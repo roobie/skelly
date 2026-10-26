@@ -46,6 +46,15 @@ export class OpticZoom {
     return this.active.frame;
   }
 
+  appliedPower(firearm: Item | undefined, aimingDownSights: boolean): number {
+    const variable = this.frame(firearm, aimingDownSights);
+    if (variable) {
+      return variable.magnification;
+    }
+    const optic = firearm && aimingDownSights ? mountedOptic(this.registry, firearm) : undefined;
+    return optic ? (opticViewSettings(optic.item, optic.model)?.magnification ?? 1) : 1;
+  }
+
   wheel(firearm: Item | undefined, aimingDownSights: boolean, deltaY: number): boolean {
     if (!Number.isFinite(deltaY) || deltaY === 0 || !this.frame(firearm, aimingDownSights) || !this.active) {
       return false;

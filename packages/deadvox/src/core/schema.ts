@@ -3918,6 +3918,7 @@ const PlayerSchema = strictObject({
   ),
   aim: strictObject({
     moveYawPerSpeed: NonNegative,
+    lookSensitivityRadiansPerPixel: Positive,
     lookLagPerRadian: NonNegative,
     lookSettleSimSeconds: PositiveSimSeconds,
     recoilRecoverySimSeconds: PositiveSimSeconds,
