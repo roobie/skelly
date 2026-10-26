@@ -685,6 +685,37 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
   return refusal ? { refusal } : { pos };
 };
 
+type Placement = ReturnType<typeof placement>;
+const positioned = (result: Placement | undefined): result is { pos: Vec3 } => result !== undefined && 'pos' in result;
+
+/** The next floor cell a drag may enter; diagonal corners need both adjoining cells clear. */
+export const advanceFloorLockedPlacement = (mover: FurnitureMover, aimed: Readonly<Vec3>): Placement => {
+  const entity = mover.inventory.entities.carrying();
+  if (!entity?.floorLocked) {
+    return placement(mover, aimed);
+  }
+  const target = placementBase(entity, [aimed[0], entity.pos[1], aimed[2]]);
+  const dx = Math.sign(target[0] - entity.pos[0]);
+  const dz = Math.sign(target[2] - entity.pos[2]);
+  const candidate = (x: number, z: number) =>
+    placement(mover, [x + Math.floor(entity.size[0] / 2), entity.pos[1], z + Math.floor(entity.size[2] / 2)]);
+  const xStep = dx === 0 ? undefined : candidate(entity.pos[0] + dx, entity.pos[2]);
+  const zStep = dz === 0 ? undefined : candidate(entity.pos[0], entity.pos[2] + dz);
+  if (xStep && zStep) {
+    const diagonal = candidate(entity.pos[0] + dx, entity.pos[2] + dz);
+    if (positioned(xStep) && positioned(zStep) && positioned(diagonal)) {
+      return diagonal;
+    }
+  }
+  if (positioned(xStep)) {
+    return xStep;
+  }
+  if (positioned(zStep)) {
+    return zStep;
+  }
+  return { pos: [...entity.pos] };
+};
+
 const standRefusal = (mover: FurnitureMover, shadow: Shadow, pos: Vec3, piece: BlockEntity): string | undefined => {
   const { size } = piece;
   const { entities } = mover.inventory;
@@ -724,11 +755,18 @@ const blocksApproach = (inventory: Inventory, entity: BlockEntity, cells: Readon
  */
 export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): string | undefined => {
   const { inventory } = mover;
-  const result = placement(mover, aimed);
+  const carried = inventory.entities.carrying()!;
+  const result = carried.floorLocked
+    ? placement(mover, [
+        carried.pos[0] + Math.floor(carried.size[0] / 2),
+        carried.pos[1],
+        carried.pos[2] + Math.floor(carried.size[2] / 2),
+      ])
+    : placement(mover, aimed);
   if ('refusal' in result) {
     return result.refusal;
   }
-  const entity = inventory.entities.carrying()!;
+  const entity = carried;
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   shadow.fill(entity, result.pos, true);
   const moves = resettlePiles(mover, shadow, pilesOver(inventory, [{ pos: result.pos, size: [...entity.size] }]));

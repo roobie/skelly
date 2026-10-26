@@ -41,6 +41,7 @@ import {
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
 import {
+  advanceFloorLockedPlacement,
   type FurnitureMover,
   type FurnitureSlideWay,
   furnitureMoveStamina,
@@ -1716,6 +1717,29 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
+  const dragAimedCell = (): Vec3 => {
+    const input = sampledInput();
+    const origin: Vec3 = [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]];
+    const direction = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
+    const reachBlocks = reachTuning(registry).useReachMetres / s;
+    const hit = raycast(origin, direction, reachBlocks, physicalSolid);
+    const cell = hit
+      ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
+      : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reachBlocks));
+    return [cell[0]!, cell[1]!, cell[2]!];
+  };
+
+  const advanceFloorLockedDrag = (): void => {
+    const carried = entities.carrying();
+    if (!carried?.floorLocked) {
+      return;
+    }
+    const result = advanceFloorLockedPlacement(furnitureMover(), dragAimedCell());
+    if ('pos' in result) {
+      entities.moveCarried(carried, result.pos);
+    }
+  };
+
   const cancelUnreachableDrag = (): void => {
     const carried = entities.carrying();
     if (carried?.floorLocked && !inventory.canReachEntity(carried)) {
@@ -1982,10 +2006,12 @@ export const createSession = (options: SessionOptions) => {
         descend: sampledInput().descending,
         dt,
       });
+      advanceFloorLockedDrag();
       cancelUnreachableDrag();
       return;
     }
     advancePlayerBody(dt, time, pacedIntent);
+    advanceFloorLockedDrag();
     cancelUnreachableDrag();
   };
 
@@ -2505,14 +2531,10 @@ export const createSession = (options: SessionOptions) => {
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
-    furniturePlacement: (aimed: Readonly<Vec3>) => {
-      const result = placement(furnitureMover(), aimed);
-      const carried = entities.carrying();
-      if (carried?.floorLocked && 'pos' in result) {
-        entities.moveCarried(carried, result.pos);
-      }
-      return result;
-    },
+    furniturePlacement: (aimed: Readonly<Vec3>) =>
+      entities.carrying()?.floorLocked
+        ? advanceFloorLockedPlacement(furnitureMover(), aimed)
+        : placement(furnitureMover(), aimed),
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       if (scenarioRun?.won) {

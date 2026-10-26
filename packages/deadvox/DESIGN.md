@@ -613,9 +613,12 @@ because rearranging a room should not require destroying its contents. See `src/
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
 - **Seen while carried.** Carry feedback must agree with where the piece can
-  be put down, without hiding the placement outline. A dragged piece stays
-  visibly on its floor plane rather than floating with the player's view.
+  be put down, without hiding the placement outline. A dragged piece advances
+  one floor cell at a time; a diagonal needs both adjoining orthogonal cells
+  clear, so it cannot cut a corner or pass through an obstacle. A dragged piece
+  stays visibly on its floor plane rather than floating with the player's view.
   Presentation reads the hold owner so it cannot outlive the hold. See
+  `src/core/furnitureMove.ts`, `advanceFloorLockedPlacement`; and
   `src/render/carriedPiece.ts`, `CarriedPiece`.
 - **Turning and tipping.** Lifted pieces can be reoriented because a piece
   that could fit through a doorway laid over should not become a dead end.

@@ -638,10 +638,13 @@ export class BlockEntities {
     this.standing += 1;
   }
 
-  /** Records the last valid floor preview, so canceling a drag leaves the piece there. */
+  /** Records a floor-drag step, so canceling a drag leaves the piece there. */
   moveCarried(entity: BlockEntity, pos: Readonly<Vec3>): void {
     if (!entity.carried) {
       throw new Error('Only a carried block entity can move');
+    }
+    if (entity.pos.every((value, axis) => value === pos[axis])) {
+      return;
     }
     entity.pos = [...pos];
     this.version += 1;
