@@ -146,6 +146,22 @@ export const meleePoseAndContact = (
   };
 };
 
+/** Resolves a leading and supporting hand pair from its content-owned transforms. */
+export const readyHandPair = (
+  primaryTuning: HeldPosesDef['readyPrimary'],
+  supportTuning: HeldPosesDef['readySupport'],
+  leading: MeleeHand,
+): MeleePoseFrame => {
+  const primary = handPose(primaryTuning.offset, primaryTuning.rotation);
+  const support = handPose(supportTuning.offset, supportTuning.rotation);
+  const reflect = (pose: HandPose): HandPose =>
+    handPose(
+      [-pose.offset[0], pose.offset[1], pose.offset[2]],
+      [pose.rotation[0], -pose.rotation[1], -pose.rotation[2]],
+    );
+  return leading === 'right' ? { right: primary, left: support } : { left: reflect(primary), right: reflect(support) };
+};
+
 export const readyMeleePose = (
   ready: boolean,
   holds?: HeldPosesDef,
@@ -157,14 +173,7 @@ export const readyMeleePose = (
   if (!holds) {
     throw new Error('Ready pose requires figure hold tuning');
   }
-  const primary = handPose(holds.readyPrimary.offset, holds.readyPrimary.rotation);
-  const support = handPose(holds.readySupport.offset, holds.readySupport.rotation);
-  const reflect = (pose: HandPose): HandPose =>
-    handPose(
-      [-pose.offset[0], pose.offset[1], pose.offset[2]],
-      [pose.rotation[0], -pose.rotation[1], -pose.rotation[2]],
-    );
-  return leading === 'right' ? { right: primary, left: support } : { left: reflect(primary), right: reflect(support) };
+  return readyHandPair(holds.guardPrimary, holds.guardSupport, leading);
 };
 
 export const interpolateHandPose = (base: Vec3, pose: HandPose): { offset: Vec3; rotation: Vec3 } => ({

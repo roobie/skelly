@@ -8,6 +8,7 @@ import { magazineSpec } from '../core/magazine.ts';
 import { isReadableItem } from '../core/options.ts';
 import type { ItemDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
+import { type MeleeReadinessInput, shouldEnterMeleeReady } from './melee.ts';
 
 type PrimaryItemAction =
   | 'melee'
@@ -47,6 +48,20 @@ export type PrimaryActionSelection =
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
+
+export interface PrimaryMeleeDispatch {
+  readonly kind: 'swing';
+  readonly hand?: HandSide;
+}
+
+/** The selected primary action dispatches a swing only from en-garde. */
+export const primaryMeleeAction = (
+  action: PrimaryActionSelection,
+  readiness: MeleeReadinessInput,
+): PrimaryMeleeDispatch | undefined =>
+  (action.kind === 'melee' || action.kind === 'fists') && shouldEnterMeleeReady(readiness)
+    ? { kind: 'swing', ...(action.hand === undefined ? {} : { hand: action.hand }) }
+    : undefined;
 
 interface CapabilityDispatch {
   readonly kind: Exclude<PrimaryItemAction, 'none'>;

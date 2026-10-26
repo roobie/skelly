@@ -1841,8 +1841,14 @@ try {
       });
     const strike = async () => {
       const before = await observe();
-      await page.mouse.click(640, 450);
-      await page.waitForFunction((count) => globalThis.primaryActionTest.swings.length > count, before.swings.length);
+      await page.mouse.down({ button: 'right' });
+      await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
+      try {
+        await page.mouse.click(640, 450);
+        await page.waitForFunction((count) => globalThis.primaryActionTest.swings.length > count, before.swings.length);
+      } finally {
+        await page.mouse.up({ button: 'right' });
+      }
       const after = await observe();
       assert.equal(after.swings.length, before.swings.length + 1, 'one click admits one swing');
       assert.ok(after.stamina < before.stamina, 'an admitted swing spends stamina');

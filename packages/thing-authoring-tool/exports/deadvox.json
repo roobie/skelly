@@ -2136,6 +2136,78 @@
     }
   },
   {
+    "id": "utility_vest_worn",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "utility_vest_worn",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "stab_vest_worn",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "stab_vest_worn",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "school_backpack_worn",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "school_backpack_worn",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "hiking_backpack_worn",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "hiking_backpack_worn",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "fanny_pack_worn",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "fanny_pack_worn",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "weapon_sling_worn",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "weapon_sling_worn",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {

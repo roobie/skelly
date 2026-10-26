@@ -16,10 +16,7 @@ import { sweepGroup } from './sweeps.ts';
 
 const SAMPLE_SEEDS = [1, 17, 42];
 const VALIDITY_SEEDS = 100;
-const VALIDITY_CHUNK = 5;
-const VALIDITY_SEED_TIMEOUT_MS = 4000;
 const COVERAGE_SCAN_BOUND = 300;
-const COVERAGE_SEED_TIMEOUT_MS = 250;
 const sampleRealizations = new Map<number, ReturnType<typeof realize>>();
 const realizeSample = (seed: number) => {
   let realized = sampleRealizations.get(seed);
@@ -257,47 +254,38 @@ describe('amalgam body plan', () => {
   });
 
   sweepGroup('amalgam validity sweep', () => {
-    // Chunked by seed range so each test stays inside the default timeout.
-    for (let from = 0; from < VALIDITY_SEEDS; from += VALIDITY_CHUNK) {
-      it(
-        `keeps every body valid, supported and severable (seeds ${from}-${from + VALIDITY_CHUNK - 1})`,
-        () => {
-          for (let seed = from; seed < from + VALIDITY_CHUNK; seed++) {
-            const realized = realize(generate(amalgamTemplate, seed));
-            expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
-            const manifest = amalgamManifest(realized.body, realized.voxels);
-            expect([...realized.supportBones].sort()).toEqual([...actualGroundOwners(realized)].sort());
-            const members = manifest.parts.filter((part) => part.severable);
-            expect(members.length).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
-            expect(members.length).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
-            for (const part of members) {
-              const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
-              expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
-            }
-          }
-        },
-        VALIDITY_CHUNK * VALIDITY_SEED_TIMEOUT_MS,
-      );
-    }
+    it(`keeps every body valid, supported and severable (${VALIDITY_SEEDS} seeds)`, () => {
+      for (let seed = 0; seed < VALIDITY_SEEDS; seed++) {
+        const realized = realize(generate(amalgamTemplate, seed));
+        expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
+        const manifest = amalgamManifest(realized.body, realized.voxels);
+        expect([...realized.supportBones].sort(), `seed ${seed}: support owners`).toEqual(
+          [...actualGroundOwners(realized)].sort(),
+        );
+        const members = manifest.parts.filter((part) => part.severable);
+        expect(members.length, `seed ${seed}: severable member count`).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
+        expect(members.length, `seed ${seed}: severable member count`).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
+        for (const part of members) {
+          const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
+          expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
+        }
+      }
+    });
 
     // Scans seeds until every case is seen, up to a stated bound, so a generator change that
     // shifts which seed rolls a case cannot flip the test; only losing a case entirely fails it.
-    it(
-      'generates variable counts, hanging members, and non-foot ground contacts',
-      () => {
-        const memberCounts = new Set<number>();
-        const seen = new Set<string>();
-        for (let seed = 0; seed < COVERAGE_SCAN_BOUND && !COVERAGE_CASES.every((name) => seen.has(name)); seed++) {
-          const sample = coverageSample(seed);
-          memberCounts.add(sample.memberCount);
-          for (const name of sample.cases) {
-            seen.add(name);
-          }
+    it('generates variable counts, hanging members, and non-foot ground contacts', () => {
+      const memberCounts = new Set<number>();
+      const seen = new Set<string>();
+      for (let seed = 0; seed < COVERAGE_SCAN_BOUND && !COVERAGE_CASES.every((name) => seen.has(name)); seed++) {
+        const sample = coverageSample(seed);
+        memberCounts.add(sample.memberCount);
+        for (const name of sample.cases) {
+          seen.add(name);
         }
-        expect([...seen].sort()).toEqual([...COVERAGE_CASES].sort());
-        expect(memberCounts.size).toBeGreaterThan(1);
-      },
-      COVERAGE_SCAN_BOUND * COVERAGE_SEED_TIMEOUT_MS,
-    );
+      }
+      expect([...seen].sort()).toEqual([...COVERAGE_CASES].sort());
+      expect(memberCounts.size).toBeGreaterThan(1);
+    });
   });
 });

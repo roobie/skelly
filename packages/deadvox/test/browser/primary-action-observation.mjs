@@ -240,7 +240,9 @@ export const observationPlugin = {
       gap: item.getWorldPosition(camera.position.clone()).distanceTo(anchor.getWorldPosition(camera.position.clone())),
       angle: item.getWorldQuaternion(camera.quaternion.clone()).angleTo(anchor.getWorldQuaternion(camera.quaternion.clone())),
       torsoYaw: pose?.torsoYaw ?? 0,
-      movedOff: [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
+      // En-garde before the click raises the off hand by design, so neutrality is checked only mid-swing.
+      movedOff: session.playerCombat.activeMeleeAction !== undefined &&
+        [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
     });
   };
 ${marker}`,

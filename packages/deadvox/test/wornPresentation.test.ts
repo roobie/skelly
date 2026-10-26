@@ -4,6 +4,7 @@ import { buildRegistry, type FigureDef, type ItemDef } from '../src/core/content
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { ItemLook } from '../src/render/itemLook.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { FIGURE_PIVOT, type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -81,6 +82,7 @@ const library = () => {
       model.name = 'fixture-item-model';
       return model;
     },
+    partLook: (look: ItemLook) => models.part(look.model),
   };
   return { available, models: models as unknown as ModelLibrary };
 };

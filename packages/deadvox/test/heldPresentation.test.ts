@@ -1,7 +1,9 @@
+// biome-ignore-all lint/suspicious/noMisplacedAssertion: helper assertions run only from the item-hold test.
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
@@ -11,12 +13,28 @@ import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 // The compass label's canvas is unrelated to its grip; pixels are checked in the held browser stage.
 vi.mock('../src/render/compass.ts', () => ({
   createCompass: ({ root }: { root: Object3D }) => ({ group: root, update: () => undefined, dispose: () => undefined }),
 }));
+
+/** A two-handed firearm keeps its model-authored support grip while it is readied. */
+const expectTwoHandedAimSupport = (view: HeldItems, sample: ItemHoldPose, mountedSupport: boolean): void => {
+  if (!mountedSupport) {
+    return;
+  }
+  const support = sample.side === 'right' ? 'left' : 'right';
+  const held = heldState(view) as {
+    handsOff: Set<'left' | 'right'>;
+    holds: Map<'left' | 'right', { at: readonly number[] }>;
+    gripAnchors: Map<'left' | 'right', Object3D>;
+  };
+  expect(held.handsOff.has(support), sample.name).toBe(false);
+  expect(held.gripAnchors.get(support)!.position.toArray(), sample.name).toEqual(held.holds.get(support)!.at);
+};
 
 it('both views resolve registry item holds through one owner, including the mannequin catalogue', async () => {
   const expectSupportMirror = (owner: HeldPresentation, sample: ItemHoldPose): void => {
@@ -52,7 +70,7 @@ it('both views resolve registry item holds through one owner, including the mann
   // Different tuning makes a view that retains the old constants disagree with the owner.
   figure.holds.oneHand[0] *= 0.8;
   figure.holds.twoHand[1] *= 0.9;
-  figure.holds.readyPrimary.offset[1] *= 0.7;
+  figure.holds.guardPrimary.offset[1] *= 0.7;
   figure.holds.supportUpright[0] += figure.holds.oneHand[0] * 0.2;
   figure.holds.supportForward[0] += figure.holds.oneHand[0] * 0.2;
   const registry = { ...base, items, figures: new Map([[figure.id, figure]]) };
@@ -79,7 +97,9 @@ it('both views resolve registry item holds through one owner, including the mann
     },
     '?mannequin=',
   )!;
-  expect(mannequin.poses.flatMap((pose) => (pose.hold ? [pose.hold] : []))).toEqual(catalogue);
+  expect(mannequin.poses.filter((pose) => pose.catalogue).flatMap((pose) => (pose.hold ? [pose.hold] : []))).toEqual(
+    catalogue,
+  );
   expect(new Set(catalogue.map((pose) => pose.itemType))).toEqual(new Set(items.keys()));
   const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
   try {
@@ -106,6 +126,12 @@ it('both views resolve registry item holds through one owner, including the mann
           sample.name,
         ).toEqual([[sample.side, item]]);
         const firstOwner = build.mock.contexts[0] as HeldPresentation;
+        const def = items.get(sample.itemType)!;
+        expectTwoHandedAimSupport(
+          view,
+          sample,
+          Boolean(def.firearm && def.twoHanded && registry.models.get(def.model!)?.hands),
+        );
         build.mockClear();
         world.sync({
           body: createPlayerBody(scale, 0, 0, 0),
@@ -145,6 +171,59 @@ it('both views resolve registry item holds through one owner, including the mann
     }
   } finally {
     mannequin.dispose();
+    build.mockRestore();
+  }
+});
+
+it('keeps active and resting firearm off-hand poses equal across first and third person readiness', async () => {
+  const registry = baseRegistry();
+  const figure = registry.figures.get('player')!;
+  const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
+  const inventory = new Inventory(registry);
+  const gun = inventory.create('revolver_357');
+  const light = inventory.create('flashlight');
+  expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);
+  const scale = makeScale(0.5);
+  const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
+  try {
+    for (const [on, progress] of [
+      [false, 0.4],
+      [false, 1],
+      [true, 0.4],
+      [true, 1],
+    ] as const) {
+      if (Boolean(light.on) !== on) {
+        expect(toggleLight(registry, light)).toBeUndefined();
+      }
+      const handling = { firearms: [], readiness: { uid: gun.uid, progress, aimingDownSights: false } } as const;
+      const view = new HeldItems(inventory, models, figure);
+      build.mockClear();
+      view.update(new PerspectiveCamera(), undefined, 0, handling);
+      const firstOwner = build.mock.contexts[0] as HeldPresentation;
+      const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
+      build.mockClear();
+      world.sync({
+        body: createPlayerBody(scale, 0, 0, 0),
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance: 'standing',
+        dt: 0,
+        thirdPerson: true,
+        inventory,
+      });
+      world.syncHeldView(undefined, handling);
+      const worldOwner = build.mock.contexts.at(-1) as HeldPresentation;
+      expect(
+        worldOwner.arms.get('left')!.position.distanceTo(firstOwner.arms.get('left')!.position),
+        `on=${on} readiness=${progress}`,
+      ).toBeLessThan(1e-7);
+      view.dispose();
+      world.dispose();
+    }
+  } finally {
     build.mockRestore();
   }
 });

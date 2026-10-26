@@ -4,7 +4,7 @@ import { type AimFrame, aimBasis, NEUTRAL_AIM } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
-import { type MeleeHand, type MeleePoseFrame, readyMeleePose } from './meleePose.ts';
+import { type MeleeHand, type MeleePoseFrame, readyHandPair } from './meleePose.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from './opticWindow.ts';
 import type { HeldPosesDef } from './schema.ts';
 
@@ -152,7 +152,7 @@ export const throwStanceWorldOffset = (side: HandSide, yaw: number, pitch: numbe
 };
 
 export const readyFirearmPose = (leading: MeleeHand, holds: HeldPosesDef): MeleePoseFrame => {
-  const hands = readyMeleePose(true, holds, leading);
+  const hands = readyHandPair(holds.readyPrimary, holds.readySupport, leading);
   return {
     right: { ...hands.right, rotation: [0, 0, 0] },
     left: { ...hands.left, rotation: [0, 0, 0] },
