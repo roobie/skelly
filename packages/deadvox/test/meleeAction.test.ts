@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import type { ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { firearmAimOffHand } from '../src/core/firearmAimOffHand.ts';
 import { readyFirearmPose } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
@@ -22,7 +23,6 @@ import {
   startPlayerMelee,
 } from '../src/game/melee.ts';
 import { primaryMeleeAction } from '../src/game/primaryAction.ts';
-import { firearmAimOffHand } from '../src/render/hands.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

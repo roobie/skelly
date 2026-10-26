@@ -33,6 +33,7 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
 import type { Job } from '../core/handling.ts';
 import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -116,33 +117,6 @@ interface OffHandGrip {
 
 /** The hand a carried item's tree path is rooted in. */
 const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
-
-export interface FirearmAimOffHand {
-  side: HandSide;
-  firearmSide: HandSide;
-  mode: 'support' | 'active';
-}
-
-/** Resolves the off-hand role while a held firearm is readied. */
-export const firearmAimOffHand = (
-  hands: Readonly<Partial<Record<HandSide, Item>>>,
-  readiness: HeldPresentationFrame['readiness'],
-  supportMounted = false,
-): FirearmAimOffHand | undefined => {
-  if (!(readiness && !supportMounted)) {
-    return;
-  }
-  const firearmSide = (['right', 'left'] as const).find((hand) => hands[hand]?.uid === readiness.uid);
-  if (!firearmSide) {
-    return;
-  }
-  const side = firearmSide === 'right' ? 'left' : 'right';
-  const item = hands[side];
-  if (!item) {
-    return { side, firearmSide, mode: 'support' };
-  }
-  return item.on === true ? { side, firearmSide, mode: 'active' } : undefined;
-};
 
 export interface HeldHandlingFrame extends HeldPresentationFrame {
   readonly firearms: readonly HeldFirearmPose[];

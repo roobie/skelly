@@ -6,6 +6,7 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { firearmAimOffHand } from '../core/firearmAimOffHand.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -383,9 +384,23 @@ export class PlayerMeshes {
       return;
     }
     const { registry, hands } = source;
-    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}:${pose.emptyFists}`;
+    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}:${pose.emptyFists}:${this.handling.readiness?.uid}`;
     const presentation = this.prepareHeld(source, version);
     this.addEmptyFists(presentation, hands, pose.emptyFists ?? false);
+    const aimOffHand = firearmAimOffHand(
+      hands,
+      this.handling.readiness,
+      (() => {
+        const firearmSide = (['right', 'left'] as const).find(
+          (hand) => hands[hand]?.uid === this.handling.readiness?.uid,
+        );
+        const side = firearmSide === 'right' ? 'left' : 'right';
+        return presentation.arms.get(side)?.parent !== presentation.torso;
+      })(),
+    );
+    if (aimOffHand?.mode === 'support') {
+      presentation.addAimSupport(aimOffHand.firearmSide);
+    }
     this.positionHeldFrame(pose, registry);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];

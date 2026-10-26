@@ -62,8 +62,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         readyPrimary: { offset: [0.025, 0.085, 0.015], rotation: [0.12, -0.08, -0.04] },
         readySupport: { offset: [-0.025, 0.075, 0.01], rotation: [0.1, 0.08, 0.04] },
         // En-garde draws both hands up close to the chin and inward, whether they are fists or holds.
-        guardPrimary: { offset: [-0.08, 0.4, 0.08], rotation: [0.42, -0.12, -0.08] },
-        guardSupport: { offset: [0.08, 0.37, 0.1], rotation: [0.38, 0.12, 0.08] },
+        guardPrimary: { offset: [-0.04, 0.12, 0.05], rotation: [0.12, -0.08, -0.04] },
+        guardSupport: { offset: [0.04, 0.1, 0.06], rotation: [0.1, 0.08, 0.04] },
         // A switched-on off-hand item stays visible and directed forward alongside an aimed firearm.
         aimActiveOffHand: { offset: [0, 0.25, 0.02], rotation: [0, 0, 0] },
         // Relaxed hands hang below the view; en-garde returns them at the same authored rate on either side.
