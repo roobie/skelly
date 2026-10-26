@@ -19,7 +19,7 @@ local notSpawnable = [
   'engine_hoist',
 ]
 // A loose gun part has no use until players can assemble guns, so none spawns as loot (`things/WORK.md`, "Decisions").
-+ [entry.id for entry in (import 'gungen/src/gun/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
++ [entry.id for entry in (import 'packages/gun-authoring-tool/src/gun/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
 local commonItems = [
   'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x',
   'revolver_357', 'cartridge_357_h_magnum', 'cartridge_box_357_h_magnum',

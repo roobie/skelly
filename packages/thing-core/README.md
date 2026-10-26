@@ -38,8 +38,8 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
   retain authored shades while resolving shared values. See `src/materials.ts`,
   `MaterialReferenceSchema`, and `packages/deadvox/src/render/modelMaterials.ts`, `applyModelMaterials`.
 - Part mass choices and appearance profiles belong to the authoring domain, not to a
-  material's identity. See `gungen/src/gun/catalogue.jsonnet`, `parts`, and
-  `gungen/src/gun/appearance.jsonnet`, `profileFinishes`.
+  material's identity. See `packages/gun-authoring-tool/src/gun/catalogue.jsonnet`, `parts`, and
+  `packages/gun-authoring-tool/src/gun/appearance.jsonnet`, `profileFinishes`.
 - A model with parts carries authored part masses, including a thing-tool atom wrapped
   as one part; its consumer authors no competing item total. Without exported parts, an
   atom reads its item weight. This keeps one authority during the tool migration while

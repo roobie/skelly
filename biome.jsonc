@@ -137,7 +137,7 @@
     },
     {
       // Standalone Playwright check scripts (run by hand, not by vitest): they assert, read env and print.
-      "includes": ["**/gungen/test/browser/*.mjs"],
+      "includes": ["**/gun-authoring-tool/test/browser/*.mjs"],
       "linter": {
         "rules": {
           "correctness": { "noProcessGlobal": "off" },
