@@ -18,6 +18,7 @@ export class CarriedPiece {
   private readonly entities: BlockEntities;
   private readonly build: (entity: BlockEntity, def: FurnitureDef) => Object3D;
   private readonly tuning: CarriedViewTuning;
+  private readonly modelsVersion: () => number;
   private readonly bounds = new Box3();
   private readonly centre = new Vector3();
   private readonly size = new Vector3();
@@ -25,15 +26,21 @@ export class CarriedPiece {
   private bobRealSeconds = 0;
   private floorUid: number | undefined;
 
+  /**
+   * `modelsVersion` goes up as models load (`src/render/models.ts`, `ModelLibrary`): a piece built before its models
+   * arrived, such as one carried in a loaded save, is rebuilt and refitted once they do.
+   */
   constructor(
     entities: BlockEntities,
     build: (entity: BlockEntity, def: FurnitureDef) => Object3D,
     tuning: CarriedViewTuning,
+    modelsVersion: () => number = () => 0,
   ) {
     this.group.name = 'carried-piece';
     this.entities = entities;
     this.build = build;
     this.tuning = tuning;
+    this.modelsVersion = modelsVersion;
   }
 
   /** Whether a carried piece is drawn. */
@@ -44,7 +51,7 @@ export class CarriedPiece {
   /** Catches up with the carry state and bobs the piece; `dt` is real seconds, `camera` the view's world turn. */
   update(dt: number, camera: Quaternion, blockSize: number, floorPlacement?: Readonly<Vec3>): void {
     const carried = this.entities.carrying();
-    const key = carried ? `${carried.uid}:${this.entities.version}` : '';
+    const key = carried ? `${carried.uid}:${this.entities.version}:${this.modelsVersion()}` : '';
     if (key !== this.drawn) {
       this.drawn = key;
       this.group.clear();

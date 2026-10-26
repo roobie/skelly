@@ -37,6 +37,7 @@ import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
 import { CarriedPiece } from './carriedPiece.ts';
 import { CaseEffects } from './caseEffects.ts';
+import { CorpseFigures } from './corpseFigures.ts';
 import { AuthoredDecals } from './decals.ts';
 import { DrawCounters } from './drawCounters.ts';
 import { Flashlight, flashlightDaylightScale, spillSwitchFromSearch } from './flashlight.ts';
@@ -284,10 +285,12 @@ export const createPlayView = (
   const vehicleMesher = vehicleShapesInWorker();
   page.addEventListener('pagehide', vehicleMesher.terminate);
   const furniture = new FurnitureMeshes(s, meshes, vehicleMesher.shapes);
+  const corpses = new CorpseFigures(s, registry, models, meshes);
   const carriedPiece = new CarriedPiece(
     inventory.entities,
-    (entity, def) => furniture.pieceMesh(entity, def),
+    (entity, def) => (def.corpse ? corpses.figure(entity, def) : furniture.pieceMesh(entity, def)),
     reachTuning(registry).furnitureMove.carriedView,
+    () => models.version,
   );
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
@@ -302,7 +305,7 @@ export const createPlayView = (
   let cameraDaylightScale = 1;
   const lightPool = new LightPool(scene, lightTuning.renderedFixtureLimit, held.warmUpTarget.scene);
   engine.shadows?.attachTorches(flashlight.lights);
-  scene.add(piles.group, vehicles.group, furniture.group, playerMeshes.group, modelMaterialWarmUp(true));
+  scene.add(piles.group, vehicles.group, furniture.group, corpses.group, playerMeshes.group, modelMaterialWarmUp(true));
   const avatarStudy = createAvatarStudy(scene, config.debug, s, models);
   const avatarMannequin = createAvatarMannequin(scene, {
     registry,
@@ -478,6 +481,7 @@ export const createPlayView = (
       leverProps.launchLit((uid) => itemThrows.drawn(uid) ?? piles.drawnModel(uid));
       vehicles.sync(inventory.vehicles);
       furniture.sync(entities);
+      corpses.sync(entities);
       decals?.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));

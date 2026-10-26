@@ -282,12 +282,7 @@ local roofAir = [
 breach.breaking(shape.colliding({
   furniture: [{
     id: 'dead_officer_body', name: 'Dead officer', size: [4, 1, 2], color: '#554f43', solid: false,
-    shape: [
-      { position: [0.2, 0, 0.5], size: [1.2, 0.15, 0.4] },
-      { position: [0.2, 0, 1.1], size: [1.2, 0.15, 0.4] },
-      { position: [1.4, 0, 0.45], size: [1.5, 0.25, 1.1] },
-      { position: [2.9, 0, 0.65], size: [0.5, 0.25, 0.7] },
-    ],
+    corpse: { figure: 'player', outfit: 'police_uniform' },
     container: { pockets: [{ grid: [6, 4], handlingSimSeconds: 1.2 }] },
   }, {
     id: 'police_weapon_cabinet', name: 'Weapon cabinet', size: [2, 4, 1], color: '#657063',
