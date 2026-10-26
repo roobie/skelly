@@ -20,8 +20,8 @@ of the root package.
 - `packages/thing-core`: the shared modeling core, with no knowledge of any kind of thing.
 - `packages/thing-authoring-tool`: authors and curates the non-gun things (tools, containers,
   food, the compass and so on) on top of the core.
-- The gun authoring tool, created in `things/WORK.md`, "Phases" (#509): authors and curates
-  guns on top of the core, and succeeds `gungen/`. Until then `gungen/` owns guns.
+- `packages/gun-authoring-tool`: authors and curates guns on top of the shared packages.
+  It owns the authored firearm sources and consumption recipe.
 - An export package above the core: writes the GLB, the model entry and each part's mass
   and centre of mass for both tools. Placing a centre of mass needs the engine's shapes, and
   deadvox loads the core, so this code needs a home deadvox doesn't load. With one writer,
@@ -37,8 +37,8 @@ binary or a fallback box. Shared mechanisms let the tools use one model contract
 gun rules stay out of tools that do not need them. Separate authoring tools keep that
 domain ownership explicit.
 
-The end state is that `gungen/` is deleted and deadvox's models all come from these tools.
-Removal waits on the gun-authoring tool reproducing every gungen export; `things/WORK.md` tracks the steps.
+Retiring residual gungen names must not lose a consumer export or a pending feature's
+reason. `things/WORK.md`, "Phases" tracks retirement and close-out.
 
 ## Rules
 
@@ -52,11 +52,9 @@ Removal waits on the gun-authoring tool reproducing every gungen export; `things
   removing or swapping a part is a subtraction.
 - The gun tool authors guns; it does not generate variants of an archetype. A gun is a
   designed look-alike of a real gun or an invented, sci-fi gun, and the gun tool's author
-  is free to draw either. Gungen is deprecated and the gun tool replaces it as the
-  primary tool, so gungen's generic archetypes are legacy and gungen's modeling
-  restrictions (its part-family vocabulary and its boundary against reproducing real
-  models) bind only gungen, never the gun tool. A new gun is authored in the gun tool
-  rather than added as another archetype.
+  is free to draw either. The inherited generic archetypes remain authored sources, not
+  a restriction on real-model resemblance. A new gun is authored in the gun tool rather than
+  added as another archetype.
 - The tools are authoring tools, not generators: each exports a closed set of items, so
   every atom it draws has a mass someone authored. The gun tool's parts (barrels, receivers
   and so on) are such items.

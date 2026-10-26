@@ -145,7 +145,7 @@ Paperwork; no game code.
 >
 > i wanted the received as a whole lifted so that the bore in relation to the receiver goes down by a margin great enough for the rear sight to align with the front without being lifted on a pin
 
-`gungen/src/gun/parts.ts`, `akRearSight`, uses a finer sight-only grain because the shared gun grid cannot represent a 2 mm notch. The AK follows its golden AKM photo (`gungen/PROJECT.md`, "Design and variants"): the receiver sits around the bore as on the AKM, and the rear-sight leaf stands on the receiver's sight block, on the sight line, without a post or a receiver lift. Its notch datum and the front-post aim line stay aligned.
+`packages/gun-authoring-tool/src/gun/parts.ts`, `akRearSight`, uses a finer sight-only grain because the shared gun grid cannot represent a 2 mm notch. The AK follows its golden AKM photo (`packages/gun-authoring-tool/PROJECT.md`, "Design and variants"): the receiver sits around the bore as on the AKM, and the rear-sight leaf stands on the receiver's sight block, on the sight line, without a post or a receiver lift. Its notch datum and the front-post aim line stay aligned.
 
 **BR, 2026-10-06 13:32, AR scope:**
 

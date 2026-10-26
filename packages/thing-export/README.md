@@ -63,11 +63,11 @@ reason, because that definition is where the item's look is authored; a recipe h
 list of exceptions. The recipe compiles the resolved grain into each row, so the exporter
 and the contract tests read one explicit value. See `tools/jsonnet/lib/voxel-grains.libsonnet`,
 `of`, and the recipes `packages/thing-authoring-tool/exports/deadvox.jsonnet` and
-`gungen/exports/deadvox.jsonnet`.
+`packages/gun-authoring-tool/exports/deadvox.jsonnet`.
 
 A part asks for the finest grain by carrying a tag in its definition, so the choice sits
 with the part's content and the exporter holds no list of part names. See `src/glb.ts`,
-`VOXEL_DETAIL`, and `gungen/src/gun/parts.ts`, where the sight parts carry it. A row that
+`VOXEL_DETAIL`, and `packages/gun-authoring-tool/src/gun/parts.ts`, where the sight parts carry it. A row that
 names a detail grain must make its own grain a whole multiple of it, because both lattices
 are anchored at the same world origin and the grains then nest: each coarse voxel face
 lies on a fine voxel face, so a sight still meets the receiver and the gas tube without
@@ -95,7 +95,7 @@ lands on the drawn face. See `src/drawn.ts`, `drawnGeometry`.
 An iron sight line runs between the voxel tops the file draws, and the muzzle sits on the
 drawn front of the barrel. The up vector is made perpendicular to that line, since the game
 aligns the model's up to the camera's. An optic keeps its optical axis, which no drawn top
-defines. See `gungen/src/gun/exportGlb.ts`, `sightMetadata` and `drawnMuzzle`.
+defines. See `packages/gun-authoring-tool/src/gun/exportGlb.ts`, `sightMetadata` and `drawnMuzzle`.
 
 A part with baked collision also names its grain, so a consumer's own datums can snap to
 the same lattice. A cargo space does this to fit the drawn bed it fills; see
@@ -157,4 +157,4 @@ keeps both tool-specific policy and authoring geometry outside Deadvox's depende
 Replaceable geometry belongs to the child item, whose weight stays authoritative, so
 neither a host-specific mount envelope nor a shared visual proxy can change an atom's mass.
 See `src/physical.ts`, `PhysicalInputs`, and the gun adapter,
-`gungen/src/gun/physical.ts`, `gunModelParts`.
+`packages/gun-authoring-tool/src/gun/physical.ts`, `gunModelParts`.

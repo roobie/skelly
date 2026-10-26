@@ -83,7 +83,7 @@
         "@mobgen/*": ["../mobgen/src/*"]
       }
     },
-    "gungen": {
+    "packages/gun-authoring-tool": {
       "entry": ["index.html!"],
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },

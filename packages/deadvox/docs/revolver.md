@@ -19,7 +19,7 @@ The revolver is one-handed with one-hand aim, leaving the off hand available rat
 
 Only the authored calibre is accepted. Per-chamber cartridge types remain explicit so future compatible ammunition can use the same owner without inventing a second chamber representation. Compatibility needs its own content rule before another calibre can be loaded.
 
-The export contract and playable handling are separate changes: validating geometry first prevents gameplay from depending on guessed pivots or duplicate model measurements. See `gungen/src/gun/revolverExport.ts`, `revolverMetadata`, and `src/render/firearmModel.ts`, `poseRevolverParts`.
+The export contract and playable handling are separate changes: validating geometry first prevents gameplay from depending on guessed pivots or duplicate model measurements. See `packages/gun-authoring-tool/src/gun/revolverExport.ts`, `revolverMetadata`, and `src/render/firearmModel.ts`, `poseRevolverParts`.
 
 ## Ownership and persistence
 

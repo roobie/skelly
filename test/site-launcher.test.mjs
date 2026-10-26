@@ -372,7 +372,7 @@ describe('site launchers track the games’ URL parameters', () => {
   });
 
   it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
-    const supported = paramsReadBy(['gungen/src/viewer/main.ts']);
+    const supported = paramsReadBy(['packages/gun-authoring-tool/src/viewer/main.ts']);
     for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
       assert.ok(supported.includes(name), `${name} is intentionally omitted: ${reason}`);
     }

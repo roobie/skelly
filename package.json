@@ -9,7 +9,7 @@
     "packages/thing-export",
     "packages/tool-ui",
     "packages/thing-authoring-tool",
-    "gungen",
+    "packages/gun-authoring-tool",
     "packages/deadvox",
     "packages/mobgen"
   ],
