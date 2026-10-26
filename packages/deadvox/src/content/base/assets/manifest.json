@@ -97,7 +97,7 @@
       ],
       "licence": "CC0-1.0",
       "title": "Gungen authored model exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/exports/deadvox.jsonnet"
+      "url": "https://github.com/roobie/skelly/blob/main/packages/gun-authoring-tool/exports/deadvox.jsonnet"
     },
     {
       "author": "Skelly contributors",

@@ -8,7 +8,7 @@ on:
     # Retain project runtime/build inputs; tests and Markdown do not change the site.
     paths:
       - 'site/**'
-      - 'gungen/**'
+      - 'packages/gun-authoring-tool/**'
       - 'packages/engine/**'
       - 'packages/tool-ui/**'
       - 'packages/thing-core/**'
@@ -24,7 +24,7 @@ on:
       - '.node-version'
       - '.github/workflows/pages.yml'
       - '!**/*.md'
-      - '!gungen/test/**'
+      - '!packages/gun-authoring-tool/test/**'
       - '!packages/deadvox/test/**'
       - '!packages/mobgen/test/**'
   workflow_dispatch:
@@ -64,7 +64,7 @@ jobs:
           npm run ci
           npm run test:site
       - name: Check and build gungen
-        working-directory: gungen
+        working-directory: packages/gun-authoring-tool
         run: |
           npm run typecheck
           npm test
@@ -91,7 +91,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -r site/. _site/
-          for P in gungen packages/deadvox packages/mobgen packages/thing-authoring-tool; do
+          for P in packages/gun-authoring-tool packages/deadvox packages/mobgen packages/thing-authoring-tool; do
             mkdir -p _site/${P#packages/}
             cp -r $P/dist/. _site/${P#packages/}/
           done

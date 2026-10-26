@@ -1,6 +1,6 @@
 // Gungen's part catalogue owns which gun parts are items; this pack adds only what a player sees of each.
 // A part's model carries its authored mass, so its item takes no weight.
-local catalogue = import 'gungen/src/gun/catalogue.jsonnet';
+local catalogue = import 'packages/gun-authoring-tool/src/gun/catalogue.jsonnet';
 local looks = {
   receiver_ar: { name: 'AR upper receiver', size: [1, 3] },
   receiver_ar_large: { name: 'AR-10 upper receiver', size: [1, 4] },

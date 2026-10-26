@@ -2013,7 +2013,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   scaled base radius, while the far tier follows the listener's hearing model.
   A real suppressor is quieter than an improvised one, and wear makes either
   louder. Keep suppression local to shots so other noises retain their range. See
-  `gungen/src/gun/attachments.ts`, `suppressors`;
+  `packages/gun-authoring-tool/src/gun/attachments.ts`, `suppressors`;
   `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
   `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
   `src/game/audioPresentation.ts`, `firearmShotSound`; and

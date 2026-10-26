@@ -1,82 +1,6 @@
 {
   "files": [
     {
-      "source": "gungen/cartridges/12-gauge-00-buck.jsonnet",
-      "output": "gungen/cartridges/12-gauge-00-buck.json"
-    },
-    {
-      "source": "gungen/cartridges/308-winchester.jsonnet",
-      "output": "gungen/cartridges/308-winchester.json"
-    },
-    {
-      "source": "gungen/cartridges/357-magnum.jsonnet",
-      "output": "gungen/cartridges/357-magnum.json"
-    },
-    {
-      "source": "gungen/cartridges/5.56x45.jsonnet",
-      "output": "gungen/cartridges/5.56x45.json"
-    },
-    {
-      "source": "gungen/cartridges/7.62x39.jsonnet",
-      "output": "gungen/cartridges/7.62x39.json"
-    },
-    {
-      "source": "gungen/cartridges/catalogue/bolt.jsonnet",
-      "output": "gungen/cartridges/catalogue/bolt.json"
-    },
-    {
-      "source": "gungen/designs/archetype-ar-large.jsonnet",
-      "output": "gungen/designs/archetype-ar-large.json"
-    },
-    {
-      "source": "gungen/designs/archetype-revolver.jsonnet",
-      "output": "gungen/designs/archetype-revolver.json"
-    },
-    {
-      "source": "gungen/designs/compact-smg-plain.jsonnet",
-      "output": "gungen/designs/compact-smg-plain.json"
-    },
-    {
-      "source": "gungen/designs/compact-smg.jsonnet",
-      "output": "gungen/designs/compact-smg.json"
-    },
-    {
-      "source": "gungen/designs/hunting-rifle.jsonnet",
-      "output": "gungen/designs/hunting-rifle.json"
-    },
-    {
-      "source": "gungen/exports/deadvox.jsonnet",
-      "output": "gungen/exports/deadvox.json"
-    },
-    {
-      "source": "gungen/src/gun/appearance.jsonnet",
-      "output": "gungen/src/gun/appearance.json"
-    },
-    {
-      "source": "gungen/src/gun/arFrames.jsonnet",
-      "output": "gungen/src/gun/arFrames.json"
-    },
-    {
-      "source": "gungen/src/gun/catalogue.jsonnet",
-      "output": "gungen/src/gun/catalogue.json"
-    },
-    {
-      "source": "gungen/src/gun/fixedPrism.jsonnet",
-      "output": "gungen/src/gun/fixedPrism.json"
-    },
-    {
-      "source": "gungen/src/gun/gunVoxel.jsonnet",
-      "output": "gungen/src/gun/gunVoxel.json"
-    },
-    {
-      "source": "gungen/src/gun/magazines.jsonnet",
-      "output": "gungen/src/gun/magazines.json"
-    },
-    {
-      "source": "gungen/src/gun/physical.jsonnet",
-      "output": "gungen/src/gun/physical.json"
-    },
-    {
       "source": "packages/deadvox/src/config/browser-mods.jsonnet",
       "output": "packages/deadvox/src/config/browser-mods.json"
     },
@@ -427,6 +351,82 @@
     {
       "source": "packages/deadvox/test/fixtures/mods/reading-world.jsonnet",
       "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/cartridges/308-winchester.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/308-winchester.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/cartridges/357-magnum.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/357-magnum.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/cartridges/5.56x45.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/5.56x45.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/cartridges/7.62x39.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/7.62x39.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/cartridges/catalogue/bolt.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/catalogue/bolt.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/designs/archetype-ar-large.jsonnet",
+      "output": "packages/gun-authoring-tool/designs/archetype-ar-large.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/designs/archetype-revolver.jsonnet",
+      "output": "packages/gun-authoring-tool/designs/archetype-revolver.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/designs/compact-smg-plain.jsonnet",
+      "output": "packages/gun-authoring-tool/designs/compact-smg-plain.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/designs/compact-smg.jsonnet",
+      "output": "packages/gun-authoring-tool/designs/compact-smg.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/designs/hunting-rifle.jsonnet",
+      "output": "packages/gun-authoring-tool/designs/hunting-rifle.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/exports/deadvox.jsonnet",
+      "output": "packages/gun-authoring-tool/exports/deadvox.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/appearance.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/appearance.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/arFrames.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/arFrames.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/catalogue.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/catalogue.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/fixedPrism.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/fixedPrism.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/gunVoxel.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/gunVoxel.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/magazines.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/magazines.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/physical.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/physical.json"
     },
     {
       "source": "packages/mobgen/src/mob/acidTemplate.jsonnet",

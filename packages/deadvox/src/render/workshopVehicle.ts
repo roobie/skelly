@@ -17,10 +17,9 @@ import { rotationOf } from '../core/orientation.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
 import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
-import { newInstance, type Paint, VOXEL } from '../vehicles/model.ts';
-import { fittedGrid } from '../vehicles/solid.ts';
-import { GLASS, keyVoxel, type MeshBuffers, meshGrid, quadColors, type Rgb, voxelKey } from '../vehicles/voxels.ts';
-import { addSkyOpeningAnchors } from './skyAnchor.ts';
+import { newInstance, type Paint } from '../vehicles/model.ts';
+import { GLASS, quadColors, type Rgb } from '../vehicles/voxels.ts';
+import { type Part, type Shape, VehicleShapes } from './vehicleShapes.ts';
 
 /** A furniture def's procedural variant of a vehicle: its blueprint, paint, dirt and absent parts. */
 export type VehicleLook = NonNullable<FurnitureDef['vehicle']>;
@@ -49,69 +48,9 @@ const rgb = (paint: Paint, dirt: number, material: string): Rgb => {
 };
 
 interface Display {
-  readonly solidBaseY: number;
   readonly solidGeometry: BufferGeometry | undefined;
   readonly clearGeometry: BufferGeometry | undefined;
 }
-
-/** A shape's uncoloured geometry beside the buffers whose quad materials colour it. */
-interface Part {
-  readonly buffers: MeshBuffers;
-  readonly geometry: BufferGeometry;
-}
-
-interface Shape {
-  readonly solidBaseY: number;
-  readonly solid: Part | undefined;
-  readonly clear: Part | undefined;
-}
-
-const geometryOf = (
-  buffers: MeshBuffers,
-  lattice: readonly [number, number, number],
-  materialAt: (cell: readonly [number, number, number]) => string | undefined,
-  openings: readonly [number, number, number][],
-): Part | undefined => {
-  if (buffers.quads === 0) {
-    return undefined;
-  }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(buffers.positions, 3));
-  geometry.setAttribute('normal', new BufferAttribute(buffers.normals, 3));
-  geometry.setIndex(new BufferAttribute(buffers.indices, 1));
-  geometry.scale(VOXEL, VOXEL, VOXEL);
-  const [length, , width] = lattice;
-  geometry.translate((-length * 4 * VOXEL) / 2, 0, (-width * 4 * VOXEL) / 2);
-  addSkyOpeningAnchors(geometry, {
-    size: lattice.map((cells) => cells * 4 * VOXEL) as [number, number, number],
-    cellSize: VOXEL,
-    materialAt,
-    isOpening: (material) => material === GLASS,
-    openings,
-  });
-  geometry.computeBoundingSphere();
-  return { buffers, geometry };
-};
-
-const shapes = new Map<string, Shape>();
-const shapeOf = (blueprint: string, removed: readonly string[]): Shape => {
-  const key = JSON.stringify([blueprint, removed]);
-  let shape = shapes.get(key);
-  if (shape === undefined) {
-    const { grid, baseY } = fittedGrid(blueprint, removed);
-    const { solid, clear } = meshGrid(grid, (material) => material === GLASS);
-    const { lattice } = BLUEPRINTS[blueprint]!;
-    const materialAt = (cell: readonly [number, number, number]) => grid.get(voxelKey(...cell));
-    const openings = [...grid].filter(([, voxel]) => voxel === GLASS).map(([voxelAt]) => keyVoxel(voxelAt));
-    shape = {
-      solidBaseY: baseY * VOXEL,
-      solid: geometryOf(solid, lattice, materialAt, openings),
-      clear: geometryOf(clear, lattice, materialAt, openings),
-    };
-    shapes.set(key, shape);
-  }
-  return shape;
-};
 
 /** The shape's geometry with this look's colours; every other attribute is the shape's own, so it uploads once. */
 const painted = (part: Part | undefined, colorOf: (material: string) => Rgb): BufferGeometry | undefined => {
@@ -123,25 +62,20 @@ const painted = (part: Part | undefined, colorOf: (material: string) => Rgb): Bu
     geometry.setAttribute(name, attribute);
   }
   geometry.setIndex(part.geometry.index);
-  geometry.setAttribute('color', new BufferAttribute(quadColors(part.buffers, colorOf), 3));
+  geometry.setAttribute('color', new BufferAttribute(quadColors(part.data, colorOf), 3));
   geometry.boundingSphere = part.geometry.boundingSphere;
   return geometry;
 };
 
 // Paint and dirt change only colours, so looks that share a blueprint and stripped parts share one mesh.
 const displays = new Map<string, Display>();
-const displayOf = (look: VehicleLook): Display => {
+const displayOf = (look: VehicleLook, shape: Shape): Display => {
   const key = JSON.stringify(look);
   let display = displays.get(key);
   if (display === undefined) {
     const { paint } = vehicleInstanceOf(look);
-    const shape = shapeOf(look.blueprint, look.removed);
     const colorOf = (material: string) => rgb(paint, look.dirt, material);
-    display = {
-      solidBaseY: shape.solidBaseY,
-      solidGeometry: painted(shape.solid, colorOf),
-      clearGeometry: painted(shape.clear, colorOf),
-    };
+    display = { solidGeometry: painted(shape.solid, colorOf), clearGeometry: painted(shape.clear, colorOf) };
     displays.set(key, display);
   }
   return display;
@@ -180,35 +114,56 @@ const addBox = (group: Group, material: MeshLambertMaterial, blockSize: number, 
 /** The model's forward +x turned to the piece's front, local −z. */
 const FORWARD_TO_FRONT = new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI / 2);
 
-/** Renders a furniture def's vehicle look in the piece's pose, standing on its lowest solid voxel. */
+/** Meshes vehicles on the spot, for callers that have no worker. */
+const onTheSpot = new VehicleShapes();
+
+interface VehicleView {
+  readonly blockSize?: number;
+  readonly shapes?: VehicleShapes;
+  readonly wait?: boolean;
+}
+
+/**
+ * Renders a furniture def's vehicle look in the piece's pose, standing on its lowest solid voxel. The group is
+ * empty until `shapes` has the vehicle's shape, then its meshes are added to it; a group dropped meanwhile just
+ * takes them unseen, so a removed piece cannot come back. `wait: false` meshes here instead, for a caller that
+ * measures the group at once.
+ */
 export const vehicleModel = (
   entity: BlockEntity,
   look: VehicleLook,
   pieceHeight: number,
-  blockSize = BLOCK_SIZE,
+  { blockSize = BLOCK_SIZE, shapes = onTheSpot, wait = true }: VehicleView = {},
 ): Group => {
   const group = new Group();
-  const { solidBaseY, solidGeometry, clearGeometry } = displayOf(look);
   const [right, up, back] = rotationOf(entity).map((axis) => new Vector3(...axis));
   group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(right!, up!, back!)).multiply(FORWARD_TO_FRONT);
-  const [x, y, z] = entity.pos;
-  const [width, height, depth] = entity.size;
-  group.position
-    .set(x + width / 2, y + height / 2, z + depth / 2)
-    .addScaledVector(up!, -pieceHeight / 2)
-    .multiplyScalar(blockSize)
-    .addScaledVector(up!, -solidBaseY);
-  if (solidGeometry) {
-    const mesh = new Mesh(solidGeometry, solidMaterial);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    group.add(mesh);
-  }
-  if (clearGeometry) {
-    const mesh = new Mesh(clearGeometry, glassMaterial);
-    mesh.renderOrder = 1;
-    mesh.receiveShadow = true;
-    group.add(mesh);
+  const fill = (shape: Shape) => {
+    const { solidGeometry, clearGeometry } = displayOf(look, shape);
+    const [x, y, z] = entity.pos;
+    const [width, height, depth] = entity.size;
+    group.position
+      .set(x + width / 2, y + height / 2, z + depth / 2)
+      .addScaledVector(up!, -pieceHeight / 2)
+      .multiplyScalar(blockSize)
+      .addScaledVector(up!, -shape.solidBaseY);
+    if (solidGeometry) {
+      const mesh = new Mesh(solidGeometry, solidMaterial);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+    if (clearGeometry) {
+      const mesh = new Mesh(clearGeometry, glassMaterial);
+      mesh.renderOrder = 1;
+      mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+  };
+  if (wait) {
+    shapes.load(look.blueprint, look.removed, fill);
+  } else {
+    fill(shapes.now(look.blueprint, look.removed));
   }
   return group;
 };

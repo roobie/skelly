@@ -44,7 +44,7 @@ a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
-  root, the doc's subproject root (`gungen/` or a package under `packages/`) when
+  root, the doc's subproject root (a package under `packages/`) when
   relevant, or the doc itself. Cross-subproject cues use a repo-root path.
 - Prose section cues use only a backticked path, comma and double-quoted name:
   `PILLARS.md`, "Zero drift". Bare paths, backticked names and numbered references
@@ -180,7 +180,7 @@ So:
 - Keep the default run fast and deterministic. A slow test gets split, or a timeout
   proportional to its work, never a flat generous one.
 
-Detailed guidance: `gungen/PROJECT.md`, "Testing".
+Detailed guidance: `packages/gun-authoring-tool/PROJECT.md`, "Testing".
 
 ## Further docs
 
