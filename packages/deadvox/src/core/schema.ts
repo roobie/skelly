@@ -3670,8 +3670,8 @@ const FigureSchema = strictObject({
     blendRealSeconds: PositiveRealSeconds,
   }),
   /**
-   * Clothing looks by id, each a colour for every material slot it repaints; slots it leaves out keep the model's own
-   * colour (`DESIGN.md`, "Dead humans").
+   * Temporary corpse role tint by outfit id, with a colour per model part's material slot. Omitted slots keep the
+   * model colour. This is not clothing; delete with #1366 (`DESIGN.md`, "Dead humans").
    */
   outfits: record(Id, record(Id, record(Id, Color))),
   /** How a dead body lies. It rests on its lowest point, so it has no hip drop. */
