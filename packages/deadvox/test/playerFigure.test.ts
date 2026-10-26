@@ -19,7 +19,7 @@ import {
   Scene,
   Vector3,
 } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 
 import { Inventory } from '../src/core/inventory.ts';
@@ -273,6 +273,60 @@ describe('held light presentation', () => {
     held.dispose();
   });
 
+  it('depth-tests carried adapter geometry against world surfaces with the main camera projection', () => {
+    const held = new HeldItems(new Inventory(registry), undefined, playerFigure);
+    const main = new PerspectiveCamera(75, 16 / 9, 0.05, 80);
+    const carried = new Mesh(new BoxGeometry(0.2, 0.2, 0.2));
+    carried.position.set(0, 0, -1);
+    held.attach(carried);
+    held.update(main);
+    let renders = 0;
+    const clearDepth = vi.fn();
+    const renderer = {
+      autoClear: true,
+      clearDepth,
+      render: (scene: Scene, camera: PerspectiveCamera) => {
+        expect(renderer.autoClear).toBe(false);
+        let drawn = false;
+        scene.traverseVisible((object) => {
+          drawn ||= object === carried;
+        });
+        if (!drawn) {
+          return;
+        }
+        renders += 1;
+        scene.updateMatrixWorld(true);
+        camera.updateMatrixWorld(true);
+        const at = carried.getWorldPosition(new Vector3());
+        const depth = at.clone().project(camera).z;
+        const behind = new Vector3(0, 0, -3).project(main).z;
+        const ahead = new Vector3(0, 0, -0.5).project(main).z;
+        expect(depth, 'a wall behind the piece must not hide it').toBeLessThan(behind);
+        expect(depth, 'a wall ahead of the piece must hide it').toBeGreaterThan(ahead);
+        expect(depth).toBeCloseTo(at.clone().project(main).z, 10);
+      },
+    } as unknown as Parameters<typeof held.render>[0];
+    const sky = {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera: main,
+      radiusM: 1,
+      farPlaneScale: 1,
+    };
+    held.render(renderer, main, sky);
+    main.near = 0.2;
+    main.far = 40;
+    main.updateProjectionMatrix();
+    held.render(renderer, main, sky);
+    expect(renders).toBe(2);
+    expect(clearDepth).not.toHaveBeenCalled();
+    expect(renderer.autoClear).toBe(true);
+    held.dispose();
+    carried.geometry.dispose();
+    (carried.material as MeshStandardMaterial).dispose();
+  });
+
   it('never redraws physical arms or items or clears world depth in the retained optical adapter', () => {
     const inventory = new Inventory(registry);
     inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
@@ -412,6 +466,9 @@ describe('optic lens presentation', () => {
       {
         autoClear: true,
         render: (scene: Scene, adapter: PerspectiveCamera) => {
+          if (!ring.visible) {
+            return;
+          }
           scene.updateMatrixWorld(true);
           adapter.updateMatrixWorld(true);
           const frustum = new Frustum().setFromProjectionMatrix(

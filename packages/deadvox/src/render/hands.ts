@@ -42,6 +42,7 @@ export class HeldItems {
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
   private readonly view = new Group();
+  private readonly carried = new Group();
   private readonly torso = new Group();
   private readonly physical = new Group();
   private readonly light = new DirectionalLight();
@@ -92,7 +93,7 @@ export class HeldItems {
     this.opticWindow.visible = false;
     this.opticWindow.renderOrder = 100;
     this.physical.add(this.torso);
-    this.view.add(this.opticWindow);
+    this.view.add(this.opticWindow, this.carried);
     this.scene.add(
       this.view,
       this.physical,
@@ -105,7 +106,7 @@ export class HeldItems {
   }
 
   attach(object: Object3D): void {
-    this.view.add(object);
+    this.carried.add(object);
   }
 
   get warmUpTarget(): { scene: Scene; camera: PerspectiveCamera } {
@@ -289,10 +290,24 @@ export class HeldItems {
       1,
     );
     const { autoClear } = renderer;
+    const opticVisible = this.opticWindow.visible;
+    const cameraVisible = this.camera.visible;
+    const carriedVisible = this.carried.visible;
     renderer.autoClear = false;
     try {
+      if (carriedVisible && this.carried.children.some((child) => child.visible)) {
+        this.opticWindow.visible = false;
+        this.camera.visible = false;
+        renderer.render(this.scene, main);
+        this.opticWindow.visible = opticVisible;
+        this.camera.visible = cameraVisible;
+      }
+      this.carried.visible = false;
       renderer.render(this.scene, this.camera);
     } finally {
+      this.opticWindow.visible = opticVisible;
+      this.camera.visible = cameraVisible;
+      this.carried.visible = carriedVisible;
       renderer.autoClear = autoClear;
     }
   }
