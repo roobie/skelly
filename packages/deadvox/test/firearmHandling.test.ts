@@ -316,6 +316,7 @@ describe('rifle firearm handling', () => {
     const { model } = firearmHandlingFor(rifle, registry);
     const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const common = {
+      holds: registry.figures.get('player')!.holds,
       model,
       side: 'right' as const,
       leadingSide: 'right' as const,
@@ -347,6 +348,7 @@ describe('rifle firearm handling', () => {
     const yaw = 0.3;
     const pitch = -0.2;
     const bore = firearmBoreRay({
+      holds: registry.figures.get('player')!.holds,
       model,
       eye: [...pose.eye],
       yaw,
@@ -404,6 +406,7 @@ describe('rifle firearm handling', () => {
     const input = { ...shotInput(rifle, 1), ...view, aimFrame: { yaw: 0.04, pitch: -0.03 } };
     const tuning = fixtureBuild.registry.skills.get('firearms_combat')!.combat!.firearms!;
     const bore = firearmBoreRay({
+      holds: fixtureBuild.registry.figures.get('player')!.holds,
       model: firearmHandlingFor(rifle, fixtureBuild.registry).model,
       eye: input.eye,
       yaw: input.yaw,
@@ -529,6 +532,7 @@ describe('rifle firearm handling', () => {
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
     const tuning = fixtureRegistry.skills.get('firearms_combat')!.combat!.firearms!;
     const bore = firearmBoreRay({
+      holds: fixtureRegistry.figures.get('player')!.holds,
       model: firearmHandlingFor(fixtureItem, fixtureRegistry).model,
       eye: [...pose.eye],
       yaw,

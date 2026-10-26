@@ -8,7 +8,8 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
-  - you change worn head gear seen from inside or on the player figure
+  - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
+  - you change equipped gear seen from inside, on the player figure or on dead humans
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
@@ -1581,27 +1582,34 @@ hold up from every side, and a body built only for first person is not enough.
 Worn items carry their own part model that covers or replaces the body part
 under it, so gear shows on the body without the body knowing about gear.
 
-The first-person arms are the figure row's own arm models, bent through the row's
-arm rig to reach each grip (`DESIGN.md`, "Models"), so the arms the player sees
-and the arms others see never differ in look or proportion. In first person the
-view draws both arms, gripping or as fists, so the body's own arms hide there;
-otherwise an empty hand would show two arms.
+First-person and world-body holds share one held-item-and-arms owner, with each
+view supplying its own shoulder frame. This applies to all items, not just guns:
+the world body is what others and the mannequin see, so it must show the same
+holds as first person. One owner prevents those holds drifting, lets the mannequin
+judge them from outside, and gives later NPCs and other players the same source.
+Hold, readiness and support tuning belongs to content so another figure need not
+inherit the player's proportions. See `src/render/heldPresentation.ts`,
+`HeldPresentation`; `src/render/playerFigure.ts`, `PlayerMeshes`;
+`src/render/hands.ts`, `HeldItems`; and
+`src/content/base/figures-player.jsonnet`, `holds`.
 
-Third person remains a debug inspection aid, not a player-facing camera.
-`PlayerMeshes` in `src/render/playerFigure.ts` draws the body from the `player`
-figure row (`DESIGN.md`, "Models"); the authored parts are thing tool rows in
-`packages/thing-authoring-tool/avatar.libsonnet`. The debug query in
-`src/render/avatarStudy.ts` stands a model beside the body for comparison.
-`src/render/avatarMannequin.ts`, `createAvatarMannequin` stands a second, inert copy of the
-body, drawn by the same `PlayerMeshes`, in every pose the figure row defines (`avatarPoses`
-in the same file), so BR can judge a pose from outside instead of only in
-first person. It is debug-only, and its controls (pose, relocate) fill their own debug-panel
-group, present only while a mannequin exists, because BR wants mannequins driven from
-one section of their own and possibly several later; the rows are the `debug.mannequin-`
-actions in `src/game/inputBindings.ts` and the group is in `src/debug/groups.ts`,
-`DEBUG_GROUPS`. Where it stands is the figure row's `mannequinPlacement`. Held-item holds and the ready stance are drawn by the
-first-person `HeldItems`, not the world body, so the mannequin shows them only if the
-world body grows them.
+Shoulders are body attachments, not movable reach handles. When an authored grip
+cannot be reached at authored limb lengths, preserving shoulder and hand contact
+takes priority over exact segment length: a floating sleeve breaks the whole-body
+figure. Reach fitting must not move the item away from its shared simulation pose
+or add per-view hold offsets. The content's joints and grips determine the fit;
+changing to skinned bones would not remove this geometric constraint. See
+`src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
+`HeldPresentation.solve`.
+
+Third person remains a debug inspection aid, not a player-facing camera. The
+mannequin is an inert drawing of the same world body, not another simulated actor.
+Its holds come from the item registry rather than a curated list, so a new item
+using an existing hold needs no debug-tool edit. Its controls belong in their own
+debug-panel group so inspecting a mannequin does not compete with unrelated
+tools. See `src/render/avatarMannequin.ts`, `createAvatarMannequin` and
+`avatarPoses`; `src/render/heldPresentation.ts`, `heldItemPoses`; and
+`src/debug/groups.ts`, `DEBUG_GROUPS`.
 
 Needs are calories, hydration, fatigue, stamina, and body temperature; rates use
 game time. Body temperature is not simulated; #366 is the trigger for deciding
@@ -1704,16 +1712,21 @@ activation must not replay dormant time. See `src/core/scheduler.ts`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.
 
-**Worn items seen.** Head gear can sit in front of the eyes, so the player should
-see what they look through. It belongs with the hands because the world camera
-cannot draw that close to the eye. It blurs under painkillers for the same reason
-the hands do: it is part of what the drugged player sees. Its strength is moddable
-content, not a player setting like the HUD's options: the frame belongs to the
-item worn, so a mod that changes the item changes how it looks from inside.
-Worn items belong on the body figure so the player's shadow and outside views
-show what they wear. Other slots follow the helmet when an item or view needs
-them. See `src/core/schema.ts`, `WearableSchema`; `src/render/hands.ts`,
-`HeldItems`; `src/render/playerFigure.ts`, `PlayerMeshes`.
+**Worn items seen.** Equipped gear shall be visibly equipped. Every equipped
+slot shows on the player figure, and dead humans wear real items through the same
+presentation path. The player gears up: gear that changes protection, carry or role
+must be readable at a glance on self, in shadows and outside views, and on bodies,
+where it tells the player what loot they carry. Colour alone cannot stand in for
+an equipped item. See `src/core/schema.ts`, `WearSlot` and `WearableSchema`;
+`src/render/playerFigure.ts`, `PlayerMeshes`.
+
+Head gear can sit in front of the eyes, so the player should see what they look
+through. It belongs with the hands because the world camera cannot draw that close
+to the eye. It blurs under painkillers for the same reason the hands do: it is part
+of what the drugged player sees. Its strength is moddable content, not a player
+setting like the HUD's options: the frame belongs to the item worn, so a mod that
+changes the item changes how it looks from inside. See `src/render/hands.ts`,
+`HeldItems`.
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
@@ -2003,7 +2016,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   scaled base radius, while the far tier follows the listener's hearing model.
   A real suppressor is quieter than an improvised one, and wear makes either
   louder. Keep suppression local to shots so other noises retain their range. See
-  `gungen/src/gun/attachments.ts`, `suppressors`;
+  `packages/gun-authoring-tool/src/gun/attachments.ts`, `suppressors`;
   `src/core/firearmAttachments.ts`, `firearmAttachmentResponse` and
   `wearFirearmAttachments`; `src/core/zombies.ts`, `hearVocalNoise`;
   `src/game/audioPresentation.ts`, `firearmShotSound`; and
@@ -2581,7 +2594,7 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/zombies.ts`, `ZombieSystem.updateAttention` and `ZombieSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
-- **Shared interest:** Alerts recruit only uncommitted listeners: searching and returning bodies already act on their own memory, and recruiting them re-arms echoes. Recruitment eligibility is an attention-state invariant, not content tuning. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. Cascades deliberately remain undamped so crowd behaviour can be evaluated before imposing a limit; slow echoes through bodies that become idle again are accepted. A future damping decision belongs at the recruitment boundary, not in player noise. Draining calls before movement prevents entity iteration order from giving one listener an extra movement tick, and keeping the queue transient avoids pending calls crossing a save boundary. See `src/core/zombies.ts`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. A per-body cry cooldown stops ping-pong when horde members become uncommitted again: shamblers are slow to react. Recruitment stays loudness-driven without hop damping, because the cooldown limits cries rather than interest. Saving the last cry prevents loading from restarting the echo. Resolving calls before movement prevents entity order from delaying listeners, and a transient queue keeps pending calls out of saves. See `src/core/zombies.ts`, `ZombieSystem.cryAlert`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.

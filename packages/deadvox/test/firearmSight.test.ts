@@ -35,6 +35,7 @@ it('aligns ADS through the fitted optic frame and restores irons when removed', 
   expect(resolved.gun?.sight?.ocularDiameterMetres).toBe(optic.ocularDiameterMetres);
   expect(resolved.grip).toBe(bare.grip);
   const pose = heldFirearmTransform({
+    holds: baseRegistry.figures.get('player')!.holds,
     model: resolved,
     side: 'right',
     leadingSide: 'right',

@@ -33,28 +33,17 @@ import type { FigureDef, ModelDef } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
-import {
-  type HeldHoldFrame,
-  HOLD,
-  heldAnchorOffset,
-  heldFirearmTransform,
-  heldGripOffset,
-  heldHoldFrame,
-  modelToView,
-  readyFirearmPose,
-  throwStanceHandOffset,
-} from '../core/heldPose.ts';
+import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
-import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import { type interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { OpticLensFrame, OpticViewSettings, OpticZoomFrame } from '../core/opticView.ts';
 import { mountedOptic, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
-import { type ArmRigDef, HELD_DISPLAY_KIND } from '../core/schema.ts';
+import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
-import { type ArmRig, buildArmRig, solveArmRig } from './armRig.ts';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,
@@ -70,9 +59,7 @@ import {
 import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
-import { presentHeldDisplay } from './heldDisplay.ts';
-import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
-import { itemLook } from './itemLook.ts';
+import { HeldPresentation, type HeldPresentationFrame } from './heldPresentation.ts';
 import {
   createMagazineLoadFrame,
   createMagazinePress,
@@ -90,8 +77,6 @@ import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
 
-/** Metres per grid cell for the stand-in box. */
-const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
 const VIEW_X_AXIS = new Vector3(1, 0, 0);
 
@@ -128,21 +113,13 @@ interface OffHandGrip {
   readonly reach: number;
 }
 
-interface HeldReadiness {
-  readonly uid: number;
-  readonly progress: number;
-  readonly aimingDownSights: boolean;
-}
-
 /** The hand a carried item's tree path is rooted in. */
 const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
 
-export interface HeldHandlingFrame {
+export interface HeldHandlingFrame extends HeldPresentationFrame {
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
-  readonly readiness?: HeldReadiness;
   readonly throwing?: { readonly chargeProgress: number };
-  readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
   readonly grab?: { readonly progress: number };
   /** The frame's real seconds, used only to raise and lower a magazine being loaded. */
@@ -176,7 +153,6 @@ export class HeldItems {
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly flames = new ModelFlames('held-light-flame');
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
-  private readonly lightMaterials = new Map<string, MeshBasicMaterial | MeshLambertMaterial>();
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
   private readonly sunSource: DirectionalLight | undefined;
@@ -202,19 +178,30 @@ export class HeldItems {
   private readonly magazineTarget = new Vector3();
   private readonly magazineWrist = new Vector3();
   private readonly magazineTilt = new Quaternion();
-  private readonly arms = new Map<HandSide, Group>();
-  /** Each arm's rigged model, once its model has loaded; an arm without one is only its grip point. */
-  private readonly armRigs = new Map<HandSide, ArmRig>();
-  private readonly handBases = new Map<HandSide, Vec3>();
-  /** Each arm's grip point: the arm's own origin, or a hold authored beside it. */
-  private readonly gripAnchors = new Map<HandSide, Object3D>();
-  /** The authored hold each arm's grip anchor carries (a long gun's grip or forend). */
-  private readonly holds = new Map<HandSide, HeldHoldFrame>();
+  private readonly presentation: HeldPresentation;
+  private get arms() {
+    return this.presentation.arms;
+  }
+  private get armRigs() {
+    return this.presentation.armRigs;
+  }
+  private get handBases() {
+    return this.presentation.handBases;
+  }
+  private get gripAnchors() {
+    return this.presentation.gripAnchors;
+  }
+  private get holds() {
+    return this.presentation.holds;
+  }
   /** The sides whose hand has left its hold this frame, to work the gun; the hand then follows its forearm. */
   private readonly handsOff = new Set<HandSide>();
-  private readonly heldByHand = new Map<HandSide, Object3D>();
-  /** The frame each hand's palm takes behind a held screen. */
-  private readonly displayPalms = new Map<HandSide, Object3D>();
+  private get heldByHand() {
+    return this.presentation.heldByHand;
+  }
+  private get displayPalms() {
+    return this.presentation.displayPalms;
+  }
   private readonly relativeCamera = new Quaternion();
   private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
@@ -247,6 +234,10 @@ export class HeldItems {
     this.inventory = inventory;
     this.models = models;
     this.figure = figure;
+    this.presentation = new HeldPresentation(inventory.registry, figure, models, {
+      frame: this.view,
+      torso: this.torso,
+    });
     this.sunSource = sunSource;
     if (sunSource) {
       this.light.shadow = sunSource.shadow;
@@ -291,7 +282,7 @@ export class HeldItems {
     this.poseFirearms(firearmPoses);
     const { loweredPitchRadians } = firearmsCombatTuning(this.inventory.registry);
     const leadingSide = dominantSide(this.inventory.character);
-    const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
+    const readyPose = readiness ? readyFirearmPose(leadingSide, this.figure.holds) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
     this.torso.rotation.y = renderPose?.torsoYaw ?? 0;
@@ -383,7 +374,7 @@ export class HeldItems {
     if (!(base && arm)) {
       return;
     }
-    const transform = interpolateHandPose(base, stanceHand);
+    const transform = this.presentation.handTransform(side, stanceHand)!;
     this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
     this.applyViewPose(main, pose, transform);
     this.lockCutBladeRoll(side, pose);
@@ -397,7 +388,6 @@ export class HeldItems {
       leadingSide,
       readyAmount,
       loweredPitchRadians,
-      arm,
       transform,
       item,
       itemDefinition,
@@ -412,7 +402,6 @@ export class HeldItems {
     leadingSide,
     readyAmount,
     loweredPitchRadians,
-    arm,
     transform,
     item,
     itemDefinition,
@@ -424,7 +413,6 @@ export class HeldItems {
     leadingSide: HandSide;
     readyAmount: number;
     loweredPitchRadians: number;
-    arm: Group;
     transform: ReturnType<typeof interpolateHandPose>;
     item: Item | undefined;
     itemDefinition: ReturnType<typeof defOf> | undefined;
@@ -470,7 +458,11 @@ export class HeldItems {
     transform.offset[2] += 0.025 * strength;
     this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
     this.poseRotation.multiply(this.recoilRotation);
-    this.placeHandAndHeldItem(side, arm, transform, firearmPose);
+    this.presentation.place(side, transform, {
+      rotation: this.poseRotation,
+      shoulder: this.viewShoulder(side),
+      firearm: Boolean(firearmPose),
+    });
     if (item && itemDefinition?.firearm) {
       const opticSettings = this.mountedOpticSettings(item, handling.opticZoom);
       const opticSight = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && opticSettings);
@@ -528,6 +520,7 @@ export class HeldItems {
       itemDefinition?.firearm && modelDefinition
         ? {
             model: modelDefinition,
+            holds: this.figure.holds,
             side,
             leadingSide,
             twoHanded: Boolean(itemDefinition.twoHanded),
@@ -540,34 +533,14 @@ export class HeldItems {
             verticalFovDegrees: main.fov,
           }
         : undefined;
-    const basePose = poseInput ? heldFirearmTransform(poseInput) : undefined;
+    const basePose = poseInput ? this.presentation.firearmTransform(poseInput) : undefined;
     const frame = item && handling.firearms.find((entry) => entry.uid === item.uid);
     const handlingTurn = handlingRotation(modelDefinition, side, frame, {
       x: basePose?.rootOffset[0] ?? 0,
       y: basePose?.rootOffset[1] ?? 0,
     });
-    const firearmPose = poseInput ? heldFirearmTransform({ ...poseInput, handlingTurn }) : undefined;
+    const firearmPose = poseInput ? this.presentation.firearmTransform({ ...poseInput, handlingTurn }) : undefined;
     return { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition };
-  }
-
-  private placeHandAndHeldItem(
-    side: HandSide,
-    arm: Group,
-    transform: ReturnType<typeof interpolateHandPose>,
-    firearmPose: ReturnType<typeof heldFirearmTransform> | undefined,
-  ): void {
-    if (arm.parent === this.torso) {
-      if (firearmPose) {
-        arm.position.set(...transform.offset);
-      } else {
-        this.placeTorsoArm(side, arm, transform);
-      }
-      arm.quaternion.copy(this.poseRotation);
-    }
-    const held = this.heldByHand.get(side);
-    if (held) {
-      this.placeHeldItem(held, arm, transform);
-    }
   }
 
   private restoreRummageSupport(): void {
@@ -984,7 +957,7 @@ export class HeldItems {
         group.add(object);
       }
     });
-    heldModelFrame(this.shown.get(item.uid)!).add(group);
+    heldModelFrame(this.shown.get(item.uid)!.children[0]!).add(group);
     this.cylinderRounds.set(item.uid, { key, group });
     return group;
   }
@@ -1121,7 +1094,7 @@ export class HeldItems {
     if (!item || defOf(this.inventory.registry, item.type).weapon?.melee?.type !== 'cut') {
       return;
     }
-    const rest = readyMeleePose(true, dominantSide(this.inventory.character))[side];
+    const rest = readyMeleePose(true, this.figure.holds, dominantSide(this.inventory.character))[side];
     const restOrientation = new Quaternion().setFromEuler(this.poseEuler.set(...rest.rotation, 'YXZ'));
     if (pose?.viewOrientation) {
       restOrientation.premultiply(this.relativeCamera);
@@ -1148,36 +1121,12 @@ export class HeldItems {
   }
 
   private placeHeldItem(held: Object3D, arm: Group, transform: { offset: Vec3 }): void {
-    if (arm.parent === this.torso) {
-      this.handPosition.copy(arm.position).applyQuaternion(this.torso.quaternion);
-      held.position.copy(this.handPosition);
-      held.quaternion.copy(this.torso.quaternion).multiply(arm.quaternion);
-      return;
-    }
-    held.position.set(...transform.offset);
-    held.quaternion.copy(this.poseRotation);
+    this.presentation.placeHeld(held, arm, transform, this.poseRotation);
   }
 
   /** Where the view hangs an arm, in the eye's frame. */
   viewShoulder(side: HandSide): Vector3 {
     return new Vector3(...firstPersonShoulder(this.figure, side));
-  }
-
-  /** Places a torso arm's grip, kept within the arm's reach plus the short shoulder lead a stretch allows. */
-  private placeTorsoArm(side: HandSide, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
-    this.handPosition.set(...transform.offset).applyAxisAngle(TORSO_Y_AXIS, -this.torso.rotation.y);
-    transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
-    const rig = this.armRigs.get(side);
-    if (rig) {
-      const shoulder = this.viewShoulder(side);
-      const grip = new Vector3(...transform.offset);
-      const reach = rig.upperLength + rig.foreLength + rig.gripFromWrist.length() + 0.08;
-      if (shoulder.distanceTo(grip) > reach) {
-        grip.sub(shoulder).normalize().multiplyScalar(reach).add(shoulder);
-        transform.offset = [grip.x, grip.y, grip.z];
-      }
-    }
-    arm.position.set(...transform.offset);
   }
 
   /** The model drawn for an item: its own if held, else the held root's model that carries it (a mounted light). */
@@ -1262,9 +1211,6 @@ export class HeldItems {
     this.syncVisor();
     this.disposeCompasses();
     this.clearArms();
-    for (const held of this.shown.values()) {
-      disposeItemEmissiveMaterials(held);
-    }
     this.view.clear();
     this.view.add(this.torso, this.opticWindow, ...this.attached);
     this.shown.clear();
@@ -1334,16 +1280,10 @@ export class HeldItems {
     this.clearVisor();
     this.disposeCompasses();
     this.clearArms();
-    for (const material of this.lightMaterials.values()) {
-      material.dispose();
-    }
-    this.lightMaterials.clear();
+    this.presentation.dispose();
     this.flames.dispose();
     this.opticWindow.geometry.dispose();
     (this.opticWindow.material as MeshBasicMaterial).dispose();
-    for (const held of this.shown.values()) {
-      disposeItemEmissiveMaterials(held);
-    }
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();
@@ -1353,13 +1293,7 @@ export class HeldItems {
 
   /** Detaches the arms before rebuilding the hands scene; their meshes are the model library's shared copies. */
   private clearArms(): void {
-    for (const arm of this.arms.values()) {
-      arm.removeFromParent();
-    }
-    this.arms.clear();
-    this.armRigs.clear();
-    this.gripAnchors.clear();
-    this.holds.clear();
+    this.presentation.clear();
   }
 
   /**
@@ -1367,90 +1301,18 @@ export class HeldItems {
    * one (a screen's back, a revolver being loaded, a long gun's authored hold), else it continues the forearm.
    */
   private updateArmChain(side: HandSide, arm: Group, gripFrame: Object3D | undefined): void {
-    const rig = this.armRigs.get(side);
-    if (!rig) {
+    if (!this.armRigs.has(side)) {
       return;
     }
     const baseShoulder = this.viewShoulder(side);
     const shoulder =
       arm.parent === this.torso ? this.view.worldToLocal(this.torso.localToWorld(baseShoulder)) : baseShoulder;
-    const anchor = this.gripAnchors.get(side) ?? arm;
-    const grip = this.view.worldToLocal(anchor.getWorldPosition(new Vector3()));
-    const viewRotation = this.view.getWorldQuaternion(new Quaternion());
-    const handFrame = gripFrame
-      ? viewRotation.clone().invert().multiply(gripFrame.getWorldQuaternion(new Quaternion()))
-      : undefined;
-    const bendSide = new Vector3(side === 'right' ? 1 : -1, 0, 0);
-    const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up: TORSO_Y_AXIS });
-    const toArm = arm.getWorldQuaternion(new Quaternion()).invert().multiply(viewRotation);
-    const place = (pivot: Object3D, at: Vector3, rotation: Quaternion): void => {
-      pivot.position.copy(arm.worldToLocal(this.view.localToWorld(at.clone())));
-      pivot.quaternion.copy(toArm).multiply(rotation);
-    };
-    place(rig.shoulder, solved.shoulder, solved.upper);
-    place(rig.elbow, solved.elbow, solved.fore);
-    place(rig.hand, grip, solved.hand);
-  }
-
-  /** The figure's arm model for `side`, once the library has it. */
-  private armModel(side: HandSide): { definition: ModelDef; scene: Object3D } | undefined {
-    const definition = this.inventory.registry.models.get(
-      this.figure.limbs[side === 'right' ? 'rightArm' : 'leftArm'].model,
-    );
-    const scene = definition && this.models?.has(definition.id) ? this.models.part(definition.id) : undefined;
-    return definition && scene ? { definition, scene } : undefined;
-  }
-
-  /**
-   * An arm whose grip point is `grip` in the torso's frame, or in a held item's when `mount` names one, posed as
-   * `pose` says; the arm's own origin is that grip point, so a held item placed from the arm's position sits in its
-   * hand. A `hold` moves the hand's grip anchor off that origin, to where the authored palm meets the held model, and
-   * sets the hand's frame there.
-   */
-  private addArm(
-    side: HandSide,
-    grip: Vec3,
-    pose: keyof ArmRigDef['handPoses'],
-    { mount, hold }: { mount?: { held: Group; origin: Vec3 }; hold?: HeldHoldFrame } = {},
-  ): void {
-    if (this.arms.has(side)) {
-      return;
-    }
-    const arm = new Group();
-    arm.name = `first-person-arm-${side}`;
-    const gripAnchor = new Object3D();
-    gripAnchor.name = 'grip-anchor';
-    if (hold) {
-      gripAnchor.position.set(...hold.at);
-      gripAnchor.quaternion.setFromRotationMatrix(
-        new Matrix4().makeBasis(
-          new Vector3(...hold.thumbSide),
-          new Vector3(...hold.fingers),
-          new Vector3(...hold.palm),
-        ),
-      );
-      this.holds.set(side, hold);
-    }
-    this.gripAnchors.set(side, gripAnchor);
-    arm.add(gripAnchor);
-    const model = this.armModel(side);
-    if (model) {
-      const { armRig } = this.figure;
-      const rig = buildArmRig(model, armRig, side, armRig.handPoses[pose]);
-      arm.add(rig.shoulder, rig.elbow, rig.hand);
-      this.armRigs.set(side, rig);
-    }
-    const origin = mount?.origin ?? [0, 0, 0];
-    const localGrip: Vec3 = [grip[0] - origin[0], grip[1] - origin[1], grip[2] - origin[2]];
-    arm.position.set(...localGrip);
-    this.arms.set(side, arm);
-    this.handBases.set(side, localGrip);
-    addShadowReceiver(mount?.held ?? this.torso, arm);
+    this.presentation.solve(side, shoulder, gripFrame);
   }
 
   private syncFistHand(side: HandSide): void {
     if (!this.inventory.hands[side]) {
-      this.addArm(side, HOLD[side], 'fist');
+      this.presentation.addFist(side);
     }
   }
 
@@ -1458,56 +1320,14 @@ export class HeldItems {
     if (!item) {
       return;
     }
-    const def = defOf(this.inventory.registry, item.type);
-    const model = def.model === undefined ? undefined : this.inventory.registry.models.get(def.model);
-    // A permanently raised inspection pose keeps this small display legible without a new input route.
-    const heldAt: Vec3 =
-      def.heldDisplay === undefined
-        ? heldGripOffset(side, Boolean(def.twoHanded), model)
-        : [side === 'right' ? 0.14 : -0.14, -0.13, -0.3];
-    const held = new Group();
-    held.position.set(...heldAt);
-    held.add(this.shape(item));
-    if (def.heldDisplay !== undefined && model?.display && this.models?.has(model.id)) {
-      const palm = presentHeldDisplay(held.children[0]!, model.display, heldAt);
-      held.add(palm);
-      this.displayPalms.set(side, palm);
-    }
+    const held = this.presentation.addItem(side, item, (value) => this.shape(value));
     addShadowReceiver(this.view, held);
     this.shown.set(item.uid, held);
-    this.heldByHand.set(side, held);
-    if (model?.hands) {
-      this.addArm(side, heldAt, model.hands.firing.pose, { hold: heldHoldFrame(model, side, 'firing') });
-    } else {
-      this.addArm(side, heldAt, this.displayPalms.has(side) ? 'open' : 'holding');
-    }
-    if (def.twoHanded) {
-      this.syncOffhandArm(side, heldAt, model, held);
-    }
-  }
-
-  private syncOffhandArm(side: HandSide, heldAt: Vec3, model: ModelDef | undefined, held: Group): void {
-    const otherSide: HandSide = side === 'right' ? 'left' : 'right';
-    if (model?.hands) {
-      // The hold is authored for the gun's holding side; the support arm is the other hand but mirrors with the gun.
-      const support = heldHoldFrame(model, side, 'support');
-      const offhandGrip: Vec3 = support.at.map((value, index) => value + heldAt[index]!) as Vec3;
-      this.addArm(otherSide, offhandGrip, model.hands.support.pose, {
-        mount: { held, origin: heldAt },
-        hold: { ...support, at: [0, 0, 0] },
-      });
-      return;
-    }
-    const pose = model?.hold;
-    const offhandGrip: Vec3 =
-      pose === 'upright' ? [heldAt[0], heldAt[1] + 0.14, heldAt[2]] : [heldAt[0], heldAt[1], heldAt[2] - 0.14];
-    this.addArm(otherSide, offhandGrip, 'holding', { mount: { held, origin: heldAt } });
   }
 
   private shape(item: Item): Object3D {
     const def = defOf(this.inventory.registry, item.type);
-    const look = itemLook(this.inventory.registry, item);
-    const model = look && this.models?.heldLook(look);
+    const model = this.presentation.model(item);
     // Until its model loads, a held display shows the placeholder any item does.
     if (def.heldDisplay === HELD_DISPLAY_KIND.compass && model) {
       const definition = this.inventory.registry.models.get(def.model!);
@@ -1524,7 +1344,6 @@ export class HeldItems {
       return compass.group;
     }
     if (model) {
-      applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
       this.flames.onModel(this.inventory.registry, item, model.root, heldModelFrame);
       const [top] = this.inventory.registry.models.get(def.model!)?.gun?.rounds ?? [];
       if (top) {
@@ -1536,7 +1355,7 @@ export class HeldItems {
       this.registerFirearmModel(item.uid, this.inventory.registry.models.get(def.model!)!, model);
       return model.root;
     }
-    return this.fallbackShape(item, def);
+    return this.presentation.fallback(item, (color) => this.flames.mesh(color));
   }
 
   private registerFirearmModel(
@@ -1554,36 +1373,5 @@ export class HeldItems {
         this.pumpModels.set(uid, definition);
       }
     }
-  }
-
-  private fallbackShape(item: Item, def: ReturnType<typeof defOf>): Object3D {
-    // Long side forward, short side across, and flatter than it is wide.
-    const long = Math.max(...def.size) * CELL;
-    const short = Math.min(...def.size) * CELL;
-    const materialKey = `${item.type}:${item.on ? 'lit' : 'unlit'}`;
-    let material = def.light ? this.lightMaterials.get(materialKey) : undefined;
-    if (def.light && !material) {
-      material = item.on
-        ? new MeshBasicMaterial({ color: def.light.color, toneMapped: false })
-        : new MeshLambertMaterial({ color: def.light.color });
-      this.lightMaterials.set(materialKey, material);
-    }
-    const box = new Mesh(this.geometry, material ?? this.material);
-    if (item.on && def.light) {
-      box.name = 'held-light-body';
-    }
-    box.scale.set(short, short * 0.6, long);
-    box.position.z = -long / 2 + short / 2; // the hand holds its near end
-    const lens = new Object3D();
-    lens.name = LENS;
-    lens.position.z = -long + short / 2;
-    const shape = new Group().add(box, lens);
-    if (item.on && def.light?.burning?.ignition === 'firestarter') {
-      const flame = this.flames.mesh(def.light.color);
-      flame.scale.set(short * 0.5, short * 1.5, short * 0.5);
-      flame.position.set(0, short * 1.05, lens.position.z);
-      shape.add(flame);
-    }
-    return shape;
   }
 }

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1348 332"><title>FAL reference profile trace, image-pixel coordinates</title><desc>Manual visible-edge trace. No hidden geometry inferred. Calibration and provenance belong to the adjacent trace record.</desc><g fill="none" stroke-width="2" stroke-linejoin="round"><path id="flash-hider" stroke="#db2763" d="M1225,82 L1329,81 L1333,85 L1333,103 L1226,106 L1225,82"/>
+<path id="barrel" stroke="#db2763" d="M1137,84 L1225,85 L1225,101 L1141,101"/>
+<path id="gas-block-front-sight" stroke="#007e87" d="M1068,50 L1102,50 L1106,31 L1122,28 L1130,36 L1130,51 L1139,54 L1141,107 L1130,113 L1070,113 L1068,50"/>
+<path id="sling-loop" stroke="#007e87" d="M1153,100 L1157,119 L1164,123 L1174,121 L1177,102"/>
+<path id="handguard" stroke="#ee7400" d="M761,47 L1068,48 L1078,57 L1074,108 L1066,117 L761,117 L757,110 L757,56 L761,47"/>
+<path id="upper-receiver" stroke="#147cf3" d="M377,61 L415,54 L704,50 L753,49 L754,111 L720,115 L704,132 L699,143 L586,158 L565,147 L491,141 L377,139 L377,61"/>
+<path id="lower-receiver" stroke="#147cf3" d="M375,76 L415,76 L416,103 L553,105 L567,113 L587,112 L586,143 L568,148 L501,145 L432,140 L375,137 L375,76"/>
+<path id="rear-sight" stroke="#007e87" d="M374,62 L378,44 L384,32 L397,28 L409,34 L412,44 L410,61 L374,62"/>
+<path id="carry-handle" stroke="#9342bd" d="M606,80 L610,65 L622,55 L640,53 L702,57 L715,62 L720,86 L714,100 L704,104 L595,109 L585,104 L585,94 L594,88 L607,89"/>
+<path id="receiver-control-pin" stroke="#9342bd" d="M548,112 L557,117 L561,128 L556,138 L547,139 L538,132 L538,122 L548,112"/>
+<path id="magazine" stroke="#ab3892" d="M599,157 L705,133 L706,268 L700,275 L603,294 L599,277 L599,157"/>
+<path id="mag-ribs" stroke="#ab3892" d="M616,159 L618,279  M645,151 L650,275  M683,143 L689,267  M606,285 L703,267"/>
+<path id="grip" stroke="#008849" d="M425,140 L499,145 L497,169 L459,222 L425,270 L359,240 L357,231 L410,186 L430,162 L431,151 L425,140"/>
+<path id="trigger-guard" stroke="#008849" d="M499,146 L500,175 L505,185 L522,191 L540,189 L550,181 L556,168 L554,149  M518,149 L514,161 L517,173 L525,181"/>
+<path id="stock-hinge" stroke="#b27900" d="M306,86 L348,75 L373,76 L371,137 L344,149 L307,152 L306,86"/>
+<path id="stock-upper" stroke="#b27900" d="M28,98 L305,91 L305,113 L61,120 L28,98"/>
+<path id="stock-lower" stroke="#b27900" d="M63,218 L161,150 L177,142 L204,136 L305,129 L306,149 L201,154 L178,157 L77,230 L63,218"/>
+<path id="stock-brace" stroke="#b27900" d="M203,119 L231,118 L231,132 L203,135 L203,119"/>
+<path id="buttplate" stroke="#b27900" d="M27,97 L57,98 L70,216 L80,230 L40,249 L35,236 L27,97"/>
+<path id="slots" stroke="#ee7400" d="M925,59 L953,59 L955,64 L950,67 L926,67 L923,64 L925,59  M977,59 L1003,59 L1007,63 L1003,67 L978,67 L974,64 L977,59  M1027,60 L1054,60 L1058,64 L1053,68 L1028,68 L1024,64 L1027,60  M802,114 L807,111 L815,111 L819,115  M945,114 L950,111 L958,111 L962,115  M995,114 L1000,111 L1008,111 L1012,115"/></g></svg>

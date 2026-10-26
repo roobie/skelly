@@ -2611,6 +2611,7 @@ describe('content references', () => {
               hesitationSimSeconds: { min: 1, max: 1 },
               refusalSuspicionSimSeconds: 2,
               refusalLean: 0.75,
+              alertCooldownSimSeconds: 10,
               chainRadiusMetres: 4,
               chainChance: 0.5,
               searchSimSeconds: { min: 40, max: 50 },

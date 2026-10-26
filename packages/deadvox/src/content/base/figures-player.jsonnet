@@ -50,6 +50,16 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
+      holds: {
+        reachLeadMetres: 0.08,
+        oneHand: [0.2, -0.2, -0.38],
+        twoHand: [0.08, -0.22, -0.42],
+        display: [0.14, -0.13, -0.3],
+        supportUpright: [0, 0.14, 0],
+        supportForward: [0, 0, -0.14],
+        readyPrimary: { offset: [0.025, 0.085, 0.015], rotation: [0.12, -0.08, -0.04] },
+        readySupport: { offset: [-0.025, 0.075, 0.01], rotation: [0.1, 0.08, 0.04] },
+      },
       // A stance bends each leg at the knee and ankle about these parts and anchors.
       legRig: {
         shin: segment('shin', 'knee'),

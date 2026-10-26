@@ -268,23 +268,47 @@ export const gridBounds = (grid: VoxelGrid): GridBounds => {
 
 export type Rgb = readonly [r: number, g: number, b: number];
 
+/**
+ * A mesh without colour: each quad keeps its material instead, because quads merge by material, so one
+ * mesh serves every paint of the same grid (see `quadColors`).
+ */
 export interface MeshBuffers {
   readonly positions: Float32Array;
   readonly normals: Float32Array;
-  readonly colors: Float32Array;
   readonly indices: Uint32Array;
+  /** One per quad, in vertex order: quad `q` owns vertices `4q` to `4q + 3`. */
+  readonly materials: readonly string[];
   readonly quads: number;
 }
+
+/** Per-vertex colours for a mesh's quads, three floats per vertex. */
+export const quadColors = (
+  buffers: Pick<MeshBuffers, 'materials' | 'quads'>,
+  colorOf: (mat: string) => Rgb,
+): Float32Array => {
+  const colors = new Float32Array(buffers.quads * 4 * 3);
+  const rgbs = new Map<string, Rgb>();
+  buffers.materials.forEach((mat, quad) => {
+    let rgb = rgbs.get(mat);
+    if (!rgb) {
+      rgb = colorOf(mat);
+      rgbs.set(mat, rgb);
+    }
+    for (let corner = 0; corner < 4; corner += 1) {
+      colors.set(rgb, (quad * 4 + corner) * 3);
+    }
+  });
+  return colors;
+};
 
 /** One mesh pass over a grid, and the buffers it fills. */
 interface Pass {
   readonly grid: VoxelGrid;
   readonly bounds: GridBounds;
-  readonly colorOf: (mat: string) => Rgb;
   readonly blocks: (neighbour: string | undefined) => boolean;
   readonly positions: number[];
   readonly normals: number[];
-  readonly colors: number[];
+  readonly materials: string[];
   readonly indices: number[];
 }
 
@@ -312,7 +336,6 @@ const emitQuad = (pass: Pass, sweep: Sweep, { plane, rect, mat }: { plane: numbe
     corners.reverse();
   }
   const base = pass.positions.length / 3;
-  const rgb = pass.colorOf(mat);
   for (const [cu, cv] of corners) {
     const position = [0, 0, 0];
     position[sweep.d] = plane;
@@ -320,8 +343,8 @@ const emitQuad = (pass: Pass, sweep: Sweep, { plane, rect, mat }: { plane: numbe
     position[sweep.v] = cv;
     pass.positions.push(...position);
     pass.normals.push(...sweep.step);
-    pass.colors.push(...rgb);
   }
+  pass.materials.push(mat);
   pass.indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
 };
 
@@ -404,29 +427,23 @@ const sweepSlices = (pass: Pass, sweep: Sweep, slices: ReadonlyMap<number, reado
   }
 };
 
-const meshPass = (
-  grid: VoxelGrid,
-  include: (mat: string) => boolean,
-  blocks: Pass['blocks'],
-  colorOf: Pass['colorOf'],
-): MeshBuffers => {
+const meshPass = (grid: VoxelGrid, include: (mat: string) => boolean, blocks: Pass['blocks']): MeshBuffers => {
   if (grid.size === 0) {
     return {
       positions: new Float32Array(),
       normals: new Float32Array(),
-      colors: new Float32Array(),
       indices: new Uint32Array(),
+      materials: [],
       quads: 0,
     };
   }
   const pass: Pass = {
     grid,
     bounds: gridBounds(grid),
-    colorOf,
     blocks,
     positions: [],
     normals: [],
-    colors: [],
+    materials: [],
     indices: [],
   };
   const voxels: SliceVoxel[] = [];
@@ -455,8 +472,8 @@ const meshPass = (
   return {
     positions: new Float32Array(pass.positions),
     normals: new Float32Array(pass.normals),
-    colors: new Float32Array(pass.colors),
     indices: new Uint32Array(pass.indices),
+    materials: pass.materials,
     quads: pass.indices.length / 6,
   };
 };
@@ -468,14 +485,12 @@ const meshPass = (
  */
 export const meshGrid = (
   grid: VoxelGrid,
-  colorOf: (mat: string) => Rgb,
   isClear: (mat: string) => boolean,
 ): { readonly solid: MeshBuffers; readonly clear: MeshBuffers } => ({
   solid: meshPass(
     grid,
     (mat) => !isClear(mat),
     (neighbour) => neighbour !== undefined && !isClear(neighbour),
-    colorOf,
   ),
-  clear: meshPass(grid, isClear, (neighbour) => neighbour !== undefined, colorOf),
+  clear: meshPass(grid, isClear, (neighbour) => neighbour !== undefined),
 });

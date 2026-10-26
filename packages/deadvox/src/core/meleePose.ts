@@ -1,5 +1,6 @@
 import { DEFAULT_HANDED_CHARACTER } from './character.ts';
 import type { Vec3 } from './coords.ts';
+import type { HeldPosesDef } from './schema.ts';
 
 export type MeleeProfile = 'blunt' | 'cut' | 'pierce' | 'fists';
 export type MeleeHand = 'right' | 'left';
@@ -77,10 +78,15 @@ const swingPath = (
 };
 
 /** Pure pose-and-contact contract shared by first-person rendering and hit resolution. */
-export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, ready: boolean): MeleePoseFrame => {
+export const meleePoseAndContact = (
+  action: MeleeActionPose,
+  elapsed: number,
+  ready: boolean,
+  holds?: HeldPosesDef,
+): MeleePoseFrame => {
   const neutral = { right: handPose(), left: handPose() };
   if (ready && elapsed <= 0) {
-    return readyMeleePose(true, action.hand);
+    return readyMeleePose(true, holds, action.hand);
   }
   if (elapsed < 0) {
     return { ...neutral, viewOrientation: { yaw: action.aimYaw, pitch: action.aimPitch } };
@@ -142,13 +148,17 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
 
 export const readyMeleePose = (
   ready: boolean,
+  holds?: HeldPosesDef,
   leading: MeleeHand = DEFAULT_HANDED_CHARACTER.handedness,
 ): MeleePoseFrame => {
   if (!ready) {
     return { right: handPose(), left: handPose() };
   }
-  const primary = handPose([0.025, 0.085, 0.015], [0.12, -0.08, -0.04]);
-  const support = handPose([-0.025, 0.075, 0.01], [0.1, 0.08, 0.04]);
+  if (!holds) {
+    throw new Error('Ready pose requires figure hold tuning');
+  }
+  const primary = handPose(holds.readyPrimary.offset, holds.readyPrimary.rotation);
+  const support = handPose(holds.readySupport.offset, holds.readySupport.rotation);
   const reflect = (pose: HandPose): HandPose =>
     handPose(
       [-pose.offset[0], pose.offset[1], pose.offset[2]],

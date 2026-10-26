@@ -7,7 +7,7 @@ import type { Registry } from '../src/core/content.ts';
 import { FIGURE_LIMBS } from '../src/core/schema.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 
-export type FigureModels = Pick<ModelLibrary, 'has' | 'part'>;
+export type FigureModels = Pick<ModelLibrary, 'has' | 'part' | 'heldLook'>;
 
 export const loadFigureModels = async (registry: Registry, figureId = 'player'): Promise<FigureModels> => {
   const figure = registry.figures.get(figureId)!;
@@ -20,5 +20,5 @@ export const loadFigureModels = async (registry: Registry, figureId = 'player'):
     }),
   );
   const scenes = new Map<string, Object3D>(ids.map((id, index) => [id, parsed[index]!.scene]));
-  return { has: (id) => scenes.has(id), part: (id) => scenes.get(id)?.clone() };
+  return { has: (id) => scenes.has(id), part: (id) => scenes.get(id)?.clone(), heldLook: () => undefined };
 };

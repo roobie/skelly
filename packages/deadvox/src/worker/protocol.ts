@@ -2,8 +2,8 @@ import type { FencePostDefs } from '../core/fencePosts.ts';
 import type { MeshData } from '../core/mesher.ts';
 import type { SkySnapshot } from '../core/skySnapshot.ts';
 import type { SkyResult } from '../core/skyTransport.ts';
-
 import type { WireMeshes } from '../core/wireMesh.ts';
+import type { ShapeData } from '../render/vehicleShape.ts';
 
 export type ToMesher =
   | {
@@ -16,9 +16,13 @@ export type ToMesher =
       fencePosts: FencePostDefs;
     }
   | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array }
-  | { type: 'sky'; input: SkySnapshot };
+  | { type: 'sky'; input: SkySnapshot }
+  | { type: 'vehicle'; key: string; blueprint: string; removed: readonly string[] };
 
-export type FromMesher = Meshed | { type: 'sky'; result: SkyResult; workerRealMs: number };
+export type FromMesher =
+  | Meshed
+  | { type: 'sky'; result: SkyResult; workerRealMs: number }
+  | { type: 'vehicle'; key: string; shape: ShapeData };
 
 interface Meshed {
   type: 'mesh';

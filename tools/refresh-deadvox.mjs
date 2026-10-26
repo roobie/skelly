@@ -4,8 +4,10 @@ import { compileJsonnetSources } from './jsonnet/compile.mjs';
 import { REPOSITORY_ROOT } from './jsonnet/index.mjs';
 
 // The recipes and catalogues are static JSON imports, so the tools' own sources compile before their loaders are imported.
-compileJsonnetSources({ within: ['packages/thing-core/src', 'packages/thing-authoring-tool', 'gungen'] });
-const { loadExportRecipe } = await import('../gungen/src/cli/exportRecipe.ts');
+compileJsonnetSources({
+  within: ['packages/thing-core/src', 'packages/thing-authoring-tool', 'packages/gun-authoring-tool'],
+});
+const { loadExportRecipe } = await import('../packages/gun-authoring-tool/src/cli/exportRecipe.ts');
 const { loadThingRecipe } = await import('../packages/thing-authoring-tool/src/exports.ts');
 
 const jobs = [

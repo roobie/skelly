@@ -1,0 +1,271 @@
+{
+  "document": "docs/fal-trace.md",
+  "reference": {
+    "allowancePercent": {
+      "kind": "derived",
+      "reason": "Registration/perspective authoring allowance, not a statistical confidence interval; systematic variant error remains unknown",
+      "value": 5
+    },
+    "calibration": {
+      "lengthMm": {
+        "kind": "sourced",
+        "source": "https://weaponsystems.net/system/1013-FN+FAL",
+        "value": 549
+      },
+      "pixels": {
+        "kind": "derived",
+        "reason": "Sight-assembly silhouette centres projected onto their common top datum; not resolved aperture/post centres",
+        "value": [[395, 28], [1116, 28]]
+      }
+    },
+    "comparisons": {
+      "extrapolated5062": {
+        "lengthMm": {
+          "kind": "derived",
+          "reason": "Subtract barrel difference from the 50.61 extended total; an assumption, not a published 50.62 total",
+          "value": 1019
+        },
+        "pixels": {
+          "kind": "derived",
+          "reason": "Visible buttplate-to-muzzle span at the provisional bore; not an independent sourced dimension",
+          "value": [[27, 94], [1333, 94]]
+        }
+      },
+      "published5063": {
+        "lengthMm": {
+          "kind": "sourced",
+          "source": "https://weaponsystems.net/system/1013-FN+FAL",
+          "value": 998
+        },
+        "pixels": {
+          "kind": "derived",
+          "reason": "Visible buttplate-to-muzzle span at the provisional bore; not an independent sourced dimension",
+          "value": [[27, 94], [1333, 94]]
+        }
+      }
+    },
+    "features": {
+      "buttplate": {
+        "kind": "derived",
+        "paths": ["buttplate"]
+      },
+      "carryHandle": {
+        "kind": "derived",
+        "paths": ["carry-handle"]
+      },
+      "exposedBarrel": {
+        "kind": "derived",
+        "paths": ["barrel"]
+      },
+      "forend": {
+        "kind": "derived",
+        "paths": ["handguard"]
+      },
+      "gasBlockAndSight": {
+        "kind": "derived",
+        "paths": ["gas-block-front-sight"]
+      },
+      "grip": {
+        "kind": "derived",
+        "paths": ["grip"]
+      },
+      "hinge": {
+        "kind": "derived",
+        "paths": ["stock-hinge"]
+      },
+      "lowerReceiver": {
+        "kind": "derived",
+        "paths": ["lower-receiver"]
+      },
+      "lowerStockTube": {
+        "kind": "derived",
+        "paths": ["stock-lower"]
+      },
+      "magazine": {
+        "kind": "derived",
+        "paths": ["magazine"]
+      },
+      "magazineRibs": {
+        "kind": "derived",
+        "paths": ["mag-ribs"]
+      },
+      "muzzleDevice": {
+        "kind": "derived",
+        "paths": ["flash-hider"]
+      },
+      "overall": {
+        "kind": "derived",
+        "paths": ["buttplate", "flash-hider"]
+      },
+      "rearSight": {
+        "kind": "derived",
+        "paths": ["rear-sight"]
+      },
+      "receiverControlPin": {
+        "kind": "derived",
+        "paths": ["receiver-control-pin"]
+      },
+      "slingLoop": {
+        "kind": "derived",
+        "paths": ["sling-loop"]
+      },
+      "slots": {
+        "kind": "derived",
+        "paths": ["slots"]
+      },
+      "stock": {
+        "kind": "derived",
+        "paths": ["stock-hinge", "stock-upper", "stock-lower", "stock-brace", "buttplate"]
+      },
+      "stockBrace": {
+        "kind": "derived",
+        "paths": ["stock-brace"]
+      },
+      "triggerAndGuard": {
+        "kind": "derived",
+        "paths": ["trigger-guard"]
+      },
+      "upperReceiver": {
+        "kind": "derived",
+        "paths": ["upper-receiver"]
+      },
+      "upperStockTube": {
+        "kind": "derived",
+        "paths": ["stock-upper"]
+      }
+    },
+    "id": "fal-para-supplied-side-profile",
+    "landmarks": {
+      "buttplateAxis": {
+        "kind": "derived",
+        "reason": "Picked buttplate rake proxy, lower end forward",
+        "value": [[27, 97], [40, 249]]
+      },
+      "gripHeel": {
+        "kind": "derived",
+        "reason": "Visible heel slope toward the muzzle",
+        "value": [[359, 240], [425, 270]]
+      },
+      "gripMidline": {
+        "kind": "derived",
+        "reason": "Picked neck-to-heel midline, stronger silhouette cue than a generic vertical grip",
+        "value": [[463, 150], [392, 250]]
+      },
+      "magazineBase": {
+        "kind": "derived",
+        "reason": "Visible sloping base",
+        "value": [[603, 294], [700, 275]]
+      },
+      "magazineFront": {
+        "kind": "derived",
+        "reason": "Visible front edge; does not establish a curved centreline",
+        "value": [[705, 133], [706, 268]]
+      },
+      "magazineRear": {
+        "kind": "derived",
+        "reason": "Visible rear edge; unequal insertion depth and perspective may affect apparent rake",
+        "value": [[599, 157], [603, 294]]
+      },
+      "stockLowerRear": {
+        "kind": "derived",
+        "reason": "Rising rear run; elbow and forward run remain separate contours",
+        "value": [[63, 218], [161, 150]]
+      },
+      "stockUpperAxis": {
+        "kind": "derived",
+        "reason": "Near-horizontal upper tube proxy",
+        "value": [[28, 98], [305, 91]]
+      },
+      "upperVentCentres": {
+        "kind": "derived",
+        "reason": "Approximate visible upper-slot centres; lower openings do not establish a hidden symmetric pattern",
+        "value": [[939, 63], [990, 63], [1041, 63]]
+      }
+    },
+    "svg": "fal-profile.svg"
+  },
+  "title": "FAL Para provisional profile",
+  "values": {
+    "barrel5061Mm": {
+      "kind": "sourced",
+      "source": "https://weaponsystems.net/system/1013-FN+FAL",
+      "value": 533
+    },
+    "barrel5062Mm": {
+      "kind": "sourced",
+      "source": "https://en.wikipedia.org/wiki/FN_FAL",
+      "value": 457
+    },
+    "barrel5063SystemsMm": {
+      "kind": "sourced",
+      "source": "https://weaponsystems.net/system/1013-FN+FAL",
+      "value": 436
+    },
+    "barrel5063WikiMm": {
+      "kind": "sourced",
+      "source": "https://en.wikipedia.org/wiki/FN_FAL",
+      "value": 440
+    },
+    "boreYPx": {
+      "kind": "derived",
+      "reason": "Provisional visual bore datum, not the optical sight line",
+      "value": 94
+    },
+    "extended5061Mm": {
+      "kind": "sourced",
+      "source": "https://weaponsystems.net/system/1013-FN+FAL",
+      "value": 1095
+    },
+    "extended5063Mm": {
+      "kind": "sourced",
+      "source": "https://weaponsystems.net/system/1013-FN+FAL",
+      "value": 998
+    },
+    "extrapolatedFolded5062Mm": {
+      "kind": "derived",
+      "reason": "Subtract barrel difference from the 50.61 folded total; an assumption, not a published 50.62 total",
+      "value": 769
+    },
+    "folded5061Mm": {
+      "kind": "sourced",
+      "source": "https://weaponsystems.net/system/1013-FN+FAL",
+      "value": 845
+    },
+    "folded5063Mm": {
+      "kind": "sourced",
+      "source": "https://weaponsystems.net/system/1013-FN+FAL",
+      "value": 748
+    },
+    "hingeLateralOffsetMm": {
+      "kind": "unknown",
+      "reason": "Not resolved by a side photograph"
+    },
+    "maximumContourAllowancePx": {
+      "kind": "derived",
+      "reason": "Manual visible-edge picking precision; overlaps are less certain",
+      "value": 5
+    },
+    "minimumContourAllowancePx": {
+      "kind": "derived",
+      "reason": "Manual visible-edge picking precision; overlaps are less certain",
+      "value": 3
+    },
+    "receiverHeightMm": {
+      "kind": "unknown",
+      "reason": "Overlaps obscure complete receiver boundaries"
+    },
+    "receiverLengthMm": {
+      "kind": "unknown",
+      "reason": "Visible envelope is not a sourced component length"
+    },
+    "registrationXPx": {
+      "kind": "derived",
+      "reason": "Provisional receiver/barrel interface, not proof of fit",
+      "value": 748
+    },
+    "systematicScaleError": {
+      "kind": "unknown",
+      "reason": "Photographed sight radius and stock geometry may differ from the provisional variant"
+    }
+  }
+}

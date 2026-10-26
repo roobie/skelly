@@ -187,6 +187,7 @@ describe('real pump ammunition', () => {
     };
     const f = fixture(registry, () => 0, ejectionPose, isSolid);
     const port = heldEjectionPose({
+      holds: registry.figures.get('player')!.holds,
       model: firearmHandlingFor(f.gun, f.inventory.registry).model,
       side: 'right',
       twoHanded: defOf(registry, 'pump_shotgun').twoHanded === true,
@@ -319,6 +320,7 @@ describe('real pump ammunition', () => {
   it('discards a case when only the player column supports it instead of landing it straight below the port', () => {
     const model = registry.models.get(registry.items.get('pump_shotgun')!.model!)!;
     const ejection = heldEjectionPose({
+      holds: registry.figures.get('player')!.holds,
       model,
       side: 'right',
       twoHanded: registry.items.get('pump_shotgun')!.twoHanded === true,
@@ -702,6 +704,7 @@ describe('real pump ammunition', () => {
     expect(f.effects).toEqual([]);
     f.finish(1e-6, 3 + at);
     const expected = heldEjectionPose({
+      holds: registry.figures.get('player')!.holds,
       model,
       side: 'right',
       twoHanded: true,
@@ -818,6 +821,7 @@ describe('real pump ammunition', () => {
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
     const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const bore = firearmBoreRay({
+      holds: registry.figures.get('player')!.holds,
       model: firearmHandlingFor(f.gun, registry).model,
       eye: pose.eye,
       yaw: pose.yaw,

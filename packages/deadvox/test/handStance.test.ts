@@ -1,6 +1,9 @@
 import { expect, it } from 'vitest';
 import { type HandPose, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
+import { baseRegistry } from './baseRegistry.ts';
+
+const { holds } = baseRegistry().figures.get('player')!;
 
 const reflected = (pose: HandPose): HandPose => ({
   offset: [-pose.offset[0], pose.offset[1], pose.offset[2]],
@@ -8,12 +11,12 @@ const reflected = (pose: HandPose): HandPose => ({
 });
 
 it('mirrors neutral stance roles without changing physical hand labels or aim', () => {
-  const right = readyMeleePose(true, 'right');
-  const left = readyMeleePose(true, 'left');
+  const right = readyMeleePose(true, holds, 'right');
+  const left = readyMeleePose(true, holds, 'left');
   expect(right.right).not.toEqual(right.left);
   expect(left.left).toEqual(reflected(right.right));
   expect(left.right).toEqual(reflected(right.left));
-  expect(renderMeleePose(undefined, 0, true, 'left')).toEqual(left);
+  expect(renderMeleePose(undefined, 0, true, { leading: 'left', holds })).toEqual(left);
   const action = {
     profile: 'fists' as const,
     hand: 'left' as const,
@@ -26,5 +29,5 @@ it('mirrors neutral stance roles without changing physical hand labels or aim', 
     direction: [0, 0, -1] as [number, number, number],
     hitResolved: false,
   };
-  expect(meleePoseAndContact(action, 0, true)).toEqual(left);
+  expect(meleePoseAndContact(action, 0, true, holds)).toEqual(left);
 });

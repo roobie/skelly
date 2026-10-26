@@ -5,6 +5,7 @@ import type { FencePostDefs } from '../core/fencePosts.ts';
 import { buildMesh } from '../core/mesher.ts';
 import { buildSkyResult } from '../core/skyTransport.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
+import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
 import type { FromMesher, ToMesher } from './protocol.ts';
 
 let wireMeshes: WireMeshes = [];
@@ -29,6 +30,12 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
         ...(result.volume ? [result.volume.light.buffer, result.volume.unfurnished.buffer] : []),
       ],
     });
+    return;
+  }
+  if (msg.type === 'vehicle') {
+    const shape = buildShape(msg.blueprint, msg.removed);
+    const reply: FromMesher = { type: 'vehicle', key: msg.key, shape };
+    postMessage(reply, { transfer: shapeBuffers(shape) });
     return;
   }
   const { key, version, padded, wide } = msg;
