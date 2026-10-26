@@ -1628,7 +1628,7 @@
     "source": "headlamp",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.002
     }
   },
   {

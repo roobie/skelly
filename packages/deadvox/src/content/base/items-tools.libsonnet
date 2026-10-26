@@ -238,7 +238,7 @@ local items = [
     size: [1, 2],
     description: 'A battery-powered beam worn on the head, leaving both hands free.',
     wearable: { slot: 'head', encumbrance: 0 },
-    figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.02, 0], turn: [0, 0, 0] }],
+    figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.055, 0], turn: [0, 0, 0] }],
     light: batteryBeam(
       radius=12,
       seenFrom=30,

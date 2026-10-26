@@ -1,5 +1,5 @@
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
-import type { Solid } from '@skelly/engine/shapes/solid.ts';
+import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { integer, minValue, parse, picklist, pipe, strictObject, string, transform } from 'valibot';
 import { annulus, box, link, positive, round } from './shapes.ts';
 
@@ -62,7 +62,11 @@ export const blowtorch = (params: Readonly<Record<string, string>>) => {
 export const headlamp = (params: Readonly<Record<string, string>>) => {
   const d = parse(
     strictObject({
-      strapRadius: positive,
+      strapHalfWidth: positive,
+      strapFront: positive,
+      strapBack: positive,
+      strapFrontChamfer: positive,
+      strapBackChamfer: positive,
       strapWidth: positive,
       strapWall: positive,
       housingWidth: positive,
@@ -73,12 +77,39 @@ export const headlamp = (params: Readonly<Record<string, string>>) => {
     }),
     params,
   );
-  if (d.strapWall >= d.strapRadius || 2 * d.lensRadius > Math.min(d.housingWidth, d.housingHeight)) {
+  if (
+    d.strapWall >= Math.min(d.strapHalfWidth, d.strapFront, d.strapBack) ||
+    d.strapFrontChamfer >= Math.min(d.strapHalfWidth, d.strapFront) ||
+    d.strapBackChamfer >= Math.min(d.strapHalfWidth, d.strapBack) ||
+    2 * d.lensRadius > Math.min(d.housingWidth, d.housingHeight)
+  ) {
     throw new Error('Invalid headlamp dimensions');
   }
-  const z = -d.strapRadius;
+  const outline = (x: number, front: number, back: number): Vec2[] => [
+    [-front + d.strapFrontChamfer, -x],
+    [back - d.strapBackChamfer, -x],
+    [back, -x + d.strapBackChamfer],
+    [back, x - d.strapBackChamfer],
+    [back - d.strapBackChamfer, x],
+    [-front + d.strapFrontChamfer, x],
+    [-front, x - d.strapFrontChamfer],
+    [-front, -x + d.strapFrontChamfer],
+  ];
+  const inner = outline(d.strapHalfWidth, d.strapFront, d.strapBack);
+  const outer = outline(d.strapHalfWidth + d.strapWall, d.strapFront + d.strapWall, d.strapBack + d.strapWall);
+  const strap = inner.map(
+    (point, i): Solid => ({
+      id: `strap-${i}`,
+      kind: 'extruded-polygon',
+      axis: 'y',
+      profile: [point, outer[i]!, outer[(i + 1) % inner.length]!, inner[(i + 1) % inner.length]!],
+      z: [0, d.strapWidth],
+      slot: 'strap',
+    }),
+  );
+  const z = -d.strapFront - d.strapWall - d.housingDepth / 2;
   return [
-    annulus('strap', [d.strapRadius - d.strapWall, d.strapRadius], d.strapWidth, 'strap'),
+    ...strap,
     box('body', [0, d.housingHeight / 2, z], [d.housingWidth, d.housingHeight, d.housingDepth], 'body'),
     round(
       'bezel',
@@ -100,7 +131,7 @@ export const headlamp = (params: Readonly<Record<string, string>>) => {
     ),
     box(
       'adjuster',
-      [0, d.strapWidth / 2, d.strapRadius],
+      [0, d.strapWidth / 2, d.strapBack + d.strapWall],
       [d.housingWidth * 0.7, d.strapWidth * 1.2, d.strapWall * 2],
       'control',
     ),

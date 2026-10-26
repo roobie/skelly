@@ -541,7 +541,7 @@
       },
       "figureModels": [
         {
-          "at": [0, 0.02, 0],
+          "at": [0, 0.055, 0],
           "frame": "head",
           "model": "headlamp",
           "pivot": [0, 0, 0],

@@ -1714,6 +1714,8 @@ must be readable at a glance on self, in shadows and outside views, and on bodie
 where it tells the player what loot they carry. Colour alone cannot stand in for
 an equipped item. Floating optics and a head breaking through its cap read as
 loose props rather than worn gear, so fit must preserve the equipped silhouette.
+Forehead lamps must leave the eye line clear so hands-free lighting does not
+read as an obstruction over the eyes.
 Item-owned presentation and figure-owned attachment frames keep
 gear additions independent of human renderers and equipment ownership. The same
 human must serve different equipment owners without manufacturing inventory in

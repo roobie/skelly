@@ -4759,10 +4759,65 @@
     },
     {
       "anchors": {
+        "housing_back": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "equipment",
+          "solid": "body"
+        },
+        "housing_bottom": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "equipment",
+          "solid": "body"
+        },
+        "housing_top": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "equipment",
+          "solid": "body"
+        },
         "lens": {
           "fraction": [0.5, 0.5, 0],
           "part": "equipment",
           "solid": "lens"
+        },
+        "strap_back_inner": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "equipment",
+          "solid": "strap-2"
+        },
+        "strap_back_outer": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "equipment",
+          "solid": "strap-2"
+        },
+        "strap_front_inner": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "equipment",
+          "solid": "strap-6"
+        },
+        "strap_front_outer": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "equipment",
+          "solid": "strap-6"
+        },
+        "strap_left_inner": {
+          "fraction": [0, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-4"
+        },
+        "strap_left_outer": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-4"
+        },
+        "strap_right_inner": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-0"
+        },
+        "strap_right_outer": {
+          "fraction": [0, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-0"
         }
       },
       "connections": [],
@@ -4772,7 +4827,7 @@
         "hold": "forward",
         "part": "equipment",
         "roll": 0,
-        "solid": "strap",
+        "solid": "strap-2",
         "turn": [0, -90, 0]
       },
       "id": "headlamp",
@@ -4794,13 +4849,18 @@
             "housingWidth": "0.059999999999999998",
             "lensDepth": "0.0050000000000000001",
             "lensRadius": "0.017000000000000001",
-            "strapRadius": "0.12",
-            "strapWall": "0.0030000000000000001",
+            "strapBack": "0.105",
+            "strapBackChamfer": "0.002",
+            "strapFront": "0.10299999999999999",
+            "strapFrontChamfer": "0.025000000000000001",
+            "strapHalfWidth": "0.092999999999999999",
+            "strapWall": "0.0040000000000000001",
             "strapWidth": "0.021999999999999999"
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [],
