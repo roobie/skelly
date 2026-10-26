@@ -213,7 +213,7 @@ it('roots public leads at reached roof exits even when the old street spawn is s
     { min: [x - 1, y, z - 2], max: [x + 1, y + 5, z - 1], block },
     { min: [x - 1, y, z + 1], max: [x + 1, y + 5, z + 2], block },
   ].map((wall) => ({ ...wall, min: wall.min as Vec3, max: wall.max as Vec3 }));
-  const result = scenarioCertificate(new ObstructedStartSite(walls, plan));
+  const result = scenarioCertificate(new ObstructedStartSite(walls, plan), ['start', 'leads']);
   expect(result.space.standing([x, y, z])).toBe(true);
   expect(result.space.path([x, y, z], start.descents[0]!.lower)).toBeUndefined();
   expect(result.issues).toEqual([]);

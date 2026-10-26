@@ -14,6 +14,21 @@ export interface ScenarioCertificate {
   readonly space: ScenarioRouteSpace;
 }
 
+export type CertificatePhase =
+  | 'start'
+  | 'lots'
+  | 'service'
+  | 'street'
+  | 'floors'
+  | 'seals'
+  | 'ladders'
+  | 'stairs'
+  | 'underground'
+  | 'objective'
+  | 'resources'
+  | 'leads'
+  | 'lotResources';
+
 class Certificate {
   readonly space: ScenarioRouteSpace;
   readonly issues: [string, string][] = [];
@@ -422,27 +437,69 @@ class Certificate {
     return accessible;
   }
 
-  run(): ScenarioCertificate {
-    this.start();
-    this.issues.push(...cityLotRouteIssues(this.site.plan.lots ?? [], this.space, this.startFeet));
-    const serviceRoutes = this.site.plan.grid.service?.routes;
-    if (serviceRoutes) {
+  /**
+   * Runs the named phases in certificate order, or all of them. A phase leans on the earlier ones it reads from
+   * (start feet, storey origins, ladder and stair links, admitted seals), so a narrowed run names those too.
+   */
+  run(only?: ReadonlySet<CertificatePhase>): ScenarioCertificate {
+    let reached: ReturnType<Certificate['reachableFloors']> | undefined;
+    const floors = () => {
+      reached ??= this.reachableFloors();
+      return reached;
+    };
+    const phases: readonly (readonly [CertificatePhase, () => void])[] = [
+      ['start', () => this.start()],
+      ['lots', () => this.issues.push(...cityLotRouteIssues(this.site.plan.lots ?? [], this.space, this.startFeet))],
+      ['service', () => this.serviceRoutes()],
+      ['street', () => this.street()],
+      ['floors', () => this.floors()],
+      ['seals', () => this.seals()],
+      ['ladders', () => this.ladders()],
+      ['stairs', () => this.stairs()],
+      ['underground', () => this.underground()],
+      ['objective', () => this.objective(floors())],
+      ['resources', () => this.fixedResources(floors())],
+      ['leads', () => this.leads()],
+      ['lotResources', () => this.lotResources()],
+    ];
+    for (const [phase, step] of phases) {
+      if (!only || only.has(phase)) {
+        step();
+      }
+    }
+    return { space: this.space, issues: this.issues };
+  }
+
+  private ladders(): void {
+    this.ladder(this.site.plan.portal!, '.portal');
+    this.composition.descents.forEach((descent, index) => {
+      this.ladder(descent, `.composition.descents[${index}]`);
+    });
+  }
+
+  private fixedResources(reached: ReturnType<Certificate['reachableFloors']>): void {
+    this.composition.resources.forEach((resource, index) => {
+      if (!resource.lot) {
+        this.resource(resource, index, reached);
+      }
+    });
+  }
+
+  private serviceRoutes(): void {
+    const routes = this.site.plan.grid.service?.routes;
+    if (routes) {
       this.issues.push(
         ...perimeterRouteIssues(
-          { placement: this.site.plan.service!, routes: serviceRoutes },
+          { placement: this.site.plan.service!, routes },
           this.space,
           this.startFeet,
           '.city.service',
         ),
       );
     }
-    this.street();
-    this.floors();
-    this.seals();
-    this.ladder(this.site.plan.portal!, '.portal');
-    this.composition.descents.forEach((descent, index) => {
-      this.ladder(descent, `.composition.descents[${index}]`);
-    });
+  }
+
+  private stairs(): void {
     this.composition.stairs.forEach((stair, index) => {
       const path = `.composition.stairs[${index}]`;
       const upper = this.floorLink(stair.upper, path);
@@ -455,22 +512,15 @@ class Certificate {
         this.links.push([stair.upper[1], stair.lower[1]]);
       }
     });
-    this.underground();
-    const reached = this.reachableFloors();
-    this.objective(reached);
-    this.composition.resources.forEach((resource, index) => {
-      if (!resource.lot) {
-        this.resource(resource, index, reached);
-      }
-    });
+  }
+
+  private leads(): void {
     const leads = this.composition.leads.map((placement, index) => this.lead(placement, index));
     for (let missed = 0; missed < leads.length; missed++) {
       if (!leads.some((accessible, index) => index !== missed && accessible)) {
         this.fail('.composition.leads', 'missing one clue must leave an independent accessible lead');
       }
     }
-    this.lotResources();
-    return { space: this.space, issues: this.issues };
   }
 }
 
@@ -499,7 +549,8 @@ export const scenarioLotResourceCertificate = (site: CitySite): ScenarioCertific
   return { space: certificate.space, issues: certificate.issues };
 };
 
-export const scenarioCertificate = (site: CitySite): ScenarioCertificate => {
+/** `only` narrows the run to the named phases, so a case that probes one rule need not certify the whole lab. */
+export const scenarioCertificate = (site: CitySite, only?: readonly CertificatePhase[]): ScenarioCertificate => {
   const { composition, service, portal } = site.plan;
   if (!(composition && service && portal)) {
     return {
@@ -507,5 +558,5 @@ export const scenarioCertificate = (site: CitySite): ScenarioCertificate => {
       issues: [['.composition', 'scenario needs its final composed route metadata']],
     };
   }
-  return new Certificate(site, composition).run();
+  return new Certificate(site, composition).run(only && new Set(only));
 };
