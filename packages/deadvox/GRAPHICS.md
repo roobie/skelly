@@ -2,6 +2,7 @@
 read_if:
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
+  - you're changing sun shadow occlusion in interiors or underground
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
@@ -45,6 +46,8 @@ A performance change may alter the default look only slightly, and each such cha
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
 Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeating lattice. The cell coordinates and smoothing keep world anchoring, but CPU float evaluation, byte quantization and hardware filtering do not promise the arithmetic shader's exact image. It is on by default because it cuts chunk fragment cost substantially while its image differs from the arithmetic shader only imperceptibly, which was approved by eye. The option and the debug URL switch stay so a player or a look review can compare against the arithmetic path. See `src/render/surfaceNoise.ts`, `createSurfaceNoise`; `src/render/surfacePatterns.ts`, `SURFACE_PATTERN_GLSL`; and `src/core/graphics.ts`, `GRAPHICS_KNOBS`.
+
+Sun shadows must block buried rooms even when a thick solid's sun-facing surface lies outside the bounded shadow map. Retain its interior-facing surface as an occluder too, without dropping the entry faces that prevent PCF leaks at joined interior corners. See `src/render/shadows.ts`, `Shadows.drawMaps`, and `test/browser/underground-sun.ts`, `undergroundSunProof`.
 
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
 
