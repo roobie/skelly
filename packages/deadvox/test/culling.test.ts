@@ -11,7 +11,6 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { skyAt } from '../src/core/sky.ts';
@@ -37,7 +36,8 @@ const floor: MeshData = {
 
 const RADIUS_M = 96;
 const BLOCK_M = 0.5;
-const FAR_PLANE_SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
+// Test-owned: the schema's minimum, where the far plane sits closest to the fog's end.
+const FAR_PLANE_SCALE = 1;
 const fogFar = (scene: Scene) => (scene.fog as Fog).far;
 const dayHour = phaseMidpoint('day') / 3600;
 const nightHour = phaseMidpoint('night') / 3600;
@@ -129,29 +129,26 @@ describe('culling', () => {
     const chunks = scene.meshes.group.children.filter((child) => !others.has(child));
     // Above the ground and looking down a little, as from a tower, so the view reaches the fog's end.
     scene.camera.position.set(1, 20, 1);
-    const inViewBeyond = [0, 20, 45, 90, 135, 200, 315].map((yawDegrees) => {
+    for (const yawDegrees of [0, 20, 45, 90, 135, 200, 315]) {
       const expected = discAtYaw(scene.camera, yawDegrees, fogEnd, chunks);
       scene.meshes.cull(scene.camera, fogEnd);
       expect(chunks.map((mesh) => mesh.visible)).toEqual(expected.shown);
-      return expected.inViewBeyond;
-    });
-    // Some ground beyond the fog's end was in view at every yaw, so the disc's edge was tested.
-    expect(inViewBeyond.every((count) => count > 0)).toBe(true);
+      // Ground on both sides of the fog's end was in view at this yaw, so the disc's edge was tested.
+      expect(expected.shown.some(Boolean)).toBe(true);
+      expect(expected.inViewBeyond).toBeGreaterThan(0);
+    }
   });
 });
 
 /**
- * Turns the camera to the yaw and returns which floor chunks should show: those in view of the same
- * camera without a far plane and nearer than the fog's end horizontally.
+ * Turns the camera to the yaw and returns which floor chunks should show: those in the camera's
+ * view (its far plane included) and nearer than the fog's end horizontally.
  */
 const discAtYaw = (camera: PerspectiveCamera, yawDegrees: number, fogEnd: number, chunks: Object3D[]) => {
   camera.rotation.set(-0.2, (yawDegrees * Math.PI) / 180, 0);
   camera.updateMatrixWorld();
-  const unbounded = camera.clone();
-  unbounded.far = 1e6;
-  unbounded.updateProjectionMatrix();
   const frustum = new Frustum().setFromProjectionMatrix(
-    new Matrix4().multiplyMatrices(unbounded.projectionMatrix, unbounded.matrixWorldInverse),
+    new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
   );
   const eye = new Vector3(camera.position.x, BLOCK_M, camera.position.z);
   let inViewBeyond = 0;

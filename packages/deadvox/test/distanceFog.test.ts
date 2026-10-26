@@ -1,10 +1,11 @@
 // biome-ignore-all lint/style/useNamingConvention: three.js shader chunk names retain their exact spelling.
 import { PerspectiveCamera, ShaderChunk, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { installDistanceFog, withDistanceFog } from '../src/render/distanceFog.ts';
 
-const SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
+// Test-owned far-plane scales, from the schema's minimum up, so no case depends on the bundled tuning.
+const SCALES = [1, 1.1, 1.5, 3];
+const SCALE = 1.5;
 
 interface Vec {
   xyz: [number, number, number];
@@ -51,6 +52,15 @@ const towerCamera = (yawDegrees: number) => {
   return camera;
 };
 
+/** Points around the eye at several bearings, distances and heights, near and far below and above it. */
+const ringPoints = (eye: Vector3): Vector3[] =>
+  [0, 30, 45, 90, 200].flatMap((bearing) => {
+    const angle = (bearing * Math.PI) / 180;
+    return [5, 80].flatMap((reach) =>
+      [-48, 20, 60].map((y) => new Vector3(eye.x + Math.sin(angle) * reach, y, eye.z + Math.cos(angle) * reach)),
+    );
+  });
+
 // three.js's own fog chunks are the thing under test: the patch must find each line it replaces.
 describe('distance fog', () => {
   it('replaces view depth with fogDistance() in all four fog chunks', () => {
@@ -78,32 +88,38 @@ describe('distance fog', () => {
     }
   });
 
-  it('fogs a point by its horizontal distance, whichever way the camera faces', () => {
-    const fogDistance = fogDistanceOf(SCALE);
-    const eye = new Vector3(18, 0, 9);
-    for (const groundY of [20, 60]) {
-      for (const pointYaw of [0, 30, 45, 90, 200]) {
-        const angle = (pointYaw * Math.PI) / 180;
-        const point = eye.clone().add(new Vector3(Math.sin(angle) * 80, groundY, Math.cos(angle) * 80));
+  it('fogs a point by max(horizontal, straight-line / scale), whichever way the camera faces', () => {
+    const eye = towerCamera(0).position;
+    const branches = new Set<string>();
+    for (const scale of SCALES) {
+      const fogDistance = fogDistanceOf(scale);
+      for (const point of ringPoints(eye)) {
+        const horizontal = Math.hypot(point.x - eye.x, point.z - eye.z);
+        const expected = Math.max(horizontal, point.distanceTo(eye) / scale);
+        branches.add(expected === horizontal ? 'horizontal' : 'straight-line');
         for (const cameraYaw of [0, 45, -45, 170]) {
-          expect(fogDistance(towerCamera(cameraYaw), point)).toBeCloseTo(80, 6);
+          expect(fogDistance(towerCamera(cameraYaw), point)).toBeCloseTo(expected, 6);
         }
       }
     }
+    // Both terms of the contract decided some case.
+    expect([...branches].sort()).toEqual(['horizontal', 'straight-line']);
   });
 
-  it('fogs fully before the far plane clips, at any yaw', () => {
-    const fogDistance = fogDistanceOf(SCALE);
+  it('fogs fully before the far plane clips, at any yaw and scale', () => {
     const fogEnd = 50;
     const steps = [-200, -150, -100, -50, 0, 50, 100, 150, 200];
     const points = steps.flatMap((x) => steps.flatMap((z) => [-48, 0, 80].map((y) => new Vector3(x, y, z))));
-    for (const cameraYaw of [0, 45]) {
-      const camera = towerCamera(cameraYaw);
-      const clipped = points.filter(
-        (point) => -point.clone().applyMatrix4(camera.matrixWorldInverse).z > fogEnd * SCALE,
-      );
-      expect(clipped.length).toBeGreaterThan(0);
-      expect(Math.min(...clipped.map((point) => fogDistance(camera, point)))).toBeGreaterThanOrEqual(fogEnd);
+    for (const scale of SCALES) {
+      const fogDistance = fogDistanceOf(scale);
+      for (const cameraYaw of [0, 45]) {
+        const camera = towerCamera(cameraYaw);
+        const clipped = points.filter(
+          (point) => -point.clone().applyMatrix4(camera.matrixWorldInverse).z > fogEnd * scale,
+        );
+        expect(clipped.length).toBeGreaterThan(0);
+        expect(Math.min(...clipped.map((point) => fogDistance(camera, point)))).toBeGreaterThanOrEqual(fogEnd);
+      }
     }
   });
 
