@@ -14,7 +14,7 @@ import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
@@ -108,74 +108,66 @@ describe('nested tier ranges reach the loot sources', () => {
   });
 });
 
-describe('gauntlet lab loot tiers by depth', () => {
-  it(
-    'lets a deeper level roll the lowest tier and a higher one besides, while level one rolls the lowest alone',
-    () => {
-      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
-      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
-      const sources = site.placements
-        .flatMap((placement) =>
-          [...placedPieces(placement), ...placedGroundLoot(placement)]
-            .filter((source) => source.lootDepth !== undefined)
-            .map((source) => ({
-              y: source.pos[1],
-              tiers: rollableTiers(
-                withLootDepth(placement.lootContext ?? placement.template.lootContext, source.lootDepth),
-              ),
-            })),
-        )
-        .sort((a, b) => b.y - a.y);
-      expect(sources.length, 'lab sources carry a tier range').toBeGreaterThan(0);
-      const top = sources[0]!;
-      const bottom = sources.at(-1)!;
-      expect(top.tiers, 'the top level rolls the lowest tier alone').toEqual([TIERS[0]]);
-      expect(bottom.tiers.length, 'a deeper level rolls a higher tier').toBeGreaterThan(top.tiers.length);
-      expect(bottom.tiers, 'the deepest level rolls the highest tier').toContain(TIERS.at(-1));
-      for (const tier of top.tiers) {
-        expect(bottom.tiers, 'a deeper level keeps the lower tiers').toContain(tier);
-      }
-    },
-    GAUNTLET_SITE_MS,
-  );
+sweepGroup('gauntlet lab loot tiers by depth', () => {
+  it('lets a deeper level roll the lowest tier and a higher one besides, while level one rolls the lowest alone', () => {
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
+    const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+    const sources = site.placements
+      .flatMap((placement) =>
+        [...placedPieces(placement), ...placedGroundLoot(placement)]
+          .filter((source) => source.lootDepth !== undefined)
+          .map((source) => ({
+            y: source.pos[1],
+            tiers: rollableTiers(
+              withLootDepth(placement.lootContext ?? placement.template.lootContext, source.lootDepth),
+            ),
+          })),
+      )
+      .sort((a, b) => b.y - a.y);
+    expect(sources.length, 'lab sources carry a tier range').toBeGreaterThan(0);
+    const top = sources[0]!;
+    const bottom = sources.at(-1)!;
+    expect(top.tiers, 'the top level rolls the lowest tier alone').toEqual([TIERS[0]]);
+    expect(bottom.tiers.length, 'a deeper level rolls a higher tier').toBeGreaterThan(top.tiers.length);
+    expect(bottom.tiers, 'the deepest level rolls the highest tier').toContain(TIERS.at(-1));
+    for (const tier of top.tiers) {
+      expect(bottom.tiers, 'a deeper level keeps the lower tiers').toContain(tier);
+    }
+  });
 
-  it(
-    'rolls rifle supplies only from containers that carry a Military usage on a level below the first',
-    () => {
-      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
-      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
-      const sources = site.placements.flatMap((placement) =>
-        lootSourcesOf(
-          registry,
-          'city',
-          placement,
-          site.plan.composition?.lootSources.find((source) => source.placement === placement)?.fixedLoot,
-        ),
-      );
-      // A Military-only item of the second tier stands for rifle supplies without naming one.
-      const rifle = { usage: ['Military' as const], tiers: ['Tier2' as const] };
-      const lab = sources.filter((source) => source.context.lowerTiers === true);
-      expect(lab.length, 'the lab declares tier ranges').toBeGreaterThan(0);
-      const reaching = lab.filter((source) =>
-        economyEligible(rifle, { ...source.context, usage: [...(source.usage ?? source.context.usage)] }),
-      );
-      expect(reaching.length, 'a lab container admits rifle supplies').toBeGreaterThan(0);
-      for (const source of reaching) {
-        expect(source.usage, 'only an explicit Military usage reaches them').toContain('Military');
-        expect(source.context.tier, 'they sit below level one').not.toBe(TIERS[0]);
+  it('rolls rifle supplies only from containers that carry a Military usage on a level below the first', () => {
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
+    const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+    const sources = site.placements.flatMap((placement) =>
+      lootSourcesOf(
+        registry,
+        'city',
+        placement,
+        site.plan.composition?.lootSources.find((source) => source.placement === placement)?.fixedLoot,
+      ),
+    );
+    // A Military-only item of the second tier stands for rifle supplies without naming one.
+    const rifle = { usage: ['Military' as const], tiers: ['Tier2' as const] };
+    const lab = sources.filter((source) => source.context.lowerTiers === true);
+    expect(lab.length, 'the lab declares tier ranges').toBeGreaterThan(0);
+    const reaching = lab.filter((source) =>
+      economyEligible(rifle, { ...source.context, usage: [...(source.usage ?? source.context.usage)] }),
+    );
+    expect(reaching.length, 'a lab container admits rifle supplies').toBeGreaterThan(0);
+    for (const source of reaching) {
+      expect(source.usage, 'only an explicit Military usage reaches them').toContain('Military');
+      expect(source.context.tier, 'they sit below level one').not.toBe(TIERS[0]);
+    }
+    const container = reaching.find((source) => source.supply.kind === 'table')!;
+    expect(container, 'a reaching container rolls a table').toBeDefined();
+    let rolledMilitaryOnly = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const point = lootSpawnPoint(container);
+      for (const { type } of rollLoot(registry, point, lootPointStream(seed, point))) {
+        const economy = registry.items.get(type)?.economy;
+        rolledMilitaryOnly += economy !== undefined && militaryOnlyEconomy(economy) ? 1 : 0;
       }
-      const container = reaching.find((source) => source.supply.kind === 'table')!;
-      expect(container, 'a reaching container rolls a table').toBeDefined();
-      let rolledMilitaryOnly = 0;
-      for (let seed = 1; seed <= 60; seed++) {
-        const point = lootSpawnPoint(container);
-        for (const { type } of rollLoot(registry, point, lootPointStream(seed, point))) {
-          const economy = registry.items.get(type)?.economy;
-          rolledMilitaryOnly += economy !== undefined && militaryOnlyEconomy(economy) ? 1 : 0;
-        }
-      }
-      expect(rolledMilitaryOnly, 'the container can roll a rifle row at its level tier').toBeGreaterThan(0);
-    },
-    GAUNTLET_SITE_MS,
-  );
+    }
+    expect(rolledMilitaryOnly, 'the container can roll a rifle row at its level tier').toBeGreaterThan(0);
+  });
 });
