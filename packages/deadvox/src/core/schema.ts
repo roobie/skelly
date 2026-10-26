@@ -3315,6 +3315,11 @@ const ZombieSchema = strictObject({
   authoredOnly: optional(vBoolean()),
   /** Sound ids are content references, so a new voice needs content only; the registry checks each exists. */
   sounds: strictObject({ idle: Id, alert: Id, attack: Id, hurt: Id }),
+  /** Idle voice cadence and its local-crowd thinning curve. */
+  idleSound: strictObject({
+    intervalSimSeconds: SimDurationRange,
+    density: strictObject({ radiusMetres: Positive, penaltyPerNeighbour: NonNegative }),
+  }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */

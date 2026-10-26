@@ -2544,6 +2544,7 @@ describe('content references', () => {
             spawnWeight: 1,
             canJumpObstacles: true,
             strength: 1,
+            idleSound: baseRegistry.zombies.get('shambler')!.idleSound,
             sounds: zombieSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
