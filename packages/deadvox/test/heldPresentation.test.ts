@@ -135,7 +135,10 @@ it('both views resolve registry item holds through one owner, including the mann
         if (items.get(sample.itemType)!.model) {
           expect(worldModel.getObjectByName('fixture-held-model'), sample.name).toBeDefined();
         }
-        for (const side of worldOwner.arms.keys()) {
+        for (const [side, arm] of worldOwner.arms) {
+          if (arm.parent !== worldOwner.torso) {
+            continue;
+          }
           const localGrip = (owner: HeldPresentation) =>
             owner.frame.worldToLocal(owner.gripAnchors.get(side)!.getWorldPosition(new Vector3()));
           expect(localGrip(worldOwner).distanceTo(localGrip(firstOwner)), `${sample.name}/${side}`).toBeLessThan(1e-7);

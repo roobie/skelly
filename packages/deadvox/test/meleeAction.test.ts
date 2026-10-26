@@ -3,6 +3,8 @@ import { Body } from '../src/core/body.ts';
 import type { ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { readyFirearmPose } from '../src/core/heldPose.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
@@ -20,6 +22,7 @@ import {
   startPlayerMelee,
 } from '../src/game/melee.ts';
 import { primaryMeleeAction } from '../src/game/primaryAction.ts';
+import { firearmAimOffHand } from '../src/render/hands.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -219,6 +222,7 @@ describe('melee pose and contact contract', () => {
     };
     expect(shouldEnterMeleeReady(input)).toBe(true);
     expect(shouldEnterMeleeGuard({ ...input, meleeWeaponHeld: false })).toBe(true);
+    expect(shouldEnterMeleeGuard({ ...input, firearmHeld: true })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, rightMouseHeld: false })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false, handsEmpty: true })).toBe(true);
@@ -237,6 +241,27 @@ describe('melee pose and contact contract', () => {
     };
     expect(primaryMeleeAction(action, readiness)).toBeUndefined();
     expect(primaryMeleeAction(action, { ...readiness, rightMouseHeld: true })).toEqual({ kind: 'swing' });
+  });
+
+  it('supports an aimed firearm only with an empty off hand and raises an active off-hand item', () => {
+    const inventory = new Inventory(registry);
+    const firearm = inventory.create('revolver_357');
+    expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
+    const readiness = { uid: firearm.uid, progress: 1, aimingDownSights: false };
+    expect(firearmAimOffHand(inventory.hands, readiness)).toEqual({
+      side: 'left',
+      firearmSide: 'right',
+      mode: 'support',
+    });
+    const flashlight = inventory.create('flashlight');
+    expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
+    expect(firearmAimOffHand(inventory.hands, readiness)).toBeUndefined();
+    expect(toggleLight(registry, flashlight)).toBeUndefined();
+    expect(firearmAimOffHand(inventory.hands, readiness)).toEqual({
+      side: 'left',
+      firearmSide: 'right',
+      mode: 'active',
+    });
   });
 
   it('keeps empty hands raised after en-garde releases during an active punch', () => {

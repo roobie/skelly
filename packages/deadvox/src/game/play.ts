@@ -3148,7 +3148,10 @@ export const startPlay = (
     debugBuild: debugTools?.buildOn ?? false,
     inputLocked: compression.locksInput,
   });
-  const shouldPlayerBlock = (): boolean => shouldEnterMeleeGuard(meleeReadiness(false));
+  const shouldPlayerBlock = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    return shouldEnterMeleeGuard({ ...meleeReadiness(false), firearmHeld: action.kind === 'firearm' });
+  };
 
   const startPrimaryMelee = (action: ReturnType<typeof selectPrimaryAction>): void => {
     const selected = primaryMeleeAction(

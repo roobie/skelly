@@ -117,6 +117,32 @@ interface OffHandGrip {
 /** The hand a carried item's tree path is rooted in. */
 const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
 
+export interface FirearmAimOffHand {
+  side: HandSide;
+  firearmSide: HandSide;
+  mode: 'support' | 'active';
+}
+
+/** Resolves the off-hand role while a held firearm is readied. */
+export const firearmAimOffHand = (
+  hands: Readonly<Partial<Record<HandSide, Item>>>,
+  readiness: HeldPresentationFrame['readiness'],
+): FirearmAimOffHand | undefined => {
+  if (!readiness) {
+    return;
+  }
+  const firearmSide = (['right', 'left'] as const).find((hand) => hands[hand]?.uid === readiness.uid);
+  if (!firearmSide) {
+    return;
+  }
+  const side = firearmSide === 'right' ? 'left' : 'right';
+  const item = hands[side];
+  if (!item) {
+    return { side, firearmSide, mode: 'support' };
+  }
+  return item.on === true ? { side, firearmSide, mode: 'active' } : undefined;
+};
+
 export interface HeldHandlingFrame extends HeldPresentationFrame {
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
@@ -291,6 +317,7 @@ export class HeldItems {
     const { loweredPitchRadians } = firearmsCombatTuning(this.inventory.registry);
     const leadingSide = dominantSide(this.inventory.character);
     const readyPose = readiness ? readyFirearmPose(leadingSide, this.figure.holds) : undefined;
+    const aimOffHand = firearmAimOffHand(this.inventory.hands, readiness);
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
     this.torso.rotation.y = renderPose?.torsoYaw ?? 0;
@@ -305,10 +332,14 @@ export class HeldItems {
         handling,
         leadingSide,
         readyPose,
+        aimOffHand,
         readyAmount,
         easedReady,
         loweredPitchRadians,
       });
+    }
+    if (aimOffHand?.mode === 'support') {
+      this.placeFirearmAimSupport(aimOffHand, readiness!.uid);
     }
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
@@ -345,6 +376,19 @@ export class HeldItems {
     }
   }
 
+  /** Moves an empty off hand to the firearm's content-owned support side while aiming. */
+  private placeFirearmAimSupport({ side, firearmSide }: FirearmAimOffHand, uid: number): void {
+    const arm = this.arms.get(side);
+    const held = this.shown.get(uid);
+    if (!(arm?.parent && held)) {
+      return;
+    }
+    const [x, y, z] = this.figure.holds.supportForward;
+    const target = held.localToWorld(new Vector3(firearmSide === 'right' ? x : -x, y, z));
+    arm.position.copy(arm.parent.worldToLocal(target));
+    this.handsOff.add(side);
+  }
+
   private poseHeldHand({
     side,
     main,
@@ -353,6 +397,7 @@ export class HeldItems {
     handling,
     leadingSide,
     readyPose,
+    aimOffHand,
     readyAmount,
     easedReady,
     loweredPitchRadians,
@@ -364,12 +409,25 @@ export class HeldItems {
     handling: HeldHandlingFrame;
     leadingSide: HandSide;
     readyPose: ReturnType<typeof readyMeleePose> | undefined;
+    aimOffHand: FirearmAimOffHand | undefined;
     readyAmount: number;
     easedReady: number;
     loweredPitchRadians: number;
   }): void {
     const neutral = { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
-    const hand = pose?.[side] ?? neutral;
+    const activeAim = aimOffHand?.mode === 'active' && aimOffHand.side === side;
+    const activeOffset = this.figure.holds.aimActiveOffHand.offset;
+    const activeRotation = this.figure.holds.aimActiveOffHand.rotation;
+    const hand = activeAim
+      ? {
+          offset: [side === 'right' ? activeOffset[0] : -activeOffset[0], activeOffset[1], activeOffset[2]] as Vec3,
+          rotation: [
+            activeRotation[0],
+            side === 'right' ? activeRotation[1] : -activeRotation[1],
+            side === 'right' ? activeRotation[2] : -activeRotation[2],
+          ] as Vec3,
+        }
+      : (pose?.[side] ?? neutral);
     const target = readyPose?.[side];
     const stanceHand = target
       ? {

@@ -53,13 +53,15 @@ export interface MeleeReadinessInput {
   rightMouseHeld: boolean;
   meleeWeaponHeld: boolean;
   handsEmpty: boolean;
+  /** A firearm uses right mouse for aim, never for a melee guard. */
+  firearmHeld?: boolean;
   debugBuild: boolean;
   inputLocked: boolean;
 }
 
 /** En-garde is available for defence regardless of what occupies the player's hands. */
 export const shouldEnterMeleeGuard = (input: MeleeReadinessInput): boolean =>
-  input.rightMouseHeld && !input.debugBuild && !input.inputLocked;
+  input.rightMouseHeld && !input.firearmHeld && !input.debugBuild && !input.inputLocked;
 
 export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
   shouldEnterMeleeGuard(input) && (input.meleeWeaponHeld || input.handsEmpty);

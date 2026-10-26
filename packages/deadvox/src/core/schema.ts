@@ -3611,6 +3611,8 @@ const HeldPosesSchema = strictObject({
   readySupport: ReadyHandSchema,
   guardPrimary: ReadyHandSchema,
   guardSupport: ReadyHandSchema,
+  /** Raised free-hand transform while an active off-hand item accompanies an aimed firearm. */
+  aimActiveOffHand: ReadyHandSchema,
   emptyHands: EmptyHandPoseSchema,
 });
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
