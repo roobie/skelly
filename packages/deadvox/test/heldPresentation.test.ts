@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noMisplacedAssertion: helper assertions run only from the item-hold test.
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
@@ -17,6 +18,21 @@ import { createPlayerBody } from './playerFixture.ts';
 vi.mock('../src/render/compass.ts', () => ({
   createCompass: ({ root }: { root: Object3D }) => ({ group: root, update: () => undefined, dispose: () => undefined }),
 }));
+
+/** A two-handed firearm keeps its model-authored support grip while it is readied. */
+const expectTwoHandedAimSupport = (view: HeldItems, sample: ItemHoldPose, mountedSupport: boolean): void => {
+  if (!mountedSupport) {
+    return;
+  }
+  const support = sample.side === 'right' ? 'left' : 'right';
+  const held = view as unknown as {
+    handsOff: Set<'left' | 'right'>;
+    holds: Map<'left' | 'right', { at: readonly number[] }>;
+    gripAnchors: Map<'left' | 'right', Object3D>;
+  };
+  expect(held.handsOff.has(support), sample.name).toBe(false);
+  expect(held.gripAnchors.get(support)!.position.toArray(), sample.name).toEqual(held.holds.get(support)!.at);
+};
 
 it('both views resolve registry item holds through one owner, including the mannequin catalogue', async () => {
   const expectSupportMirror = (owner: HeldPresentation, sample: ItemHoldPose): void => {
@@ -108,6 +124,12 @@ it('both views resolve registry item holds through one owner, including the mann
           sample.name,
         ).toEqual([[sample.side, item]]);
         const firstOwner = build.mock.contexts[0] as HeldPresentation;
+        const def = items.get(sample.itemType)!;
+        expectTwoHandedAimSupport(
+          view,
+          sample,
+          Boolean(def.firearm && def.twoHanded && registry.models.get(def.model!)?.hands),
+        );
         build.mockClear();
         world.sync({
           body: createPlayerBody(scale, 0, 0, 0),
@@ -135,10 +157,7 @@ it('both views resolve registry item holds through one owner, including the mann
         if (items.get(sample.itemType)!.model) {
           expect(worldModel.getObjectByName('fixture-held-model'), sample.name).toBeDefined();
         }
-        for (const [side, arm] of worldOwner.arms) {
-          if (arm.parent !== worldOwner.torso) {
-            continue;
-          }
+        for (const side of worldOwner.arms.keys()) {
           const localGrip = (owner: HeldPresentation) =>
             owner.frame.worldToLocal(owner.gripAnchors.get(side)!.getWorldPosition(new Vector3()));
           expect(localGrip(worldOwner).distanceTo(localGrip(firstOwner)), `${sample.name}/${side}`).toBeLessThan(1e-7);

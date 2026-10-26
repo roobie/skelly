@@ -253,6 +253,7 @@ describe('melee pose and contact contract', () => {
       firearmSide: 'right',
       mode: 'support',
     });
+    expect(firearmAimOffHand(inventory.hands, readiness, true)).toBeUndefined();
     const flashlight = inventory.create('flashlight');
     expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
     expect(firearmAimOffHand(inventory.hands, readiness)).toBeUndefined();
