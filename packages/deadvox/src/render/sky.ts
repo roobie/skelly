@@ -8,6 +8,7 @@ import {
   SRGBColorSpace,
 } from 'three';
 import type { Rgb, Sky } from '../core/sky.ts';
+import { installDistanceFog } from './distanceFog.ts';
 
 export interface SkyTargets {
   scene: Scene;
@@ -18,15 +19,22 @@ export interface SkyTargets {
   camera: PerspectiveCamera;
   /** View radius in metres; fog distances are fractions of it. */
   radiusM: number;
+  /** The far plane as a multiple of where the fog ends (render/distanceFog.ts). */
+  farPlaneScale: number;
 }
 
 const set = (color: Color, [r, g, b]: Rgb): Color => color.setRGB(r, g, b, SRGBColorSpace);
 
 /**
  * Applies a sky (core/sky.ts) to the scene's background, fog and lights, and moves the
- * camera's far plane to where the fog ends.
+ * camera's far plane with where the fog ends.
  */
-export const applySky = ({ scene, light, ambient, camera, radiusM }: SkyTargets, sky: Sky, skyVisibility = 1): void => {
+export const applySky = (
+  { scene, light, ambient, camera, radiusM, farPlaneScale }: SkyTargets,
+  sky: Sky,
+  skyVisibility = 1,
+): void => {
+  installDistanceFog(farPlaneScale);
   if (!(scene.fog instanceof Fog)) {
     scene.fog = new Fog(0);
   }
@@ -35,11 +43,11 @@ export const applySky = ({ scene, light, ambient, camera, radiusM }: SkyTargets,
   fog.near = radiusM * sky.fogNear;
   fog.far = radiusM * sky.fogFar;
   scene.background = fog.color;
-  // Fog and the far plane both go by depth along the view, and at fog.far a surface is
-  // exactly the background colour. So nothing beyond it can show: clipping there
-  // changes no pixel, and frustum culling skips those chunks (most of them at night).
-  if (camera.far !== fog.far) {
-    camera.far = fog.far;
+  // At the far plane a surface is already exactly the background colour (render/distanceFog.ts),
+  // so clipping there changes no pixel, and frustum culling skips those chunks (most at night).
+  const far = fog.far * farPlaneScale;
+  if (camera.far !== far) {
+    camera.far = far;
     camera.updateProjectionMatrix();
   }
 

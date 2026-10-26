@@ -6,6 +6,7 @@ import { type CraftPreference, planCraft, requirementStatus } from '../core/craf
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import type { LongJob } from '../core/longAction.ts';
+import { decimalText } from '../core/numberText.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
@@ -14,8 +15,8 @@ export const craftingText = (registry: Registry): ScreenText['crafting'] =>
   registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.crafting;
 export const craftTime = (seconds: number, text: ScreenText['crafting']): string =>
   seconds >= 60
-    ? fillText(text.mins, { value: (seconds / 60).toFixed(1) })
-    : fillText(text.secs, { value: seconds.toFixed(1) });
+    ? fillText(text.mins, { value: decimalText(seconds / 60) })
+    : fillText(text.secs, { value: decimalText(seconds) });
 export const workName = (registry: Registry, item: Item): string => {
   const { work } = item;
   const text = craftingText(registry);

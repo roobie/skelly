@@ -12,6 +12,7 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -37,6 +38,8 @@ import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
 import { skyWorldFixture } from './fixtures/skyWorld.ts';
 import { makeConfig } from './fixtures/startupContent.ts';
+
+const FAR_PLANE_SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
 
 const registry = baseRegistry();
 /** Only the figure's model rows, which the drawn body needs to lay out; held items draw their fallbacks. */
@@ -100,6 +103,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
       ambient: new HemisphereLight(),
       camera: new PerspectiveCamera(),
       radiusM: 64,
+      farPlaneScale: FAR_PLANE_SCALE,
     },
     isSolid,
   } as unknown as Engine;
@@ -205,7 +209,14 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     registry: inventory.registry,
     scene,
     camera,
-    sky: { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM: 64 },
+    sky: {
+      scene,
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera,
+      radiusM: 64,
+      farPlaneScale: FAR_PLANE_SCALE,
+    },
     skylight: sky,
     isSolid: owner.knownOpaque,
     renderer: { toneMapping: 0, toneMappingExposure: 1 },

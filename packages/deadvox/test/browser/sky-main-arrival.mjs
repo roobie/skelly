@@ -36,7 +36,9 @@ export const mainSourceOverlays = [
   'render/acidEffects.ts',
   'render/gore.ts',
   'render/mobActors.ts',
+  // The engine builds the sky's targets and the sky installs the fog that the height fog patches; the three change together.
   'render/heightFog.ts',
+  'render/sky.ts',
   'game/damageFeedback.ts',
   'game/painCue.ts',
   'game/worldLoading.ts',
