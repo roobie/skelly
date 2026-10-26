@@ -242,7 +242,7 @@ if (uWeathering > 0.0 && vWeatherable > 0.5 && (uWeatheringSplitEnabled < 0.5 ||
 
 /**
  * Owns the three.js meshes for chunks, keyed by chunk key, and culls them: `cull` hides
- * the meshes whose tight box is outside the camera's frustum, far plane included.
+ * the meshes whose tight box is outside the camera's frustum or past the fog's end.
  */
 export class ChunkMeshes implements ColumnReveal {
   readonly group = new Group();
@@ -273,6 +273,7 @@ export class ChunkMeshes implements ColumnReveal {
   private readonly weatheringBlend = { value: 0 };
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
+  private readonly eye = new Vector3();
   private changes = 0;
   private revealed: ReadonlySet<string> | undefined;
   private revealChanges = 0;
@@ -503,12 +504,20 @@ export class ChunkMeshes implements ColumnReveal {
     return count;
   }
 
-  /** Shows only the meshes whose box meets the camera's frustum. The camera's matrices must be current. */
-  cull(camera: Camera): void {
+  /**
+   * Shows only the meshes whose box meets the camera's frustum and comes within `fogEndM` of the
+   * camera horizontally: fog goes by horizontal distance (render/distanceFog.ts), so the far plane
+   * alone keeps fully fogged chunks to the camera's side. The camera's matrices must be current.
+   */
+  cull(camera: Camera, fogEndM = Number.POSITIVE_INFINITY): void {
     this.viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.viewProjection);
+    this.eye.setFromMatrixPosition(camera.matrixWorld);
+    const { x, z } = this.eye;
     for (const [mesh, box] of this.boxes) {
-      mesh.visible = this.canReveal(mesh) && this.frustum.intersectsBox(box);
+      const dx = Math.max(box.min.x - x, 0, x - box.max.x);
+      const dz = Math.max(box.min.z - z, 0, z - box.max.z);
+      mesh.visible = this.canReveal(mesh) && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
     }
   }
 

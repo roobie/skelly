@@ -5,6 +5,8 @@ local toggle(label, default=false) = { label: label, default: default, options: 
   graphics: [{
     id: 'core',
     readyRadiusM: 64,
+    streamHysteresisM: 16,
+    fogFarPlaneScale: 1.5,
     itemPictureCacheCapacity: 128,
     unbuiltSkyCap: 0.5,
     itemViewer: {

@@ -1,6 +1,7 @@
 import { actionText, fillText } from '../core/actionText.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { countText } from '../core/numberText.ts';
 import type { InputContext } from './inputBindings.ts';
 import type { InputReplayRecorder } from './inputReplay.ts';
 import type { PlayerTickActions } from './playerTickActions.ts';
@@ -26,7 +27,7 @@ export const createScreenCommandDispatcher =
     const assigned = (item: Item, slot: number): string =>
       fillText(actionText(ports.inventory.registry).play.onQuickbar, {
         item: ports.inventory.name(item),
-        slot: slot + 1,
+        slot: countText(slot + 1),
       });
     const recorder = ports.inputRecorder();
     if (!recorder) {

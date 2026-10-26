@@ -3,6 +3,7 @@ import type { HandedCharacter } from '../core/character.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { assertFoodExposure } from '../core/food.ts';
 import { assertSavedLiquidContents, type ItemState } from '../core/items.ts';
+import { countText } from '../core/numberText.ts';
 import {
   type ActiveBrowserMod,
   type ActiveBundledMod,
@@ -393,7 +394,7 @@ export class SaveController {
     if (this.storageStatus.persistent === true) {
       return fillText(this.text.persistentStorage, {
         backend: this.storageStatus.backend,
-        bytes: this.storageStatus.quota.availableBytes ?? 0,
+        bytes: countText(this.storageStatus.quota.availableBytes ?? 0),
       });
     }
     return fillText(this.text.bestEffortStorage, { backend: this.storageStatus.backend });
@@ -633,7 +634,7 @@ export class SaveController {
       if (this.readDeadWorldId() && this.readDeadWorldId() !== task.snapshot.world.id) {
         this.clearDeadWorldMarker();
       }
-      this.statusText = fillText(this.text.saved, { generation: result.generation, reason: task.reason });
+      this.statusText = fillText(this.text.saved, { generation: countText(result.generation), reason: task.reason });
       this.failure = '';
     } catch (error) {
       this.failure = fillText(this.text.saveFailedFor, { reason: task.reason, error: errorMessage(error) });

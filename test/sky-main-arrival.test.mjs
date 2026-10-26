@@ -32,6 +32,7 @@ it('main overlays keep play, view and their presentation constructor contracts o
   assert.ok(mainSourceOverlays.includes('render/gore.ts'));
   assert.ok(mainSourceOverlays.includes('render/mobActors.ts'));
   assert.ok(mainSourceOverlays.includes('render/heightFog.ts'));
+  assert.ok(mainSourceOverlays.includes('render/sky.ts'));
   assert.ok(mainSourceOverlays.includes('bench/post.ts'));
   assert.ok(mainSourceOverlays.includes('game/damageFeedback.ts'));
   assert.ok(mainSourceOverlays.includes('game/painCue.ts'));

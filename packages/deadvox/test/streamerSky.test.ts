@@ -82,6 +82,7 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
     scale,
     structures: [],
     radius: 1,
+    hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
   streamer.setReplayControlled();
@@ -168,6 +169,7 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
     scale,
     structures: [],
     radius: 2,
+    hysteresis: 1,
     surface: { height: () => -1, top: () => undefined },
     stamp: (chunk) => chunk.set(1, 1, 1, 1),
   });
@@ -255,6 +257,7 @@ it('delivers the first mesh before sky and admits queued sky at the next complet
     scale,
     structures: [],
     radius: 1,
+    hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
   const receive = vi.fn();
