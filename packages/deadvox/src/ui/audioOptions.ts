@@ -1,4 +1,5 @@
 import { html, render, type TemplateResult } from 'lit-html';
+import { hundredthsText } from '../core/numberText.ts';
 import { fillText } from '../core/textTemplate.ts';
 
 const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
@@ -27,7 +28,7 @@ const optionsTemplate = (
         const input = event.currentTarget as HTMLInputElement;
         const bounds = input.getBoundingClientRect();
         const ratio = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
-        input.value = (Math.round(ratio * 100) / 100).toFixed(2);
+        input.value = hundredthsText(ratio);
         change(category, Number(input.value));
       };
       return html`
@@ -45,7 +46,7 @@ const optionsTemplate = (
             @pointerdown=${setFromPointer}
             @click=${setFromPointer}
           />
-          <output>${volumes[category].toFixed(2)}</output>
+          <output>${hundredthsText(volumes[category])}</output>
         </label>
       `;
     })}

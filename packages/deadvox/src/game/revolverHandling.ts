@@ -3,6 +3,7 @@ import type { CylinderState } from '../core/firearmState.ts';
 import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { countText } from '../core/numberText.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
 const REVOLVER_STEPS = ['open', 'eject', 'pick', 'load', 'close', 'cock', 'pull'] as const;
@@ -191,8 +192,8 @@ export class RevolverHandling {
     const label =
       step === 'load'
         ? fillText(this.text.loading.loadRound, {
-            count: cylinder.chambers.filter((entry) => entry.state === 'round').length + 1,
-            capacity: cylinder.chambers.length,
+            count: countText(cylinder.chambers.filter((entry) => entry.state === 'round').length + 1),
+            capacity: countText(cylinder.chambers.length),
           })
         : this.text.revolver[step];
     this.queue.enqueueAction(`revolver.${step}`, label, duration, {

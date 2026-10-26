@@ -1,4 +1,5 @@
 import { html, render } from 'lit-html';
+import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
@@ -28,7 +29,7 @@ export const readPaste = async (
     }
     if (!response.ok) {
       await response.body?.cancel();
-      return failed(fillText(messages.httpStatus, { status: response.status }));
+      return failed(fillText(messages.httpStatus, { status: countText(response.status) }));
     }
     if (!response.body) {
       return failed(messages.emptyResponse);
@@ -47,7 +48,7 @@ export const readPaste = async (
         bytes += chunk.value.byteLength;
         if (bytes > MAX_MOD_BYTES) {
           await reader.cancel();
-          return failed(fillText(messages.tooLarge, { maxBytes: MAX_MOD_BYTES }));
+          return failed(fillText(messages.tooLarge, { maxBytes: countText(MAX_MOD_BYTES) }));
         }
         text += decoder.decode(chunk.value, { stream: true });
       }
@@ -66,7 +67,7 @@ const readUpload = async (file: File, messages: ModsText): Promise<{ name: strin
     return { name: file.name, text: '', issue: messages.jsonOnly };
   }
   if (file.size > MAX_MOD_BYTES) {
-    return { name: file.name, text: '', issue: fillText(messages.tooLarge, { maxBytes: MAX_MOD_BYTES }) };
+    return { name: file.name, text: '', issue: fillText(messages.tooLarge, { maxBytes: countText(MAX_MOD_BYTES) }) };
   }
   try {
     return { name: file.name, text: await file.text() };
@@ -158,7 +159,7 @@ export const chooseMods = async (
         html`
       <section class="mods-card" aria-label=${text.heading}>
         <h1>${text.heading}</h1>
-        <p>${factDetail(text.jsonLabel, fillText(text.jsonFact, { maxBytes: MAX_MOD_BYTES }))}</p>
+        <p>${factDetail(text.jsonLabel, fillText(text.jsonFact, { maxBytes: countText(MAX_MOD_BYTES) }))}</p>
         <pre role="alert">${storageFailed ? text.storageFailed : ''}</pre>
         <label>${text.input}<textarea aria-label=${text.inputLabel} ?disabled=${busy || storageFailed} .value=${draft} @input=${(
           event: Event,

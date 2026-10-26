@@ -6,8 +6,6 @@ import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 
 const PLACEHOLDER = /\{(\w+)\}/g;
-const PLACEHOLDER_SPLIT = /(\{\w+\})/;
-const PLACEHOLDER_PART = /^\{(\w+)\}$/;
 
 const placeholdersIn = (text: string): Set<string> =>
   new Set([...text.matchAll(PLACEHOLDER)].map((match) => match[1]!));
@@ -38,21 +36,9 @@ const Template = <const N extends string>(...names: readonly N[]) =>
     transform((text) => text as Template<N>),
   );
 
-/** Fills a template's placeholders; validation guaranteed each one is named. */
-export const fillText = <N extends string>(
-  template: Template<N>,
-  values: Readonly<Record<N, string | number>>,
-): string => template.replace(PLACEHOLDER, (_, name: string) => String(values[name as N]));
-
-/** A template split around its placeholders, each replaced by its value, for a view that renders values such as key caps. */
-export const fillParts = <N extends string, V>(template: Template<N>, values: Readonly<Record<N, V>>): (string | V)[] =>
-  template
-    .split(PLACEHOLDER_SPLIT)
-    .filter((part) => part !== '')
-    .map((part) => {
-      const name = PLACEHOLDER_PART.exec(part)?.[1];
-      return name === undefined ? part : values[name as N];
-    });
+/** Fills a template's placeholders; validation guaranteed each one is named. A number must pass `src/core/numberText.ts` first, so raw floats cannot reach the player. */
+export const fillText = <N extends string>(template: Template<N>, values: Readonly<Record<N, string>>): string =>
+  template.replace(PLACEHOLDER, (_, name: string) => values[name as N]);
 
 export const ActionTextSchema = strictObject({
   /** Refusals many actions share. */

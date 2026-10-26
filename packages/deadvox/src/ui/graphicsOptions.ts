@@ -1,5 +1,6 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import { GRAPHICS_KEYS, type GraphicsKey, type GraphicsOptions } from '../core/graphics.ts';
+import { hundredthsText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import type { GraphicsControls } from '../game/graphicsControls.ts';
 
@@ -7,7 +8,7 @@ type OptionsText = ScreenText['options'];
 
 const valueText = (value: number | boolean, text: OptionsText): string => {
   if (typeof value === 'number') {
-    return value.toFixed(2);
+    return hundredthsText(value);
   }
   return value ? text.on : text.off;
 };

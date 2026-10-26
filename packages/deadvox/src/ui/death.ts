@@ -2,6 +2,7 @@ import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { defOf } from '../core/items.ts';
+import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 
@@ -26,7 +27,9 @@ const formatSpan = (seconds: number, text: DeathText): string => {
   const minutes = Math.floor(seconds / 60);
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return h > 0 ? fillText(text.spanLong, { hrs: h, mins: m }) : fillText(text.spanShort, { mins: m });
+  return h > 0
+    ? fillText(text.spanLong, { hrs: countText(h), mins: countText(m) })
+    : fillText(text.spanShort, { mins: countText(m) });
 };
 
 /** The page's query with the next seed, keeping the other settings but not the start time. */
@@ -43,7 +46,7 @@ export const lootedText = (registry: Registry, looted: ReadonlyMap<string, numbe
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .map(([type, count]) => {
       const item = defOf(registry, type).name.toLowerCase();
-      return count > 1 ? fillText(deathText(registry).lootCount, { count, item }) : item;
+      return count > 1 ? fillText(deathText(registry).lootCount, { count: countText(count), item }) : item;
     })
     .join(', ');
 
@@ -62,7 +65,7 @@ export const deathViewModel = (registry: Registry, summary: DeathSummary): Death
     cause: summary.cause,
     worldSeed: summary.worldSeed,
     span: formatSpan(summary.survived, text),
-    summary: fillText(text.summary, { searched: summary.searched, loot: looted || text.noLoot }),
+    summary: fillText(text.summary, { searched: countText(summary.searched), loot: looted || text.noLoot }),
   };
 };
 
@@ -75,7 +78,7 @@ const deathTemplate = (
   <div class="card">
     <h1>${text.heading}</h1>
     <p>${fillText(text.cause, { cause: vm.cause, span: vm.span })}</p>
-    <p>${fillText(text.seed, { seed: vm.worldSeed })}</p>
+    <p>${fillText(text.seed, { seed: countText(vm.worldSeed) })}</p>
     <p>${vm.summary}</p>
     <p><a href=${feedbackHref} target="_blank" rel="noopener">${text.feedback}</a></p>
     <button type="button" @click=${newWorld}>${text.newWorld}</button>
