@@ -4320,6 +4320,8 @@ const RecipeSchema = strictObject({
 const GraphicsTuningSchema = strictObject({
   id: Id,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
+  /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
+  streamHysteresisM: pipe(Positive, finite()),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,

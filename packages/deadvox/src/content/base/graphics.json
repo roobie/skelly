@@ -70,6 +70,7 @@
         "label": "Smaller sun shadow map",
         "options": [false, true]
       },
+      "streamHysteresisM": 16,
       "unbuiltSkyCap": 0.5
     }
   ]
