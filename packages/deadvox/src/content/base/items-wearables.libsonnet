@@ -133,11 +133,11 @@
       "category": "clothing",
       "weight": 1400,
       "size": [2, 2],
+      "figureModels": [{ "model": "riot_helmet", "frame": "head", "pivot": [0, 0, 0], "at": [0, 0.04, 0], "turn": [0, 180, 0] }],
       "wearable": {
         "slot": "head",
         "encumbrance": 3,
         "viewModel": { "model": "riot_helmet_view", "tint": 0.035, "darkening": 0.85 },
-        "figureModel": { "model": "riot_helmet", "at": [0, 0.04, 0], "turn": [0, 180, 0] },
         "warmth": 1,
         "wearPerDamage": 0.0015,
         "protects": { "blunt": 0.6, "cut": 0.6, "pierce": 0.5, "acid": 0.3 }

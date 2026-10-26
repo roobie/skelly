@@ -539,6 +539,15 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0.02, 0],
+          "frame": "head",
+          "model": "headlamp",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "headlamp",
       "light": {
         "beam": {
@@ -580,6 +589,15 @@
         "tiers": ["Tier2", "Tier3"],
         "usage": ["Military"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "head",
+          "model": "night_vision_goggles",
+          "pivot": [0, 0, 0],
+          "turn": [0, 180, 0]
+        }
+      ],
       "id": "night_vision_goggles",
       "light": {
         "color": "#7dff86",
@@ -617,11 +635,6 @@
       "size": [2, 2],
       "wearable": {
         "encumbrance": 0,
-        "figureModel": {
-          "at": [0, 0, 0],
-          "model": "night_vision_goggles",
-          "turn": [0, 180, 0]
-        },
         "slot": "eyes"
       },
       "weight": 550,

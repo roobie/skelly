@@ -13,7 +13,7 @@ local equipment(id, family, massKg, dimensions, finish, heldSolid, turn=[0, 0, 0
     mouthLength: 0.020, mouthRadius: 0.013, valveRadius: 0.016,
   }, { body: 'plastic-blue', rubber: 'paint-charcoal', metal: 'steel-grey', control: 'plastic-red' }, 'body', [0, 0, 0]),
   equipment('headlamp', 'headlamp', 0.180, {
-    strapRadius: 0.095, strapWidth: 0.022, strapWall: 0.003,
+    strapRadius: 0.12, strapWidth: 0.022, strapWall: 0.003,
     housingWidth: 0.060, housingHeight: 0.040, housingDepth: 0.030,
     lensRadius: 0.017, lensDepth: 0.005,
   }, { strap: 'cord-olive', body: 'plastic-red', metal: 'steel-grey', lens: 'glass-grey', control: 'paint-charcoal' }, 'strap', [0, -90, 0], [0.5, 0.5, 1]) + {

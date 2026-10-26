@@ -15,7 +15,8 @@
       "category": "clothing",
       "model": "baseball_cap",
       "size": [2, 1],
-      "wearable": { "slot": "head", "encumbrance": 0 }
+      "wearable": { "slot": "head", "encumbrance": 0 },
+      "figureModels": [{ "model": "baseball_cap", "frame": "head", "pivot": [0, 0, 0], "at": [0, 0.04, 0], "turn": [0, 0, 0] }]
     },
     {
       "id": "evacuation_note",

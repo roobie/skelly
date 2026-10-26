@@ -238,6 +238,7 @@ local items = [
     size: [1, 2],
     description: 'A battery-powered beam worn on the head, leaving both hands free.',
     wearable: { slot: 'head', encumbrance: 0 },
+    figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.02, 0], turn: [0, 0, 0] }],
     light: batteryBeam(
       radius=12,
       seenFrom=30,
@@ -254,11 +255,8 @@ local items = [
     size: [2, 2],
     description: 'Battery-powered night-vision goggles with an infrared lamp.',
     model: 'night_vision_goggles',
-    wearable: {
-      slot: 'eyes',
-      encumbrance: 0,
-      figureModel: { model: 'night_vision_goggles', at: [0, 0, 0], turn: [0, 180, 0] },
-    },
+    wearable: { slot: 'eyes', encumbrance: 0 },
+    figureModels: [{ model: 'night_vision_goggles', frame: 'head', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 180, 0] }],
     // The light stands in for the infrared lamp: wide, dim and seen only from close up.
     light: {
       radius: 14,

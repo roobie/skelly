@@ -927,13 +927,6 @@ const WearableSchema = pipe(
         darkening: Fraction,
       }),
     ),
-    figureModel: optional(
-      strictObject({
-        model: Id,
-        at: tuple([number(), number(), number()]),
-        turn: tuple([number(), number(), number()]),
-      }),
-    ),
     /** 0–100: how much it slows and hampers you. */
     encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
     warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
@@ -1476,6 +1469,17 @@ const ItemSchema = strictObject({
   twoHanded: optional(vBoolean()),
   container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
+  figureModels: optional(
+    array(
+      strictObject({
+        model: Id,
+        frame: Id,
+        pivot: tuple([number(), number(), number()]),
+        at: tuple([number(), number(), number()]),
+        turn: tuple([number(), number(), number()]),
+      }),
+    ),
+  ),
   food: optional(FoodSchema),
   serving: optional(strictObject({ food: Id, empty: Id })),
   treatment: optional(TreatmentSchema),
@@ -3610,6 +3614,16 @@ const FigureSchema = strictObject({
   /** Both arm models' rig; the two arms share it because each is the mirror of the other. */
   armRig: ArmRigSchema,
   holds: HeldPosesSchema,
+  attachmentFrames: record(
+    Id,
+    strictObject({
+      part: picklist(['body', ...FIGURE_LIMBS]),
+      pivot: optional(Id),
+      at: tuple([number(), number(), number()]),
+      turn: tuple([number(), number(), number()]),
+      insideView: vBoolean(),
+    }),
+  ),
   /** Both leg models' rig; the two legs share it because each is the mirror of the other. */
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */

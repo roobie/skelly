@@ -811,10 +811,19 @@ const checkInventoryNameCollisions = (items: readonly ItemDef[], report: Report)
 };
 
 const checkWearableModels = (item: ItemDef, registry: Registry, report: Report): void => {
-  for (const field of ['viewModel', 'figureModel'] as const) {
-    const entry = item.wearable?.[field];
-    if (entry && !registry.models.has(entry.model)) {
-      report('items', item.id, `.wearable.${field}.model`, `no model "${entry.model}"`);
+  const view = item.wearable?.viewModel;
+  if (view && !registry.models.has(view.model)) {
+    report('items', item.id, '.wearable.viewModel.model', `no model "${view.model}"`);
+  }
+  for (const [index, entry] of (item.figureModels ?? []).entries()) {
+    const path = `.figureModels[${index}]`;
+    if (!registry.models.has(entry.model)) {
+      report('items', item.id, `${path}.model`, `no model "${entry.model}"`);
+    }
+    for (const figure of registry.figures.values()) {
+      if (!figure.attachmentFrames[entry.frame]) {
+        report('items', item.id, `${path}.frame`, `figure "${figure.id}" has no frame "${entry.frame}"`);
+      }
     }
   }
 };
@@ -1823,10 +1832,31 @@ const checkFigurePart = (registry: Registry, report: Report, figure: FigureDef, 
   }
 };
 
+const attachmentPivots = (figure: FigureDef, part: FigureDef['attachmentFrames'][string]['part']): string[] => {
+  if (part === 'body') {
+    return [figure.body.head.pivot];
+  }
+  if (part.endsWith('Arm')) {
+    return [figure.armRig.fore.pivot, figure.armRig.hand.pivot];
+  }
+  return LEG_SEGMENTS.map((segment) => figure.legRig[segment].pivot);
+};
+
 const checkFigures = (registry: Registry, report: Report): void => {
   for (const figure of registry.figures.values()) {
     for (const part of figurePartNames(figure)) {
       checkFigurePart(registry, report, figure, part);
+    }
+    for (const [name, frame] of Object.entries(figure.attachmentFrames)) {
+      const pivots = attachmentPivots(figure, frame.part);
+      if (frame.pivot !== undefined && !pivots.includes(frame.pivot)) {
+        report(
+          'figures',
+          figure.id,
+          `.attachmentFrames.${name}.pivot`,
+          `no posed pivot "${frame.pivot}" on "${frame.part}"`,
+        );
+      }
     }
     // The right arm hangs right of and below the eye, else the view bends it through the head.
     const [x, y] = figure.armRig.shoulderFromEye;
