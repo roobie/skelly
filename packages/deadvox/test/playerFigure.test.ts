@@ -56,7 +56,7 @@ const STANDING = { stance: 'standing', dt: 0 } as const;
 
 const figureModels = {
   version: 1,
-  ...(await loadFigureModels(registry, 'player', ['riot_helmet'])),
+  ...(await loadFigureModels(registry, 'player', ['riot_helmet', 'baseball_cap', 'night_vision_goggles', 'headlamp'])),
 } as unknown as ModelLibrary;
 /** The figure's models and no item model, so held items keep their stand-in shapes. */
 const figureOnlyModels = {
@@ -103,6 +103,46 @@ const expectConnectedArm = (arm: Group, rig: ArmRig, label: string): void => {
   expect(joints.grip.distanceTo(joints.wrist), `${label} grip from wrist`).toBeCloseTo(rig.gripFromWrist.length(), 4);
 };
 const drawnPart = (meshes: PlayerMeshes, name: 'body' | FigureLimb) => meshes.group.getObjectByName(`figure-${name}`)!;
+const drawnHead = (meshes: PlayerMeshes): Object3D =>
+  drawnPart(meshes, 'body')
+    .getObjectByName(FIGURE_PIVOT.head)!
+    .children.find((object) => object.userData.part === playerFigure.body.head.part)!;
+const wearOnFigure = (type: string): PlayerMeshes => {
+  const inventory = new Inventory(registry);
+  expect(inventory.add(inventory.create(type), { kind: 'worn' })).toBe(true);
+  const meshes = playerMeshes();
+  meshes.sync({
+    body: createPlayerBody(scale, 4, 1, 4),
+    yaw: 0,
+    stepOffset: 0,
+    gaitPhase: 0,
+    moving: false,
+    ...STANDING,
+    thirdPerson: true,
+    inventory,
+  });
+  meshes.group.updateMatrixWorld(true);
+  expect(drawnHead(meshes)).toBeDefined();
+  return meshes;
+};
+const expectSnugStrap = (head: Object3D, at: (name: string) => Vector3): Raycaster => {
+  head.traverse((object) => {
+    if (object instanceof Mesh) {
+      object.material = new MeshBasicMaterial({ side: DoubleSide });
+    }
+  });
+  const ray = new Raycaster();
+  ray.layers.enableAll();
+  for (const side of ['left', 'right', 'front', 'back']) {
+    const inner = at(`strap_${side}_inner`);
+    const outer = at(`strap_${side}_outer`);
+    ray.set(inner, inner.clone().sub(outer).normalize());
+    const hits = ray.intersectObject(head, true);
+    expect(hits.length, `${side} strap faces the head`).toBeGreaterThan(0);
+    expect(hits[0]!.distance, `${side} strap close to head`).toBeLessThanOrEqual(inner.distanceTo(outer) + 1e-6);
+  }
+  return ray;
+};
 /** Each drawn vertex in world space, for the parts `visible` passes. */
 const drawnVertices = (meshes: PlayerMeshes): { part: string; at: Vector3 }[] => {
   meshes.group.updateMatrixWorld(true);
@@ -437,22 +477,8 @@ describe('player figure', () => {
   });
 
   it('fits the worn riot helmet over the drawn head: it covers the crown and sides and nothing of it lies inside', () => {
-    const body = createPlayerBody(scale, 4, 1, 4);
-    const inventory = new Inventory(registry);
-    expect(inventory.add(inventory.create('riot_helmet'), { kind: 'worn' })).toBe(true);
-    const meshes = playerMeshes();
-    meshes.sync({
-      body,
-      yaw: 0,
-      stepOffset: 0,
-      gaitPhase: 0,
-      moving: false,
-      ...STANDING,
-      thirdPerson: true,
-      inventory,
-    });
-    meshes.group.updateMatrixWorld(true);
-    const head = drawnPart(meshes, 'body').getObjectByName(FIGURE_PIVOT.head)!;
+    const meshes = wearOnFigure('riot_helmet');
+    const head = drawnHead(meshes);
     const helmet = meshes.group.getObjectByName('worn-head')!;
     expect(helmet.visible).toBe(true);
     const headBounds = new Box3().setFromObject(head, true);
@@ -487,6 +513,84 @@ describe('player figure', () => {
       }
     });
     expect(inside, 'helmet points inside the head').toEqual([]);
+  });
+
+  it('covers the head crown with the cap rather than letting its corners break through', () => {
+    const meshes = wearOnFigure('baseball_cap');
+    const head = drawnHead(meshes);
+    const cap = meshes.group.getObjectByName('worn-head')!;
+    cap.traverse((object) => {
+      if (object instanceof Mesh) {
+        object.material = new MeshBasicMaterial({ side: DoubleSide });
+      }
+    });
+    const top = new Box3().setFromObject(head, true).max.y;
+    const ray = new Raycaster();
+    ray.layers.enableAll();
+    const across = new Vector3(1, 0.31, 0.17).normalize();
+    let crownPoints = 0;
+    head.traverse((object) => {
+      const position = object instanceof Mesh ? object.geometry.getAttribute('position') : undefined;
+      for (let index = 0; index < (position?.count ?? 0); index++) {
+        const point = new Vector3().fromBufferAttribute(position!, index).applyMatrix4(object.matrixWorld);
+        if (Math.abs(point.y - top) < 1e-6) {
+          crownPoints += 1;
+          ray.set(point, across);
+          expect(ray.intersectObject(cap, true).length % 2, 'crown point enclosed by cap').toBe(1);
+        }
+      }
+    });
+    expect(crownPoints).toBeGreaterThan(0);
+  });
+
+  it('fits goggles over both eyes with a strap no farther from the head than its own thickness', () => {
+    const meshes = wearOnFigure('night_vision_goggles');
+    const head = drawnHead(meshes);
+    const model = meshes.group.getObjectByName('worn-eyes')!.children[0]!;
+    const anchors = registry.models.get('night_vision_goggles')!.anchors!;
+    const at = (name: string) => new Vector3(...anchors[name]!).applyMatrix4(model.matrixWorld);
+    const headAnchors = registry.models.get(playerFigure.body.model)!.anchors!;
+    for (const side of ['left', 'right']) {
+      const eye = new Vector3(...headAnchors[`eye_${side}`]!).applyMatrix4(drawnPart(meshes, 'body').matrixWorld);
+      const rear = at(`eye_${side}`);
+      const lens = at(`lens_${side}`);
+      const radius = at(`lens_${side}_edge`).distanceTo(lens);
+      const forward = lens.clone().sub(rear).normalize();
+      const eyeToLens = lens.clone().sub(eye);
+      const ahead = eyeToLens.dot(forward);
+      expect(ahead, `${side} lens in front of eye`).toBeGreaterThan(0);
+      expect(eyeToLens.addScaledVector(forward, -ahead).length(), `${side} eye within lens aperture`).toBeLessThan(
+        radius,
+      );
+      expect(rear.distanceTo(eye), `${side} eyepiece against face`).toBeLessThan(radius);
+    }
+    expectSnugStrap(head, at);
+  });
+
+  it('fits the headlamp against the forehead above the eyes with a snug strap', () => {
+    const meshes = wearOnFigure('headlamp');
+    const head = drawnHead(meshes);
+    const model = meshes.group.getObjectByName('worn-head')!.children[0]!;
+    const anchors = registry.models.get('headlamp')!.anchors!;
+    const at = (name: string) => new Vector3(...anchors[name]!).applyMatrix4(model.matrixWorld);
+    const eyes = ['eye_left', 'eye_right'].map((name) => anchorAt(meshes, 'body', playerFigure.body.model, name));
+    expect(at('housing_bottom').y, 'housing clears the eye line').toBeGreaterThan(
+      Math.max(...eyes.map((eye) => eye.y)),
+    );
+    expect(at('housing_top').y, 'housing stays below the crown').toBeLessThan(
+      new Box3().setFromObject(head, true).max.y,
+    );
+    const back = at('housing_back');
+    expect(back.x, 'housing centred between eyes').toBeGreaterThan(Math.min(...eyes.map((eye) => eye.x)));
+    expect(back.x, 'housing centred between eyes').toBeLessThan(Math.max(...eyes.map((eye) => eye.x)));
+    const ray = expectSnugStrap(head, at);
+    const lens = at('lens');
+    ray.set(back, back.clone().sub(lens).normalize());
+    const hits = ray.intersectObject(head, true);
+    expect(hits.length, 'housing faces the forehead').toBeGreaterThan(0);
+    expect(hits[0]!.distance, 'housing rests against forehead within its own depth').toBeLessThan(
+      lens.distanceTo(back),
+    );
   });
 
   it('poses the drawn body for the stance it is given, inside that stance’s height, blending between stances', () => {

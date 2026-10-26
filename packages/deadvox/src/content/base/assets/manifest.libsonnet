@@ -408,7 +408,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/models/cloth_bundle.glb",
         "assets/models/stab_vest.glb",
         "assets/models/riot_helmet_view.glb",
-        "assets/models/night_vision_goggles.glb",
         "assets/models/sewing_kit.glb",
         "assets/models/broken_toaster.glb",
         "assets/models/table_fan.glb",

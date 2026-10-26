@@ -15,6 +15,7 @@
         ]
       },
       "id": "dead_officer_body",
+      "massKg": 16,
       "material": "wood",
       "name": "Dead officer",
       "shape": [
@@ -53,6 +54,7 @@
         ]
       },
       "id": "police_weapon_cabinet",
+      "massKg": 16,
       "material": "wood",
       "name": "Weapon cabinet",
       "shape": [

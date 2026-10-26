@@ -324,6 +324,38 @@ try {
     };
   });
   assert.notEqual(shownReadout.text, '', 'looked-at block readout is populated');
+  const furnitureMassReadout = await page.evaluate(() => {
+    const { debugTools, eye, inventory, session } = globalThis.fullAutoRuntime;
+    const definition = [...inventory.registry.furniture.values()].find(
+      (value) => value.massKg !== undefined && value.size.every((axis) => axis <= 2),
+    );
+    if (!definition) {
+      throw new Error('No compact furniture with an authored mass');
+    }
+    const origin = eye();
+    const entity = inventory.furnish({
+      type: definition.id,
+      pos: [Math.floor(origin[0]) + 1, Math.floor(session.body.pos[1]) + 2, Math.floor(origin[2])],
+      size: definition.size,
+      facing: 'n',
+    });
+    if (!entity) {
+      throw new Error('Could not furnish debug mass target');
+    }
+    const centre = entity.pos.map((axis, index) => axis + entity.size[index] / 2);
+    const delta = centre.map((axis, index) => axis - origin[index]);
+    const length = Math.hypot(...delta);
+    debugTools.updateLookedAt(
+      origin,
+      delta.map((axis) => axis / length),
+      true,
+    );
+    return { text: document.querySelector('#debug-look-readout').textContent, mass: definition.massKg };
+  });
+  assert.ok(
+    furnitureMassReadout.text.includes(String(furnitureMassReadout.mass)),
+    'debug furniture readout includes the content-authored mass',
+  );
   assert.equal(shownReadout.quickbarHidden, false, 'quickbar is shown');
   assert.ok(shownReadout.readout.top > shownReadout.middle, 'looked-at readout is below the screen middle');
   assert.ok(shownReadout.readout.bottom <= shownReadout.quickbarTop, 'looked-at readout clears the quickbar');
@@ -772,6 +804,19 @@ try {
   assert.equal(runtimeTuning.effective, runtimeTuning.slider, 'the mouse-selected value changes firearm handling');
   assert.equal(runtimeTuning.locked, true, 'dragging the slider keeps pointer lock available for play');
   assert.ok(!runtimeTuning.saved.includes('skillZeroHandling'), 'runtime tuning is not included in a save');
+  await page.goto(
+    browserStageUrl(
+      'full-auto',
+      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+    ),
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    () =>
+      document.querySelector('#overlay').hidden && document.querySelector('#world-loading')?.dataset.state === 'ready',
+  );
+  assert.equal(await page.locator('#debug-look-readout').count(), 0, 'normal play omits the debug look readout');
   assert.deepEqual(errors, []);
   process.stdout.write(
     `full-auto native WebAudio passed: ${expectedShots} shots/burst, ${persistentCases} cases, release stops, ${native.records.length} starts, native starts in their shots' frames, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,

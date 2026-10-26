@@ -9,7 +9,7 @@ read_if:
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
-  - you change equipped gear seen from inside, on the player figure or on dead humans
+  - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
@@ -519,8 +519,12 @@ because rearranging a room should not require destroying its contents. See `src/
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
-  holding it. See `src/core/furnitureMove.ts`, `liftFurniture`, `placement` and
-  `slideFurniture`, and `src/game/session.ts`, `liftPiece` and `slidePiece`.
+  holding it. A drag holds its last valid floor position while a target is
+  blocked, then ends once that piece leaves interaction reach, so it cannot
+  teleport through an obstacle. See `src/core/furnitureMove.ts`,
+  `liftFurniture`, `placement` and `slideFurniture`, and
+  `src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
+  `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
   search, rest, read), so the common action stays one tap. A tap-and-hold opens
   the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
@@ -548,11 +552,15 @@ because rearranging a room should not require destroying its contents. See `src/
   carrying occupies both of them rather than a new carry slot. Items, ladders
   and furniture answer to one hand authority, so no combination leaves a hand
   doing two jobs at once. See `src/core/inventory.ts`, `HandHold`, and
-  `src/core/ladders.ts`, `LadderHold`. Lifting costs stamina and carrying
-  drains it, so moving a room's worth of furniture is a choice paid for, not a
-  free reshuffle. A worn-out player puts the piece down where it fits; when
-  nothing fits the piece stays held until something does, because dropping it
-  through a wall or a body is worse than holding it a moment longer. See
+  `src/core/ladders.ts`, `LadderHold`. Lifting, carrying and dragging cost
+  stamina, with each action's content curve scaling the drain by the piece's
+  estimated mass, so moving a heavy piece tires the player faster and mass has
+  a felt cost. Holding a carried piece still drains no stamina because otherwise
+  the player is at rest. See `src/core/furnitureMove.ts`,
+  `furnitureMoveStamina`, and `src/game/session.ts`, `liftPiece` and
+  `advancePlayerMovement`. A worn-out player puts the piece down where it fits;
+  when nothing fits the piece stays held until something does, because dropping
+  it through a wall or a body is worse than holding it a moment longer. See
   `src/game/session.ts`, `putDownWornOut`.
 - **Carried sleep surface.** A bedroll lets the player sleep where they are at
   worse recovery than a bed, paid for by carrying it in the hands, so resting
@@ -605,9 +613,12 @@ because rearranging a room should not require destroying its contents. See `src/
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
 - **Seen while carried.** Carry feedback must agree with where the piece can
-  be put down, without hiding the placement outline. A dragged piece stays
-  visibly on its floor plane rather than floating with the player's view.
+  be put down, without hiding the placement outline. A dragged piece advances
+  one floor cell at a time; a diagonal needs both adjoining orthogonal cells
+  clear, so it cannot cut a corner or pass through an obstacle. A dragged piece
+  stays visibly on its floor plane rather than floating with the player's view.
   Presentation reads the hold owner so it cannot outlive the hold. See
+  `src/core/furnitureMove.ts`, `advanceFloorLockedPlacement`; and
   `src/render/carriedPiece.ts`, `CarriedPiece`.
 - **Turning and tipping.** Lifted pieces can be reoriented because a piece
   that could fit through a doorway laid over should not become a dead end.
@@ -1591,9 +1602,6 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-Worn items carry their own part model that covers or replaces the body part
-under it, so gear shows on the body without the body knowing about gear.
-
 First-person and world-body holds share one held-item-and-arms owner, with each
 view supplying its own shoulder frame. This applies to all items, not just guns:
 the world body is what others and the mannequin see, so it must show the same
@@ -1729,8 +1737,17 @@ slot shows on the player figure, and dead humans wear real items through the sam
 presentation path. The player gears up: gear that changes protection, carry or role
 must be readable at a glance on self, in shadows and outside views, and on bodies,
 where it tells the player what loot they carry. Colour alone cannot stand in for
-an equipped item. See `src/core/schema.ts`, `WearSlot` and `WearableSchema`;
-`src/render/playerFigure.ts`, `PlayerMeshes`.
+an equipped item. Floating optics and a head breaking through its cap read as
+loose props rather than worn gear, so fit must preserve the equipped silhouette.
+Forehead lamps must leave the eye line clear so hands-free lighting does not
+read as an obstruction over the eyes.
+Item-owned presentation and figure-owned attachment frames keep
+gear additions independent of human renderers and equipment ownership. The same
+human must serve different equipment owners without manufacturing inventory in
+the renderer. Attachment does not decide whether a garment needs rigid segments
+or skin deformation; that choice needs a visual comparison before multiplying
+clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
+`src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. It belongs with the hands because the world camera cannot draw that close

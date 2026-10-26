@@ -86,6 +86,8 @@ local neckPin = jointPin('head') { normal: [0, -1, 0] };
     anchors: {
       neck: { part: 'torso', solid: 'neck', fraction: [0.5, 0, 0.5] },
       head: { part: 'torso', solid: 'neck', fraction: [0.5, 1, 0.5] },
+      eye_left: { part: 'head', solid: 'left-eye', fraction: [0.5, 0.5, 1] },
+      eye_right: { part: 'head', solid: 'right-eye', fraction: [0.5, 0.5, 1] },
       shoulder_left: shoulder('left'),
       shoulder_right: shoulder('right'),
       hip_left: hip(0.75),

@@ -247,6 +247,15 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Police"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "head",
+          "model": "riot_helmet",
+          "pivot": [0, 0, 0],
+          "turn": [0, 180, 0]
+        }
+      ],
       "id": "riot_helmet",
       "model": "riot_helmet",
       "name": "Riot helmet",
@@ -254,11 +263,6 @@
       "size": [2, 2],
       "wearable": {
         "encumbrance": 3,
-        "figureModel": {
-          "at": [0, 0, 0],
-          "model": "riot_helmet",
-          "turn": [0, 180, 0]
-        },
         "protects": {
           "acid": 0.29999999999999999,
           "blunt": 0.59999999999999998,

@@ -60,6 +60,7 @@ const fixture = () => {
           name: 'Fixture note',
           size: [1, 1, 1],
           color: '#ffffff',
+          massKg: 1,
           solid: false,
           readable: { title: 'Fixture lead', text: 'An independent fixture lead.' },
           breach: fixtureBreach(),

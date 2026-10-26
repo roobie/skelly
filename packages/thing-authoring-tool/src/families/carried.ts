@@ -1,6 +1,7 @@
 import type { BoxSolid } from '@skelly/engine/shapes/solid.ts';
 import { minValue, parse, pipe, strictObject } from 'valibot';
-import { cylinder, positive, scalar } from './shapes.ts';
+import { slab } from './body.ts';
+import { positive, scalar } from './shapes.ts';
 
 const nonnegative = pipe(scalar, minValue(0));
 const box = (
@@ -78,11 +79,20 @@ export const boots = (params: Readonly<Record<string, string>>) => {
 
 export const cap = (params: Readonly<Record<string, string>>) => {
   const d = parse(
-    strictObject({ radius: positive, height: positive, brimDepth: positive, brimWidth: positive }),
+    strictObject({
+      width: positive,
+      depth: positive,
+      height: positive,
+      chamfer: positive,
+      brimDepth: positive,
+      brimWidth: positive,
+      brimThickness: positive,
+      brimHeight: positive,
+    }),
     params,
   );
   return [
-    cylinder('body', d.radius, d.height, 'body'),
-    box('brim', [d.brimWidth, d.height * 0.12, d.brimDepth], [0, d.height * 0.18, -d.radius], 'trim'),
+    slab('body', 'body', [0, d.height], { halfX: d.width / 2, halfZ: d.depth / 2, chamfer: d.chamfer }),
+    box('brim', [d.brimWidth, d.brimThickness, d.brimDepth], [0, d.brimHeight, -d.depth / 2], 'trim'),
   ];
 };

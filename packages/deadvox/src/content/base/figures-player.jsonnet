@@ -50,6 +50,9 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
+      attachmentFrames: {
+        head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
+      },
       holds: {
         // The chin-high guard must stay inside both view and world arm reach.
         reachLeadMetres: 0.3,

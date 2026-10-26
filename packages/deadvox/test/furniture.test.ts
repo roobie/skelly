@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { BlockEntities, doorPanel, panelFor, poseKey, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry, type TemplateDef } from '../src/core/content.ts';
+import { furnitureMoveStamina } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { handlingWeights, Inventory } from '../src/core/inventory.ts';
-import { couldFit, ItemFactory } from '../src/core/items.ts';
+import { couldFit, ItemFactory, weightOf } from '../src/core/items.ts';
 import type { Body } from '../src/core/physics.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
@@ -70,6 +71,25 @@ describe('furniture', () => {
     expect([...inv.entities.all]).toHaveLength(1);
     expect(inv.entities.at(1, 1, 0)).toBe(cupboard);
     expect(inv.entities.at(2, 0, 0)).toBeUndefined();
+  });
+
+  it('adds container contents to furniture mass and carry fatigue', () => {
+    const { inv, cupboard, beans } = kitchen();
+    const fullMassKg = inv.entities.massKg(cupboard)!;
+    const fullCarry = furnitureMoveStamina(inv, cupboard, 'carry');
+    const pile = { kind: 'pile', pos: [0, 0, 0] as [number, number, number] } as const;
+    const furniture = { kind: 'furniture', entity: cupboard, pocket: 0 } as const;
+
+    inv.entities.markSearched(cupboard);
+    expect(inv.move(beans, pile).ok).toBe(true);
+    const emptyMassKg = inv.entities.massKg(cupboard)!;
+    const emptyCarry = furnitureMoveStamina(inv, cupboard, 'carry');
+    expect(fullMassKg - emptyMassKg).toBeCloseTo(weightOf(registry, beans) / 1000);
+    expect(emptyCarry).toBeLessThan(fullCarry);
+
+    expect(inv.move(beans, furniture).ok).toBe(true);
+    expect(inv.entities.massKg(cupboard)).toBeCloseTo(fullMassKg);
+    expect(furnitureMoveStamina(inv, cupboard, 'carry')).toBe(fullCarry);
   });
 
   it('throws for required fixed stock that fits no pocket, and leaves out a rolled item', () => {
@@ -270,6 +290,7 @@ describe('furniture', () => {
       name: 'Fixture shaped furniture',
       size: [1, 2, 1] as [number, number, number],
       color: '#123456',
+      massKg: 1,
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
       shape: [
@@ -514,6 +535,7 @@ describe('furniture', () => {
       name: 'Fixture body',
       size: [4, 2, 2],
       color: '#554f43',
+      massKg: 1,
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
       solid: false,

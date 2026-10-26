@@ -52,6 +52,7 @@ const registryOf = (...mapPieces: MapPieceDef[]) => {
             name: 'Clutter',
             size: [1, 1, 1],
             color: '#808080',
+            massKg: 1,
             breach: fixtureBreach(),
             material: FIXTURE_MATERIAL,
           },
