@@ -30,46 +30,42 @@ sweepGroup('acid population measurements', () => {
       // Retries must not duplicate a winning genome and turn its pairwise IoU into one.
       nextSeed = generated.seed + 1;
     }
-  }, config.sheetCount * 500);
+  });
 
-  it(
-    'raw population cost quantiles fit the authored ranges without filtering validation failures',
-    () => {
-      const samples = Array.from(
-        { length: config.count },
-        (_, seed) => realize(generate(acidTemplate, seed)).report.stats,
-      );
-      expect(samples.length).toBeGreaterThan(1);
-      const costs = {
-        totalVoxels: samples.map((sample) => sample.voxels),
-        totalTriangles: samples.map((sample) => sample.triangles),
-        ...Object.fromEntries(
-          Object.entries(acidTemplate.budgets.groups).map(([name, group]) => [
-            name,
-            samples.map((sample) =>
-              Object.entries(sample.perBoneVoxels)
-                .filter(([id]) =>
-                  group.bones.some((pattern) =>
-                    pattern.endsWith('*') ? id.startsWith(pattern.slice(0, -1)) : id === pattern,
-                  ),
-                )
-                .reduce((sum, [, amount]) => sum + amount, 0),
-            ),
-          ]),
-        ),
-      };
-      for (const [name, bounds] of Object.entries({
-        totalVoxels: acidTemplate.budgets.totalVoxels,
-        totalTriangles: acidTemplate.budgets.totalTriangles,
-        ...acidTemplate.budgets.groups,
-      })) {
-        const values = costs[name as keyof typeof costs]!;
-        expect(quantile(values, config.lowerQuantile), name).toBeGreaterThanOrEqual(bounds.min);
-        expect(quantile(values, config.upperQuantile), name).toBeLessThanOrEqual(bounds.max);
-      }
-    },
-    config.count * 200,
-  );
+  it('raw population cost quantiles fit the authored ranges without filtering validation failures', () => {
+    const samples = Array.from(
+      { length: config.count },
+      (_, seed) => realize(generate(acidTemplate, seed)).report.stats,
+    );
+    expect(samples.length).toBeGreaterThan(1);
+    const costs = {
+      totalVoxels: samples.map((sample) => sample.voxels),
+      totalTriangles: samples.map((sample) => sample.triangles),
+      ...Object.fromEntries(
+        Object.entries(acidTemplate.budgets.groups).map(([name, group]) => [
+          name,
+          samples.map((sample) =>
+            Object.entries(sample.perBoneVoxels)
+              .filter(([id]) =>
+                group.bones.some((pattern) =>
+                  pattern.endsWith('*') ? id.startsWith(pattern.slice(0, -1)) : id === pattern,
+                ),
+              )
+              .reduce((sum, [, amount]) => sum + amount, 0),
+          ),
+        ]),
+      ),
+    };
+    for (const [name, bounds] of Object.entries({
+      totalVoxels: acidTemplate.budgets.totalVoxels,
+      totalTriangles: acidTemplate.budgets.totalTriangles,
+      ...acidTemplate.budgets.groups,
+    })) {
+      const values = costs[name as keyof typeof costs]!;
+      expect(quantile(values, config.lowerQuantile), name).toBeGreaterThanOrEqual(bounds.min);
+      expect(quantile(values, config.upperQuantile), name).toBeLessThanOrEqual(bounds.max);
+    }
+  });
 
   it('the valid sheet retains front and side silhouette spread', () => {
     const masks = sheet.map((result) => silhouetteMasks(result.realized));

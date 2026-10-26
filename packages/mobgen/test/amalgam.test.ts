@@ -259,10 +259,12 @@ describe('amalgam body plan', () => {
         const realized = realize(generate(amalgamTemplate, seed));
         expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
         const manifest = amalgamManifest(realized.body, realized.voxels);
-        expect([...realized.supportBones].sort()).toEqual([...actualGroundOwners(realized)].sort());
+        expect([...realized.supportBones].sort(), `seed ${seed}: support owners`).toEqual(
+          [...actualGroundOwners(realized)].sort(),
+        );
         const members = manifest.parts.filter((part) => part.severable);
-        expect(members.length).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
-        expect(members.length).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
+        expect(members.length, `seed ${seed}: severable member count`).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
+        expect(members.length, `seed ${seed}: severable member count`).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
         for (const part of members) {
           const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
           expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
