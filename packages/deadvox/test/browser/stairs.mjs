@@ -244,6 +244,10 @@ try {
       await timePhase('far-sun-receiver-rule', () =>
         page.evaluate(async (path) => (await import(path)).farSunProof(), '/test/farSun.ts'),
       );
+      const beamDaylight = await timePhase('closed-roof-beam-daylight', () =>
+        page.evaluate(async (path) => (await import(path)).beamDaylightProof(), '/test/browser/beam-daylight.ts'),
+      );
+      process.stdout.write(`BEAM_DAYLIGHT ${JSON.stringify(beamDaylight)}\n`);
       const markerLighting = await page.evaluate(async () => {
         // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-origin URL.
         const { interactionMarkerLightingProof } = await import('/test/browser/interaction-marker-lighting.ts');
