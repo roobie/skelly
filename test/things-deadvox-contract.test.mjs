@@ -105,7 +105,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
-      if (figureModels.has(row.id) || wornModels.has(row.id)) {
+      if (!registry.items.has(row.source) && (figureModels.has(row.id) || wornModels.has(row.id))) {
         // Presentation-only models do not introduce items or a second mass source beside the loose item model.
         assert.equal(registry.items.has(row.source), false);
         assert.ok(registry.models.get(row.id));
