@@ -505,7 +505,7 @@ const stepWakeGameHour = (gameHour: number | undefined, step: 1 | -1): number | 
 };
 
 const wakeLabel = (gameHour: number | undefined, text: InventoryText): string =>
-  gameHour === undefined ? text.whenRested : `${String(gameHour).padStart(2, '0')}:00`;
+  gameHour === undefined ? text.whenRested : `${countText(gameHour).padStart(2, '0')}:00`;
 
 const furnitureBodyTemplate = (
   furniture: FurnitureViewModel,
@@ -743,7 +743,7 @@ const queueTemplate = (
   text: InventoryText,
 ): TemplateResult => {
   const rows = queue.jobs.map((job, i) => ({
-    n: String(i + 1),
+    n: countText(i + 1),
     label: job.label,
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
     duration: secs(text, job.duration),
