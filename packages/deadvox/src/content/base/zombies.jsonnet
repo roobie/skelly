@@ -702,6 +702,7 @@ content + {
       hesitationSimSeconds: { min: 5, max: 5 },
       refusalSuspicionSimSeconds: 20,
       refusalLean: 0.75,
+      alertCooldownSimSeconds: 60,
       chainRadiusMetres: 8,
       chainChance: 0.35,
     },

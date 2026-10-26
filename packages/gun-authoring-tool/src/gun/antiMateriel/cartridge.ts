@@ -1,12 +1,8 @@
 // The .50 BMG round the anti-materiel rifle is sized from. Its
 // dimensions are the only numbers the magazine, the magazine well and the action are derived from, so
-// they live here once. Pure arithmetic: no imports beyond core constants.
+// they live here once.
 
-import { METRES_PER_UNIT } from '../exportFrame.ts';
-
-const MM_PER_INCH = 25.4;
-const MM_PER_U = METRES_PER_UNIT * 1000;
-const inchesToU = (inches: number): number => (inches * MM_PER_INCH) / MM_PER_U;
+import { inchesToU } from '../units.ts';
 
 /**
  * .50 BMG (12.7x99mm NATO), English Wikipedia infobox ".50 BMG", fields `length` (5.450 in, overall

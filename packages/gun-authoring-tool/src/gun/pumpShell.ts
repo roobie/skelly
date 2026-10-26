@@ -3,7 +3,7 @@
 import { GRID } from '@skelly/engine/foundation/conventions.ts';
 import shellJson from '../../cartridges/12-gauge-00-buck.json' with { type: 'json' };
 import { formatCartridgeParseError, parseCartridge } from '../ammo/parseCartridge.ts';
-import { METRES_PER_UNIT } from './exportFrame.ts';
+import { mmToU } from './units.ts';
 
 const parsed = parseCartridge(shellJson);
 if (!parsed.ok) {
@@ -18,7 +18,7 @@ if (
 }
 
 /** Conservative rolled-closed shell length converted from millimetres to gungen units. */
-export const PUMP_SHELL_LOADED_LENGTH_U = parsed.cartridge.length.loaded.value / (METRES_PER_UNIT * 1000);
+export const PUMP_SHELL_LOADED_LENGTH_U = mmToU(parsed.cartridge.length.loaded.value);
 
 /** Round the minimum shell-clearance stroke up to the geometry grid, never down. */
 export const PUMP_ACTION_TRAVEL_U = Math.ceil(PUMP_SHELL_LOADED_LENGTH_U / GRID) * GRID;
@@ -30,4 +30,4 @@ export const PUMP_LOADING_PORT_X: readonly [number, number] = [
 ];
 /** Rim diameter, rounded up to the grid; the existing L tube/receiver frame admits 12 gauge. */
 export const PUMP_LOADING_PORT_HALF_WIDTH_U =
-  (Math.ceil(parsed.cartridge.head.rimDiameter.value / (METRES_PER_UNIT * 1000) / GRID) * GRID) / 2;
+  (Math.ceil(mmToU(parsed.cartridge.head.rimDiameter.value) / GRID) * GRID) / 2;

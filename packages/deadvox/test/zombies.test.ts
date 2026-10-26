@@ -856,7 +856,7 @@ describe('shambler scenarios', () => {
     expect(zombie.mode).not.toBe('investigate');
   });
 
-  it('alerts when a searching shambler spots the player', () => {
+  it('alerts when a searching shambler spots the player after its cry cooldown', () => {
     let sensed: PlayerSense = {
       ...player([100, 1, 100]),
       vocalNoise: { id: 1, pos: [20, 1, 0], radiusMetres: 30, expiresAt: 1 },
@@ -892,10 +892,10 @@ describe('shambler scenarios', () => {
       [zombie.body.pos[0] + facing[0] * 5, zombie.body.pos[1], zombie.body.pos[2] + facing[2] * 5],
       [-facing[0], 0, -facing[2]],
     );
-    system.tick(1 / 20, 30);
+    system.tick(1 / 20, 0.05 + type.hearingModel.alertCooldownSimSeconds);
 
     expect(zombie.mode).toBe('chase');
-    expect(alerts).toEqual(['shambler_alert']);
+    expect(alerts).toEqual([type.sounds.alert]);
   });
 
   it('chooses a near heard player over a visible light lure', () => {

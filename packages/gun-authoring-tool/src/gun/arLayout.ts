@@ -1,9 +1,8 @@
 import { GRID } from '@skelly/engine/foundation/conventions.ts';
 import { AR_ACTION_FRAMES, SMALL_AR_FRAME } from './arFrames.ts';
-import { GUN_UNITS } from './units.ts';
+import { mmToU } from './units.ts';
 
-const mmPerUnit = GUN_UNITS.metresPerUnit * 1000;
-const units = (mm: number): number => Math.ceil(mm / mmPerUnit / GRID - 1e-9) * GRID;
+const units = (mm: number): number => Math.ceil(mmToU(mm) / GRID - 1e-9) * GRID;
 
 export interface ARActionLayout {
   readonly frameId: string;
