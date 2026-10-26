@@ -20,7 +20,6 @@ const onGridWithCarrierClearance = (value: number, step: number, family: PartFam
 
 // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
 // ports, unique port ids and positive box sizes. No rules or geometry checks run.
-const BATCH_CASE_TIMEOUT_MS = 40;
 
 export const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
   let gridStep = GRID;
@@ -98,15 +97,10 @@ export const definePartChecks = (family: PartFamily, cases: Record<string, strin
 
   for (let start = 0; start < cases.length; start += batchSize) {
     const batch = cases.slice(start, start + batchSize);
-    // The timeout scales with the batch's case count, never a flat number.
-    it(
-      `cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`,
-      () => {
-        for (const params of batch) {
-          expect(check(params), JSON.stringify(params)).toEqual(expected);
-        }
-      },
-      batch.length * BATCH_CASE_TIMEOUT_MS,
-    );
+    it(`cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
+      for (const params of batch) {
+        expect(check(params), JSON.stringify(params)).toEqual(expected);
+      }
+    });
   }
 };

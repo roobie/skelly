@@ -65,12 +65,7 @@ const resolveAll = (variants: BrokenVariant[]): ResolvedVariant[] =>
     }
   });
 
-/**
- * Per-rule timeout scales with the number of variants, keeping exhaustive runs bounded without a flat limit.
- */
-const MS_PER_VARIANT = 100;
-
-const defineRuleChecks = (resolvedVariants: ResolvedVariant[], timeoutMs?: number): void => {
+const defineRuleChecks = (resolvedVariants: ResolvedVariant[]): void => {
   for (const rule of ALL_RULES) {
     const failures = (): string[] => {
       const out: string[] = [];
@@ -87,20 +82,9 @@ const defineRuleChecks = (resolvedVariants: ResolvedVariant[], timeoutMs?: numbe
       }
       return out;
     };
-    const name = `${rule.id} does not throw on any unplaced-part variant`;
-    if (timeoutMs === undefined) {
-      it(name, () => {
-        expect(failures()).toEqual([]);
-      });
-    } else {
-      it(
-        name,
-        () => {
-          expect(failures()).toEqual([]);
-        },
-        timeoutMs,
-      );
-    }
+    it(`${rule.id} does not throw on any unplaced-part variant`, () => {
+      expect(failures()).toEqual([]);
+    });
   }
 };
 
@@ -136,7 +120,7 @@ describe('rules on assemblies with unplaced parts', () => {
 
   sweepGroup('on every variant of every fixture', () => {
     const allVariants = runSweeps ? fixtures.flatMap((fixture) => brokenVariants(fixture)) : [];
-    defineRuleChecks(resolveAll(allVariants), allVariants.length * MS_PER_VARIANT);
+    defineRuleChecks(resolveAll(allVariants));
   });
 
   it('leaves reporting the unplaced part to the structure and required-ports checks', () => {
