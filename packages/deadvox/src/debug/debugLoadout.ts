@@ -3,7 +3,17 @@ import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 
-const LOADOUTS = ['ar', 'ak', 'pump', 'hunting', 'magazine', 'grenade', 'revolver', 'revolver-open'] as const;
+const LOADOUTS = [
+  'ar',
+  'ak',
+  'pump',
+  'hunting',
+  'magazine',
+  'grenade',
+  'revolver',
+  'revolver-open',
+  'riot-helmet',
+] as const;
 type LoadoutChoice = (typeof LOADOUTS)[number];
 const isLoadoutChoice = (choice: string | null): choice is LoadoutChoice =>
   (LOADOUTS as readonly (string | null)[]).includes(choice);
@@ -49,6 +59,10 @@ export const equipDebugLoadout = (
     equipEmptyMagazine(inventory, backpack);
   } else if (choice === 'grenade') {
     equipGrenades(inventory, backpack);
+  } else if (choice === 'riot-helmet') {
+    if (!inventory.add(inventory.create('riot_helmet'), { kind: 'worn' })) {
+      throw new Error('Could not wear riot helmet preview');
+    }
   } else {
     equipRifles(inventory, backpack, choice);
   }

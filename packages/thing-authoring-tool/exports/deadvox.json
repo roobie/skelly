@@ -2112,6 +2112,18 @@
     }
   },
   {
+    "id": "riot_helmet",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "riot_helmet",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {
