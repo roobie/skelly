@@ -8,9 +8,9 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
-  - you add a dead human, change figure outfits or the corpse pose, or change how dead bodies are drawn
+  - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
   - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
-  - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
+  - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
@@ -43,7 +43,7 @@ read_if:
   - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
-  - you're changing worn layers, armour protection or item wear
+  - you're changing worn layers, empty-slot body appearance, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
@@ -474,21 +474,21 @@ construction.
 
 ### Dead humans
 
-Any dead body of a human, whatever its role, is drawn as the player figure dressed
-for that role, such as a police officer in a police uniform or a soldier in a military
-one. A box shaped like a body reads as a prop, not a person, and sharing the player's
-own figure keeps every human in the world one body plan, so improving the player
-figure improves every corpse.
+Dead humans share the player's figure because a box shaped like a body reads as a
+prop, not a person. One body plan lets figure improvements serve every human.
 
-The body stays furniture: its pockets, loot, placement keys, picking and saves belong
-to the piece, and only its drawing changes, so a role's gameplay never depends on how
-it looks. The outfit is content the furniture row chooses, so a new dead human needs
-no code. See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`, and
-`src/render/corpseFigures.ts`, `CorpseFigures`.
+Until corpse-owned equipment is drawn under #1366, role colours tint the corpse's
+non-lootable underwear base so dead police and soldiers remain readable. The tint is
+not lootable clothing and never applies to the player. Delete the tint path and its
+content palettes when #1366 merges, rather than keeping a second clothing appearance
+beside owned equipment. See `src/content/base/figures-player.jsonnet`, `outfits`,
+`src/render/playerFigure.ts`, `dress`, and `src/render/corpseFigures.ts`, `CorpseFigures`.
 
-A dead human shows no damage steps, because its look comes from the figure and outfit
-rather than its material; the hint still names the band, so the player can still judge
-its condition.
+The body stays furniture so its gameplay identity does not depend on its drawing.
+See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`.
+
+A dead human shows no material damage steps because its look belongs to the figure;
+the hint still names the damage band so the player can judge its condition.
 
 ### Ladders and hatches
 
@@ -1760,6 +1760,10 @@ an equipped item. Floating optics and a head breaking through its cap read as
 loose props rather than worn gear, so fit must preserve the equipped silhouette.
 Forehead lamps must leave the eye line clear so hands-free lighting does not
 read as an obstruction over the eyes.
+Empty clothing slots show non-lootable underwear and otherwise exposed body:
+stripping equipment must not leave apparently usable clothes or shoes that cannot
+be taken. Garments hide only the base regions they cover, restoring those regions
+when removed, so layering neither clips through clothing nor leaves a missing body.
 Item-owned presentation and figure-owned attachment frames keep
 gear additions independent of human renderers and equipment ownership. The same
 human must serve different equipment owners without manufacturing inventory in
@@ -1768,16 +1772,14 @@ or skin deformation; that choice needs a visual comparison before multiplying
 clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
 `src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
 
-Rigid carry and armour, packs, vests, a fanny pack and a slung gun, are authored
-on the torso in the bust's own frame and fitted to the bust's measures, so they
-follow the body when it changes. They stack in layers outward from the body, so
-any mix of them worn together keeps clear of the torso and of each other, standing
-or crouched; the swinging limbs are left out of that rule because they already pass
-through the body. A worn item's fitted parts draw with it, so an item looks the same
-worn as held, and a fitted part's own worn model, such as a sling's strap, draws
-beside it. Carry stays drawn in first person, as the body does. See
-`packages/thing-authoring-tool/worn-carry.libsonnet`, `fit`; `src/render/playerFigure.ts`,
-`wornEntries`; and `test/wornCarry.test.ts`.
+Carry and armour follow the torso's under-layer so changes to the body or clothing
+do not bury the gear or leave it floating. Layered gear must keep clear of the torso
+and of each other, standing or crouched; swinging limbs are excluded because they
+already pass through the body. A worn item keeps its fitted parts, including their
+own worn presentation, so equipping it does not change its identity or lose its sling.
+Carry stays visible in first person for the same reason as the body. See
+`packages/thing-authoring-tool/worn-carry.libsonnet`, `fit`;
+`src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. It belongs with the hands because the world camera cannot draw that close
@@ -1789,6 +1791,11 @@ changes the item changes how it looks from inside. See `src/render/hands.ts`,
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
+Vests and carry shells have a fit per under-layer, selected by the torso garment,
+so they stay snug over a bare torso and over a jacket rather than burying the outer
+shell or floating away from the body. Clothing coverage hides only the base body,
+not gear layered above it. See `src/render/wornModels.ts`, `WornModels`, and
+`packages/thing-authoring-tool/worn-carry.libsonnet`, `carry`.
 One vest at a time makes the player pick pouches or protection. Whole-region
 coverage keeps layering simple rather than asking the player to judge uncovered
 fractions. Contact can meet a different layer because a puddle reaches boots

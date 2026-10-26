@@ -1,4 +1,4 @@
-import { Scene, Vector3 } from 'three';
+import { Group, Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -152,6 +152,46 @@ describe('debug avatar mannequin', () => {
     expect(distance(mannequin!.position, far)).toBeGreaterThan(standoff * 2);
     mannequin!.place();
     expect(distance(mannequin!.position, far)).toBeCloseTo(standoff, 5);
+  });
+
+  it('keeps query-selected garment samples worn while stepping poses', () => {
+    const template = [...registry.items.values()].find((item) => item.wearable?.slot === 'torso')!;
+    const garment = {
+      ...template,
+      id: 'fixture_garment',
+      figureModels: [
+        {
+          model: 'fixture_worn',
+          frame: 'head',
+          pivot: [0, 0, 0] as Vec3,
+          at: [0, 0, 0] as Vec3,
+          turn: [0, 0, 0] as Vec3,
+        },
+      ],
+    };
+    const fixtureRegistry = { ...registry, items: new Map([...registry.items, [garment.id, garment]]) };
+    const fixtureModels = {
+      ...models,
+      part: (id: string) => (id === 'fixture_worn' ? new Group() : models.part(id)),
+    } as ModelLibrary;
+    const mannequin = createAvatarMannequin(
+      new Scene(),
+      {
+        debug: true,
+        blockSize: 0.5,
+        figure,
+        modelDefs: registry.models,
+        models: fixtureModels,
+        registry: fixtureRegistry,
+      },
+      `?mannequin=&mannequinWear=${garment.id}`,
+    )!;
+    mannequin.sync([0, 0, 0], 0, 1);
+    const attachment = mannequin.group.getObjectByName('worn-torso');
+    expect(attachment).toBeDefined();
+    mannequin.step(1);
+    mannequin.sync([0, 0, 0], 0, 1);
+    expect(mannequin.group.getObjectByName('worn-torso')).toBe(attachment);
   });
 
   it('is absent without debug, and without the query', () => {
