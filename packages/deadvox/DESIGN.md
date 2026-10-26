@@ -1637,7 +1637,7 @@ exclusion during this transition. See `src/render/hands.ts`, `HeldItems`.
 
 Hands and held objects use normal world depth. Visible wall intersections are
 accepted as the bounded body rollout's limitation, not hidden with a depth-clear
-redraw or a camera-specific pose. Held-object obstruction reaction is the
+redraw or a camera-specific pose. Held-object obstruction reaction ([#1376](https://github.com/roobie/skelly/issues/1376)) is the
 follow-up: its common pose and action policy must be settled before contact
 behaviour replaces that limitation. See `src/render/playView.ts`, `render`.
 
