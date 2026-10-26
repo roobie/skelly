@@ -182,6 +182,9 @@ export class FurnitureMeshes {
     if (def.vehicle) {
       return vehicleModel(entity, def.vehicle, def.size[1], { blockSize: this.blockSize, shapes: this.vehicles, wait });
     }
+    if (def.corpse) {
+      return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).
+    }
     if (def.door) {
       return this.door(entity, material, def);
     }

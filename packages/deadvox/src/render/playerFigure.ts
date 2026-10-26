@@ -1,6 +1,6 @@
 // The player's world body: the figure row's authored models posed about their joints.
 
-import { Group, Object3D, type Vector3 } from 'three';
+import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ItemDef, ModelDef, Registry } from '../core/content.ts';
@@ -240,6 +240,40 @@ const hangFromPivots = (
   });
 };
 
+/** A figure outfit: a colour for each material slot it repaints (`FigureDef`, `outfits`). */
+type Outfit = Readonly<Record<string, string>>;
+
+/** How a figure other than the player's own is drawn: in an outfit, and on a layer other than the player's. */
+interface FigureDress {
+  outfit: Outfit;
+  layer: number;
+}
+
+/**
+ * Repaints each mesh whose exported material slot the outfit names. Loaded copies share their library's materials,
+ * so a repainted one is a copy, kept in `dressed` for the next part that shares it.
+ */
+const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>): void => {
+  const repaint = (material: Material, slot: string): Material => {
+    let copy = dressed.get(material);
+    if (!copy) {
+      copy = material.clone();
+      (copy as MeshStandardMaterial).color.set(outfit[slot]!);
+      dressed.set(material, copy);
+    }
+    return copy;
+  };
+  scene.traverse((object) => {
+    if (!(object instanceof Mesh) || Array.isArray(object.material)) {
+      return;
+    }
+    const { slot } = object.geometry.userData;
+    if (typeof slot === 'string' && Object.hasOwn(outfit, slot)) {
+      object.material = repaint(object.material, slot);
+    }
+  });
+};
+
 /**
  * The player's world body from its figure row, each part drawn once its model loads. The body, head included,
  * stays drawn in first person, where the head sits behind the eye; the arms show only in third person.
@@ -282,6 +316,11 @@ export class PlayerMeshes {
   private readonly blendFrom: StancePose = { ...STANDING_POSE };
   private blendProgress = 1;
   private readonly shownPose: StancePose = { ...STANDING_POSE };
+  /** Set by `holdPose`: the drawn pose stays put whatever stance a sync names. */
+  private fixedPose = false;
+  private outfit: Outfit | undefined;
+  /** Each loaded material and its copy in the outfit's colour, so parts that shared a material share its copy. */
+  private readonly dressed = new Map<Material, Material>();
 
   constructor(
     blockSize: number,
@@ -328,9 +367,23 @@ export class PlayerMeshes {
     return this.drawn.size === this.layout.parts.length;
   }
 
+  /** Dresses a figure other than the player's own. Parts take it as they load, so it comes before the first sync. */
+  dress({ outfit, layer }: FigureDress): void {
+    this.outfit = outfit;
+    this.layer = layer;
+  }
+
+  /** Draws `pose` from now on, at once and whatever stance later syncs name, as a body that no longer moves. */
+  holdPose(pose: Omit<StancePose, 'hipDropMetres'>): void {
+    Object.assign(this.shownPose, pose, { hipDropMetres: 0 });
+    this.fixedPose = true;
+  }
+
   sync(pose: PlayerFigurePose): void {
     const { thirdPerson = false } = pose;
-    this.blendStance(pose.stance, pose.dt);
+    if (!this.fixedPose) {
+      this.blendStance(pose.stance, pose.dt);
+    }
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
@@ -467,6 +520,9 @@ export class PlayerMeshes {
       const model = new Group();
       model.name = `figure-${part.name}`;
       const scene = this.models.part(part.model)!;
+      if (this.outfit) {
+        dress(scene, this.outfit, this.dressed);
+      }
       const chain = this.pivotedParts[pivotedKind(part.name)];
       this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
       model.add(scene);

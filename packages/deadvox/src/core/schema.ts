@@ -2259,6 +2259,11 @@ const FurnitureSchema = pipe(
         surface: picklist(['wood', 'painted-metal', 'plastic']),
       }),
     ),
+    /**
+     * A dead human, drawn as the figure lying in its corpse pose and dressed in the named outfit of that figure
+     * (`DESIGN.md`, "Dead humans").
+     */
+    corpse: optional(strictObject({ figure: Id, outfit: Id })),
     /** Boxes in cell coordinates that the piece is drawn as. */
     shape: optional(pipe(array(FurnitureShapeBoxSchema), nonEmpty('needs at least one box'))),
     /**
@@ -2352,6 +2357,11 @@ const FurnitureSchema = pipe(
     'appearance needs a plain container without a shape, door or readable',
   ),
   check(({ door, shape }) => !(door?.hatch && shape), 'a hatch is its own panel and cannot have a shape'),
+  check(
+    ({ corpse, shape, appearance, door, vehicle, solid }) =>
+      !corpse || (!(shape || appearance || door || vehicle) && solid === false),
+    'a corpse is drawn as its figure, so it is non-solid and has no shape, appearance, door or vehicle',
+  ),
   // The same reading as `src/core/blockEntities.ts`, `isBodyDoor`: a body door is the front of its own drawn body.
   check(
     ({ door, shape, container }) => !door?.detail || shape === undefined || container === undefined,
@@ -3657,6 +3667,13 @@ const FigureSchema = strictObject({
     /** How long the drawn body takes to settle into a new stance. */
     blendRealSeconds: PositiveRealSeconds,
   }),
+  /**
+   * Clothing looks by id, each a colour for every material slot it repaints; slots it leaves out keep the model's own
+   * colour (`DESIGN.md`, "Dead humans").
+   */
+  outfits: record(Id, record(Id, Color)),
+  /** How a dead body lies. It rests on its lowest point, so it has no hip drop. */
+  corpsePose: omit(StancePoseSchema, ['hipDropMetres']),
 });
 
 // ---- skills and recipes ----
