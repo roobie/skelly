@@ -300,7 +300,7 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>
 
 /**
  * The player's world body from its figure row, each part drawn once its model loads. The body, head included,
- * stays drawn in first person, where the head sits behind the eye; view-arm counterparts are shadow-only.
+ * stays drawn in first person, where the head sits behind the eye; the arms show only in third person.
  */
 export class PlayerMeshes {
   readonly group = new Group();
@@ -431,11 +431,7 @@ export class PlayerMeshes {
     for (const [part, drawn] of this.drawn) {
       // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
       const side = ARM_SIDE[part.name];
-      const viewArm = isArm(part.name) && !thirdPerson;
-      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side))) || viewArm;
-      if (isArm(part.name)) {
-        this.setShadowOnly(drawn, viewArm);
-      }
+      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side)));
       this.posePoint(part.at, part.name, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
@@ -576,26 +572,6 @@ export class PlayerMeshes {
     }
     this.heldFrame.rotation.set(pose.pitch ?? 0, pose.yaw, 0, 'YXZ');
     this.heldFrame.updateMatrixWorld(true);
-  }
-
-  /** Adds each part whose model has loaded since the last sync. */
-  /** Keeps world arms in the shadow pass while first-person view arms supply their colour. */
-  private setShadowOnly(drawn: Object3D, shadowOnly: boolean): void {
-    drawn.traverse((object) => {
-      if (!(object instanceof Mesh)) {
-        return;
-      }
-      if (!object.userData.shadowOnlyMaterial) {
-        object.material = Array.isArray(object.material)
-          ? object.material.map((material) => material.clone())
-          : object.material.clone();
-        object.userData.shadowOnlyMaterial = true;
-      }
-      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-        material.colorWrite = !shadowOnly;
-        material.depthWrite = !shadowOnly;
-      }
-    });
   }
 
   /** Adds each part whose model has loaded since the last sync. */

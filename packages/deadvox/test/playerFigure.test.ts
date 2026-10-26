@@ -458,7 +458,7 @@ describe('player figure', () => {
     }
   });
 
-  it('draws every figure-row part, keeps first-person arms shadow-only, and sets the body back only there', () => {
+  it('draws every figure-row part, hides only the arms in first person, and sets the body back only there', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
     const bodyZ = (thirdPerson: boolean) => {
@@ -468,7 +468,7 @@ describe('player figure', () => {
     const firstPerson = bodyZ(false);
     expect(meshes.loaded).toBe(true);
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
-      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(true);
+      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(!name.endsWith('Arm'));
     }
     expect(firstPerson - bodyZ(true)).toBeCloseTo(PLAYER_BODY_REAR_OFFSET);
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
@@ -711,20 +711,8 @@ describe('player figure', () => {
     const bodyArmShown = (side: 'left' | 'right') => {
       let count = 0;
       meshes.group.traverseVisible((object) => {
-        if (object.name === `first-person-arm-${side}`) {
+        if (object.name === `figure-${side}Arm` || object.name === `first-person-arm-${side}`) {
           count += 1;
-        }
-        if (object.name === `figure-${side}Arm`) {
-          let colourWrites = false;
-          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: material visibility belongs to each mesh.
-          object.traverse((part) => {
-            if (part instanceof Mesh) {
-              for (const material of Array.isArray(part.material) ? part.material : [part.material]) {
-                colourWrites ||= material.colorWrite;
-              }
-            }
-          });
-          count += Number(colourWrites);
         }
       });
       expect(count).toBeLessThanOrEqual(1);
@@ -759,37 +747,6 @@ describe('player figure', () => {
       }
       view.dispose();
     }
-  });
-
-  it('keeps first-person empty world arms shadow-only while view arms draw', () => {
-    const inventory = new Inventory(registry);
-    const meshes = playerMeshes();
-    meshes.sync({
-      body: createPlayerBody(scale, 4, 1, 4),
-      yaw: 0,
-      stepOffset: 0,
-      gaitPhase: 0,
-      moving: false,
-      ...STANDING,
-      inventory,
-    });
-    for (const side of ['left', 'right'] as const) {
-      const arm = meshes.group.getObjectByName(`figure-${side}Arm`)!;
-      expect(arm.visible).toBe(true);
-      let shadowOnly = false;
-      arm.traverse((object) => {
-        if (object instanceof Mesh) {
-          expect(Array.isArray(object.material)).toBe(false);
-          shadowOnly ||=
-            object.castShadow &&
-            !(Array.isArray(object.material) ? object.material : [object.material]).some(
-              (material) => material.colorWrite,
-            );
-        }
-      });
-      expect(shadowOnly, side).toBe(true);
-    }
-    meshes.dispose();
   });
 
   it('keeps idle first-person grips camera-relative when the camera turns', () => {
