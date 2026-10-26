@@ -11,6 +11,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { aimBasis } from '../src/core/aim.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -414,17 +415,29 @@ it.each(['optic_holographic', 'optic_lpvo_1_6x'])(
   },
 );
 
-it('ADS-only housing is intact when lowered or ready and restored immediately on leaving ADS', async () => {
+it('exported near frame stays visible while only the length housing hides in ADS and restores on exit', async () => {
   const f = await fixture();
   const scene = new Scene();
   f.view.configureOpticsSpike(scene, 'world', 'relief');
-  const hood = new Mesh(new BufferGeometry(), new MeshBasicMaterial());
-  hood.geometry.userData.piece = 'optic-ads-housing';
-  const body = new Mesh(new BufferGeometry(), new MeshBasicMaterial());
+  const definition = f.registry.models.get('optic_holographic')!;
+  const bytes = readFileSync(new URL(`../src/content/base/${definition.file}`, import.meta.url));
+  const { scene: optic } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+  const meshes: Mesh[] = [];
+  optic.traverse((object) => {
+    if (object instanceof Mesh) {
+      meshes.push(object);
+    }
+  });
+  const hood = meshes.filter((mesh) => mesh.geometry.userData.piece === 'optic-ads-housing');
+  const frame = meshes.filter((mesh) => mesh.geometry.userData.piece === 'optic-near-frame');
+  const body = meshes.filter((mesh) => !mesh.geometry.userData.piece);
   const handling = { firearms: [], readiness: { uid: f.item.uid, progress: 1, aimingDownSights: false } };
   try {
+    expect(hood.length).toBeGreaterThan(0);
+    expect(frame.length).toBeGreaterThan(0);
+    expect(body.length).toBeGreaterThan(0);
     f.view.update(f.camera, f.pose, 0, handling);
-    scene.getObjectByName('held-item-right')!.add(hood, body);
+    scene.getObjectByName('held-item-right')!.add(optic);
     for (const [progress, aimingDownSights] of [
       [0, false],
       [1, false],
@@ -433,14 +446,20 @@ it('ADS-only housing is intact when lowered or ready and restored immediately on
       [0, false],
     ] as const) {
       f.view.update(f.camera, f.pose, 0, { ...handling, readiness: { uid: f.item.uid, progress, aimingDownSights } });
-      expect(hood.visible).toBe(!aimingDownSights);
-      expect(body.visible).toBe(true);
+      for (const mesh of hood) {
+        expect(mesh.visible).toBe(!aimingDownSights);
+      }
+      for (const mesh of [...frame, ...body]) {
+        expect(mesh.visible).toBe(true);
+      }
     }
   } finally {
     f.dispose();
-    for (const mesh of [hood, body]) {
+    for (const mesh of meshes) {
       mesh.geometry.dispose();
-      (mesh.material as MeshBasicMaterial).dispose();
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        material.dispose();
+      }
     }
   }
 });

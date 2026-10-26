@@ -43,9 +43,15 @@ Eyecups are authored content sized to the relief placement, not a general fix fo
 every eye distance or field of view. See
 `packages/gun-authoring-tool/src/gun/optics.ts`, `eyecup`; and
 `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`.
-An ADS-only mask must not change the instrument seen outside ADS. The housing
-remains authored and exported; its display-piece metadata selects temporary
-visibility in `packages/deadvox/src/render/hands.ts`, `HeldItems.syncOpticPieces`.
+An ADS-only mask must not change the instrument seen outside ADS or erase the
+near rim that locates the aperture. The near frame remains visible while the
+lengthwise housing uses temporary visibility in
+`packages/deadvox/src/render/hands.ts`, `HeldItems.syncOpticPieces`.
+The retained frame paints over the housing's existing occupied volume rather
+than changing its full silhouette; see
+`packages/gun-authoring-tool/src/gun/optics.ts`, `nearFrame`.
+Frame dimensions remain authored in
+`packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`.
 Keeping the opaque battery front below the transparent pane avoids a voxel-shared
 interface that removes its eye-facing surface; see
 `packages/gun-authoring-tool/test/optics.test.ts`,

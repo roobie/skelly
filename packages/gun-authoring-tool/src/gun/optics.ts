@@ -145,6 +145,7 @@ const eyecup = (centerY: number, cup: (typeof opticPresentation.cups)['lpvo-1-6x
 });
 
 const adsHousing = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-ads-housing' } });
+const nearFrame = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-near-frame' } });
 
 const ringBand = (id: string, centerX: number, centerY: number, radius: number): Solid =>
   scopeBody(
@@ -439,6 +440,51 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         ],
         slot: 'metal',
       }),
+      // Later voxel paint separates the retained rim without changing the full hood's occupied volume.
+      nearFrame(
+        box(
+          'near-frame-left',
+          [-3.75, 1.5, -1.5 - opticPresentation.holographic.nearFrameThicknessU],
+          [-3.75 + opticPresentation.holographic.nearFrameDepthU, 4.25, -1.5],
+        ),
+      ),
+      nearFrame(
+        box(
+          'near-frame-right',
+          [-3.75, 1.5, 1.5],
+          [
+            -3.75 + opticPresentation.holographic.nearFrameDepthU,
+            4.25,
+            1.5 + opticPresentation.holographic.nearFrameThicknessU,
+          ],
+        ),
+      ),
+      nearFrame(
+        box(
+          'near-frame-top',
+          [-3.75, 4.25, -1.5 - opticPresentation.holographic.nearFrameThicknessU],
+          [
+            -3.75 + opticPresentation.holographic.nearFrameDepthU,
+            4.25 + opticPresentation.holographic.nearFrameThicknessU,
+            1.5 + opticPresentation.holographic.nearFrameThicknessU,
+          ],
+        ),
+      ),
+      nearFrame(
+        box(
+          'near-frame-bottom',
+          [
+            -3.75,
+            1.5 - opticPresentation.holographic.nearFrameThicknessU,
+            -1.5 - opticPresentation.holographic.nearFrameThicknessU,
+          ],
+          [
+            -3.75 + opticPresentation.holographic.nearFrameDepthU,
+            1.5,
+            1.5 + opticPresentation.holographic.nearFrameThicknessU,
+          ],
+        ),
+      ),
     ],
   }),
   'fixed-prism-4x': makeEntry({

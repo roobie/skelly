@@ -234,10 +234,12 @@ describe('optic catalog', () => {
     }
   });
 
-  it('exports the complete holographic hood as ADS-only pieces rather than deleting its housing', async () => {
+  it('exports the complete holographic hood with a shallow always-visible near frame separate from ADS-only length housing', async () => {
     const optic = getOptic('holographic');
     const hood = optic.solids.filter((solid) => solid.display?.piece === 'optic-ads-housing');
+    const frame = optic.solids.filter((solid) => solid.display?.piece === 'optic-near-frame');
     expect(hood.length).toBeGreaterThan(0);
+    expect(frame.length).toBeGreaterThan(0);
     const row = exportRecipe.find(({ id }) => id === 'optic_holographic')!;
     const result = exportAttachmentGlb(
       'optic-holographic',
@@ -251,12 +253,49 @@ describe('optic catalog', () => {
     }
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(result.glb).buffer, '');
     const exported: Mesh[] = [];
+    const near: Mesh[] = [];
     scene.traverse((mesh) => {
-      if (mesh instanceof Mesh && mesh.geometry.userData.piece === 'optic-ads-housing') {
+      if (!(mesh instanceof Mesh)) {
+        return;
+      }
+      if (mesh.geometry.userData.piece === 'optic-ads-housing') {
         exported.push(mesh);
+      }
+      if (mesh.geometry.userData.piece === 'optic-near-frame') {
+        near.push(mesh);
       }
     });
     expect(exported.length).toBeGreaterThan(0);
+    expect(near.length).toBeGreaterThan(0);
+    const frameSolids = near.flatMap((mesh) => mesh.geometry.userData.solids as string[]);
+    expect(frameSolids).toEqual(expect.arrayContaining(frame.map(({ id }) => id)));
+    const nearBounds = new Box3();
+    for (const mesh of near) {
+      nearBounds.union(new Box3().setFromObject(mesh));
+    }
+    const ocular = optic.ocularX * METRES_PER_UNIT;
+    const objective =
+      Math.max(...optic.solids.filter(({ slot }) => slot === LENS_SLOT).map((solid) => localSolidBounds(solid)[1][0])) *
+      METRES_PER_UNIT;
+    expect(Math.abs(nearBounds.min.x - ocular)).toBeLessThan(row.voxel.detailGrain!);
+    expect(nearBounds.max.x).toBeLessThan(objective);
+    const opening = optic.ocularOpeningDiameterU * METRES_PER_UNIT;
+    const axis = optic.opticalAxisY * METRES_PER_UNIT;
+    expect(nearBounds.min.y).toBeLessThan(axis - opening / 2);
+    expect(nearBounds.max.y).toBeGreaterThan(axis + opening / 2);
+    expect(nearBounds.min.z).toBeLessThan(-opening / 2);
+    expect(nearBounds.max.z).toBeGreaterThan(opening / 2);
+    scene.updateMatrixWorld(true);
+    const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0).multiplyScalar(METRES_PER_UNIT);
+    expect(new Raycaster(eye, new Vector3(1, 0, 0)).intersectObjects(near, false)).toHaveLength(0);
+    for (const solid of frame) {
+      const [low, high] = localSolidBounds(solid);
+      const target = new Vector3(...low).add(new Vector3(...high)).multiplyScalar(METRES_PER_UNIT / 2);
+      expect(
+        new Raycaster(eye, target.sub(eye).normalize()).intersectObjects(near, false).length,
+        solid.id,
+      ).toBeGreaterThan(0);
+    }
     const drawnSolids = exported.flatMap((mesh) => mesh.geometry.userData.solids as string[]);
     for (const solid of hood) {
       expect(drawnSolids).toContain(solid.id);
