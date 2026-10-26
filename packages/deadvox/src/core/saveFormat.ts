@@ -648,6 +648,7 @@ const zombie = obj({
   soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
   dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
   lastVocalNoiseId: nullable(nonNegativeInt),
+  lastAlertAt: opt(nonNegative),
   idleSoundTimer: nonNegative,
   modeTimer: finite,
   searchAnchor: opt(vec3),
