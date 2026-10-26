@@ -1636,11 +1636,11 @@ doubled colour. ADS eye alignment and the visor/scope effect boundary require
 their own design decisions, not a camera-specific physical substitute. See
 `src/render/hands.ts`, `HeldItems`.
 
-Hands and held objects use normal world depth. Visible wall intersections are
-accepted until #1376 replaces them with common contact behaviour, not hidden with a depth-clear
-redraw or a camera-specific pose. Held-object obstruction reaction ([#1376](https://github.com/roobie/skelly/issues/1376)) is the
-follow-up: its common pose and action policy must be settled before contact
-behaviour replaces that limitation. See `src/render/playView.ts`, `render`.
+Hands and held objects use normal world depth, not a depth-clear redraw or a
+camera-specific pose. Visible wall intersections are accepted until
+[#1376](https://github.com/roobie/skelly/issues/1376) settles a common obstruction
+pose and action policy; hiding them per view would violate the shared actor.
+See `src/render/playView.ts`, `render`.
 
 Held presentation must sample the same frame's camera and body feedback before
 posing. Moving the camera afterward leaves hands, wielded items and their light
