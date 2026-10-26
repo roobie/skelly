@@ -81,6 +81,14 @@ describe('debug avatar mannequin', () => {
     }
   });
 
+  it('uses the player firearm-aim owner to mount the mannequin free hand as support', () => {
+    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=aim-firearm');
+    expect(mannequin!.pose.name).toBe('aim-firearm');
+    mannequin!.sync([0, 0, 0], 0, 0);
+    const arm = mannequin!.group.getObjectByName('first-person-arm-left')!;
+    expect(arm.parent).toBe(mannequin!.group.getObjectByName('held-item-right'));
+  });
+
   it('steps through the offered poses and wraps round', () => {
     const { mannequin } = mannequinFor(true, '?debug=1&mannequin=');
     const first = mannequin!.pose;

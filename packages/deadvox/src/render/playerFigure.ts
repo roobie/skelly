@@ -395,7 +395,8 @@ export class PlayerMeshes {
           (hand) => hands[hand]?.uid === this.handling.readiness?.uid,
         );
         const side = firearmSide === 'right' ? 'left' : 'right';
-        return presentation.arms.get(side)?.parent !== presentation.torso;
+        const supportArm = presentation.arms.get(side);
+        return supportArm !== undefined && supportArm.parent !== presentation.torso;
       })(),
     );
     if (aimOffHand?.mode === 'support') {

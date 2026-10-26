@@ -25,6 +25,8 @@ export interface AvatarPose {
   secondaryHold?: ItemHoldPose;
   /** Overrides the selected hold's ordinary readiness for a debug comparison pose. */
   ready?: boolean;
+  /** Displays firearm aim using the same readiness owner as the player. */
+  aim?: boolean;
   emptyFists?: boolean;
 }
 
@@ -56,9 +58,14 @@ const avatarPoses = (figure: FigureDef, registry: Registry): AvatarPose[] => {
     ready: true,
   });
   const guardSamples = meleeItem && handItem ? [handHold(meleeItem, 'right'), handHold(handItem, 'left')] : undefined;
+  const firearm = candidates.find((item) => item.id === 'revolver_357');
+  const firearmAim = firearm ? handHold(firearm, 'right') : undefined;
   return [
     ...stances,
     enGarde('en-garde'),
+    ...(firearmAim
+      ? [{ name: 'aim-firearm', stance: 'standing' as const, moving: false, hold: firearmAim, aim: true }]
+      : []),
     ...(guardSamples
       ? [
           enGarde('en-garde-crowbar-right', guardSamples[0]),
@@ -197,7 +204,7 @@ export class AvatarMannequin {
       this.placed = true;
       this.place();
     }
-    const { moving, stance, hold, secondaryHold, ready, emptyFists } = this.pose;
+    const { moving, stance, hold, secondaryHold, ready, aim, emptyFists } = this.pose;
     const hands: Partial<Record<'right' | 'left', Item>> = {};
     for (const sample of [hold, secondaryHold]) {
       if (!sample) {
@@ -212,6 +219,7 @@ export class AvatarMannequin {
       hands[sample.side] = item;
     }
     figurePose.heldItems = { registry: this.registry, hands };
+    const aimed = aim && hold ? { uid: hands[hold.side]!.uid, progress: 1, aimingDownSights: false } : undefined;
     figurePose.holdReady = ready ?? hold?.ready ?? emptyFists ?? false;
     figurePose.emptyFists = emptyFists ?? false;
     figurePose.gaitPhase += dt * GAIT_RATE;
@@ -219,5 +227,6 @@ export class AvatarMannequin {
     figurePose.stance = stance;
     figurePose.dt = dt;
     this.meshes.sync(figurePose);
+    this.meshes.syncHeldView(undefined, aimed ? { readiness: aimed } : {});
   }
 }
