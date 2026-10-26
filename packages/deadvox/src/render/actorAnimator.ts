@@ -501,7 +501,7 @@ export class ActorAnimator {
     if (handling.firearms.length > 0 || (handling.readiness?.progress ?? 0) > 0 || pose?.viewOrientation) {
       return;
     }
-    const frame = this.simulation && rummageFrame(this.simulation, handling.job);
+    const frame = rummageFrame(this.inventory, handling.job);
     if (!frame) {
       return;
     }
@@ -535,10 +535,16 @@ export class ActorAnimator {
    * progress, so the press never shows a round the simulation hasn't moved (`DESIGN.md`, "Hands: what you see is what's there").
    */
   private magazineLoading(handling: HeldHandlingFrame) {
-    const running =
-      this.simulation && readMagazineLoadFrame(this.simulation, handling.job, this.magazineFrame)
-        ? this.magazineFrame
-        : undefined;
+    const running = readMagazineLoadFrame(
+      {
+        hands: this.inventory.hands,
+        itemByUid: (uid) => this.itemByUid(uid),
+      },
+      handling.job,
+      this.magazineFrame,
+    )
+      ? this.magazineFrame
+      : undefined;
     if (handling.magazineRaise) {
       Object.assign(this.magazineRaise, handling.magazineRaise);
     } else {
@@ -645,9 +651,7 @@ export class ActorAnimator {
     { action, parts }: { action?: FirearmAction; parts: readonly HeldActionPart[] },
     frame: HeldFirearmPose | undefined,
   ): void {
-    const item =
-      this.simulation?.itemByUid(uid) ??
-      Object.values(this.inventory.hands).find((candidate) => candidate?.uid === uid);
+    const item = this.itemByUid(uid);
     const modelId = item && defOf(this.inventory.registry, item.type).model;
     const definition = modelId ? this.inventory.registry.models.get(modelId) : undefined;
     if (definition?.gun?.revolver && item?.firearm?.cylinder) {
@@ -980,6 +984,12 @@ export class ActorAnimator {
 
   private placeHeldItem(held: Object3D, arm: Group, transform: { offset: Vec3 }): void {
     this.presentation.placeHeld(held, arm, transform, this.poseRotation);
+  }
+
+  private itemByUid(uid: number): Item | undefined {
+    return (
+      this.simulation?.itemByUid(uid) ?? Object.values(this.inventory.hands).find((candidate) => candidate?.uid === uid)
+    );
   }
 
   private leadingSide(): HandSide {

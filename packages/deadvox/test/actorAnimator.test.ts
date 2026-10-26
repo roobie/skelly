@@ -140,6 +140,7 @@ it('both adapters consume one animation advance per actor tick', async () => {
 
 it('final arm solving samples the rummage mover output in world and overlay, and cancellation restores grips', async () => {
   const f = await fixture(false);
+  f.world.sync({ ...f.actor, heldItems: { registry: f.registry, hands: f.inventory.hands } });
   const queue = new HandlingQueue(f.inventory);
   const solved: { owner: HeldPresentation; anchor: Object3D; point: Vector3; hand: Object3D }[] = [];
   const { solve } = HeldPresentation.prototype;
