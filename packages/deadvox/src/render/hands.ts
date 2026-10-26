@@ -38,6 +38,7 @@ import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import {
+  defaultOpticsTube,
   OPTICS_SPIKE_LAYER,
   type OpticsEye,
   type OpticsSpike,
@@ -66,7 +67,7 @@ export class HeldItems {
   private visor: Object3D | undefined;
   private opticsSpike: OpticsSpike | undefined;
   private opticsEye: OpticsEye = 'fill';
-  private opticsTube: OpticsTube = 'none';
+  private opticsTube: OpticsTube | undefined;
   private readonly opticEffects = new Group();
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private drawn = '';
@@ -110,7 +111,7 @@ export class HeldItems {
     this.scene.add(this.view, this.light, this.ambient, this.camera, presentation.warmUp(), modelMaterialWarmUp(false));
   }
 
-  configureOpticsSpike(world: Scene, mode: OpticsSpike, eye: OpticsEye, tube: OpticsTube = 'none'): void {
+  configureOpticsSpike(world: Scene, mode: OpticsSpike, eye: OpticsEye, tube?: OpticsTube): void {
     this.opticsSpike = mode;
     this.opticsEye = eye;
     this.opticsTube = tube;
@@ -178,7 +179,11 @@ export class HeldItems {
         : base;
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
-    const tube = opticsTubePresentation(this.opticsTube, settings?.magnification ?? 1);
+    const tube = opticsTubePresentation(
+      this.opticsTube ??
+        defaultOpticsTube(this.opticsSpike, optic?.model.gun?.attachment?.properties.magnification?.max),
+      settings?.magnification ?? 1,
+    );
     if (heldModel) {
       heldModel.visible = this.opticsSpike !== undefined || !active;
       this.syncOpticPieces(heldModel, active, tube.cups);

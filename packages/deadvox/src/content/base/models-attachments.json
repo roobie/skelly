@@ -614,7 +614,7 @@
             "eye": [-0.11499999999999999, 0.023, 0],
             "eyeReliefMetres": 0.086249999999999993,
             "kind": "optic",
-            "ocularDiameterMetres": 0.031625,
+            "ocularDiameterMetres": 0.030187499999999999,
             "up": [0, 1, 0]
           }
         }

@@ -4,6 +4,7 @@ read_if:
   - you compare authored eye relief with aperture-fill-derived ADS placement
   - you compare an ocular world disc with relief-sized eyecup geometry
   - you change ADS-only housing visibility or reticle projection
+  - you investigate a gap where a voxel optic body meets transparent glass
 ---
 
 # Optical border comparison
@@ -15,9 +16,10 @@ have the same constraints as a physical object seen by another observer.
 See `packages/deadvox/src/render/opticsSpike.ts`, `opticsSpikeFromSearch`;
 `packages/deadvox/src/render/hands.ts`, `HeldItems.configureOpticsSpike`; and
 `packages/deadvox/src/render/playerFigure.ts`, `PlayerMeshes.opticsSpikeWorldBorders`.
-The opt-in boundary keeps ordinary play unchanged while the presentation is
-unsettled. Existing pose owners remain separate deliberately: consolidating them
-would obscure the optical comparison with an unrelated animation migration.
+The chosen world presentation and authored eye relief are the spike defaults;
+URL overrides remain useful for comparisons. Existing pose owners remain separate
+deliberately: consolidating them would obscure the optical comparison with an
+unrelated animation migration.
 
 Eye placement is a separate judgement from border ownership: realistic eye relief
 can make the sight picture smaller, regardless of how its border is drawn. The
@@ -32,12 +34,23 @@ world geometry posed from an earlier camera sample. See
 `packages/deadvox/src/game/play.ts`, `updateFrame`.
 
 A hollow eyecup can cover the rim but cannot replace rays through the tube with
-world imagery. The unity-power world disc therefore remains a separate choice;
-above unity the zoom image already replaces the interior. See
+world imagery. The world disc is the scope default, including at unity power;
+the unmagnified holographic window needs no world replacement. Other tube modes
+remain available for comparison. The authored power range distinguishes these
+instruments without dispatching on content identity. See
 `packages/deadvox/src/render/opticsSpike.ts`, `opticsTubePresentation`; and
 `packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
 Both image paths exclude the player's close-eye geometry so neither magnifies
 nor copies the instrument back into its own window.
+
+Disc diameter and eye relief are independent authored choices: reducing the
+disc at relief placement exposes more of the physical rim without moving it.
+Aperture-fill placement instead intentionally derives distance from that diameter.
+Opaque voxel surfaces must remain present beside transparent glass; culling that
+interface opens a false gap through the instrument in every view. Neither a larger
+disc nor a different eye placement repairs the exported surface. See
+`packages/thing-export/src/glb.ts`, `voxelPrimitivesFor`; and
+`packages/gun-authoring-tool/test/opticTubeExport.test.ts`.
 
 Eyecups are authored content sized to the relief placement, not a general fix for
 every eye distance or field of view. See

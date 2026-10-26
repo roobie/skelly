@@ -21,6 +21,7 @@ import {
 import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts';
 import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
+import { surfaceOf } from '@skelly/thing-core/materials';
 import { invalidPaletteFinish, resolveAppearance } from './appearance.ts';
 import type {
   ExportGlb,
@@ -551,6 +552,9 @@ const writeGlb: ExportGlb = (input) => {
     });
     const { groups } = voxelize(sources, grain, latticeOrigin(part.placed, grain, metresPerUnit), {
       neighbours: neighboursOf(part, grain),
+      exposeInterface: (group, neighbour) =>
+        !surfaceOf(finishes[group]!.appearance.finish).transparent &&
+        surfaceOf(finishes[neighbour]!.appearance.finish).transparent,
       preserveFace: input.skin ? preserveSkinFace(input.skin, placedInMetres(part)) : undefined,
     });
     return [...groups].map(([group, buffers]) =>

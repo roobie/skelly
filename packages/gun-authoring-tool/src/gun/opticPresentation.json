@@ -18,5 +18,15 @@
     "hoodFrontX": 0.25,
     "nearFrameDepthU": 0.25,
     "nearFrameThicknessU": 0.25
+  },
+  "scopes": {
+    "hunting-3-9x": {
+      "eyeReliefU": 8,
+      "ocularOpeningDiameterU": 2.75
+    },
+    "lpvo-1-6x": {
+      "eyeReliefU": 7.5,
+      "ocularOpeningDiameterU": 2.625
+    }
   }
 }

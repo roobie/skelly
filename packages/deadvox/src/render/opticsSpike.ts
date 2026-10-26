@@ -7,35 +7,34 @@ export type OpticsSpike = 'effect' | 'world';
 export type OpticsEye = 'fill' | 'relief';
 export type OpticsTube = 'disc' | 'cups' | 'split' | 'none';
 
+export const defaultOpticsTube = (
+  mode: OpticsSpike | undefined,
+  maximumMagnification: number | undefined,
+): OpticsTube => (mode === 'world' && (maximumMagnification ?? 1) > 1 ? 'disc' : 'none');
+
 export const opticsTubePresentation = (tube: OpticsTube, magnification: number) => ({
   worldAtUnity: tube === 'disc' || (tube === 'split' && magnification === 1),
   cups: tube === 'cups' || (tube === 'split' && magnification > 1),
 });
 
-const opticsSpikeFromSearch = (search: string): OpticsSpike | undefined => {
+const opticsSpikeFromSearch = (search: string): OpticsSpike => {
   const choice = new URLSearchParams(search).get('optics');
-  return choice === 'effect' || choice === 'world' ? choice : undefined;
+  return choice === 'effect' ? 'effect' : 'world';
 };
 
-export const configureOpticsSpike = (
-  held: HeldItems,
-  scene: Scene,
-  camera: PerspectiveCamera,
-): OpticsSpike | undefined => {
-  const mode = opticsSpikeFromSearch(globalThis.location?.search ?? '');
-  if (mode) {
-    const eye: OpticsEye =
-      mode === 'world' && new URLSearchParams(globalThis.location?.search ?? '').get('eye') === 'relief'
-        ? 'relief'
-        : 'fill';
-    const requested = new URLSearchParams(globalThis.location?.search ?? '').get('tube');
-    const tube: OpticsTube =
-      mode === 'world' && (requested === 'disc' || requested === 'cups' || requested === 'split') ? requested : 'none';
-    held.configureOpticsSpike(scene, mode, eye, tube);
-    camera.layers.enable(OPTICS_SPIKE_LAYER);
-    camera.near = 0.01;
-    camera.updateProjectionMatrix();
-  }
+export const configureOpticsSpike = (held: HeldItems, scene: Scene, camera: PerspectiveCamera): OpticsSpike => {
+  const search = new URLSearchParams(globalThis.location?.search ?? '');
+  const mode = opticsSpikeFromSearch(search.toString());
+  const eye: OpticsEye = mode === 'world' && search.get('eye') !== 'fill' ? 'relief' : 'fill';
+  const requested = search.get('tube');
+  const tube: OpticsTube | undefined =
+    mode === 'world' && (requested === 'disc' || requested === 'cups' || requested === 'split' || requested === 'none')
+      ? requested
+      : undefined;
+  held.configureOpticsSpike(scene, mode, eye, tube);
+  camera.layers.enable(OPTICS_SPIKE_LAYER);
+  camera.near = 0.01;
+  camera.updateProjectionMatrix();
   return mode;
 };
 

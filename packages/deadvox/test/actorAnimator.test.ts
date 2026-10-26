@@ -278,7 +278,8 @@ it('final arm solving samples the rummage mover output in world and overlay, and
 });
 
 it.each([
-  ['?optics=world', false],
+  ['', true],
+  ['?optics=world', true],
   ['?optics=world&eye=fill', false],
   ['?optics=world&eye=relief', true],
   ['?optics=effect&eye=relief', false],
@@ -325,6 +326,35 @@ it.each([
     f.dispose();
   }
 });
+
+it.each([
+  { loadout: 'ar', opticType: 'optic_holographic', search: '', mode: 'world', disc: false },
+  { loadout: 'ar', opticType: 'optic_lpvo_1_6x', search: '', mode: 'world', disc: true },
+  { loadout: 'hunting', opticType: 'optic_hunting_3_9x', search: '', mode: 'world', disc: true },
+  { loadout: 'ar', opticType: 'optic_lpvo_1_6x', search: '?optics=effect', mode: 'effect', disc: false },
+] as const)(
+  '$opticType with $search selects the default tube from the authored power range',
+  async ({ loadout, opticType, search, mode, disc }) => {
+    const f = await fixture(true, `?loadout=${loadout}&optic=${opticType}`);
+    vi.stubGlobal('location', { search });
+    try {
+      expect(configureOpticsSpike(f.view, new Scene(), f.camera)).toBe(mode);
+      const optic = mountedOptic(f.registry, f.item)!;
+      const range = optic.model.gun!.attachment!.properties.magnification;
+      for (const magnification of new Set([range?.min ?? 1, range?.max ?? 1])) {
+        f.view.update(f.camera, f.pose, 0, {
+          firearms: [],
+          readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+          ...(range ? { opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification } } : {}),
+        });
+        expect(f.view.opticLensFrame!.worldAtUnity).toBe(disc);
+      }
+    } finally {
+      vi.unstubAllGlobals();
+      f.dispose();
+    }
+  },
+);
 
 it('holographic relief changes the physical eye distance and its projected window together', async () => {
   const f = await fixture(true, '?loadout=ar&optic=optic_holographic');
