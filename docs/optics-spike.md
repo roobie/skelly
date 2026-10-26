@@ -24,7 +24,10 @@ instrument, or the image and housing would disagree. See
 `packages/deadvox/src/render/opticsSpike.ts`, `opticsEyeDistance`; and
 `packages/deadvox/src/render/actorAnimator.ts`, `ActorViewPlacement`.
 This compares relative eye-to-instrument placement, not a shared physical ADS
-pose or a change to the gameplay camera trajectory.
+pose or a change to the gameplay camera trajectory. The camera and instrument
+must describe the same frame: a screen-space aperture cannot stay aligned with
+world geometry posed from an earlier camera sample. See
+`packages/deadvox/src/game/play.ts`, `updateFrame`.
 
 Authored world geometry is the limit of this experiment. Missing close-eye
 interiors are a result to report, not permission to invent replacement assets.

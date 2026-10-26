@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { Group, type Object3D, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -117,6 +118,63 @@ it('orbit and spectator orientation cannot change world handling transforms for 
     expect(f.transforms()).not.toEqual(expected);
   } finally {
     f.dispose();
+  }
+});
+
+it('the play frame poses held geometry and the optical camera from this frame rather than the previous view', async () => {
+  const source = readFileSync(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  const start = source.indexOf('const updateFrame =');
+  const end = source.indexOf('const skyRoute =', start);
+  expect(start).toBeGreaterThan(0);
+  expect(end).toBeGreaterThan(start);
+  // Replay the production frame's presentation calls without booting terrain streaming or the DOM.
+  const frame = source.slice(start, end);
+  const calls = [...frame.matchAll(/\b(updateVisualFeedback|updateHeldItems|finishDraw)\(/g)].map((match) => match[1]!);
+  expect(new Set(calls).size).toBe(3);
+  expect(calls).toHaveLength(3);
+  const fixtures = await Promise.all(
+    (['world', 'effect', undefined] as const).map(async (mode) => ({ mode, f: await fixture() })),
+  );
+  for (const { mode, f } of fixtures) {
+    const scene = new Scene();
+    if (mode) {
+      f.view.configureOpticsSpike(scene, mode, 'relief');
+    }
+    const heldFrame = (mode ? scene : f.view.warmUpTarget.scene).getObjectByName('held-items-view')!;
+    const next = new PerspectiveCamera();
+    const steps: Record<string, () => void> = {
+      updateVisualFeedback: () => {
+        f.camera.position.copy(next.position);
+        f.camera.quaternion.copy(next.quaternion);
+        f.camera.updateMatrixWorld(true);
+      },
+      updateHeldItems: () =>
+        f.update(f.camera, f.pose, 0, {
+          firearms: [],
+          readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+        }),
+      finishDraw: () => {
+        expect(heldFrame.position.distanceTo(next.position)).toBeLessThan(1e-8);
+        expect(heldFrame.quaternion.toArray()).toEqual(next.quaternion.toArray());
+        expect(f.view.warmUpTarget.camera.position.distanceTo(next.position)).toBeLessThan(1e-8);
+        expect(f.view.warmUpTarget.camera.quaternion.toArray()).toEqual(next.quaternion.toArray());
+        expect(f.view.opticLensFrame).toBeDefined();
+      },
+    };
+    try {
+      next.position.set(1, 2, 3);
+      next.rotation.set(0.3, -0.7, 0.1, 'YXZ');
+      for (const call of calls) {
+        steps[call]!();
+      }
+      next.position.set(-2, 1, 4);
+      next.rotation.set(-0.4, 1.2, -0.1, 'YXZ');
+      for (const call of calls) {
+        steps[call]!();
+      }
+    } finally {
+      f.dispose();
+    }
   }
 });
 

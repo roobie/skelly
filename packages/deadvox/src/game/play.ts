@@ -4084,6 +4084,7 @@ export const startPlay = (
       frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
       perceptionLabels: perceptionLabelsEnabled,
     });
+    updateVisualFeedback(dt);
     const readiness = firearmReadiness();
     updateHeldItems(dt, readiness);
     const bore = heldFirearmBore(readiness);
@@ -4092,7 +4093,6 @@ export const startPlay = (
     updateDebugReadout(now);
     mark = realNow();
 
-    updateVisualFeedback(dt);
     const unconsciousPresentation = sim.body.unconscious && !sim.dead;
     document.body.classList.toggle('unconscious', unconsciousPresentation);
     audio.setOutputMuted(unconsciousPresentation);
