@@ -392,6 +392,7 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
       sigmaRadiansPerSqrtSecond: tuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
       smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
     },
+    breathHold: tuning.breathHold,
   });
   aim.recordShot(1, 0.3);
   aim.advance({
