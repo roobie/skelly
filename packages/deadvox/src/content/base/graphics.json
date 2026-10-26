@@ -28,6 +28,7 @@
         "label": "Fast camouflage pattern",
         "options": [false, true]
       },
+      "fogFarPlaneScale": 1.5,
       "gore": {
         "dripSourceCap": 6,
         "dropletCap": 128,
@@ -70,6 +71,7 @@
         "label": "Smaller sun shadow map",
         "options": [false, true]
       },
+      "streamHysteresisM": 16,
       "unbuiltSkyCap": 0.5
     }
   ]

@@ -231,6 +231,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     surface: built?.surface,
     stamp: built ? (chunk) => built.stamp(chunk) : undefined,
     radius: config.radiusChunks,
+    hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
   });
   return {

@@ -215,6 +215,7 @@ describe('held light presentation', () => {
       ambient: new HemisphereLight(),
       camera,
       radiusM: 1,
+      farPlaneScale: 1,
     };
     const worldAmbientIntensity = sky.ambient.intensity;
     const held = new HeldItems(new Inventory(registry), undefined, playerFigure);
