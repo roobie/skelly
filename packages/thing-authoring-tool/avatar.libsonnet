@@ -43,7 +43,7 @@ local legSegment(id, massKg, finish, ports) = {
   finish: finish,
   ports: ports,
 };
-local foot = { shoe: skin };
+local foot = { skin: skin };
 // The bust's measures, hips to crown.
 local bust = {
   pelvisWidth: 0.33, pelvisDepth: 0.2, pelvisHeight: 0.17,
@@ -136,8 +136,8 @@ local neckPin = jointPin('head') { normal: [0, -1, 0] };
     // One segment per part so a stance bends the leg at the knee and ankle; each segment is drawn about its own joint
     // and mates to the segment above it there, so the whole stands exactly as one piece would.
     parts: [
-      legSegment('thigh', 7, { pants: skin }, [jointSocket('knee', [0, -leg.thighLength, 0])]),
-      legSegment('shin', 3, { pants: skin }, [
+      legSegment('thigh', 7, { skin: skin }, [jointSocket('knee', [0, -leg.thighLength, 0])]),
+      legSegment('shin', 3, { skin: skin }, [
         jointPin('knee'),
         jointSocket('ankle', [0, leg.shoeHeight - leg.length + leg.thighLength, 0]),
       ]),

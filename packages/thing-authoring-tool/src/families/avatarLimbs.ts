@@ -171,7 +171,7 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
   switch (d.segment) {
     case 'thigh':
       return [
-        slab('thigh', 'pants', ys(knee, 0), {
+        slab('thigh', 'skin', ys(knee, 0), {
           halfX: d.thighWidth / 2,
           halfZ: d.thighDepth / 2,
           chamfer: d.thighChamfer,
@@ -179,7 +179,7 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
       ];
     case 'shin':
       return [
-        slab('shin', 'pants', ys(ankle - d.ankleOverlap, knee + d.kneeOverlap), {
+        slab('shin', 'skin', ys(ankle - d.ankleOverlap, knee + d.kneeOverlap), {
           halfX: d.shinWidth / 2,
           halfZ: d.shinDepth / 2,
           chamfer: d.shinChamfer,
@@ -187,7 +187,7 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
       ];
     case 'foot':
       return [
-        slab('foot', 'shoe', ys(sole, ankle), {
+        slab('foot', 'skin', ys(sole, ankle), {
           halfX: halfShoe - d.upperSideInset,
           halfZ: (d.heelReach + d.toeReach) / 2 - d.upperLengthInset,
           chamfer: d.shoeChamfer,

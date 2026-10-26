@@ -6750,7 +6750,7 @@
         {
           "family": "avatarLeg",
           "finish": {
-            "pants": "body-skin-player"
+            "skin": "body-skin-player"
           },
           "id": "thigh",
           "massKg": 7,
@@ -6790,7 +6790,7 @@
         {
           "family": "avatarLeg",
           "finish": {
-            "pants": "body-skin-player"
+            "skin": "body-skin-player"
           },
           "id": "shin",
           "massKg": 3,
@@ -6839,7 +6839,7 @@
         {
           "family": "avatarLeg",
           "finish": {
-            "shoe": "body-skin-player"
+            "skin": "body-skin-player"
           },
           "id": "foot",
           "massKg": 1,

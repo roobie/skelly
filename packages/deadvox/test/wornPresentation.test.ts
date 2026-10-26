@@ -235,14 +235,12 @@ describe('shared worn presentation', () => {
     expect(inventory.add(inventory.create(item.id), { kind: 'worn' })).toBe(true);
     const { models } = library();
     const meshes = new PlayerMeshes(0.5, pairedFigure, pairedRegistry.models, models);
-    const relativeTurns: Quaternion[] = [];
     for (const stance of ['standing', 'crouching', 'prone'] as const) {
       meshes.sync({ ...pose(inventory), stance, moving: true });
       meshes.group.updateMatrixWorld(true);
       const frames = ['shin', 'other_shin'].map((name) => meshes.group.getObjectByName(`wear-frame-${name}`)!);
       const [left, right] = frames.map((frame) => frame.getWorldQuaternion(new Quaternion()));
       expect(left!.angleTo(right!)).toBeGreaterThan(0);
-      relativeTurns.push(left!.clone().invert().multiply(right!));
       for (const frame of frames) {
         const attachment = frame.getObjectByName('worn-torso')!;
         expect(attachment).toBeDefined();
@@ -250,11 +248,22 @@ describe('shared worn presentation', () => {
         expect(pivot.distanceTo(frame.localToWorld(new Vector3(...segment.at)))).toBeLessThan(1e-8);
       }
     }
+    meshes.holdPose(pairedFigure.corpsePose);
+    meshes.sync({ ...pose(inventory), moving: false });
+    meshes.group.updateMatrixWorld(true);
+    const corpseFrames = ['shin', 'other_shin'].map((name) => meshes.group.getObjectByName(`wear-frame-${name}`)!);
+    const corpseTurns = corpseFrames.map((frame) => frame.getWorldQuaternion(new Quaternion()));
+    const relativeTurn = corpseTurns[0]!.clone().invert().multiply(corpseTurns[1]!);
+    for (const frame of corpseFrames) {
+      const attachment = frame.getObjectByName('worn-torso')!;
+      const pivot = attachment.children[0]!.localToWorld(new Vector3(...segment.pivot));
+      expect(pivot.distanceTo(frame.localToWorld(new Vector3(...segment.at)))).toBeLessThan(1e-8);
+    }
     meshes.group.rotation.set(0.2, 0.7, Math.PI / 2);
     meshes.group.updateMatrixWorld(true);
     const left = meshes.group.getObjectByName('wear-frame-shin')!.getWorldQuaternion(new Quaternion());
     const right = meshes.group.getObjectByName('wear-frame-other_shin')!.getWorldQuaternion(new Quaternion());
-    expect(left.invert().multiply(right).angleTo(relativeTurns.at(-1)!)).toBeLessThan(1e-7);
+    expect(left.invert().multiply(right).angleTo(relativeTurn)).toBeLessThan(1e-7);
   });
 
   it('rejects missing worn models, frames, covered parts and posed pivots at the content boundary', () => {
