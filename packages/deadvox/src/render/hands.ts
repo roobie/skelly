@@ -957,7 +957,7 @@ export class HeldItems {
         group.add(object);
       }
     });
-    heldModelFrame(this.shown.get(item.uid)!).add(group);
+    heldModelFrame(this.shown.get(item.uid)!.children[0]!).add(group);
     this.cylinderRounds.set(item.uid, { key, group });
     return group;
   }
