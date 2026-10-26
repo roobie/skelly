@@ -5,15 +5,18 @@ import { type ContentSource, validateContent } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { rotatedSize, rotationOf } from '../src/core/orientation.ts';
 import { reachTuning } from '../src/core/reach.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { CorpseFigures } from '../src/render/corpseFigures.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const BLOCK_SIZE = 0.5;
@@ -33,13 +36,21 @@ const entityOf = (def: FurnitureDef, facing: Facing): BlockEntity =>
     open: false,
   }) as BlockEntity;
 
-/** Each exported material slot in `root` and the colour it is drawn in. */
-const slotColours = (root: Object3D): Map<string, string> => {
-  const found = new Map<string, string>();
-  root.traverse((object) => {
-    if (object instanceof Mesh && typeof object.geometry.userData.slot === 'string') {
-      found.set(object.geometry.userData.slot, (object.material as MeshStandardMaterial).color.getHexString());
+const slotColours = (root: Object3D): { part: string; slot: string; colour: string }[] => {
+  const found: ReturnType<typeof slotColours> = [];
+  root.traverse((part) => {
+    if (typeof part.userData.part !== 'string') {
+      return;
     }
+    part.traverse((object) => {
+      if (object instanceof Mesh && typeof object.geometry.userData.slot === 'string') {
+        found.push({
+          part: part.userData.part,
+          slot: object.geometry.userData.slot,
+          colour: (object.material as MeshStandardMaterial).color.getHexString(),
+        });
+      }
+    });
   });
   return found;
 };
@@ -48,7 +59,11 @@ const slotColours = (root: Object3D): Map<string, string> => {
 const figureSlotColours = (): Map<string, string> => {
   const figure = registry.figures.get('player')!;
   const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
-  return new Map([...ids].flatMap((id) => [...slotColours(models.part(id)!)]));
+  return new Map(
+    [...ids].flatMap((id) =>
+      slotColours(models.part(id)!).map(({ part, slot, colour }) => [`${part}/${slot}`, colour]),
+    ),
+  );
 };
 /** Taken before any corpse is built, so a corpse that repaints the shared models can't move it. */
 const UNDRESSED = figureSlotColours();
@@ -79,18 +94,37 @@ describe('dead human bodies', () => {
     }
   });
 
-  it("dresses each dead human in its outfit's colours and leaves the shared models undressed", () => {
+  it('tints each corpse base with its role palette without tinting the player or shared models', () => {
+    const player = new PlayerMeshes(BLOCK_SIZE, registry.figures.get('player')!, registry.models, models);
+    player.sync({
+      body: createPlayerBody(makeScale(BLOCK_SIZE), 0, 0, 0),
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      stance: 'standing',
+      dt: 1,
+      thirdPerson: true,
+    });
     const corpses = new CorpseFigures(BLOCK_SIZE, registry, models);
     for (const def of deadHumans) {
       const outfit = registry.figures.get(def.corpse!.figure)!.outfits[def.corpse!.outfit]!;
       const drawn = slotColours(corpses.figure(entityOf(def, 'n'), def));
-      expect(drawn.size, def.id).toBeGreaterThan(0);
-      for (const [slot, colour] of drawn) {
-        const expected = Object.hasOwn(outfit, slot) ? new Color(outfit[slot]).getHexString() : UNDRESSED.get(slot);
-        expect(colour, `${def.id} ${slot}`).toBe(expected);
+      expect(drawn.length, def.id).toBeGreaterThan(0);
+      expect(
+        drawn.some(({ part, slot, colour }) => colour !== UNDRESSED.get(`${part}/${slot}`)),
+        def.id,
+      ).toBe(true);
+      for (const { part, slot, colour } of drawn) {
+        const tint = outfit[part]?.[slot];
+        const expected = tint === undefined ? UNDRESSED.get(`${part}/${slot}`) : new Color(tint).getHexString();
+        expect(colour, `${def.id} ${part}/${slot}`).toBe(expected);
       }
     }
     expect(figureSlotColours()).toEqual(UNDRESSED);
+    expect(new Map(slotColours(player.group).map(({ part, slot, colour }) => [`${part}/${slot}`, colour]))).toEqual(
+      UNDRESSED,
+    );
   });
 
   it('shows a carried dead human, fitted to the carry size, once models that were still loading arrive', () => {
@@ -129,11 +163,13 @@ describe('dead human bodies', () => {
     expect(shownSize()).toBeCloseTo(tuning.sizeMetres, 6);
   });
 
-  it('names only slots the figure models carry in every outfit', () => {
+  it('names only part slots the figure models carry in every outfit', () => {
     for (const figure of registry.figures.values()) {
       for (const [id, outfit] of Object.entries(figure.outfits)) {
-        for (const slot of Object.keys(outfit)) {
-          expect(UNDRESSED.has(slot), `${figure.id} outfit ${id} slot ${slot}`).toBe(true);
+        for (const [part, slots] of Object.entries(outfit)) {
+          for (const slot of Object.keys(slots)) {
+            expect(UNDRESSED.has(`${part}/${slot}`), `${figure.id} outfit ${id} part ${part} slot ${slot}`).toBe(true);
+          }
         }
       }
     }

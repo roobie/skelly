@@ -28,6 +28,8 @@ import { presentHeldDisplay } from './heldDisplay.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import { LENS, type ModelLibrary } from './models.ts';
+import type { WornPresentation } from './playerFigure.ts';
+import { WornModels } from './wornModels.ts';
 
 const HOLD_STATES = { lowered: false, ready: true } as const;
 
@@ -65,6 +67,9 @@ export class HeldPresentation {
   readonly holds = new Map<HandSide, HeldHoldFrame>();
   readonly heldByHand = new Map<HandSide, Object3D>();
   readonly displayPalms = new Map<HandSide, Object3D>();
+  private readonly wornFrames = new Map<string, Group>();
+  private readonly baseParts = new Map<string, Object3D[]>();
+  private readonly worn: WornModels | undefined;
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
   private readonly lightMaterials = new Map<string, MeshBasicMaterial | MeshLambertMaterial>();
@@ -84,11 +89,19 @@ export class HeldPresentation {
     this.registry = registry;
     this.figure = figure;
     this.models = models;
+    this.worn = models && new WornModels(figure, models, this.wornFrames, this.baseParts);
     this.frame = frame;
     this.torso = torso;
   }
 
+  syncWorn(source?: WornPresentation): void {
+    this.worn?.sync(source);
+  }
+
   clear(): void {
+    this.worn?.clear();
+    this.wornFrames.clear();
+    this.baseParts.clear();
     for (const held of this.heldByHand.values()) {
       disposeItemEmissiveMaterials(held);
     }
@@ -302,12 +315,33 @@ export class HeldPresentation {
     }
     arm.add(anchor);
     this.gripAnchors.set(side, anchor);
-    const definition = this.registry.models.get(this.figure.limbs[side === 'right' ? 'rightArm' : 'leftArm'].model);
+    const part = side === 'right' ? 'rightArm' : 'leftArm';
+    const definition = this.registry.models.get(this.figure.limbs[part].model);
     const scene = definition && this.models?.has(definition.id) ? this.models.part(definition.id) : undefined;
     if (definition && scene) {
+      scene.traverse((node) => {
+        if (typeof node.userData.part === 'string') {
+          const key = `${part}/${node.userData.part}`;
+          const nodes = this.baseParts.get(key) ?? [];
+          nodes.push(node);
+          this.baseParts.set(key, nodes);
+        }
+      });
       const rig = buildArmRig({ definition, scene }, this.figure.armRig, side, this.figure.armRig.handPoses[pose]);
       arm.add(rig.shoulder, rig.elbow, rig.hand);
       this.armRigs.set(side, rig);
+      for (const [name, entry] of Object.entries(this.figure.attachmentFrames)) {
+        if (entry.part !== part) {
+          continue;
+        }
+        const parent = rig.attachmentParents.get(entry.pivot)!;
+        const frame = new Group();
+        frame.name = `wear-frame-${name}`;
+        frame.position.set(...entry.at);
+        frame.rotation.set(...(entry.turn.map((degrees) => (degrees * Math.PI) / 180) as Vec3));
+        parent.add(frame);
+        this.wornFrames.set(name, frame);
+      }
     }
     const origin = mount?.origin ?? [0, 0, 0];
     const at = grip.map((value, index) => value - origin[index]!) as Vec3;

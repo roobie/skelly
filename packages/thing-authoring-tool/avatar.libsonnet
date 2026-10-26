@@ -1,16 +1,15 @@
 local params(values) = { [key]: std.toString(values[key]) for key in std.objectFields(values) };
 local shoulder(side) = { part: 'torso', solid: 'shoulder-' + side, fraction: [0.5, 0.5, 0.5] };
-local hip(x) = { part: 'torso', solid: 'pelvis', fraction: [x, 0.12, 0.5] };
-// The player's skin, shirt and trousers, shared by every body part so the joins match.
+local hip(x) = { part: 'pelvis', solid: 'pelvis', fraction: [x, 0.12, 0.5] };
+// Shared finishes keep exposed skin continuous across separately posed parts.
 local skin = 'body-skin-player';
-local shirt = 'cloth-shirt-player';
-local pants = 'cloth-pants-player';
+local underwear = 'cloth-pants-player';
 // The arm's measures; shoulder to fingertip reaches mid-thigh on the standing figure.
 local arm = {
-  upperLength: 0.3, upperWidth: 0.085, upperDepth: 0.09, sleeveLength: 0.15,
+  upperLength: 0.3, upperWidth: 0.085, upperDepth: 0.09,
   foreLength: 0.25, foreWidth: 0.08, wristWidth: 0.06,
   palmLength: 0.1, palmWidth: 0.085, palmThickness: 0.032, fingerLength: 0.08, thumbLength: 0.06,
-  sleeveThickness: 0.008, seamOverlap: 0.01, handOverlap: 0.005, armChamfer: 0.03, wristChamfer: 0.02,
+  seamOverlap: 0.01, handOverlap: 0.005, armChamfer: 0.03, wristChamfer: 0.02,
   foreDepthExtra: 0.004, wristDepthExtra: 0.006, wristShare: 0.45,
   fingerThicknessShare: 0.8, thumbThicknessShare: 0.7, fingerFrontShare: 0.9, thumbRootShare: 0.3,
   thumbInset: 0.004, thumbProjection: 0.014,
@@ -22,9 +21,7 @@ local leg = {
   shinWidth: 0.11, shinDepth: 0.12,
   shoeHeight: 0.09, shoeWidth: 0.1, toeReach: 0.21, heelReach: 0.06,
   thighChamfer: 0.04, shinChamfer: 0.03, shoeChamfer: 0.04, kneeOverlap: 0.02, ankleOverlap: 0.01,
-  cuffHeight: 0.04, cuffThickness: 0.006, soleThickness: 0.025, upperBase: 0.02,
   upperSideInset: 0.004, upperLengthInset: 0.008, upperBackShift: 0.004,
-  toeCapSideInset: 0.006, toeCapTipInset: 0.002, toeCapHeightShare: 0.6, toeCapStartShare: 0.55,
 };
 // A limb joint: the socket on the segment above, at the joint, faces down; the pin at the segment's own origin faces
 // up, so mated the lower segment hangs straight from the joint.
@@ -46,7 +43,7 @@ local legSegment(id, massKg, finish, ports) = {
   finish: finish,
   ports: ports,
 };
-local shoe = { shoe: 'leather-shoe-player', sole: 'rubber-black' };
+local foot = { skin: skin };
 local bust = import 'bust-measures.libsonnet';
 local bustSegment(id, massKg, finish, ports) = {
   id: id,
@@ -66,17 +63,23 @@ local neckPin = jointPin('head') { normal: [0, -1, 0] };
     // The head is its own part so a stance lifts it about the neck's top while the torso leans; the head mates to
     // the torso there, so the whole stands exactly as one piece would.
     parts: [
-      bustSegment('torso', 33, { pants: pants, shirt: shirt, skin: skin }, [neckSocket(
+      bustSegment('torso', 25, { skin: skin }, [jointSocket('pelvis', [0, 0, 0]), jointSocket('neck', [0, 0, 0])]),
+      bustSegment('pelvis', 7, { underwear: underwear }, [jointPin('pelvis')]),
+      bustSegment('neck', 1, { skin: skin }, [jointPin('neck'), neckSocket(
         [0, bust.pelvisHeight + bust.waistHeight + bust.ribHeight + bust.chestHeight + bust.neckHeight + bust.neckOverlap, 0],
       )]),
       bustSegment('head', 5, { skin: skin, hair: 'body-hair', eye: 'body-eye', mouth: 'body-mouth' }, [neckPin]),
     ],
-    connections: [{ from: 'torso.head', to: 'head.head' }],
+    connections: [
+      { from: 'neck.head', to: 'head.head' },
+      { from: 'torso.pelvis', to: 'pelvis.pelvis' },
+      { from: 'torso.neck', to: 'neck.neck' },
+    ],
     // The pivots code poses from: the neck where the torso meets the head, the head's own pivot above it, a
     // shoulder at each deltoid cap's centre and a hip under each side of the pelvis. Left is the figure's left, +x.
     anchors: {
-      neck: { part: 'torso', solid: 'neck', fraction: [0.5, 0, 0.5] },
-      head: { part: 'torso', solid: 'neck', fraction: [0.5, 1, 0.5] },
+      neck: { part: 'neck', solid: 'neck', fraction: [0.5, 0, 0.5] },
+      head: { part: 'neck', solid: 'neck', fraction: [0.5, 1, 0.5] },
       eye_left: { part: 'head', solid: 'left-eye', fraction: [0.5, 0.5, 1] },
       eye_right: { part: 'head', solid: 'right-eye', fraction: [0.5, 0.5, 1] },
       shoulder_left: shoulder('left'),
@@ -91,7 +94,7 @@ local neckPin = jointPin('head') { normal: [0, -1, 0] };
     // One segment per part so the first-person view bends the arm at its joints; each segment is drawn about its
     // own joint and mates to the segment above it there, so the whole hangs exactly as one piece would.
     parts: [
-      armSegment('upper', 1.9, { shirt: shirt, skin: skin }, [jointSocket('elbow', [0, -arm.upperLength, 0])]),
+      armSegment('upper', 1.9, { skin: skin }, [jointSocket('elbow', [0, -arm.upperLength, 0])]),
       armSegment('fore', 1.1, { skin: skin }, [jointPin('elbow'), jointSocket('wrist', [0, -arm.foreLength, 0])]),
       armSegment('palm', 0.3, { skin: skin }, [
         jointPin('wrist'),
@@ -110,7 +113,7 @@ local neckPin = jointPin('head') { normal: [0, -1, 0] };
     // The pivots code poses from: the shoulder the arm hangs from, sitting at the bust's shoulder anchor, each joint
     // below it, and the grip a held item sits at in the palm.
     anchors: {
-      shoulder: { part: 'upper', solid: 'sleeve', fraction: [0.5, 1, 0.5] },
+      shoulder: { part: 'upper', solid: 'upper-arm', fraction: [0.5, 1, 0.5] },
       elbow: { part: 'upper', solid: 'upper-arm', fraction: [0.5, 0, 0.5] },
       wrist: { part: 'fore', solid: 'wrist', fraction: [0.5, 0, 0.5] },
       knuckles: { part: 'palm', solid: 'palm', fraction: [0.5, 0, 0.5] },
@@ -124,23 +127,23 @@ local neckPin = jointPin('head') { normal: [0, -1, 0] };
     // One segment per part so a stance bends the leg at the knee and ankle; each segment is drawn about its own joint
     // and mates to the segment above it there, so the whole stands exactly as one piece would.
     parts: [
-      legSegment('thigh', 7, { pants: pants }, [jointSocket('knee', [0, -leg.thighLength, 0])]),
-      legSegment('shin', 3, { pants: pants }, [
+      legSegment('thigh', 7, { skin: skin }, [jointSocket('knee', [0, -leg.thighLength, 0])]),
+      legSegment('shin', 3, { skin: skin }, [
         jointPin('knee'),
         jointSocket('ankle', [0, leg.shoeHeight - leg.length + leg.thighLength, 0]),
       ]),
-      legSegment('foot', 1, shoe, [jointPin('ankle')]),
+      legSegment('foot', 1, foot, [jointPin('ankle')]),
     ],
     connections: [
       { from: 'thigh.knee', to: 'shin.knee' },
       { from: 'shin.ankle', to: 'foot.ankle' },
     ],
     // The pivots code poses from: the hip the leg hangs from and strides about, sitting at the bust's hip anchor, and
-    // each joint below it. The ankle lies in the cuff, its overlap's height above the cuff's bottom.
+    // each joint below it. The shin overlaps the foot so the joint stays closed when it bends.
     anchors: {
       hip: { part: 'thigh', solid: 'thigh', fraction: [0.5, 1, 0.5] },
       knee: { part: 'thigh', solid: 'thigh', fraction: [0.5, 0, 0.5] },
-      ankle: { part: 'shin', solid: 'cuff', fraction: [0.5, leg.ankleOverlap / (leg.ankleOverlap + leg.cuffHeight), 0.5] },
+      ankle: { part: 'shin', solid: 'shin', fraction: [0.5, leg.ankleOverlap / (leg.length - leg.shoeHeight - leg.thighLength + leg.kneeOverlap + leg.ankleOverlap), 0.5] },
     },
   },
 ]

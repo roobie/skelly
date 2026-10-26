@@ -13,7 +13,7 @@ import { positive } from './shapes.ts';
 const ARM_SEGMENTS = ['upper', 'fore', 'palm', 'fingers', 'thumb'] as const;
 
 /**
- * One segment of a hanging arm: short sleeve, bare upper arm and forearm, the hand edge-on to the thigh with its
+ * One segment of a bare arm, the hand edge-on to the thigh with its
  * thumb forward. The whole arm's measures come in, so every segment is drawn from the same figures.
  */
 export const avatarArm = (params: Readonly<Record<string, string>>): (ExtrudedPolygonSolid | BoxSolid)[] => {
@@ -23,7 +23,6 @@ export const avatarArm = (params: Readonly<Record<string, string>>): (ExtrudedPo
       upperLength: positive,
       upperWidth: positive,
       upperDepth: positive,
-      sleeveLength: positive,
       foreLength: positive,
       foreWidth: positive,
       wristWidth: positive,
@@ -32,8 +31,6 @@ export const avatarArm = (params: Readonly<Record<string, string>>): (ExtrudedPo
       palmThickness: positive,
       fingerLength: positive,
       thumbLength: positive,
-      /** How far the sleeve stands off the upper arm on each side. */
-      sleeveThickness: positive,
       /** How far each arm segment reaches into the one above it, so no gap opens between them. */
       seamOverlap: positive,
       /** How far the palm reaches into the wrist and the fingers into the palm. */
@@ -80,12 +77,7 @@ export const avatarArm = (params: Readonly<Record<string, string>>): (ExtrudedPo
   switch (d.segment) {
     case 'upper':
       return [
-        slab('sleeve', 'shirt', ys(-d.sleeveLength, 0), {
-          halfX: d.upperWidth / 2 + d.sleeveThickness,
-          halfZ: d.upperDepth / 2 + d.sleeveThickness,
-          chamfer: d.armChamfer,
-        }),
-        slab('upper-arm', 'skin', ys(elbow, -d.sleeveLength + d.seamOverlap), {
+        slab('upper-arm', 'skin', ys(elbow, 0), {
           halfX: d.upperWidth / 2,
           halfZ: d.upperDepth / 2,
           chamfer: d.armChamfer,
@@ -140,7 +132,7 @@ export const avatarArm = (params: Readonly<Record<string, string>>): (ExtrudedPo
 const LEG_SEGMENTS = ['thigh', 'shin', 'foot'] as const;
 
 /**
- * One segment of a standing leg: trouser thigh and shin over a shoe whose sole lies `length` below the hip joint.
+ * One segment of a bare leg whose foot lies `length` below the hip joint.
  * The whole leg's measures come in, so every segment is drawn from the same figures.
  */
 export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPolygonSolid | BoxSolid)[] => {
@@ -163,21 +155,10 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
       /** How far the shin reaches up into the thigh, and the shin and cuff down into the shoe. */
       kneeOverlap: positive,
       ankleOverlap: positive,
-      /** The trouser cuff's height above the ankle, and how far it stands off the shin on each side. */
-      cuffHeight: positive,
-      cuffThickness: positive,
-      soleThickness: positive,
-      /** The shoe upper's bottom above the sole's underside; below the sole's top, so the two meet. */
-      upperBase: positive,
       /** How far the upper sits in from the sole: at each side, over its length, and back from the toe. */
       upperSideInset: positive,
       upperLengthInset: positive,
       upperBackShift: positive,
-      /** The toe cap's inset from the shoe's sides and its tip, its height as a share of the shoe height, and where it starts as a share of the toe reach. */
-      toeCapSideInset: positive,
-      toeCapTipInset: positive,
-      toeCapHeightShare: positive,
-      toeCapStartShare: positive,
     }),
     params,
   );
@@ -185,13 +166,12 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
   const sole = -d.length;
   const ankle = sole + d.shoeHeight;
   const halfShoe = d.shoeWidth / 2;
-  const upperBottom = sole + d.upperBase;
   const origin = { thigh: 0, shin: knee, foot: ankle }[d.segment];
   const ys = (bottom: number, top: number): [number, number] => [bottom - origin, top - origin];
   switch (d.segment) {
     case 'thigh':
       return [
-        slab('thigh', 'pants', ys(knee, 0), {
+        slab('thigh', 'skin', ys(knee, 0), {
           halfX: d.thighWidth / 2,
           halfZ: d.thighDepth / 2,
           chamfer: d.thighChamfer,
@@ -199,33 +179,20 @@ export const avatarLeg = (params: Readonly<Record<string, string>>): (ExtrudedPo
       ];
     case 'shin':
       return [
-        slab('shin', 'pants', ys(ankle - d.ankleOverlap, knee + d.kneeOverlap), {
+        slab('shin', 'skin', ys(ankle - d.ankleOverlap, knee + d.kneeOverlap), {
           halfX: d.shinWidth / 2,
           halfZ: d.shinDepth / 2,
-          chamfer: d.shinChamfer,
-        }),
-        slab('cuff', 'pants', ys(ankle - d.ankleOverlap, ankle + d.cuffHeight), {
-          halfX: d.shinWidth / 2 + d.cuffThickness,
-          halfZ: d.shinDepth / 2 + d.cuffThickness,
           chamfer: d.shinChamfer,
         }),
       ];
     case 'foot':
       return [
-        block('sole', 'sole', [-halfShoe, halfShoe], ys(sole, sole + d.soleThickness), [-d.heelReach, d.toeReach]),
-        slab('shoe', 'shoe', ys(upperBottom, ankle), {
+        slab('foot', 'skin', ys(sole, ankle), {
           halfX: halfShoe - d.upperSideInset,
           halfZ: (d.heelReach + d.toeReach) / 2 - d.upperLengthInset,
           chamfer: d.shoeChamfer,
           cz: (d.toeReach - d.heelReach) / 2 - d.upperBackShift,
         }),
-        block(
-          'toe-cap',
-          'shoe',
-          [-halfShoe + d.toeCapSideInset, halfShoe - d.toeCapSideInset],
-          ys(upperBottom, sole + d.shoeHeight * d.toeCapHeightShare),
-          [d.toeReach * d.toeCapStartShare, d.toeReach - d.toeCapTipInset],
-        ),
       ];
     default:
       return d.segment satisfies never;

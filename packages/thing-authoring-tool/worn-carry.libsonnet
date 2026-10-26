@@ -1,8 +1,7 @@
-// Carry and armour as worn, in the player bust's frame (`avatar.libsonnet`, `player_bust`): origin at the pelvis base
-// on the centre line, y up, the face toward +z, the wearer's left at +x. Each shell fits round the bust's measures, so
-// it follows the body when those change. The layers stack outward: a vest on the body, a pack's shoulder straps over
-// the vest, the pack itself behind them.
+// Shared under-layer measures keep outer shells snug without burying them; straps clear the vest and its pouches.
+local carry(overJacket, suffix) =
 local bust = import 'bust-measures.libsonnet';
+local jacket = import 'jacket-measures.libsonnet';
 local bags = import 'bag-measures.libsonnet';
 local params(values) = { [key]: std.toString(values[key]) for key in std.objectFields(values) };
 local box(id, slot, min, max) = { id: id, kind: 'box', slot: slot, min: min, max: max };
@@ -11,11 +10,17 @@ local mirrored(id, slot, xs, ys, zs) = [
   box('%s_right' % id, slot, [-xs[1], ys[0], zs[0]], [-xs[0], ys[1], zs[1]]),
 ];
 
-// The bust's torso slabs, bottom to top, as `src/families/bust.ts`, `bust` stacks and chamfers them.
 local level(bottom, height, width, depth, chamfer) = {
   y: [bottom, bottom + height], hx: width / 2, hz: depth / 2, c: chamfer / 2,
 };
-local torso = {
+local jacketLevel(d, bottom, top) = level(bottom, top - bottom, d.width, d.depth, d.chamfer * 2);
+local jacketSplit = (jacket.chest.bottom + jacket.chest.top) / 2;
+local torso = if overJacket then {
+  pelvis: jacketLevel(jacket.hem, 0, jacket.hem.top),
+  waist: jacketLevel(jacket.waist, jacket.hem.top, jacket.chest.bottom),
+  ribs: jacketLevel(jacket.chest, jacket.chest.bottom, jacketSplit),
+  chest: jacketLevel(jacket.chest, jacketSplit, jacket.chest.top),
+} else {
   pelvis: level(0, bust.pelvisHeight, bust.pelvisWidth, bust.pelvisDepth, bust.torsoChamfer),
   waist: level(self.pelvis.y[1], bust.waistHeight, bust.waistWidth, bust.waistDepth, bust.torsoChamfer),
   ribs: level(self.waist.y[1], bust.ribHeight, bust.ribWidth, bust.ribDepth, bust.torsoChamfer),
@@ -23,11 +28,12 @@ local torso = {
 };
 local shoulderTop = torso.chest.y[1];
 
-// How far each layer sits out from the bust's measured surface, inner and outer face. Each inner face clears the
-// bust's drawn surface, which its coarser voxel grain sets out past the measures.
+// Clearances must exceed the under-layer's exported surface, including pockets and fasteners, not just its slab.
 local fit = {
   vest: [0.012, 0.02],
   stabVest: [0.012, 0.024],
+  vestWaist: self.vest,
+  stabVestWaist: self.stabVest,
   belt: [0.012, 0.02],
   packStrap: [0.028, 0.036],
   // A pack strap runs over each shoulder in this lane, between the collar and the deltoid.
@@ -41,7 +47,15 @@ local fit = {
   // A belt rides on the pelvis, below the step in to the waist.
   beltBand: [0.14, 0.165],
   fannyPackBottom: 0.09,
-};
+  slingClearance: 0.008,
+  slingInset: 0.02,
+} + if overJacket then {
+  vest: [0.02, 0.028],
+  stabVest: [0.02, 0.032],
+  vestWaist: [0.03, 0.038],
+  stabVestWaist: [0.03, 0.042],
+  packStrap: [0.04, 0.048],
+} else {};
 
 // The torso's plan outline at a level, set out by `o`; a y prism's profile is (z, x). Setting a chamfered corner out
 // by `o` moves its cut back by `o (2 - sqrt 2)`, so the outline stays parallel.
@@ -66,8 +80,8 @@ local ring(id, slot, l, offsets, heights, sides) =
 
 // A vest's shell from its hem to over the shoulders. The arms hang close beside the ribs and chest, so the shell is
 // open at the flanks there; `flanks` names the waist sides that close it below them.
-local vestShell(id, slot, offsets, bottom, flanks) =
-  ring(id + '_waist', slot, torso.waist, offsets, [bottom, torso.waist.y[1]], SIDES.open + flanks)
+local vestShell(id, slot, offsets, waistOffsets, bottom, flanks) =
+  ring(id + '_waist', slot, torso.waist, waistOffsets, [bottom, torso.waist.y[1]], SIDES.open + flanks)
   + ring(id + '_ribs', slot, torso.ribs, offsets, torso.ribs.y, SIDES.open)
   + ring(id + '_chest', slot, torso.chest, offsets, [torso.chest.y[0], shoulderTop + offsets[1]], SIDES.open)
   // Shoulder straps join the front and back panels over the top, clear of the collar and the deltoids.
@@ -75,22 +89,22 @@ local vestShell(id, slot, offsets, bottom, flanks) =
              [-(torso.chest.hz + offsets[1]), torso.chest.hz + offsets[1]]);
 
 local utilityVest =
-  local front = torso.waist.hz + fit.vest[1];
+  local front = torso.waist.hz + fit.vestWaist[1];
   local chestFront = torso.chest.hz + fit.vest[1];
   // A pouch with a flap over its top, standing out from the shell; the four pouches are the item's four pockets.
   local pouch(id, xs, ys, z, depth) =
     mirrored(id, 'trim', xs, ys, [z, z + depth])
     + mirrored(id + '_flap', 'body', [xs[0] - 0.003, xs[1] + 0.003], [ys[1] - 0.025, ys[1] + 0.004], [z + depth, z + depth + 0.004]);
-  vestShell('vest', 'body', fit.vest, fit.vestBottom, SIDES.flanks)
+  vestShell('vest', 'body', fit.vest, fit.vestWaist, fit.vestBottom, SIDES.flanks)
   // The pouches keep inside the pack straps' lane, so a pack worn over the vest clears them.
   + pouch('pouch_low', [0.015, fit.packStrapLane[0] - 0.01], [0.24, 0.33], front + 0.001, 0.034)
   + pouch('pouch_chest', [0.03, fit.packStrapLane[0] - 0.01], [0.47, 0.56], chestFront + 0.001, 0.024);
 
 local stabVest =
-  vestShell('panel', 'body', fit.stabVest, fit.vestBottom, [])
+  vestShell('panel', 'body', fit.stabVest, fit.stabVestWaist, fit.vestBottom, [])
   // Side straps close the open flanks at the waist, clear of the hanging arms.
-  + ring('side_strap_low', 'trim', torso.waist, [fit.stabVest[0], fit.stabVest[0] + 0.006], [0.25, 0.28], SIDES.flanks)
-  + ring('side_strap_high', 'trim', torso.waist, [fit.stabVest[0], fit.stabVest[0] + 0.006], [0.3, 0.33], SIDES.flanks);
+  + ring('side_strap_low', 'trim', torso.waist, [fit.stabVestWaist[0], fit.stabVestWaist[0] + 0.006], [0.25, 0.28], SIDES.flanks)
+  + ring('side_strap_high', 'trim', torso.waist, [fit.stabVestWaist[0], fit.stabVestWaist[0] + 0.006], [0.3, 0.33], SIDES.flanks);
 
 // A pack's shoulder straps: down the front to their buckles, over each shoulder, and down the back to the pack.
 local packStraps(backTo) =
@@ -110,7 +124,7 @@ local backpack(id, massKg, bottom) =
   local d = bags[id];
   local panel = -(torso.chest.hz + fit.packStrap[1] + d.strapWidth / 2);
   {
-    id: id + '_worn',
+    id: id + '_worn' + suffix,
     exportMass: 'parts',
     voxelGrain: 0.004,
     parts: [
@@ -129,7 +143,7 @@ local fannyPack =
   local d = bags.fanny_pack;
   local beltOuter = torso.pelvis.hz + fit.belt[1];
   {
-    id: 'fanny_pack_worn',
+    id: 'fanny_pack_worn' + suffix,
     exportMass: 'parts',
     voxelGrain: 0.004,
     parts: [
@@ -146,7 +160,7 @@ local fannyPack =
   };
 
 local wornAtom(id, massKg, pieces, finish) = {
-  id: id,
+  id: id + suffix,
   exportMass: 'parts',
   voxelGrain: 0.004,
   parts: [{ id: 'shell', family: 'compound', massKg: massKg, params: params({ pieces: pieces }), finish: finish, ports: [] }],
@@ -157,9 +171,10 @@ local wornAtom(id, massKg, pieces, finish) = {
 // to the slung gun's stock. Its foot meets the gun where `packages/deadvox/src/content/base/models-firearms.libsonnet`,
 // `slung`, hangs it.
 local sling =
-  local deltoidX = bust.chestWidth / 2 + bust.shoulderWidth / 2 - bust.deltoidInset;
-  local deltoidTop = shoulderTop - bust.deltoidDrop;
-  local half = bust.shoulderDepth / 2;
+  local deltoidX = if overJacket then jacket.chest.width / 2 - fit.slingInset
+                  else bust.chestWidth / 2 + bust.shoulderWidth / 2 - bust.deltoidInset;
+  local deltoidTop = if overJacket then shoulderTop + fit.slingClearance else shoulderTop - bust.deltoidDrop;
+  local half = if overJacket then jacket.chest.depth / 2 + fit.slingClearance else bust.shoulderDepth / 2;
   local xs = [-deltoidX - 0.012, -deltoidX + 0.012];
   local pad = [deltoidTop + 0.004, deltoidTop + 0.012];
   [
@@ -178,4 +193,5 @@ local sling =
   backpack('hiking_backpack', 1.4, 0.06),
   fannyPack,
   wornAtom('weapon_sling_worn', 0.15, sling, { strap: 'cord-olive', trim: 'steel-grey' }),
-]
+];
+carry(false, '') + carry(true, '_jacket')

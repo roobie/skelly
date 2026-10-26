@@ -225,6 +225,9 @@
           "at": [0, 0, 0],
           "frame": "torso",
           "model": "weapon_sling_worn",
+          "overTorso": {
+            "jacket": "weapon_sling_worn_jacket"
+          },
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }

@@ -49,6 +49,7 @@ export class HeldItems {
   private readonly ambient = new HemisphereLight();
   private skyVisibility = 1;
   private readonly animator: ActorAnimator;
+  private readonly presentation: HeldPresentation;
   private visor: Object3D | undefined;
   private opticsSpike: OpticsSpike | undefined;
   private opticsEye: OpticsEye = 'fill';
@@ -83,6 +84,7 @@ export class HeldItems {
       frame: this.view,
       torso: this.torso,
     });
+    this.presentation = presentation;
     this.animator = new ActorAnimator(inventory, presentation, (side) => this.viewShoulder(side));
     if (sunSource) {
       this.light.shadow = sunSource.shadow;
@@ -140,6 +142,7 @@ export class HeldItems {
         poseItem: (frame) => this.poseOptic(frame, main),
       },
     });
+    this.presentation.syncWorn(this.inventory);
     if (this.opticsSpike) {
       this.view.traverse((object) => object.layers.set(OPTICS_SPIKE_LAYER));
     }

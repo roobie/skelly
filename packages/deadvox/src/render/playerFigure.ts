@@ -3,7 +3,7 @@
 import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
-import type { FigureDef, ItemDef, ModelDef, Registry } from '../core/content.ts';
+import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -23,9 +23,9 @@ import {
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
-import { type ItemLook, itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
+import { WornModels } from './wornModels.ts';
 
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
 export const PLAYER_BODY_REAR_OFFSET = 0.19;
@@ -72,24 +72,6 @@ export interface WornPresentation {
   registry: Registry;
   worn: Readonly<Partial<Record<WearSlot, Item>>>;
 }
-
-/** One figure model a worn item draws, with the item that owns it and, when it draws that item's own model, its look. */
-interface WornEntry {
-  owner: Item;
-  entry: NonNullable<ItemDef['figureModels']>[number];
-  look?: ItemLook;
-}
-
-/** A worn item's figure models and those of the items fitted to it, such as a slung gun's sling. */
-const wornEntries = (registry: Registry, item: Item): WornEntry[] =>
-  [item, ...Object.values(item.slots ?? {}).filter((child): child is Item => child !== undefined)].flatMap((owner) => {
-    const look = itemLook(registry, owner);
-    return (defOf(registry, owner.type).figureModels ?? []).map((entry) => ({
-      owner,
-      entry,
-      ...(look && entry.model === look.model ? { look } : {}),
-    }));
-  });
 
 type FigurePartName = 'body' | FigureLimb;
 
@@ -262,8 +244,8 @@ const hangFromPivots = (
   });
 };
 
-/** A figure outfit: a colour for each material slot it repaints (`FigureDef`, `outfits`). */
-type Outfit = Readonly<Record<string, string>>;
+type Outfit = FigureDef['outfits'][string];
+type DressedMaterials = Map<Material, Map<string, Material>>;
 
 /** How a figure other than the player's own is drawn: in an outfit, and on a layer other than the player's. */
 interface FigureDress {
@@ -272,27 +254,38 @@ interface FigureDress {
 }
 
 /**
- * Repaints each mesh whose exported material slot the outfit names. Loaded copies share their library's materials,
- * so a repainted one is a copy, kept in `dressed` for the next part that shares it.
+ * Temporary corpse role tint; delete with #1366. Parts share skin materials, so repaint copies by colour rather
+ * than changing the shared material or letting one part's tint leak into another's.
  */
-const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>): void => {
-  const repaint = (material: Material, slot: string): Material => {
-    let copy = dressed.get(material);
+const dress = (scene: Object3D, outfit: Outfit, dressed: DressedMaterials): void => {
+  const repaint = (material: Material, colour: string): Material => {
+    let colours = dressed.get(material);
+    if (!colours) {
+      colours = new Map();
+      dressed.set(material, colours);
+    }
+    let copy = colours.get(colour);
     if (!copy) {
       copy = material.clone();
-      (copy as MeshStandardMaterial).color.set(outfit[slot]!);
-      dressed.set(material, copy);
+      (copy as MeshStandardMaterial).color.set(colour);
+      colours.set(colour, copy);
     }
     return copy;
   };
-  scene.traverse((object) => {
-    if (!(object instanceof Mesh) || Array.isArray(object.material)) {
+  scene.traverse((part) => {
+    const slots = typeof part.userData.part === 'string' ? outfit[part.userData.part] : undefined;
+    if (!slots) {
       return;
     }
-    const { slot } = object.geometry.userData;
-    if (typeof slot === 'string' && Object.hasOwn(outfit, slot)) {
-      object.material = repaint(object.material, slot);
-    }
+    part.traverse((object) => {
+      if (!(object instanceof Mesh) || Array.isArray(object.material)) {
+        return;
+      }
+      const { slot } = object.geometry.userData;
+      if (typeof slot === 'string' && Object.hasOwn(slots, slot)) {
+        object.material = repaint(object.material, slots[slot]!);
+      }
+    });
   });
 };
 
@@ -320,15 +313,8 @@ export class PlayerMeshes {
   private readonly modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
   private readonly pivotedParts: Readonly<Record<PivotedKind, readonly PivotedParts[]>>;
   private readonly attachmentFrames = new Map<string, Group>();
-  private readonly attachments = new Map<
-    WearSlot,
-    {
-      item: Item;
-      /** Changes whenever what the slot draws does: a model loading, or a part fitted or removed. */
-      key: string;
-      groups: Group[];
-    }
-  >();
+  private readonly baseParts = new Map<string, Object3D[]>();
+  private readonly worn: WornModels;
   private readonly models: ModelLibrary;
   private layer = PLAYER_FIGURE_LAYER;
   private readonly dummy = new Object3D();
@@ -344,8 +330,7 @@ export class PlayerMeshes {
   /** Set by `holdPose`: the drawn pose stays put whatever stance a sync names. */
   private fixedPose = false;
   private outfit: Outfit | undefined;
-  /** Each loaded material and its copy in the outfit's colour, so parts that shared a material share its copy. */
-  private readonly dressed = new Map<Material, Material>();
+  private readonly dressed: DressedMaterials = new Map();
 
   constructor(
     blockSize: number,
@@ -354,6 +339,7 @@ export class PlayerMeshes {
     models: ModelLibrary,
   ) {
     this.figure = figure;
+    this.worn = new WornModels(figure, models, this.attachmentFrames, this.baseParts);
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
     this.heldFrame.add(this.heldTorso);
@@ -414,7 +400,7 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     this.syncModels();
-    this.syncWorn(pose.wornItems ?? pose.inventory);
+    this.worn.sync(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
     this.syncHeld(pose);
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
@@ -512,6 +498,7 @@ export class PlayerMeshes {
     );
     this.heldFrame.traverse((object) => object.layers.set(this.layer));
     castsAndReceives(this.heldFrame);
+    this.presentation?.syncWorn(pose.wornItems ?? pose.inventory);
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
       if (side) {
@@ -551,6 +538,14 @@ export class PlayerMeshes {
       }
       const chain = this.pivotedParts[pivotedKind(part.name)];
       this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
+      scene.traverse((node) => {
+        if (typeof node.userData.part === 'string') {
+          const key = `${part.name}/${node.userData.part}`;
+          const nodes = this.baseParts.get(key) ?? [];
+          nodes.push(node);
+          this.baseParts.set(key, nodes);
+        }
+      });
       model.add(scene);
       model.traverse((object) => object.layers.set(this.layer));
       this.drawn.set(part, model);
@@ -583,49 +578,6 @@ export class PlayerMeshes {
     for (const key of STANCE_POSE_KEYS) {
       this.shownPose[key] = this.blendFrom[key] + (target[key] - this.blendFrom[key]) * this.blendProgress;
     }
-  }
-
-  private syncWorn(source?: WornPresentation): void {
-    const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
-    for (const slot of slots) {
-      const item = source?.worn[slot];
-      const entries = item ? wornEntries(source!.registry, item) : [];
-      const key = [this.models.version, ...entries.map(({ owner, look }) => `${owner.type}:${look?.key ?? ''}`)].join(
-        '|',
-      );
-      const previous = this.attachments.get(slot);
-      if (previous && previous.item === item && previous.key === key && previous.groups.length === entries.length) {
-        continue;
-      }
-      for (const group of previous?.groups ?? []) {
-        group.removeFromParent();
-      }
-      this.attachments.delete(slot);
-      if (!item || entries.length === 0) {
-        continue;
-      }
-      const groups = entries.flatMap((entry) => this.attachWorn(slot, entry) ?? []);
-      this.attachments.set(slot, { item, key, groups });
-    }
-  }
-
-  private attachWorn(slot: WearSlot, { entry, look }: WornEntry): Group | undefined {
-    const frame = this.attachmentFrames.get(entry.frame);
-    // An entry drawing its own item's model draws the item's whole look, so a slung gun keeps what is fitted to it.
-    const model = frame && (look ? this.models.partLook(look) : this.models.part(entry.model));
-    if (!(frame && model)) {
-      return;
-    }
-    // Keep the authored item pivot on the frame even when the model is turned.
-    model.position.set(...entry.pivot).negate();
-    const attachment = new Group();
-    attachment.name = `worn-${slot}`;
-    attachment.position.set(...entry.at);
-    attachment.rotation.set(...(entry.turn.map((degrees) => degrees * RADIANS) as Vec3));
-    attachment.add(model);
-    attachment.traverse((object) => object.layers.set(this.layer));
-    frame.add(castsAndReceives(attachment));
-    return attachment;
   }
 
   /** A limb's walking swing about its joint, in radians: the legs swing opposite ways, each arm against its leg. */
