@@ -3,6 +3,7 @@ import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
@@ -169,6 +170,52 @@ it('both views resolve registry item holds through one owner, including the mann
     }
   } finally {
     mannequin.dispose();
+    build.mockRestore();
+  }
+});
+
+it('keeps active firearm off-hand poses equal across first and third person readiness', async () => {
+  const registry = baseRegistry();
+  const figure = registry.figures.get('player')!;
+  const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
+  const inventory = new Inventory(registry);
+  const gun = inventory.create('revolver_357');
+  const light = inventory.create('flashlight');
+  expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);
+  expect(toggleLight(registry, light)).toBeUndefined();
+  const scale = makeScale(0.5);
+  const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
+  try {
+    for (const progress of [0.4, 1]) {
+      const handling = { firearms: [], readiness: { uid: gun.uid, progress, aimingDownSights: false } } as const;
+      const view = new HeldItems(inventory, models, figure);
+      build.mockClear();
+      view.update(new PerspectiveCamera(), undefined, 0, handling);
+      const firstOwner = build.mock.contexts[0] as HeldPresentation;
+      const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
+      build.mockClear();
+      world.sync({
+        body: createPlayerBody(scale, 0, 0, 0),
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance: 'standing',
+        dt: 0,
+        thirdPerson: true,
+        inventory,
+      });
+      world.syncHeldView(undefined, handling);
+      const worldOwner = build.mock.contexts.at(-1) as HeldPresentation;
+      expect(
+        worldOwner.arms.get('left')!.position.distanceTo(firstOwner.arms.get('left')!.position),
+        `readiness ${progress}`,
+      ).toBeLessThan(1e-7);
+      view.dispose();
+      world.dispose();
+    }
+  } finally {
     build.mockRestore();
   }
 });
