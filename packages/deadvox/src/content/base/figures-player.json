@@ -58,12 +58,84 @@
         }
       },
       "attachmentFrames": {
+        "clothing_body": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "body",
+          "turn": [0, 0, 0]
+        },
         "head": {
           "at": [0, 0.080399999999999999, 0],
           "insideView": true,
           "part": "body",
           "pivot": "head",
           "turn": [0, 180, 0]
+        },
+        "left_boot": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftLeg",
+          "pivot": "ankle",
+          "turn": [0, 0, 0]
+        },
+        "left_cuff": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "pivot": "elbow",
+          "turn": [0, 0, 0]
+        },
+        "left_hem": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftLeg",
+          "pivot": "knee",
+          "turn": [0, 0, 0]
+        },
+        "left_sleeve": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftArm",
+          "turn": [0, 0, 0]
+        },
+        "left_trouser": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "leftLeg",
+          "turn": [0, 0, 0]
+        },
+        "right_boot": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightLeg",
+          "pivot": "ankle",
+          "turn": [0, 0, 0]
+        },
+        "right_cuff": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "pivot": "elbow",
+          "turn": [0, 0, 0]
+        },
+        "right_hem": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightLeg",
+          "pivot": "knee",
+          "turn": [0, 0, 0]
+        },
+        "right_sleeve": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightArm",
+          "turn": [0, 0, 0]
+        },
+        "right_trouser": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "rightLeg",
+          "turn": [0, 0, 0]
         },
         "torso": {
           "at": [0, 0, 0],
@@ -162,22 +234,118 @@
       },
       "outfits": {
         "lab_coat": {
-          "pants": "#585b62",
-          "shirt": "#d9d9d1",
-          "shoe": "#2d2622",
-          "skin": "#b6a597"
+          "fingers": {
+            "skin": "#b6a597"
+          },
+          "foot": {
+            "skin": "#2d2622"
+          },
+          "fore": {
+            "skin": "#b6a597"
+          },
+          "head": {
+            "skin": "#b6a597"
+          },
+          "neck": {
+            "skin": "#b6a597"
+          },
+          "palm": {
+            "skin": "#b6a597"
+          },
+          "pelvis": {
+            "underwear": "#585b62"
+          },
+          "shin": {
+            "skin": "#585b62"
+          },
+          "thigh": {
+            "skin": "#585b62"
+          },
+          "thumb": {
+            "skin": "#b6a597"
+          },
+          "torso": {
+            "skin": "#d9d9d1"
+          },
+          "upper": {
+            "skin": "#d9d9d1"
+          }
         },
         "police_uniform": {
-          "pants": "#232937",
-          "shirt": "#33415e",
-          "shoe": "#121212",
-          "skin": "#b39e8f"
+          "fingers": {
+            "skin": "#b39e8f"
+          },
+          "foot": {
+            "skin": "#121212"
+          },
+          "fore": {
+            "skin": "#b39e8f"
+          },
+          "head": {
+            "skin": "#b39e8f"
+          },
+          "neck": {
+            "skin": "#b39e8f"
+          },
+          "palm": {
+            "skin": "#b39e8f"
+          },
+          "pelvis": {
+            "underwear": "#232937"
+          },
+          "shin": {
+            "skin": "#232937"
+          },
+          "thigh": {
+            "skin": "#232937"
+          },
+          "thumb": {
+            "skin": "#b39e8f"
+          },
+          "torso": {
+            "skin": "#33415e"
+          },
+          "upper": {
+            "skin": "#33415e"
+          }
         },
         "special_ops_uniform": {
-          "pants": "#363b2e",
-          "shirt": "#3d4434",
-          "shoe": "#17140f",
-          "skin": "#a99a8b"
+          "fingers": {
+            "skin": "#a99a8b"
+          },
+          "foot": {
+            "skin": "#17140f"
+          },
+          "fore": {
+            "skin": "#a99a8b"
+          },
+          "head": {
+            "skin": "#a99a8b"
+          },
+          "neck": {
+            "skin": "#a99a8b"
+          },
+          "palm": {
+            "skin": "#a99a8b"
+          },
+          "pelvis": {
+            "underwear": "#363b2e"
+          },
+          "shin": {
+            "skin": "#363b2e"
+          },
+          "thigh": {
+            "skin": "#363b2e"
+          },
+          "thumb": {
+            "skin": "#a99a8b"
+          },
+          "torso": {
+            "skin": "#3d4434"
+          },
+          "upper": {
+            "skin": "#3d4434"
+          }
         }
       },
       "stancePoses": {

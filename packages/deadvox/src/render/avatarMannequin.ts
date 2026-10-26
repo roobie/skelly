@@ -7,6 +7,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Item } from '../core/items.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
+import type { WearSlot } from '../core/schema.ts';
 import { heldItemPoses, type ItemHoldPose } from './heldPresentation.ts';
 import type { ModelLibrary } from './models.ts';
 import { type PlayerFigurePose, PlayerMeshes } from './playerFigure.ts';
@@ -110,6 +111,7 @@ export const createAvatarMannequin = (
     blockSize,
     placement: figure.mannequinPlacement,
     requested,
+    wear: (new URLSearchParams(search).get('mannequinWear') ?? '').split(',').filter(Boolean),
   });
   scene.add(mannequin.group);
   return mannequin;
@@ -139,7 +141,14 @@ export class AvatarMannequin {
       placement,
       requested,
       registry,
-    }: { blockSize: number; placement: FigureDef['mannequinPlacement']; requested: string; registry: Registry },
+      wear = [],
+    }: {
+      blockSize: number;
+      placement: FigureDef['mannequinPlacement'];
+      requested: string;
+      registry: Registry;
+      wear?: readonly string[];
+    },
   ) {
     this.blockSize = blockSize;
     this.registry = registry;
@@ -160,6 +169,15 @@ export class AvatarMannequin {
       dt: 0,
       thirdPerson: true,
     };
+    const worn: Partial<Record<WearSlot, Item>> = {};
+    for (const type of wear) {
+      const slot = registry.items.get(type)?.wearable?.slot;
+      if (!slot || worn[slot]) {
+        throw new Error(`Invalid or overlapping mannequin garment: ${type}`);
+      }
+      worn[slot] = this.sample(type);
+    }
+    this.figurePose.wornItems = { registry, worn };
     this.group.add(meshes.group);
   }
 
@@ -210,13 +228,7 @@ export class AvatarMannequin {
       if (!sample) {
         continue;
       }
-      let item = this.samples.get(sample.itemType);
-      if (!item) {
-        // A mannequin sample is presentation only, not a simulated inventory item with ownership or persistence.
-        item = { uid: this.samples.size + 1, type: sample.itemType, count: 1, condition: 1 };
-        this.samples.set(sample.itemType, item);
-      }
-      hands[sample.side] = item;
+      hands[sample.side] = this.sample(sample.itemType);
     }
     figurePose.heldItems = { registry: this.registry, hands };
     const aimed = aim && hold ? { uid: hands[hold.side]!.uid, progress: 1, aimingDownSights: false } : undefined;
@@ -228,5 +240,15 @@ export class AvatarMannequin {
     figurePose.dt = dt;
     this.meshes.sync(figurePose);
     this.meshes.syncHeldView(undefined, { firearms: [], ...(aimed ? { readiness: aimed } : {}) });
+  }
+
+  private sample(type: string): Item {
+    let item = this.samples.get(type);
+    if (!item) {
+      // Samples are presentation only, with no simulation ownership or persistence.
+      item = { uid: this.samples.size + 1, type, count: 1, condition: 1 };
+      this.samples.set(type, item);
+    }
+    return item;
   }
 }

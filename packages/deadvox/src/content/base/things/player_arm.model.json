@@ -2,7 +2,7 @@
   "id": "player_arm",
   "file": "assets/models/player_arm.glb",
   "parts": {
-    "upper": { "node": "upper:upper", "massKg": 1.9, "centreOfMass": [0, -0.14138554216867472, 0] },
+    "upper": { "node": "upper:upper", "massKg": 1.9, "centreOfMass": [0, -0.15, 0] },
     "fore": { "node": "fore:fore", "massKg": 1.1, "centreOfMass": [-5.00495294549375e-17, -0.411218487394958, 0] },
     "palm": { "node": "palm:palm", "massKg": 0.3, "centreOfMass": [-1.469460465287658e-16, -0.6000000000000001, 0] },
     "fingers": {
