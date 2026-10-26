@@ -1,3 +1,5 @@
+import type { Job } from '../core/handling.ts';
+import type { Inventory } from '../core/inventory.ts';
 import type { HandPose, MeleePoseFrame } from '../core/meleePose.ts';
 
 const clamp01 = (value: number): number => Math.max(0, Math.min(1, value));
@@ -12,6 +14,23 @@ const reachingHand = (side: 'right' | 'left', amount: number): HandPose => {
     offset: [-sign * 0.1 * amount, -0.19 * amount, -0.34 * amount],
     rotation: [-0.75 * amount, -sign * 0.12 * amount, sign * 0.08 * amount],
   };
+};
+
+/**
+ * How far a move has got when it takes an item that isn't carried, from the ground or from storage alike: the hands
+ * reach out for whatever is in the world, so one rule serves every pile, piece of furniture and container in either.
+ */
+export const worldGrabProgress = (
+  inventory: Pick<Inventory, 'itemByUid' | 'carriedByUid'>,
+  job: Readonly<Job> | undefined,
+): number | undefined => {
+  if (job?.kind !== 'move' || job.duration <= 0) {
+    return undefined;
+  }
+  if (!inventory.itemByUid(job.itemUid) || inventory.carriedByUid(job.itemUid)) {
+    return undefined;
+  }
+  return clamp01(job.elapsed / job.duration);
 };
 
 /** A short reach-and-return layered over the current view pose; handling owns its progress. */
