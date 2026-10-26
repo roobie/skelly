@@ -21,7 +21,9 @@ import {
   type WearSlot,
 } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
-import { HeldPresentation, type HeldPresentationFrame } from './heldPresentation.ts';
+import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
+import { HeldPresentation } from './heldPresentation.ts';
+import { type ItemLook, itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
@@ -70,6 +72,24 @@ export interface WornPresentation {
   registry: Registry;
   worn: Readonly<Partial<Record<WearSlot, Item>>>;
 }
+
+/** One figure model a worn item draws, with the item that owns it and, when it draws that item's own model, its look. */
+interface WornEntry {
+  owner: Item;
+  entry: NonNullable<ItemDef['figureModels']>[number];
+  look?: ItemLook;
+}
+
+/** A worn item's figure models and those of the items fitted to it, such as a slung gun's sling. */
+const wornEntries = (registry: Registry, item: Item): WornEntry[] =>
+  [item, ...Object.values(item.slots ?? {}).filter((child): child is Item => child !== undefined)].flatMap((owner) => {
+    const look = itemLook(registry, owner);
+    return (defOf(registry, owner.type).figureModels ?? []).map((entry) => ({
+      owner,
+      entry,
+      ...(look && entry.model === look.model ? { look } : {}),
+    }));
+  });
 
 type FigurePartName = 'body' | FigureLimb;
 
@@ -154,6 +174,8 @@ export interface PlayerFigurePose {
   wornItems?: WornPresentation;
   heldItems?: FigureHeldItems;
   holdReady?: boolean;
+  /** Draw empty fists through the same ready-pose source as the player's first-person presentation. */
+  emptyFists?: boolean;
   eye?: Vec3;
   pitch?: number;
 }
@@ -282,12 +304,14 @@ export class PlayerMeshes {
   opticsSpikeWorldBorders = false;
   readonly group = new Group();
   private readonly heldFrame = new Group();
+  private readonly heldTorso = new Group();
+  private animator: ActorAnimator | undefined;
   private readonly figure: FigureDef;
   private presentation: HeldPresentation | undefined;
-  private heldVersion = '';
   private lastPose: PlayerFigurePose | undefined;
   private handPose: MeleePoseFrame | undefined;
-  private handling: HeldPresentationFrame = {};
+  private handling: HeldHandlingFrame = { firearms: [] };
+  private recoil = 0;
   private readonly layout: PlayerFigureLayout;
   /** Each part's drawn model, once it has loaded. */
   private readonly drawn = new Map<FigurePart, Group>();
@@ -300,8 +324,8 @@ export class PlayerMeshes {
     WearSlot,
     {
       item: Item;
-      entries: ItemDef['figureModels'];
-      modelsVersion: number;
+      /** Changes whenever what the slot draws does: a model loading, or a part fitted or removed. */
+      key: string;
       groups: Group[];
     }
   >();
@@ -332,6 +356,7 @@ export class PlayerMeshes {
     this.figure = figure;
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
+    this.heldFrame.add(this.heldTorso);
     this.layout = playerFigureLayout(figure, modelDefs);
     this.modelDefs = modelDefs;
     const { body, legRig, armRig } = figure;
@@ -420,31 +445,33 @@ export class PlayerMeshes {
   }
 
   dispose(): void {
-    this.presentation?.dispose();
-    this.heldVersion = '';
+    this.animator?.dispose();
+    this.animator = undefined;
+    this.presentation = undefined;
     this.lastPose = undefined;
   }
 
-  /** Static holds share the first-person owner; view-only handling effects can update them after camera sync. */
-  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldPresentationFrame): void {
+  /** Actor action input is independent of the observing camera. */
+  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldHandlingFrame, recoil = 0): void {
     this.handPose = handPose;
     this.handling = handling;
+    this.recoil = recoil;
     if (this.lastPose) {
       this.syncHeld(this.lastPose);
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and mounts resolve in one frame.
   private syncHeld(pose: PlayerFigurePose): void {
     const source = pose.heldItems ?? pose.inventory;
     this.heldFrame.visible = pose.thirdPerson === true;
     if (!source) {
-      this.presentation?.clear();
-      this.heldVersion = '';
+      this.animator?.dispose();
+      this.animator = undefined;
+      this.presentation = undefined;
       return;
     }
     const { registry, hands } = source;
-    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}`;
-    const presentation = this.prepareHeld(source, version);
     this.positionHeldFrame(pose, registry);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
@@ -454,45 +481,43 @@ export class PlayerMeshes {
     const holdingSide = hands.left ? 'left' : 'right';
     const leading = pose.inventory ? dominantSide(pose.inventory.character) : holdingSide;
     const handPose = this.handPose ?? readyMeleePose(pose.holdReady ?? false, this.figure.holds, leading);
-    presentation.poseStatic(hands, handPose, {
-      leading,
-      ready: pose.holdReady ?? false,
-      handling: this.handling,
-      shoulderOf,
-    });
-    this.heldFrame.updateMatrixWorld(true);
-    for (const side of presentation.arms.keys()) {
-      const shoulder = shoulderOf(side);
-      const anchor = presentation.gripAnchors.get(side)!;
-      const hold = presentation.holds.get(side);
-      anchor.position.set(...(hold?.at ?? [0, 0, 0]));
-      presentation.solve(side, shoulder, presentation.displayPalms.get(side) ?? (hold ? anchor : undefined));
-    }
-  }
-
-  private prepareHeld({ registry, hands }: FigureHeldItems, version: string): HeldPresentation {
     if (this.presentation?.registry !== registry) {
-      this.presentation?.dispose();
+      this.animator?.dispose();
       this.presentation = new HeldPresentation(registry, this.figure, this.models, {
         frame: this.heldFrame,
-        torso: this.heldFrame,
+        torso: this.heldTorso,
       });
-      this.heldVersion = '';
+      this.animator = new ActorAnimator(source, this.presentation, shoulderOf, {
+        emptyFists: false,
+        shouldersFollowTorso: false,
+      });
     }
-    const presentation = this.presentation!;
-    if (version !== this.heldVersion) {
-      presentation.clear();
-      for (const side of ['right', 'left'] as const) {
-        const item = hands[side];
-        if (item) {
-          presentation.addItem(side, item);
-        }
+    this.animator!.setSource(source);
+    this.animator!.setShoulders(shoulderOf);
+    const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
+    const readiness =
+      this.handling.readiness ?? (readyGun ? { uid: readyGun.uid, progress: 1, aimingDownSights: false } : undefined);
+    this.animator!.update(
+      {
+        position: this.heldFrame.position.clone(),
+        quaternion: this.heldFrame.quaternion.clone(),
+        rotation: { y: pose.yaw },
+      },
+      {
+        pose: handPose,
+        recoil: this.recoil,
+        emptyFists: pose.emptyFists ?? false,
+        handling: { ...this.handling, ...(readiness ? { readiness } : {}) },
+      },
+    );
+    this.heldFrame.traverse((object) => object.layers.set(this.layer));
+    castsAndReceives(this.heldFrame);
+    for (const [part, drawn] of this.drawn) {
+      const side = ARM_SIDE[part.name];
+      if (side) {
+        drawn.visible = pose.thirdPerson === true && !this.presentation!.arms.has(side);
       }
-      this.heldVersion = version;
-      this.heldFrame.traverse((object) => object.layers.set(this.layer));
-      castsAndReceives(this.heldFrame);
     }
-    return presentation;
   }
 
   private positionHeldFrame(pose: PlayerFigurePose, registry: Registry): void {
@@ -564,32 +589,30 @@ export class PlayerMeshes {
     const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
     for (const slot of slots) {
       const item = source?.worn[slot];
-      const entries = item && defOf(source!.registry, item.type).figureModels;
+      const entries = item ? wornEntries(source!.registry, item) : [];
+      const key = [this.models.version, ...entries.map(({ owner, look }) => `${owner.type}:${look?.key ?? ''}`)].join(
+        '|',
+      );
       const previous = this.attachments.get(slot);
-      if (
-        previous &&
-        previous.item === item &&
-        previous.entries === entries &&
-        previous.modelsVersion === this.models.version &&
-        previous.groups.length === entries?.length
-      ) {
+      if (previous && previous.item === item && previous.key === key && previous.groups.length === entries.length) {
         continue;
       }
       for (const group of previous?.groups ?? []) {
         group.removeFromParent();
       }
       this.attachments.delete(slot);
-      if (!(item && entries)) {
+      if (!item || entries.length === 0) {
         continue;
       }
       const groups = entries.flatMap((entry) => this.attachWorn(slot, entry) ?? []);
-      this.attachments.set(slot, { item, entries, modelsVersion: this.models.version, groups });
+      this.attachments.set(slot, { item, key, groups });
     }
   }
 
-  private attachWorn(slot: WearSlot, entry: NonNullable<ItemDef['figureModels']>[number]): Group | undefined {
+  private attachWorn(slot: WearSlot, { entry, look }: WornEntry): Group | undefined {
     const frame = this.attachmentFrames.get(entry.frame);
-    const model = frame && this.models.part(entry.model);
+    // An entry drawing its own item's model draws the item's whole look, so a slung gun keeps what is fitted to it.
+    const model = frame && (look ? this.models.partLook(look) : this.models.part(entry.model));
     if (!(frame && model)) {
       return;
     }

@@ -232,15 +232,17 @@ export const observationPlugin = {
     proofHeldUpdate(...args);
     if (!proof.trackAttachment) return;
     const pose = args[1];
-    const arm = view.held.arms.get(proof.off);
-    const item = view.held.heldByHand.get(proof.off);
+    const arm = view.held.animator.presentation.arms.get(proof.off);
+    const item = view.held.animator.presentation.heldByHand.get(proof.off);
     const anchor = arm?.getObjectByName('grip-anchor');
     if (!anchor || !item) return;
     proof.attachments.push({
       gap: item.getWorldPosition(camera.position.clone()).distanceTo(anchor.getWorldPosition(camera.position.clone())),
       angle: item.getWorldQuaternion(camera.quaternion.clone()).angleTo(anchor.getWorldQuaternion(camera.quaternion.clone())),
       torsoYaw: pose?.torsoYaw ?? 0,
-      movedOff: [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
+      // En-garde before the click raises the off hand by design, so neutrality is checked only mid-swing.
+      movedOff: session.playerCombat.activeMeleeAction !== undefined &&
+        [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
     });
   };
 ${marker}`,

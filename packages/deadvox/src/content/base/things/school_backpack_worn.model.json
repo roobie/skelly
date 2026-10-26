@@ -1,0 +1,12 @@
+{
+  "id": "school_backpack_worn",
+  "file": "assets/models/school_backpack_worn.glb",
+  "parts": {
+    "straps": { "node": "straps:straps", "massKg": 0.1, "centreOfMass": [0, 0.5510754716981132, 0.004322740814299901] },
+    "bag": {
+      "node": "bag:bag",
+      "massKg": 0.6,
+      "centreOfMass": [0.00007721305777615998, 0.3735526027324011, -0.24779172793626178]
+    }
+  }
+}

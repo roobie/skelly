@@ -45,6 +45,7 @@ import { FurnitureMeshes } from './furniture.ts';
 import { Gore } from './gore.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { setHeightFogTuning } from './heightFog.ts';
+import { createHeldViews } from './heldViews.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { ItemPictures } from './itemPictures.ts';
 import { ItemThrows } from './itemThrows.ts';
@@ -303,6 +304,7 @@ export const createPlayView = (
   scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
   playerMeshes.opticsSpikeWorldBorders = opticsSpike === 'world';
+  const updateHeldViews = createHeldViews(inventory, held, playerMeshes);
   const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
   const flashlight = new Flashlight(
     scene,
@@ -578,8 +580,7 @@ export const createPlayView = (
           : 0;
       const carried = inventory.entities.carrying();
       carriedPiece.update(dt, camera.quaternion, s, carried?.floorLocked ? handling.floorPlacement : undefined);
-      held.update(camera, pose, recoil, { ...handling, lift });
-      playerMeshes.syncHeldView(pose, handling);
+      updateHeldViews(camera, pose, recoil, { ...handling, dt, lift });
       flashlight.update({ registry, lit: light, held, camera, inventory, piles });
       lightPool.update(inventory, {
         held,

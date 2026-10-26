@@ -11,6 +11,7 @@ import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { heldState } from './heldState.ts';
 
 const BASE = 'src/content/base';
 const registry = baseRegistry();
@@ -114,7 +115,7 @@ function measure(
         } as ModelLibrary)
       : library;
   const held = new HeldItems(inventory, models, playerFigure);
-  const internals = held as unknown as HeldInternals;
+  const internals = heldState(held) as HeldInternals;
   const camera = new PerspectiveCamera(75, 16 / 9, 0.01, 128);
   camera.rotation.order = 'YXZ';
   camera.updateProjectionMatrix();

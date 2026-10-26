@@ -1,6 +1,5 @@
 import {
   BoxGeometry,
-  Euler,
   Group,
   Matrix4,
   Mesh,
@@ -10,7 +9,7 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
-import { type AimFrame, NEUTRAL_AIM } from '../core/aim.ts';
+import type { AimFrame } from '../core/aim.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import {
@@ -22,11 +21,9 @@ import {
 } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { type HandPose, interpolateHandPose, type MeleePoseFrame } from '../core/meleePose.ts';
+import { type HandPose, interpolateHandPose } from '../core/meleePose.ts';
 import type { ArmRigDef } from '../core/schema.ts';
-import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { type ArmRig, buildArmRig, solveArmRig } from './armRig.ts';
-import { sightedFirearmModel } from './firearmSight.ts';
 import { presentHeldDisplay } from './heldDisplay.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
@@ -158,54 +155,6 @@ export class HeldPresentation {
     }
   }
 
-  poseStatic(
-    hands: Readonly<Partial<Record<HandSide, Item>>>,
-    pose: MeleePoseFrame,
-    {
-      leading,
-      ready,
-      handling,
-      shoulderOf,
-    }: {
-      leading: HandSide;
-      ready: boolean;
-      handling: HeldPresentationFrame;
-      shoulderOf: (side: HandSide) => Vector3;
-    },
-  ): void {
-    for (const side of ['right', 'left'] as const) {
-      const arm = this.arms.get(side);
-      const transform = this.handTransform(side, pose[side]);
-      if (!(arm && transform) || arm.parent !== this.torso) {
-        continue;
-      }
-      const rotation = new Quaternion().setFromEuler(new Euler(...transform.rotation, 'YXZ'));
-      const item = hands[side];
-      const def = item && defOf(this.registry, item.type);
-      if (item && def?.firearm) {
-        const { readiness } = handling;
-        const progress = readiness?.uid === item.uid ? readiness.progress : Number(ready);
-        const resolved = this.firearmTransform({
-          model: sightedFirearmModel(this.registry, item)!,
-          side,
-          leadingSide: leading,
-          twoHanded: Boolean(def.twoHanded),
-          progress,
-          aimingDownSights: false,
-          aimFrame: handling.aim ?? NEUTRAL_AIM,
-          loweredPitchRadians: firearmsCombatTuning(this.registry).loweredPitchRadians,
-        });
-        transform.offset = resolved.rootOffset;
-        rotation.setFromRotationMatrix(
-          new Matrix4().makeBasis(
-            ...(resolved.rootRotation.map((axis) => new Vector3(...axis)) as [Vector3, Vector3, Vector3]),
-          ),
-        );
-      }
-      this.place(side, transform, { rotation, shoulder: shoulderOf(side), firearm: Boolean(def?.firearm) });
-    }
-  }
-
   private torsoRotation(): Quaternion {
     return this.frame
       .getWorldQuaternion(new Quaternion())
@@ -257,6 +206,13 @@ export class HeldPresentation {
       shape.add(mesh);
     }
     return shape;
+  }
+
+  warmUp(): Mesh {
+    const mesh = new Mesh(this.geometry, this.material);
+    mesh.receiveShadow = true;
+    mesh.visible = false;
+    return mesh;
   }
 
   dispose(): void {

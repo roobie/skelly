@@ -564,12 +564,18 @@ const exposedFaces = (grid: Grid, sweep: Sweep): { readonly slices: Map<number, 
   return { slices, count };
 };
 
+// A loop rather than a spread into Math.min: a fine-grained grid has more voxels than a call can take arguments.
 const boundsOf = (grid: Grid): Bounds => {
-  const voxels = [...grid.keys()].map(voxelOf);
-  return [
-    [0, 1, 2].map((axis) => Math.min(...voxels.map((at) => at[axis]!))),
-    [0, 1, 2].map((axis) => Math.max(...voxels.map((at) => at[axis]!))),
-  ];
+  const low = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+  const high = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  for (const key of grid.keys()) {
+    const at = voxelOf(key);
+    for (let axis = 0; axis < 3; axis += 1) {
+      low[axis] = Math.min(low[axis]!, at[axis]!);
+      high[axis] = Math.max(high[axis]!, at[axis]!);
+    }
+  }
+  return [low, high];
 };
 
 /** A face in source-local metres that must keep its voxel-grain tessellation. */

@@ -50,18 +50,28 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
+      // Head gear sits on the head and turns with it; carry and armour sit on the torso in the bust's own frame, where
+      // their models are authored, and stay drawn in first person as the body does.
       attachmentFrames: {
         head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
+        torso: { part: 'body', at: [0, 0, 0], turn: [0, 0, 0], insideView: false },
       },
       holds: {
-        reachLeadMetres: 0.08,
+        // The chin-high guard must stay inside both view and world arm reach.
+        reachLeadMetres: 0.3,
         oneHand: [0.2, -0.2, -0.38],
         twoHand: [0.08, -0.22, -0.42],
         display: [0.14, -0.13, -0.3],
         supportUpright: [0, 0.14, 0],
         supportForward: [0, 0, -0.14],
+        // Firearm readiness is separate from en-garde so aiming keeps its authored bore alignment.
         readyPrimary: { offset: [0.025, 0.085, 0.015], rotation: [0.12, -0.08, -0.04] },
         readySupport: { offset: [-0.025, 0.075, 0.01], rotation: [0.1, 0.08, 0.04] },
+        // En-garde draws both hands up close to the chin and inward, whether they are fists or holds.
+        guardPrimary: { offset: [-0.04, 0.12, 0.05], rotation: [0.12, -0.08, -0.04] },
+        guardSupport: { offset: [0.04, 0.1, 0.06], rotation: [0.1, 0.08, 0.04] },
+        // A switched-on off-hand item stays visible and directed forward alongside an aimed firearm.
+        aimActiveOffHand: { offset: [0, 0.25, 0.02], rotation: [0, 0, 0] },
       },
       // A stance bends each leg at the knee and ankle about these parts and anchors.
       legRig: {

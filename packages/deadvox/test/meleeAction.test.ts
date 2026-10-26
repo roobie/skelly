@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import type { ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { firearmAimOffHand } from '../src/core/firearmAimOffHand.ts';
+import { readyFirearmPose } from '../src/core/heldPose.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
@@ -13,9 +17,11 @@ import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
+  shouldEnterMeleeGuard,
   shouldEnterMeleeReady,
   startPlayerMelee,
 } from '../src/game/melee.ts';
+import { primaryMeleeAction } from '../src/game/primaryAction.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -214,6 +220,8 @@ describe('melee pose and contact contract', () => {
       inputLocked: false,
     };
     expect(shouldEnterMeleeReady(input)).toBe(true);
+    expect(shouldEnterMeleeGuard({ ...input, meleeWeaponHeld: false })).toBe(true);
+    expect(shouldEnterMeleeGuard({ ...input, firearmHeld: true })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, rightMouseHeld: false })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false, handsEmpty: true })).toBe(true);
@@ -221,15 +229,56 @@ describe('melee pose and contact contract', () => {
     expect(shouldEnterMeleeReady({ ...input, inputLocked: true })).toBe(false);
   });
 
-  it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {
+  it('dispatches an empty-hand primary click to a punch only from en-garde', () => {
+    const action = { kind: 'fists' as const };
+    const readiness = {
+      rightMouseHeld: false,
+      meleeWeaponHeld: false,
+      handsEmpty: true,
+      debugBuild: false,
+      inputLocked: false,
+    };
+    expect(primaryMeleeAction(action, readiness)).toBeUndefined();
+    expect(primaryMeleeAction(action, { ...readiness, rightMouseHeld: true })).toEqual({ kind: 'swing' });
+  });
+
+  it('supports an aimed firearm only with an empty off hand and raises an active off-hand item', () => {
+    const inventory = new Inventory(registry);
+    const firearm = inventory.create('revolver_357');
+    expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
+    const readiness = { uid: firearm.uid, progress: 1, aimingDownSights: false };
+    expect(firearmAimOffHand(inventory.hands, readiness)).toEqual({
+      side: 'left',
+      firearmSide: 'right',
+      mode: 'support',
+    });
+    expect(firearmAimOffHand(inventory.hands, readiness, true)).toBeUndefined();
+    const flashlight = inventory.create('flashlight');
+    expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
+    expect(firearmAimOffHand(inventory.hands, readiness)).toBeUndefined();
+    expect(toggleLight(registry, flashlight)).toBeUndefined();
+    expect(firearmAimOffHand(inventory.hands, readiness)).toEqual({
+      side: 'left',
+      firearmSide: 'right',
+      mode: 'active',
+    });
+  });
+
+  it('raises both hands from rest in the shared en-garde pose', () => {
     expect(readyMeleePose(false).right.offset).toEqual([0, 0, 0]);
     expect(readyMeleePose(false).left.offset).toEqual([0, 0, 0]);
     const ready = readyMeleePose(true, registry.figures.get('player')!.holds);
     for (const side of ['right', 'left'] as const) {
-      expect(ready[side].offset).not.toEqual([0, 0, 0]);
-      expect(Math.hypot(...ready[side].offset)).toBeLessThan(0.1);
-      expect(Math.hypot(...ready[side].rotation)).toBeLessThan((45 * Math.PI) / 180);
+      expect(ready[side].offset[1]).toBeGreaterThan(0);
     }
+  });
+
+  it('keeps the firearm-ready pose unchanged when guard tuning changes', () => {
+    const holds = structuredClone(registry.figures.get('player')!.holds);
+    const firearmReady = readyFirearmPose('right', holds);
+    holds.guardPrimary.offset[1] += 1;
+    holds.guardSupport.offset[1] += 1;
+    expect(readyFirearmPose('right', holds)).toEqual(firearmReady);
   });
 
   it('eases fist-only torso yaw to 30 degrees at contact and back to the unchanged rest pose', () => {

@@ -97,8 +97,11 @@ try {
     globalThis.d7Observed.starts = [];
     globalThis.d7Observed.combatStaminaBefore = globalThis.d7Review.session.sim.needs.stamina;
   });
+  await page.mouse.down({ button: 'right' });
+  await page.waitForFunction(() => globalThis.d7Review.input.rightMouseActionHeld);
   await page.mouse.click(640, 360);
   await page.waitForFunction(() => globalThis.d7Observed.starts.length > 0);
+  await page.mouse.up({ button: 'right' });
   const combat = await page.evaluate(() => ({
     starts: globalThis.d7Observed.starts,
     staminaBefore: globalThis.d7Observed.combatStaminaBefore,

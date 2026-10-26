@@ -9,7 +9,7 @@ read_if:
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you add a dead human, change figure outfits or the corpse pose, or change how dead bodies are drawn
-  - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
+  - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
@@ -1342,6 +1342,16 @@ A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. The lamp's authored grip must leave the flame visible; see
 `src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
+En-garde raises both hands close to the chin with elbows in, whether they are
+empty or holding items, so it reads as a guard whatever the player carries. A
+firearm on aim is not a melee guard: a free off hand supports the gun, an
+off-hand item in use stays raised and forward, and any other off-hand item rests.
+The off-hand state makes it clear whether the player is aiming with a free hand
+or still using what it holds. The rule is shared by first person, third person and
+the mannequin so other players and the third-person camera see the same hands. See
+`src/render/actorAnimator.ts`, `ActorAnimator.update`, and
+`src/content/base/figures-player.jsonnet`, `holds`.
+
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
 or a phone, so the hand can never sit between the eye and the screen. Content
@@ -1416,11 +1426,13 @@ same gun instance keeps its rounds and attachments. The slung gun takes no
 pocket space, but its full weight counts toward carried encumbrance. Slinging
 is an ordinary worn-item move, and a displaced long gun prefers a free shoulder
 over a pocket or the ground. Every long gun may take the Deadvox sling mount;
-the sling itself has no model or handling effect. Rare loot and authored fitted
-guns make this carrying option discoverable. See `SLING_SLOT` in
-`src/core/firearmFitting.ts` and `Inventory.carriedWeight` in
-`src/core/inventory.ts`. Third-person rendering waits for worn-gear rendering
-(#582).
+the sling has no handling effect. Rare loot and authored fitted guns make this
+carrying option discoverable. A slung gun hangs at the wearer's side on a fixed
+sling path, not across the back, so it clears a pack; it is drawn with whatever
+is fitted to it, and its sling's strap over the shoulder
+(`DESIGN.md`, "Worn items seen"). See `src/core/firearmFitting.ts`, `SLING_SLOT`;
+`src/core/inventory.ts`, `Inventory.carriedWeight`; and
+`src/content/base/models-firearms.libsonnet`, `slung`.
 
 ### Light mount on a long gun
 
@@ -1607,15 +1619,17 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-First-person and world-body holds share one held-item-and-arms owner, with each
-view supplying its own shoulder frame. This applies to all items, not just guns:
-the world body is what others and the mannequin see, so it must show the same
-holds as first person. One owner prevents those holds drifting, lets the mannequin
-judge them from outside, and gives later NPCs and other players the same source.
-Hold, readiness and support tuning belongs to content so another figure need not
-inherit the player's proportions. See `src/render/heldPresentation.ts`,
-`HeldPresentation`; `src/render/playerFigure.ts`, `PlayerMeshes`;
-`src/render/hands.ts`, `HeldItems`; and
+First-person and world-body handling share one animation implementation and
+held-item-and-arms mechanism, with each view supplying its own shoulder frame.
+This applies to all items, not just guns: the world body is what others and the
+mannequin see, so it must show the same holds and action feedback as first person.
+One animation source prevents those drifting, lets the mannequin judge them from
+outside, and gives later NPCs and other players the same source. Observer motion
+must not change the actor's physical pose. Hold, readiness and support tuning
+belongs to content so another figure need not inherit the player's proportions.
+See `src/render/actorAnimator.ts`, `ActorAnimator`;
+`src/render/heldPresentation.ts`, `HeldPresentation`;
+`src/render/playerFigure.ts`, `PlayerMeshes`; `src/render/hands.ts`, `HeldItems`; and
 `src/content/base/figures-player.jsonnet`, `holds`.
 
 Shoulders are body attachments, not movable reach handles. When an authored grip
@@ -1753,6 +1767,17 @@ the renderer. Attachment does not decide whether a garment needs rigid segments
 or skin deformation; that choice needs a visual comparison before multiplying
 clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
 `src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
+
+Rigid carry and armour, packs, vests, a fanny pack and a slung gun, are authored
+on the torso in the bust's own frame and fitted to the bust's measures, so they
+follow the body when it changes. They stack in layers outward from the body, so
+any mix of them worn together keeps clear of the torso and of each other, standing
+or crouched; the swinging limbs are left out of that rule because they already pass
+through the body. A worn item's fitted parts draw with it, so an item looks the same
+worn as held, and a fitted part's own worn model, such as a sling's strap, draws
+beside it. Carry stays drawn in first person, as the body does. See
+`packages/thing-authoring-tool/worn-carry.libsonnet`, `fit`; `src/render/playerFigure.ts`,
+`wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. It belongs with the hands because the world camera cannot draw that close
