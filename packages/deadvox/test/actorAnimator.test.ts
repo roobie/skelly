@@ -137,7 +137,7 @@ it('orbit and spectator orientation cannot change world handling transforms for 
   }
 });
 
-it('the play frame poses held geometry and the optical camera from this frame rather than the previous view', async () => {
+it('the play frame poses overlay and world held views from this frame rather than the previous view', async () => {
   const source = readFileSync(new URL('../src/game/play.ts', import.meta.url), 'utf8');
   const start = source.indexOf('const updateFrame =');
   const end = source.indexOf('const skyRoute =', start);
@@ -158,11 +158,24 @@ it('the play frame poses held geometry and the optical camera from this frame ra
     }
     const heldFrame = (mode ? scene : f.view.warmUpTarget.scene).getObjectByName('held-items-view')!;
     const next = new PerspectiveCamera();
+    const worldSample = new PerspectiveCamera();
+    const syncHeldView = f.world.syncHeldView.bind(f.world);
+    const world = vi.spyOn(f.world, 'syncHeldView').mockImplementation((...args) => {
+      syncHeldView(...args);
+      worldSample.position.copy(f.physical().position);
+      worldSample.quaternion.copy(f.physical().quaternion);
+    });
     const steps: Record<string, () => void> = {
       updateVisualFeedback: () => {
         f.camera.position.copy(next.position);
         f.camera.quaternion.copy(next.quaternion);
         f.camera.updateMatrixWorld(true);
+        f.world.sync({
+          ...f.actor,
+          eye: [next.position.x / 0.5, next.position.y / 0.5, next.position.z / 0.5],
+          yaw: next.rotation.y,
+          pitch: next.rotation.x,
+        });
       },
       updateHeldItems: () =>
         f.update(f.camera, f.pose, 0, {
@@ -170,25 +183,27 @@ it('the play frame poses held geometry and the optical camera from this frame ra
           readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
         }),
       finishDraw: () => {
-        expect(heldFrame.position.distanceTo(next.position)).toBeLessThan(1e-8);
-        expect(heldFrame.quaternion.toArray()).toEqual(next.quaternion.toArray());
-        expect(f.view.warmUpTarget.camera.position.distanceTo(next.position)).toBeLessThan(1e-8);
-        expect(f.view.warmUpTarget.camera.quaternion.toArray()).toEqual(next.quaternion.toArray());
+        for (const sample of [heldFrame, f.view.warmUpTarget.camera, worldSample]) {
+          expect(sample.position.distanceTo(next.position)).toBeLessThan(1e-8);
+          expect(sample.quaternion.toArray()).toEqual(next.quaternion.toArray());
+        }
         expect(f.view.opticLensFrame).toBeDefined();
       },
     };
     try {
       next.position.set(1, 2, 3);
-      next.rotation.set(0.3, -0.7, 0.1, 'YXZ');
+      next.rotation.set(0.3, -0.7, 0, 'YXZ');
       for (const call of calls) {
         steps[call]!();
       }
       next.position.set(-2, 1, 4);
-      next.rotation.set(-0.4, 1.2, -0.1, 'YXZ');
+      next.rotation.set(-0.4, 1.2, 0, 'YXZ');
       for (const call of calls) {
         steps[call]!();
       }
+      expect(world).toHaveBeenCalledTimes(2);
     } finally {
+      world.mockRestore();
       f.dispose();
     }
   }
