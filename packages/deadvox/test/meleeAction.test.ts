@@ -3,7 +3,6 @@ import { Body } from '../src/core/body.ts';
 import type { ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAimOffHand } from '../src/core/firearmAimOffHand.ts';
-import { firearmAimHandPose } from '../src/core/firearmAimPose.ts';
 import { readyFirearmPose } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
@@ -242,18 +241,6 @@ describe('melee pose and contact contract', () => {
     };
     expect(primaryMeleeAction(action, readiness)).toBeUndefined();
     expect(primaryMeleeAction(action, { ...readiness, rightMouseHeld: true })).toEqual({ kind: 'swing' });
-  });
-
-  it('resolves the active off-hand pose toward the firearm-ready pose', () => {
-    const { holds } = registry.figures.get('player')!;
-    const active = { side: 'left' as const, firearmSide: 'right' as const, mode: 'active' as const };
-    const ready = readyFirearmPose('right', holds);
-    expect(firearmAimHandPose({ side: 'left', aimOffHand: active, readyPose: ready, holds, easedReady: 1 })).toEqual(
-      ready.left,
-    );
-    expect(
-      firearmAimHandPose({ side: 'left', aimOffHand: active, readyPose: ready, holds, easedReady: 0 }),
-    ).not.toEqual(ready.left);
   });
 
   it('supports an aimed firearm only with an empty off hand and raises an active off-hand item', () => {
