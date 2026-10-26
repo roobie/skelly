@@ -1,4 +1,4 @@
-import { Group, Quaternion, Vector3 } from 'three';
+import { Group, type Object3D, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type FigureDef, type ItemDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -170,12 +170,102 @@ describe('shared worn presentation', () => {
     expect(meshes.group.getObjectByName('worn-head')).toBeDefined();
   });
 
-  it('rejects missing worn models, frames and posed pivots at the content boundary', () => {
+  it('suppresses only loaded garment coverage and restores it after the last covering item is removed', () => {
+    const covering = (id: string, slot: 'legs' | 'feet'): ItemDef => ({
+      ...fixtureItem,
+      id,
+      wearable: { slot, encumbrance: 0 },
+      figureModels: [{ ...segment, covers: [figure.legRig.shin.part] }],
+    });
+    const trousers = covering('fixture_trousers', 'legs');
+    const boots = covering('fixture_boots', 'feet');
+    const coveredRegistry = {
+      ...registry,
+      items: new Map([...registry.items, [trousers.id, trousers], [boots.id, boots]]),
+    };
+    const inventory = new Inventory(coveredRegistry);
+    const { models, available } = library();
+    available.clear();
+    const meshes = new PlayerMeshes(0.5, fixtureFigure, coveredRegistry.models, models);
+    const pants = inventory.create(trousers.id);
+    const shoes = inventory.create(boots.id);
+    expect(inventory.add(pants, { kind: 'worn' })).toBe(true);
+    meshes.sync(pose(inventory));
+    const leg = meshes.group.getObjectByName('figure-leftLeg')!;
+    const baseNodes: Object3D[] = [];
+    leg.traverse((node) => {
+      if (node.userData.part === figure.legRig.shin.part) {
+        baseNodes.push(node);
+      }
+    });
+    expect(baseNodes.length).toBeGreaterThan(0);
+    expect(baseNodes.every((node) => node.visible)).toBe(true);
+    available.add(segment.model);
+    models.version += 1;
+    meshes.sync(pose(inventory));
+    expect(baseNodes.every((node) => !node.visible)).toBe(true);
+    const otherLeg = meshes.group.getObjectByName('figure-rightLeg')!;
+    expect(otherLeg.visible).toBe(true);
+    otherLeg.traverse((node) => expect(node.visible).toBe(true));
+    expect(inventory.add(shoes, { kind: 'worn' })).toBe(true);
+    meshes.sync(pose(inventory));
+    expect(inventory.move(pants, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    meshes.sync(pose(inventory));
+    expect(baseNodes.every((node) => !node.visible)).toBe(true);
+    expect(inventory.move(shoes, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    meshes.sync(pose(inventory));
+    expect(baseNodes.every((node) => node.visible)).toBe(true);
+  });
+
+  it('keeps paired garment segments on independently swinging limbs through stance and corpse placement', () => {
+    const otherFrame = 'other_shin';
+    const pairedFigure: FigureDef = {
+      ...fixtureFigure,
+      attachmentFrames: {
+        ...fixtureFigure.attachmentFrames,
+        [otherFrame]: { ...fixtureFigure.attachmentFrames.shin!, part: 'rightLeg' },
+      },
+    };
+    const item: ItemDef = {
+      ...fixtureItem,
+      figureModels: [segment, { ...segment, frame: 'other_shin' }],
+    };
+    const pairedRegistry = { ...registry, items: new Map([...registry.items, [item.id, item]]) };
+    const inventory = new Inventory(pairedRegistry);
+    expect(inventory.add(inventory.create(item.id), { kind: 'worn' })).toBe(true);
+    const { models } = library();
+    const meshes = new PlayerMeshes(0.5, pairedFigure, pairedRegistry.models, models);
+    const relativeTurns: Quaternion[] = [];
+    for (const stance of ['standing', 'crouching', 'prone'] as const) {
+      meshes.sync({ ...pose(inventory), stance, moving: true });
+      meshes.group.updateMatrixWorld(true);
+      const frames = ['shin', 'other_shin'].map((name) => meshes.group.getObjectByName(`wear-frame-${name}`)!);
+      const [left, right] = frames.map((frame) => frame.getWorldQuaternion(new Quaternion()));
+      expect(left!.angleTo(right!)).toBeGreaterThan(0);
+      relativeTurns.push(left!.clone().invert().multiply(right!));
+      for (const frame of frames) {
+        const attachment = frame.getObjectByName('worn-torso')!;
+        expect(attachment).toBeDefined();
+        const pivot = attachment.children[0]!.localToWorld(new Vector3(...segment.pivot));
+        expect(pivot.distanceTo(frame.localToWorld(new Vector3(...segment.at)))).toBeLessThan(1e-8);
+      }
+    }
+    meshes.group.rotation.set(0.2, 0.7, Math.PI / 2);
+    meshes.group.updateMatrixWorld(true);
+    const left = meshes.group.getObjectByName('wear-frame-shin')!.getWorldQuaternion(new Quaternion());
+    const right = meshes.group.getObjectByName('wear-frame-other_shin')!.getWorldQuaternion(new Quaternion());
+    expect(left.invert().multiply(right).angleTo(relativeTurns.at(-1)!)).toBeLessThan(1e-7);
+  });
+
+  it('rejects missing worn models, frames, covered parts and posed pivots at the content boundary', () => {
     const broken = structuredClone(fixtureFigure);
     broken.attachmentFrames.shin!.pivot = 'fixture_missing_pivot';
     const item = {
       ...fixtureItem,
-      figureModels: [{ ...segment, model: 'fixture_missing_model', frame: 'fixture_missing_frame' }],
+      figureModels: [
+        { ...segment, model: 'fixture_missing_model', frame: 'fixture_missing_frame' },
+        { ...segment, frame: 'head', covers: ['fixture_missing_part'] },
+      ],
     };
     const { issues } = buildRegistry([
       {
@@ -196,6 +286,10 @@ describe('shared worn presentation', () => {
         expect.objectContaining({
           path: 'items[0].figureModels[0].frame',
           message: expect.stringContaining('fixture_missing_frame'),
+        }),
+        expect.objectContaining({
+          path: 'items[0].figureModels[1].covers[0]',
+          message: expect.stringContaining('fixture_missing_part'),
         }),
         expect.objectContaining({
           path: 'figures[0].attachmentFrames.shin.pivot',

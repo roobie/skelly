@@ -66,6 +66,11 @@ export const PLAYER_REGION_BOXES: Readonly<Record<BodyRegion, FigureBox>> = {
   rightLeg: legRegion(FIGURE_BOXES.rightLeg),
 };
 
+interface WornAttachment {
+  group: Group;
+  covered: Object3D[];
+}
+
 export interface WornPresentation {
   registry: Registry;
   worn: Readonly<Partial<Record<WearSlot, Item>>>;
@@ -261,13 +266,14 @@ export class PlayerMeshes {
   private readonly modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
   private readonly pivotedParts: Readonly<Record<PivotedKind, readonly PivotedParts[]>>;
   private readonly attachmentFrames = new Map<string, Group>();
+  private readonly baseParts = new Map<string, Object3D[]>();
   private readonly attachments = new Map<
     WearSlot,
     {
       item: Item;
       entries: ItemDef['figureModels'];
       modelsVersion: number;
-      groups: Group[];
+      groups: WornAttachment[];
     }
   >();
   private readonly models: ModelLibrary;
@@ -469,6 +475,14 @@ export class PlayerMeshes {
       const scene = this.models.part(part.model)!;
       const chain = this.pivotedParts[pivotedKind(part.name)];
       this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
+      scene.traverse((node) => {
+        if (typeof node.userData.part === 'string') {
+          const key = `${part.name}/${node.userData.part}`;
+          const nodes = this.baseParts.get(key) ?? [];
+          nodes.push(node);
+          this.baseParts.set(key, nodes);
+        }
+      });
       model.add(scene);
       model.traverse((object) => object.layers.set(this.layer));
       this.drawn.set(part, model);
@@ -518,7 +532,7 @@ export class PlayerMeshes {
       ) {
         continue;
       }
-      for (const group of previous?.groups ?? []) {
+      for (const { group } of previous?.groups ?? []) {
         group.removeFromParent();
       }
       this.attachments.delete(slot);
@@ -528,9 +542,25 @@ export class PlayerMeshes {
       const groups = entries.flatMap((entry) => this.attachWorn(slot, entry) ?? []);
       this.attachments.set(slot, { item, entries, modelsVersion: this.models.version, groups });
     }
+    this.syncBaseCoverage();
   }
 
-  private attachWorn(slot: WearSlot, entry: NonNullable<ItemDef['figureModels']>[number]): Group | undefined {
+  private syncBaseCoverage(): void {
+    for (const nodes of this.baseParts.values()) {
+      for (const node of nodes) {
+        node.visible = true;
+      }
+    }
+    for (const { groups } of this.attachments.values()) {
+      for (const { covered } of groups) {
+        for (const node of covered) {
+          node.visible = false;
+        }
+      }
+    }
+  }
+
+  private attachWorn(slot: WearSlot, entry: NonNullable<ItemDef['figureModels']>[number]): WornAttachment | undefined {
     const frame = this.attachmentFrames.get(entry.frame);
     const model = frame && this.models.part(entry.model);
     if (!(frame && model)) {
@@ -545,7 +575,9 @@ export class PlayerMeshes {
     attachment.add(model);
     attachment.traverse((object) => object.layers.set(this.layer));
     frame.add(castsAndReceives(attachment));
-    return attachment;
+    const { part } = this.figure.attachmentFrames[entry.frame]!;
+    const covered = (entry.covers ?? []).flatMap((name) => this.baseParts.get(`${part}/${name}`) ?? []);
+    return { group: attachment, covered };
   }
 
   /** A limb's walking swing about its joint, in radians: the legs swing opposite ways, each arm against its leg. */

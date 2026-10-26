@@ -1,5 +1,8 @@
 local limb(model, joint) = { model: model, joint: joint };
 local segment(part, pivot) = { part: part, pivot: pivot };
+local frame(part, pivot=null) = {
+  part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
+} + if pivot == null then {} else { pivot: pivot };
 local handPose(fingers, thumbAcross, thumbIn) = {
   fingersDegrees: fingers,
   thumbAcrossDegrees: thumbAcross,
@@ -52,6 +55,17 @@ local handPose(fingers, thumbAcross, thumbIn) = {
       },
       attachmentFrames: {
         head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
+        clothing_body: frame('body'),
+        left_sleeve: frame('leftArm'),
+        right_sleeve: frame('rightArm'),
+        left_cuff: frame('leftArm', 'elbow'),
+        right_cuff: frame('rightArm', 'elbow'),
+        left_trouser: frame('leftLeg'),
+        right_trouser: frame('rightLeg'),
+        left_hem: frame('leftLeg', 'knee'),
+        right_hem: frame('rightLeg', 'knee'),
+        left_boot: frame('leftLeg', 'ankle'),
+        right_boot: frame('rightLeg', 'ankle'),
       },
       holds: {
         reachLeadMetres: 0.08,

@@ -6154,22 +6154,22 @@
         },
         "head": {
           "fraction": [0.5, 1, 0.5],
-          "part": "torso",
+          "part": "neck",
           "solid": "neck"
         },
         "hip_left": {
           "fraction": [0.75, 0.12, 0.5],
-          "part": "torso",
+          "part": "pelvis",
           "solid": "pelvis"
         },
         "hip_right": {
           "fraction": [0.25, 0.12, 0.5],
-          "part": "torso",
+          "part": "pelvis",
           "solid": "pelvis"
         },
         "neck": {
           "fraction": [0.5, 0, 0.5],
-          "part": "torso",
+          "part": "neck",
           "solid": "neck"
         },
         "shoulder_left": {
@@ -6185,8 +6185,16 @@
       },
       "connections": [
         {
-          "from": "torso.head",
+          "from": "neck.head",
           "to": "head.head"
+        },
+        {
+          "from": "torso.pelvis",
+          "to": "pelvis.pelvis"
+        },
+        {
+          "from": "torso.neck",
+          "to": "neck.neck"
         }
       ],
       "exportMass": "parts",
@@ -6195,12 +6203,10 @@
         {
           "family": "bust",
           "finish": {
-            "pants": "cloth-pants-player",
-            "shirt": "cloth-shirt-player",
             "skin": "body-skin-player"
           },
           "id": "torso",
-          "massKg": 33,
+          "massKg": 25,
           "params": {
             "chestDepth": "0.22",
             "chestHeight": "0.14999999999999999",
@@ -6228,6 +6234,114 @@
             "waistWidth": "0.29999999999999999"
           },
           "ports": [
+            {
+              "gender": "female",
+              "id": "pelvis",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
+            {
+              "gender": "female",
+              "id": "neck",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "bust",
+          "finish": {
+            "underwear": "cloth-pants-player"
+          },
+          "id": "pelvis",
+          "massKg": 7,
+          "params": {
+            "chestDepth": "0.22",
+            "chestHeight": "0.14999999999999999",
+            "chestWidth": "0.40000000000000002",
+            "hairCover": "0.070000000000000007",
+            "headDepth": "0.20000000000000001",
+            "headHeight": "0.23499999999999999",
+            "headWidth": "0.16500000000000001",
+            "jawHeight": "0.080000000000000002",
+            "neckHeight": "0.070000000000000007",
+            "neckOverlap": "0.02",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20000000000000001",
+            "pelvisHeight": "0.17000000000000001",
+            "pelvisWidth": "0.33000000000000002",
+            "ribDepth": "0.20999999999999999",
+            "ribHeight": "0.12",
+            "ribWidth": "0.34999999999999998",
+            "segment": "pelvis",
+            "shoulderDepth": "0.12",
+            "shoulderHeight": "0.12",
+            "shoulderWidth": "0.089999999999999997",
+            "waistDepth": "0.19",
+            "waistHeight": "0.17000000000000001",
+            "waistWidth": "0.29999999999999999"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "pelvis",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            }
+          ]
+        },
+        {
+          "family": "bust",
+          "finish": {
+            "skin": "body-skin-player"
+          },
+          "id": "neck",
+          "massKg": 1,
+          "params": {
+            "chestDepth": "0.22",
+            "chestHeight": "0.14999999999999999",
+            "chestWidth": "0.40000000000000002",
+            "hairCover": "0.070000000000000007",
+            "headDepth": "0.20000000000000001",
+            "headHeight": "0.23499999999999999",
+            "headWidth": "0.16500000000000001",
+            "jawHeight": "0.080000000000000002",
+            "neckHeight": "0.070000000000000007",
+            "neckOverlap": "0.02",
+            "neckWidth": "0.10000000000000001",
+            "pelvisDepth": "0.20000000000000001",
+            "pelvisHeight": "0.17000000000000001",
+            "pelvisWidth": "0.33000000000000002",
+            "ribDepth": "0.20999999999999999",
+            "ribHeight": "0.12",
+            "ribWidth": "0.34999999999999998",
+            "segment": "neck",
+            "shoulderDepth": "0.12",
+            "shoulderHeight": "0.12",
+            "shoulderWidth": "0.089999999999999997",
+            "waistDepth": "0.19",
+            "waistHeight": "0.17000000000000001",
+            "waistWidth": "0.29999999999999999"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "neck",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [0, 0, 1]
+            },
             {
               "gender": "female",
               "id": "head",
@@ -6309,7 +6423,7 @@
         "shoulder": {
           "fraction": [0.5, 1, 0.5],
           "part": "upper",
-          "solid": "sleeve"
+          "solid": "upper-arm"
         },
         "thumb_root": {
           "fraction": [0.5, 1, 0],
@@ -6346,7 +6460,6 @@
         {
           "family": "avatarArm",
           "finish": {
-            "shirt": "cloth-shirt-player",
             "skin": "body-skin-player"
           },
           "id": "upper",
@@ -6365,8 +6478,6 @@
             "palmWidth": "0.085000000000000006",
             "seamOverlap": "0.01",
             "segment": "upper",
-            "sleeveLength": "0.14999999999999999",
-            "sleeveThickness": "0.0080000000000000002",
             "thumbInset": "0.0040000000000000001",
             "thumbLength": "0.059999999999999998",
             "thumbProjection": "0.014",
@@ -6413,8 +6524,6 @@
             "palmWidth": "0.085000000000000006",
             "seamOverlap": "0.01",
             "segment": "fore",
-            "sleeveLength": "0.14999999999999999",
-            "sleeveThickness": "0.0080000000000000002",
             "thumbInset": "0.0040000000000000001",
             "thumbLength": "0.059999999999999998",
             "thumbProjection": "0.014",
@@ -6470,8 +6579,6 @@
             "palmWidth": "0.085000000000000006",
             "seamOverlap": "0.01",
             "segment": "palm",
-            "sleeveLength": "0.14999999999999999",
-            "sleeveThickness": "0.0080000000000000002",
             "thumbInset": "0.0040000000000000001",
             "thumbLength": "0.059999999999999998",
             "thumbProjection": "0.014",
@@ -6536,8 +6643,6 @@
             "palmWidth": "0.085000000000000006",
             "seamOverlap": "0.01",
             "segment": "fingers",
-            "sleeveLength": "0.14999999999999999",
-            "sleeveThickness": "0.0080000000000000002",
             "thumbInset": "0.0040000000000000001",
             "thumbLength": "0.059999999999999998",
             "thumbProjection": "0.014",
@@ -6584,8 +6689,6 @@
             "palmWidth": "0.085000000000000006",
             "seamOverlap": "0.01",
             "segment": "thumb",
-            "sleeveLength": "0.14999999999999999",
-            "sleeveThickness": "0.0080000000000000002",
             "thumbInset": "0.0040000000000000001",
             "thumbLength": "0.059999999999999998",
             "thumbProjection": "0.014",
@@ -6616,9 +6719,9 @@
     {
       "anchors": {
         "ankle": {
-          "fraction": [0.5, 0.19999999999999998, 0.5],
+          "fraction": [0.5, 0.029411764705882353, 0.5],
           "part": "shin",
-          "solid": "cuff"
+          "solid": "shin"
         },
         "hip": {
           "fraction": [0.5, 1, 0.5],
@@ -6647,14 +6750,12 @@
         {
           "family": "avatarLeg",
           "finish": {
-            "pants": "cloth-pants-player"
+            "pants": "body-skin-player"
           },
           "id": "thigh",
           "massKg": 7,
           "params": {
             "ankleOverlap": "0.01",
-            "cuffHeight": "0.040000000000000001",
-            "cuffThickness": "0.0060000000000000001",
             "heelReach": "0.059999999999999998",
             "kneeOverlap": "0.02",
             "length": "0.81999999999999995",
@@ -6665,18 +6766,12 @@
             "shoeChamfer": "0.040000000000000001",
             "shoeHeight": "0.089999999999999997",
             "shoeWidth": "0.10000000000000001",
-            "soleThickness": "0.025000000000000001",
             "thighChamfer": "0.040000000000000001",
             "thighDepth": "0.16",
             "thighLength": "0.41999999999999998",
             "thighWidth": "0.14999999999999999",
-            "toeCapHeightShare": "0.59999999999999998",
-            "toeCapSideInset": "0.0060000000000000001",
-            "toeCapStartShare": "0.55000000000000004",
-            "toeCapTipInset": "0.002",
             "toeReach": "0.20999999999999999",
             "upperBackShift": "0.0040000000000000001",
-            "upperBase": "0.02",
             "upperLengthInset": "0.0080000000000000002",
             "upperSideInset": "0.0040000000000000001"
           },
@@ -6695,14 +6790,12 @@
         {
           "family": "avatarLeg",
           "finish": {
-            "pants": "cloth-pants-player"
+            "pants": "body-skin-player"
           },
           "id": "shin",
           "massKg": 3,
           "params": {
             "ankleOverlap": "0.01",
-            "cuffHeight": "0.040000000000000001",
-            "cuffThickness": "0.0060000000000000001",
             "heelReach": "0.059999999999999998",
             "kneeOverlap": "0.02",
             "length": "0.81999999999999995",
@@ -6713,18 +6806,12 @@
             "shoeChamfer": "0.040000000000000001",
             "shoeHeight": "0.089999999999999997",
             "shoeWidth": "0.10000000000000001",
-            "soleThickness": "0.025000000000000001",
             "thighChamfer": "0.040000000000000001",
             "thighDepth": "0.16",
             "thighLength": "0.41999999999999998",
             "thighWidth": "0.14999999999999999",
-            "toeCapHeightShare": "0.59999999999999998",
-            "toeCapSideInset": "0.0060000000000000001",
-            "toeCapStartShare": "0.55000000000000004",
-            "toeCapTipInset": "0.002",
             "toeReach": "0.20999999999999999",
             "upperBackShift": "0.0040000000000000001",
-            "upperBase": "0.02",
             "upperLengthInset": "0.0080000000000000002",
             "upperSideInset": "0.0040000000000000001"
           },
@@ -6752,15 +6839,12 @@
         {
           "family": "avatarLeg",
           "finish": {
-            "shoe": "leather-shoe-player",
-            "sole": "rubber-black"
+            "shoe": "body-skin-player"
           },
           "id": "foot",
           "massKg": 1,
           "params": {
             "ankleOverlap": "0.01",
-            "cuffHeight": "0.040000000000000001",
-            "cuffThickness": "0.0060000000000000001",
             "heelReach": "0.059999999999999998",
             "kneeOverlap": "0.02",
             "length": "0.81999999999999995",
@@ -6771,18 +6855,12 @@
             "shoeChamfer": "0.040000000000000001",
             "shoeHeight": "0.089999999999999997",
             "shoeWidth": "0.10000000000000001",
-            "soleThickness": "0.025000000000000001",
             "thighChamfer": "0.040000000000000001",
             "thighDepth": "0.16",
             "thighLength": "0.41999999999999998",
             "thighWidth": "0.14999999999999999",
-            "toeCapHeightShare": "0.59999999999999998",
-            "toeCapSideInset": "0.0060000000000000001",
-            "toeCapStartShare": "0.55000000000000004",
-            "toeCapTipInset": "0.002",
             "toeReach": "0.20999999999999999",
             "upperBackShift": "0.0040000000000000001",
-            "upperBase": "0.02",
             "upperLengthInset": "0.0080000000000000002",
             "upperSideInset": "0.0040000000000000001"
           },
@@ -6933,6 +7011,169 @@
         }
       ],
       "voxelGrain": 0.002
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_jacket_body",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-shirt-player",
+            "fastener": "steel-grey",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.23,\n        \"id\": \"hem\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.095,\n                -0.185\n            ],\n            [\n                0.095,\n                -0.185\n            ],\n            [\n                0.12,\n                -0.16\n            ],\n            [\n                0.12,\n                0.16\n            ],\n            [\n                0.095,\n                0.185\n            ],\n            [\n                -0.095,\n                0.185\n            ],\n            [\n                -0.12,\n                0.16\n            ],\n            [\n                -0.12,\n                -0.16\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": 0.08\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": 0.38,\n        \"id\": \"waist\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.0925,\n                -0.175\n            ],\n            [\n                0.0925,\n                -0.175\n            ],\n            [\n                0.1175,\n                -0.15\n            ],\n            [\n                0.1175,\n                0.15\n            ],\n            [\n                0.0925,\n                0.175\n            ],\n            [\n                -0.0925,\n                0.175\n            ],\n            [\n                -0.1175,\n                0.15\n            ],\n            [\n                -0.1175,\n                -0.15\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": 0.2\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": 0.62,\n        \"id\": \"chest\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.1,\n                -0.22\n            ],\n            [\n                0.1,\n                -0.22\n            ],\n            [\n                0.13,\n                -0.19\n            ],\n            [\n                0.13,\n                0.19\n            ],\n            [\n                0.1,\n                0.22\n            ],\n            [\n                -0.1,\n                0.22\n            ],\n            [\n                -0.13,\n                0.19\n            ],\n            [\n                -0.13,\n                -0.19\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": 0.35\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": 0.66,\n        \"id\": \"collar\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.06,\n                -0.08\n            ],\n            [\n                0.06,\n                -0.08\n            ],\n            [\n                0.08,\n                -0.06\n            ],\n            [\n                0.08,\n                0.06\n            ],\n            [\n                0.06,\n                0.08\n            ],\n            [\n                -0.06,\n                0.08\n            ],\n            [\n                -0.08,\n                0.06\n            ],\n            [\n                -0.08,\n                -0.06\n            ]\n        ],\n        \"slot\": \"trim\",\n        \"start\": 0.6\n    },\n    {\n        \"id\": \"zip\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.006,\n            0.61,\n            0.14\n        ],\n        \"min\": [\n            -0.006,\n            0.09,\n            0.129\n        ],\n        \"slot\": \"fastener\"\n    },\n    {\n        \"id\": \"left-pocket\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.04,\n            0.25,\n            0.14\n        ],\n        \"min\": [\n            -0.155,\n            0.16,\n            0.12\n        ],\n        \"slot\": \"trim\"\n    },\n    {\n        \"id\": \"right-pocket\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.155,\n            0.25,\n            0.14\n        ],\n        \"min\": [\n            0.04,\n            0.16,\n            0.12\n        ],\n        \"slot\": \"trim\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_jacket_upper",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-shirt-player",
+            "fastener": "steel-grey",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.025,\n        \"id\": \"sleeve\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.045,\n                -0.0625\n            ],\n            [\n                0.045,\n                -0.0625\n            ],\n            [\n                0.065,\n                -0.042499999999999996\n            ],\n            [\n                0.065,\n                0.042499999999999996\n            ],\n            [\n                0.045,\n                0.0625\n            ],\n            [\n                -0.045,\n                0.0625\n            ],\n            [\n                -0.065,\n                0.042499999999999996\n            ],\n            [\n                -0.065,\n                -0.042499999999999996\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.32\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_jacket_fore",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-shirt-player",
+            "fastener": "steel-grey",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.025,\n        \"id\": \"sleeve\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.042499999999999996,\n                -0.0575\n            ],\n            [\n                0.042499999999999996,\n                -0.0575\n            ],\n            [\n                0.0625,\n                -0.037500000000000006\n            ],\n            [\n                0.0625,\n                0.037500000000000006\n            ],\n            [\n                0.042499999999999996,\n                0.0575\n            ],\n            [\n                -0.042499999999999996,\n                0.0575\n            ],\n            [\n                -0.0625,\n                0.037500000000000006\n            ],\n            [\n                -0.0625,\n                -0.037500000000000006\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.24\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": -0.215,\n        \"id\": \"cuff\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.037500000000000006,\n                -0.0525\n            ],\n            [\n                0.037500000000000006,\n                -0.0525\n            ],\n            [\n                0.0575,\n                -0.0325\n            ],\n            [\n                0.0575,\n                0.0325\n            ],\n            [\n                0.037500000000000006,\n                0.0525\n            ],\n            [\n                -0.037500000000000006,\n                0.0525\n            ],\n            [\n                -0.0575,\n                0.0325\n            ],\n            [\n                -0.0575,\n                -0.0325\n            ]\n        ],\n        \"slot\": \"trim\",\n        \"start\": -0.255\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_trousers_pelvis",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-pants-player",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.185,\n        \"id\": \"seat\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.0875,\n                -0.1775\n            ],\n            [\n                0.0875,\n                -0.1775\n            ],\n            [\n                0.1125,\n                -0.1525\n            ],\n            [\n                0.1125,\n                0.1525\n            ],\n            [\n                0.0875,\n                0.1775\n            ],\n            [\n                -0.0875,\n                0.1775\n            ],\n            [\n                -0.1125,\n                0.1525\n            ],\n            [\n                -0.1125,\n                -0.1525\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.01\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": 0.19,\n        \"id\": \"waistband\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.09,\n                -0.18\n            ],\n            [\n                0.09,\n                -0.18\n            ],\n            [\n                0.115,\n                -0.155\n            ],\n            [\n                0.115,\n                0.155\n            ],\n            [\n                0.09,\n                0.18\n            ],\n            [\n                -0.09,\n                0.18\n            ],\n            [\n                -0.115,\n                0.155\n            ],\n            [\n                -0.115,\n                -0.155\n            ]\n        ],\n        \"slot\": \"trim\",\n        \"start\": 0.15\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_trousers_thigh",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-pants-player",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.025,\n        \"id\": \"leg\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.075,\n                -0.0875\n            ],\n            [\n                0.075,\n                -0.0875\n            ],\n            [\n                0.095,\n                -0.06749999999999999\n            ],\n            [\n                0.095,\n                0.06749999999999999\n            ],\n            [\n                0.075,\n                0.0875\n            ],\n            [\n                -0.075,\n                0.0875\n            ],\n            [\n                -0.095,\n                0.06749999999999999\n            ],\n            [\n                -0.095,\n                -0.06749999999999999\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.44\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_trousers_shin",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-pants-player",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.025,\n        \"id\": \"leg\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.057499999999999996,\n                -0.07\n            ],\n            [\n                0.057499999999999996,\n                -0.07\n            ],\n            [\n                0.0775,\n                -0.05\n            ],\n            [\n                0.0775,\n                0.05\n            ],\n            [\n                0.057499999999999996,\n                0.07\n            ],\n            [\n                -0.057499999999999996,\n                0.07\n            ],\n            [\n                -0.0775,\n                0.05\n            ],\n            [\n                -0.0775,\n                -0.05\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.325\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": -0.29,\n        \"id\": \"hem\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.06,\n                -0.0725\n            ],\n            [\n                0.06,\n                -0.0725\n            ],\n            [\n                0.08,\n                -0.05249999999999999\n            ],\n            [\n                0.08,\n                0.05249999999999999\n            ],\n            [\n                0.06,\n                0.0725\n            ],\n            [\n                -0.06,\n                0.0725\n            ],\n            [\n                -0.08,\n                0.05249999999999999\n            ],\n            [\n                -0.08,\n                -0.05249999999999999\n            ]\n        ],\n        \"slot\": \"trim\",\n        \"start\": -0.325\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_boot_shaft",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "rubber-black",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.025,\n        \"id\": \"shaft\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.06999999999999999,\n                -0.08\n            ],\n            [\n                0.06999999999999999,\n                -0.08\n            ],\n            [\n                0.09,\n                -0.06\n            ],\n            [\n                0.09,\n                0.06\n            ],\n            [\n                0.06999999999999999,\n                0.08\n            ],\n            [\n                -0.06999999999999999,\n                0.08\n            ],\n            [\n                -0.09,\n                0.06\n            ],\n            [\n                -0.09,\n                -0.06\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.33\n    },\n    {\n        \"axis\": \"y\",\n        \"end\": 0.03,\n        \"id\": \"rim\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.075,\n                -0.085\n            ],\n            [\n                0.075,\n                -0.085\n            ],\n            [\n                0.095,\n                -0.065\n            ],\n            [\n                0.095,\n                0.065\n            ],\n            [\n                0.075,\n                0.085\n            ],\n            [\n                -0.075,\n                0.085\n            ],\n            [\n                -0.095,\n                0.065\n            ],\n            [\n                -0.095,\n                -0.065\n            ]\n        ],\n        \"slot\": \"trim\",\n        \"start\": -0.02\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_boot_foot",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "rubber-black",
+            "trim": "paint-charcoal"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.02,\n        \"id\": \"upper\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.05500000000000001,\n                -0.065\n            ],\n            [\n                0.20500000000000002,\n                -0.065\n            ],\n            [\n                0.22499999999999998,\n                -0.045\n            ],\n            [\n                0.22499999999999998,\n                0.045\n            ],\n            [\n                0.20500000000000002,\n                0.065\n            ],\n            [\n                -0.05500000000000001,\n                0.065\n            ],\n            [\n                -0.075,\n                0.045\n            ],\n            [\n                -0.075,\n                -0.045\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.075\n    },\n    {\n        \"id\": \"sole\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.07,\n            -0.065,\n            0.23\n        ],\n        \"min\": [\n            -0.07,\n            -0.09,\n            -0.08\n        ],\n        \"slot\": \"trim\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
     },
     {
       "connections": [],

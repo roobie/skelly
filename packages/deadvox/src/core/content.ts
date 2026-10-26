@@ -821,9 +821,28 @@ const checkWearableModels = (item: ItemDef, registry: Registry, report: Report):
     if (!registry.models.has(entry.model)) {
       report('items', item.id, `${path}.model`, `no model "${entry.model}"`);
     }
-    for (const figure of registry.figures.values()) {
-      if (!figure.attachmentFrames[entry.frame]) {
-        report('items', item.id, `${path}.frame`, `figure "${figure.id}" has no frame "${entry.frame}"`);
+    checkFigureAttachment(item, index, registry, report);
+  }
+};
+
+const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry, report: Report): void => {
+  const entry = item.figureModels![index]!;
+  const path = `.figureModels[${index}]`;
+  for (const figure of registry.figures.values()) {
+    const frame = figure.attachmentFrames[entry.frame];
+    if (!frame) {
+      report('items', item.id, `${path}.frame`, `figure "${figure.id}" has no frame "${entry.frame}"`);
+      continue;
+    }
+    const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
+    for (const [coverIndex, part] of (entry.covers ?? []).entries()) {
+      if (!registry.models.get(model)?.parts?.[part]) {
+        report(
+          'items',
+          item.id,
+          `${path}.covers[${coverIndex}]`,
+          `figure "${figure.id}": model "${model}" has no part "${part}"`,
+        );
       }
     }
   }

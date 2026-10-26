@@ -2503,22 +2503,28 @@
     "parts": {
       "torso": {
         "node": "torso:torso",
-        "massKg": 33,
-        "centreOfMass": [-0.0011775237273511652, 0.3457668248490077, -0.0019654874892148406]
+        "massKg": 25,
+        "centreOfMass": [-0.0013832182750140743, 0.42175061479659864, -0.0025713312198157095]
       },
+      "pelvis": {
+        "node": "pelvis:pelvis",
+        "massKg": 7,
+        "centreOfMass": [-0.0006992481203007413, 0.085, -0.0003834586466165413]
+      },
+      "neck": { "node": "neck:neck", "massKg": 1, "centreOfMass": [8.021436534415164e-17, 0.655, 0] },
       "head": {
         "node": "head:head",
         "massKg": 5,
-        "centreOfMass": [1.0201979643961859e-16, 0.8334131944444445, -0.0073888888888888875]
+        "centreOfMass": [2.0408347653397456e-16, 0.8334131944444445, -0.0073888888888888875]
       }
     },
     "anchors": {
-      "eye_left": [0.0350000000000001, 0.8200000000000001, 0.1],
-      "eye_right": [-0.034999999999999906, 0.8200000000000001, 0.1],
-      "head": [0, 0.7000000000000001, 0],
-      "hip_left": [0.08499999999999999, 0.0204, 0],
-      "hip_right": [-0.085, 0.0204, 0],
-      "neck": [0, 0.61, 0],
+      "eye_left": [0.0350000000000002, 0.8200000000000001, 0.1],
+      "eye_right": [-0.03499999999999981, 0.8200000000000001, 0.1],
+      "head": [8.572527594031473e-17, 0.7000000000000001, 0],
+      "hip_left": [0.08499999999999999, 0.02039999999999999, 0],
+      "hip_right": [-0.085, 0.020400000000000012, 0],
+      "neck": [7.470345474798854e-17, 0.61, 0],
       "shoulder_left": [0.23500000000000001, 0.54, 0],
       "shoulder_right": [-0.23500000000000001, 0.54, 0]
     }
@@ -2527,7 +2533,7 @@
     "id": "player_arm",
     "file": "assets/models/player_arm.glb",
     "parts": {
-      "upper": { "node": "upper:upper", "massKg": 1.9, "centreOfMass": [0, -0.14138554216867472, 0] },
+      "upper": { "node": "upper:upper", "massKg": 1.9, "centreOfMass": [0, -0.15, 0] },
       "fore": { "node": "fore:fore", "massKg": 1.1, "centreOfMass": [-5.00495294549375e-17, -0.411218487394958, 0] },
       "palm": { "node": "palm:palm", "massKg": 0.3, "centreOfMass": [-1.469460465287658e-16, -0.6000000000000001, 0] },
       "fingers": {
@@ -2554,15 +2560,11 @@
       "shin": {
         "node": "shin:shin",
         "massKg": 3,
-        "centreOfMass": [-0.0038859008835959233, -0.5928390318862851, -0.0003592009220130615]
+        "centreOfMass": [-0.004612403100775262, -0.57, -0.0004263565891472864]
       },
-      "foot": {
-        "node": "foot:foot",
-        "massKg": 1,
-        "centreOfMass": [-1.9030544570482657e-16, -0.7782947139753802, 0.07889572773352643]
-      }
+      "foot": { "node": "foot:foot", "massKg": 1, "centreOfMass": [-1.894984735200155e-16, -0.775, 0.07] }
     },
-    "anchors": { "ankle": [-9.347520200482578e-17, -0.73, 0], "hip": [0, 0, 0], "knee": [0, -0.42, 0] }
+    "anchors": { "ankle": [-0.005000000000000091, -0.73, 0], "hip": [0, 0, 0], "knee": [0, -0.42, 0] }
   },
   {
     "id": "riot_helmet",
@@ -2608,6 +2610,14 @@
       "strap_right_outer": [-0.098, 0.037000000000000005, -0.012999999999999998]
     }
   },
+  { "id": "worn_jacket_body", "file": "assets/models/worn_jacket_body.glb" },
+  { "id": "worn_jacket_upper", "file": "assets/models/worn_jacket_upper.glb" },
+  { "id": "worn_jacket_fore", "file": "assets/models/worn_jacket_fore.glb" },
+  { "id": "worn_trousers_pelvis", "file": "assets/models/worn_trousers_pelvis.glb" },
+  { "id": "worn_trousers_thigh", "file": "assets/models/worn_trousers_thigh.glb" },
+  { "id": "worn_trousers_shin", "file": "assets/models/worn_trousers_shin.glb" },
+  { "id": "worn_boot_shaft", "file": "assets/models/worn_boot_shaft.glb" },
+  { "id": "worn_boot_foot", "file": "assets/models/worn_boot_foot.glb" },
   {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",

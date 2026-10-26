@@ -30,6 +30,48 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["pelvis"],
+          "frame": "clothing_body",
+          "model": "worn_trousers_pelvis",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thigh"],
+          "frame": "left_trouser",
+          "model": "worn_trousers_thigh",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["thigh"],
+          "frame": "right_trouser",
+          "model": "worn_trousers_thigh",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "left_hem",
+          "model": "worn_trousers_shin",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "right_hem",
+          "model": "worn_trousers_shin",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "jeans",
       "model": "jeans",
       "name": "Jeans",
@@ -49,6 +91,40 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "left_hem",
+          "model": "worn_boot_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["shin"],
+          "frame": "right_hem",
+          "model": "worn_boot_shaft",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "left_boot",
+          "model": "worn_boot_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "right_boot",
+          "model": "worn_boot_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "rubber_boots",
       "model": "rubber_boots",
       "name": "Rubber boots",
@@ -159,6 +235,48 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["torso"],
+          "frame": "clothing_body",
+          "model": "worn_jacket_body",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "left_sleeve",
+          "model": "worn_jacket_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "right_sleeve",
+          "model": "worn_jacket_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "left_cuff",
+          "model": "worn_jacket_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "right_cuff",
+          "model": "worn_jacket_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "jacket",
       "model": "jacket",
       "name": "Jacket",

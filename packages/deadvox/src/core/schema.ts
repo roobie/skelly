@@ -1476,6 +1476,7 @@ const ItemSchema = strictObject({
       strictObject({
         model: Id,
         frame: Id,
+        covers: optional(array(Id)),
         pivot: tuple([number(), number(), number()]),
         at: tuple([number(), number(), number()]),
         turn: tuple([number(), number(), number()]),

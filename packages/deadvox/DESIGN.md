@@ -42,7 +42,7 @@ read_if:
   - you're authoring scenario event rules or changing when they fire or what they release
   - you're restructuring the per-tick zombie simulation
   - you're authoring decals or scenario outbreak age
-  - you're changing worn layers, armour protection or item wear
+  - you're changing worn layers, empty-slot body appearance, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
@@ -1727,6 +1727,10 @@ an equipped item. Floating optics and a head breaking through its cap read as
 loose props rather than worn gear, so fit must preserve the equipped silhouette.
 Forehead lamps must leave the eye line clear so hands-free lighting does not
 read as an obstruction over the eyes.
+Empty clothing slots show non-lootable underwear and otherwise exposed body:
+stripping equipment must not leave apparently usable clothes or shoes that cannot
+be taken. Garments hide only the base regions they cover, restoring those regions
+when removed, so layering neither clips through clothing nor leaves a missing body.
 Item-owned presentation and figure-owned attachment frames keep
 gear additions independent of human renderers and equipment ownership. The same
 human must serve different equipment owners without manufacturing inventory in

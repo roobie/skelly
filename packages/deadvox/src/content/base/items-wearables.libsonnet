@@ -1,3 +1,8 @@
+local worn(model, frame, covers) = {
+  model: model, frame: frame, covers: covers,
+  pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0],
+};
+local pair(model, left, right, covers) = [worn(model, left, covers), worn(model, right, covers)];
 {
   "items": [
     {
@@ -5,6 +10,9 @@
       "name": "Jeans",
       "category": "clothing",
       "model": "jeans",
+      figureModels: [worn('worn_trousers_pelvis', 'clothing_body', ['pelvis'])]
+        + pair('worn_trousers_thigh', 'left_trouser', 'right_trouser', ['thigh'])
+        + pair('worn_trousers_shin', 'left_hem', 'right_hem', ['shin']),
       "size": [3, 3],
       "wearable": {
         "slot": "legs",
@@ -26,6 +34,8 @@
       "name": "Rubber boots",
       "category": "clothing",
       "model": "rubber_boots",
+      figureModels: pair('worn_boot_shaft', 'left_hem', 'right_hem', ['shin'])
+        + pair('worn_boot_foot', 'left_boot', 'right_boot', ['foot']),
       "size": [2, 3],
       "wearable": {
         "slot": "feet",
@@ -75,6 +85,9 @@
       "name": "Jacket",
       "category": "clothing",
       "model": "jacket",
+      figureModels: [worn('worn_jacket_body', 'clothing_body', ['torso'])]
+        + pair('worn_jacket_upper', 'left_sleeve', 'right_sleeve', ['upper'])
+        + pair('worn_jacket_fore', 'left_cuff', 'right_cuff', ['fore']),
       "size": [3, 3],
       "wearable": {
         "slot": "torso",

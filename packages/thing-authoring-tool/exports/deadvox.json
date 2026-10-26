@@ -2136,6 +2136,102 @@
     }
   },
   {
+    "id": "worn_jacket_body",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_jacket_body",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_jacket_upper",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_jacket_upper",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_jacket_fore",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_jacket_fore",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_trousers_pelvis",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_trousers_pelvis",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_trousers_thigh",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_trousers_thigh",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_trousers_shin",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_trousers_shin",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_boot_shaft",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_boot_shaft",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_boot_foot",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_boot_foot",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "tape_roll",
     "kind": "item",
     "options": {
