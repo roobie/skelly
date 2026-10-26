@@ -149,7 +149,7 @@ import {
   emptyHandsPresentationReady,
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
-  shouldEnterMeleeReady,
+  shouldEnterMeleeGuard,
   startPlayerMelee,
   unarmedMeleeWeapon,
 } from './melee.ts';
@@ -3142,12 +3142,7 @@ export const startPlay = (
     debugBuild: debugTools?.buildOn ?? false,
     inputLocked: compression.locksInput,
   });
-  const shouldPlayerBlock = (): boolean => {
-    const action = selectPrimaryAction(inventory);
-    return shouldEnterMeleeReady(
-      meleeReadiness(action.kind === 'melee', action.kind === 'fists' ? action.hand : undefined),
-    );
-  };
+  const shouldPlayerBlock = (): boolean => shouldEnterMeleeGuard(meleeReadiness(false));
 
   const startPrimaryMelee = (action: ReturnType<typeof selectPrimaryAction>): void => {
     const selected = primaryMeleeAction(
@@ -3608,8 +3603,7 @@ export const startPlay = (
 
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
-    const selectedMelee = meleeSelection();
-    const ready = shouldEnterMeleeReady(meleeReadiness(selectedMelee.item !== undefined, selectedMelee.hand));
+    const ready = shouldPlayerBlock();
     const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))

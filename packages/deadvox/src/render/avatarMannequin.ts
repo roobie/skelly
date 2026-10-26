@@ -20,6 +20,9 @@ export interface AvatarPose {
   stance: PlayerStance;
   moving: boolean;
   hold?: ItemHoldPose;
+  secondaryHold?: ItemHoldPose;
+  /** Overrides the selected hold's ordinary readiness for a debug comparison pose. */
+  ready?: boolean;
   emptyFists?: boolean;
 }
 
@@ -30,9 +33,23 @@ const avatarPoses = (figure: FigureDef, registry: Registry): AvatarPose[] => {
     { name: stance, stance, moving: false },
     { name: `${stance}-walking`, stance, moving: true },
   ]);
+  const enGarde = (name: string, hold?: ItemHoldPose, secondaryHold?: ItemHoldPose): AvatarPose => ({
+    name,
+    stance: 'standing',
+    moving: false,
+    ...(hold ? { hold } : {}),
+    ...(secondaryHold ? { secondaryHold } : {}),
+    ready: true,
+    emptyFists: true,
+  });
+  const crowbar = { name: 'crowbar-right-ready', itemType: 'crowbar', side: 'right', ready: true } as const;
+  const beans = { name: 'canned_beans-left-ready', itemType: 'canned_beans', side: 'left', ready: true } as const;
   return [
     ...stances,
-    { name: 'en-garde', stance: 'standing', moving: false, emptyFists: true },
+    enGarde('en-garde'),
+    enGarde('en-garde-crowbar-right', crowbar),
+    enGarde('en-garde-canned-beans-left', beans),
+    enGarde('en-garde-crowbar-right-canned-beans-left', crowbar, beans),
     ...heldItemPoses(registry).map(
       (hold): AvatarPose => ({
         name: hold.name,
@@ -163,15 +180,22 @@ export class AvatarMannequin {
       this.placed = true;
       this.place();
     }
-    const { moving, stance, hold, emptyFists } = this.pose;
-    let item = hold && this.samples.get(hold.itemType);
-    if (hold && !item) {
-      // A mannequin sample is presentation only, not a simulated inventory item with ownership or persistence.
-      item = { uid: this.samples.size + 1, type: hold.itemType, count: 1, condition: 1 };
-      this.samples.set(hold.itemType, item);
+    const { moving, stance, hold, secondaryHold, ready, emptyFists } = this.pose;
+    const hands: Partial<Record<'right' | 'left', Item>> = {};
+    for (const sample of [hold, secondaryHold]) {
+      if (!sample) {
+        continue;
+      }
+      let item = this.samples.get(sample.itemType);
+      if (!item) {
+        // A mannequin sample is presentation only, not a simulated inventory item with ownership or persistence.
+        item = { uid: this.samples.size + 1, type: sample.itemType, count: 1, condition: 1 };
+        this.samples.set(sample.itemType, item);
+      }
+      hands[sample.side] = item;
     }
-    figurePose.heldItems = { registry: this.registry, hands: hold && item ? { [hold.side]: item } : {} };
-    figurePose.holdReady = hold?.ready ?? emptyFists ?? false;
+    figurePose.heldItems = { registry: this.registry, hands };
+    figurePose.holdReady = ready ?? hold?.ready ?? emptyFists ?? false;
     figurePose.emptyFists = emptyFists ?? false;
     figurePose.gaitPhase += dt * GAIT_RATE;
     figurePose.moving = moving;

@@ -57,8 +57,9 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         display: [0.14, -0.13, -0.3],
         supportUpright: [0, 0.14, 0],
         supportForward: [0, 0, -0.14],
-        readyPrimary: { offset: [0.025, 0.085, 0.015], rotation: [0.12, -0.08, -0.04] },
-        readySupport: { offset: [-0.025, 0.075, 0.01], rotation: [0.1, 0.08, 0.04] },
+        // En-garde draws both hands up close to the chin and inward, whether they are fists or holds.
+        readyPrimary: { offset: [-0.08, 0.4, 0.08], rotation: [0.42, -0.12, -0.08] },
+        readySupport: { offset: [0.08, 0.37, 0.1], rotation: [0.38, 0.12, 0.08] },
         // Relaxed hands hang below the view; en-garde returns them at the same authored rate on either side.
         emptyHands: {
           loweredOffset: [0, -0.5, 0.08],

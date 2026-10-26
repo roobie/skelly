@@ -57,8 +57,12 @@ export interface MeleeReadinessInput {
   inputLocked: boolean;
 }
 
+/** En-garde is available for defence regardless of what occupies the player's hands. */
+export const shouldEnterMeleeGuard = (input: MeleeReadinessInput): boolean =>
+  input.rightMouseHeld && !input.debugBuild && !input.inputLocked;
+
 export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
-  input.rightMouseHeld && (input.meleeWeaponHeld || input.handsEmpty) && !input.debugBuild && !input.inputLocked;
+  shouldEnterMeleeGuard(input) && (input.meleeWeaponHeld || input.handsEmpty);
 
 /** An active punch keeps bare hands raised after the player releases en-garde. */
 export const emptyHandsPresentationReady = (ready: boolean, action: { profile: string } | undefined): boolean =>

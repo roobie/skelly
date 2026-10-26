@@ -1313,7 +1313,9 @@ source is working. The lamp's authored grip must leave the flame visible; see
 Relaxed unoccupied hands remain below the view, including the hand opposite a
 held item, because people do not walk with a hand held in front of them. A
 pickup reach raises an empty hand into view before it reaches and lowers it
-again, so the handling feedback remains visible. See `src/render/hands.ts`,
+again, so the handling feedback remains visible. En-garde raises both hands
+close to the chin with elbows in, whether they are empty or holding items, so
+it reads as a guard whatever the player carries. See `src/render/hands.ts`,
 `HeldItems.update`, and `src/content/base/figures-player.jsonnet`, `holds`.
 
 **Held screens.** An item with a screen is held at a raised spot with the screen

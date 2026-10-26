@@ -1,7 +1,7 @@
-import { Scene } from 'three';
+import { Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
+import { AvatarMannequin, createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -43,18 +43,42 @@ describe('debug avatar mannequin', () => {
     }
   });
 
-  it('draws empty en-garde through the player ready-pose source', () => {
-    const sync = vi.spyOn(PlayerMeshes.prototype, 'sync');
-    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=en-garde');
-    mannequin!.sync([0, 0, 0], 0, 0);
-    expect(mannequin!.pose).toMatchObject({ name: 'en-garde', emptyFists: true });
-    expect(sync).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        heldItems: { registry, hands: {} },
-        holdReady: true,
-        emptyFists: true,
-      }),
-    );
+  it('raises both hands over their rest height in en-garde for every hold state', () => {
+    const gripY = (mannequin: AvatarMannequin, side: 'right' | 'left'): number => {
+      mannequin.group.updateMatrixWorld(true);
+      const arm = mannequin.group.getObjectByName(`first-person-arm-${side}`)!;
+      return arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3()).y;
+    };
+    for (const name of [
+      'en-garde',
+      'en-garde-crowbar-right',
+      'en-garde-canned-beans-left',
+      'en-garde-crowbar-right-canned-beans-left',
+    ]) {
+      const { mannequin } = mannequinFor(true, `?debug=1&mannequin=${name}`);
+      const { pose } = mannequin!;
+      expect(pose.name).toBe(name);
+      const rest = new AvatarMannequin(
+        new PlayerMeshes(0.5, figure, registry.models, models),
+        [{ ...pose, ready: false }],
+        {
+          registry,
+          blockSize: 0.5,
+          placement: figure.mannequinPlacement,
+          requested: 'rest',
+        },
+      );
+      try {
+        mannequin!.sync([0, 0, 0], 0, 0);
+        rest.sync([0, 0, 0], 0, 0);
+        for (const side of ['right', 'left'] as const) {
+          expect(gripY(mannequin!, side), `${name}/${side}`).toBeGreaterThan(gripY(rest, side));
+        }
+      } finally {
+        mannequin!.dispose();
+        rest.dispose();
+      }
+    }
   });
 
   it('steps through the offered poses and wraps round', () => {

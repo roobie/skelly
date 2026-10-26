@@ -14,6 +14,7 @@ import {
   emptyHandsPresentationReady,
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
+  shouldEnterMeleeGuard,
   shouldEnterMeleeReady,
   startPlayerMelee,
 } from '../src/game/melee.ts';
@@ -216,6 +217,7 @@ describe('melee pose and contact contract', () => {
       inputLocked: false,
     };
     expect(shouldEnterMeleeReady(input)).toBe(true);
+    expect(shouldEnterMeleeGuard({ ...input, meleeWeaponHeld: false })).toBe(true);
     expect(shouldEnterMeleeReady({ ...input, rightMouseHeld: false })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false, handsEmpty: true })).toBe(true);
@@ -242,14 +244,12 @@ describe('melee pose and contact contract', () => {
     expect(emptyHandsPresentationReady(false, undefined)).toBe(false);
   });
 
-  it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {
+  it('raises both hands from rest in the shared en-garde pose', () => {
     expect(readyMeleePose(false).right.offset).toEqual([0, 0, 0]);
     expect(readyMeleePose(false).left.offset).toEqual([0, 0, 0]);
     const ready = readyMeleePose(true, registry.figures.get('player')!.holds);
     for (const side of ['right', 'left'] as const) {
-      expect(ready[side].offset).not.toEqual([0, 0, 0]);
-      expect(Math.hypot(...ready[side].offset)).toBeLessThan(0.1);
-      expect(Math.hypot(...ready[side].rotation)).toBeLessThan((45 * Math.PI) / 180);
+      expect(ready[side].offset[1]).toBeGreaterThan(0);
     }
   });
 
