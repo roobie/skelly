@@ -8,7 +8,7 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
-  - you add a dead human, change figure outfits or the corpse pose, or change how dead bodies are drawn
+  - you add a dead human, change figure outfits or the corpse pose, or resolve the temporary stripped-body presentation
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
@@ -474,21 +474,19 @@ construction.
 
 ### Dead humans
 
-Any dead body of a human, whatever its role, is drawn as the player figure dressed
-for that role, such as a police officer in a police uniform or a soldier in a military
-one. A box shaped like a body reads as a prop, not a person, and sharing the player's
-own figure keeps every human in the world one body plan, so improving the player
-figure improves every corpse.
+Dead humans share the player's figure because a box shaped like a body reads as a
+prop, not a person. One body plan lets figure improvements serve every human.
 
-The body stays furniture: its pockets, loot, placement keys, picking and saves belong
-to the piece, and only its drawing changes, so a role's gameplay never depends on how
-it looks. The outfit is content the furniture row chooses, so a new dead human needs
-no code. See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`, and
+Role outfits tint exposed skin only. Corpses show the non-lootable underwear base
+until corpse-owned equipment is drawn under #1366: skin tint must not masquerade as
+removable clothing. See `src/content/base/figures-player.jsonnet`, `outfits`, and
 `src/render/corpseFigures.ts`, `CorpseFigures`.
 
-A dead human shows no damage steps, because its look comes from the figure and outfit
-rather than its material; the hint still names the band, so the player can still judge
-its condition.
+The body stays furniture so its gameplay identity does not depend on its drawing.
+See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`.
+
+A dead human shows no material damage steps because its look belongs to the figure;
+the hint still names the damage band so the player can judge its condition.
 
 ### Ladders and hatches
 

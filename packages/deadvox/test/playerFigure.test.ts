@@ -425,7 +425,7 @@ describe('player figure', () => {
     }
   });
 
-  it('keeps a shoe toe visible past the torso at -60 and -80 degrees', () => {
+  it('keeps a bare foot visible past the torso at -60 and -80 degrees', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
     const eye = new Vector3(
