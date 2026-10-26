@@ -12,6 +12,8 @@ import {
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { OpticLensFrame } from '../core/opticView.ts';
 import { opticFieldOfView } from '../core/opticView.ts';
+import { OPTICS_SPIKE_LAYER } from './opticsSpike.ts';
+import { PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
 const OPTIC_LENS_SHADER = {
   name: 'OpticLensShader',
@@ -19,6 +21,7 @@ const OPTIC_LENS_SHADER = {
     tDiffuse: { value: null },
     uZoomTexture: { value: null },
     uZoomActive: { value: 0 },
+    uBorder: { value: 1 },
     uLensCenter: { value: new Vector2(0.5, 0.5) },
     uLensRadius: { value: new Vector2(0.25, 0.4) },
     uLensShape: { value: new Vector2() },
@@ -38,6 +41,7 @@ void main() {
 uniform sampler2D tDiffuse;
 uniform sampler2D uZoomTexture;
 uniform float uZoomActive;
+uniform float uBorder;
 uniform vec2 uLensCenter;
 uniform vec2 uLensRadius;
 uniform vec2 uLensShape;
@@ -80,7 +84,7 @@ void main() {
   vec3 lens = mix(source.rgb, texture2D(uZoomTexture, vUv).rgb, uZoomActive);
   vec3 color = mix(source.rgb, lens, aperture);
   float frame = smoothstep(0.96, 0.99, radius) * (1.0 - smoothstep(1.09, 1.13, radius));
-  color = mix(color, vec3(0.035, 0.04, 0.045), frame);
+  color = mix(color, vec3(0.035, 0.04, 0.045), frame * uBorder);
   color = reticle(local, color, aperture);
   gl_FragColor = vec4(color, source.a);
 }`,
@@ -104,6 +108,10 @@ export class OpticLensRenderer {
     }
     const previous = renderer.getRenderTarget();
     this.zoomCamera.copy(camera);
+    if (frame.excludeSelf) {
+      this.zoomCamera.layers.disable(OPTICS_SPIKE_LAYER);
+      this.zoomCamera.layers.disable(PLAYER_FIGURE_LAYER);
+    }
     this.zoomCamera.fov = opticFieldOfView(camera.fov, frame.magnification);
     this.zoomCamera.updateProjectionMatrix();
     try {
@@ -124,6 +132,7 @@ export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER)
 export const setOpticLensUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
   const { reticle, aperture } = frame;
   const { uniforms } = pass;
+  uniforms.uBorder!.value = frame.border === false ? 0 : 1;
   uniforms.uLensShape!.value.set(aperture.aspectRatio, aperture.exponent);
   uniforms.uReticleCount!.value = reticle?.primitives.length ?? 0;
   uniforms.uReticleScale!.value = reticle ? reticleScale(reticle, frame.magnification) : 1;

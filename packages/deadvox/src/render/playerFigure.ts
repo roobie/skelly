@@ -279,6 +279,7 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>
  * stays drawn in first person, where the head sits behind the eye; the arms show only in third person.
  */
 export class PlayerMeshes {
+  opticsSpikeWorldBorders = false;
   readonly group = new Group();
   private readonly heldFrame = new Group();
   private readonly figure: FigureDef;
@@ -414,7 +415,7 @@ export class PlayerMeshes {
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
     for (const [name, frame] of this.attachmentFrames) {
-      frame.visible = thirdPerson || !this.figure.attachmentFrames[name]!.insideView;
+      frame.visible = thirdPerson || this.opticsSpikeWorldBorders || !this.figure.attachmentFrames[name]!.insideView;
     }
   }
 

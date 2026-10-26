@@ -36,7 +36,10 @@ export interface LensAperture {
   readonly radius: readonly [number, number];
 }
 
-export interface OpticLensFrame extends LensAperture, OpticViewSettings {}
+export interface OpticLensFrame extends LensAperture, OpticViewSettings {
+  readonly border?: boolean;
+  readonly excludeSelf?: boolean;
+}
 
 export const opticFieldOfView = (verticalFovDegrees: number, magnification: number): number => {
   if (!(verticalFovDegrees > 0 && verticalFovDegrees < 180 && magnification > 0)) {

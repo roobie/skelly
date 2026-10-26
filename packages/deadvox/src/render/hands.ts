@@ -1,10 +1,5 @@
-// What you hold, in first person (`DESIGN.md`, "Hands: what you see is what's there"):
-// the right hand, the left hand, or both for a two-handed item. Held items are drawn
-// after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. The scene receives only the world's sun, its shadow and the sky's
-// ambient light, so no nearby lamp or fire lights a held item, and burning fallback
-// models need their own flame or self-lit material. An item
-// without a model (or whose model hasn't loaded) is a plain box sized from its cells.
+// See `DESIGN.md`, "Hands: what you see is what's there".
+// The optics comparison is isolated so judging borders does not require an actor-owner refactor.
 
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
@@ -73,6 +68,7 @@ import {
 import { ModelFlames } from './modelFlame.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { type ComposedSlot, heldModelFrame, LENS, type ModelLibrary } from './models.ts';
+import { OPTICS_SPIKE_LAYER, type OpticsSpike } from './opticsSpike.ts';
 import { firstPersonShoulder } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
@@ -132,6 +128,8 @@ export interface HeldHandlingFrame extends HeldPresentationFrame {
 export class HeldItems {
   private readonly scene = new Scene();
   private visor: Object3D | undefined;
+  private opticsSpike: OpticsSpike | undefined;
+  private readonly opticEffects = new Group();
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
   /** Turned and translated with the main camera so shadow lookups use world positions. */
@@ -254,6 +252,19 @@ export class HeldItems {
     warmUp.receiveShadow = true;
     warmUp.visible = false;
     this.scene.add(warmUp, modelMaterialWarmUp(false));
+  }
+
+  configureOpticsSpike(world: Scene, mode: OpticsSpike): void {
+    this.opticsSpike = mode;
+    world.add(this.view);
+    this.scene.add(this.opticEffects);
+    this.opticEffects.add(this.opticWindow);
+  }
+
+  setOpticsSpikeOwnView(ownView: boolean): void {
+    if (this.opticsSpike) {
+      this.view.visible = ownView;
+    }
   }
 
   /** Draws `object` in the hands' view, in view metres, for something held that this owner doesn't build. */
@@ -469,7 +480,7 @@ export class HeldItems {
       const opticSight = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && opticSettings);
       const heldModel = this.shown.get(item.uid);
       if (heldModel) {
-        heldModel.visible = !opticSight;
+        heldModel.visible = this.opticsSpike !== undefined || !opticSight;
       }
       const ocularDiameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
       const apertureFill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
@@ -749,7 +760,7 @@ export class HeldItems {
     this.opticEyeOffset.fromArray(sightEyeOffset).applyQuaternion(this.opticBaseInverse).applyQuaternion(heldRotation);
     this.opticEye.fromArray(rootOffset).add(this.opticEyeOffset);
     this.opticWindow.position.copy(this.opticEye.addScaledVector(this.opticForward, distance));
-    this.opticWindow.visible = true;
+    this.opticWindow.visible = this.opticsSpike !== 'world';
     if (settings) {
       const center = this.opticWindow.position;
       const aperture = projectLensAperture({
@@ -761,7 +772,11 @@ export class HeldItems {
         aspect,
       });
       if (aperture) {
-        this.opticViewFrame = { ...settings, ...aperture };
+        this.opticViewFrame = {
+          ...settings,
+          ...aperture,
+          ...(this.opticsSpike ? { border: this.opticsSpike === 'effect', excludeSelf: true } : {}),
+        };
       }
     }
   }
@@ -1201,6 +1216,8 @@ export class HeldItems {
       this.camera.aspect = main.aspect;
       this.camera.updateProjectionMatrix();
     }
+    this.opticEffects.position.copy(this.view.position);
+    this.opticEffects.quaternion.copy(this.view.quaternion);
     this.visor?.scale.set(
       this.camera.aspect * Math.tan(MathUtils.degToRad(this.camera.fov / 2)),
       Math.tan(MathUtils.degToRad(this.camera.fov / 2)),
@@ -1224,7 +1241,10 @@ export class HeldItems {
     this.disposeCompasses();
     this.clearArms();
     this.view.clear();
-    this.view.add(this.torso, this.opticWindow, ...this.attached);
+    this.view.add(this.torso, ...this.attached);
+    if (!this.opticsSpike) {
+      this.view.add(this.opticWindow);
+    }
     this.shown.clear();
     this.firearmParts.clear();
     this.cylinderRounds.clear();
@@ -1242,6 +1262,9 @@ export class HeldItems {
     this.syncHand('left', hands.left);
     this.syncFistHand('right');
     this.syncFistHand('left');
+    if (this.opticsSpike) {
+      this.view.traverse((object) => object.layers.set(OPTICS_SPIKE_LAYER));
+    }
   }
 
   private clearVisor(): void {
@@ -1255,6 +1278,9 @@ export class HeldItems {
 
   private syncVisor(): void {
     this.clearVisor();
+    if (this.opticsSpike === 'world') {
+      return;
+    }
     const { head } = this.inventory.worn;
     const entry = head && defOf(this.inventory.registry, head.type).wearable?.viewModel;
     const model = entry && this.models?.part(entry.model);

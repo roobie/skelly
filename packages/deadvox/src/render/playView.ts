@@ -56,6 +56,7 @@ import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
+import { OPTICS_SPIKE_LAYER, opticsSpikeFromSearch } from './opticsSpike.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -255,6 +256,13 @@ export const createPlayView = (
   const leverProps = new LeverProps(s, engine.isSolid);
   const acidEffects = new AcidEffects(s, config.seed);
   const held = new HeldItems(inventory, models, playerFigure, engine.sky.light);
+  const opticsSpike = opticsSpikeFromSearch(globalThis.location?.search ?? '');
+  if (opticsSpike) {
+    held.configureOpticsSpike(scene, opticsSpike);
+    camera.layers.enable(OPTICS_SPIKE_LAYER);
+    camera.near = 0.01;
+    camera.updateProjectionMatrix();
+  }
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -295,6 +303,7 @@ export const createPlayView = (
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
+  playerMeshes.opticsSpikeWorldBorders = opticsSpike === 'world';
   const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
   const flashlight = new Flashlight(
     scene,
@@ -594,6 +603,7 @@ export const createPlayView = (
       }
       const start = performance.now();
       const ownView = !(thirdPerson || detached);
+      held.setOpticsSpikeOwnView(ownView);
       drawCounters?.begin();
       try {
         mood.render(

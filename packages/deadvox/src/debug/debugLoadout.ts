@@ -15,6 +15,8 @@ const LOADOUTS = [
   'revolver',
   'revolver-open',
   'riot-helmet',
+  'optics',
+  'optics-visor',
 ] as const;
 type LoadoutChoice = (typeof LOADOUTS)[number];
 const isLoadoutChoice = (choice: string | null): choice is LoadoutChoice =>
@@ -55,8 +57,14 @@ export const equipDebugLoadout = (
     equipRevolver(inventory, backpack, choice === 'revolver-open');
   } else if (choice === 'pump') {
     equipPump(inventory, backpack);
-  } else if (choice === 'hunting') {
+  } else if (choice === 'hunting' || choice === 'optics' || choice === 'optics-visor') {
     equipHuntingRifle(inventory, backpack);
+    if (choice === 'optics' || choice === 'optics-visor') {
+      const wearable = choice === 'optics' ? 'night_vision_goggles' : 'riot_helmet';
+      if (!inventory.add(inventory.create(wearable), { kind: 'worn' })) {
+        throw new Error('Could not wear optics preview item');
+      }
+    }
   } else if (choice === 'magazine') {
     equipEmptyMagazine(inventory, backpack);
   } else if (choice === 'grenade') {
