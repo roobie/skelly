@@ -65,6 +65,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/pileDisplay.ts': 'Presentation-only pile projection; it does not alter simulation or save identity.',
   'src/core/firearmAimOffHand.ts':
     'Presentation-only hand-role projection; it does not alter simulation or save identity.',
+  'src/core/firearmAimPose.ts':
+    'Presentation-only hand-pose projection; it does not alter simulation or save identity.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
   'src/game/indexedDbCommit.ts': 'IndexedDB commit policy runs only in the save worker, outside simulation state.',
   'src/game/mapSliceInput.ts':

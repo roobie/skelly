@@ -34,6 +34,7 @@ import type { FigureDef, ModelDef } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
+import { firearmAimHandPose } from '../core/firearmAimPose.ts';
 import type { Job } from '../core/handling.ts';
 import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -403,26 +404,18 @@ export class HeldItems {
     loweredPitchRadians: number;
   }): void {
     const neutral = { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
-    const activeAim = aimOffHand?.mode === 'active' && aimOffHand.side === side;
-    const activeOffset = this.figure.holds.aimActiveOffHand.offset;
-    const activeRotation = this.figure.holds.aimActiveOffHand.rotation;
-    const hand = activeAim
-      ? {
-          offset: [side === 'right' ? activeOffset[0] : -activeOffset[0], activeOffset[1], activeOffset[2]] as Vec3,
-          rotation: [
-            activeRotation[0],
-            side === 'right' ? activeRotation[1] : -activeRotation[1],
-            side === 'right' ? activeRotation[2] : -activeRotation[2],
-          ] as Vec3,
-        }
-      : (pose?.[side] ?? neutral);
+    const activeHand = firearmAimHandPose({ side, aimOffHand, readyPose, holds: this.figure.holds, easedReady });
+    const hand = activeHand ?? pose?.[side] ?? neutral;
     const target = readyPose?.[side];
-    const stanceHand = target
-      ? {
-          offset: hand.offset.map((value, index) => value + (target.offset[index]! - value) * easedReady) as Vec3,
-          rotation: hand.rotation.map((value, index) => value + (target.rotation[index]! - value) * easedReady) as Vec3,
-        }
-      : hand;
+    const stanceHand =
+      !activeHand && target
+        ? {
+            offset: hand.offset.map((value, index) => value + (target.offset[index]! - value) * easedReady) as Vec3,
+            rotation: hand.rotation.map(
+              (value, index) => value + (target.rotation[index]! - value) * easedReady,
+            ) as Vec3,
+          }
+        : hand;
     const base = this.handBases.get(side);
     const arm = this.arms.get(side);
     if (!(base && arm)) {

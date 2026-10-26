@@ -7,6 +7,8 @@ import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { firearmAimOffHand } from '../core/firearmAimOffHand.ts';
+import { firearmAimHandPose } from '../core/firearmAimPose.ts';
+import { readyFirearmPose } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -375,6 +377,7 @@ export class PlayerMeshes {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and mounts resolve in one frame.
   private syncHeld(pose: PlayerFigurePose): void {
     const source = pose.heldItems ?? pose.inventory;
     this.heldFrame.visible = pose.thirdPerson === true;
@@ -411,20 +414,16 @@ export class PlayerMeshes {
     const holdingSide = hands.left ? 'left' : 'right';
     const leading = pose.inventory ? dominantSide(pose.inventory.character) : holdingSide;
     const handPose = this.handPose ?? readyMeleePose(pose.holdReady ?? false, this.figure.holds, leading);
-    const activeHandPose =
-      aimOffHand?.mode === 'active'
-        ? {
-            ...handPose,
-            [aimOffHand.side]: {
-              offset: this.figure.holds.aimActiveOffHand.offset.map((value, index) =>
-                index === 0 && aimOffHand.side === 'left' ? -value : value,
-              ) as Vec3,
-              rotation: this.figure.holds.aimActiveOffHand.rotation.map((value, index) =>
-                index > 0 && aimOffHand.side === 'left' ? -value : value,
-              ) as Vec3,
-            },
-          }
-        : handPose;
+    const readyAmount = this.handling.readiness ? Math.max(0, Math.min(1, this.handling.readiness.progress)) : 0;
+    const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
+    const active = firearmAimHandPose({
+      side: aimOffHand?.side ?? leading,
+      aimOffHand,
+      readyPose: this.handling.readiness ? readyFirearmPose(leading, this.figure.holds) : undefined,
+      holds: this.figure.holds,
+      easedReady,
+    });
+    const activeHandPose = active && aimOffHand ? { ...handPose, [aimOffHand.side]: active } : handPose;
     presentation.poseStatic(hands, activeHandPose, {
       leading,
       ready: pose.holdReady ?? false,
