@@ -5,6 +5,7 @@ import type { Gender, Resolved } from '@skelly/engine/assembly/schema.ts';
 import type { Issue } from '@skelly/engine/foundation/issue.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { MaterialDef } from '@skelly/thing-core/materials';
+import type { ExportSkin } from './skin.ts';
 
 /**
  * An sRGB colour as normalized red, green, blue channels in [0, 1]. TypeScript cannot enforce finiteness or range;
@@ -77,6 +78,7 @@ export interface GlbAssetIdentity {
 /** All domain-specific inputs are supplied explicitly; this type imports no domain module. */
 export interface GlbExportInput {
   readonly resolved: Resolved;
+  readonly skin?: ExportSkin;
   readonly palette: Palette;
   /** Optional domain-agnostic appearance context, supplied by the caller (never inferred from assembly.name). */
   readonly appearance?: AppearanceContext;
@@ -106,6 +108,7 @@ export interface GlbExportInput {
 export type VoxelGrains = Required<Pick<GlbExportInput, 'voxelGrain'>> & Pick<GlbExportInput, 'voxelDetailGrain'>;
 
 export type GlbExportError =
+  | { readonly code: 'invalid-skin'; readonly message: string }
   | { readonly code: 'structure-issues'; readonly issues: readonly Issue[] }
   | { readonly code: 'unplaced-parts'; readonly partIds: readonly string[] }
   | { readonly code: 'invalid-port-id'; readonly id: string }

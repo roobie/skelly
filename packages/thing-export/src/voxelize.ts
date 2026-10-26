@@ -572,7 +572,36 @@ const boundsOf = (grid: Grid): Bounds => {
   ];
 };
 
-const meshGrid = (grid: Grid, grain: number): Voxelized => {
+/** A face in source-local metres that must keep its voxel-grain tessellation. */
+export type PreserveVoxelFace = (min: readonly number[], max: readonly number[]) => boolean;
+
+const sliceMask = (
+  slice: readonly Face[],
+  { bounds, sweep, plane, grain }: { bounds: Bounds; sweep: Sweep; plane: number; grain: number },
+  preserveFace: PreserveVoxelFace | undefined,
+  emit: (face: Face) => void,
+): Int32Array => {
+  const du = bounds[1][sweep.u]! - bounds[0][sweep.u]! + 1;
+  const dv = bounds[1][sweep.v]! - bounds[0][sweep.v]! + 1;
+  const mask = new Int32Array(du * dv).fill(-1);
+  for (const face of slice) {
+    const min = [0, 0, 0];
+    min[sweep.d] = plane * grain;
+    min[sweep.u] = face.u * grain;
+    min[sweep.v] = face.v * grain;
+    const max = [...min];
+    max[sweep.u] = (face.u + 1) * grain;
+    max[sweep.v] = (face.v + 1) * grain;
+    if (preserveFace?.(min, max)) {
+      emit(face);
+    } else {
+      mask[face.u - bounds[0][sweep.u]! + (face.v - bounds[0][sweep.v]!) * du] = face.group;
+    }
+  }
+  return mask;
+};
+
+const meshGrid = (grid: Grid, grain: number, preserveFace?: PreserveVoxelFace): Voxelized => {
   const builders = new Map<number, Builder>();
   const builderOf = (group: number): Builder => {
     let builder = builders.get(group);
@@ -594,10 +623,11 @@ const meshGrid = (grid: Grid, grain: number): Voxelized => {
       const du = bounds[1][sweep.u]! - bounds[0][sweep.u]! + 1;
       const dv = bounds[1][sweep.v]! - bounds[0][sweep.v]! + 1;
       for (const [w, slice] of [...slices].sort(([p], [q]) => p - q)) {
-        const mask = new Int32Array(du * dv).fill(-1);
-        for (const face of slice) {
-          mask[face.u - bounds[0][sweep.u]! + (face.v - bounds[0][sweep.v]!) * du] = face.group;
-        }
+        const plane = w + (sign > 0 ? 1 : 0);
+        const mask = sliceMask(slice, { bounds, sweep, plane, grain }, preserveFace, (face) => {
+          quads += 1;
+          emitQuad(builderOf(face.group), sweep, { plane, rect: [face.u, face.v, 1, 1] }, grain);
+        });
         greedy(mask, [du, dv], ([i, j, width, height], group) => {
           quads += 1;
           emitQuad(
@@ -723,7 +753,13 @@ export const voxelize = (
   sources: readonly VoxelSource[],
   grain: number,
   origin: readonly number[] = [0, 0, 0],
-  neighbours: readonly VoxelSource[] = [],
+  {
+    neighbours = [],
+    preserveFace,
+  }: {
+    readonly neighbours?: readonly VoxelSource[];
+    readonly preserveFace?: PreserveVoxelFace | undefined;
+  } = {},
 ): Voxelized => {
   checkedGrain(grain);
   const lattice = { grain, origin };
@@ -736,7 +772,14 @@ export const voxelize = (
   if (grid.size === 0) {
     return { groups: new Map(), stats: { voxels: 0, faces: 0, quads: 0 } };
   }
-  const { groups, stats } = meshGrid(grid, grain);
+  const localFace = preserveFace
+    ? (min: readonly number[], max: readonly number[]) =>
+        preserveFace(
+          min.map((value, axis) => value + origin[axis]!),
+          max.map((value, axis) => value + origin[axis]!),
+        )
+    : undefined;
+  const { groups, stats } = meshGrid(grid, grain, localFace);
   return {
     groups: new Map([...groups].map(([group, b]) => [group, { ...b, positions: shifted(b.positions, origin, 1) }])),
     stats,

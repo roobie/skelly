@@ -1,0 +1,5 @@
+{
+  "id": "bend_strip",
+  "file": "assets/models/bend_strip.glb",
+  "parts": { "strip": { "node": "strip:block", "massKg": 1, "centreOfMass": [0, 0.5, 0] } }
+}

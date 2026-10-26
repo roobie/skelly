@@ -1,0 +1,74 @@
+{
+  "defaultMaterial": "paint-charcoal",
+  "facets": 12,
+  "items": [
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "id": "bend_strip",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "paint-charcoal"
+          },
+          "id": "strip",
+          "massKg": 1,
+          "params": {
+            "depth": "0.1",
+            "height": "1",
+            "width": "0.2"
+          },
+          "ports": []
+        }
+      ],
+      "skin": {
+        "joints": [
+          {
+            "name": "fixed",
+            "rest": {
+              "r": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+              "t": [0, 0, 0]
+            }
+          },
+          {
+            "name": "bend",
+            "parent": "fixed",
+            "rest": {
+              "r": [1, 0, 0, 0, 1, 0, 0, 0, 1],
+              "t": [0, 0.5, 0]
+            }
+          }
+        ],
+        "regions": [
+          {
+            "axis": 1,
+            "joint": "fixed",
+            "kind": "constant",
+            "max": 0.40000000000000002
+          },
+          {
+            "axis": 1,
+            "joints": ["fixed", "bend"],
+            "kind": "blend",
+            "max": 0.59999999999999998,
+            "min": 0.40000000000000002,
+            "profile": "smoothstep"
+          },
+          {
+            "axis": 1,
+            "joint": "bend",
+            "kind": "constant",
+            "min": 0.59999999999999998
+          }
+        ]
+      },
+      "voxelGrain": 0.050000000000000003
+    }
+  ],
+  "units": {
+    "bevel": 0,
+    "grid": 0.001,
+    "metresPerUnit": 1
+  }
+}

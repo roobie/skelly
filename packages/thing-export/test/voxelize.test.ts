@@ -64,6 +64,62 @@ describe('voxelize', () => {
     expect(stats.faces).toBeGreaterThan(stats.quads);
   });
 
+  it('preserves the same exposed voxel faces when a band prevents greedy merging, leaving rigid output greedy', () => {
+    const origin = [0.01, -0.02, 0.03];
+    const source = box(
+      origin,
+      origin.map((value) => value + 8 * grain),
+    );
+    const rigid = voxelize([source], grain, origin);
+    const disabled = voxelize([source], grain, origin, { preserveFace: () => false });
+    expect(disabled).toEqual(rigid);
+    const low = origin[1]! + 3 * grain;
+    const high = origin[1]! + 5 * grain;
+    const banded = voxelize([source], grain, origin, {
+      preserveFace: (min, max) => max[1]! > low && min[1]! < high,
+    });
+    const quadCells = (mesh: VoxelBuffers, i: number): string[] => {
+      const corners = [0, 1, 2, 5].map((j) => mesh.indices[i + j]!);
+      const normal = Array.from(mesh.normals.subarray(corners[0]! * 3, corners[0]! * 3 + 3));
+      const d = normal.findIndex((value) => value !== 0);
+      const cells = (axis: number) =>
+        corners.map((index) => Math.round((mesh.positions[index * 3 + axis]! - origin[axis]!) / grain));
+      const us = cells((d + 1) % 3);
+      const vs = cells((d + 2) % 3);
+      const keys: string[] = [];
+      for (let a = Math.min(...us); a < Math.max(...us); a++) {
+        for (let b = Math.min(...vs); b < Math.max(...vs); b++) {
+          keys.push([d, normal[d], cells(d)[0], a, b].join(','));
+        }
+      }
+      return keys;
+    };
+    const facesOf = (result: ReturnType<typeof voxelize>) => {
+      const faces = new Set<string>();
+      for (const [group, mesh] of result.groups) {
+        for (let i = 0; i < mesh.indices.length; i += 6) {
+          for (const key of quadCells(mesh, i)) {
+            faces.add(`${group},${key}`);
+          }
+        }
+      }
+      return faces;
+    };
+    expect(facesOf(rigid).size).toBeGreaterThan(0);
+    expect(facesOf(banded)).toEqual(facesOf(rigid));
+    expect(banded.stats.voxels).toBe(rigid.stats.voxels);
+    expect(banded.stats.quads).toBeGreaterThan(rigid.stats.quads);
+    // Without a band, every emitted vertex is still a box corner, not an interior sample.
+    for (const mesh of rigid.groups.values()) {
+      Array.from(mesh.positions).forEach((value, i) => {
+        const axis = i % 3;
+        expect(Math.min(Math.abs(value - origin[axis]!), Math.abs(value - (origin[axis]! + 8 * grain)))).toBeLessThan(
+          1e-6,
+        );
+      });
+    }
+  });
+
   it('keeps a plate thinner than the grain as one voxel layer', () => {
     const { stats } = voxelize([box([0, 0, 0.011], [0.2, 0.2, 0.013])], grain);
     expect(stats.voxels).toBe(16);
@@ -207,7 +263,12 @@ describe('voxelize', () => {
   it('draws a part that meets its neighbour joined to the neighbour', () => {
     const block = box([0, 0, 0], [0.2, 0.2, 0.15]);
     const bar = diagonalWall([0.2, 0.2], [0.45, 0.47], 0.15);
-    expect(bodies(voxelize([block], grain, [0, 0, 0], [bar]), voxelize([bar], grain, [0, 0, 0], [block]))).toBe(1);
+    expect(
+      bodies(
+        voxelize([block], grain, [0, 0, 0], { neighbours: [bar] }),
+        voxelize([bar], grain, [0, 0, 0], { neighbours: [block] }),
+      ),
+    ).toBe(1);
   });
 
   /** A closed prism over a counter-clockwise triangle in x and y, from z = 0 to `height`. */

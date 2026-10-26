@@ -60,6 +60,7 @@ const intentionallyUnofferedDeadvoxParams = {
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
+  save: 'A debug-run opt-in to saving, meaningful only with debug=1; not a launcher gameplay option.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
   wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
   weatheringProfile: 'A profile choice owned by the in-game debug look panel, not the start launcher.',

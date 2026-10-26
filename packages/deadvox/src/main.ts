@@ -12,7 +12,14 @@ import { getBuildRevision } from './core/buildInfo.ts';
 import { parseTimeOfDay } from './core/clock.ts';
 import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
-import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
+import {
+  applyWeatheringConfig,
+  configFromUrl,
+  DEFAULT_RADIUS_M,
+  makeConfig,
+  savingEnabledFromUrl,
+  siteFromUrl,
+} from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
 import { requestInputLock } from './game/input.ts';
@@ -211,7 +218,12 @@ if (bench === 'report') {
     });
     const saveBackend = params.get('save-backend');
     const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
-    const saveController = new SaveController(screenText, backend, bundled.admitted, browserSelection?.admitted);
+    const saveController = new SaveController(
+      screenText,
+      { backend, savingEnabled: savingEnabledFromUrl(params) },
+      bundled.admitted,
+      browserSelection?.admitted,
+    );
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {

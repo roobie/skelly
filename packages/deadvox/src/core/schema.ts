@@ -681,6 +681,7 @@ const UiScreenTextSchema = strictObject({
   save: slottedTable({
     insecurePage: [],
     apisUnavailable: [],
+    debugRun: [],
     noSavedWorld: [],
     checkingSaves: [],
     checkingCompatibility: [],
