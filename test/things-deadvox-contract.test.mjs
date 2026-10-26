@@ -52,6 +52,9 @@ const figureParts = [...registry.figures.values()].flatMap((figure) => [
   }),
 ]);
 const figureModels = new Set(figureParts.map(({ model }) => model));
+const wornModels = new Set(
+  [...registry.items.values()].flatMap((item) => (item.figureModels ?? []).map(({ model }) => model)),
+);
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
   it('validates and reproduces every recipe model without orphaned records', () => {
@@ -102,8 +105,8 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
-      if (figureModels.has(row.id)) {
-        // A figure part's model is drawn by its figure row; no item holds it.
+      if (figureModels.has(row.id) || wornModels.has(row.id)) {
+        // Presentation-only models do not introduce items or a second mass source beside the loose item model.
         assert.equal(registry.items.has(row.source), false);
         assert.ok(registry.models.get(row.id));
         continue;
