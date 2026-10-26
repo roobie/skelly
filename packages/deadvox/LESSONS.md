@@ -8,6 +8,7 @@ read_if:
   - you're sizing browser-stage budgets after adding pixel captures
   - you're changing sparse vehicle meshing or investigating startup CPU cost
   - you've solved a hard problem and need to preserve its reason
+  - you're considering lowering the held gun near walls
 ---
 
 # Deadvox lessons
@@ -68,7 +69,14 @@ The timeout error and console warning identify the unanswered request's phase, s
 
 Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
 
-## GPU resource ownership
+## Wall leeway
+
+The game does not lower the held gun near walls. The gain is too small for the per-frame cost and the loss of general ergonomics, so the spike is kept as a record and is not enabled. The code lives on branch `deadvox/spike-wall-leeway` at commit a074c0ba781060f9c4cb53e28e5d23b627ee7013; it is not on main, and the branch must not be deleted.
+
+Revisit only when the project owner wants it or a gameplay need requires it. Before reviving it:
+
+- Measure cost first. A naive nearest-surface search was far too slow for every frame; an exact closed-form distance brought both detectors well under the frame budget. Prove the budget before building on a detector.
+- Choose the detector by what it must see. The cell-based detector lowers the gun early near thin things. The refined detector avoids that but needs authored shape boxes for every model that can be held or approached.
 
 Renderer memory counters do not cover every instance buffer or VAO. Dispose owned instanced resources on removal and presentation teardown, but never dispose shared model geometry/materials. Delayed asset loads may replace a fallback only while the owning slot still exists. See `test/browser/case-visual-pool.mjs`.
 
