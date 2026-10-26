@@ -216,13 +216,118 @@
       },
       "outfits": {
         "lab_coat": {
-          "skin": "#b6a597"
+          "fingers": {
+            "skin": "#b6a597"
+          },
+          "foot": {
+            "skin": "#2d2622"
+          },
+          "fore": {
+            "skin": "#b6a597"
+          },
+          "head": {
+            "skin": "#b6a597"
+          },
+          "neck": {
+            "skin": "#b6a597"
+          },
+          "palm": {
+            "skin": "#b6a597"
+          },
+          "pelvis": {
+            "underwear": "#585b62"
+          },
+          "shin": {
+            "skin": "#585b62"
+          },
+          "thigh": {
+            "skin": "#585b62"
+          },
+          "thumb": {
+            "skin": "#b6a597"
+          },
+          "torso": {
+            "skin": "#d9d9d1"
+          },
+          "upper": {
+            "skin": "#d9d9d1"
+          }
         },
         "police_uniform": {
-          "skin": "#b39e8f"
+          "fingers": {
+            "skin": "#b39e8f"
+          },
+          "foot": {
+            "skin": "#121212"
+          },
+          "fore": {
+            "skin": "#b39e8f"
+          },
+          "head": {
+            "skin": "#b39e8f"
+          },
+          "neck": {
+            "skin": "#b39e8f"
+          },
+          "palm": {
+            "skin": "#b39e8f"
+          },
+          "pelvis": {
+            "underwear": "#232937"
+          },
+          "shin": {
+            "skin": "#232937"
+          },
+          "thigh": {
+            "skin": "#232937"
+          },
+          "thumb": {
+            "skin": "#b39e8f"
+          },
+          "torso": {
+            "skin": "#33415e"
+          },
+          "upper": {
+            "skin": "#33415e"
+          }
         },
         "special_ops_uniform": {
-          "skin": "#a99a8b"
+          "fingers": {
+            "skin": "#a99a8b"
+          },
+          "foot": {
+            "skin": "#17140f"
+          },
+          "fore": {
+            "skin": "#a99a8b"
+          },
+          "head": {
+            "skin": "#a99a8b"
+          },
+          "neck": {
+            "skin": "#a99a8b"
+          },
+          "palm": {
+            "skin": "#a99a8b"
+          },
+          "pelvis": {
+            "underwear": "#363b2e"
+          },
+          "shin": {
+            "skin": "#363b2e"
+          },
+          "thigh": {
+            "skin": "#363b2e"
+          },
+          "thumb": {
+            "skin": "#a99a8b"
+          },
+          "torso": {
+            "skin": "#3d4434"
+          },
+          "upper": {
+            "skin": "#3d4434"
+          }
         }
       },
       "stancePoses": {

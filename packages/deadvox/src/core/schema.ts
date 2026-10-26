@@ -3673,7 +3673,7 @@ const FigureSchema = strictObject({
    * Clothing looks by id, each a colour for every material slot it repaints; slots it leaves out keep the model's own
    * colour (`DESIGN.md`, "Dead humans").
    */
-  outfits: record(Id, record(Id, Color)),
+  outfits: record(Id, record(Id, record(Id, Color))),
   /** How a dead body lies. It rests on its lowest point, so it has no hip drop. */
   corpsePose: omit(StancePoseSchema, ['hipDropMetres']),
 });

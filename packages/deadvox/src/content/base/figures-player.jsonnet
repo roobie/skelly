@@ -1,3 +1,11 @@
+// Temporary role readability on the underwear base; delete with corpse-owned equipment in #1366.
+local outfit(skin, shirt, pants, shoe) = {
+  torso: { skin: shirt }, pelvis: { underwear: pants },
+  neck: { skin: skin }, head: { skin: skin },
+  upper: { skin: shirt }, fore: { skin: skin }, palm: { skin: skin },
+  fingers: { skin: skin }, thumb: { skin: skin },
+  thigh: { skin: pants }, shin: { skin: pants }, foot: { skin: shoe },
+};
 local limb(model, joint) = { model: model, joint: joint };
 local segment(part, pivot) = { part: part, pivot: pivot };
 local frame(part, pivot=null) = {
@@ -111,17 +119,10 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         },
         blendRealSeconds: 0.2,
       },
-      // Role colouring changes exposed skin, never paints equipment onto a stripped body.
       outfits: {
-        police_uniform: {
-          skin: '#b39e8f',
-        },
-        special_ops_uniform: {
-          skin: '#a99a8b',
-        },
-        lab_coat: {
-          skin: '#b6a597',
-        },
+        police_uniform: outfit('#b39e8f', '#33415e', '#232937', '#121212'),
+        special_ops_uniform: outfit('#a99a8b', '#3d4434', '#363b2e', '#17140f'),
+        lab_coat: outfit('#b6a597', '#d9d9d1', '#585b62', '#2d2622'),
       },
       // On its back, legs out and a little bent, feet fallen outward and the head tipped back.
       corpsePose: {

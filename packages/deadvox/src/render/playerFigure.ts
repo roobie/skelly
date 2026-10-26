@@ -245,8 +245,8 @@ const hangFromPivots = (
   });
 };
 
-/** A figure outfit: a colour for each material slot it repaints (`FigureDef`, `outfits`). */
-type Outfit = Readonly<Record<string, string>>;
+type Outfit = FigureDef['outfits'][string];
+type DressedMaterials = Map<Material, Map<string, Material>>;
 
 /** How a figure other than the player's own is drawn: in an outfit, and on a layer other than the player's. */
 interface FigureDress {
@@ -255,27 +255,38 @@ interface FigureDress {
 }
 
 /**
- * Repaints each mesh whose exported material slot the outfit names. Loaded copies share their library's materials,
- * so a repainted one is a copy, kept in `dressed` for the next part that shares it.
+ * Temporary corpse role tint; delete with #1366. Parts share skin materials, so repaint copies by colour rather
+ * than changing the shared material or letting one part's tint leak into another's.
  */
-const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>): void => {
-  const repaint = (material: Material, slot: string): Material => {
-    let copy = dressed.get(material);
+const dress = (scene: Object3D, outfit: Outfit, dressed: DressedMaterials): void => {
+  const repaint = (material: Material, colour: string): Material => {
+    let colours = dressed.get(material);
+    if (!colours) {
+      colours = new Map();
+      dressed.set(material, colours);
+    }
+    let copy = colours.get(colour);
     if (!copy) {
       copy = material.clone();
-      (copy as MeshStandardMaterial).color.set(outfit[slot]!);
-      dressed.set(material, copy);
+      (copy as MeshStandardMaterial).color.set(colour);
+      colours.set(colour, copy);
     }
     return copy;
   };
-  scene.traverse((object) => {
-    if (!(object instanceof Mesh) || Array.isArray(object.material)) {
+  scene.traverse((part) => {
+    const slots = typeof part.userData.part === 'string' ? outfit[part.userData.part] : undefined;
+    if (!slots) {
       return;
     }
-    const { slot } = object.geometry.userData;
-    if (typeof slot === 'string' && Object.hasOwn(outfit, slot)) {
-      object.material = repaint(object.material, slot);
-    }
+    part.traverse((object) => {
+      if (!(object instanceof Mesh) || Array.isArray(object.material)) {
+        return;
+      }
+      const { slot } = object.geometry.userData;
+      if (typeof slot === 'string' && Object.hasOwn(slots, slot)) {
+        object.material = repaint(object.material, slots[slot]!);
+      }
+    });
   });
 };
 
@@ -325,8 +336,7 @@ export class PlayerMeshes {
   /** Set by `holdPose`: the drawn pose stays put whatever stance a sync names. */
   private fixedPose = false;
   private outfit: Outfit | undefined;
-  /** Each loaded material and its copy in the outfit's colour, so parts that shared a material share its copy. */
-  private readonly dressed = new Map<Material, Material>();
+  private readonly dressed: DressedMaterials = new Map();
 
   constructor(
     blockSize: number,

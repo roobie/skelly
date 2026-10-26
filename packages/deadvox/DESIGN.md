@@ -8,7 +8,7 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
-  - you add a dead human, change figure outfits or the corpse pose, or resolve the temporary stripped-body presentation
+  - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
@@ -477,10 +477,12 @@ construction.
 Dead humans share the player's figure because a box shaped like a body reads as a
 prop, not a person. One body plan lets figure improvements serve every human.
 
-Role outfits tint exposed skin only. Corpses show the non-lootable underwear base
-until corpse-owned equipment is drawn under #1366: skin tint must not masquerade as
-removable clothing. See `src/content/base/figures-player.jsonnet`, `outfits`, and
-`src/render/corpseFigures.ts`, `CorpseFigures`.
+Until corpse-owned equipment is drawn under #1366, role colours tint the corpse's
+non-lootable underwear base so dead police and soldiers remain readable. The tint is
+not lootable clothing and never applies to the player. Delete the tint path and its
+content palettes when #1366 merges, rather than keeping a second clothing appearance
+beside owned equipment. See `src/content/base/figures-player.jsonnet`, `outfits`,
+`src/render/playerFigure.ts`, `dress`, and `src/render/corpseFigures.ts`, `CorpseFigures`.
 
 The body stays furniture so its gameplay identity does not depend on its drawing.
 See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`.
