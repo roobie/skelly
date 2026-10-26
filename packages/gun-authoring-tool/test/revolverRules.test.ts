@@ -342,7 +342,7 @@ describe('revolver alignment rules', () => {
   });
 
   sweepGroup('revolver full assembly product', () => {
-    // Chunked so each test stays inside the default timeout.
+    // Chunked so a failure names its combination range.
     for (let from = 0; from < revolverVariants.length; from += REVOLVER_CHUNK) {
       it(`validates legitimate frame/grip/barrel/bore/style combinations ${from}-${from + REVOLVER_CHUNK - 1}`, () => {
         for (const combination of revolverVariants.slice(from, from + REVOLVER_CHUNK)) {

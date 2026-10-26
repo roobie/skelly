@@ -284,6 +284,7 @@
   save: {
     insecurePage: "Saves need a secure (https) page; this session won't be saved",
     apisUnavailable: 'Required save APIs are unavailable; this session will not be saved.',
+    debugRun: 'Debug run: saves are off unless the address has save=1',
     noSavedWorld: 'No saved world found.',
     checkingSaves: 'Checking saved worlds…',
     checkingCompatibility: 'Checking save compatibility…',

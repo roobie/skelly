@@ -65,6 +65,8 @@ Bleeding feedback names each region's tier when messages are enabled. A content 
 
 `?debug=1` is a development profile whose tools and readouts may be instructional. Testers hand back metrics and replays through the menu, not the debug panel. The shipped profile has no debug tools and leaves HUD options enabled by default.
 
+A `?debug=1` run neither saves nor loads a save unless `?save=1` is also set, because debug runs are ephemeral tests where progress is not worth keeping, and a stale save would stop each run starting fresh. The title card says saves are off, through the same path as other unsaved sessions. See `src/game/config.ts`, `savingEnabledFromUrl`, and `src/ui/saveController.ts`, `SaveController`.
+
 A blocking runtime error halts play, releases pointer lock and prevents further saves. It offers the full error for copying and a local report download; nothing is sent automatically. Reports can contain world, browser and recent playtest data, so review them before public sharing. The error panel's text stays in code and the page, not content, because it must show when content itself fails to load. See `src/ui/errorReport.ts`, `errorReportText`, and `src/game/play.ts`, `stopPlayAfterError`.
 
 ## Layout

@@ -27,7 +27,7 @@ import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -229,136 +229,127 @@ describe('one finished city plan', () => {
       return { spawns: [...zombies.values()].flat(), hordes: [...hordes.values()].flat() };
     };
 
-    it(
-      'spawns each composed event marker once',
-      () => {
-        const scenario = fixtureScenario();
-        const host = {
-          id: 'fixture_marker_host',
-          eligibility: { settlementKinds: ['fixture_city'] },
-          lootContext: fixtureLootContext(),
-          size: [5, 3, 5] as [number, number, number],
-          palette: { '.': 'air', '=': 'fixture_solid' },
-          layers: [
-            ['=====', '=====', '=====', '=====', '====='],
-            ['.....', '.....', '.....', '.....', '.....'],
-            ['.....', '.....', '.....', '.....', '.....'],
-          ],
-        };
-        const event = {
-          id: 'fixture_marker_event',
-          lootContext: { usage: ['Military'] as 'Military'[], tier: 'Tier2' as const },
-          size: [1, 3, 1] as [number, number, number],
-          palette: {
-            '.': 'air',
-            '=': { ground: true as const },
-            E: { furniture: 'fixture_crate' },
-            Z: { spawn: 'shambler', chance: 1 },
-          },
-          layers: [['='], ['E'], ['Z']],
-        };
-        scenario.population.hordes = 0;
-        scenario.composition = {
-          start: fixtureStart(),
-          fixedLoot: [{ at: [2, 1, 2], items: [{ item: 'fixture_token' }] }],
-          leads: [{ template: 'fixture_marker_lead_a' }, { template: 'fixture_marker_lead_b' }],
-          landmarks: ['fixture_marker_landmark_a', 'fixture_marker_landmark_b'],
-          incidentalTemplates: [],
-          objective: [2, 1, 2],
-          objectiveFace: [2, 1, 4],
-          retreat: [2, 7, 2],
-          resources: [],
-          storeys: [],
-          stairs: [],
-          seals: [],
-          descents: [],
-          events: [
-            {
-              template: event.id,
-              lot: 'fixture_marker_lot',
-              at: [0, 0, 0],
-              fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'fixture_event_token' }] }],
-            },
-          ],
-        };
-        scenario.city.fillRows = false;
-        scenario.city.lots = [
+    it('spawns each composed event marker once', () => {
+      const scenario = fixtureScenario();
+      const host = {
+        id: 'fixture_marker_host',
+        eligibility: { settlementKinds: ['fixture_city'] },
+        lootContext: fixtureLootContext(),
+        size: [5, 3, 5] as [number, number, number],
+        palette: { '.': 'air', '=': 'fixture_solid' },
+        layers: [
+          ['=====', '=====', '=====', '=====', '====='],
+          ['.....', '.....', '.....', '.....', '.....'],
+          ['.....', '.....', '.....', '.....', '.....'],
+        ],
+      };
+      const event = {
+        id: 'fixture_marker_event',
+        lootContext: { usage: ['Military'] as 'Military'[], tier: 'Tier2' as const },
+        size: [1, 3, 1] as [number, number, number],
+        palette: {
+          '.': 'air',
+          '=': { ground: true as const },
+          E: { furniture: 'fixture_crate' },
+          Z: { spawn: 'shambler', chance: 1 },
+        },
+        layers: [['='], ['E'], ['Z']],
+      };
+      scenario.population.hordes = 0;
+      scenario.composition = {
+        start: fixtureStart(),
+        fixedLoot: [{ at: [2, 1, 2], items: [{ item: 'fixture_token' }] }],
+        leads: [{ template: 'fixture_marker_lead_a' }, { template: 'fixture_marker_lead_b' }],
+        landmarks: ['fixture_marker_landmark_a', 'fixture_marker_landmark_b'],
+        incidentalTemplates: [],
+        objective: [2, 1, 2],
+        objectiveFace: [2, 1, 4],
+        retreat: [2, 7, 2],
+        resources: [],
+        storeys: [],
+        stairs: [],
+        seals: [],
+        descents: [],
+        events: [
           {
-            id: 'fixture_marker_lot',
-            position: [-10, -10],
-            size: [5, 5],
-            turn: 1,
-            source: { kind: 'template', id: host.id },
+            template: event.id,
+            lot: 'fixture_marker_lot',
+            at: [0, 0, 0],
+            fixedLoot: [{ at: [0, 1, 0], items: [{ item: 'fixture_event_token' }] }],
           },
-        ];
-        const service = structuredClone(registry.templates.get(scenario.serviceTemplate)!);
-        service.size[1] = 12;
-        service.layers = service.layers.slice(0, service.size[1]);
-        service.palette.C = { furniture: 'fixture_crate' };
-        service.layers[1]![2] = '..C.....==';
-        const note = {
-          ...registry.furniture.get('fixture_crate')!,
-          id: 'fixture_marker_note',
-          readable: { title: 'Fixture lead', text: 'Fixture directions.' },
-          solid: false,
-        };
-        const lead = (id: string) => ({
-          id,
-          lootContext: fixtureLootContext(),
-          size: [1, 2, 1] as [number, number, number],
-          palette: { '=': 'fixture_solid', N: { furniture: note.id } },
-          layers: [['='], ['N']],
-        });
-        const leads = [lead('fixture_marker_lead_a'), lead('fixture_marker_lead_b')];
-        const landmarks = [lead('fixture_marker_landmark_a'), lead('fixture_marker_landmark_b')];
-        const templates = new Map(registry.templates);
-        templates.set(service.id, service);
-        templates.set(host.id, host);
-        templates.set(event.id, event);
-        for (const template of [...leads, ...landmarks]) {
-          templates.set(template.id, template);
-        }
-        const testRegistry = {
-          ...registry,
-          furniture: new Map([...registry.furniture, [note.id, note]]),
-          templates,
-          zombies: new Map([...registry.zombies, ...native.zombies]),
-        };
-        const plan = buildCityPlan({
-          seed: 73,
-          registry: testRegistry,
-          floor,
-          grid: cityGridOf(testRegistry, scenario.city),
-          scenario,
-        });
-        const site = new CitySite(73, testRegistry, scale, plan);
-        const markers = placedSpawns(plan.composition!.events[0]!);
-        expect(markers.length).toBeGreaterThan(0);
-        const { zombies } = gauntletPopulation(site, scenario);
-        for (const marker of markers) {
-          const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
-          expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
-        }
-      },
-      GAUNTLET_SITE_MS,
-    );
+        ],
+      };
+      scenario.city.fillRows = false;
+      scenario.city.lots = [
+        {
+          id: 'fixture_marker_lot',
+          position: [-10, -10],
+          size: [5, 5],
+          turn: 1,
+          source: { kind: 'template', id: host.id },
+        },
+      ];
+      const service = structuredClone(registry.templates.get(scenario.serviceTemplate)!);
+      service.size[1] = 12;
+      service.layers = service.layers.slice(0, service.size[1]);
+      service.palette.C = { furniture: 'fixture_crate' };
+      service.layers[1]![2] = '..C.....==';
+      const note = {
+        ...registry.furniture.get('fixture_crate')!,
+        id: 'fixture_marker_note',
+        readable: { title: 'Fixture lead', text: 'Fixture directions.' },
+        solid: false,
+      };
+      const lead = (id: string) => ({
+        id,
+        lootContext: fixtureLootContext(),
+        size: [1, 2, 1] as [number, number, number],
+        palette: { '=': 'fixture_solid', N: { furniture: note.id } },
+        layers: [['='], ['N']],
+      });
+      const leads = [lead('fixture_marker_lead_a'), lead('fixture_marker_lead_b')];
+      const landmarks = [lead('fixture_marker_landmark_a'), lead('fixture_marker_landmark_b')];
+      const templates = new Map(registry.templates);
+      templates.set(service.id, service);
+      templates.set(host.id, host);
+      templates.set(event.id, event);
+      for (const template of [...leads, ...landmarks]) {
+        templates.set(template.id, template);
+      }
+      const testRegistry = {
+        ...registry,
+        furniture: new Map([...registry.furniture, [note.id, note]]),
+        templates,
+        zombies: new Map([...registry.zombies, ...native.zombies]),
+      };
+      const plan = buildCityPlan({
+        seed: 73,
+        registry: testRegistry,
+        floor,
+        grid: cityGridOf(testRegistry, scenario.city),
+        scenario,
+      });
+      const site = new CitySite(73, testRegistry, scale, plan);
+      const markers = placedSpawns(plan.composition!.events[0]!);
+      expect(markers.length).toBeGreaterThan(0);
+      const { zombies } = gauntletPopulation(site, scenario);
+      for (const marker of markers) {
+        const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
+        expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
+      }
+    });
 
-    it(
-      'supplies ordinary wanderers and hordes even when city buildings have no spawn markers',
-      () => {
+    sweepGroup('in the bundled city', () => {
+      it('supplies ordinary wanderers and hordes even when city buildings have no spawn markers', () => {
         const { spawns, hordes } = populationOf({});
         expect(spawns.length).toBeGreaterThan(0);
         expect(hordes.length).toBeGreaterThan(0);
         expect(hordes.every((horde) => horde.members > 0)).toBe(true);
-      },
-      GAUNTLET_SITE_MS,
-    );
+      });
 
-    // Zero and two distinguish omitted spawns from distinct configured areas without a redundant one-horde case.
-    const hordeCases = [0, 2];
-    it(
-      'places exactly the horde count the scenario asks for in distinct authored areas',
-      () => {
+      // Zero and two distinguish omitted spawns from distinct configured areas without a redundant one-horde case.
+      const hordeCases = [0, 2];
+      it('places exactly the horde count the scenario asks for in distinct authored areas', () => {
         for (const hordes of hordeCases) {
           const area = bundled.population.hordeAreas![0]!;
           const midpoint = (area.x0 + area.x1) / 2;
@@ -370,36 +361,23 @@ describe('one finished city plan', () => {
           expect(placed).toHaveLength(hordes);
           expect(new Set(placed.map(({ id }) => id)).size).toBe(hordes);
         }
-      },
-      hordeCases.length * GAUNTLET_SITE_MS,
-    );
+      });
 
-    it(
-      'adds more stragglers when the scenario asks for extras',
-      () => {
+      it('adds more stragglers when the scenario asks for extras', () => {
         const base = populationOf({ extraStragglers: 0 }).spawns.length;
         expect(populationOf({ extraStragglers: 3 }).spawns.length).toBeGreaterThan(base);
-      },
-      2 * GAUNTLET_SITE_MS,
-    );
+      });
 
-    it(
-      'leaves no zombies or hordes when settlement pressure and authored markers are both off',
-      () => {
+      it('leaves no zombies or hordes when settlement pressure and authored markers are both off', () => {
         const { spawns, hordes } = populationOf({ settlementPressure: false, authoredMarkers: false });
         expect(spawns).toEqual([]);
         expect(hordes).toEqual([]);
-      },
-      GAUNTLET_SITE_MS,
-    );
+      });
 
-    it(
-      'rejects more hordes than the city has spawn areas',
-      () => {
+      it('rejects more hordes than the city has spawn areas', () => {
         expect(() => populationOf({ groupSize: 64, hordes: 16 })).toThrow('.population.hordes');
-      },
-      GAUNTLET_SITE_MS,
-    );
+      });
+    });
   });
 
   it('fills paired inner banks while keeping alleys, perimeter gates and the service reserve clear', () => {
@@ -602,9 +580,8 @@ describe('one finished city plan', () => {
     expect(scenarioPlanIssues(admitted, scenario).map(([path]) => path)).toContain('.city.ring.pool');
   });
 
-  it(
-    'keeps every gauntlet spawn inside the walled area and clear of the wall',
-    () => {
+  sweepGroup('as a gauntlet site', () => {
+    it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
       const native = BUNDLED_CONTENT.registry;
       const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
       const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
@@ -626,9 +603,8 @@ describe('one finished city plan', () => {
         expect(pos[2]).toBeLessThan(site.bounds.z1);
         expect(inWall(pos)).toBe(false);
       }
-    },
-    GAUNTLET_SITE_MS,
-  );
+    });
+  });
 
   it('reserves each candidate/turn class inside the apron and keeps ordinary rows out of street space', () => {
     const plan = planned();

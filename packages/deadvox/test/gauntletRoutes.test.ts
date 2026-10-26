@@ -3,8 +3,6 @@ import { GauntletSite } from '../src/core/gauntlet.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import { scenarioCertificate } from '../src/core/scenarioCertificate.ts';
 import { startupContent } from './baseRegistry.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
-import { sweepGroup } from './sweeps.ts';
 
 // Play doesn't prove the route before Go, so these tests stand in for that proof: the certificate's issues cover
 // every entrance, crossing, resource and the lab terminal. See `packages/deadvox/DESIGN.md`, "Gauntlet".
@@ -26,21 +24,11 @@ const issuesOf = (seed: number) =>
   );
 
 describe('gauntlet route certificate', () => {
-  it.each(FIXED_SEEDS)(
-    'certifies every bundled gauntlet finishable at seed %i',
-    (seed) => {
-      expect(issuesOf(seed)).toEqual([]);
-    },
-    gauntlets.length * GAUNTLET_SITE_MS,
-  );
-});
+  it.each(FIXED_SEEDS)('certifies every bundled gauntlet finishable at seed %i', (seed) => {
+    expect(issuesOf(seed)).toEqual([]);
+  });
 
-sweepGroup('gauntlet route certificate sweep', () => {
-  it(
-    'certifies every bundled gauntlet finishable across a seed sweep',
-    () => {
-      expect(SWEEP_SEEDS.flatMap(issuesOf)).toEqual([]);
-    },
-    SWEEP_SEEDS.length * gauntlets.length * GAUNTLET_SITE_MS,
-  );
+  it('certifies every bundled gauntlet finishable across a seed sweep', () => {
+    expect(SWEEP_SEEDS.flatMap(issuesOf)).toEqual([]);
+  });
 });

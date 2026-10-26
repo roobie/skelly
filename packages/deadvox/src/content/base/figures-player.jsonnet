@@ -50,8 +50,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
+      // Head gear sits on the head and turns with it; carry and armour sit on the torso in the bust's own frame, where
+      // their models are authored, and stay drawn in first person as the body does.
       attachmentFrames: {
         head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
+        torso: { part: 'body', at: [0, 0, 0], turn: [0, 0, 0], insideView: false },
       },
       holds: {
         // The chin-high guard must stay inside both view and world arm reach.

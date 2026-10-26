@@ -465,6 +465,10 @@
       "output": "packages/thing-authoring-tool/items.json"
     },
     {
+      "source": "packages/thing-authoring-tool/test/fixtures/bend-strip.jsonnet",
+      "output": "packages/thing-authoring-tool/test/fixtures/bend-strip.json"
+    },
+    {
       "source": "packages/thing-core/src/materials.jsonnet",
       "output": "packages/thing-core/src/materials.json"
     },

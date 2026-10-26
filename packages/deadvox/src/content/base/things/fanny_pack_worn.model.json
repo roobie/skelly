@@ -1,0 +1,16 @@
+{
+  "id": "fanny_pack_worn",
+  "file": "assets/models/fanny_pack_worn.glb",
+  "parts": {
+    "belt": {
+      "node": "belt:belt",
+      "massKg": 0.05,
+      "centreOfMass": [-3.924937663359562e-18, 0.152, 0.00029181494661921926]
+    },
+    "bag": {
+      "node": "bag:bag",
+      "massKg": 0.15,
+      "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.1749469345698094]
+    }
+  }
+}

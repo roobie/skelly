@@ -9,7 +9,15 @@
 
 import { portFrame } from '@skelly/engine/assembly/resolve.ts';
 import type { PartDef, PartInstance, PortDef } from '@skelly/engine/assembly/schema.ts';
-import { applyPoint, compose, invert, type Mat3, type Transform, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import {
+  applyDir,
+  applyPoint,
+  compose,
+  invert,
+  type Mat3,
+  type Transform,
+  type Vec3,
+} from '@skelly/engine/foundation/math.ts';
 import { type DisplayItem, displayItems } from '@skelly/engine/shapes/display.ts';
 import { boundsOfPoints } from '@skelly/engine/shapes/geometry.ts';
 import { displayBevel, meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
@@ -24,6 +32,7 @@ import type {
   PartPortId,
   SrgbColor,
 } from './exportTypes.ts';
+import { matrixOf, prepareSkin, preserveSkinFace, SkinError, skinPoints } from './skin.ts';
 import { voxelize } from './voxelize.ts';
 
 const ASSET_FILE = /^assets\/models\/[a-z0-9_-]+\.glb$/;
@@ -140,17 +149,23 @@ const FLOAT = 5126;
 const UNSIGNED_INT = 5125;
 
 class BinaryBuffer {
-  readonly views: { buffer: 0; byteOffset: number; byteLength: number; target: number }[] = [];
+  readonly views: { buffer: 0; byteOffset: number; byteLength: number; target?: number }[] = [];
   readonly accessors: Record<string, unknown>[] = [];
   private readonly chunks: Uint8Array[] = [];
   private size = 0;
 
   /** Appends `data` (whose byte length is a multiple of 4) as a buffer view and returns its accessor index. */
-  add(data: Float32Array | Uint32Array, accessor: Record<string, unknown>, target: number): number {
+  add(data: Float32Array | Uint32Array | Uint16Array, accessor: Record<string, unknown>, target?: number): number {
     const bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    this.views.push({ buffer: 0, byteOffset: this.size, byteLength: bytes.byteLength, target });
-    this.chunks.push(bytes);
-    this.size += bytes.byteLength;
+    this.views.push({
+      buffer: 0,
+      byteOffset: this.size,
+      byteLength: bytes.byteLength,
+      ...(target === undefined ? {} : { target }),
+    });
+    const padded = pad4(bytes, 0);
+    this.chunks.push(padded);
+    this.size += padded.byteLength;
     this.accessors.push({ bufferView: this.views.length - 1, ...accessor });
     return this.accessors.length - 1;
   }
@@ -299,7 +314,7 @@ const refusal = (input: Parameters<ExportGlb>[0]): GlbExportError | undefined =>
  * structure issues or unplaced parts, ids that can't form a stable port id, a palette colour outside sRGB [0,1],
  * and an asset file outside `assets/models/<name>.glb`.
  */
-export const exportGlb: ExportGlb = (input) => {
+const writeGlb: ExportGlb = (input) => {
   checkNesting(input);
   const error = refusal(input);
   if (error) {
@@ -327,6 +342,7 @@ export const exportGlb: ExportGlb = (input) => {
         : [];
     });
 
+  const skin = input.skin === undefined ? undefined : prepareSkin(input.skin);
   const bin = new BinaryBuffer();
   const materials: Json[] = [];
   const materialIndex = new Map<string, number>();
@@ -379,8 +395,16 @@ export const exportGlb: ExportGlb = (input) => {
     mesh: { positions: Float32Array; normals: Float32Array; indices: Uint32Array },
     material: number,
     extras: Json,
+    part: PartExport,
   ): Json => {
-    const { positions } = mesh;
+    const frame = { r: part.placed.r, t: toMetres(part.placed.t, metresPerUnit) };
+    const positions = skin ? new Float32Array(skinPoints(mesh.positions, frame).flat()) : mesh.positions;
+    const normals = mesh.normals.slice();
+    if (skin) {
+      for (let i = 0; i < normals.length; i += 3) {
+        normals.set(applyDir(frame, [normals[i]!, normals[i + 1]!, normals[i + 2]!]), i);
+      }
+    }
     const points = Array.from(
       { length: positions.length / 3 },
       (_, index) => [positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!] as Vec3,
@@ -391,17 +415,27 @@ export const exportGlb: ExportGlb = (input) => {
       { componentType: FLOAT, count: positions.length / 3, type: 'VEC3', min, max },
       ARRAY_BUFFER,
     );
-    const normal = bin.add(
-      mesh.normals,
-      { componentType: FLOAT, count: mesh.normals.length / 3, type: 'VEC3' },
-      ARRAY_BUFFER,
-    );
+    const normal = bin.add(normals, { componentType: FLOAT, count: normals.length / 3, type: 'VEC3' }, ARRAY_BUFFER);
     const indices = bin.add(
       mesh.indices,
       { componentType: UNSIGNED_INT, count: mesh.indices.length, type: 'SCALAR' },
       ELEMENT_ARRAY_BUFFER,
     );
-    return { attributes: { POSITION: position, NORMAL: normal }, indices, material, mode: 4, extras };
+    const attributes: Json = { POSITION: position, NORMAL: normal };
+    if (skin) {
+      const evaluated = skin.attributes(points);
+      attributes.JOINTS_0 = bin.add(
+        evaluated.joints,
+        { componentType: 5123, count: points.length, type: 'VEC4' },
+        ARRAY_BUFFER,
+      );
+      attributes.WEIGHTS_0 = bin.add(
+        evaluated.weights,
+        { componentType: FLOAT, count: points.length, type: 'VEC4' },
+        ARRAY_BUFFER,
+      );
+    }
+    return { attributes, indices, material, mode: 4, extras };
   };
   const appearanceExtras = (appearance: ReturnType<typeof resolveAppearance>): Json => ({
     ...(appearance.material === undefined ? {} : { material: appearance.material }),
@@ -423,6 +457,7 @@ export const exportGlb: ExportGlb = (input) => {
         ...pieceExtras(solid.display?.piece),
         ...appearanceExtras(appearance),
       },
+      part,
     );
   };
   const itemsOf = (part: PartExport): DisplayItem[] =>
@@ -514,19 +549,22 @@ export const exportGlb: ExportGlb = (input) => {
       finishes[group]!.solids.push(...item.solids.map(({ id }) => id));
       return [{ ...mesh, group }];
     });
-    const { groups } = voxelize(
-      sources,
-      grain,
-      latticeOrigin(part.placed, grain, metresPerUnit),
-      neighboursOf(part, grain),
-    );
+    const { groups } = voxelize(sources, grain, latticeOrigin(part.placed, grain, metresPerUnit), {
+      neighbours: neighboursOf(part, grain),
+      preserveFace: input.skin ? preserveSkinFace(input.skin, placedInMetres(part)) : undefined,
+    });
     return [...groups].map(([group, buffers]) =>
-      bufferPrimitive(buffers, materialFor(finishes[group]!.appearance), {
-        voxelGrain: grain,
-        solids: finishes[group]!.solids,
-        ...pieceExtras(finishes[group]!.piece),
-        ...appearanceExtras(finishes[group]!.appearance),
-      }),
+      bufferPrimitive(
+        buffers,
+        materialFor(finishes[group]!.appearance),
+        {
+          voxelGrain: grain,
+          solids: finishes[group]!.solids,
+          ...pieceExtras(finishes[group]!.piece),
+          ...appearanceExtras(finishes[group]!.appearance),
+        },
+        part,
+      ),
     );
   };
 
@@ -548,10 +586,13 @@ export const exportGlb: ExportGlb = (input) => {
     const name = partNodeName(part.id, part.family);
     const node: Json = { name };
     const rotation = quaternion(part.placed.r);
-    if (!isIdentity(part.placed.r)) {
+    if (!(skin || isIdentity(part.placed.r))) {
       node.rotation = rotation;
     }
-    node.translation = toMetres(part.placed.t, metresPerUnit);
+    node.translation = skin ? [0, 0, 0] : toMetres(part.placed.t, metresPerUnit);
+    if (skin && primitives.length > 0) {
+      node.skin = 0;
+    }
     if (primitives.length > 0) {
       node.mesh = meshes.length;
       meshes.push({ name, primitives });
@@ -579,10 +620,10 @@ export const exportGlb: ExportGlb = (input) => {
     for (const port of part.def.ports) {
       const portNode: Json = {
         name: `${part.id}.${port.id}`,
-        translation: toMetres(port.pos, metresPerUnit),
+        translation: toMetres(skin ? applyPoint(part.placed, port.pos) : port.pos, metresPerUnit),
         extras: { port: portMetadata(part.id, port, part.placed) },
       };
-      const frame = portFrame(port).r;
+      const frame = (skin ? compose(part.placed, portFrame(port)) : portFrame(port)).r;
       if (!isIdentity(frame)) {
         portNode.rotation = quaternion(frame);
       }
@@ -596,6 +637,28 @@ export const exportGlb: ExportGlb = (input) => {
   };
   for (const part of parts) {
     addPart(part);
+  }
+
+  const skins: Json[] = [];
+  if (skin && input.skin) {
+    const first = nodes.length;
+    const { joints } = input.skin;
+    for (const joint of joints) {
+      nodes.push({ name: joint.name, matrix: matrixOf(joint.rest) });
+    }
+    joints.forEach((joint, index) => {
+      if (joint.parent === undefined) {
+        rootChildren.push(first + index);
+      } else {
+        const parent = nodes[first + joints.findIndex(({ name }) => name === joint.parent)]!;
+        parent.children ??= [];
+        (parent.children as number[]).push(first + index);
+      }
+    });
+    skins.push({
+      joints: joints.map((_, index) => first + index),
+      inverseBindMatrices: bin.add(skin.inverseBinds, { componentType: FLOAT, count: joints.length, type: 'MAT4' }),
+    });
   }
 
   (nodes[0] as Json).extras = {
@@ -613,6 +676,7 @@ export const exportGlb: ExportGlb = (input) => {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes,
+    ...(skin ? { skins } : {}),
     ...(meshes.length > 0 ? { meshes, materials } : {}),
     ...(bin.byteLength > 0
       ? {
@@ -624,4 +688,15 @@ export const exportGlb: ExportGlb = (input) => {
   };
 
   return { ok: true, glb: glbFile(json, bin.bytes()) };
+};
+
+export const exportGlb: ExportGlb = (input) => {
+  try {
+    return writeGlb(input);
+  } catch (error) {
+    if (error instanceof SkinError) {
+      return fail({ code: 'invalid-skin', message: error.message });
+    }
+    throw error;
+  }
 };

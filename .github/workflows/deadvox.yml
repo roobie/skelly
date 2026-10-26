@@ -78,8 +78,6 @@ jobs:
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
       - run: timeout 300 npm run typecheck
-      - name: Gauntlet route sweep (stands in for a runtime route proof)
-        run: timeout 300 npm run test:sweeps
       - run: timeout 300 npm run validate
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
@@ -92,8 +90,9 @@ jobs:
           if-no-files-found: ignore
 
   # Vitest assigns whole files to shards, so the save budget fixture's file runs in exactly one shard.
-  # The step bound is about twice the slowest shard's expected time, per-shard costs included, so a
-  # hang or a runaway shard fails fast; see docs/browser-ci.md (#1140).
+  # The step bound is about twice the slowest shard's expected time, so a hang or a runaway shard fails
+  # fast; see docs/browser-ci.md (#1140). Shards run vitest directly: the root CI's content check fails
+  # any drift in the tracked content outputs, so recompiling here only repeats it; see docs/browser-ci.md.
   unit:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -126,7 +125,7 @@ jobs:
       - run: npm ci --prefix tools/lit-check --no-audit --no-fund --prefer-offline
         timeout-minutes: 3
       - name: Unit suite shard ${{ matrix.shard }}
-        run: timeout 180 npm test -- --maxWorkers=2 --shard=${{ matrix.shard }}
+        run: timeout 180 npx vitest run --maxWorkers=2 --shard=${{ matrix.shard }}
       - name: Upload check artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4

@@ -17,6 +17,7 @@ const gauntletLoading = async (browser, baseUrl) => {
     const url = new URL(baseUrl);
     url.searchParams.set('site', 'gauntlet');
     url.searchParams.set('debug', '1');
+    url.searchParams.set('save', '1');
     url.searchParams.set('time', '12:00');
     url.searchParams.delete('actors');
     await page.goto(url.href);
@@ -81,6 +82,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     url.searchParams.set('site', 'gauntlet');
     url.searchParams.set('route-fixture', '1');
     url.searchParams.set('debug', '1');
+    url.searchParams.set('save', '1');
     url.searchParams.delete('actors');
     await page.goto(url.href);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);

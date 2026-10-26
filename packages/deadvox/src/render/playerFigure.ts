@@ -25,6 +25,7 @@ import {
 } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { HeldPresentation, type HeldPresentationFrame } from './heldPresentation.ts';
+import { type ItemLook, itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
@@ -73,6 +74,24 @@ export interface WornPresentation {
   registry: Registry;
   worn: Readonly<Partial<Record<WearSlot, Item>>>;
 }
+
+/** One figure model a worn item draws, with the item that owns it and, when it draws that item's own model, its look. */
+interface WornEntry {
+  owner: Item;
+  entry: NonNullable<ItemDef['figureModels']>[number];
+  look?: ItemLook;
+}
+
+/** A worn item's figure models and those of the items fitted to it, such as a slung gun's sling. */
+const wornEntries = (registry: Registry, item: Item): WornEntry[] =>
+  [item, ...Object.values(item.slots ?? {}).filter((child): child is Item => child !== undefined)].flatMap((owner) => {
+    const look = itemLook(registry, owner);
+    return (defOf(registry, owner.type).figureModels ?? []).map((entry) => ({
+      owner,
+      entry,
+      ...(look && entry.model === look.model ? { look } : {}),
+    }));
+  });
 
 type FigurePartName = 'body' | FigureLimb;
 
@@ -304,8 +323,8 @@ export class PlayerMeshes {
     WearSlot,
     {
       item: Item;
-      entries: ItemDef['figureModels'];
-      modelsVersion: number;
+      /** Changes whenever what the slot draws does: a model loading, or a part fitted or removed. */
+      key: string;
       groups: Group[];
     }
   >();
@@ -631,32 +650,30 @@ export class PlayerMeshes {
     const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
     for (const slot of slots) {
       const item = source?.worn[slot];
-      const entries = item && defOf(source!.registry, item.type).figureModels;
+      const entries = item ? wornEntries(source!.registry, item) : [];
+      const key = [this.models.version, ...entries.map(({ owner, look }) => `${owner.type}:${look?.key ?? ''}`)].join(
+        '|',
+      );
       const previous = this.attachments.get(slot);
-      if (
-        previous &&
-        previous.item === item &&
-        previous.entries === entries &&
-        previous.modelsVersion === this.models.version &&
-        previous.groups.length === entries?.length
-      ) {
+      if (previous && previous.item === item && previous.key === key && previous.groups.length === entries.length) {
         continue;
       }
       for (const group of previous?.groups ?? []) {
         group.removeFromParent();
       }
       this.attachments.delete(slot);
-      if (!(item && entries)) {
+      if (!item || entries.length === 0) {
         continue;
       }
       const groups = entries.flatMap((entry) => this.attachWorn(slot, entry) ?? []);
-      this.attachments.set(slot, { item, entries, modelsVersion: this.models.version, groups });
+      this.attachments.set(slot, { item, key, groups });
     }
   }
 
-  private attachWorn(slot: WearSlot, entry: NonNullable<ItemDef['figureModels']>[number]): Group | undefined {
+  private attachWorn(slot: WearSlot, { entry, look }: WornEntry): Group | undefined {
     const frame = this.attachmentFrames.get(entry.frame);
-    const model = frame && this.models.part(entry.model);
+    // An entry drawing its own item's model draws the item's whole look, so a slung gun keeps what is fitted to it.
+    const model = frame && (look ? this.models.partLook(look) : this.models.part(entry.model));
     if (!(frame && model)) {
       return;
     }

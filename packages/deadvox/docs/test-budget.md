@@ -25,7 +25,7 @@ Revisit a cut only when an issue reports a related defect or suite overrun; rest
 
 Isolate city route alternatives so content additions do not accumulate into one timing failure and failures identify the affected alternative. See `test/cityKitRoutes.test.ts`, `cityAlternatives`.
 
-For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. A workload-scaled deadline avoids coupling content growth to a fixed allowance. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
+For production chunk-order checks, native deep equality avoids matcher traversal dominating generation and stamping without weakening full-data comparisons. See `test/scenarioCertificate.test.ts`, `stampProbeCells`.
 
 Skyline admission needs the compiler's grounded envelopes, not fully expanded voxel
 maps: selected choices cannot exceed their declared envelope. Quota admission likewise

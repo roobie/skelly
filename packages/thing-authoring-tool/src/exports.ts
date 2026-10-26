@@ -5,6 +5,7 @@ import { loadRecipe, type RecipeRow, recipeAsset, recipeOptions, recipeVoxel } f
 import { literal, optional, parse, picklist, strictObject } from 'valibot';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { buildItem, catalogue, palette, type ToolItem } from './catalogue.ts';
+import { authoredSkin } from './skin.ts';
 
 export const exportItem = (
   item: ToolItem,
@@ -15,6 +16,7 @@ export const exportItem = (
   const { report, masses, handling, drawn, glow } = buildItem(item, voxel);
   const out = exportGlb({
     resolved: report.resolved,
+    ...(item.skin ? { skin: authoredSkin(item.skin) } : {}),
     asset,
     palette,
     revolveFacets: catalogue.facets,

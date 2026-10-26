@@ -9,7 +9,7 @@ import { footprint } from '../src/core/templates.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import type { ZombieSystem } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const registry = baseRegistry();
 const playtest = JSON.parse(readFileSync('src/content/base/layouts-playtest.json', 'utf8')) as {
@@ -85,9 +85,8 @@ describe('authored zombie spawn persistence', () => {
     }
   });
 
-  it(
-    'keeps the secret house’s sealed brute shambler through generation and a save round-trip',
-    () => {
+  sweepGroup('in a gauntlet site', () => {
+    it('keeps the secret house’s sealed brute shambler through generation and a save round-trip', () => {
       const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
       const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
       const [house, ...others] = city.plan.placements.filter(
@@ -121,9 +120,8 @@ describe('authored zombie spawn persistence', () => {
       loadAll(afterLoad, restored);
       expect(restored.filter(sealed)).toEqual(saved.filter(sealed));
       expect(afterLoad.snapshotState()).toEqual(ledger);
-    },
-    GAUNTLET_SITE_MS,
-  );
+    });
+  });
 
   it('restores every authored camp amalgam without duplicating or losing it', () => {
     const { locations, everyMarkerHasSpawn } = campAmalgams();

@@ -52,6 +52,7 @@ import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
 import { spool } from './families/spool.ts';
+import { SkinSchema } from './skin.ts';
 
 const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const name = pipe(string(), nonEmpty());
@@ -87,6 +88,7 @@ const PartSchema = strictObject({
 const ItemSchema = strictObject({
   id: name,
   exportMass: picklist(['parts', 'inventory-atom']),
+  skin: optional(SkinSchema),
   parts: pipe(
     array(PartSchema),
     nonEmpty(),

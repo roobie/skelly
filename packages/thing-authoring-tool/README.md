@@ -3,9 +3,42 @@ read_if:
   - you author or export a non-gun item
   - you inspect the thing tool's viewer or its assembly boundary
   - you change a tool item's mass, finish or geometry
+  - you investigate skin authoring or voxel deformation topology
 ---
 
 # Thing authoring tool
+
+## Skinned export
+
+Weights must be evaluated in common bind space after voxel meshing so duplicated
+vertices at finish boundaries cannot acquire different deformation rules. See
+`src/skin.ts`, `authoredSkin`, and `packages/thing-export/src/glb.ts`, `writeGlb`.
+
+Greedy meshing must not erase the samples needed for deformation. Exposed voxel
+faces intersecting authored blend bands retain their grain-sized tessellation;
+only tessellation changes, not the occupied cells or rest silhouette. Rigid exports
+keep greedy meshing so supporting skins does not inflate ordinary models. See
+`packages/thing-export/src/voxelize.ts`, `sliceMask`, and
+`packages/thing-export/src/skin.ts`, `preserveSkinFace`. Band extents and profiles
+belong to authoring content, not anatomy-specific exporter constants; see
+`test/fixtures/bend-strip.jsonnet` and `src/skin.ts`, `authoredSkin`.
+
+The exporter and consumer proofs live in their owning packages so tests do not
+introduce runtime import edges between them. The consumer reads a committed model
+rather than importing its producer. For fixture regeneration, see
+`test/export-skin-fixture.ts`, `writeRecipeExports`, and
+`packages/deadvox/test/skinExport.test.ts`, `load`. Regeneration uses the same item
+export and file-writing mechanisms as production assets, while keeping fixture
+content out of the production catalogue.
+
+Each displayed skin owns its mutable skeleton because posing or disposing one
+figure must not change another. Immutable geometry may remain shared. Full joint
+matrices must survive nonuniform parent scale without decomposition, which can
+lose compensating shear. Bounds must follow deformed vertices rather than the rest
+geometry so posing cannot hide visible geometry through culling. See
+`packages/deadvox/src/render/models.ts`, `instantiateSkin` and `visibleBounds`.
+
+## Authoring ownership
 
 Each item has an authored row so mass has one home even when geometry builders are reused.
 A single part takes the core wrapper and can gain parts without changing the export or
