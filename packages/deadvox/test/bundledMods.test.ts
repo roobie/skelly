@@ -3,14 +3,16 @@ import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/
 import { perceivePlayer } from '../src/core/zombies.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
+import { reuseBundledBuilds } from './bundledContentReuse.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const base = buildBundledContent().registry;
 const PACKS_DIFFER = /content packs differ/;
+// Admitted once; every case below reads it and none changes it.
+const beginner = selectBundledMods(['beginner']);
+reuseBundledBuilds();
 
 describe('beginner bundled mod', () => {
-  const beginner = selectBundledMods(['beginner']);
-
   it('is admitted without issues', () => {
     expect(beginner.issues).toEqual([]);
     expect(beginner.admitted.map(({ id }) => id)).toEqual(['beginner']);
@@ -63,25 +65,23 @@ describe('beginner bundled mod', () => {
 
 describe('beginner mode saves', () => {
   it('loads back only under the mode it was saved in', async () => {
-    const beginner = await currentSaveVersionIdentity(selectBundledMods(['beginner']).admitted);
+    const easy = await currentSaveVersionIdentity(beginner.admitted);
     const normal = await currentSaveVersionIdentity();
-    expect(beginner.digest).not.toBe(normal.digest);
+    expect(easy.digest).not.toBe(normal.digest);
     const bytes = await encodeSave(capture(createRuntime()), {
       generation: 1,
-      version: beginner.components,
+      version: easy.components,
       worldOptions: formatWorldOptions,
     });
-    const decoded = await decodeSave(bytes, { version: beginner.components, contentLookup });
-    expect(decoded.versionIdentity.digest).toBe(beginner.digest);
+    const decoded = await decodeSave(bytes, { version: easy.components, contentLookup });
+    expect(decoded.versionIdentity.digest).toBe(easy.digest);
     await expect(decodeSave(bytes, { version: normal.components, contentLookup })).rejects.toThrow(PACKS_DIFFER);
     const normalBytes = await encodeSave(capture(createRuntime()), {
       generation: 1,
       version: normal.components,
       worldOptions: formatWorldOptions,
     });
-    await expect(decodeSave(normalBytes, { version: beginner.components, contentLookup })).rejects.toThrow(
-      PACKS_DIFFER,
-    );
+    await expect(decodeSave(normalBytes, { version: easy.components, contentLookup })).rejects.toThrow(PACKS_DIFFER);
   });
 });
 
@@ -116,9 +116,12 @@ describe('beginner mode light spotting', () => {
   };
 
   it('spots a carried light from a shorter range than without the mod', () => {
-    const beginner = selectBundledMods(['beginner']).content.registry;
     for (const [id, plain] of base.zombies) {
-      const lightOnly = { ...beginner.zombies.get(id)!, sight: plain.sight, nightSight: plain.nightSight };
+      const lightOnly = {
+        ...beginner.content.registry.zombies.get(id)!,
+        sight: plain.sight,
+        nightSight: plain.nightSight,
+      };
       expect(farthestSpotted(lightOnly), id).toBeLessThan(farthestSpotted(plain));
     }
   });
