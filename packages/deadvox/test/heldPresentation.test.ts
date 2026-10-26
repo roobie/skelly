@@ -13,6 +13,7 @@ import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 // The compass label's canvas is unrelated to its grip; pixels are checked in the held browser stage.
@@ -26,7 +27,7 @@ const expectTwoHandedAimSupport = (view: HeldItems, sample: ItemHoldPose, mounte
     return;
   }
   const support = sample.side === 'right' ? 'left' : 'right';
-  const held = view as unknown as {
+  const held = heldState(view) as {
     handsOff: Set<'left' | 'right'>;
     holds: Map<'left' | 'right', { at: readonly number[] }>;
     gripAnchors: Map<'left' | 'right', Object3D>;
@@ -174,7 +175,7 @@ it('both views resolve registry item holds through one owner, including the mann
   }
 });
 
-it('keeps active firearm off-hand poses equal across first and third person readiness', async () => {
+it('keeps active and resting firearm off-hand poses equal across first and third person readiness', async () => {
   const registry = baseRegistry();
   const figure = registry.figures.get('player')!;
   const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
@@ -183,11 +184,18 @@ it('keeps active firearm off-hand poses equal across first and third person read
   const light = inventory.create('flashlight');
   expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
   expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);
-  expect(toggleLight(registry, light)).toBeUndefined();
   const scale = makeScale(0.5);
   const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
   try {
-    for (const progress of [0.4, 1]) {
+    for (const [on, progress] of [
+      [false, 0.4],
+      [false, 1],
+      [true, 0.4],
+      [true, 1],
+    ] as const) {
+      if (Boolean(light.on) !== on) {
+        expect(toggleLight(registry, light)).toBeUndefined();
+      }
       const handling = { firearms: [], readiness: { uid: gun.uid, progress, aimingDownSights: false } } as const;
       const view = new HeldItems(inventory, models, figure);
       build.mockClear();
@@ -210,7 +218,7 @@ it('keeps active firearm off-hand poses equal across first and third person read
       const worldOwner = build.mock.contexts.at(-1) as HeldPresentation;
       expect(
         worldOwner.arms.get('left')!.position.distanceTo(firstOwner.arms.get('left')!.position),
-        `readiness ${progress}`,
+        `on=${on} readiness=${progress}`,
       ).toBeLessThan(1e-7);
       view.dispose();
       world.dispose();

@@ -232,8 +232,8 @@ export const observationPlugin = {
     proofHeldUpdate(...args);
     if (!proof.trackAttachment) return;
     const pose = args[1];
-    const arm = view.held.arms.get(proof.off);
-    const item = view.held.heldByHand.get(proof.off);
+    const arm = view.held.animator.presentation.arms.get(proof.off);
+    const item = view.held.animator.presentation.heldByHand.get(proof.off);
     const anchor = arm?.getObjectByName('grip-anchor');
     if (!anchor || !item) return;
     proof.attachments.push({

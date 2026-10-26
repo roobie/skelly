@@ -15,7 +15,7 @@ A normal top-up preserves live cartridges and picks out cases individually. Deli
 
 Speedloaders are follow-up work, not part of loose-round loading. Separating them keeps the cylinder's ownership and interruptions reviewable before another ammunition container is introduced.
 
-The revolver is one-handed with one-hand aim, leaving the off hand available rather than treating a handgun as a long gun. Loading a round requires that the hand not wielding the gun is free, because that hand carries the round to the chamber. Its reach and the visible round share the loading job's progress; ordinary stance posing must not overwrite the reach. See `src/game/revolverHandling.ts`, `RevolverHandling`, and `src/render/hands.ts`, `HeldItems`. Existing grip, bore and sight transforms own aiming; moving parts do not change shot admission. See `src/core/heldPose.ts`, `heldFirearmTransform`.
+The revolver is one-handed with one-hand aim, leaving the off hand available rather than treating a handgun as a long gun. Loading a round requires that the hand not wielding the gun is free, because that hand carries the round to the chamber. Its reach and the visible round share the loading job's progress; ordinary stance posing must not overwrite the reach. See `src/game/revolverHandling.ts`, `RevolverHandling`, and `src/render/actorAnimator.ts`, `ActorAnimator`. Existing grip, bore and sight transforms own aiming; moving parts do not change shot admission. See `src/core/heldPose.ts`, `heldFirearmTransform`.
 
 Only the authored calibre is accepted. Per-chamber cartridge types remain explicit so future compatible ammunition can use the same owner without inventing a second chamber representation. Compatibility needs its own content rule before another calibre can be loaded.
 
@@ -33,8 +33,8 @@ Handling times, dispersion, recoil and loot weights belong to content so mods ca
 
 The crane carries the cylinder and ejector even though the GLB nodes are flat. Loading and picking may display a different chamber angle without changing the saved alignment. Each frame starts from the exported rest transform to avoid accumulated rotation. See `src/render/firearmModel.ts`, `poseRevolverParts`.
 
-Loaded rounds share the gun's file frame, including its grip offset, because chamber seats are exported in that frame rather than the outer hand-placement wrapper. See `src/render/hands.ts`, `HeldItems.cylinderRoundGroup`, and `test/revolverPose.test.ts`.
+Loaded rounds share the gun's file frame, including its grip offset, because chamber seats are exported in that frame rather than the outer hand-placement wrapper. See `src/render/actorAnimator.ts`, `ActorAnimator.cylinderRoundGroup`, and `test/revolverPose.test.ts`.
 
-The loading fist shares the cartridge's frame rather than following the forearm's bend: an elbow-driven palm rotation makes a gun-local cartridge offset cut through the hand's face. Content places the round at the fist's forward edge so it protrudes toward the chamber instead of showing only its base through the palm. See `src/render/hands.ts`, `HeldItems`, and `src/content/base/items-revolver.jsonnet`, `loadPose`.
+The loading fist shares the cartridge's frame rather than following the forearm's bend: an elbow-driven palm rotation makes a gun-local cartridge offset cut through the hand's face. Content places the round at the fist's forward edge so it protrudes toward the chamber instead of showing only its base through the palm. See `src/render/actorAnimator.ts`, `ActorAnimator`, and `src/content/base/items-revolver.jsonnet`, `loadPose`.
 
 The shot and handling come from a real snub revolver: a .38 Special J-frame recorded near the gun, rather than this .357. A .38 may sound quieter, so gain and pitch stay in content and a tweak after listening is a content edit. A handling the takes don't hold falls back to a general click library. See `src/content/base/sounds-revolver.jsonnet`, `sounds`.

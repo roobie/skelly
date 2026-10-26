@@ -227,6 +227,6 @@ export class AvatarMannequin {
     figurePose.stance = stance;
     figurePose.dt = dt;
     this.meshes.sync(figurePose);
-    this.meshes.syncHeldView(undefined, aimed ? { readiness: aimed } : {});
+    this.meshes.syncHeldView(undefined, { firearms: [], ...(aimed ? { readiness: aimed } : {}) });
   }
 }

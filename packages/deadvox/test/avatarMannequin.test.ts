@@ -119,7 +119,7 @@ describe('debug avatar mannequin', () => {
           },
         },
       });
-      meshes.syncHeldView(undefined, { readiness: { uid: 1, progress: 1, aimingDownSights: false } });
+      meshes.syncHeldView(undefined, { firearms: [], readiness: { uid: 1, progress: 1, aimingDownSights: false } });
       meshes.group.updateMatrixWorld(true);
       const height = meshes.group
         .getObjectByName('first-person-arm-left')!

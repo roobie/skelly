@@ -272,6 +272,10 @@
       "genMs": 1,
       "meshMs": 1
     },
+    "render/actorAnimator.ts": {
+      "duration": 1,
+      "elapsed": 1
+    },
     "render/firearmModel.ts": {
       "duration": 1,
       "elapsed": 1
@@ -280,10 +284,7 @@
       "ms": 1,
       "windowMs": 1
     },
-    "render/hands.ts": {
-      "duration": 1,
-      "elapsed": 1
-    },
+
     "render/mobActors.ts": {
       "elapsed": 5
     },

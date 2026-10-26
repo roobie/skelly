@@ -6,9 +6,6 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ItemDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { firearmAimOffHand } from '../core/firearmAimOffHand.ts';
-import { firearmAimHandPose } from '../core/firearmAimPose.ts';
-import { readyFirearmPose } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -24,7 +21,8 @@ import {
   type WearSlot,
 } from '../core/schema.ts';
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
-import { HeldPresentation, type HeldPresentationFrame } from './heldPresentation.ts';
+import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
+import { HeldPresentation } from './heldPresentation.ts';
 import { type ItemLook, itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
@@ -305,12 +303,14 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly heldFrame = new Group();
+  private readonly heldTorso = new Group();
+  private animator: ActorAnimator | undefined;
   private readonly figure: FigureDef;
   private presentation: HeldPresentation | undefined;
-  private heldVersion = '';
   private lastPose: PlayerFigurePose | undefined;
   private handPose: MeleePoseFrame | undefined;
-  private handling: HeldPresentationFrame = {};
+  private handling: HeldHandlingFrame = { firearms: [] };
+  private recoil = 0;
   private readonly layout: PlayerFigureLayout;
   /** Each part's drawn model, once it has loaded. */
   private readonly drawn = new Map<FigurePart, Group>();
@@ -355,6 +355,7 @@ export class PlayerMeshes {
     this.figure = figure;
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
+    this.heldFrame.add(this.heldTorso);
     this.layout = playerFigureLayout(figure, modelDefs);
     this.modelDefs = modelDefs;
     const { body, legRig, armRig } = figure;
@@ -443,15 +444,17 @@ export class PlayerMeshes {
   }
 
   dispose(): void {
-    this.presentation?.dispose();
-    this.heldVersion = '';
+    this.animator?.dispose();
+    this.animator = undefined;
+    this.presentation = undefined;
     this.lastPose = undefined;
   }
 
-  /** Static holds share the first-person owner; view-only handling effects can update them after camera sync. */
-  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldPresentationFrame): void {
+  /** Actor action input is independent of the observing camera. */
+  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldHandlingFrame, recoil = 0): void {
     this.handPose = handPose;
     this.handling = handling;
+    this.recoil = recoil;
     if (this.lastPose) {
       this.syncHeld(this.lastPose);
     }
@@ -462,29 +465,12 @@ export class PlayerMeshes {
     const source = pose.heldItems ?? pose.inventory;
     this.heldFrame.visible = pose.thirdPerson === true;
     if (!source) {
-      this.presentation?.clear();
-      this.heldVersion = '';
+      this.animator?.dispose();
+      this.animator = undefined;
+      this.presentation = undefined;
       return;
     }
     const { registry, hands } = source;
-    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}:${pose.emptyFists}:${this.handling.readiness?.uid}`;
-    const presentation = this.prepareHeld(source, version);
-    this.addEmptyFists(presentation, hands, pose.emptyFists ?? false);
-    const aimOffHand = firearmAimOffHand(
-      hands,
-      this.handling.readiness,
-      (() => {
-        const firearmSide = (['right', 'left'] as const).find(
-          (hand) => hands[hand]?.uid === this.handling.readiness?.uid,
-        );
-        const side = firearmSide === 'right' ? 'left' : 'right';
-        const supportArm = presentation.arms.get(side);
-        return supportArm !== undefined && supportArm.parent !== presentation.torso;
-      })(),
-    );
-    if (aimOffHand?.mode === 'support') {
-      presentation.addAimSupport(aimOffHand.firearmSide);
-    }
     this.positionHeldFrame(pose, registry);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
@@ -494,67 +480,43 @@ export class PlayerMeshes {
     const holdingSide = hands.left ? 'left' : 'right';
     const leading = pose.inventory ? dominantSide(pose.inventory.character) : holdingSide;
     const handPose = this.handPose ?? readyMeleePose(pose.holdReady ?? false, this.figure.holds, leading);
-    const readyAmount = this.handling.readiness ? Math.max(0, Math.min(1, this.handling.readiness.progress)) : 0;
-    const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
-    const active = firearmAimHandPose({
-      side: aimOffHand?.side ?? leading,
-      aimOffHand,
-      readyPose: this.handling.readiness ? readyFirearmPose(leading, this.figure.holds) : undefined,
-      holds: this.figure.holds,
-      easedReady,
-    });
-    const activeHandPose = active && aimOffHand ? { ...handPose, [aimOffHand.side]: active } : handPose;
-    presentation.poseStatic(hands, activeHandPose, {
-      leading,
-      ready: pose.holdReady ?? false,
-      handling: this.handling,
-      shoulderOf,
-    });
-    this.heldFrame.updateMatrixWorld(true);
-    for (const side of presentation.arms.keys()) {
-      const shoulder = shoulderOf(side);
-      const anchor = presentation.gripAnchors.get(side)!;
-      const hold = presentation.holds.get(side);
-      anchor.position.set(...(hold?.at ?? [0, 0, 0]));
-      presentation.solve(side, shoulder, presentation.displayPalms.get(side) ?? (hold ? anchor : undefined));
-    }
-  }
-
-  /** Adds the unarmed half of an explicitly posed pair of hands. */
-  private addEmptyFists(presentation: HeldPresentation, hands: FigureHeldItems['hands'], emptyFists: boolean): void {
-    if (!emptyFists) {
-      return;
-    }
-    for (const side of ['right', 'left'] as const) {
-      if (!hands[side]) {
-        presentation.addFist(side);
-      }
-    }
-  }
-
-  private prepareHeld({ registry, hands }: FigureHeldItems, version: string): HeldPresentation {
     if (this.presentation?.registry !== registry) {
-      this.presentation?.dispose();
+      this.animator?.dispose();
       this.presentation = new HeldPresentation(registry, this.figure, this.models, {
         frame: this.heldFrame,
-        torso: this.heldFrame,
+        torso: this.heldTorso,
       });
-      this.heldVersion = '';
+      this.animator = new ActorAnimator(source, this.presentation, shoulderOf, {
+        emptyFists: false,
+        shouldersFollowTorso: false,
+      });
     }
-    const presentation = this.presentation!;
-    if (version !== this.heldVersion) {
-      presentation.clear();
-      for (const side of ['right', 'left'] as const) {
-        const item = hands[side];
-        if (item) {
-          presentation.addItem(side, item);
-        }
+    this.animator!.setSource(source);
+    this.animator!.setShoulders(shoulderOf);
+    const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
+    const readiness =
+      this.handling.readiness ?? (readyGun ? { uid: readyGun.uid, progress: 1, aimingDownSights: false } : undefined);
+    this.animator!.update(
+      {
+        position: this.heldFrame.position.clone(),
+        quaternion: this.heldFrame.quaternion.clone(),
+        rotation: { y: pose.yaw },
+      },
+      {
+        pose: handPose,
+        recoil: this.recoil,
+        emptyFists: pose.emptyFists ?? false,
+        handling: { ...this.handling, ...(readiness ? { readiness } : {}) },
+      },
+    );
+    this.heldFrame.traverse((object) => object.layers.set(this.layer));
+    castsAndReceives(this.heldFrame);
+    for (const [part, drawn] of this.drawn) {
+      const side = ARM_SIDE[part.name];
+      if (side) {
+        drawn.visible = pose.thirdPerson === true && !this.presentation!.arms.has(side);
       }
-      this.heldVersion = version;
-      this.heldFrame.traverse((object) => object.layers.set(this.layer));
-      castsAndReceives(this.heldFrame);
     }
-    return presentation;
   }
 
   private positionHeldFrame(pose: PlayerFigurePose, registry: Registry): void {
