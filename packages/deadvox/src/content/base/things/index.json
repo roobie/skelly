@@ -2550,6 +2550,20 @@
     "anchors": { "ankle": [-9.347520200482578e-17, -0.73, 0], "hip": [0, 0, 0], "knee": [0, -0.42, 0] }
   },
   {
+    "id": "riot_helmet",
+    "file": "assets/models/riot_helmet.glb",
+    "parts": {
+      "helmet": {
+        "node": "helmet:compound",
+        "massKg": 1.4,
+        "centreOfMass": [0.00038613505747126556, 0.042740660919540305, 0.003491379310344836]
+      }
+    },
+    "grip": { "at": [0, 0.15000000000000002, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "roll": 0
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {

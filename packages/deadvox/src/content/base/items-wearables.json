@@ -255,7 +255,7 @@
       "wearable": {
         "encumbrance": 3,
         "figureModel": {
-          "at": [0, 0.040000000000000001, 0],
+          "at": [0, 0, 0],
           "model": "riot_helmet",
           "turn": [0, 180, 0]
         },
@@ -274,7 +274,6 @@
         "warmth": 1,
         "wearPerDamage": 0.0015
       },
-      "weight": 1400,
       "workInProgress": false
     },
     {

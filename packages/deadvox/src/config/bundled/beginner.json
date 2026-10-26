@@ -135,6 +135,16 @@
         "stepMetres": 0.38
       },
       "id": "shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
@@ -369,6 +379,16 @@
         "stepMetres": 0.38
       },
       "id": "military_shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "soldier_pockets",
       "meleeDamageResistance": {
@@ -603,6 +623,16 @@
         "stepMetres": 0.38
       },
       "id": "farmer_shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "farmer_pockets",
       "meleeDamageResistance": {
@@ -837,6 +867,16 @@
         "stepMetres": 0.38
       },
       "id": "worker_shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "worker_pockets",
       "meleeDamageResistance": {
@@ -1071,6 +1111,16 @@
         "stepMetres": 0.38
       },
       "id": "medic_shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "medic_pockets",
       "meleeDamageResistance": {
@@ -1305,6 +1355,16 @@
         "stepMetres": 0.38
       },
       "id": "brute_shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
@@ -1533,6 +1593,16 @@
         "stepMetres": 0.38
       },
       "id": "runner",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "shambler_pockets",
       "model": "runner",
@@ -1696,6 +1766,16 @@
         "stepMetres": 0.38
       },
       "id": "crawler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "shambler_pockets",
       "model": "shambler",
@@ -1862,6 +1942,16 @@
         "stepMetres": 0.38
       },
       "id": "amalgam",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "locomotion": "omnidirectional",
       "loot": "shambler_pockets",
@@ -2167,6 +2257,16 @@
         "stepMetres": 0.38
       },
       "id": "acid_zombie",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "lightSightScale": 0.5,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {

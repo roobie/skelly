@@ -35,6 +35,7 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
     }
   };
   input = new Input(target, allowed, () => true, viewerInputAllowed);
+  input.setLookSensitivity(1, () => 1);
   keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
   return { input, target, document, targetListeners, windowListeners, documentListeners };
 };
@@ -81,6 +82,25 @@ describe('pointer input', () => {
     expect(orbitLook).toHaveBeenCalledExactlyOnceWith(30, -12);
     expect(input.yaw).toBe(0.8);
     expect(input.pitch).toBe(-0.2);
+  });
+  it('scales look by applied optic power on each mouse event', () => {
+    const { input, target, document, documentListeners } = fixture();
+    document.pointerLockElement = target;
+    let power = 1;
+    input.setLookSensitivity(1, () => power);
+    const turn = () => {
+      input.yaw = 0;
+      documentListeners.get('mousemove')!({ movementX: 10, movementY: 0 } as MouseEvent);
+      return Math.abs(input.yaw);
+    };
+
+    const unaimed = turn();
+    expect(turn()).toBe(unaimed);
+    power = 2;
+    const magnified = turn();
+    expect(magnified).toBeLessThan(unaimed);
+    power = 3;
+    expect(turn()).toBeLessThan(magnified);
   });
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
     const { input, target, document } = fixture();

@@ -44,6 +44,7 @@ import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, real
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { sightedFirearmModel } from '../render/firearmSight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
+import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -155,7 +156,7 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
-import type { MoveIntent } from './player.ts';
+import { type MoveIntent, playerTuning } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -870,6 +871,7 @@ export const startPlay = (
       intent: (): MoveIntent => input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
       readyHeld: () => input.rightMouseHeld,
+      aimingDownSights: () => input.aimingDownSights && input.rightMouseActionHeld,
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
@@ -1084,6 +1086,10 @@ export const startPlay = (
     const action = selectPrimaryAction(inventory);
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
+  const { lookSensitivityRadiansPerPixel } = playerTuning(registry).aim;
+  input.setLookSensitivity(lookSensitivityRadiansPerPixel, () =>
+    opticZoom.appliedPower(zoomFirearm(), isAimingDownSights()),
+  );
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet, {
     calendar: () => sim.calendar,
@@ -3577,13 +3583,7 @@ export const startPlay = (
 
   const handlingPresentation = () => {
     const [job] = queue.jobs;
-    const item = job?.kind === 'move' ? inventory.itemByUid(job.itemUid) : undefined;
-    const location = item ? inventory.locate(item) : undefined;
-    const progress =
-      job?.kind === 'move' && location?.kind === 'pile' && job.duration > 0
-        ? Math.max(0, Math.min(1, job.elapsed / job.duration))
-        : undefined;
-    return { job, progress };
+    return { job, progress: worldGrabProgress(inventory, job) };
   };
 
   const throwingPresentation = () => {

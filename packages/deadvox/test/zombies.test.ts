@@ -4060,4 +4060,53 @@ describe('dismemberment', () => {
     };
     expect(runFour()).toEqual(runFour());
   });
+
+  it('thins idle cues per enemy in a local crowd without changing a lone enemy rate', () => {
+    const duration = simSeconds(SHAMBLER.idleSound.intervalSimSeconds.max * 12);
+    const type = {
+      ...SHAMBLER,
+      wander: {
+        ...SHAMBLER.wander,
+        idleSimSeconds: { min: simSeconds(duration + 1), max: simSeconds(duration + 1) },
+      },
+    };
+    const cueCounts = (positions: readonly Vec3[], candidate: ZombieDef): number[] => {
+      const cues = new Map<Zombie, number>();
+      const system = new ZombieSystem({
+        ...senses(() => player([100, 2, 0])),
+        onSound: (event, _position, zombie) => {
+          if (zombie && event === zombie.type.sounds.idle) {
+            cues.set(zombie, (cues.get(zombie) ?? 0) + 1);
+          }
+        },
+      });
+      const ids = positions.map((position) => system.add(candidate, position));
+      run(system, duration);
+      return ids.map((id) => cues.get(system.store.get(id)!) ?? 0);
+    };
+    const radius = type.idleSound.density.radiusMetres / BLOCK_SIZE;
+    const lone = cueCounts([[0, 1, 0]], type);
+    const crowded = cueCounts(
+      [
+        [0, 1, 0],
+        [radius / 3, 1, 0],
+        [0, 1, radius / 3],
+        [radius / 3, 1, radius / 3],
+      ],
+      type,
+    );
+    const strongerDensityCurve = {
+      ...type,
+      idleSound: {
+        ...type.idleSound,
+        density: {
+          ...type.idleSound.density,
+          penaltyPerNeighbour: type.idleSound.density.penaltyPerNeighbour * 2,
+        },
+      },
+    };
+
+    expect(crowded.every((count) => count < lone[0]!)).toBe(true);
+    expect(cueCounts([[0, 1, 0]], strongerDensityCurve)).toEqual(lone);
+  });
 });
