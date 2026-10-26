@@ -6,6 +6,8 @@ import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { mountedOptic } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
+import { ARM_NODE } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
@@ -178,6 +180,45 @@ it('the play frame poses overlay and world held views from this frame rather tha
     expect(world).toHaveBeenCalledTimes(2);
   } finally {
     world.mockRestore();
+    f.dispose();
+  }
+});
+
+it('keeps the trigger elbow below its folded grip while both hands follow extreme aim', async () => {
+  const f = await fixture();
+  try {
+    for (const [stance, pitch] of [
+      ['standing', -LOOK_PITCH_LIMIT],
+      ['crouching', LOOK_PITCH_LIMIT],
+      ['crouching', -LOOK_PITCH_LIMIT],
+      ['standing', LOOK_PITCH_LIMIT],
+    ] as const) {
+      f.world.sync({ ...f.actor, stance, pitch, dt: 1 });
+      f.update(f.camera, f.pose, 0, {
+        firearms: [],
+        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: false },
+      });
+      const eye = new Vector3();
+      f.world.eyePosition(eye);
+      const aim = f.physical().getWorldDirection(new Vector3()).negate();
+      for (const side of ['right', 'left'] as const) {
+        const arm = f.physical().getObjectByName(`first-person-arm-${side}`)!;
+        const hand = arm.getObjectByName(ARM_NODE.hand)!.getWorldPosition(new Vector3());
+        const fromEye = hand.clone().sub(eye);
+        expect(fromEye.dot(aim), `${stance} ${pitch} ${side}: hand ahead along aim`).toBeGreaterThan(0);
+        // Authored grips may sit beside the bore rather than exactly on its aiming line.
+        expect(fromEye.cross(aim).length(), `${stance} ${pitch} ${side}: aim-line distance`).toBeLessThan(0.3);
+        if (side === 'right' && pitch < 0) {
+          const shoulder = arm.getObjectByName(ARM_NODE.shoulder)!.getWorldPosition(new Vector3());
+          const elbow = arm.getObjectByName(ARM_NODE.elbow)!.getWorldPosition(new Vector3());
+          expect(elbow.y, `${stance}: trigger elbow below shoulder`).toBeLessThan(shoulder.y);
+          if (stance === 'standing') {
+            expect(elbow.y, 'folded trigger elbow below hand').toBeLessThan(hand.y);
+          }
+        }
+      }
+    }
+  } finally {
     f.dispose();
   }
 });

@@ -1659,7 +1659,10 @@ cannot be reached at authored limb lengths, preserving shoulder and hand contact
 takes priority over exact segment length: a floating sleeve breaks the whole-body
 figure. Reach fitting must not move the item away from its shared simulation pose
 or add per-view hold offsets. The content's joints and grips determine the fit;
-changing to skinned bones would not remove this geometric constraint. See
+changing to skinned bones would not remove this geometric constraint. Elbow bend
+hints stay in the body's upright frame so looking down does not swing a folded arm
+sideways across the chest. Hands and held objects must follow aim at the
+extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
 

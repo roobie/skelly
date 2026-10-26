@@ -2,6 +2,7 @@
   "figures": [
     {
       "armRig": {
+        "elbowPole": [0.70710678118654757, -0.70710678118654757, 0],
         "fingers": {
           "part": "fingers",
           "pivot": "knuckles"

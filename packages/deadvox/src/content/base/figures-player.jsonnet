@@ -50,6 +50,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         fingers: segment('fingers', 'knuckles'),
         thumb: segment('thumb', 'thumb_root'),
         grip: 'grip',
+        elbowPole: [std.sqrt(0.5), -std.sqrt(0.5), 0],
         handPoses: {
           fist: handPose(95, 60, 45),
           holding: handPose(80, 50, 30),

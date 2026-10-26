@@ -3592,6 +3592,8 @@ const ArmRigSchema = strictObject({
   thumb: ArmSegmentSchema,
   /** The anchor on the palm's midline a held item's grip sits against, moved out to the palm's face. */
   grip: Id,
+  /** A body-relative pole keeps the elbow bend independent of where the eye looks. */
+  elbowPole: UnitVector,
   /** One closing per `HAND_POSES` name; a held model's hold names the one its hand takes. */
   handPoses: strictObject({
     fist: HandPoseSchema,
