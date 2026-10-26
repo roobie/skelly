@@ -24,6 +24,7 @@ import {
   unloadBattery,
 } from '../core/lights.ts';
 import { consume } from '../core/needs.ts';
+import { countText } from '../core/numberText.ts';
 import {
   batteryHandRefusal,
   batterySlotOption,
@@ -503,7 +504,7 @@ export class Survival {
     if (def.light?.liquidFuel) {
       lines.push(coreLabel(registry, item.on ? 'lightOnStatus' : 'lightOffStatus'));
     } else if (share !== undefined) {
-      const charge = fillText(def.igniter ? text.fuelDetail : text.batteryDetail, { percent: Math.round(share * 100) });
+      const charge = fillText(def.igniter ? text.fuelDetail : text.batteryDetail, { percent: countText(share * 100) });
       lines.push(def.light ? fillText(item.on ? text.lightOnDetail : text.lightOffDetail, { charge }) : charge);
     }
     if (def.igniter) {

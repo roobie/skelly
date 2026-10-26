@@ -219,7 +219,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
-  body: () => body, character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
+  body: () => body, character: () => ({ skills: {}, practice: { [CORE_CONTENT_IDS.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
   slotLabels: Object.fromEntries(['head', 'eyes', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');
@@ -1007,6 +1007,16 @@ try {
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const failures = [];
   let activeTab;
+  // The character's practice accumulates as products of tuning numbers, so the panel must round it.
+  await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
+  activeTab = 'skills';
+  const practiceLine = await page.locator('#inventory .inv-skill-practice').first().textContent();
+  assert.equal(
+    practiceLine?.includes((2.5 * 0.46).toFixed(1)),
+    true,
+    `skills panel rounds accumulated practice: ${practiceLine}`,
+  );
+  assert.equal(/\.\d{2,}/.test(practiceLine ?? ''), false, `skills panel hides float noise: ${practiceLine}`);
   for (const { tab, selector } of [
     { tab: 'skills', selector: '#inventory [data-pane="body"]' },
     { tab: 'items', selector: '#inventory [data-pane="you"]' },

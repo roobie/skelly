@@ -71,10 +71,6 @@ local stair = {
       for z in std.range(0, std.length(plan) - 1)
     ]);
     local size = [std.length(plan[0]) * scale, height, std.length(plan) * scale];
-    local through = function(dx, dz, x, z) inBox(level.through, x * scale + dx, z * scale + dz);
-    local hole = function(dx, dz, x, z) inBox(level.holes, x * scale + dx, z * scale + dz);
-    local voided = function(dx, dz, x, z) inBox(std.get(level, 'voids', []), x * scale + dx, z * scale + dz);
-    local marker = function(y, dx, dz, x, z) std.member(level.markers, [x * scale + dx, y, z * scale + dz]);
     // A level without a seal has no card.
     local card = std.get(level, 'card', null);
     // A card with a `container` is stock in that dressing bay's container, so finding it is a search rather than a sighting.
@@ -88,31 +84,60 @@ local stair = {
       else local o = candidates[0];
         local along = if o.axis == 'x' then (x - o.at[0]) * scale + dx else (z - o.at[1]) * scale + dz;
         o + { clear: along >= std.get(o, 'offset', 0) && along < std.get(o, 'offset', 0) + o.width };
+    // Membership is height-invariant; cache it so glyphs and ownership do not repeat interpreted list scans.
+    local planCells = [[
+      local c = plan[z][x];
+      {
+        token: c,
+        room: if c == '#' then null else byToken[c],
+        bay: std.length(bayAt(c, x, z)) > 0,
+        card: isCard(x, z),
+      }
+      for x in std.range(0, std.length(plan[z]) - 1)
+    ] for z in std.range(0, std.length(plan) - 1)];
+    local columns = [[
+      local x = std.floor(fx / scale);
+      local z = std.floor(fz / scale);
+      local p = planCells[z][x];
+      p + {
+        voided: inBox(std.get(level, 'voids', []), fx, fz),
+        through: inBox(level.through, fx, fz),
+        hole: inBox(level.holes, fx, fz),
+        markers: [m[1] for m in level.markers if m[0] == fx && m[2] == fz],
+        opening: if p.room == null then null else opening(p.room, p.token, fx % scale, fz % scale, x, z),
+        cardOrigin: p.card && fx % scale == 0 && fz % scale == 0,
+      }
+      for fx in std.range(0, size[0] - 1)
+    ] for fz in std.range(0, size[2] - 1)];
+    local through = function(dx, dz, x, z) columns[z * scale + dz][x * scale + dx].through;
     local wallGlyph = function(room, y) if y == 1 then room.band else room.wall;
-    local cell = function(c, y, dx, dz, x, z)
-      if voided(dx, dz, x, z) then '.'
-      else if c == '#' then '#'
-      else local room = byToken[c];
-        local bay = bayAt(c, x, z);
-        local o = opening(room, c, dx, dz, x, z);
-        if y == 0 then (if hole(dx, dz, x, z) then '.' else room.floor)
-        else if through(dx, dz, x, z) then '.'
-        else if std.length(bay) > 0 then '.'
-        else if c == room.wall then wallGlyph(room, y)
+    local cell = function(p, y)
+      if p.voided then '.'
+      else if p.token == '#' then '#'
+      else local room = p.room;
+        local o = p.opening;
+        if y == 0 then (if p.hole then '.' else room.floor)
+        else if p.through then '.'
+        else if p.bay then '.'
+        else if p.token == room.wall then wallGlyph(room, y)
         else if y <= room.floorRise then room.floor
         else if y >= height - room.ceilingDrop then room.wall
-        else if c == '|' then (if y <= 5 then '|' else room.wall)
-        else if o != null then (if !o.clear || y > std.get(o, 'height', 4) then wallGlyph(room, y) else if c == 'D' then 'D' else '.')
-        else if isCard(x, z) && y == room.floorRise + 1 && dx == 0 && dz == 0 then 'K'
+        else if p.token == '|' then (if y <= 5 then '|' else room.wall)
+        else if o != null then (if !o.clear || y > std.get(o, 'height', 4) then wallGlyph(room, y) else if p.token == 'D' then 'D' else '.')
+        else if p.cardOrigin && y == room.floorRise + 1 then 'K'
         else '.';
-    local claims = function(y) expand(function(c, dx, dz, x, z)
-      local glyph = cell(c, y, dx, dz, x, z);
-      if voided(dx, dz, x, z) then '.'
+    local glyphs = [[[cell(p, y) for p in row] for row in columns] for y in std.range(0, height - 1)];
+    local claims = function(y) [std.join('', [
+      local p = columns[fz][fx];
+      local glyph = glyphs[y][fz][fx];
+      if p.voided then '.'
       else if y == 0 then (if glyph == '.' then '.' else 'S')
       else if glyph != '.' && glyph != 'K' then 'S'
-      else if isCard(x, z) then 'A'
-      else if through(dx, dz, x, z) || std.length(bayAt(c, x, z)) > 0 || marker(y, dx, dz, x, z) then '.'
-      else 'R');
+      else if p.card then 'A'
+      else if p.through || p.bay || std.member(p.markers, y) then '.'
+      else 'R'
+      for fx in std.range(0, size[0] - 1)
+    ]) for fz in std.range(0, size[2] - 1)];
     local palette = { '.': { role: 'opening', material: 'air' }, '#': { role: 'shell', material: 'rock' }, '|': { role: 'shell', material: 'wire' } }
       + (if card != null && cardBay == null then { K: { groundLoot: { kind: 'fixed', items: [{ item: level.cardItem }] } } } else {})
       // A level without seals has no bulkhead to lock.
@@ -122,7 +147,7 @@ local stair = {
       + { [room.band]: { role: 'shell', material: room.finish.base } for room in roomList };
     local shell = {
       id: prefix + '_shell', size: size, style: 'concrete_lab', lootContext: level.context, palette: palette,
-      layers: [expand(function(c, dx, dz, x, z) cell(c, y, dx, dz, x, z)) for y in std.range(0, height - 1)],
+      layers: [[std.join('', row) for row in layer] for layer in glyphs],
       ownership: { layers: [claims(y) for y in std.range(0, height - 1)] }, anchors: {}, ports: [],
     };
     local bay = function(d)

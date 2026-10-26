@@ -6,5 +6,5 @@ const SPLIT = new RegExp(SLOT_PATTERN.source);
 export const fillParts = <T>(template: string, slots: Readonly<Record<string, T>>): (string | T)[] =>
   template.split(SPLIT).map((part, index) => (index % 2 === 0 ? part : slots[part]!));
 
-export const fillText = (template: string, slots: Readonly<Record<string, string | number>> = {}): string =>
+export const fillText = (template: string, slots: Readonly<Record<string, string>> = {}): string =>
   fillParts(template, slots).join('');
