@@ -3,7 +3,7 @@ import {
   Box3,
   type Camera,
   DirectionalLight,
-  FrontSide,
+  DoubleSide,
   Frustum,
   Group,
   type Light,
@@ -392,13 +392,13 @@ describe('Shadows', () => {
     expect(draws.some((draw) => draw.light !== torch && draw.seesFigure)).toBe(true);
   });
 
-  it('draws the sun map from the chunk faces light enters, and the flashlight map from the faces it leaves', () => {
+  it('keeps both sun caster orientations while beams retain exit faces', () => {
     // A map of the faces light leaves lit a band along the inside joint of a sealed room (#562).
     const { frame, draws, light, torch } = setup();
     torch.castShadow = true;
     frame(1);
     const sideFor = (drawn: Light) => draws.filter((draw) => draw.light === drawn).at(-1)?.chunkSide;
-    expect(sideFor(light)).toBe(FrontSide);
+    expect(sideFor(light)).toBe(DoubleSide);
     expect(sideFor(torch)).toBe(BackSide);
   });
 
