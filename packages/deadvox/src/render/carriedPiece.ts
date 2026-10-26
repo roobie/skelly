@@ -23,7 +23,7 @@ export class CarriedPiece {
   private readonly size = new Vector3();
   private drawn = '';
   private bobRealSeconds = 0;
-  private hasFloorPlacement = false;
+  private floorUid: number | undefined;
 
   constructor(
     entities: BlockEntities,
@@ -42,7 +42,7 @@ export class CarriedPiece {
   }
 
   /** Catches up with the carry state and bobs the piece; `dt` is real seconds, `camera` the view's world turn. */
-  update(dt: number, camera: Quaternion, floor?: { pos: Readonly<Vec3>; blockSize: number }): void {
+  update(dt: number, camera: Quaternion, floorPlacement?: Readonly<Vec3>, blockSize?: number): void {
     const carried = this.entities.carrying();
     const key = carried ? `${carried.uid}:${this.entities.version}` : '';
     if (key !== this.drawn) {
@@ -50,24 +50,26 @@ export class CarriedPiece {
       this.group.clear();
       this.floorGroup.clear();
       this.bobRealSeconds = 0;
-      this.hasFloorPlacement = false;
       if (carried) {
         (carried.floorLocked ? this.floorGroup : this.group).add(this.fitted(carried));
       }
     }
     if (!carried) {
+      this.floorUid = undefined;
       return;
     }
     if (carried.floorLocked) {
-      if (floor) {
-        this.floorGroup.position.set(
-          (floor.pos[0] - carried.pos[0]) * floor.blockSize,
-          0,
-          (floor.pos[2] - carried.pos[2]) * floor.blockSize,
-        );
-        this.hasFloorPlacement = true;
+      if (this.floorUid !== carried.uid) {
+        this.floorUid = carried.uid;
+        this.floorGroup.position.set(0, 0, 0);
       }
-      this.floorGroup.visible = this.hasFloorPlacement;
+      if (floorPlacement && blockSize !== undefined) {
+        this.floorGroup.position.set(
+          (floorPlacement[0] - carried.pos[0]) * blockSize,
+          0,
+          (floorPlacement[2] - carried.pos[2]) * blockSize,
+        );
+      }
       return;
     }
     this.bobRealSeconds += dt;
