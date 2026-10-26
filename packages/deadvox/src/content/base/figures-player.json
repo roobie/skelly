@@ -79,6 +79,15 @@
         },
         "model": "player_bust"
       },
+      "corpsePose": {
+        "ankleDegrees": -40,
+        "armsForwardDegrees": 0,
+        "elbowBendDegrees": 12,
+        "headUpDegrees": 10,
+        "kneeBendDegrees": 8,
+        "legsForwardDegrees": 90,
+        "torsoForwardDegrees": -90
+      },
       "gait": {
         "armSwingDegrees": 10,
         "legSwingDegrees": 12.6
@@ -148,6 +157,26 @@
       "mannequinPlacement": {
         "aheadMetres": 1.2,
         "asideMetres": 1.2
+      },
+      "outfits": {
+        "lab_coat": {
+          "pants": "#585b62",
+          "shirt": "#d9d9d1",
+          "shoe": "#2d2622",
+          "skin": "#b6a597"
+        },
+        "police_uniform": {
+          "pants": "#232937",
+          "shirt": "#33415e",
+          "shoe": "#121212",
+          "skin": "#b39e8f"
+        },
+        "special_ops_uniform": {
+          "pants": "#363b2e",
+          "shirt": "#3d4434",
+          "shoe": "#17140f",
+          "skin": "#a99a8b"
+        }
       },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,
