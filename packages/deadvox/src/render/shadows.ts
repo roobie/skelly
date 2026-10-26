@@ -18,12 +18,10 @@
 // while it is bright enough to show (`beamMapDue`); otherwise its `shadow.intensity` is 0, so the
 // map it stopped refreshing shades nothing.
 //
-// The sun's map is drawn from the chunk faces that face it, where its light enters a solid, not from
-// three.js's default for a one-sided material, the back faces where light leaves. At an inside corner
-// the lit wall and the block that shades it are one joined solid, and a back-face map stores that
-// solid's far side, behind the wall, so the PCF disk lit a band along every joint of a sealed room
-// (#562). Front faces keep such a room dark; `sunShadowBias` then offsets lookups past the disk so a
-// lit face never compares against its own depth. The flashlight's map keeps the back faces: its light
+// The sun's map needs both chunk face orientations. Front faces stop PCF taps reaching behind a
+// joined solid at interior corners (#562). Back faces still block a buried room when the solid's
+// sun-facing entry surface lies outside the bounded map. `sunShadowBias` offsets lookups past the
+// PCF disk so a lit face never compares against its own depth. The flashlight keeps the back faces: its light
 // sits with the viewer, so a face it can't reach is one the viewer can't see, and its perspective
 // texels grow with distance past what a fixed normal offset could clear.
 //
@@ -36,7 +34,7 @@ import {
   type Box3,
   type Camera,
   type DirectionalLight,
-  FrontSide,
+  DoubleSide,
   type Frustum,
   type Light,
   type Object3D,
@@ -320,12 +318,12 @@ export class Shadows {
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
       // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
       // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
-      this.sunCasters = meshes.selectShadowCasters(noBoxes, FrontSide);
+      this.sunCasters = meshes.selectShadowCasters(noBoxes, DoubleSide);
       draw([light], scene, camera);
     }
     if (this.sunDue) {
       light.shadow.updateMatrices(light);
-      this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()), FrontSide);
+      this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()), DoubleSide);
       draw([light], scene, camera);
       this.drawnAt.copy(this.snapped);
       this.drawnToSun.copy(this.toSun);
