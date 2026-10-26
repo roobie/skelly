@@ -30,6 +30,10 @@ local content = {
         "attack": "shambler_attack",
         "hurt": "shambler_hurt"
       },
+      "idleSound": {
+        "intervalSimSeconds": { "min": 8, "max": 20 },
+        "density": { "radiusMetres": 8, "penaltyPerNeighbour": 0.25 }
+      },
       "regions": {
         "head": 60,
         "torso": 60,
@@ -141,6 +145,7 @@ local content = {
     },
     {
       "id": "military_shambler",
+      "idleSound": $.zombies[0].idleSound,
       "strength": 5,
       "name": "Soldier",
       "model": "shambler",
@@ -338,6 +343,7 @@ local content = {
     },
     {
       "id": "runner",
+      "idleSound": $.zombies[0].idleSound,
       "strength": 4,
       "name": "Runner",
       "model": "runner",
@@ -445,6 +451,7 @@ local content = {
     },
     {
       "id": "crawler",
+      "idleSound": $.zombies[0].idleSound,
       "strength": 3,
       "name": "Crawler",
       "model": "shambler",
@@ -535,6 +542,7 @@ local content = {
     },
     {
       "id": "amalgam",
+      "idleSound": $.zombies[0].idleSound,
       "strength": 0,
       "name": "Amalgam",
       "model": "amalgam",
@@ -702,6 +710,7 @@ content + {
       hesitationSimSeconds: { min: 5, max: 5 },
       refusalSuspicionSimSeconds: 20,
       refusalLean: 0.75,
+      alertCooldownSimSeconds: 60,
       chainRadiusMetres: 8,
       chainChance: 0.35,
     },

@@ -85,7 +85,16 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1,
           "caseEjection": { "speedMetresPerSimSecond": 3.5, "flightSimSeconds": 0.48, "landingLiftMetres": 0.006 },
-          "shotTraceRangeBlocks": 240
+          "shotTraceRangeBlocks": 240,
+          "breathHold": {
+            "staminaPerSimSecond": 12,
+            "recoverySimSeconds": 3,
+            "recoverySwayScale": 2.5,
+            "steadyingMinimum": 0.5,
+            "steadyingSkillRange": 0.4,
+            "steadyingSkillHalfLifeLevels": 5,
+            "painWeakeningPerRatio": 0.5
+          }
         }
       }
     },

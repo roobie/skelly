@@ -1,4 +1,4 @@
-import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
+import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS, TOUCHES } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
@@ -648,6 +648,7 @@ const zombie = obj({
   soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
   dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
   lastVocalNoiseId: nullable(nonNegativeInt),
+  lastAlertAt: opt(nonNegative),
   idleSoundTimer: nonNegative,
   modeTimer: finite,
   searchAnchor: opt(vec3),
@@ -772,6 +773,7 @@ const aim = obj({
     pitch: obj({ raw: finite, smooth: finite }),
     rng: tuple(safeInt, safeInt, safeInt, safeInt),
   }),
+  breath: obj({ held: bool, recoveryRemainingSimSeconds: nonNegative }),
 });
 const playerStateInventory = obj({
   ...inventoryCore.fields,
@@ -1555,6 +1557,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   validateSavedColumns(snapshot.world.columns);
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
+  assertBreathHoldState(snapshot.character.aim.breath);
   validateActionReferences(snapshot);
   collectItemIds(
     savedItemTree(snapshot.character.inventory, snapshot.world.vehicles),
@@ -1861,6 +1864,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   validateSavedColumns(snapshot.world.columns);
   assertAimState(snapshot.character.aim);
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
+  assertBreathHoldState(snapshot.character.aim.breath);
   validateActionReferences(snapshot);
   assertAcidGlobSources(snapshot.world.zombies);
   const hordes = new Map<string, HordeState>();

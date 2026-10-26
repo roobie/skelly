@@ -1,3 +1,4 @@
+import type { BreathHoldTuning } from './aim.ts';
 import { canonicalJson } from './canonicalJson.ts';
 import {
   SKILL_LEVEL_LEGENDARY,
@@ -66,6 +67,7 @@ export interface FirearmsCombatTuning {
     readonly landingLiftMetres: number;
   };
   readonly shotTraceRangeBlocks: number;
+  readonly breathHold: BreathHoldTuning;
   readonly curve?: { readonly saturationFloor: number; readonly saturationHalfLifeLevels: number } | undefined;
 }
 

@@ -27,9 +27,7 @@ import {
   validateActionFrames,
 } from './actionFrame.ts';
 import frameContent from './arFrames.json' with { type: 'json' };
-import { GUN_UNITS } from './units.ts';
-
-const mmPerUnit = GUN_UNITS.metresPerUnit * 1000;
+import { mmToU, uToMm } from './units.ts';
 
 const Positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const Finite = pipe(number(), finite());
@@ -164,12 +162,11 @@ const derivedMeasure = (cartridge: FrameCartridge, derivation: FrameDerivation):
   if (sourceValue === null) {
     throw new Error(`The AR frame for "${cartridge.measures.id}" requires sourced ${derivation.measure}.`);
   }
-  const clearance = derivation.clearanceUnits * mmPerUnit;
+  const clearance = uToMm(derivation.clearanceUnits);
   const minimum = sourceValue * (derivation.multiplier ?? 1) + clearance;
   const snapUnits = SNAP_UNITS[derivation.snap];
   return {
-    value:
-      snapUnits === undefined ? minimum : Math.ceil(minimum / mmPerUnit / snapUnits - 1e-9) * snapUnits * mmPerUnit,
+    value: snapUnits === undefined ? minimum : uToMm(Math.ceil(mmToU(minimum) / snapUnits - 1e-9) * snapUnits),
     evidence: {
       kind: 'estimate',
       method: `Derived from cartridges/${cartridge.measures.id}.json (${cartridge.sourceTitle}, ${derivation.description}) plus ${derivation.clearanceUnits}u (${clearance} mm) clearance${SNAP_METHOD[derivation.snap]}.`,
@@ -191,7 +188,7 @@ const tracedPortLength = (source: FrameSource, derivedLength: FrameMeasure): Fra
   if (units === undefined) {
     return derivedLength;
   }
-  if (units * mmPerUnit < derivedLength.value) {
+  if (uToMm(units) < derivedLength.value) {
     throw new Error(
       `AR frame "${source.id}" traces a ${units}u ejection port, shorter than its cartridge's ${derivedLength.value} mm.`,
     );
@@ -204,7 +201,7 @@ const receiverEstimate = (
   measure: 'length' | 'height' | 'depth below the bore' | 'ejection port length',
   units: number,
 ): FrameMeasure => ({
-  value: units * mmPerUnit,
+  value: uToMm(units),
   evidence: {
     kind: 'estimate',
     method: `Receiver ${measure} from the side-profile silhouette in ${source.receiver.photo}, scaled by ${source.receiver.scale}; estimated to ${units}u on the gun grid.`,

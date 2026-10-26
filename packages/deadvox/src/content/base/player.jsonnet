@@ -16,6 +16,7 @@
     load: { light: 20000, heavy: 40000, slowest: 0.6, handlingScale: 0.5 },
     aim: {
       moveYawPerSpeed: 0.0045,
+      lookSensitivityRadiansPerPixel: 0.0022,
       lookLagPerRadian: 0.035,
       lookSettleSimSeconds: 0.22,
       recoilRecoverySimSeconds: 0.34,

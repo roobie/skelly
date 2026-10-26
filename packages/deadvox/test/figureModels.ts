@@ -9,10 +9,15 @@ import type { ModelLibrary } from '../src/render/models.ts';
 
 export type FigureModels = Pick<ModelLibrary, 'has' | 'part' | 'heldLook'>;
 
-export const loadFigureModels = async (registry: Registry, figureId = 'player'): Promise<FigureModels> => {
+/** `worn` names further models to load beside the figure's, such as the head gear a test puts on. */
+export const loadFigureModels = async (
+  registry: Registry,
+  figureId = 'player',
+  worn: readonly string[] = [],
+): Promise<FigureModels> => {
   const figure = registry.figures.get(figureId)!;
   const loader = new GLTFLoader();
-  const ids = [...new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)])];
+  const ids = [...new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model), ...worn])];
   const parsed = await Promise.all(
     ids.map((id) => {
       const bytes = readFileSync(new URL(`../src/content/base/${registry.models.get(id)!.file}`, import.meta.url));

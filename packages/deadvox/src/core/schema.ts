@@ -4,6 +4,8 @@
 // Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
 import { MATERIALS } from '@skelly/thing-core/materials';
+import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
+import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
@@ -1839,7 +1841,8 @@ const AttachmentPropertiesSchema = strictObject({
       check(({ min, max }) => max >= min, 'maximum magnification cannot be below minimum'),
     ),
   ),
-  reticleKind: optional(picklist(['dot', 'crosshair', 'chevron'])),
+  aperture: optional(OpticApertureSchema),
+  reticle: optional(ReticleSchema),
   noiseFactor: optional(Fraction),
   wearClass: optional(picklist(['real', 'improvised'])),
   handlingClass: optional(pipe(string(), nonEmpty('must not be empty'))),
@@ -1875,9 +1878,16 @@ const attachmentSpanCheck = check(
   attachmentSpanMatchesMount,
   'rail attachments need a notch span and muzzle attachments cannot have one',
 );
+const attachmentHasOpticPresentation = ({ kind, properties }: InferOutput<typeof AttachmentFieldsSchema>): boolean =>
+  (kind === 'optic') === (properties.reticle !== undefined) &&
+  (kind === 'optic') === (properties.aperture !== undefined);
 const AttachmentSchema = pipe(
   AttachmentFieldsSchema,
   attachmentSpanCheck,
+  check(
+    attachmentHasOpticPresentation,
+    'optics need an authored reticle and aperture; other attachments cannot have them',
+  ),
   check(
     ({ kind, properties }) => (kind === 'suppressor') === (properties.noiseFactor !== undefined),
     'suppressors need a noise factor and other attachments cannot have one',
@@ -1889,6 +1899,10 @@ const FittedAttachmentSchema = pipe(
     node: pipe(string(), nonEmpty('must not be empty')),
     mountedAt: pipe(string(), nonEmpty('must not be empty')),
   }),
+  check(
+    (value) => attachmentHasOpticPresentation(value),
+    'optics need an authored reticle and aperture; other attachments cannot have them',
+  ),
   check(
     (value) => attachmentSpanMatchesMount(value),
     'rail attachments need a notch span and muzzle attachments cannot have one',
@@ -3315,6 +3329,11 @@ const ZombieSchema = strictObject({
   authoredOnly: optional(vBoolean()),
   /** Sound ids are content references, so a new voice needs content only; the registry checks each exists. */
   sounds: strictObject({ idle: Id, alert: Id, attack: Id, hurt: Id }),
+  /** Idle voice cadence and its local-crowd thinning curve. */
+  idleSound: strictObject({
+    intervalSimSeconds: SimDurationRange,
+    density: strictObject({ radiusMetres: Positive, penaltyPerNeighbour: NonNegative }),
+  }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */
@@ -3394,6 +3413,7 @@ const ZombieSchema = strictObject({
       hesitationSimSeconds: SimDurationRange,
       refusalSuspicionSimSeconds: PositiveSimSeconds,
       refusalLean: Fraction,
+      alertCooldownSimSeconds: NonNegative,
       chainRadiusMetres: NonNegative,
       chainChance: Fraction,
       searchSimSeconds: SimDurationRange,
@@ -3705,6 +3725,16 @@ const SkillSchema = pipe(
               landingLiftMetres: NonNegative,
             }),
             shotTraceRangeBlocks: Positive,
+            /** `DESIGN.md`, "Holding breath". */
+            breathHold: strictObject({
+              staminaPerSimSecond: NonNegativeSimRate,
+              recoverySimSeconds: SimSeconds,
+              recoverySwayScale: pipe(number(), minValue(1, 'must be at least 1'), maxValue(10)),
+              steadyingMinimum: Fraction,
+              steadyingSkillRange: Fraction,
+              steadyingSkillHalfLifeLevels: Positive,
+              painWeakeningPerRatio: NonNegative,
+            }),
             /** The owning skill's curve is attached by the registry, not authored here. */
             curve: optional(SkillCurveSchema),
           }),
@@ -3749,7 +3779,9 @@ const SkillSchema = pipe(
     const melee = combat?.melee;
     return (
       complete &&
-      (!firearm || firearm.readyMovementMinimum + firearm.readyMovementRange <= 1) &&
+      (!firearm ||
+        (firearm.readyMovementMinimum + firearm.readyMovementRange <= 1 &&
+          firearm.breathHold.steadyingMinimum + firearm.breathHold.steadyingSkillRange <= 1)) &&
       (!melee ||
         (melee.blockChanceMinimum + melee.blockChanceRange <= 1 &&
           melee.mitigationMinimum + melee.mitigationRange <= 1))
@@ -3900,6 +3932,7 @@ const PlayerSchema = strictObject({
   ),
   aim: strictObject({
     moveYawPerSpeed: NonNegative,
+    lookSensitivityRadiansPerPixel: Positive,
     lookLagPerRadian: NonNegative,
     lookSettleSimSeconds: PositiveSimSeconds,
     recoilRecoverySimSeconds: PositiveSimSeconds,

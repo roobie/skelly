@@ -7,7 +7,44 @@
       "kind": "optic",
       "mount": "rail-top",
       "properties": {
-        "reticleKind": "chevron",
+        "aperture": { "aspectRatio": 1, "exponent": 2 },
+        "reticle": {
+          "focalPlane": "second",
+          "referenceMagnification": 1,
+          "primitives": [
+            { "kind": "line", "from": [-0.12, -0.12], "to": [0, 0], "width": 0.018, "color": [0.95, 0.075, 0.035] },
+            { "kind": "line", "from": [0, 0], "to": [0.12, -0.12], "width": 0.018, "color": [0.95, 0.075, 0.035] },
+            { "kind": "line", "from": [0, -0.19], "to": [0, -0.75], "width": 0.009, "color": [0.025, 0.025, 0.025] },
+            {
+              "kind": "line",
+              "from": [-0.17, -0.3],
+              "to": [0.17, -0.3],
+              "width": 0.009,
+              "color": [0.025, 0.025, 0.025]
+            },
+            {
+              "kind": "line",
+              "from": [-0.14, -0.43],
+              "to": [0.14, -0.43],
+              "width": 0.009,
+              "color": [0.025, 0.025, 0.025]
+            },
+            {
+              "kind": "line",
+              "from": [-0.11, -0.56],
+              "to": [0.11, -0.56],
+              "width": 0.009,
+              "color": [0.025, 0.025, 0.025]
+            },
+            {
+              "kind": "line",
+              "from": [-0.08, -0.69],
+              "to": [0.08, -0.69],
+              "width": 0.009,
+              "color": [0.025, 0.025, 0.025]
+            }
+          ]
+        },
         "magnification": { "min": 4, "max": 4 },
         "railSpanNotches": { "minOffset": -1, "maxOffset": 3 }
       },

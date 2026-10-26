@@ -2,6 +2,7 @@
 read_if:
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
+  - you're changing sun shadow occlusion in interiors or underground
   - you're changing wide ambient occlusion or its interaction with skylight
   - you're changing content-defined graphics policy or per-machine graphics settings, or evaluating GPU quality trials
   - you're adding or evaluating GPU quality options, including cached surface noise and its comparison against the arithmetic shader
@@ -20,7 +21,7 @@ Tone mapping can follow the solar cycle instead: neutral in bright daylight, shi
 
 Distance fog, the clear background and height mist share the camera's diffuse sky visibility so they cannot glow where the sky cannot reach. Use the interior field's spatial interpolation rather than a separate transition, keeping doorway changes aligned with held-item lighting. See `src/render/playView.ts`, `prepareLighting`; `src/render/sky.ts`, `applySky`; and `src/render/mood.ts`, `Mood.setSky`.
 
-A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. See `src/render/playView.ts`, `prepareLighting`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
+A flashlight beam fades in full daylight because its pool is not worth drawing or shadowing against the sun. Adapt its strength to the actual sky where the beam lands, not where the player stands, so a lit player can still illuminate a dark doorway. Keep furniture occlusion in that sky query: unlike ceiling fixtures, beams cast furniture shadows, and ignoring closed doors or hatches suppresses the beam in rooms they shelter. See `src/render/skylight.ts`, `Skylight`, and `src/render/flashlight.ts`, `flashlightDaylightScale`.
 
 A powered ceiling fixture's light on a surface fades by that surface's sky exposure, because walking across sunlight must not change how a room is lit. That exposure leaves furniture out: glows cast no furniture shadows, so fading by furniture-blocked sky would light the wall behind a workbench brighter than the open wall beside it. See `src/core/skylight.ts`, "SkyVolume". The held-item scene and the fallback without a skylight have no per-surface sky exposure to fade by, so there the camera's daylight scale stands in. See `src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `src/render/lightPool.ts`, `LightPoolContext`.
 
@@ -45,6 +46,8 @@ A performance change may alter the default look only slightly, and each such cha
 Coarser surface detail can retain weathering and camouflage while changing their appearance, so it is a visual choice rather than equivalent-image waste removal. World anchoring still matters for continuity across faces and chunks; changing detail does not justify changing geometry or shadow-caster visibility. See `src/render/chunks.ts`, `ChunkMeshes.setCoarseWeathering` and `ChunkMeshes.setFastCamo`, and `src/render/surfacePatterns.ts`, `camoColor`. Smaller sun maps keep biases and grid snapping tied to their actual texel size to avoid trading raster cost for acne or unstable edges; see `src/render/shadows.ts`, `Shadows.setSmallSunMap`.
 
 Cached surface noise exchanges repeated arithmetic hashes for a filtered, repeating lattice. The cell coordinates and smoothing keep world anchoring, but CPU float evaluation, byte quantization and hardware filtering do not promise the arithmetic shader's exact image. It is on by default because it cuts chunk fragment cost substantially while its image differs from the arithmetic shader only imperceptibly, which was approved by eye. The option and the debug URL switch stay so a player or a look review can compare against the arithmetic path. See `src/render/surfaceNoise.ts`, `createSurfaceNoise`; `src/render/surfacePatterns.ts`, `SURFACE_PATTERN_GLSL`; and `src/core/graphics.ts`, `GRAPHICS_KNOBS`.
+
+Sun shadows must block buried rooms even when a thick solid's sun-facing surface lies outside the bounded shadow map. Retain its interior-facing surface as an occluder too, without dropping the entry faces that prevent PCF leaks at joined interior corners. See `src/render/shadows.ts`, `Shadows.drawMaps`, and `test/browser/underground-sun.ts`, `undergroundSunProof`.
 
 Wide ambient occlusion darkens indirect light according to enclosure, while direct sun and flashlight lighting remain separate. The mesher's corner AO remains unchanged. Weathering changes rendering only; building-geometry changes are tracked separately by #396. See `src/core/occlusion.ts` and `src/render/chunks.ts`, `chunkMaterial`.
 
