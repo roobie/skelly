@@ -3,7 +3,7 @@ import type { HeldItems } from './hands.ts';
 
 export type OpticsSpike = 'effect' | 'world';
 
-export const opticsSpikeFromSearch = (search: string): OpticsSpike | undefined => {
+const opticsSpikeFromSearch = (search: string): OpticsSpike | undefined => {
   const choice = new URLSearchParams(search).get('optics');
   return choice === 'effect' || choice === 'world' ? choice : undefined;
 };
