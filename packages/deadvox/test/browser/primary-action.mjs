@@ -1036,9 +1036,10 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     // A pile lays out a loaded model where its model sits, so aim only once that layout is final.
     await page.waitForFunction((model) => !model || globalThis.primaryActionTest.view.models.has(model), placed.model);
     const fixture = await page.evaluate(
-      async ({ pileLayoutModuleUrl, ground }) => {
+      async ({ pileLayoutModuleUrl, playerLookPoseModuleUrl, ground }) => {
         const r = globalThis.primaryActionTest;
         const { pileItemPosition } = await import(pileLayoutModuleUrl);
+        const { playerEyePosition } = await import(playerLookPoseModuleUrl);
         const { itemUid } = ground;
         const pile = [...r.inventory.piles.values()].find(({ items }) =>
           items.some(({ item }) => item.uid === itemUid),
@@ -1047,16 +1048,38 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           blockSize: r.scale.blockSize,
           hasModel: (id) => r.view.models.has(id),
         }).map((metres) => metres / r.scale.blockSize);
-        const eye = [
-          r.session.body.pos[0],
-          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-          r.session.body.pos[2],
-        ];
-        const dx = target[0] - eye[0];
-        const dy = target[1] - eye[1];
-        const dz = target[2] - eye[2];
-        r.input.yaw = Math.atan2(-dx, -dz);
-        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        const feetDx = target[0] - r.session.body.pos[0];
+        const feetDz = target[2] - r.session.body.pos[2];
+        r.input.yaw = Math.atan2(-feetDx, -feetDz);
+        // Pitch changes the eye position too, so solve the aim against the posed eye.
+        let low = -Math.PI / 2;
+        let high = 0;
+        for (let step = 0; step < 32; step += 1) {
+          const pitch = (low + high) / 2;
+          const posedEye = playerEyePosition({
+            feet: r.session.body.pos,
+            eyeHeightMetres: r.session.playerEyeHeightMetres,
+            blockSize: r.scale.blockSize,
+            yaw: r.input.yaw,
+            pitch,
+            stance: r.session.stance,
+            figure: r.inventory.registry.figures.get('player'),
+          });
+          const dx = target[0] - posedEye[0];
+          const dy = target[1] - posedEye[1];
+          const dz = target[2] - posedEye[2];
+          const forward = -dx * Math.sin(r.input.yaw) - dz * Math.cos(r.input.yaw);
+          if (pitch < Math.atan2(dy, forward)) {
+            low = pitch;
+          } else {
+            high = pitch;
+          }
+        }
+        r.input.pitch = (low + high) / 2;
+        const targeted = r.interactionTargetAt();
+        if (targeted?.kind !== 'item' || targeted.item.uid !== itemUid) {
+          throw new Error('Posed-eye aim does not target the ground pickup fixture');
+        }
         r.grabProgress = [];
         const updateHeld = r.view.updateHeld.bind(r.view);
         r.view.updateHeld = (dt, pose, light, handling) => {
@@ -1067,7 +1090,11 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         };
         return ground;
       },
-      { pileLayoutModuleUrl: pileLayoutModule, ground: placed },
+      {
+        pileLayoutModuleUrl: pileLayoutModule,
+        playerLookPoseModuleUrl: '/src/core/playerLookPose.ts',
+        ground: placed,
+      },
     );
     await pressAction(page, 'world.interact');
     await page.waitForFunction(
