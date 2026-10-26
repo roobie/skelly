@@ -28,9 +28,14 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
       chestWidth: positive,
       chestDepth: positive,
       chestHeight: positive,
+      torsoChamfer: positive,
+      chestChamfer: positive,
       shoulderWidth: positive,
       shoulderHeight: positive,
       shoulderDepth: positive,
+      /** How far each deltoid sets into the chest's side, and how far its top sits below the chest's. */
+      deltoidInset: positive,
+      deltoidDrop: positive,
       neckWidth: positive,
       neckHeight: positive,
       headWidth: positive,
@@ -54,8 +59,8 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
   const origin = d.segment === 'head' ? crown + d.neckOverlap : 0;
   const ys = (bottom: number, topY: number): [number, number] => [bottom - origin, topY - origin];
   const eyeY = crown + d.headHeight * 0.58;
-  const deltoidX = d.chestWidth / 2 + d.shoulderWidth / 2 - 0.012;
-  const deltoidY = shoulders - d.shoulderHeight / 2 - 0.01;
+  const deltoidX = d.chestWidth / 2 + d.shoulderWidth / 2 - d.deltoidInset;
+  const deltoidY = shoulders - d.shoulderHeight / 2 - d.deltoidDrop;
   const deltoid = (id: string, side: 1 | -1) =>
     block(
       id,
@@ -82,10 +87,22 @@ export const bust = (params: Readonly<Record<string, string>>): (ExtrudedPolygon
     );
   if (d.segment === 'torso') {
     return [
-      slab('pelvis', 'pants', ys(0, waist), { halfX: d.pelvisWidth / 2, halfZ: d.pelvisDepth / 2, chamfer: 0.05 }),
-      slab('waist', 'shirt', ys(waist, ribs), { halfX: d.waistWidth / 2, halfZ: d.waistDepth / 2, chamfer: 0.05 }),
-      slab('ribs', 'shirt', ys(ribs, chest), { halfX: d.ribWidth / 2, halfZ: d.ribDepth / 2, chamfer: 0.05 }),
-      slab('chest', 'shirt', ys(chest, shoulders), { halfX: d.chestWidth / 2, halfZ: d.chestDepth / 2, chamfer: 0.06 }),
+      slab('pelvis', 'pants', ys(0, waist), {
+        halfX: d.pelvisWidth / 2,
+        halfZ: d.pelvisDepth / 2,
+        chamfer: d.torsoChamfer,
+      }),
+      slab('waist', 'shirt', ys(waist, ribs), {
+        halfX: d.waistWidth / 2,
+        halfZ: d.waistDepth / 2,
+        chamfer: d.torsoChamfer,
+      }),
+      slab('ribs', 'shirt', ys(ribs, chest), { halfX: d.ribWidth / 2, halfZ: d.ribDepth / 2, chamfer: d.torsoChamfer }),
+      slab('chest', 'shirt', ys(chest, shoulders), {
+        halfX: d.chestWidth / 2,
+        halfZ: d.chestDepth / 2,
+        chamfer: d.chestChamfer,
+      }),
       deltoid('shoulder-left', 1),
       deltoid('shoulder-right', -1),
       slab('collar', 'shirt', ys(shoulders - 0.012, shoulders + 0.012), {

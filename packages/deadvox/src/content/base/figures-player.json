@@ -64,6 +64,12 @@
           "part": "body",
           "pivot": "head",
           "turn": [0, 180, 0]
+        },
+        "torso": {
+          "at": [0, 0, 0],
+          "insideView": false,
+          "part": "body",
+          "turn": [0, 0, 0]
         }
       },
       "body": {

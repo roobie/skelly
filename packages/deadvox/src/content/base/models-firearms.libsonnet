@@ -3,6 +3,13 @@
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
 local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
 local longGunHands = import 'long-gun-hands.libsonnet';
+// A slung long gun (`DESIGN.md`, "Shoulder and sling") hangs muzzle down at the wearer's right side, behind the arm
+// and clear of a pack: its top faces forward and its ejection side out. The point on its bore level with its grip sits
+// at the sling's foot (`packages/thing-authoring-tool/worn-carry.libsonnet`, `sling`), so every gun hangs from the
+// strap whatever its length.
+local slung(model) = [{
+  model: model.id, frame: 'torso', pivot: [model.grip.at[0], 0, 0], at: [-0.25, 0.26, -0.19], turn: [90, -90, 0],
+}];
 
 {
   "items": [
@@ -10,6 +17,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
       id: 'rifle_hunting', name: 'Hunting rifle', category: 'weapon',
       description: '.308 Winchester bolt-action rifle with an internal magazine.',
       model: 'rifle_hunting', size: [2, 11], twoHanded: true,
+      figureModels: slung(import 'gungen/rifle_hunting.model.json'),
       lightMountSite: { kind: 'strap', at: [0.42, -0.03, 0], turn: [0, 0, 0] },
       firearm: {
         bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
@@ -43,6 +51,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
       "id": "pump_shotgun",
       "lightMountSite": { "kind": "strap", "at": [0.34, -0.045, 0], "turn": [0, 0, 0] },
       "model": "shotgun_pump",
+      "figureModels": slung(import 'gungen/shotgun_pump.model.json'),
       "name": "Pump shotgun",
       "size": [2, 10],
       "twoHanded": true
@@ -53,6 +62,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
       "id": "debug_shotgun_pump",
       "notLoot": true,
       "model": "shotgun_pump",
+      "figureModels": slung(import 'gungen/shotgun_pump.model.json'),
       "name": "Pump shotgun (debug)",
       "size": [2, 10],
       "twoHanded": true
@@ -74,6 +84,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
       },
       "id": "rifle_assault",
       "model": "rifle_assault",
+      "figureModels": slung(import 'gungen/rifle_assault.model.json'),
       "name": "AR-pattern rifle",
       "size": [2, 9],
       "twoHanded": true
@@ -95,6 +106,7 @@ local longGunHands = import 'long-gun-hands.libsonnet';
       },
       "id": "rifle_ak",
       "model": "rifle_ak",
+      "figureModels": slung(import 'gungen/rifle_ak.model.json'),
       "name": "AK-pattern rifle",
       "size": [2, 9],
       "twoHanded": true
