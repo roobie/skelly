@@ -4,7 +4,6 @@ import { keyboardInput } from './inputBindings.ts';
 import type { MoveIntent, StanceToggle } from './player.ts';
 import { ReloadInput } from './reloadInput.ts';
 
-const SENSITIVITY = 0.0022;
 export const LOOK_PITCH_LIMIT = 1.55;
 
 export const adjustLookPitch = (pitch: number, delta: number): { pitch: number; applied: number } => {
@@ -64,6 +63,7 @@ export class Input {
   private readonly cancelOnBlurAllowed: () => boolean;
   private readonly viewerInputAllowed: () => boolean;
   private mouseLookOverride: ((movementX: number, movementY: number) => boolean) | undefined;
+  private lookSensitivity: () => number = () => 1;
   constructor(
     target: HTMLElement,
     dominantUseAllowed: () => boolean = () => true,
@@ -122,8 +122,12 @@ export class Input {
       if (this.mouseLookOverride?.(event.movementX, event.movementY)) {
         return;
       }
-      this.yaw -= event.movementX * SENSITIVITY;
-      this.pitch = adjustLookPitch(this.pitch, -event.movementY * SENSITIVITY).pitch;
+      const sensitivity = this.lookSensitivity();
+      if (!(Number.isFinite(sensitivity) && sensitivity > 0)) {
+        throw new Error('Invalid look sensitivity');
+      }
+      this.yaw -= event.movementX * sensitivity;
+      this.pitch = adjustLookPitch(this.pitch, -event.movementY * sensitivity).pitch;
     });
   }
   cancel(preservePointer = false): void {
@@ -141,6 +145,9 @@ export class Input {
   }
   setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
     this.mouseLookOverride = override;
+  }
+  setLookSensitivity(sensitivity: () => number): void {
+    this.lookSensitivity = sensitivity;
   }
   setAimingDownSightsAllowed(allowed: () => boolean): void {
     this.aimingDownSightsAllowed = allowed;

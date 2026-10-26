@@ -75,6 +75,18 @@ describe('optic wheel zoom', () => {
     expect(zoom.wheel(bare, true, -1)).toBe(false);
   });
 
+  it('owns the power applied by aimed variable and fixed optics', () => {
+    const { zoom, weapon, initial, tuning } = fixture();
+    const variable = weapon();
+    expect(zoom.appliedPower(variable, false)).toBe(1);
+    expect(zoom.appliedPower(variable, true)).toBe(initial);
+    zoom.wheel(variable, true, -1);
+    expect(zoom.appliedPower(variable, true)).toBe(initial + tuning.step);
+
+    const fixed = fixture(true, true);
+    expect(fixed.zoom.appliedPower(fixed.weapon(), true)).toBe(fixed.range.min);
+  });
+
   it('does not take the wheel through a fixed optic', () => {
     const { zoom, weapon } = fixture(true, true);
     expect(zoom.wheel(weapon(), true, -1)).toBe(false);

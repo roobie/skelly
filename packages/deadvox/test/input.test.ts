@@ -82,6 +82,27 @@ describe('pointer input', () => {
     expect(input.yaw).toBe(0.8);
     expect(input.pitch).toBe(-0.2);
   });
+  it('scales look by applied optic power on each mouse event', () => {
+    const { input, target, document, documentListeners } = fixture();
+    document.pointerLockElement = target;
+    let aiming = false;
+    let power = 1;
+    input.setLookSensitivity(() => (aiming ? 1 / power : 1));
+    const turn = () => {
+      input.yaw = 0;
+      documentListeners.get('mousemove')!({ movementX: 10, movementY: 0 } as MouseEvent);
+      return Math.abs(input.yaw);
+    };
+
+    const unaimed = turn();
+    aiming = true;
+    expect(turn()).toBe(unaimed);
+    power = 2;
+    const magnified = turn();
+    expect(magnified).toBeLessThan(unaimed);
+    power = 3;
+    expect(turn()).toBeLessThan(magnified);
+  });
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
     const { input, target, document } = fixture();
     document.pointerLockElement = null;
