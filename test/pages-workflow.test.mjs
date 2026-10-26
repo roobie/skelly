@@ -54,7 +54,7 @@ const workflowIncludesPath = (workflow, event, file) => {
 
 test('Pages project checks run in their PR workflows', () => {
   const projects = [
-    { name: 'Gungen', pageStep: 'Check and build gungen', workflow: gungen, job: 'check' },
+    { name: 'Gungen', pageStep: 'Check and build gungen', workflow: gungen, job: ['fast', 'unit'] },
     { name: 'Deadvox', pageStep: 'Check and build deadvox', workflow: deadvox, job: ['fast', 'unit'] },
     { name: 'Mobgen', pageStep: 'Check and build mobgen', workflow: mobgen, job: 'check' },
     {
