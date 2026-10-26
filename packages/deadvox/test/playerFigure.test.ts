@@ -458,7 +458,7 @@ describe('player figure', () => {
     }
   });
 
-  it('draws every figure-row part, hides only the arms in first person, and sets the body back only there', () => {
+  it('draws every figure-row part, keeps first-person arms shadow-only, and sets the body back only there', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
     const bodyZ = (thirdPerson: boolean) => {
@@ -468,7 +468,7 @@ describe('player figure', () => {
     const firstPerson = bodyZ(false);
     expect(meshes.loaded).toBe(true);
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
-      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(!name.endsWith('Arm'));
+      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(true);
     }
     expect(firstPerson - bodyZ(true)).toBeCloseTo(PLAYER_BODY_REAR_OFFSET);
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
@@ -761,9 +761,8 @@ describe('player figure', () => {
     }
   });
 
-  it('keeps first-person world arms shadow-only while view arms draw', () => {
+  it('keeps first-person empty world arms shadow-only while view arms draw', () => {
     const inventory = new Inventory(registry);
-    expect(inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' })).toBe(true);
     const meshes = playerMeshes();
     meshes.sync({
       body: createPlayerBody(scale, 4, 1, 4),
@@ -774,20 +773,22 @@ describe('player figure', () => {
       ...STANDING,
       inventory,
     });
-    const arm = meshes.group.getObjectByName('figure-rightArm')!;
-    expect(arm.visible).toBe(true);
-    let shadowOnly = false;
-    arm.traverse((object) => {
-      if (object instanceof Mesh) {
-        expect(Array.isArray(object.material)).toBe(false);
-        shadowOnly ||=
-          object.castShadow &&
-          !(Array.isArray(object.material) ? object.material : [object.material]).some(
-            (material) => material.colorWrite,
-          );
-      }
-    });
-    expect(shadowOnly).toBe(true);
+    for (const side of ['left', 'right'] as const) {
+      const arm = meshes.group.getObjectByName(`figure-${side}Arm`)!;
+      expect(arm.visible).toBe(true);
+      let shadowOnly = false;
+      arm.traverse((object) => {
+        if (object instanceof Mesh) {
+          expect(Array.isArray(object.material)).toBe(false);
+          shadowOnly ||=
+            object.castShadow &&
+            !(Array.isArray(object.material) ? object.material : [object.material]).some(
+              (material) => material.colorWrite,
+            );
+        }
+      });
+      expect(shadowOnly, side).toBe(true);
+    }
     meshes.dispose();
   });
 

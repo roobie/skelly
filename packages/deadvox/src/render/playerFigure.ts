@@ -412,7 +412,7 @@ export class PlayerMeshes {
     for (const [part, drawn] of this.drawn) {
       // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
       const side = ARM_SIDE[part.name];
-      const viewArm = isArm(part.name) && !thirdPerson && Boolean(side && this.presentation?.arms.has(side));
+      const viewArm = isArm(part.name) && !thirdPerson;
       drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side))) || viewArm;
       if (isArm(part.name)) {
         this.setShadowOnly(drawn, viewArm);
