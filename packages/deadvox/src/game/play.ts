@@ -148,7 +148,6 @@ import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
-  emptyHandsPresentationReady,
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeGuard,
@@ -3620,7 +3619,6 @@ export const startPlay = (
       firearms: firearms.frames(),
       opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
-      emptyHandsReady: emptyHandsPresentationReady(ready, action),
       aim: aim.frame,
       job: handlingJob,
       ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),

@@ -798,7 +798,7 @@ describe('player figure', () => {
     const internals = held as unknown as { view: Group; arms: Map<'left' | 'right', Group> };
     const camera = new PerspectiveCamera();
     camera.rotation.set(0, Math.PI / 2, 0, 'YXZ');
-    held.update(camera, readyMeleePose(false), 0, { firearms: [], emptyHandsReady: true, dt: 1 });
+    held.update(camera, readyMeleePose(false));
     internals.view.updateMatrixWorld(true);
     const actual = internals.arms.get('right')!.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3());
     const expected = new Vector3(...HOLD.right).applyQuaternion(camera.quaternion);
@@ -810,7 +810,7 @@ describe('player figure', () => {
     const held = new HeldItems(inventory, figureModels, playerFigure);
     const internals = held as unknown as ArmInternals;
     const camera = new PerspectiveCamera();
-    held.update(camera, readyMeleePose(false), 0, { firearms: [], emptyHandsReady: true, dt: 1 });
+    held.update(camera);
     internals.view.updateMatrixWorld(true);
     for (const side of ['left', 'right'] as const) {
       const arm = internals.arms.get(side)!;
@@ -835,69 +835,6 @@ describe('player figure', () => {
         expect(found, `${side} ${segment}`).toBeDefined();
       }
     }
-    held.dispose();
-  });
-
-  it('reveals relaxed empty arm geometry only when the first-person view looks down', () => {
-    const inventory = new Inventory(registry);
-    const held = new HeldItems(inventory, figureModels, playerFigure);
-    const camera = new PerspectiveCamera(75, 1, 0.01, 16);
-    const visibleVertices = (
-      pitch: number,
-      handling: Parameters<typeof held.update>[3] = { firearms: [], dt: 1 },
-    ): number => {
-      camera.rotation.set(pitch, 0, 0, 'YXZ');
-      held.update(camera, readyMeleePose(false), 0, handling);
-      camera.updateMatrixWorld(true);
-      const frustum = new Frustum().setFromProjectionMatrix(
-        new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
-      );
-      const { arms } = held as unknown as { arms: Map<'left' | 'right', Group> };
-      let visible = 0;
-      for (const arm of arms.values()) {
-        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the assertion counts rendered geometry, not bounds.
-        arm.traverse((object) => {
-          if (!(object instanceof Mesh)) {
-            return;
-          }
-          const positions = object.geometry.getAttribute('position');
-          for (let index = 0; index < positions.count; index++) {
-            if (frustum.containsPoint(object.localToWorld(new Vector3().fromBufferAttribute(positions, index)))) {
-              visible += 1;
-            }
-          }
-        });
-      }
-      return visible;
-    };
-    expect(visibleVertices(-0.8)).toBeGreaterThan(0);
-    expect(visibleVertices(0)).toBe(0);
-    for (const handling of [
-      { firearms: [], emptyHandsReady: true, dt: 1 },
-      { firearms: [], grab: { progress: 0 }, dt: 1 },
-    ]) {
-      expect(visibleVertices(-0.8, handling)).toBeGreaterThan(0);
-      expect(visibleVertices(0.6, handling)).toBeGreaterThan(0);
-    }
-    held.dispose();
-  });
-
-  it('lowers each relaxed empty hand and raises it for a pickup reach', () => {
-    const inventory = new Inventory(registry);
-    const held = new HeldItems(inventory, undefined, playerFigure);
-    const camera = new PerspectiveCamera();
-    const wristY = (handling: Parameters<typeof held.update>[3]): number => {
-      held.update(camera, readyMeleePose(false), 0, handling);
-      const arm = (held as unknown as { arms: Map<'left' | 'right', Group> }).arms.get('left')!;
-      return arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3()).y;
-    };
-    const relaxed = wristY({ firearms: [], dt: 1 });
-    const reaching = wristY({ firearms: [], grab: { progress: 0 }, dt: 1 });
-    expect(reaching).toBeGreaterThan(relaxed);
-    expect(inventory.add(inventory.create('canned_beans'), { kind: 'hand', side: 'right' })).toBe(true);
-    const loneRelaxed = wristY({ firearms: [], dt: 1 });
-    const loneRaised = wristY({ firearms: [], emptyHandsReady: true, dt: 1 });
-    expect(loneRaised).toBeGreaterThan(loneRelaxed);
     held.dispose();
   });
 

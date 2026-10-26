@@ -66,10 +66,6 @@ export const shouldEnterMeleeGuard = (input: MeleeReadinessInput): boolean =>
 export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
   shouldEnterMeleeGuard(input) && (input.meleeWeaponHeld || input.handsEmpty);
 
-/** An active punch keeps bare hands raised after the player releases en-garde. */
-export const emptyHandsPresentationReady = (ready: boolean, action: { profile: string } | undefined): boolean =>
-  ready || action?.profile === 'fists';
-
 /** Applies content class defaults and per-weapon overrides once, before the action is saved. */
 export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {
   const speedMultiplier = weapon.speedMultiplier ?? defaults.speedMultiplier;

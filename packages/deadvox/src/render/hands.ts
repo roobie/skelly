@@ -129,8 +129,6 @@ export interface HeldHandlingFrame extends HeldPresentationFrame {
   readonly dt?: number;
   /** Metres the arms and held item are raised, to show a blow deflected. */
   readonly lift?: number;
-  /** True while empty hands are in en-garde. */
-  readonly emptyHandsReady?: boolean;
 }
 
 export class HeldItems {
@@ -152,8 +150,6 @@ export class HeldItems {
   );
   /** First-person shoulder frame; unlike the camera, this can twist during an unarmed strike. */
   private readonly torso = new Group();
-  /** Zero is the raised en-garde pose; one is the content-authored lowered pose. */
-  private emptyHandsLowered = 1;
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
   private skyVisibility = 1;
@@ -281,9 +277,6 @@ export class HeldItems {
     handling: HeldHandlingFrame = { firearms: [] },
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
-    const loweringTarget = handling.emptyHandsReady || handling.grab ? 0 : 1;
-    const transition = this.figure.holds.emptyHands.transitionTimeConstantRealSeconds;
-    this.emptyHandsLowered += (loweringTarget - this.emptyHandsLowered) * Math.min(1, (handling.dt ?? 0) / transition);
     const renderPose = handling.grab ? grabPose(pose ?? readyMeleePose(false), handling.grab.progress) : pose;
     const baseCameraQuaternion = main.quaternion.clone();
     this.restoreRummageSupport();
@@ -422,24 +415,10 @@ export class HeldItems {
       return;
     }
     const transform = this.presentation.handTransform(side, stanceHand)!;
-    const item = this.inventory.hands[side];
-    if (!item) {
-      const lowered = this.figure.holds.emptyHands.loweredOffset.map(
-        (value, axis) => value * this.emptyHandsLowered * (axis === 0 && side === 'left' ? -1 : 1),
-      ) as Vec3;
-      // Only the relaxed portion hangs world-down; guards and reaches remain camera-relative.
-      this.handPosition
-        .set(...lowered)
-        .applyQuaternion(this.poseRotation.setFromEuler(this.poseEuler.set(-main.rotation.x, 0, 0)));
-      transform.offset = [
-        transform.offset[0] + this.handPosition.x,
-        transform.offset[1] + this.handPosition.y,
-        transform.offset[2] + this.handPosition.z,
-      ];
-    }
     this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
     this.applyViewPose(main, pose, transform);
     this.lockCutBladeRoll(side, pose);
+    const item = this.inventory.hands[side];
     const itemDefinition = item && defOf(this.inventory.registry, item.type);
     this.poseHeldItem({
       side,

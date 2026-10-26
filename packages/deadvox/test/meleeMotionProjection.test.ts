@@ -143,11 +143,7 @@ function measure(
   const sampleTimes = [
     ...new Set([...Array.from({ length: 121 }, (_, step) => (cooldown * step) / 120), pullTime, contactAt, followTime]),
   ].sort((a, b) => a - b);
-  held.update(camera, readyMeleePose(true, registry.figures.get('player')!.holds), 0, {
-    firearms: [],
-    emptyHandsReady: true,
-    dt: 1,
-  });
+  held.update(camera, readyMeleePose(true, registry.figures.get('player')!.holds));
   internals.view.updateMatrixWorld(true);
   const weaponTransform = internals.heldByHand.get(side)?.children[0];
   const restOrientation = weaponTransform?.getWorldQuaternion(new Quaternion());
@@ -162,7 +158,7 @@ function measure(
   for (const elapsed of sampleTimes) {
     const pose = meleePoseAndContact(action, elapsed, false);
     const cameraBefore = camera.quaternion.clone();
-    held.update(camera, pose, 0, { firearms: [], emptyHandsReady: true });
+    held.update(camera, pose);
     cameraOrientationChange = Math.max(cameraOrientationChange, cameraBefore.angleTo(camera.quaternion));
     maxTorsoYawRadians = Math.max(maxTorsoYawRadians, Math.abs(pose.torsoYaw ?? 0));
     if (Math.abs(elapsed - contactAt) < 1e-8) {

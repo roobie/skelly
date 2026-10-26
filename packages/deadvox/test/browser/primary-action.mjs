@@ -2286,27 +2286,28 @@ try {
     );
     const stanceCancelThrow = await mouseCharge(page);
     await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
-    const chargedStancePose = await page.evaluate(() => {
-      const r = globalThis.primaryActionTest;
-      return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
-    });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
       return !(r.isThrowingStance() || r.isChargingItemThrow());
     });
-    await stanceCancelThrow();
-    await page.waitForFunction((raised) => {
+    await page.waitForFunction((normal) => {
       const r = globalThis.primaryActionTest;
-      return ['right', 'left'].every((side) => r.view.held.arms.get(side).position.y < raised[side][1]);
-    }, chargedStancePose);
+      return ['right', 'left'].every((side) =>
+        r.view.held.arms
+          .get(side)
+          .position.toArray()
+          .every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001),
+      );
+    }, normalThrowPose);
     const restoredThrowPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
     });
     for (const side of ['right', 'left']) {
-      assert.ok(restoredThrowPose[side][1] < chargedStancePose[side][1]);
+      assert.ok(restoredThrowPose[side].every((value, axis) => Math.abs(value - normalThrowPose[side][axis]) < 0.001));
     }
+    await stanceCancelThrow();
     assert.equal(
       await page.evaluate(
         (uid) =>

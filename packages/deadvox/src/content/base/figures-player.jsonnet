@@ -72,11 +72,6 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         guardSupport: { offset: [0.04, 0.1, 0.06], rotation: [0.1, 0.08, 0.04] },
         // A switched-on off-hand item stays visible and directed forward alongside an aimed firearm.
         aimActiveOffHand: { offset: [0, 0.25, 0.02], rotation: [0, 0, 0] },
-        // Relaxed hands hang below the view; en-garde returns them at the same authored rate on either side.
-        emptyHands: {
-          loweredOffset: [0, -0.5, 0.08],
-          transitionTimeConstantRealSeconds: 0.2,
-        },
       },
       // A stance bends each leg at the knee and ankle about these parts and anchors.
       legRig: {

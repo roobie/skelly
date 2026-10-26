@@ -3576,11 +3576,6 @@ export type ArmSegment = (typeof ARM_SEGMENTS)[number];
 const ArmSegmentSchema = strictObject({ part: Id, pivot: Id });
 /** How a hand closes: the fingers curl at the knuckles; the thumb folds across the palm and in toward it. */
 const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegrees: Degrees, thumbInDegrees: Degrees });
-/** How bare hands leave and return to the first-person view. */
-const EmptyHandPoseSchema = strictObject({
-  loweredOffset: Point,
-  transitionTimeConstantRealSeconds: PositiveRealSeconds,
-});
 /** The first-person view's rig over the arm model (src/render/armRig.ts). */
 const ArmRigSchema = strictObject({
   upper: ArmSegmentSchema,
@@ -3630,7 +3625,6 @@ const HeldPosesSchema = strictObject({
   guardSupport: ReadyHandSchema,
   /** Raised free-hand transform while an active off-hand item accompanies an aimed firearm. */
   aimActiveOffHand: ReadyHandSchema,
-  emptyHands: EmptyHandPoseSchema,
 });
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 

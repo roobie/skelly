@@ -15,7 +15,6 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
-  emptyHandsPresentationReady,
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeGuard,
@@ -263,12 +262,6 @@ describe('melee pose and contact contract', () => {
       firearmSide: 'right',
       mode: 'active',
     });
-  });
-
-  it('keeps empty hands raised after en-garde releases during an active punch', () => {
-    expect(emptyHandsPresentationReady(true, undefined)).toBe(true);
-    expect(emptyHandsPresentationReady(false, { profile: 'fists' })).toBe(true);
-    expect(emptyHandsPresentationReady(false, undefined)).toBe(false);
   });
 
   it('raises both hands from rest in the shared en-garde pose', () => {
