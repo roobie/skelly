@@ -1,12 +1,13 @@
 // Keep firearm units and file axes in the Gungen adapter so the shared engine stays domain-neutral.
 
 import { IDENTITY_M, type Mat3, mulMV, transpose, type Vec3 } from '@skelly/engine/foundation/math.ts';
+import unitScale from './unitScale.json' with { type: 'json' };
 
 /**
  * The scale is anchored to a sourced STANAG magazine dimension; the export applies the resolved
  * domain's `units.metresPerUnit`.
  */
-export const METRES_PER_UNIT = 0.0115;
+export const METRES_PER_UNIT = unitScale.metresPerUnit;
 
 /**
  * How gungen assembly axes map to the exported file's axes: `file = FILE_FROM_GUNGEN * gungen`.

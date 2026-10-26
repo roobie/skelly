@@ -3,7 +3,7 @@ import { GRID } from '@skelly/engine/foundation/conventions.ts';
 import catalogue from '../../cartridges/catalogue/bolt.json' with { type: 'json' };
 import type { Cartridge } from '../ammo/cartridge.ts';
 import { formatCartridgeParseError, parseCartridge } from '../ammo/parseCartridge.ts';
-import { METRES_PER_UNIT } from './exportFrame.ts';
+import { mmToU } from './units.ts';
 
 const cartridges = new Map<string, Cartridge>(
   catalogue.cartridges.map((raw) => {
@@ -72,10 +72,7 @@ export const boltStrokeUnits = (cartridge: Cartridge): number => {
   if (cartridge.kind !== 'metallic' || cartridge.overallLength.max.value === null) {
     throw new Error('Bolt travel needs a sourced metallic cartridge overall length');
   }
-  return (
-    Math.ceil((cartridge.overallLength.max.value / (METRES_PER_UNIT * 1000) + BOLT_EXTRACTION_CLEARANCE_U) / GRID) *
-    GRID
-  );
+  return Math.ceil((mmToU(cartridge.overallLength.max.value) + BOLT_EXTRACTION_CLEARANCE_U) / GRID) * GRID;
 };
 export const BOLT_MAGAZINE_WALL_U = catalogue.magazineOuterWallU;
 export const BOLT_WELL_PROFILES = catalogue.integralWells;
@@ -94,11 +91,8 @@ export const boltMagazineSection = (cartridge: Cartridge) => {
   ) {
     throw new Error('Integral well requires sourced cartridge length and rim');
   }
-  const mmPerUnit = METRES_PER_UNIT * 1000;
   return {
-    depth:
-      Math.ceil(cartridge.overallLength.max.value / mmPerUnit / (2 * GRID)) * (2 * GRID) + 2 * BOLT_MAGAZINE_WALL_U,
-    width:
-      Math.ceil(cartridge.case.rim.diameter.value / mmPerUnit / (2 * GRID)) * (2 * GRID) + 2 * BOLT_MAGAZINE_WALL_U,
+    depth: Math.ceil(mmToU(cartridge.overallLength.max.value) / (2 * GRID)) * (2 * GRID) + 2 * BOLT_MAGAZINE_WALL_U,
+    width: Math.ceil(mmToU(cartridge.case.rim.diameter.value) / (2 * GRID)) * (2 * GRID) + 2 * BOLT_MAGAZINE_WALL_U,
   };
 };

@@ -15,8 +15,8 @@ import {
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { Cartridge, Shotshell } from '../ammo/cartridge.ts';
 import { roundProfiles } from '../ammo/roundProfile.ts';
-import { UNITS_PER_MM } from '../gun/magazineGeometry.ts';
 import { shotshellGeometry, shotshellHullColor } from '../gun/shotshellGeometry.ts';
+import { mmToU } from '../gun/units.ts';
 
 const DEFAULT_ROUND_FACETS = 24;
 const ROUND_CREASE_DEGREES = 12;
@@ -70,7 +70,7 @@ const revolvedGeometry = (profile: readonly Vec2[], facets: number): BufferGeome
     id: 'cartridge-component',
     kind: 'revolved',
     axis: 'x',
-    profile: profile.map(([axial, radius]): Vec2 => [axial * UNITS_PER_MM, radius * UNITS_PER_MM]),
+    profile: profile.map(([axial, radius]): Vec2 => [mmToU(axial), mmToU(radius)]),
     creaseDegrees: ROUND_CREASE_DEGREES,
   };
   const mesh = meshForSolid(solid, 0, facets);
@@ -96,11 +96,11 @@ const buildShellMeshes = (shell: Shotshell, finish: CaseFinish, env: Texture, fa
     for (const solid of parts) {
       const scaled =
         solid.kind === 'revolved'
-          ? { ...solid, profile: solid.profile.map(([x, y]): Vec2 => [x * UNITS_PER_MM, y * UNITS_PER_MM]) }
+          ? { ...solid, profile: solid.profile.map(([x, y]): Vec2 => [mmToU(x), mmToU(y)]) }
           : {
               ...solid,
-              profile: solid.profile.map(([x, y]): Vec2 => [x * UNITS_PER_MM, y * UNITS_PER_MM]),
-              z: [solid.z[0] * UNITS_PER_MM, solid.z[1] * UNITS_PER_MM] as const,
+              profile: solid.profile.map(([x, y]): Vec2 => [mmToU(x), mmToU(y)]),
+              z: [mmToU(solid.z[0]), mmToU(solid.z[1])] as const,
             };
       const data = meshForSolid(scaled, 0, facets);
       const geometry = new BufferGeometry();
@@ -116,9 +116,9 @@ const buildShellMeshes = (shell: Shotshell, finish: CaseFinish, env: Texture, fa
   return {
     loose: groupOf(solids.round),
     fired: groupOf(solids.case),
-    lengthUnits: shell.length.loaded.value! * UNITS_PER_MM,
-    caseLengthUnits: shell.length.nominal.value! * UNITS_PER_MM,
-    headDiameterUnits: shell.head.rimDiameter.value! * UNITS_PER_MM,
+    lengthUnits: mmToU(shell.length.loaded.value!),
+    caseLengthUnits: mmToU(shell.length.nominal.value!),
+    headDiameterUnits: mmToU(shell.head.rimDiameter.value!),
   };
 };
 
@@ -151,8 +151,8 @@ export const buildAmmoMeshes = (
   return {
     loose,
     fired,
-    lengthUnits: lengthMm * UNITS_PER_MM,
-    caseLengthUnits: caseLengthMm * UNITS_PER_MM,
-    headDiameterUnits: headDiameterMm * UNITS_PER_MM,
+    lengthUnits: mmToU(lengthMm),
+    caseLengthUnits: mmToU(caseLengthMm),
+    headDiameterUnits: mmToU(headDiameterMm),
   };
 };

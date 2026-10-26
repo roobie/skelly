@@ -6,11 +6,11 @@ import { roundProfiles } from '../ammo/roundProfile.ts';
 import { METRES_PER_UNIT } from './exportFrame.ts';
 import { magazineCenterline } from './magazineCenterline.ts';
 import { magazineProfileContent } from './magazineProfiles.ts';
+import { mmToU } from './units.ts';
 
 export const MAGAZINE_WALL_U = 0.125;
 /** Assumed portion of the top round that stands proud of the magazine feed face. */
 const MAGAZINE_TOP_PROUD_DIAMETERS = 0.35;
-export const UNITS_PER_MM = 1 / (METRES_PER_UNIT * 1000);
 const BODY_CLEARANCE_EPSILON_U = 1e-9;
 type MagazineCenterlineData = NonNullable<ReturnType<typeof magazineCenterline>>;
 
@@ -123,9 +123,9 @@ export const magazineRoundColumn = (
     throw new Error('magazine geometry has no recognized body centreline');
   }
   const profiles = roundProfiles(cartridge);
-  const diameter = Math.max(...profiles.loadedCase.map(([, radius]) => radius)) * 2 * UNITS_PER_MM;
+  const diameter = mmToU(Math.max(...profiles.loadedCase.map(([, radius]) => radius)) * 2);
   const roundAxialCoordinates = [...profiles.loadedCase, ...profiles.bullet].map(([axial]) => axial);
-  const roundLength = (Math.max(...roundAxialCoordinates) - Math.min(...roundAxialCoordinates)) * UNITS_PER_MM;
+  const roundLength = mmToU(Math.max(...roundAxialCoordinates) - Math.min(...roundAxialCoordinates));
   const minimumPhysicalWidth = Math.min(...physicalCenterline.sectionWidths);
   const interiorWidth = minimumPhysicalWidth - 2 * MAGAZINE_WALL_U;
   if (interiorWidth < diameter) {

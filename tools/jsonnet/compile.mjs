@@ -18,6 +18,7 @@ const SOURCE_ROOTS = [
   'packages/gun-authoring-tool/cartridges',
   'packages/gun-authoring-tool/designs',
   'packages/gun-authoring-tool/exports',
+  'packages/gun-authoring-tool/references',
   'packages/mobgen/src/mob',
   'site',
 ];

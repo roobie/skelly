@@ -38,6 +38,7 @@ import {
   pumpShotgun,
   smg,
 } from '../src/gun/templates.ts';
+import { uToMm } from '../src/gun/units.ts';
 import { loadDesignAssembly, type MutableAssembly } from './helpers.ts';
 
 const HTTPS_URL = /^https:\/\//;
@@ -223,7 +224,7 @@ describe('optic catalog', () => {
     for (const type of ['lpvo-1-6x', 'high-mag-5-25x']) {
       const optic = getOptic(type);
       const body = optic.solids.find(({ id }) => id === 'tube-with-flared-bells')!;
-      const gapMm = localSolidBounds(body)[0][1] * 11.5;
+      const gapMm = uToMm(localSolidBounds(body)[0][1]);
       expect(gapMm, type).toBeGreaterThanOrEqual(2);
       expect(gapMm, type).toBeLessThanOrEqual(3);
     }

@@ -524,7 +524,7 @@ ${ShaderChunk.lights_fragment_begin
   .replace(
     SPOT_LIGHT_INFO_CALL,
     `$&
-        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyFade / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
+        directLight.color *= 1.0 / (1.0 + pow(uSkyDaylight * receiverSkyVisibility / float(${HALF_BRIGHTNESS}), float(${FADE_SHARPNESS})));`,
   )
   .replace(
     POINT_LIGHT_INFO_CALL,

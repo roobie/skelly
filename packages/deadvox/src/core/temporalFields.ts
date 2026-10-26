@@ -253,6 +253,7 @@ export const TEMPORAL_FIELDS = [
   },
   { path: 'zombies.stimulusMemorySimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.hearingModel.searchSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.hearingModel.alertCooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.hearingModel.hesitationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.hearingModel.refusalSuspicionSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.hearingModel.searchStrollSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
