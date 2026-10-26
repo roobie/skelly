@@ -433,6 +433,7 @@ export class PlayerMeshes {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and worn mounts resolve in one frame.
   private syncHeld(pose: PlayerFigurePose): void {
     const source = pose.heldItems ?? pose.inventory;
     this.heldFrame.visible = true;
@@ -483,7 +484,7 @@ export class PlayerMeshes {
     );
     this.heldFrame.traverse((object) => object.layers.set(this.layer));
     castsAndReceives(this.heldFrame);
-    this.presentation?.syncWorn(pose.wornItems ?? pose.inventory);
+    this.presentation.syncWorn(pose.wornItems ?? pose.inventory);
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
       if (side) {

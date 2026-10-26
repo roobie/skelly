@@ -1630,13 +1630,14 @@ attached rather than moving to suit the observing camera. See
 `src/render/actorAnimator.ts`, `ActorAnimator`; and
 `src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
 
-ADS eye alignment and the visor/scope effect boundary remain separate design
-work. The optical adapter remains for that work, not as another visible arm or
-held-item owner; authored head-slot interiors retain their matching world-frame
-exclusion during this transition. See `src/render/hands.ts`, `HeldItems`.
+The optical adapter must not become another visible arm or held-item owner.
+Authored head-slot interiors use a matching world-frame exclusion to avoid
+doubled colour. ADS eye alignment and the visor/scope effect boundary require
+their own design decisions, not a camera-specific physical substitute. See
+`src/render/hands.ts`, `HeldItems`.
 
 Hands and held objects use normal world depth. Visible wall intersections are
-accepted as the bounded body rollout's limitation, not hidden with a depth-clear
+accepted until #1376 replaces them with common contact behaviour, not hidden with a depth-clear
 redraw or a camera-specific pose. Held-object obstruction reaction ([#1376](https://github.com/roobie/skelly/issues/1376)) is the
 follow-up: its common pose and action policy must be settled before contact
 behaviour replaces that limitation. See `src/render/playView.ts`, `render`.
