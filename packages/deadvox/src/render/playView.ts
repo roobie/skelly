@@ -55,8 +55,8 @@ import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
+import { configureOpticsSpike } from './opticsSpike.ts';
 import { PileMeshes } from './piles.ts';
-import { OPTICS_SPIKE_LAYER, opticsSpikeFromSearch } from './opticsSpike.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -256,13 +256,7 @@ export const createPlayView = (
   const leverProps = new LeverProps(s, engine.isSolid);
   const acidEffects = new AcidEffects(s, config.seed);
   const held = new HeldItems(inventory, models, playerFigure, engine.sky.light);
-  const opticsSpike = opticsSpikeFromSearch(globalThis.location?.search ?? '');
-  if (opticsSpike) {
-    held.configureOpticsSpike(scene, opticsSpike);
-    camera.layers.enable(OPTICS_SPIKE_LAYER);
-    camera.near = 0.01;
-    camera.updateProjectionMatrix();
-  }
+  const opticsSpike = configureOpticsSpike(held, scene, camera);
   scene.add(
     caseEffects.mesh,
     impactEffects.group,

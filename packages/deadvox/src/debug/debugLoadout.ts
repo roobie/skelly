@@ -53,18 +53,33 @@ export const equipDebugLoadout = (
   if (!backpack) {
     throw new Error('Could not equip preview backpack');
   }
+  equipChosenLoadout(inventory, backpack, choice);
+  const optic = new URLSearchParams(search).get('optic');
+  if (optic) {
+    equipPreviewOptic(inventory, optic);
+  }
+  return true;
+};
+
+const equipOpticsWearable = (inventory: Inventory, choice: LoadoutChoice): void => {
+  if (choice !== 'optics' && choice !== 'optics-visor') {
+    return;
+  }
+  const wearable = choice === 'optics' ? 'night_vision_goggles' : 'riot_helmet';
+  if (!inventory.add(inventory.create(wearable), { kind: 'worn' })) {
+    throw new Error('Could not wear optics preview item');
+  }
+};
+
+const equipChosenLoadout = (inventory: Inventory, backpack: Item, requested: LoadoutChoice): void => {
+  equipOpticsWearable(inventory, requested);
+  const choice = requested === 'optics' || requested === 'optics-visor' ? 'hunting' : requested;
   if (choice === 'revolver' || choice === 'revolver-open') {
     equipRevolver(inventory, backpack, choice === 'revolver-open');
   } else if (choice === 'pump') {
     equipPump(inventory, backpack);
-  } else if (choice === 'hunting' || choice === 'optics' || choice === 'optics-visor') {
+  } else if (choice === 'hunting') {
     equipHuntingRifle(inventory, backpack);
-    if (choice === 'optics' || choice === 'optics-visor') {
-      const wearable = choice === 'optics' ? 'night_vision_goggles' : 'riot_helmet';
-      if (!inventory.add(inventory.create(wearable), { kind: 'worn' })) {
-        throw new Error('Could not wear optics preview item');
-      }
-    }
   } else if (choice === 'magazine') {
     equipEmptyMagazine(inventory, backpack);
   } else if (choice === 'grenade') {
@@ -76,11 +91,6 @@ export const equipDebugLoadout = (
   } else {
     equipRifles(inventory, backpack, choice);
   }
-  const optic = new URLSearchParams(search).get('optic');
-  if (optic) {
-    equipPreviewOptic(inventory, optic);
-  }
-  return true;
 };
 
 const equipPreviewOptic = (inventory: Inventory, type: string): void => {
