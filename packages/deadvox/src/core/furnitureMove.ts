@@ -657,7 +657,11 @@ const placementBase = (entity: BlockEntity, aimed: Readonly<Vec3>): Vec3 => [
 ];
 
 /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
-export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: Vec3 } | { refusal: string } => {
+export const placement = (
+  mover: FurnitureMover,
+  aimed: Readonly<Vec3>,
+  skipTargetReach = false,
+): { pos: Vec3 } | { refusal: string } => {
   const { inventory } = mover;
   const messages = messagesOf(inventory);
   const entity = inventory.entities.carrying();
@@ -665,7 +669,7 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
     throw new Error('Not carrying a block entity');
   }
   const target: Vec3 = [aimed[0], entity.floorLocked ? entity.pos[1] : aimed[1], aimed[2]];
-  if (!inventory.canReach(target)) {
+  if (!(skipTargetReach || inventory.canReach(target))) {
     return { refusal: messages.outOfReach };
   }
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
@@ -686,6 +690,23 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
 };
 
 type Placement = ReturnType<typeof placement>;
+
+/** Validates the held floor position with the reach rule shared by hold, set-down and cancellation. */
+export const floorLockedPlacement = (mover: FurnitureMover): Placement => {
+  const entity = mover.inventory.entities.carrying();
+  if (!entity?.floorLocked) {
+    throw new Error('Not carrying a floor-locked block entity');
+  }
+  if (!mover.inventory.canReachEntity(entity)) {
+    return { refusal: messagesOf(mover.inventory).outOfReach };
+  }
+  return placement(
+    mover,
+    [entity.pos[0] + Math.floor(entity.size[0] / 2), entity.pos[1], entity.pos[2] + Math.floor(entity.size[2] / 2)],
+    true,
+  );
+};
+
 const positioned = (result: Placement | undefined): result is { pos: Vec3 } => result !== undefined && 'pos' in result;
 
 /** The next floor cell a drag may enter; diagonal corners need both adjoining cells clear. */
@@ -756,13 +777,7 @@ const blocksApproach = (inventory: Inventory, entity: BlockEntity, cells: Readon
 export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): string | undefined => {
   const { inventory } = mover;
   const carried = inventory.entities.carrying()!;
-  const result = carried.floorLocked
-    ? placement(mover, [
-        carried.pos[0] + Math.floor(carried.size[0] / 2),
-        carried.pos[1],
-        carried.pos[2] + Math.floor(carried.size[2] / 2),
-      ])
-    : placement(mover, aimed);
+  const result = carried.floorLocked ? floorLockedPlacement(mover) : placement(mover, aimed);
   if ('refusal' in result) {
     return result.refusal;
   }

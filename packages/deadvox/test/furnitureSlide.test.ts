@@ -209,6 +209,23 @@ describe('floor furniture steps', () => {
     expect(entity.pos[2] + entity.size[2]).toBeLessThanOrEqual(wallZ);
   });
 
+  it('does not let a floor drag cut between blocked orthogonal steps', () => {
+    const { entity, mover } = fixture();
+    const aimed: Vec3 = [spec.pos[0] + 3, spec.pos[1], spec.pos[2] + 2];
+    const reachCells = Math.ceil(reachTuning(registry).reachMetres / mover.blockSize) - 1;
+    const cornerMover: FurnitureMover = {
+      ...mover,
+      player: { ...mover.player, pos: [aimed[0] + reachCells, spec.pos[1], aimed[2] + 1] },
+      terrainSolid: (x, y, z) =>
+        y === 0 ||
+        (y === 1 &&
+          ((x === spec.pos[0] + entity.size[0] && z === spec.pos[2]) || (x === spec.pos[0] && z === aimed[2]))),
+    };
+    expect(liftFurniture(cornerMover, entity, true)).toBeUndefined();
+
+    expect(advanceFloorLockedPlacement(cornerMover, aimed)).toEqual({ pos: spec.pos });
+  });
+
   it('drains carried furniture stamina only while the player moves', () => {
     const { session, advance, setWalking } = runtime();
     const entity = session.inventory.furnish(spec)!;
@@ -452,7 +469,10 @@ describe('floor furniture steps', () => {
       version: formatVersion,
       contentLookup: (kind, id) => contentLookup(registry, kind, id),
     });
+    const heldPos: Vec3 = [...restored.pos];
     const resumed = runtime(savedHold.snapshot);
     expect(resumed.session.entities.carrying()).toMatchObject({ uid: restored.uid, floorLocked: true });
+    expect(resumed.session.placeFurniture([heldPos[0] + 2, heldPos[1], heldPos[2] + 1])).toBeUndefined();
+    expect(resumed.session.entities.byUid(restored.uid)?.pos).toEqual(heldPos);
   });
 });

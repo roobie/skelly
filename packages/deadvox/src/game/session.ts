@@ -44,6 +44,7 @@ import {
   advanceFloorLockedPlacement,
   type FurnitureMover,
   type FurnitureSlideWay,
+  floorLockedPlacement,
   furnitureMoveStamina,
   liftFurniture,
   placeFurniture,
@@ -2532,9 +2533,7 @@ export const createSession = (options: SessionOptions) => {
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
     furniturePlacement: (aimed: Readonly<Vec3>) =>
-      entities.carrying()?.floorLocked
-        ? advanceFloorLockedPlacement(furnitureMover(), aimed)
-        : placement(furnitureMover(), aimed),
+      entities.carrying()?.floorLocked ? floorLockedPlacement(furnitureMover()) : placement(furnitureMover(), aimed),
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       if (scenarioRun?.won) {
