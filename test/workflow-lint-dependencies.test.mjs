@@ -9,6 +9,9 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const WORKFLOWS = join(ROOT, '.github/workflows');
 const WORKFLOW_FILE = /\.ya?ml$/;
 const ROOT_CI_COMMAND = /\bnpm\s+run\s+ci(?:\s|$)/;
+const CONTENT_CHECK_COMMAND = /\bnpm run content:check\b/;
+const SHARED_CHECKS_COMMAND = /\bnpm run ci:checks\b/;
+const PRE_PUSH_SHARED_CHECKS = /run_check 'npm run ci:checks' run ci:checks/;
 const PREFIX_INSTALL = /\bnpm\s+ci\s+--prefix(?:=|\s+)([^\s\\]+)/g;
 const CACHE_PATH_SEPARATOR = /\s+/;
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
@@ -62,6 +65,20 @@ const nodeCacheDependencyPathsIn = (workflow) =>
 
 const lintCommands = commandsIn(parse(read('.github/workflows/lint.yml')));
 const requiredPrefixes = installPrefixes(lintCommands);
+const packageScripts = JSON.parse(read('package.json')).scripts;
+
+test('CI keeps the generated-content check while the pre-push hook runs the shared checks', () => {
+  assert.match(packageScripts.ci, CONTENT_CHECK_COMMAND);
+  assert.match(packageScripts.ci, SHARED_CHECKS_COMMAND);
+  assert.match(read('.githooks/pre-push'), PRE_PUSH_SHARED_CHECKS);
+
+  for (const commands of [lintCommands, commandsIn(parse(read('.github/workflows/pages.yml')))]) {
+    assert.ok(
+      commands.some((command) => ROOT_CI_COMMAND.test(command)),
+      'CI workflow runs root CI',
+    );
+  }
+});
 
 test('every workflow running root CI installs lint workflow prefixes and caches their lockfiles', () => {
   assert.ok(requiredPrefixes.size > 0, 'lint workflow declares prefix installs');
