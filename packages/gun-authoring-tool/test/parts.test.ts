@@ -1,70 +1,20 @@
+import { readdirSync } from 'node:fs';
 import type { PartFamily } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { GRID } from '@skelly/engine/foundation/conventions.ts';
-import { cross, dot, length } from '@skelly/engine/foundation/math.ts';
+import { dot } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
 import { meshForSolid, meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
-import {
-  BOLT_CARRIER_RUNNING_CLEARANCE_U,
-  CARRIER_HANDLE_STYLES,
-  FAMILIES,
-  GRIP_MOUNT_PROFILE,
-} from '../src/gun/parts.ts';
+import { CARRIER_HANDLE_STYLES, FAMILIES, GRIP_MOUNT_PROFILE } from '../src/gun/parts.ts';
 import { REVOLVER_PROPORTIONS } from '../src/gun/revolver.ts';
 import { fullProduct, tWiseCases } from './coveringArray.ts';
 import { expectWatertightMesh, variant } from './helpers.ts';
-import { runSweeps, sweepGroup } from './sweeps.ts';
+import { ARRAY_SAMPLED_KEYS, acceptedCases, withoutHandleStyle } from './partSweepCases.ts';
+import { definePartChecks } from './partSweepChecks.ts';
 
-/**
- * Keys of `FAMILIES` (not family names: `ak-receiver` is also named `receiver`) whose default-run cases are a 3-wise covering array instead of the full product. Any
- * family not listed here (including every family added later) gets the full product.
- *
- * Why these: they are the families whose full products dominate the default run (`receiver` alone is
- * most of the combinations). For `receiver`, `barrel` and `handguard`, on a sample of `parts.ts`
- * mutants the array killed every mutant the full product killed, where 2-wise missed one. The
- * other sampled families were not measured; they are sampled for run time and the sweep keeps their
- * full products.
- * `lower` stays a full product: the 3-wise array misses its `magazineOrientation=tilt` classes.
- * `magazine` stays a full product: `acceptedCases` drops invalid length/profile rows, and filtering
- * an array after generation would leave valid triples uncovered.
- * `sight` is sampled as an array so future optic parameters compose without making its full product
- * the default; the optic contract tests explicitly cover every stable catalog type. The full product
- * of these families still runs under `GUNGEN_SWEEPS` (see `sweepGroup` below).
- * `handleStyle` is deliberately excluded from these unconstrained products: arbitrary combinations
- * create invalid owner/pattern pairings. The compatible style × pattern × owner matrix below tests it.
- */
-const ARRAY_SAMPLED_KEYS = [
-  'receiver',
-  'barrel',
-  'handguard',
-  'sight',
-  'bolt-carrier',
-  'bolt-handle-arm',
-  'bolt-handle-knob',
-] as const;
 const ARRAY_STRENGTH = 3;
-// Sporter joints/support and cartridge-driven motion/export have dedicated contract tests;
-// multiplying their look controls through unrelated mechanisms only repeats geometry classes.
-const withoutHandleStyle = (family: PartFamily) =>
-  Object.fromEntries(
-    Object.entries(family.params).filter(
-      ([name]) =>
-        !(
-          [
-            'handleStyle',
-            'boltCalibre',
-            'stockStyle',
-            'combDegrees',
-            'muzzleInsetRatio',
-            'frontSightMuzzleInsetRatio',
-            'wellBody',
-          ].includes(name) ||
-          (name === 'section' && ['lower', 'stock', 'front-sight'].includes(family.name))
-        ),
-    ),
-  );
 
 /**
  * Interactions the array is known to miss, as explicit cases. `receiver`'s shell coordinates depend
@@ -134,12 +84,6 @@ const isArraySampled = (key: string): boolean => (ARRAY_SAMPLED_KEYS as readonly
 const sameParams = (a: Record<string, string>, b: Record<string, string>): boolean =>
   Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([k, v]) => b[k] === v);
 
-// Straight STANAG only accepts M; the rejected lengths have a dedicated contract test.
-const acceptedCases = (key: string, cases: Record<string, string>[]): Record<string, string>[] =>
-  key === 'magazine'
-    ? cases.filter(({ profile, length: lengthClass }) => profile !== 'stanag-straight' || lengthClass === 'M')
-    : cases;
-
 /** The default product/covering-array cases; owner-specific styles are covered separately below. */
 const defaultCases = (key: string, family: PartFamily): Record<string, string>[] => {
   const params = withoutHandleStyle(family);
@@ -158,20 +102,6 @@ const defaultCases = (key: string, family: PartFamily): Record<string, string>[]
     }
   }
   return cases;
-};
-
-const onGrid = (n: number, step = GRID) => Math.abs(n / step - Math.round(n / step)) < 1e-9;
-
-const onGridWithCarrierClearance = (value: number, step: number, family: PartFamily): boolean => {
-  if (onGrid(value, step)) {
-    return true;
-  }
-  // Receiver cavities and the SMG handle stem in its slot stand one running clearance off the grid.
-  if (family.name !== 'receiver' && family.name !== 'smg-handle') {
-    return false;
-  }
-  const nearest = Math.round(value / step) * step;
-  return Math.abs(Math.abs(value - nearest) - BOLT_CARRIER_RUNNING_CLEARANCE_U) < 1e-9;
 };
 
 const pumpTubeDimensions = (input: {
@@ -595,97 +525,16 @@ describe('part library', () => {
     }
   });
 
-  // Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
-  // ports, unique port ids and positive box sizes. No rules or geometry checks run.
-  const BatchCaseTimeoutMs = 40;
-  const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
-    let gridStep = GRID;
-    if (family.name === 'forend' || family.name === 'ar-charging-handle') {
-      gridStep = GRID / 5;
-    } else if (['front-sight', 'rail-front-sight', 'ak-rear-sight', 'sporting-rear-sight'].includes(family.name)) {
-      gridStep = GRID / 4;
-    } else if (['frame', 'slide'].includes(family.name)) {
-      gridStep = GRID / 2;
+  it('keeps a full-product sweep for every array-sampled family', () => {
+    const sweepFiles = readdirSync(import.meta.dirname);
+    for (const key of ARRAY_SAMPLED_KEYS) {
+      const stem = key
+        .split('-')
+        .map((word) => `${word[0]!.toUpperCase()}${word.slice(1)}`)
+        .join('');
+      expect(sweepFiles.some((file) => file.startsWith(`partSweep${stem}`))).toBe(true);
     }
-    const check = (params: Record<string, string>) => {
-      const def = family.build(params);
-      const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
-        box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
-      // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
-      // Explicit metal handle parts use sub-grid clearances; their ownership, contact and motion have dedicated geometry tests.
-      const explicitCarrierStyle = family.name === 'bolt-carrier' && params.handleStyle !== undefined;
-      // AR hand corridors follow the thin, 0.05u-authored handle; body stations retain their usual grid.
-      const fineHandleIds = new Set(['charging-handle', 'rear-t-hand-grip-clearance', 'rear-t-hand-clearance']);
-      const fineHandleKeepOuts = def.keepOuts.filter((k) => family.name === 'receiver' && fineHandleIds.has(k.id));
-      // Sights traced onto a barrel keep the sight families' finer grid.
-      const barrelSights = def.solids.filter((s) => family.name === 'barrel' && s.id.startsWith('front-sight-'));
-      const numbers = [
-        ...def.solids.flatMap((s) =>
-          s.kind === 'box' &&
-          !s.id.startsWith('trigger-guard-') &&
-          !barrelSights.includes(s) &&
-          !(family.name === 'magazine' && params.profile === 'smg') &&
-          !(explicitCarrierStyle && s.slot === 'metal')
-            ? bounds(s.box)
-            : [],
-        ),
-        ...def.keepOuts.flatMap((k) =>
-          (explicitCarrierStyle && k.id.startsWith(`${params.handleStyle}-handle-`)) || fineHandleKeepOuts.includes(k)
-            ? []
-            : bounds(k.box),
-        ),
-        ...def.ports.flatMap((p) => [...p.pos, p.slots?.pitch ?? 0]),
-        ...def.axes
-          .filter((axis) => family.name !== 'revolver-cylinder' || axis.kind !== 'bore')
-          .flatMap((axis) => [...axis.origin]),
-      ];
-      return {
-        geometryOnGrid:
-          numbers.every((n) => onGridWithCarrierClearance(n, gridStep, family)) &&
-          fineHandleKeepOuts.flatMap((k) => bounds(k.box)).every((n) => onGrid(n, GRID / 5)) &&
-          barrelSights.flatMap((s) => (s.kind === 'box' ? bounds(s.box) : [])).every((n) => onGrid(n, GRID / 4)),
-        portsOrthonormal: def.ports.every(
-          (p) =>
-            Math.abs(length(p.normal) - 1) < 1e-6 &&
-            Math.abs(length(p.up) - 1) < 1e-6 &&
-            Math.abs(dot(p.normal, p.up)) < 1e-6 &&
-            Math.abs(length(cross(p.normal, p.up)) - 1) < 1e-6,
-        ),
-        uniquePortIds: new Set(def.ports.map((p) => p.id)).size === def.ports.length,
-        positiveBoxSizes: def.solids.every((s) => s.kind !== 'box' || s.box.half.every((h) => h > 0)),
-      };
-    };
-    const expected = {
-      geometryOnGrid: true,
-      portsOrthonormal: true,
-      uniquePortIds: true,
-      positiveBoxSizes: true,
-    };
-
-    if (batchSize === 1) {
-      for (const params of cases) {
-        const tag = JSON.stringify(params);
-        it(`${tag}: geometry and port definitions are valid on the ${gridStep}u grid`, () => {
-          expect(check(params), tag).toEqual(expected);
-        });
-      }
-      return;
-    }
-
-    for (let start = 0; start < cases.length; start += batchSize) {
-      const batch = cases.slice(start, start + batchSize);
-      // The timeout scales with the batch's case count, never a flat number.
-      it(
-        `cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`,
-        () => {
-          for (const params of batch) {
-            expect(check(params), JSON.stringify(params)).toEqual(expected);
-          }
-        },
-        batch.length * BatchCaseTimeoutMs,
-      );
-    }
-  };
+  });
 
   it('retains every receiver section in the default 3-wise sample', () => {
     const receiver = FAMILIES.receiver!;
@@ -718,17 +567,6 @@ describe('part library', () => {
       definePartChecks(family, cases);
     });
   }
-
-  // The exhaustive product for the families the default run samples with a covering array.
-  sweepGroup('full parameter product of the array-sampled families', () => {
-    for (const [key, family] of Object.entries(FAMILIES).filter(([k]) => isArraySampled(k))) {
-      describe(key, () => {
-        // A skipped group still registers its cases, so build none in the default run.
-        // Batch exhaustive cases to cap Vitest registration memory; failures retain the exact params.
-        definePartChecks(family, runSweeps ? acceptedCases(key, fullProduct(withoutHandleStyle(family))) : [], 256);
-      });
-    }
-  });
 });
 
 it('sporting rear sight uses the AK open-notch leaves scaled to its sight line', () => {

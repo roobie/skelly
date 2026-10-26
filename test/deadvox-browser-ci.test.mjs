@@ -237,7 +237,7 @@ describe('gungen browser CI', () => {
     const workflow = parse(readFileSync(join(ROOT, '.github/workflows/gungen.yml'), 'utf8'));
     const {
       jobs: {
-        check: { steps },
+        fast: { steps },
       },
     } = workflow;
     assert.doesNotMatch(JSON.stringify(workflow), gungenSystemBrowserPattern);
