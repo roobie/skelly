@@ -1642,6 +1642,11 @@ redraw or a camera-specific pose. Held-object obstruction reaction ([#1376](http
 follow-up: its common pose and action policy must be settled before contact
 behaviour replaces that limitation. See `src/render/playView.ts`, `render`.
 
+Held presentation must sample the same frame's camera and body feedback before
+posing. Moving the camera afterward leaves hands, wielded items and their light
+and optic anchors a frame behind the view used to draw them. See
+`src/game/play.ts`, `updateFrame` and `updateVisualFeedback`.
+
 Shoulders are body attachments, not movable reach handles. When an authored grip
 cannot be reached at authored limb lengths, preserving shoulder and hand contact
 takes priority over exact segment length: a floating sleeve breaks the whole-body
