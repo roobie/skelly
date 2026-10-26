@@ -31,7 +31,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'look[].mobActors.hearingGazeJitter.cyclesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'powerTuning[].tickSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'powerDevices[].burnLitresPerGameHour', clock: 'Game', unit: 'PerHour', dimension: 'rate' },
-  { path: 'figures[].holds.emptyHands.transitionRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'figures[].holds.emptyHands.transitionTimeConstantRealSeconds',
+    clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'graphics[].renderScale.adaptive.targetRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },
   {
     path: 'graphics[].renderScale.adaptive.hysteresisRealMs',

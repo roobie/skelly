@@ -62,7 +62,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Relaxed hands hang below the view; en-garde returns them at the same authored rate on either side.
         emptyHands: {
           loweredOffset: [0, -0.5, 0.08],
-          transitionRealSeconds: 0.2,
+          transitionTimeConstantRealSeconds: 0.2,
         },
       },
       // A stance bends each leg at the knee and ankle about these parts and anchors.

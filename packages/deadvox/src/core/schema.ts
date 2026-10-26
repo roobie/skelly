@@ -3542,7 +3542,7 @@ const HandPoseSchema = strictObject({ fingersDegrees: Degrees, thumbAcrossDegree
 /** How bare hands leave and return to the first-person view. */
 const EmptyHandPoseSchema = strictObject({
   loweredOffset: Point,
-  transitionRealSeconds: PositiveRealSeconds,
+  transitionTimeConstantRealSeconds: PositiveRealSeconds,
 });
 /** The first-person view's rig over the arm model (src/render/armRig.ts). */
 const ArmRigSchema = strictObject({

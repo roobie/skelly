@@ -278,9 +278,8 @@ export class HeldItems {
     handling: HeldHandlingFrame = { firearms: [] },
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
-    const emptyHands = !(this.inventory.hands.right || this.inventory.hands.left);
-    const loweringTarget = emptyHands && handling.emptyHandsReady ? 0 : 1;
-    const transition = this.figure.holds.emptyHands.transitionRealSeconds;
+    const loweringTarget = handling.emptyHandsReady || handling.grab ? 0 : 1;
+    const transition = this.figure.holds.emptyHands.transitionTimeConstantRealSeconds;
     this.emptyHandsLowered += (loweringTarget - this.emptyHandsLowered) * Math.min(1, (handling.dt ?? 0) / transition);
     const renderPose = handling.grab ? grabPose(pose ?? readyMeleePose(false), handling.grab.progress) : pose;
     const baseCameraQuaternion = main.quaternion.clone();
@@ -384,7 +383,7 @@ export class HeldItems {
     }
     const transform = this.presentation.handTransform(side, stanceHand)!;
     const item = this.inventory.hands[side];
-    if (!(item || this.inventory.hands.right || this.inventory.hands.left)) {
+    if (!item) {
       const lowered = this.figure.holds.emptyHands.loweredOffset;
       transform.offset = transform.offset.map(
         (value, axis) => value + lowered[axis]! * this.emptyHandsLowered * (axis === 0 && side === 'left' ? -1 : 1),

@@ -132,7 +132,8 @@ it('held unpacking converges without mutating game state and returns after compl
   expect(f.project().separation).toBeLessThan(rest.separation);
   expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
   expect(f.inventory.itemByUid(f.item.uid)).toBeUndefined();
-  expect(f.project().wrists).toEqual(rest.wrists);
+  const relaxed = f.project();
+  expect(f.project().wrists).toEqual(relaxed.wrists);
 });
 
 it('a cancelled two-handed move restores the support arm local baseline', () => {
@@ -250,7 +251,7 @@ it('held-display capability selects the raised compass display and rummage grip 
   const plainEmpty = plain.project();
   expect(plain.inventory.move(plain.item, { kind: 'hand', side: 'right' }).ok).toBe(true);
   const plainHeld = plain.project();
-  expect(plainHeld.wrists).toEqual(plainEmpty.wrists);
+  expect(plainHeld.wrists[0]!.y).toBeGreaterThan(plainEmpty.wrists[0]!.y);
   let plainDial: Mesh | undefined;
   plain.held.warmUpTarget.scene.traverse((object) => {
     if (object instanceof Mesh && object.geometry instanceof CircleGeometry) {

@@ -1310,6 +1310,12 @@ A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. The lamp's authored grip must leave the flame visible; see
 `src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
+Relaxed unoccupied hands remain below the view, including the hand opposite a
+held item, because people do not walk with a hand held in front of them. A
+pickup reach raises an empty hand into view before it reaches and lowers it
+again, so the handling feedback remains visible. See `src/render/hands.ts`,
+`HeldItems.update`, and `src/content/base/figures-player.jsonnet`, `holds`.
+
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
 or a phone, so the hand can never sit between the eye and the screen. Content

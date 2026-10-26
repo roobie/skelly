@@ -11,12 +11,13 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
-  canStartPrimaryMelee,
+  emptyHandsPresentationReady,
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeReady,
   startPlayerMelee,
 } from '../src/game/melee.ts';
+import { primaryMeleeAction } from '../src/game/primaryAction.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -222,16 +223,23 @@ describe('melee pose and contact contract', () => {
     expect(shouldEnterMeleeReady({ ...input, inputLocked: true })).toBe(false);
   });
 
-  it('starts an empty-hand primary attack only from en-garde', () => {
-    const emptyHands = {
+  it('dispatches an empty-hand primary click to a punch only from en-garde', () => {
+    const action = { kind: 'fists' as const };
+    const readiness = {
       rightMouseHeld: false,
       meleeWeaponHeld: false,
       handsEmpty: true,
       debugBuild: false,
       inputLocked: false,
     };
-    expect(canStartPrimaryMelee(emptyHands)).toBe(false);
-    expect(canStartPrimaryMelee({ ...emptyHands, rightMouseHeld: true })).toBe(true);
+    expect(primaryMeleeAction(action, readiness)).toBeUndefined();
+    expect(primaryMeleeAction(action, { ...readiness, rightMouseHeld: true })).toEqual({ kind: 'swing' });
+  });
+
+  it('keeps empty hands raised after en-garde releases during an active punch', () => {
+    expect(emptyHandsPresentationReady(true, undefined)).toBe(true);
+    expect(emptyHandsPresentationReady(false, { profile: 'fists' })).toBe(true);
+    expect(emptyHandsPresentationReady(false, undefined)).toBe(false);
   });
 
   it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {

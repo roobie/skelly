@@ -60,8 +60,9 @@ export interface MeleeReadinessInput {
 export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
   input.rightMouseHeld && (input.meleeWeaponHeld || input.handsEmpty) && !input.debugBuild && !input.inputLocked;
 
-/** A primary melee click starts an attack only from en-garde. */
-export const canStartPrimaryMelee = (input: MeleeReadinessInput): boolean => shouldEnterMeleeReady(input);
+/** An active punch keeps bare hands raised after the player releases en-garde. */
+export const emptyHandsPresentationReady = (ready: boolean, action: { profile: string } | undefined): boolean =>
+  ready || action?.profile === 'fists';
 
 /** Applies content class defaults and per-weapon overrides once, before the action is saved. */
 export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {

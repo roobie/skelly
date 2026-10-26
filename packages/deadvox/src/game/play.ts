@@ -146,7 +146,7 @@ import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
-  canStartPrimaryMelee,
+  emptyHandsPresentationReady,
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeReady,
@@ -170,7 +170,7 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
-import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
+import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
@@ -3134,29 +3134,23 @@ export const startPlay = (
     return true;
   };
 
+  const meleeReadiness = (meleeWeaponHeld: boolean) => ({
+    rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
+    meleeWeaponHeld,
+    handsEmpty: !(inventory.hands.right || inventory.hands.left),
+    debugBuild: debugTools?.buildOn ?? false,
+    inputLocked: compression.locksInput,
+  });
   const shouldPlayerBlock = (): boolean =>
-    shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
-      meleeWeaponHeld: selectPrimaryAction(inventory).kind === 'melee',
-      handsEmpty: !(inventory.hands.right || inventory.hands.left),
-      debugBuild: debugTools?.buildOn ?? false,
-      inputLocked: compression.locksInput,
-    });
+    shouldEnterMeleeReady(meleeReadiness(selectPrimaryAction(inventory).kind === 'melee'));
 
-  const startPrimaryMelee = (hand: HandSide | undefined, meleeWeaponHeld: boolean): void => {
-    if (
-      !canStartPrimaryMelee({
-        rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
-        meleeWeaponHeld,
-        handsEmpty: !(inventory.hands.right || inventory.hands.left),
-        debugBuild: debugTools?.buildOn ?? false,
-        inputLocked: compression.locksInput,
-      })
-    ) {
+  const startPrimaryMelee = (action: ReturnType<typeof selectPrimaryAction>): void => {
+    const selected = primaryMeleeAction(action, meleeReadiness(action.kind === 'melee'));
+    if (!selected) {
       return;
     }
     // On a ladder only the free hand swings.
-    swing(session.ladderHold.freeHand(hand));
+    swing(session.ladderHold.freeHand(selected.hand));
   };
 
   const activateIgniter = (item: Item, hand: HandSide): void => {
@@ -3224,7 +3218,7 @@ export const startPlay = (
         togglePin(action.item);
         return;
       case 'melee':
-        startPrimaryMelee(action.hand, true);
+        startPrimaryMelee(action);
         return;
       case 'ignite':
         activateIgniter(action.item, action.hand);
@@ -3245,7 +3239,7 @@ export const startPlay = (
         );
         return;
       case 'fists':
-        startPrimaryMelee(action.hand, false);
+        startPrimaryMelee(action);
         return;
       case 'noop':
         return;
@@ -3607,13 +3601,7 @@ export const startPlay = (
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
-    const ready = shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
-      meleeWeaponHeld: selectedMelee.item !== undefined,
-      handsEmpty: !(inventory.hands.right || inventory.hands.left),
-      debugBuild: debugTools?.buildOn ?? false,
-      inputLocked: compression.locksInput,
-    });
+    const ready = shouldEnterMeleeReady(meleeReadiness(selectedMelee.item !== undefined));
     const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
@@ -3628,7 +3616,7 @@ export const startPlay = (
       firearms: firearms.frames(),
       opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
-      emptyHandsReady: ready,
+      emptyHandsReady: emptyHandsPresentationReady(ready, action),
       aim: aim.frame,
       job: handlingJob,
       ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
