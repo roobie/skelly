@@ -20,6 +20,7 @@ import {
   type CycleTimeline,
   sweepMovingPart,
 } from '../gun/cycle.ts';
+import { uToMm } from '../gun/units.ts';
 
 const SPEEDS = [1, 0.25, 0.1, 0.02] as const;
 const XRAY_OPACITY = 0.2;
@@ -111,7 +112,7 @@ export const createCycleView = (): CycleView => {
   let boundAction: ResolvedGunAction | undefined;
   let ejectionArrow: ArrowHelper | undefined;
   let strokeUnits = 0;
-  let millimetresPerUnit = 11.5;
+  let millimetresPerUnit = uToMm(1);
   let timeSeconds = 0;
   let playing = false;
 

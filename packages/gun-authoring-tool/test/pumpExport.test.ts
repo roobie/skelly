@@ -12,6 +12,7 @@ import { resolveGunAction } from '../src/gun/actionDescription.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { PUMP_ACTION_TRAVEL_U, PUMP_LOADING_PORT_X, PUMP_SHELL_LOADED_LENGTH_U } from '../src/gun/pumpShell.ts';
 import { tubeMagazineCapacity } from '../src/gun/tubeCapacity.ts';
+import { uToMm } from '../src/gun/units.ts';
 import { loadDesigns } from './helpers.ts';
 
 const { assembly } = loadDesigns().find((entry) => entry.assembly.name === 'archetype-pump-shotgun')!;
@@ -99,8 +100,8 @@ it('opens a source-sized single-shell mouth rather than placing its loading anch
   const resolved = resolve(assembly, gunDomain);
   const receiver = resolved.defs.get('receiver')!;
   const mouth = receiver.keepOuts.find((volume) => volume.id === 'loading-port')!.box;
-  expect(2 * mouth.half[0] * 11.5).toBeGreaterThan(shell.length.loaded.value!);
-  expect(2 * mouth.half[2] * 11.5).toBeGreaterThan(shell.head.rimDiameter.value!);
+  expect(uToMm(2 * mouth.half[0])).toBeGreaterThan(shell.length.loaded.value!);
+  expect(uToMm(2 * mouth.half[2])).toBeGreaterThan(shell.head.rimDiameter.value!);
   expect(PUMP_LOADING_PORT_X[1] - PUMP_LOADING_PORT_X[0]).toBeGreaterThan(PUMP_SHELL_LOADED_LENGTH_U);
   const point: Solid = {
     id: 'probe',

@@ -20,8 +20,9 @@ import {
 import { boxFromMinMax, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import type { ClipPlane, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 
+import { mmToU } from './units.ts';
+
 const SCALE = 1.15;
-const MILLIMETRES_PER_U = 11.5;
 const GRID_U = 0.25;
 const PROFILE_GRID_U = 0.125;
 const NOMINAL_FRAME_HEIGHT_U = 9;
@@ -32,7 +33,7 @@ const TRIGGER_ID = /^curved-trigger-[0-9]$/;
 const photoControl = (sourceRow: string, pickedU: number) => ({ sourceRow, pickedU });
 const dimension = (sourceRow: string, referenceMm: number, pickedU?: number) => {
   const scaledMm = referenceMm * SCALE;
-  const scaledU = scaledMm / MILLIMETRES_PER_U;
+  const scaledU = mmToU(scaledMm);
   return {
     sourceRow,
     referenceMm,
@@ -44,7 +45,7 @@ const dimension = (sourceRow: string, referenceMm: number, pickedU?: number) => 
   } as const;
 };
 
-/** Reference rows retain their ×1.15/11.5-mm calibration; BR/photo overrides are separate design controls. */
+/** Reference calibration and photo overrides remain separate design controls. */
 export const REVOLVER_PROPORTIONS = {
   overallLength: dimension('S&W Model 686 Plus Mountain Gun published overall length: 9.75 in', 247.65, 24.75),
   overallHeight: dimension('S&W Model 686 Plus Mountain Gun published overall height: 5.68 in', 144.272, 14.5),

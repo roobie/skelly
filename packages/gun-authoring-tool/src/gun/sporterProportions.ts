@@ -1,4 +1,5 @@
 import { TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
+import { inchesToMm } from './units.ts';
 
 const stockSeatY = -2;
 const jointTopU = TAPERED_STOCK_PROPORTIONS.combAtJointU + stockSeatY;
@@ -6,7 +7,7 @@ const jointBottomU = -2.5 + stockSeatY;
 
 /** Bore-registered side-profile estimates; see `packages/gun-authoring-tool/docs/bolt-action-export.md`, "Reference registration". */
 export const SPORTER_PROPORTIONS = {
-  referenceOverallLengthMm: 41.5 * 25.4,
+  referenceOverallLengthMm: inchesToMm(41.5),
   receiver: {
     rearX: -16,
     frontX: 0,

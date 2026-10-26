@@ -1,5 +1,5 @@
 local appearance = import 'appearance.jsonnet';
-local mmPerU = 11.5;
+local mmPerU = (import 'unitScale.jsonnet').metresPerUnit * 1000;
 local wall = 0.125;
 local axisY = 2.5;
 local backupZ = 0;
