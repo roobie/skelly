@@ -131,6 +131,7 @@ breach.breaking(shape.colliding({
     },
     { [k]: deadOfficer[k] for k in std.objectFields(deadOfficer) if k != 'id' && k != 'name' && k != 'container' } + {
       id: 'gauntlet_dead_special_ops', name: 'Dead special operations soldier',
+      corpse: { figure: 'player', outfit: 'special_ops_uniform' },
       container: { pockets: [{ grid: [6, 6], handlingSimSeconds: 1.2 }] },
     },
     note('gauntlet_perimeter_notice', 'Notice', 'QUARANTINE ZONE'),
