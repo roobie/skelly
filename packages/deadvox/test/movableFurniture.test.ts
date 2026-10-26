@@ -149,15 +149,15 @@ describe('movable furniture', () => {
       reachTuning(registry).furnitureMove.carriedView,
     );
     const lookingNorth = new Quaternion();
-    view.update(0, lookingNorth);
+    view.update(0, lookingNorth, formatWorldOptions.blockSize);
     expect(view.shown).toBe(false);
 
     expect(liftFurniture(furniture, piece)).toBeUndefined();
-    view.update(0, lookingNorth);
+    view.update(0, lookingNorth, formatWorldOptions.blockSize);
     expect(view.shown).toBe(true);
 
     expect(placeFurniture(furniture, moved)).toBeUndefined();
-    view.update(0, lookingNorth);
+    view.update(0, lookingNorth, formatWorldOptions.blockSize);
     expect(view.shown).toBe(false);
   });
 
@@ -309,7 +309,7 @@ describe('movable furniture', () => {
         if (turns) {
           expect(turnCarried(inventory)).toBeUndefined();
         }
-        view.update(0, lookingEast);
+        view.update(0, lookingEast, formatWorldOptions.blockSize);
         camera.updateMatrixWorld(true);
         const drawn = new Box3().setFromObject(view.group).getSize(new Vector3());
         expect(drawn.x > drawn.z).toBe(piece.size[0] > piece.size[2]);

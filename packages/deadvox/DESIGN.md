@@ -519,8 +519,12 @@ because rearranging a room should not require destroying its contents. See `src/
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
-  holding it. See `src/core/furnitureMove.ts`, `liftFurniture`, `placement` and
-  `slideFurniture`, and `src/game/session.ts`, `liftPiece` and `slidePiece`.
+  holding it. A drag holds its last valid floor position while a target is
+  blocked, then ends once that piece leaves interaction reach, so it cannot
+  teleport through an obstacle. See `src/core/furnitureMove.ts`,
+  `liftFurniture`, `placement` and `slideFurniture`, and
+  `src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
+  `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
   search, rest, read), so the common action stays one tap. A tap-and-hold opens
   the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
@@ -548,11 +552,15 @@ because rearranging a room should not require destroying its contents. See `src/
   carrying occupies both of them rather than a new carry slot. Items, ladders
   and furniture answer to one hand authority, so no combination leaves a hand
   doing two jobs at once. See `src/core/inventory.ts`, `HandHold`, and
-  `src/core/ladders.ts`, `LadderHold`. Lifting costs stamina and carrying
-  drains it, so moving a room's worth of furniture is a choice paid for, not a
-  free reshuffle. A worn-out player puts the piece down where it fits; when
-  nothing fits the piece stays held until something does, because dropping it
-  through a wall or a body is worse than holding it a moment longer. See
+  `src/core/ladders.ts`, `LadderHold`. Lifting, carrying and dragging cost
+  stamina, with each action's content curve scaling the drain by the piece's
+  estimated mass, so moving a heavy piece tires the player faster and mass has
+  a felt cost. Holding a carried piece still drains no stamina because otherwise
+  the player is at rest. See `src/core/furnitureMove.ts`,
+  `furnitureMoveStamina`, and `src/game/session.ts`, `liftPiece` and
+  `advancePlayerMovement`. A worn-out player puts the piece down where it fits;
+  when nothing fits the piece stays held until something does, because dropping
+  it through a wall or a body is worse than holding it a moment longer. See
   `src/game/session.ts`, `putDownWornOut`.
 - **Carried sleep surface.** A bedroll lets the player sleep where they are at
   worse recovery than a bed, paid for by carrying it in the hands, so resting
@@ -605,9 +613,12 @@ because rearranging a room should not require destroying its contents. See `src/
   piece goes off at its carrier, because the piece is in their hands, not where
   it last stood. See `src/game/session.ts`, `detonationPoint`.
 - **Seen while carried.** Carry feedback must agree with where the piece can
-  be put down, without hiding the placement outline. A dragged piece stays
-  visibly on its floor plane rather than floating with the player's view.
+  be put down, without hiding the placement outline. A dragged piece advances
+  one floor cell at a time; a diagonal needs both adjoining orthogonal cells
+  clear, so it cannot cut a corner or pass through an obstacle. A dragged piece
+  stays visibly on its floor plane rather than floating with the player's view.
   Presentation reads the hold owner so it cannot outlive the hold. See
+  `src/core/furnitureMove.ts`, `advanceFloorLockedPlacement`; and
   `src/render/carriedPiece.ts`, `CarriedPiece`.
 - **Turning and tipping.** Lifted pieces can be reoriented because a piece
   that could fit through a doorway laid over should not become a dead end.

@@ -441,6 +441,7 @@ describe('final composed body-route certificate', () => {
               name: 'Boundary box',
               size: [3, 4, 2],
               color: '#aaaaaa',
+              massKg: 1,
               breach: fixtureBreach(),
               material: FIXTURE_MATERIAL,
             },

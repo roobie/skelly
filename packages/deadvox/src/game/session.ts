@@ -41,8 +41,11 @@ import {
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
 import {
+  advanceFloorLockedPlacement,
   type FurnitureMover,
   type FurnitureSlideWay,
+  floorLockedPlacement,
+  furnitureMoveStamina,
   liftFurniture,
   placeFurniture,
   placement,
@@ -1637,7 +1640,11 @@ export const createSession = (options: SessionOptions) => {
     if (reason) {
       return reason;
     }
-    spendStamina(sim.needs, reachTuning(registry).furnitureMove.liftStamina, bodyTuning.staminaRegenDelaySimSeconds);
+    spendStamina(
+      sim.needs,
+      furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift'),
+      bodyTuning.staminaRegenDelaySimSeconds,
+    );
     playNoisyWorldSound(floorLocked ? 'furniture_drag' : 'furniture_scrape', centre);
     return undefined;
   };
@@ -1656,11 +1663,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const reason = slideFurniture(furnitureMover(), entity, params.way, { destination: params.destination as Vec3 });
     if (!reason) {
-      spendStamina(
-        sim.needs,
-        reachTuning(registry).furnitureMove.slide.stamina,
-        bodyTuning.staminaRegenDelaySimSeconds,
-      );
+      spendStamina(sim.needs, furnitureMoveStamina(inventory, entity, 'drag'), bodyTuning.staminaRegenDelaySimSeconds);
       playNoisyWorldSound('furniture_drag', boxCentre(entity.pos, entity.size));
     }
     return reason;
@@ -1712,6 +1715,36 @@ export const createSession = (options: SessionOptions) => {
         (options.refusal ?? options.notice)(registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.wornOut);
         return;
       }
+    }
+  };
+
+  const dragAimedCell = (): Vec3 => {
+    const input = sampledInput();
+    const origin: Vec3 = [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]];
+    const direction = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
+    const reachBlocks = reachTuning(registry).useReachMetres / s;
+    const hit = raycast(origin, direction, reachBlocks, physicalSolid);
+    const cell = hit
+      ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
+      : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reachBlocks));
+    return [cell[0]!, cell[1]!, cell[2]!];
+  };
+
+  const advanceFloorLockedDrag = (): void => {
+    const carried = entities.carrying();
+    if (!carried?.floorLocked) {
+      return;
+    }
+    const result = advanceFloorLockedPlacement(furnitureMover(), dragAimedCell());
+    if ('pos' in result) {
+      entities.moveCarried(carried, result.pos);
+    }
+  };
+
+  const cancelUnreachableDrag = (): void => {
+    const carried = entities.carrying();
+    if (carried?.floorLocked && !inventory.canReachEntity(carried)) {
+      entities.place(carried, carried.pos);
     }
   };
 
@@ -1900,6 +1933,21 @@ export const createSession = (options: SessionOptions) => {
     return { intent, moving, handling, readyGait };
   };
 
+  const advanceCarriedFurnitureStamina = (dt: number, intent: MoveIntent): void => {
+    const carried = entities.carrying();
+    if (carried === undefined || (intent.forward === 0 && intent.right === 0 && !intent.jump)) {
+      return;
+    }
+    spendStamina(
+      sim.needs,
+      furnitureMoveStamina(inventory, carried, 'carry') * dt,
+      bodyTuning.staminaRegenDelaySimSeconds,
+    );
+    if (sim.needs.stamina <= 0) {
+      putDownWornOut();
+    }
+  };
+
   const advancePlayerMovement = (
     dt: number,
     time: number,
@@ -1915,14 +1963,7 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
     if (carrying) {
-      spendStamina(
-        sim.needs,
-        reachTuning(registry).furnitureMove.carryStaminaPerSimSecond * dt,
-        bodyTuning.staminaRegenDelaySimSeconds,
-      );
-      if (sim.needs.stamina <= 0) {
-        putDownWornOut();
-      }
+      advanceCarriedFurnitureStamina(dt, intent);
     } else if (aim.breathHeld) {
       spendStamina(
         sim.needs,
@@ -1966,9 +2007,13 @@ export const createSession = (options: SessionOptions) => {
         descend: sampledInput().descending,
         dt,
       });
+      advanceFloorLockedDrag();
+      cancelUnreachableDrag();
       return;
     }
     advancePlayerBody(dt, time, pacedIntent);
+    advanceFloorLockedDrag();
+    cancelUnreachableDrag();
   };
 
   // The player is held still until there is ground under them. Inputs are locked
@@ -2487,7 +2532,8 @@ export const createSession = (options: SessionOptions) => {
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
-    furniturePlacement: (aimed: Readonly<Vec3>) => placement(furnitureMover(), aimed),
+    furniturePlacement: (aimed: Readonly<Vec3>) =>
+      entities.carrying()?.floorLocked ? floorLockedPlacement(furnitureMover()) : placement(furnitureMover(), aimed),
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       if (scenarioRun?.won) {

@@ -10,6 +10,7 @@ import type { BundleAdmission } from './bundleAdmission.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { liftableFurniture } from './furnitureMove.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
   footprintScaleIssue,
@@ -1177,6 +1178,9 @@ const checkFurniture = (registry: Registry, report: Report) => {
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
+    if (liftableFurniture(furniture) && furniture.massKg === undefined) {
+      report('furniture', furniture.id, '.massKg', 'liftable furniture needs an estimated mass');
+    }
     checkFurniturePower(registry, furniture, report);
     if (furniture.container) {
       checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });

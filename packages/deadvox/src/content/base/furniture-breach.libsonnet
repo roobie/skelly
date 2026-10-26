@@ -18,12 +18,22 @@
     if std.objectHas(piece, 'appearance') then surfaces[piece.appearance.surface]
     else if std.objectHas(piece, 'vehicle') || std.objectHas(piece, 'climbable') then 'steel'
     else 'wood',
+  // Estimated masses label their source as an estimate rather than claiming a measured property; content may override one.
+  estimatedMassKg(piece)::
+    local volume = piece.size[0] * piece.size[1] * piece.size[2];
+    if std.objectHas(piece, 'cover') then volume / 4
+    else if std.objectHas(piece, 'shotTarget') then 5
+    else if std.objectHas(piece, 'vehicle') then 10 * volume
+    else if $.materialOf(piece) == 'steel' then 5 * volume
+    else if $.materialOf(piece) == 'plastic' then volume
+    else 2 * volume,
   breakable(pieces):: [
     assert std.objectHas(piece, 'breach') || !leaf(piece) : 'door leaf "%s" needs its own breach' % piece.id;
     assert std.objectHas(piece, 'material') || !std.objectHas(piece, 'door') : 'door "%s" needs its own material' % piece.id;
     piece
     + (if std.objectHas(piece, 'breach') then {} else { breach: $.kindOf(piece) })
     + (if std.objectHas(piece, 'material') then {} else { material: $.materialOf(piece) })
+    + (if std.objectHas(piece, 'massKg') then {} else { massKg: $.estimatedMassKg(piece) })
     for piece in pieces
   ],
   breaking(document):: document + { furniture: $.breakable(document.furniture) },

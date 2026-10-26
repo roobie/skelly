@@ -76,7 +76,7 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
     return { lootContext: fixtureLootContext(), ...entry };
   }
   if (section === 'furniture') {
-    return { breach: fixtureBreach(), material: FIXTURE_MATERIAL, ...entry };
+    return { breach: fixtureBreach(), material: FIXTURE_MATERIAL, massKg: 1, ...entry };
   }
   const { buildings } = entry;
   return {

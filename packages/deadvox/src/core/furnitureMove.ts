@@ -2,6 +2,7 @@
 // so a refusal leaves the world as it was (`DESIGN.md`, "Moving furniture").
 
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
+import type { FurnitureDef } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
@@ -64,6 +65,26 @@ const topLayer = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] =>
   footprint([pos[0], pos[1] + size[1], pos[2]], size);
 
 const messagesOf = (inventory: Inventory) => inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+
+export type FurnitureMoveEffort = 'lift' | 'drag' | 'carry';
+
+/** The content curve for one furniture move: `base + perKg * massKg`. */
+export const furnitureMoveStamina = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  effort: FurnitureMoveEffort,
+): number => {
+  const furniture = inventory.entities.defOf(entity);
+  const massKg = inventory.entities.massKg(entity);
+  if (massKg === undefined) {
+    throw new Error(`Liftable furniture "${furniture.id}" has no mass`);
+  }
+  const { fatigue } = reachTuning(inventory.registry).furnitureMove;
+  if (effort === 'carry') {
+    return fatigue.carry.basePerSimSecond + fatigue.carry.perKgPerSimSecond * massKg;
+  }
+  return fatigue[effort].base + fatigue[effort].perKg * massKg;
+};
 
 /**
  * Which cells terrain and standing furniture fill, as a move would leave them: the move's changes over the
@@ -138,20 +159,20 @@ export const movableRefusal = (inventory: Inventory, entity: BlockEntity, blockS
   return fastened(inventory, entity) ? messages.fastened : undefined;
 };
 
+/** Whether a furniture definition can lift or drag when its placement is not fixed. */
+export const liftableFurniture = (furniture: FurnitureDef): boolean =>
+  furniture.mount === undefined &&
+  furniture.door === undefined &&
+  furniture.climbable === undefined &&
+  furniture.vehicle === undefined &&
+  furniture.scenarioGoal !== true;
+
 /** Fixed where it stands: such a piece neither lifts nor falls. */
 const fastened = (inventory: Inventory, entity: BlockEntity): boolean =>
   entity.fixed === true || fastenedKind(inventory, entity);
 
-const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean => {
-  const def = inventory.entities.defOf(entity);
-  return (
-    def.mount !== undefined ||
-    def.door !== undefined ||
-    def.climbable !== undefined ||
-    def.vehicle !== undefined ||
-    def.scenarioGoal === true
-  );
-};
+const fastenedKind = (inventory: Inventory, entity: BlockEntity): boolean =>
+  !liftableFurniture(inventory.entities.defOf(entity));
 
 const anyBodyIn = (pos: Readonly<Vec3>, size: Readonly<Vec3>, bodies: Iterable<Body>): boolean =>
   [...bodies].some((body) => boxIntersectsBody(pos, size, body));
@@ -492,7 +513,7 @@ export const liftFurniture = (mover: FurnitureMover, entity: BlockEntity, floorL
   if (handsRefusal) {
     return handsRefusal;
   }
-  if (mover.stamina < reachTuning(inventory.registry).furnitureMove.liftStamina) {
+  if (mover.stamina < furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift')) {
     return messages.tired;
   }
   const supported = supportRefusal(mover, entity, true);
@@ -535,7 +556,6 @@ const oversizedFurniture = (inventory: Inventory, entity: BlockEntity, blockSize
 const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
   const { inventory } = mover;
   const messages = messagesOf(inventory);
-  const tuning = reachTuning(inventory.registry).furnitureMove.slide;
   const refusal = inventory.entities.useRefusal(entity);
   if (refusal) {
     return refusal;
@@ -546,19 +566,10 @@ const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | unde
   if (!oversizedFurniture(inventory, entity, mover.blockSize)) {
     return messages.carryInstead;
   }
-  const chest: Vec3 = [
-    mover.player.pos[0],
-    mover.player.pos[1] + reachTuning(inventory.registry).chestHeightMetres / mover.blockSize,
-    mover.player.pos[2],
-  ];
-  if (
-    entity.carried ||
-    !inventory.canReachEntity(entity) ||
-    inventory.entities.distance(entity, chest) * mover.blockSize > tuning.reachMetres
-  ) {
+  if (entity.carried || !inventory.canReachEntity(entity)) {
     return messages.outOfReach;
   }
-  if (mover.stamina < tuning.stamina) {
+  if (mover.stamina < furnitureMoveStamina(inventory, entity, 'drag')) {
     return messages.slideTired;
   }
   return supportRefusal(mover, entity, true);
@@ -646,7 +657,11 @@ const placementBase = (entity: BlockEntity, aimed: Readonly<Vec3>): Vec3 => [
 ];
 
 /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
-export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: Vec3 } | { refusal: string } => {
+export const placement = (
+  mover: FurnitureMover,
+  aimed: Readonly<Vec3>,
+  skipTargetReach = false,
+): { pos: Vec3 } | { refusal: string } => {
   const { inventory } = mover;
   const messages = messagesOf(inventory);
   const entity = inventory.entities.carrying();
@@ -654,7 +669,7 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
     throw new Error('Not carrying a block entity');
   }
   const target: Vec3 = [aimed[0], entity.floorLocked ? entity.pos[1] : aimed[1], aimed[2]];
-  if (!inventory.canReach(target)) {
+  if (!(skipTargetReach || inventory.canReach(target))) {
     return { refusal: messages.outOfReach };
   }
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
@@ -672,6 +687,54 @@ export const placement = (mover: FurnitureMover, aimed: Readonly<Vec3>): { pos: 
   const pos: Vec3 = [base[0], landingY, base[2]];
   const refusal = standRefusal(mover, shadow, pos, entity);
   return refusal ? { refusal } : { pos };
+};
+
+type Placement = ReturnType<typeof placement>;
+
+/** Validates the held floor position with the reach rule shared by hold, set-down and cancellation. */
+export const floorLockedPlacement = (mover: FurnitureMover): Placement => {
+  const entity = mover.inventory.entities.carrying();
+  if (!entity?.floorLocked) {
+    throw new Error('Not carrying a floor-locked block entity');
+  }
+  if (!mover.inventory.canReachEntity(entity)) {
+    return { refusal: messagesOf(mover.inventory).outOfReach };
+  }
+  return placement(
+    mover,
+    [entity.pos[0] + Math.floor(entity.size[0] / 2), entity.pos[1], entity.pos[2] + Math.floor(entity.size[2] / 2)],
+    true,
+  );
+};
+
+const positioned = (result: Placement | undefined): result is { pos: Vec3 } => result !== undefined && 'pos' in result;
+
+/** The next floor cell a drag may enter; diagonal corners need both adjoining cells clear. */
+export const advanceFloorLockedPlacement = (mover: FurnitureMover, aimed: Readonly<Vec3>): Placement => {
+  const entity = mover.inventory.entities.carrying();
+  if (!entity?.floorLocked) {
+    return placement(mover, aimed);
+  }
+  const target = placementBase(entity, [aimed[0], entity.pos[1], aimed[2]]);
+  const dx = Math.sign(target[0] - entity.pos[0]);
+  const dz = Math.sign(target[2] - entity.pos[2]);
+  const candidate = (x: number, z: number) =>
+    placement(mover, [x + Math.floor(entity.size[0] / 2), entity.pos[1], z + Math.floor(entity.size[2] / 2)]);
+  const xStep = dx === 0 ? undefined : candidate(entity.pos[0] + dx, entity.pos[2]);
+  const zStep = dz === 0 ? undefined : candidate(entity.pos[0], entity.pos[2] + dz);
+  if (xStep && zStep) {
+    const diagonal = candidate(entity.pos[0] + dx, entity.pos[2] + dz);
+    if (positioned(xStep) && positioned(zStep) && positioned(diagonal)) {
+      return diagonal;
+    }
+  }
+  if (positioned(xStep)) {
+    return xStep;
+  }
+  if (positioned(zStep)) {
+    return zStep;
+  }
+  return { pos: [...entity.pos] };
 };
 
 const standRefusal = (mover: FurnitureMover, shadow: Shadow, pos: Vec3, piece: BlockEntity): string | undefined => {
@@ -713,11 +776,12 @@ const blocksApproach = (inventory: Inventory, entity: BlockEntity, cells: Readon
  */
 export const placeFurniture = (mover: FurnitureMover, aimed: Readonly<Vec3>): string | undefined => {
   const { inventory } = mover;
-  const result = placement(mover, aimed);
+  const carried = inventory.entities.carrying()!;
+  const result = carried.floorLocked ? floorLockedPlacement(mover) : placement(mover, aimed);
   if ('refusal' in result) {
     return result.refusal;
   }
-  const entity = inventory.entities.carrying()!;
+  const entity = carried;
   const shadow = new Shadow(mover.terrainSolid, inventory.entities);
   shadow.fill(entity, result.pos, true);
   const moves = resettlePiles(mover, shadow, pilesOver(inventory, [{ pos: result.pos, size: [...entity.size] }]));
