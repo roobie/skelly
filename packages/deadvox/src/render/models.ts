@@ -4,7 +4,8 @@
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
 import { MATERIALS } from '@skelly/thing-core/materials';
-import { Box3, type BufferGeometry, Group, type Material, MathUtils, Matrix4, Mesh, Object3D, Vector3 } from 'three';
+import { Bone, Box3, type BufferGeometry, Group, type Material, MathUtils, Matrix4, Mesh, Object3D, SkinnedMesh, Vector3 } from 'three';
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
@@ -105,7 +106,11 @@ export const visibleBounds = (object: Object3D): Box3 => {
   object.updateMatrixWorld(true);
   const box = new Box3();
   object.traverseVisible((child) => {
-    if (child instanceof Mesh) {
+    if (child instanceof SkinnedMesh) {
+      child.computeBoundingBox();
+      child.computeBoundingSphere();
+      box.union(child.boundingBox!.clone().applyMatrix4(child.matrixWorld));
+    } else if (child instanceof Mesh) {
       child.geometry.computeBoundingBox();
       box.union(child.geometry.boundingBox!.clone().applyMatrix4(child.matrixWorld));
     }
@@ -171,10 +176,52 @@ export const heldModelFrame = (root: Object3D): Object3D => modelFrame(root, 'he
 /** A ground copy's group in the model file's own frame, for points authored in that frame. */
 export const groundModelFrame = (root: Object3D): Object3D => modelFrame(root, 'ground');
 
+export const instantiateSkin = (scene: Object3D) => {
+  const root = cloneSkeleton(scene);
+  const bones = new Map<string, Bone>();
+  const meshes: SkinnedMesh[] = [];
+  root.traverse((node) => {
+    if (node instanceof Bone) {
+      if (bones.has(node.name)) throw new Error(`Duplicate skin joint ${node.name}`);
+      node.updateMatrix();
+      node.matrixAutoUpdate = false;
+      bones.set(node.name, node);
+    }
+    if (node instanceof SkinnedMesh) meshes.push(node);
+  });
+  if (meshes.length === 0) throw new Error('Model has no skin');
+  return {
+    root,
+    bones,
+    /** Desired joint frames in the model root's frame; preserve solver scale and shear. */
+    pose(frames: ReadonlyMap<string, Matrix4>): void {
+      root.updateMatrixWorld(true);
+      const desired = new Map<Bone, Matrix4>();
+      for (const [name, bone] of bones) {
+        const frame = frames.get(name);
+        if (!frame || !frame.elements.every(Number.isFinite) || frame.determinant() === 0) throw new Error(`Invalid or missing joint frame ${name}`);
+        desired.set(bone, root.matrixWorld.clone().multiply(frame));
+      }
+      for (const [bone, world] of desired) {
+        const parent = bone.parent;
+        const parentWorld = parent instanceof Bone ? desired.get(parent)! : parent?.matrixWorld ?? new Matrix4();
+        bone.matrix.copy(parentWorld).invert().multiply(world);
+        bone.matrixWorldNeedsUpdate = true;
+      }
+      visibleBounds(root);
+    },
+    bounds: () => visibleBounds(root),
+    dispose(): void {
+      for (const skeleton of new Set(meshes.map((mesh) => mesh.skeleton))) skeleton.dispose();
+    },
+  };
+};
+
 export class ModelLibrary {
   /** Goes up each time a model loads, so what's drawn can catch up. */
   version = 0;
   private readonly ready = new Map<string, Prepared & { actionParts: readonly ActionPartPath[] }>();
+  private readonly skins = new Map<string, Object3D>();
   /** Composed ground looks by `ItemLook.key`, so piles build each distinct look once. */
   private readonly composedGround = new Map<string, Object3D>();
 
@@ -195,6 +242,14 @@ export class ModelLibrary {
         url,
         (gltf) => {
           try {
+            let skinned = false;
+            gltf.scene.traverse((node) => { if (node instanceof SkinnedMesh) skinned = true; });
+            if (skinned) {
+              applyModelMaterials(gltf.scene, MATERIALS);
+              this.skins.set(def.id, gltf.scene);
+              this.version += 1;
+              return;
+            }
             const actionParts = actionPartPaths(gltf.scene, def.gun?.action, gltf.parser, def.gun?.revolver);
             hideSlotNodes(def, gltf.scene, gltf.parser);
             this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
@@ -210,7 +265,7 @@ export class ModelLibrary {
   }
 
   has(id: string): boolean {
-    return this.ready.has(id);
+    return this.ready.has(id) || this.skins.has(id);
   }
 
   /** Shared geometry/material parts and their prepared-ground transforms for instanced rendering. */
@@ -232,6 +287,12 @@ export class ModelLibrary {
   /** A copy of a model in its own file frame, as another model's part; undefined until it loads. */
   part(id: string): Object3D | undefined {
     return this.ready.get(id)?.scene.clone();
+  }
+
+  /** An independently posed skin; never prepared as a rigid ground or held model. */
+  skinned(id: string): ReturnType<typeof instantiateSkin> | undefined {
+    const scene = this.skins.get(id);
+    return scene ? instantiateSkin(scene) : undefined;
   }
 
   /** A part model's bounds in its own file frame. */

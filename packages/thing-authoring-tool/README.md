@@ -3,9 +3,24 @@ read_if:
   - you author or export a non-gun item
   - you inspect the thing tool's viewer or its assembly boundary
   - you change a tool item's mass, finish or geometry
+  - you investigate skin authoring or voxel deformation topology
 ---
 
 # Thing authoring tool
+
+## Skin capability gate
+
+Weights must be evaluated in common bind space after voxel meshing so duplicated
+vertices at finish boundaries cannot acquire different deformation rules. See
+`src/skin.ts`, `authoredSkin`, and `packages/thing-export/src/glb.ts`, `writeGlb`.
+
+Skin accessors alone do not prove a usable bend: greedy meshing can remove every
+vertex inside a weight band on a flat strip. The fixture gate must fail rather than
+substitute a smooth mesh or count endpoint-only deformation as a blended band.
+See `test/fixtures/bend-strip.jsonnet` and
+`packages/deadvox/test/skinExport.test.ts`, `round trips final voxel vertices with named joints, normalized weights and unchanged rest shape`.
+
+## Authoring ownership
 
 Each item has an authored row so mass has one home even when geometry builders are reused.
 A single part takes the core wrapper and can gain parts without changing the export or

@@ -28,6 +28,7 @@ import {
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
+import { SkinSchema } from './skin.ts';
 import { avatarArm, avatarLeg } from './families/avatarLimbs.ts';
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
@@ -87,6 +88,7 @@ const PartSchema = strictObject({
 const ItemSchema = strictObject({
   id: name,
   exportMass: picklist(['parts', 'inventory-atom']),
+  skin: optional(SkinSchema),
   parts: pipe(
     array(PartSchema),
     nonEmpty(),
