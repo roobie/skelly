@@ -7,7 +7,6 @@ import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 100;
-const FAR_LOD_SEED_TIMEOUT_MS = 500;
 const seedSamplingFixture = {
   ...TEMPLATES[0]!,
   name: 'test-seed-sampling-fixture',
@@ -284,15 +283,11 @@ describe('validation profiles', () => {
 
   sweepGroup('far LOD silhouette validation', () => {
     for (const template of HUMANOID_TEMPLATES) {
-      it(
-        `passes for every full-valid ${template.name} genome in ${SEEDS} seeds at 1/6, 1/4 and 1/2 block`,
-        () => {
-          const { validSources, failures } = validateFarLodSeeds(template);
-          expect(validSources, 'full-valid sources').toBeGreaterThan(0);
-          expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
-        },
-        SEEDS * FAR_LOD_SEED_TIMEOUT_MS,
-      );
+      it(`passes for every full-valid ${template.name} genome in ${SEEDS} seeds at 1/6, 1/4 and 1/2 block`, () => {
+        const { validSources, failures } = validateFarLodSeeds(template);
+        expect(validSources, 'full-valid sources').toBeGreaterThan(0);
+        expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
+      });
     }
   });
 });
@@ -312,23 +307,19 @@ describe('templates', () => {
   }
 
   sweepGroup('head volume sweep', () => {
-    it(
-      'shambler head+jaw voxel count is within the template budget on average',
-      () => {
-        const t = TEMPLATES.find((x) => x.name === 'shambler')!;
-        const head = t.budgets.groups.head!;
-        let sum = 0;
-        for (let seed = 0; seed < SEEDS; seed++) {
-          const { report } = realize(generate(t, seed));
-          sum += (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
-        }
-        const mean = sum / SEEDS;
-        // Bounds come from the template itself (packages/mobgen/src/mob/templates.ts), not repeated here, so a
-        // deliberate head-size retune (e.g. the 5-voxel-wide face) can't leave this test stale.
-        expect(mean).toBeGreaterThanOrEqual(head.min);
-        expect(mean).toBeLessThanOrEqual(head.max);
-      },
-      SEEDS * 100,
-    );
+    it('shambler head+jaw voxel count is within the template budget on average', () => {
+      const t = TEMPLATES.find((x) => x.name === 'shambler')!;
+      const head = t.budgets.groups.head!;
+      let sum = 0;
+      for (let seed = 0; seed < SEEDS; seed++) {
+        const { report } = realize(generate(t, seed));
+        sum += (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
+      }
+      const mean = sum / SEEDS;
+      // Bounds come from the template itself (packages/mobgen/src/mob/templates.ts), not repeated here, so a
+      // deliberate head-size retune (e.g. the 5-voxel-wide face) can't leave this test stale.
+      expect(mean).toBeGreaterThanOrEqual(head.min);
+      expect(mean).toBeLessThanOrEqual(head.max);
+    });
   });
 });
