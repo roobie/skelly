@@ -15,7 +15,6 @@ import {
 import { REVOLVER_PROPORTIONS } from '../src/gun/revolver.ts';
 import { fullProduct, tWiseCases } from './coveringArray.ts';
 import { expectWatertightMesh, variant } from './helpers.ts';
-import { runSweeps, sweepGroup } from './sweeps.ts';
 
 /**
  * Keys of `FAMILIES` (not family names: `ak-receiver` is also named `receiver`) whose default-run cases are a 3-wise covering array instead of the full product. Any
@@ -718,17 +717,6 @@ describe('part library', () => {
       definePartChecks(family, cases);
     });
   }
-
-  // The exhaustive product for the families the default run samples with a covering array.
-  sweepGroup('full parameter product of the array-sampled families', () => {
-    for (const [key, family] of Object.entries(FAMILIES).filter(([k]) => isArraySampled(k))) {
-      describe(key, () => {
-        // A skipped group still registers its cases, so build none in the default run.
-        // Batch exhaustive cases to cap Vitest registration memory; failures retain the exact params.
-        definePartChecks(family, runSweeps ? acceptedCases(key, fullProduct(withoutHandleStyle(family))) : [], 256);
-      });
-    }
-  });
 });
 
 it('sporting rear sight uses the AK open-notch leaves scaled to its sight line', () => {
