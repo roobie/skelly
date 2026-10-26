@@ -3496,7 +3496,7 @@ export const startPlay = (
         paused: sim.paused,
         noclip: debugTools?.noclip ?? false,
         yaw: spectator.avatarYaw(input.yaw),
-        pitch: input.pitch,
+        pitch: spectator.avatarPitch(input.pitch),
         stridePhase: session.playerStridePhase,
         stance: session.stance,
         eye: eye(),

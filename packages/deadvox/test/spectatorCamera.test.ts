@@ -119,20 +119,26 @@ describe('spectator camera', () => {
     expect(observed(attached.session).pos).not.toEqual(observed(reference.session).pos);
   });
 
-  it('keeps the avatar facing where it was when look input turns only the camera', () => {
+  it('keeps the avatar aim where it was when look input turns only the camera', () => {
     const spectator = new SpectatorCamera();
-    let look = 0.4;
-    const controls = { ...idleControls(), yaw: () => look };
+    let yaw = 0.4;
+    let pitch = 0.1;
+    const controls = { ...idleControls(), yaw: () => yaw, pitch: () => pitch };
     const { session } = runtime(spectator.guard(controls));
-    expect(spectator.avatarYaw(look)).toBe(look);
+    expect(spectator.avatarYaw(yaw)).toBe(yaw);
+    expect(spectator.avatarPitch(pitch)).toBe(pitch);
 
-    spectator.toggle(session.body, eyeOf(session), look, 0.1);
-    look += 1.3;
-    expect(spectator.avatarYaw(look)).toBe(0.4);
+    spectator.toggle(session.body, eyeOf(session), yaw, pitch);
+    yaw += 1.3;
+    pitch -= 0.7;
+    expect(spectator.avatarYaw(yaw)).toBe(0.4);
+    expect(spectator.avatarPitch(pitch)).toBe(0.1);
     expect(spectator.guard(controls).yaw()).toBe(0.4);
+    expect(spectator.guard(controls).pitch()).toBe(0.1);
 
-    spectator.toggle(session.body, eyeOf(session), look, 0.1);
-    expect(spectator.avatarYaw(look)).toBe(look);
+    spectator.toggle(session.body, eyeOf(session), yaw, pitch);
+    expect(spectator.avatarYaw(yaw)).toBe(yaw);
+    expect(spectator.avatarPitch(pitch)).toBe(pitch);
   });
 
   it('refuses avatar commands while detached but keeps debug and menu commands', () => {
