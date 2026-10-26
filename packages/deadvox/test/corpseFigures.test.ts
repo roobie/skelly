@@ -1,11 +1,14 @@
-import { Box3, Color, Mesh, type MeshStandardMaterial, type Object3D } from 'three';
+import { Box3, Color, Mesh, type MeshStandardMaterial, type Object3D, Quaternion, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { type ContentSource, validateContent } from '../src/core/content.ts';
+import { Inventory } from '../src/core/inventory.ts';
 import { rotatedSize, rotationOf } from '../src/core/orientation.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
+import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { CorpseFigures } from '../src/render/corpseFigures.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -88,6 +91,42 @@ describe('dead human bodies', () => {
       }
     }
     expect(figureSlotColours()).toEqual(UNDRESSED);
+  });
+
+  it('shows a carried dead human, fitted to the carry size, once models that were still loading arrive', () => {
+    let loaded = false;
+    const loading = {
+      version: 0,
+      has: (id: string) => loaded && models.has(id),
+      part: (id: string) => (loaded ? models.part(id) : undefined),
+    } as unknown as ModelLibrary;
+    const inventory = new Inventory(registry);
+    const def = deadHumans[0]!;
+    const entity = inventory.furnish({ type: def.id, pos: [0, 0, 0], size: def.size, facing: 'n' })!;
+    inventory.entities.lift(entity);
+    const corpses = new CorpseFigures(BLOCK_SIZE, registry, loading);
+    const tuning = reachTuning(registry).furnitureMove.carriedView;
+    const carried = new CarriedPiece(
+      inventory.entities,
+      (e, d) => corpses.figure(e, d),
+      tuning,
+      () => loading.version,
+    );
+    const shownSize = (): number => {
+      carried.update(0, new Quaternion());
+      carried.group.updateMatrixWorld(true);
+      const meshes: Object3D[] = [];
+      carried.group.traverseVisible((object) => (object instanceof Mesh ? meshes.push(object) : undefined));
+      const box = new Box3();
+      for (const mesh of meshes) {
+        box.expandByObject(mesh);
+      }
+      return box.isEmpty() ? 0 : Math.max(...box.getSize(new Vector3()).toArray());
+    };
+    expect(shownSize(), 'nothing to show before the models load').toBe(0);
+    loaded = true;
+    loading.version += 1;
+    expect(shownSize()).toBeCloseTo(tuning.sizeMetres, 6);
   });
 
   it('names only slots the figure models carry in every outfit', () => {

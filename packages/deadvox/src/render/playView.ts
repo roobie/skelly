@@ -290,6 +290,7 @@ export const createPlayView = (
     inventory.entities,
     (entity, def) => (def.corpse ? corpses.figure(entity, def) : furniture.pieceMesh(entity, def)),
     reachTuning(registry).furnitureMove.carriedView,
+    () => models.version,
   );
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
