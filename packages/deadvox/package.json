@@ -34,6 +34,7 @@
     "test:browser:firefox:native": "timeout 300 node test/browser/firefox-first-click.mjs",
     "test:browser:firefox:continue": "SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=continue timeout 300 node test/browser/save-storage.mjs firefox",
     "probe:render": "node tools/render-probe.mjs",
+    "probe:wall-cost": "node tools/wall-spike-cost.mjs",
     "probe:decals": "node tools/decal-probe.mjs",
     "probe:furniture": "node tools/furniture-detail-probe.mjs",
     "probe:glyph-widths": "node tools/grid-name-glyph-widths.mjs",
