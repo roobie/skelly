@@ -811,6 +811,25 @@ const checkInventoryNameCollisions = (items: readonly ItemDef[], report: Report)
   }
 };
 
+const checkTorsoFits = (item: ItemDef, index: number, registry: Registry, report: Report): void => {
+  const fits = item.figureModels![index]!.overTorso;
+  if (!fits) {
+    return;
+  }
+  const path = `.figureModels[${index}].overTorso`;
+  for (const [fit, model] of Object.entries(fits)) {
+    if (!registry.models.has(model)) {
+      report('items', item.id, `${path}.${fit}`, `no model "${model}"`);
+    }
+  }
+  for (const under of registry.items.values()) {
+    const fit = under.wearable?.figureFit;
+    if (fit && !Object.hasOwn(fits, fit)) {
+      report('items', item.id, path, `no fit "${fit}" selected by "${under.id}"`);
+    }
+  }
+};
+
 const checkWearableModels = (item: ItemDef, registry: Registry, report: Report): void => {
   const view = item.wearable?.viewModel;
   if (view && !registry.models.has(view.model)) {
@@ -821,9 +840,29 @@ const checkWearableModels = (item: ItemDef, registry: Registry, report: Report):
     if (!registry.models.has(entry.model)) {
       report('items', item.id, `${path}.model`, `no model "${entry.model}"`);
     }
-    for (const figure of registry.figures.values()) {
-      if (!figure.attachmentFrames[entry.frame]) {
-        report('items', item.id, `${path}.frame`, `figure "${figure.id}" has no frame "${entry.frame}"`);
+    checkTorsoFits(item, index, registry, report);
+    checkFigureAttachment(item, index, registry, report);
+  }
+};
+
+const checkFigureAttachment = (item: ItemDef, index: number, registry: Registry, report: Report): void => {
+  const entry = item.figureModels![index]!;
+  const path = `.figureModels[${index}]`;
+  for (const figure of registry.figures.values()) {
+    const frame = figure.attachmentFrames[entry.frame];
+    if (!frame) {
+      report('items', item.id, `${path}.frame`, `figure "${figure.id}" has no frame "${entry.frame}"`);
+      continue;
+    }
+    const model = frame.part === 'body' ? figure.body.model : figure.limbs[frame.part].model;
+    for (const [coverIndex, part] of (entry.covers ?? []).entries()) {
+      if (!registry.models.get(model)?.parts?.[part]) {
+        report(
+          'items',
+          item.id,
+          `${path}.covers[${coverIndex}]`,
+          `figure "${figure.id}": model "${model}" has no part "${part}"`,
+        );
       }
     }
   }

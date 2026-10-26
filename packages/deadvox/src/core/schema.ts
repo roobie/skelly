@@ -923,6 +923,7 @@ const CompressionTuningSchema = strictObject({
 const WearableSchema = pipe(
   strictObject({
     slot: picklist(CLOTHING_SLOTS),
+    figureFit: optional(Id),
     viewModel: optional(
       strictObject({
         model: Id,
@@ -943,6 +944,10 @@ const WearableSchema = pipe(
       ),
     ),
   }),
+  check(
+    (wearable) => wearable.figureFit === undefined || wearable.slot === 'torso',
+    'an under-layer fit requires the torso slot',
+  ),
   check(
     (wearable) => wearable.viewModel === undefined || wearable.slot === 'head',
     'a first-person model requires the head slot',
@@ -1476,7 +1481,9 @@ const ItemSchema = strictObject({
     array(
       strictObject({
         model: Id,
+        overTorso: optional(record(Id, Id)),
         frame: Id,
+        covers: optional(array(Id)),
         pivot: tuple([number(), number(), number()]),
         at: tuple([number(), number(), number()]),
         turn: tuple([number(), number(), number()]),
@@ -3674,10 +3681,10 @@ const FigureSchema = strictObject({
     blendRealSeconds: PositiveRealSeconds,
   }),
   /**
-   * Clothing looks by id, each a colour for every material slot it repaints; slots it leaves out keep the model's own
-   * colour (`DESIGN.md`, "Dead humans").
+   * Temporary corpse role tint by outfit id, with a colour per model part's material slot. Omitted slots keep the
+   * model colour. This is not clothing; delete with #1366 (`DESIGN.md`, "Dead humans").
    */
-  outfits: record(Id, record(Id, Color)),
+  outfits: record(Id, record(Id, record(Id, Color))),
   /** How a dead body lies. It rests on its lowest point, so it has no hip drop. */
   corpsePose: omit(StancePoseSchema, ['hipDropMetres']),
 });

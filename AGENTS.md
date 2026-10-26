@@ -211,8 +211,10 @@ push to a PR, so don't repeat it locally.
   - only the browser stage(s) that exercise the behaviour you changed, once each.
   - Build only if build config changed; a project's `test:sweeps` only if the change is in a
     gated test's path.
-  - The pre-push hook runs root `npm run ci` and `npm run test:site`. The root `prepare`
-    script configures Git to use `.githooks`; if the hook is missing, run
+  - The pre-push hook runs root `npm run ci:checks` and `npm run test:site`; CI runs
+    `content:check` before those shared checks. Content drift is caught at CI so the hook
+    avoids the content compile time. The root `prepare` script configures Git to use
+    `.githooks`; if the hook is missing, run
     `git config core.hooksPath .githooks`.
 - **CI** runs the full matrix except the gated slow tests, including Deadvox's whole
   `test:ui-browser`. Open a draft PR

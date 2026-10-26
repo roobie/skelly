@@ -36,7 +36,8 @@ defects before they reach `main`.
   or force-push a published branch. Reviews, CI runs and BR's looks are tied to exact head
   SHAs, and rewriting history would invalidate them and lose what others built on.
 - **Don't bypass the pre-push hook** with `--no-verify` to get past a real failure. The
-  hook runs the same root checks as CI, so a bypass only moves the failure to CI.
+  hook runs CI's shared root checks, while CI also checks generated content. A bypass only
+  moves a shared-check failure to CI; content drift is caught there to keep the hook fast.
 
 ## Merge and clean up
 

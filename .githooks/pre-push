@@ -40,5 +40,5 @@ run_check() {
   exit 1
 }
 
-run_check 'npm run ci' run ci
+run_check 'npm run ci:checks' run ci:checks
 run_check 'npm run test:site' run test:site

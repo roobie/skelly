@@ -48,6 +48,7 @@ export class HeldItems {
   private readonly ambient = new HemisphereLight();
   private skyVisibility = 1;
   private readonly animator: ActorAnimator;
+  private readonly presentation: HeldPresentation;
   private visor: Object3D | undefined;
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private drawn = '';
@@ -82,6 +83,7 @@ export class HeldItems {
       frame: this.physical,
       torso: this.torso,
     });
+    this.presentation = presentation;
     this.animator = new ActorAnimator(inventory, presentation, (side) => this.viewShoulder(side));
     if (sunSource) {
       this.light.shadow = sunSource.shadow;
@@ -132,6 +134,7 @@ export class HeldItems {
         poseItem: (frame) => this.poseOptic(frame, main),
       },
     });
+    this.presentation.syncWorn(this.inventory);
     this.view.position.copy(main.position);
     this.view.quaternion.copy(main.quaternion);
     this.camera.position.copy(main.position);
