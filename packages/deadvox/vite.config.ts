@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
@@ -188,6 +188,29 @@ function bundledModListPlugin() {
 // and the DOM) must never be reachable through this alias; see test/mobgenBoundary.test.ts.
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
+// Tests that build whole worlds, city plans or scenario walks run only under DEADVOX_SWEEPS, in the manual
+// slow-test workflow; `AGENTS.md`, "Tests" says why. These files are slow throughout. A file that also holds fast
+// tests keeps them in the default run and gates its slow cases with test/sweeps.ts, `sweepGroup`.
+const SLOW_TEST_FILES = [
+  'test/gauntletHqThreat.test.ts',
+  'test/gauntletLoot.test.ts',
+  'test/gauntletRoutes.test.ts',
+  'test/playtestLootChart.test.ts',
+  'test/scenarioCertificate.test.ts',
+  'test/scenarioStart.test.ts',
+];
+// biome-ignore lint/style/noProcessEnv: the slow-test gate is env-driven; see test/sweeps.ts.
+const runSweeps = process.env.DEADVOX_SWEEPS === '1';
+const sweepCaseFiles = (): string[] =>
+  readdirSync(resolve(packageRoot, 'test'))
+    .filter((name) => name.endsWith('.test.ts'))
+    .map((name) => `test/${name}`)
+    .filter((path) => readFileSync(resolve(packageRoot, path), 'utf8').includes("from './sweeps.ts'"));
+// The gated run has no per-test timer: its work is bounded, so only the workflow's job timeout caps a hang.
+const testFiles = runSweeps
+  ? { include: [...new Set([...SLOW_TEST_FILES, ...sweepCaseFiles()])], testTimeout: 0 }
+  : { include: ['test/**/*.test.ts'], exclude: [...configDefaults.exclude, ...SLOW_TEST_FILES] };
+
 export default defineConfig({
   plugins: [
     // biome-ignore lint/style/noProcessEnv: publication tooling opts into the analytics described by its consent page.
@@ -223,7 +246,7 @@ export default defineConfig({
   worker: { format: 'es' },
   test: {
     ...TEST_POOL,
-    include: ['test/**/*.test.ts'],
+    ...testFiles,
     globalSetup: ['test/baseRegistrySetup.ts'],
   },
 });

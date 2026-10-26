@@ -13,7 +13,6 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 import {
   capture,
   contentLookup,
@@ -22,6 +21,7 @@ import {
   formatVersion,
   registry,
 } from './snapshotTestSupport.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const messages = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
 const { blockSize } = makeScale(0.5);
@@ -222,35 +222,31 @@ describe('a cover over a hatch', () => {
   });
 });
 
-describe('the secret house', () => {
-  it(
-    'has one cover lying over every cell of its hatch, which can be lifted',
-    () => {
-      const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-      const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
-      const [house] = city.plan.placements.filter(({ template }) => template.id === 'gauntlet_city_cellar_secret');
-      const all = specsOf(city, [house!]);
-      const hatches = all.filter((spec) => registry.furniture.get(spec.type)?.door?.hatch);
-      const covers = all.filter(
-        (spec) => registry.furniture.get(spec.type)?.cover && hatches.some((hatch) => lies(spec, hatch)),
-      );
-      expect(covers.length).toBeGreaterThan(0);
-      const [cover] = covers;
-      const under = hatches.filter((hatch) => lies(cover!, hatch));
-      expect(under.length).toBeGreaterThan(0);
-      const covered = new Set(
-        [...cellsOf(cover!.size)].map((cell) => `${cell[0] + cover!.pos[0]},${cell[2] + cover!.pos[2]}`),
-      );
-      for (const cell of cellsOf(under[0]!.size)) {
-        expect(covered.has(`${cell[0] + under[0]!.pos[0]},${cell[2] + under[0]!.pos[2]}`)).toBe(true);
-      }
+sweepGroup('the secret house', () => {
+  it('has one cover lying over every cell of its hatch, which can be lifted', () => {
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
+    const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+    const [house] = city.plan.placements.filter(({ template }) => template.id === 'gauntlet_city_cellar_secret');
+    const all = specsOf(city, [house!]);
+    const hatches = all.filter((spec) => registry.furniture.get(spec.type)?.door?.hatch);
+    const covers = all.filter(
+      (spec) => registry.furniture.get(spec.type)?.cover && hatches.some((hatch) => lies(spec, hatch)),
+    );
+    expect(covers.length).toBeGreaterThan(0);
+    const [cover] = covers;
+    const under = hatches.filter((hatch) => lies(cover!, hatch));
+    expect(under.length).toBeGreaterThan(0);
+    const covered = new Set(
+      [...cellsOf(cover!.size)].map((cell) => `${cell[0] + cover!.pos[0]},${cell[2] + cover!.pos[2]}`),
+    );
+    for (const cell of cellsOf(under[0]!.size)) {
+      expect(covered.has(`${cell[0] + under[0]!.pos[0]},${cell[2] + under[0]!.pos[2]}`)).toBe(true);
+    }
 
-      const inventory = new Inventory(registry);
-      const piece = inventory.furnish(cover!)!;
-      expect(movableRefusal(inventory, piece, blockSize)).toBeUndefined();
-    },
-    GAUNTLET_SITE_MS,
-  );
+    const inventory = new Inventory(registry);
+    const piece = inventory.furnish(cover!)!;
+    expect(movableRefusal(inventory, piece, blockSize)).toBeUndefined();
+  });
 });
 
 describe('the content check for covers', () => {
@@ -321,42 +317,38 @@ const onlyTarpYards = (data: { mapAssemblies?: { slots: Slotted[] }[] }) => ({
   }),
 });
 
-describe('tarps', () => {
-  it(
-    'never lie over a hatch and keep clear of doors and ladders',
-    () => {
-      const built = buildRegistry(
-        readdirSync(BASE)
-          .filter((file) => file.endsWith('.json'))
-          .sort()
-          .map((file) => ({ source: file, data: onlyTarpYards(JSON.parse(readFileSync(join(BASE, file), 'utf8'))) })),
-      );
-      expect(built.issues).toEqual([]);
-      const tarpYards = built.registry;
-      const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
-      const city = new GauntletSite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
-      const all = specsOf(city, city.plan.placements);
-      const tarps = all.filter((spec) => spec.type === 'tarp');
-      expect(tarps.length).toBeGreaterThan(0);
-      const reserved = all.filter((spec) => {
-        const def = registry.furniture.get(spec.type);
-        return def?.door || def?.climbable;
-      });
-      const aboveHatches = new Set(
-        all
-          .filter((spec) => registry.furniture.get(spec.type)?.door?.hatch)
-          .flatMap((hatch) =>
-            cells({ pos: [hatch.pos[0], hatch.pos[1] + hatch.size[1], hatch.pos[2]], size: hatch.size }),
-          ),
-      );
-      const reservedCells = new Set(reserved.flatMap(cells));
-      for (const tarp of tarps) {
-        for (const key of cells(tarp)) {
-          expect(aboveHatches.has(key)).toBe(false);
-          expect(reservedCells.has(key)).toBe(false);
-        }
+sweepGroup('tarps', () => {
+  it('never lie over a hatch and keep clear of doors and ladders', () => {
+    const built = buildRegistry(
+      readdirSync(BASE)
+        .filter((file) => file.endsWith('.json'))
+        .sort()
+        .map((file) => ({ source: file, data: onlyTarpYards(JSON.parse(readFileSync(join(BASE, file), 'utf8'))) })),
+    );
+    expect(built.issues).toEqual([]);
+    const tarpYards = built.registry;
+    const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
+    const city = new GauntletSite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
+    const all = specsOf(city, city.plan.placements);
+    const tarps = all.filter((spec) => spec.type === 'tarp');
+    expect(tarps.length).toBeGreaterThan(0);
+    const reserved = all.filter((spec) => {
+      const def = registry.furniture.get(spec.type);
+      return def?.door || def?.climbable;
+    });
+    const aboveHatches = new Set(
+      all
+        .filter((spec) => registry.furniture.get(spec.type)?.door?.hatch)
+        .flatMap((hatch) =>
+          cells({ pos: [hatch.pos[0], hatch.pos[1] + hatch.size[1], hatch.pos[2]], size: hatch.size }),
+        ),
+    );
+    const reservedCells = new Set(reserved.flatMap(cells));
+    for (const tarp of tarps) {
+      for (const key of cells(tarp)) {
+        expect(aboveHatches.has(key)).toBe(false);
+        expect(reservedCells.has(key)).toBe(false);
       }
-    },
-    GAUNTLET_SITE_MS,
-  );
+    }
+  });
 });

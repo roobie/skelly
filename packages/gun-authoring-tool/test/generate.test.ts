@@ -131,9 +131,8 @@ sweepGroup('templates', () => {
   for (const t of TEMPLATES) {
     const chunkSize = t.name === 'ar' || t.name === 'ak' ? 10 : CHUNK;
     describe(t.name, () => {
-      // Chunked by seed range so each test stays well inside the default timeout; the sweep
-      // runs only in CI (see sweeps.ts) and its timeouts are never raised. The AR and AK families
-      // are costly, so they use smaller chunks. The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
+      // Chunked by seed range so a failure names its seeds; the sweep runs only in the manual
+      // slow-test workflow (see sweeps.ts). The AR and AK families are costly, so they use smaller chunks. The half-valid floor is an aggregate over all SEEDS seeds, so chunks tally into a
       // memoized count and one final test asserts it (computing any chunk that has not run, e.g. under `-t`).
       // Each chunk test also records its valid count, so the final test is normally free.
       const validIn = new Map<number, number>();

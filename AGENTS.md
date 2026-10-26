@@ -170,15 +170,22 @@ So:
 - Each test protects one specific behaviour or constraint, and its name says which. Don't
   add a near-duplicate case for comfort.
 - Prefer targeted cases and covering arrays (every pair or triple of parameter values)
-  over full cartesian products and long seed loops. Exhaustive sweeps go behind the
-  project's sweep flag (gungen: `GUNGEN_SWEEPS`), and only if something runs that flag.
+  over full cartesian products and long seed loops.
+- **Slow tests run only on demand.** Tests that build whole worlds or city plans, walk
+  scenarios, or sweep seeds and variants stay out of the default run, the pre-push hook and
+  per-PR CI. They run under the project's sweep flag in the manually triggered workflow
+  `.github/workflows/slow-tests.yml`, without wall-clock budgets. At pre-pre-alpha they
+  cost too much to pay on every change, and a seed that blocks a route is a bug to file
+  from the manual run, not a gate on every PR. See `packages/deadvox/vite.config.ts`,
+  `SLOW_TEST_FILES`; `packages/deadvox/test/sweeps.ts`, `sweepGroup`; and
+  `packages/gun-authoring-tool/test/sweeps.ts`, `sweepGroup`.
 - Measure before adding or cutting: coverage classes show which cases exercise the same
   code; mutation testing (inject small bugs, see which tests catch them) shows which
   tests actually detect anything. A removal states what the test protected and which
   remaining test still catches it, or, for drifting data, names its row in
   `docs/deferred-assertions.md`.
-- Keep the default run fast and deterministic. A slow test gets split, or a timeout
-  proportional to its work, never a flat generous one.
+- Keep the default run fast and deterministic. A slow test gets split or gated as above,
+  never a flat generous timeout.
 
 Detailed guidance: `packages/gun-authoring-tool/PROJECT.md`, "Testing".
 
@@ -201,11 +208,13 @@ push to a PR, so don't repeat it locally.
   - `validate` if content or schema changed;
   - Lit if UI changed;
   - only the browser stage(s) that exercise the behaviour you changed, once each.
-  - Build only if build config changed; Gungen `test:sweeps` only if the change is in a sweep's path.
+  - Build only if build config changed; a project's `test:sweeps` only if the change is in a
+    gated test's path.
   - The pre-push hook runs root `npm run ci` and `npm run test:site`. The root `prepare`
     script configures Git to use `.githooks`; if the hook is missing, run
     `git config core.hooksPath .githooks`.
-- **CI** runs the full matrix, including Deadvox's whole `test:ui-browser`. Open a draft PR
+- **CI** runs the full matrix except the gated slow tests, including Deadvox's whole
+  `test:ui-browser`. Open a draft PR
   at a feature's first push, so every later push is checked. Cite the CI run instead of
   re-running stages locally, and fix a red job in the next push.
 - **Mutation proof:** only where "Tests" calls for it (tricky invariants): one mutant,

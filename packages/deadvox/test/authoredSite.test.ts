@@ -34,6 +34,7 @@ import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { content as BUNDLED_CONTENT, configFromUrl } from './fixtures/startupContent.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const base = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -381,34 +382,36 @@ describe('authored layout acceptance', () => {
       expect(nearestTrackEdge).toBeGreaterThan(bodyRadius);
     }
   });
-  it('carries a spawn window from a template marker into its world column', () => {
-    const templateSource = base.find((file) => file.source === 'templates.json')!;
-    const templateFile = structuredClone(templateSource.data) as { templates: TemplateDef[] };
-    const building = layout.buildings[0]!;
-    const templateIndex = templateFile.templates.findIndex(({ id }) => id === building.template);
-    const definition = templateFile.templates[templateIndex]!;
-    const air = Object.entries(definition.palette).find(([, entry]) => entry === 'air')?.[0];
-    expect(air).toBeDefined();
-    const used = new Set(Object.keys(definition.palette));
-    const markerChar = ['@', '$', '?', '!'].find((char) => !used.has(char));
-    expect(markerChar).toBeDefined();
-    const timedTemplate = withClearTemplateSpawn(registry, definition, markerChar!, air!);
-    expect(timedTemplate).toBeDefined();
-    templateFile.templates[templateIndex] = timedTemplate!;
-    const files = base.map((file) =>
-      file.source === templateSource.source ? { source: file.source, data: templateFile } : file,
-    );
-    const result = buildRegistry([...files, { source: 'layout-test.json', data: { layouts: [layout] } }]);
-    expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
-    const admitted = result.registry.layouts.get(layout.id)!;
-    const placement = placementOf(result.registry, admitted.buildings[0]!);
-    const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
-    expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
-    const site = new AuthoredSite(1, result.registry, scale, admitted);
-    expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
-      type: 'shambler',
-      pos: expected.pos,
-      window: { fromGameTimeOfDay: 'dusk' },
+  sweepGroup('from a re-admitted base pack', () => {
+    it('carries a spawn window from a template marker into its world column', () => {
+      const templateSource = base.find((file) => file.source === 'templates.json')!;
+      const templateFile = structuredClone(templateSource.data) as { templates: TemplateDef[] };
+      const building = layout.buildings[0]!;
+      const templateIndex = templateFile.templates.findIndex(({ id }) => id === building.template);
+      const definition = templateFile.templates[templateIndex]!;
+      const air = Object.entries(definition.palette).find(([, entry]) => entry === 'air')?.[0];
+      expect(air).toBeDefined();
+      const used = new Set(Object.keys(definition.palette));
+      const markerChar = ['@', '$', '?', '!'].find((char) => !used.has(char));
+      expect(markerChar).toBeDefined();
+      const timedTemplate = withClearTemplateSpawn(registry, definition, markerChar!, air!);
+      expect(timedTemplate).toBeDefined();
+      templateFile.templates[templateIndex] = timedTemplate!;
+      const files = base.map((file) =>
+        file.source === templateSource.source ? { source: file.source, data: templateFile } : file,
+      );
+      const result = buildRegistry([...files, { source: 'layout-test.json', data: { layouts: [layout] } }]);
+      expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+      const admitted = result.registry.layouts.get(layout.id)!;
+      const placement = placementOf(result.registry, admitted.buildings[0]!);
+      const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === 'dusk')!;
+      expect(expected.window).toEqual({ fromGameTimeOfDay: 'dusk' });
+      const site = new AuthoredSite(1, result.registry, scale, admitted);
+      expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
+        type: 'shambler',
+        pos: expected.pos,
+        window: { fromGameTimeOfDay: 'dusk' },
+      });
     });
   });
   it('carries a spawn window from an authored marker into its world column', () => {
@@ -983,50 +986,52 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   }
 });
 
-it('grounds a seed-owned woodland tree in the lot blend rather than on the raw ridge', () => {
-  const ridge = structuredClone(registry.layouts.get('hunting_cabins')!);
-  const fixture: SiteLayoutDef = {
-    ...ridge,
-    id: 'ridge_tree_blend',
-    buildings: [44, 52, 60, 68, 76, 84].map((cx) => {
-      const building = {
-        template: 'shed',
-        lootContext: registry.templates.get('shed')!.lootContext,
-        position: [cx - 1.5, 0, 67.5] as [number, number, number],
-        rotation: 90 as const,
-      };
-      building.position[1] = defaultFoundation(ridge, buildingBounds(building, registry.templates.get('shed')!.size));
-      return building;
-    }),
-    tracks: [],
-    woodlands: [
-      {
-        polygon: [
-          [38, 62],
-          [90, 62],
-          [90, 82],
-          [38, 82],
-        ],
-        density: 1,
-      },
-    ],
-  };
-  expect(load(fixture).issues).toEqual([]);
-  const site = new AuthoredSite(28, registry, scale, fixture);
-  // Six steep-flank lots offer several tree-cell opportunities in the uphill blend.
-  // Protect grounding, not a particular seeded tree mix or canopy position.
-  let witnesses = 0;
-  for (const tree of site.trees) {
-    const [x, y, z] = tree.origin;
-    expect(y).toBe(site.surface.height(x, z, fixture.ground / scale.blockSize) + 1);
-    const raw =
-      Math.round(profileHeight(fixture, (x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize) / scale.blockSize) +
-      1;
-    if (raw !== y) {
-      witnesses += 1;
+sweepGroup('on a ridge site', () => {
+  it('grounds a seed-owned woodland tree in the lot blend rather than on the raw ridge', () => {
+    const ridge = structuredClone(registry.layouts.get('hunting_cabins')!);
+    const fixture: SiteLayoutDef = {
+      ...ridge,
+      id: 'ridge_tree_blend',
+      buildings: [44, 52, 60, 68, 76, 84].map((cx) => {
+        const building = {
+          template: 'shed',
+          lootContext: registry.templates.get('shed')!.lootContext,
+          position: [cx - 1.5, 0, 67.5] as [number, number, number],
+          rotation: 90 as const,
+        };
+        building.position[1] = defaultFoundation(ridge, buildingBounds(building, registry.templates.get('shed')!.size));
+        return building;
+      }),
+      tracks: [],
+      woodlands: [
+        {
+          polygon: [
+            [38, 62],
+            [90, 62],
+            [90, 82],
+            [38, 82],
+          ],
+          density: 1,
+        },
+      ],
+    };
+    expect(load(fixture).issues).toEqual([]);
+    const site = new AuthoredSite(28, registry, scale, fixture);
+    // Six steep-flank lots offer several tree-cell opportunities in the uphill blend.
+    // Protect grounding, not a particular seeded tree mix or canopy position.
+    let witnesses = 0;
+    for (const tree of site.trees) {
+      const [x, y, z] = tree.origin;
+      expect(y).toBe(site.surface.height(x, z, fixture.ground / scale.blockSize) + 1);
+      const raw =
+        Math.round(profileHeight(fixture, (x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize) / scale.blockSize) +
+        1;
+      if (raw !== y) {
+        witnesses += 1;
+      }
     }
-  }
-  expect(witnesses, 'lot blend should affect the grounded height of a woodland tree').toBeGreaterThan(0);
+    expect(witnesses, 'lot blend should affect the grounded height of a woodland tree').toBeGreaterThan(0);
+  });
 });
 
 it('keeps adjacent lot floors, apron blending and footprint ties independent of building order', () => {
