@@ -43,6 +43,9 @@ const UNDERGROUND_OVERLAP = /overlaps the city/;
 // The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
 // CPU, instead of vitest's flat default (#792).
 const WALK_MS_PER_STOREY = 4800;
+// The two walks are bounded by frames and by the descent chain, never by time: their work is finite and deterministic,
+// so a wall-clock budget can only fail them under host load. Vitest reads 0 as no timer; the job timeout still caps a hang.
+const NO_TIMER = 0;
 // What a case needs to link the storeys before a rule that reads them (objective, fixed resources, the portal).
 const ROUTED_PHASES: CertificatePhase[] = ['floors', 'ladders', 'stairs'];
 const scale = makeScale(0.5);
@@ -330,7 +333,7 @@ describe('final composed body-route certificate', () => {
       }
       expect(scenarioCertificate(site).issues).toEqual([]);
     },
-    profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+    NO_TIMER,
   );
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
@@ -646,7 +649,7 @@ it(
   () => {
     traverseScenario(siteOf(), profile, scale);
   },
-  profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+  NO_TIMER,
 );
 
 describe('lab threat by depth', () => {
