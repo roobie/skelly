@@ -578,10 +578,6 @@
       "id": "stab_vest"
     },
     {
-      "file": "assets/models/riot_helmet.glb",
-      "id": "riot_helmet"
-    },
-    {
       "file": "assets/models/riot_helmet_view.glb",
       "id": "riot_helmet_view"
     },
@@ -3813,6 +3809,23 @@
           "node": "thigh:thigh"
         }
       }
+    },
+    {
+      "file": "assets/models/riot_helmet.glb",
+      "grip": {
+        "at": [0, 0.15000000000000002, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "riot_helmet",
+      "parts": {
+        "helmet": {
+          "centreOfMass": [0.00038613505747126556, 0.042740660919540305, 0.003491379310344836],
+          "massKg": 1.3999999999999999,
+          "node": "helmet:compound"
+        }
+      },
+      "roll": 0
     }
   ]
 }

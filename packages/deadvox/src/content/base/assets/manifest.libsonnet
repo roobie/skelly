@@ -1,11 +1,11 @@
-local recipe = import 'gungen/exports/deadvox.jsonnet';
+local recipe = import 'packages/gun-authoring-tool/exports/deadvox.jsonnet';
 local things = import 'packages/thing-authoring-tool/exports/deadvox.jsonnet';
 local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
 {
   "sources": [
     {
       title: 'Gungen authored model exports',
-      url: 'https://github.com/roobie/skelly/blob/main/gungen/exports/deadvox.jsonnet',
+      url: 'https://github.com/roobie/skelly/blob/main/packages/gun-authoring-tool/exports/deadvox.jsonnet',
       author: 'Skelly contributors',
       licence: 'CC0-1.0',
       download: null,
@@ -407,7 +407,6 @@ local exportFiles = import 'tools/jsonnet/lib/export-files.libsonnet';
         "assets/models/glass_lens.glb",
         "assets/models/cloth_bundle.glb",
         "assets/models/stab_vest.glb",
-        "assets/models/riot_helmet.glb",
         "assets/models/riot_helmet_view.glb",
         "assets/models/night_vision_goggles.glb",
         "assets/models/sewing_kit.glb",

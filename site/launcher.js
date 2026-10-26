@@ -166,7 +166,7 @@ const page = (state) => html`  <main>
 
       <section class="card" aria-labelledby="gungen-title">
         <div class="card-heading">
-          <h2 id="gungen-title"><a href="gungen/">gungen</a></h2>
+          <h2 id="gungen-title"><a href="gun-authoring-tool/">gungen</a></h2>
           <p>A super-low-poly firearm generator. Generate from a template, open a validation fixture, or view a curated design.</p>
         </div>
         <form id="gungen-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
@@ -445,7 +445,7 @@ const makeDeadvox = (d) => {
   return u;
 };
 const makeGungen = (g) => {
-  const u = new URL('gungen/', location.href);
+  const u = new URL('gun-authoring-tool/', location.href);
   const p = u.searchParams;
   if (g.mode === 'fixture') {
     p.set('fixture', 'ak-standard-handguard');

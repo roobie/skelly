@@ -39,7 +39,7 @@ class OwnedWorker {
   }
   replyNext(index = 0) {
     const [message] = this.waiting.splice(index, 1);
-    if (!message) {
+    if (!message || message.type === 'vehicle') {
       throw new Error('No worker request');
     }
     const data =

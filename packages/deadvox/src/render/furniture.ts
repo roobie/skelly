@@ -31,6 +31,7 @@ import { furnitureDetail } from './furnitureDetail.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { addSkyAnchors } from './skyAnchor.ts';
+import { VehicleShapes } from './vehicleShapes.ts';
 import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
@@ -68,6 +69,7 @@ export class FurnitureMeshes {
   private readonly shapeGeometries = new Map<string, BufferGeometry>();
   private readonly doorGeometries = new Map<string, BufferGeometry>();
   private readonly blockSize: number;
+  private readonly vehicles: VehicleShapes;
   private readonly marker = new LineSegments(
     markerEdges(),
     withHeightFog(new MeshLambertMaterial({ color: '#ffe36e', depthTest: true }), 'furniture'),
@@ -80,8 +82,10 @@ export class FurnitureMeshes {
   private readonly reveal: ColumnReveal | undefined;
   private pieces = new Map<BlockEntity, { pose: string; mesh: Group | Mesh }>();
 
-  constructor(blockSize: number, reveal?: ColumnReveal) {
+  /** `vehicles` meshes vehicle displays; with a worker behind it a vehicle appears when its mesh arrives. */
+  constructor(blockSize: number, reveal?: ColumnReveal, vehicles = new VehicleShapes()) {
     this.blockSize = blockSize;
+    this.vehicles = vehicles;
     this.reveal = reveal;
     this.marker.visible = false;
     this.marker.receiveShadow = true;
@@ -166,16 +170,17 @@ export class FurnitureMeshes {
 
   /** A piece built as it would stand, for drawing it away from the world; it shares this owner's geometry and materials. */
   pieceMesh(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
-    return this.meshFor(entity, def);
+    return this.meshFor(entity, def, false);
   }
 
-  private meshFor(entity: BlockEntity, def: FurnitureDef): Group | Mesh {
+  /** `wait` lets a vehicle's mesh arrive later; a caller that measures the piece at once passes false. */
+  private meshFor(entity: BlockEntity, def: FurnitureDef, wait = true): Group | Mesh {
     const material = this.material(def.color);
     if (def.id === 'workshop_lift') {
       return workshopLift(entity, this.blockSize);
     }
     if (def.vehicle) {
-      return vehicleModel(entity, def.vehicle, def.size[1], this.blockSize);
+      return vehicleModel(entity, def.vehicle, def.size[1], { blockSize: this.blockSize, shapes: this.vehicles, wait });
     }
     if (def.corpse) {
       return new Group(); // Drawn as its figure (`src/render/corpseFigures.ts`, `CorpseFigures`).

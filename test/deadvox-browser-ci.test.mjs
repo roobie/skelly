@@ -17,7 +17,9 @@ import {
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'packages/deadvox/package.json'), 'utf8'));
-const { scripts: gungenScripts } = JSON.parse(readFileSync(join(ROOT, 'gungen/package.json'), 'utf8'));
+const { scripts: gungenScripts } = JSON.parse(
+  readFileSync(join(ROOT, 'packages/gun-authoring-tool/package.json'), 'utf8'),
+);
 const browserStages = browserStagesOfScripts(scripts);
 const customChromiumSelection = /\b(?:executablePath|CHROME_BIN)\b|channel\s*:\s*(?!\s*['"]chromium['"])/;
 const stageScriptPathPattern = /^node (\S+\.mjs)\b/;
@@ -216,19 +218,19 @@ describe('deadvox browser CI coverage', () => {
 describe('gungen browser CI', () => {
   it('routes manifest browser scripts through the bounded managed Chromium install and one helper', () => {
     assert.ok(gungenBrowserStagePaths.length > 0, 'gungen package manifest declares browser cases');
-    const browserFiles = readdirSync(join(ROOT, 'gungen/test/browser'))
+    const browserFiles = readdirSync(join(ROOT, 'packages/gun-authoring-tool/test/browser'))
       .filter((path) => path.endsWith('.mjs'))
       .map((path) => `test/browser/${path}`)
       .sort();
     assert.deepEqual(gungenBrowserStagePaths.slice().sort(), browserFiles);
     for (const path of gungenBrowserStagePaths) {
-      const source = readFileSync(join(ROOT, 'gungen', path), 'utf8');
+      const source = readFileSync(join(ROOT, 'packages/gun-authoring-tool', path), 'utf8');
       assert.doesNotMatch(source, customChromiumSelection, `${path} must not select a system browser`);
       assert.doesNotMatch(source, directChromiumLaunchPattern, `${path} must use launchChromium`);
       assert.match(source, sharedChromiumLaunchPattern, `${path} must use launchChromium`);
     }
 
-    const helper = readFileSync(join(ROOT, 'gungen/test/chromium.mjs'), 'utf8');
+    const helper = readFileSync(join(ROOT, 'packages/gun-authoring-tool/test/chromium.mjs'), 'utf8');
     assert.match(helper, helperChromiumLaunchPattern, 'the Gungen helper owns Chromium launch');
     assert.doesNotMatch(helper, customChromiumSelection, 'the Gungen helper uses Playwright-managed Chromium');
 

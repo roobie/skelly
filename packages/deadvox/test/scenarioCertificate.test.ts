@@ -10,7 +10,11 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { scenarioCertificate, scenarioLotResourceCertificate } from '../src/core/scenarioCertificate.ts';
+import {
+  type CertificatePhase,
+  scenarioCertificate,
+  scenarioLotResourceCertificate,
+} from '../src/core/scenarioCertificate.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
@@ -39,6 +43,11 @@ const UNDERGROUND_OVERLAP = /overlaps the city/;
 // The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
 // CPU, instead of vitest's flat default (#792).
 const WALK_MS_PER_STOREY = 4800;
+// The two walks are bounded by frames and by the descent chain, never by time: their work is finite and deterministic,
+// so a wall-clock budget can only fail them under host load. Vitest reads 0 as no timer; the job timeout still caps a hang.
+const NO_TIMER = 0;
+// What a case needs to link the storeys before a rule that reads them (objective, fixed resources, the portal).
+const ROUTED_PHASES: CertificatePhase[] = ['floors', 'ladders', 'stairs'];
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
@@ -66,6 +75,20 @@ const lab = {
 };
 
 const siteOf = (plan = base) => new CitySite(9, registry, scale, plan);
+// A narrowed phase set can report a rule's path for an unrelated reason (a route locked because a phase it needs was
+// left out), so each narrowed probe first proves its rule stays quiet on the unobstructed site with the same phases.
+const healthyPaths = new Map<string, string[]>();
+const expectQuietWhenHealthy = (phases: readonly CertificatePhase[], rule: (path: string) => boolean): void => {
+  const key = phases.join();
+  if (!healthyPaths.has(key)) {
+    healthyPaths.set(
+      key,
+      scenarioCertificate(siteOf(), phases).issues.map(([path]) => path),
+    );
+  }
+  // biome-ignore lint/suspicious/noMisplacedAssertion: shared control, only ever called from inside a test case
+  expect(healthyPaths.get(key)!.filter(rule)).toEqual([]);
+};
 const obstruct = (chunk: Chunk, point: Readonly<Vec3>): void => {
   const cell = point.map(Math.floor) as Vec3;
   if (toChunk(cell[0]) === chunk.cx && toChunk(cell[1]) === chunk.cy && toChunk(cell[2]) === chunk.cz) {
@@ -141,7 +164,7 @@ describe('final composed body-route certificate', () => {
     const clear = new ScenarioRouteSpace(siteOf(plan));
     expect(perimeterRouteIssues(crossing, clear, [entry], '.city.service')).toEqual([]);
     const obstruction = inside.map((value, axis) => (value + outside[axis]!) / 2) as Vec3;
-    const result = scenarioCertificate(new ObstructedSite(obstruction, plan));
+    const result = scenarioCertificate(new ObstructedSite(obstruction, plan), ['start', 'service']);
     expect(result.space.path(entry, inside, { placement: plan.service! })).toBeDefined();
     expect(result.issues.map(([path]) => path)).toEqual(['.city.service.routes[0]']);
   });
@@ -242,11 +265,14 @@ describe('final composed body-route certificate', () => {
           original(cx, cz).filter((point) => !atKey(point.destination)),
         );
       }
-      expect(scenarioCertificate(site).issues.some(([path]) => path === `.composition.seals[${index}]`)).toBe(true);
+      expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(
+        `.composition.seals[${index}]`,
+      );
     },
   );
 
   it('rejects a keycard container that lies behind the seal it opens', () => {
+    expectQuietWhenHealthy(['seals'], (path) => path.startsWith('.composition.seals'));
     // Level two's card desk, made to hold level one's card and to open level one's bulkheads, which stand between it and the way in.
     const composition = base.composition!;
     const held = composition.seals.findIndex((seal) => seal.held);
@@ -265,7 +291,7 @@ describe('final composed body-route certificate', () => {
           : spawn,
       ),
     );
-    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain('.composition.seals[0]');
+    expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain('.composition.seals[0]');
   });
 
   it('rejects a keycard container out of reach of where its taker stands', () => {
@@ -275,7 +301,7 @@ describe('final composed body-route certificate', () => {
     const { standing } = composition.seals[held - 1]!;
     const seals = composition.seals.map((seal, index) => (index === held ? { ...seal, standing } : seal));
     const site = siteOf({ ...base, composition: { ...composition, seals } });
-    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
+    expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
   });
 
   it(
@@ -307,7 +333,7 @@ describe('final composed body-route certificate', () => {
       }
       expect(scenarioCertificate(site).issues).toEqual([]);
     },
-    profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+    NO_TIMER,
   );
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
@@ -324,7 +350,7 @@ describe('final composed body-route certificate', () => {
           !(registry.furniture.get(spec.type)?.climbable && spec.pos[0] === ladder[0] && spec.pos[2] === ladder[2]),
       ),
     );
-    expect(scenarioCertificate(site).issues).toContainEqual([
+    expect(scenarioLotResourceCertificate(site).issues).toContainEqual([
       `.composition.resources[${index}].key.climbs[0]`,
       expect.stringMatching(COMPOSED_LADDER),
     ]);
@@ -368,7 +394,9 @@ describe('final composed body-route certificate', () => {
       throw new Error('Production lab has no descent witness');
     }
     const obstruction: Vec3 = [descent.ladder[0] + 1, descent.ladder[1] + 4, descent.ladder[2]];
-    const result = scenarioCertificate(new ObstructedSite(obstruction));
+    const phases = ROUTED_PHASES.concat('seals');
+    expectQuietWhenHealthy(phases, (path) => path === '.composition.descents[0]');
+    const result = scenarioCertificate(new ObstructedSite(obstruction), phases);
     expect(
       result.issues.some(
         ([path, message]) => path === '.composition.descents[0]' && message.includes('continuous body-clear shaft'),
@@ -391,8 +419,10 @@ describe('final composed body-route certificate', () => {
       }
     });
     try {
-      const result = scenarioCertificate(site);
-      expect(result.issues.some(([path]) => path === '.composition.objectiveFace')).toBe(true);
+      const phases = ROUTED_PHASES.concat('seals', 'objective');
+      expectQuietWhenHealthy(phases, (path) => path === '.composition.objectiveFace');
+      const result = scenarioCertificate(site, phases);
+      expect(result.issues.map(([path]) => path)).toContain('.composition.objectiveFace');
     } finally {
       stamp.mockRestore();
     }
@@ -439,38 +469,45 @@ describe('final composed body-route certificate', () => {
     expect(space.clear([CHUNK + 1, base.floor + 1, 6])).toBe(false);
   });
 
-  it('rejects a sewer tunnel walled off between its mouth and the lab port', () => {
-    const [sewer] = base.underground;
-    if (!sewer) {
-      throw new Error('Production city has no underground witness');
-    }
-    const { placement, definition } = sewer;
-    const mouth = placedPoint(placement, definition.mouths[0]!.lower);
-    const outside = placedPoint(placement, definition.ports[0]!.outside);
-    const z = Math.floor((mouth[2] + outside[2]) / 2);
-    const [width] = footprint(placement);
-    const [west, bottom] = placement.origin;
-    const site = siteOf();
-    const original = site.stamp.bind(site);
-    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-      original(chunk);
-      for (let x = west; x < west + width; x++) {
-        for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
-          obstruct(chunk, [x, y, z]);
-        }
+  it(
+    'rejects a sewer tunnel walled off between its mouth and the lab port',
+    () => {
+      const [sewer] = base.underground;
+      if (!sewer) {
+        throw new Error('Production city has no underground witness');
       }
-    });
-    try {
-      const result = scenarioCertificate(site);
-      expect(
-        result.issues.some(
-          ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
-        ),
-      ).toBe(true);
-    } finally {
-      stamp.mockRestore();
-    }
-  });
+      const { placement, definition } = sewer;
+      const mouth = placedPoint(placement, definition.mouths[0]!.lower);
+      const outside = placedPoint(placement, definition.ports[0]!.outside);
+      const z = Math.floor((mouth[2] + outside[2]) / 2);
+      const [width] = footprint(placement);
+      const [west, bottom] = placement.origin;
+      const site = siteOf();
+      const original = site.stamp.bind(site);
+      const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+        original(chunk);
+        for (let x = west; x < west + width; x++) {
+          for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
+            obstruct(chunk, [x, y, z]);
+          }
+        }
+      });
+      try {
+        const phases = ['start' as CertificatePhase].concat(ROUTED_PHASES, 'seals', 'underground');
+        expectQuietWhenHealthy(phases, (path) => path.startsWith('.city.underground'));
+        const result = scenarioCertificate(site, phases);
+        expect(
+          result.issues.some(
+            ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
+          ),
+        ).toBe(true);
+      } finally {
+        stamp.mockRestore();
+      }
+      // Two routed certificates: the healthy control and the walled site.
+    },
+    2 * WALK_MS_PER_STOREY,
+  );
 
   it('admits the sewer port only where its threshold crosses the service shell', () => {
     expect(undergroundPortIssues(registry, profile, compiled)).toEqual([]);
@@ -519,20 +556,30 @@ describe('final composed body-route certificate', () => {
   });
 
   it('rejects a fixed resource whose declared standing route is obstructed', () => {
-    const result = scenarioCertificate(new ObstructedSite(base.composition!.resources[0]!.standing));
-    expect(result.issues.some(([path]) => path.startsWith('.composition.resources'))).toBe(true);
+    expectQuietWhenHealthy(ROUTED_PHASES.concat('resources'), (path) => path === '.composition.resources[0]');
+    const result = scenarioCertificate(
+      new ObstructedSite(base.composition!.resources[0]!.standing),
+      ROUTED_PHASES.concat('resources'),
+    );
+    expect(result.issues.some(([path]) => path === '.composition.resources[0]')).toBe(true);
   });
 
   it('rejects cyclic fixed keys behind their mutually dependent locked portals', () => {
-    const result = scenarioCertificate(cyclicSite(registry, base, scale));
+    expectQuietWhenHealthy(
+      ROUTED_PHASES.concat('resources'),
+      (path) => path === '.portal' || path.startsWith('.composition.resources'),
+    );
+    const result = scenarioCertificate(cyclicSite(registry, base, scale), ROUTED_PHASES.concat('resources'));
     expect(result.issues.some(([path]) => path === '.portal')).toBe(true);
     expect(result.issues.some(([path]) => path.startsWith('.composition.resources'))).toBe(true);
   });
 
   it('rejects a missing clue instead of treating two copies of metadata as independent sources', () => {
     const missing = base.composition!.leads[0]!;
+    expectQuietWhenHealthy(['start', 'leads'], (path) => path === '.composition.leads');
     const result = scenarioCertificate(
       siteOf({ ...base, placements: base.placements.filter((placement) => placement !== missing) }),
+      ['start', 'leads'],
     );
     expect(result.issues.some(([path]) => path === '.composition.leads')).toBe(true);
   });
@@ -602,7 +649,7 @@ it(
   () => {
     traverseScenario(siteOf(), profile, scale);
   },
-  profile.composition!.storeys.length * WALK_MS_PER_STOREY,
+  NO_TIMER,
 );
 
 describe('lab threat by depth', () => {

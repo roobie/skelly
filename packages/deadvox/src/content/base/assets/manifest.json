@@ -97,7 +97,7 @@
       ],
       "licence": "CC0-1.0",
       "title": "Gungen authored model exports",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/exports/deadvox.jsonnet"
+      "url": "https://github.com/roobie/skelly/blob/main/packages/gun-authoring-tool/exports/deadvox.jsonnet"
     },
     {
       "author": "Skelly contributors",
@@ -280,6 +280,7 @@
         "assets/models/player_bust.glb",
         "assets/models/player_arm.glb",
         "assets/models/player_leg.glb",
+        "assets/models/riot_helmet.glb",
         "assets/models/tape_roll.glb",
         "assets/models/thread_spool.glb",
         "assets/models/cord_coil.glb",
@@ -673,7 +674,6 @@
         "assets/models/glass_lens.glb",
         "assets/models/cloth_bundle.glb",
         "assets/models/stab_vest.glb",
-        "assets/models/riot_helmet.glb",
         "assets/models/riot_helmet_view.glb",
         "assets/models/night_vision_goggles.glb",
         "assets/models/sewing_kit.glb",

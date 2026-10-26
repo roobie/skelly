@@ -856,7 +856,7 @@ describe('shambler scenarios', () => {
     expect(zombie.mode).not.toBe('investigate');
   });
 
-  it('alerts when a searching shambler spots the player', () => {
+  it('alerts when a searching shambler spots the player after its cry cooldown', () => {
     let sensed: PlayerSense = {
       ...player([100, 1, 100]),
       vocalNoise: { id: 1, pos: [20, 1, 0], radiusMetres: 30, expiresAt: 1 },
@@ -892,10 +892,10 @@ describe('shambler scenarios', () => {
       [zombie.body.pos[0] + facing[0] * 5, zombie.body.pos[1], zombie.body.pos[2] + facing[2] * 5],
       [-facing[0], 0, -facing[2]],
     );
-    system.tick(1 / 20, 30);
+    system.tick(1 / 20, 0.05 + type.hearingModel.alertCooldownSimSeconds);
 
     expect(zombie.mode).toBe('chase');
-    expect(alerts).toEqual(['shambler_alert']);
+    expect(alerts).toEqual([type.sounds.alert]);
   });
 
   it('chooses a near heard player over a visible light lure', () => {
@@ -4059,5 +4059,54 @@ describe('dismemberment', () => {
       return system.store.get(id)!.severed;
     };
     expect(runFour()).toEqual(runFour());
+  });
+
+  it('thins idle cues per enemy in a local crowd without changing a lone enemy rate', () => {
+    const duration = simSeconds(SHAMBLER.idleSound.intervalSimSeconds.max * 12);
+    const type = {
+      ...SHAMBLER,
+      wander: {
+        ...SHAMBLER.wander,
+        idleSimSeconds: { min: simSeconds(duration + 1), max: simSeconds(duration + 1) },
+      },
+    };
+    const cueCounts = (positions: readonly Vec3[], candidate: ZombieDef): number[] => {
+      const cues = new Map<Zombie, number>();
+      const system = new ZombieSystem({
+        ...senses(() => player([100, 2, 0])),
+        onSound: (event, _position, zombie) => {
+          if (zombie && event === zombie.type.sounds.idle) {
+            cues.set(zombie, (cues.get(zombie) ?? 0) + 1);
+          }
+        },
+      });
+      const ids = positions.map((position) => system.add(candidate, position));
+      run(system, duration);
+      return ids.map((id) => cues.get(system.store.get(id)!) ?? 0);
+    };
+    const radius = type.idleSound.density.radiusMetres / BLOCK_SIZE;
+    const lone = cueCounts([[0, 1, 0]], type);
+    const crowded = cueCounts(
+      [
+        [0, 1, 0],
+        [radius / 3, 1, 0],
+        [0, 1, radius / 3],
+        [radius / 3, 1, radius / 3],
+      ],
+      type,
+    );
+    const strongerDensityCurve = {
+      ...type,
+      idleSound: {
+        ...type.idleSound,
+        density: {
+          ...type.idleSound.density,
+          penaltyPerNeighbour: type.idleSound.density.penaltyPerNeighbour * 2,
+        },
+      },
+    };
+
+    expect(crowded.every((count) => count < lone[0]!)).toBe(true);
+    expect(cueCounts([[0, 1, 0]], strongerDensityCurve)).toEqual(lone);
   });
 });

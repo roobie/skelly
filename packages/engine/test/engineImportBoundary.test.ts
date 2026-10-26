@@ -110,7 +110,19 @@ const packageEdges = (roots: Roots): readonly PackageEdge[] => {
   const thingExport = join(roots.packages, 'thing-export');
   const thingTool = join(roots.packages, 'thing-authoring-tool');
   const toolUi = join(roots.packages, 'tool-ui');
+  const gunTool = join(roots.packages, 'gun-authoring-tool');
   return [
+    {
+      from: gunTool,
+      forbids: (target) => isWithin(thingTool, target),
+      problem: 'gun tool imports the thing tool',
+    },
+    ...[engine, thingCore, thingExport, toolUi, join(roots.packages, 'deadvox'), thingTool].map((from) => ({
+      from,
+      forbids: (target: string) => isWithin(gunTool, target),
+      problem: 'imports the gun tool',
+    })),
+
     { from: roots.packages, forbids: (target) => isWithin(roots.gungen, target), problem: 'imports gungen' },
     { from: roots.gungen, forbids: (target) => isWithin(thingTool, target), problem: 'gungen imports the thing tool' },
     {
@@ -447,6 +459,31 @@ describe('engine import boundary', () => {
       expect(findBoundaryViolations([file], fixtureRoots)[0]).toContain('imports gungen');
       writeFileSync(file, "import '../../thing-authoring-tool/src/catalogue.ts';\n");
       expect(findBoundaryViolations([file], fixtureRoots)[0]).toContain('tool-ui imports the thing tool');
+    } finally {
+      rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects gun-tool imports from lower packages and either tool importing its peer', () => {
+    const fixtureRoot = mkdtempSync(join(tmpdir(), 'gun-tool-boundary-'));
+    const fixtureRoots = rootsUnder(fixtureRoot);
+    const gunTool = 'gun-authoring-tool';
+    const pairs = [
+      ...['engine', 'thing-core', 'thing-export', 'tool-ui', 'deadvox', 'thing-authoring-tool'].map(
+        (from) => [from, gunTool] as const,
+      ),
+      [gunTool, 'thing-authoring-tool'] as const,
+    ];
+    try {
+      for (const [from, target] of pairs) {
+        const directory = join(fixtureRoots.packages, from, 'src');
+        mkdirSync(directory, { recursive: true });
+        const file = join(directory, 'boundary.ts');
+        for (const specifier of [`@skelly/${target}/index.ts`, `../../${target}/src/index.ts`]) {
+          writeFileSync(file, `import '${specifier}';\n`);
+          expect(findBoundaryViolations([file], fixtureRoots), `${from} -> ${specifier}`).not.toEqual([]);
+        }
+      }
     } finally {
       rmSync(fixtureRoot, { recursive: true, force: true });
     }

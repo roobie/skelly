@@ -19,7 +19,7 @@ The revolver is one-handed with one-hand aim, leaving the off hand available rat
 
 Only the authored calibre is accepted. Per-chamber cartridge types remain explicit so future compatible ammunition can use the same owner without inventing a second chamber representation. Compatibility needs its own content rule before another calibre can be loaded.
 
-The export contract and playable handling are separate changes: validating geometry first prevents gameplay from depending on guessed pivots or duplicate model measurements. See `gungen/src/gun/revolverExport.ts`, `revolverMetadata`, and `src/render/firearmModel.ts`, `poseRevolverParts`.
+The export contract and playable handling are separate changes: validating geometry first prevents gameplay from depending on guessed pivots or duplicate model measurements. See `packages/gun-authoring-tool/src/gun/revolverExport.ts`, `revolverMetadata`, and `src/render/firearmModel.ts`, `poseRevolverParts`.
 
 ## Ownership and persistence
 
@@ -32,6 +32,8 @@ Each completed shot leaves its case in the same chamber. Ejections become item-o
 Handling times, dispersion, recoil and loot weights belong to content so mods can change feel without editing mechanics. The police armoury and gun store are ordinary sources; rare residential wardrobe finds make the gun part of a formerly inhabited world rather than exclusively institutional equipment. See `src/content/base/items-revolver.jsonnet`, `items`, `src/content/base/gauntlet-city-building-types.libsonnet`, `loot`, and `src/content/base/loot.jsonnet`, `loot`.
 
 The crane carries the cylinder and ejector even though the GLB nodes are flat. Loading and picking may display a different chamber angle without changing the saved alignment. Each frame starts from the exported rest transform to avoid accumulated rotation. See `src/render/firearmModel.ts`, `poseRevolverParts`.
+
+Loaded rounds share the gun's file frame, including its grip offset, because chamber seats are exported in that frame rather than the outer hand-placement wrapper. See `src/render/hands.ts`, `HeldItems.cylinderRoundGroup`, and `test/revolverPose.test.ts`.
 
 The loading fist shares the cartridge's frame rather than following the forearm's bend: an elbow-driven palm rotation makes a gun-local cartridge offset cut through the hand's face. Content places the round at the fist's forward edge so it protrudes toward the chamber instead of showing only its base through the palm. See `src/render/hands.ts`, `HeldItems`, and `src/content/base/items-revolver.jsonnet`, `loadPose`.
 

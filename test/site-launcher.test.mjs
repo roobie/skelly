@@ -55,6 +55,7 @@ const authoredLayoutIds = () =>
     .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
+  optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
@@ -372,7 +373,7 @@ describe('site launchers track the games’ URL parameters', () => {
   });
 
   it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
-    const supported = paramsReadBy(['gungen/src/viewer/main.ts']);
+    const supported = paramsReadBy(['packages/gun-authoring-tool/src/viewer/main.ts']);
     for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
       assert.ok(supported.includes(name), `${name} is intentionally omitted: ${reason}`);
     }

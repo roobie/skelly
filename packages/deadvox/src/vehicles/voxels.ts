@@ -282,7 +282,10 @@ export interface MeshBuffers {
 }
 
 /** Per-vertex colours for a mesh's quads, three floats per vertex. */
-export const quadColors = (buffers: MeshBuffers, colorOf: (mat: string) => Rgb): Float32Array => {
+export const quadColors = (
+  buffers: Pick<MeshBuffers, 'materials' | 'quads'>,
+  colorOf: (mat: string) => Rgb,
+): Float32Array => {
   const colors = new Float32Array(buffers.quads * 4 * 3);
   const rgbs = new Map<string, Rgb>();
   buffers.materials.forEach((mat, quad) => {

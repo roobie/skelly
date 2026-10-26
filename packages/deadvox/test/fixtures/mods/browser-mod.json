@@ -117,6 +117,7 @@
       "footstepSound": "shambler",
       "hearing": 1,
       "hearingModel": {
+        "alertCooldownSimSeconds": 60,
         "bearingErrorRadians": 0.60999999999999999,
         "chainChance": 0.34999999999999998,
         "chainRadiusMetres": 8,
@@ -149,6 +150,16 @@
         "stepMetres": 0.38
       },
       "id": "shambler",
+      "idleSound": {
+        "density": {
+          "penaltyPerNeighbour": 0.25,
+          "radiusMetres": 8
+        },
+        "intervalSimSeconds": {
+          "max": 20,
+          "min": 8
+        }
+      },
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
         "head": {

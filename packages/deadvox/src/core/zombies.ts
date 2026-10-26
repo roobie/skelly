@@ -371,6 +371,7 @@ export interface Zombie {
   incapacitated: boolean;
   lastPerceived?: Vec3 | undefined;
   stimulusAt?: number | undefined;
+  lastAlertAt?: number | undefined;
   attackWait: number;
   /** Seconds left in the current attack's telegraph windup; 0 = not winding up. Set to
    * type.attack.windup when an attack starts (alongside attackWait), counts down to exactly 0, then the
@@ -489,6 +490,7 @@ const validZombieEventState = (zombie: ZombieState): boolean =>
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
   (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
+  (zombie.lastAlertAt === undefined || (Number.isFinite(zombie.lastAlertAt) && zombie.lastAlertAt >= 0)) &&
   Array.isArray(zombie.severed) &&
   zombie.severed.every((part) => typeof part === 'string') &&
   Array.isArray(zombie.carved) &&
@@ -1472,6 +1474,7 @@ const zombieSnapshotFields = [
   'incapacitated',
   'lastPerceived',
   'stimulusAt',
+  'lastAlertAt',
   'attackWait',
   'attackWindup',
   'spitWindup',
@@ -1581,6 +1584,7 @@ const zombieSnapshotProjectors = {
   incapacitated: (zombie) => zombie.incapacitated,
   lastPerceived: (zombie) => (zombie.lastPerceived === undefined ? undefined : [...zombie.lastPerceived]),
   stimulusAt: (zombie) => zombie.stimulusAt,
+  lastAlertAt: (zombie) => zombie.lastAlertAt,
   attackWait: (zombie) => zombie.attackWait,
   attackWindup: (zombie) => zombie.attackWindup,
   spitWindup: (zombie) => zombie.spitWindup,
@@ -1681,6 +1685,8 @@ export class ZombieSystem {
     Zombie,
     { carved: readonly number[]; severed: number; missing: MissingFlesh }
   >();
+  private idleSoundGrid = new Map<string, Zombie[]>();
+  private idleSoundGridCellBlocks = 1;
 
   constructor(options: ZombieSystemOptions) {
     this.options = options;
@@ -2280,7 +2286,7 @@ export class ZombieSystem {
     zombie.soundRng = Rng.stream(this.options.seed ?? 0, `zombie-sound:${id}`);
     zombie.dismemberRng = Rng.stream(this.options.seed ?? 0, `zombie-dismember:${id}`);
     zombie.spitRng = Rng.stream(this.options.seed ?? 0, `zombie-spit:${id}`);
-    zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
+    zombie.idleSoundTimer = inRange(zombie.soundRng, zombie.type.idleSound.intervalSimSeconds);
     this.beginIdle(zombie);
     return id;
   }
@@ -2471,6 +2477,7 @@ export class ZombieSystem {
     const entries = [...this.store.entries()].filter(
       ([id, zombie]) => zombie.tier === 'background' && id % sliceCount === sliceIndex,
     );
+    this.indexIdleSoundDensity();
     for (const [id, zombie] of entries) {
       this.captureRenderPrevious(zombie, time);
       if (zombie.incapacitated) {
@@ -2689,16 +2696,27 @@ export class ZombieSystem {
   }
 
   private announcePursuit(previous: ZombieMode): void {
-    const { zombie, pos } = this.tickScratch;
+    const { zombie, time } = this.tickScratch;
     if (
       (zombie.mode === 'chase' || zombie.mode === 'investigate') &&
       previous !== 'chase' &&
       previous !== 'investigate'
     ) {
       zombie.leanTarget = undefined;
-      this.options.onSound?.(zombie.type.sounds.alert, copy(pos), zombie);
-      this.chainStimuli.push({ caller: zombie, origin: copy(pos), target: copy(zombie.lastPerceived!) });
+      this.cryAlert(zombie, time);
     }
+  }
+
+  private cryAlert(zombie: Zombie, time: number): void {
+    if (
+      zombie.lastAlertAt !== undefined &&
+      time - zombie.lastAlertAt < zombie.type.hearingModel.alertCooldownSimSeconds
+    ) {
+      return;
+    }
+    zombie.lastAlertAt = time;
+    this.options.onSound?.(zombie.type.sounds.alert, copy(zombie.body.pos), zombie);
+    this.chainStimuli.push({ caller: zombie, origin: copy(zombie.body.pos), target: copy(zombie.lastPerceived!) });
   }
 
   private processChainStimuli(time: number): void {
@@ -2723,8 +2741,7 @@ export class ZombieSystem {
         zombie.leanTarget = undefined;
         zombie.lastPerceived = copy(stimulus.target);
         zombie.stimulusAt = time;
-        this.options.onSound?.(zombie.type.sounds.alert, copy(zombie.body.pos), zombie);
-        this.chainStimuli.push({ caller: zombie, origin: copy(zombie.body.pos), target: copy(stimulus.target) });
+        this.cryAlert(zombie, time);
       }
     }
     this.chainStimuli.length = 0;
@@ -2835,6 +2852,62 @@ export class ZombieSystem {
     }
   }
 
+  private indexIdleSoundDensity(): void {
+    let widestRadiusBlocks = 0;
+    for (const [, zombie] of this.store.entries()) {
+      if (!zombie.incapacitated) {
+        widestRadiusBlocks = Math.max(
+          widestRadiusBlocks,
+          zombie.type.idleSound.density.radiusMetres / this.options.blockSize,
+        );
+      }
+    }
+    this.idleSoundGridCellBlocks = Math.max(1, widestRadiusBlocks);
+    this.idleSoundGrid = new Map();
+    for (const [, zombie] of this.store.entries()) {
+      if (zombie.incapacitated) {
+        continue;
+      }
+      const key = this.idleSoundGridKey(zombie.body.pos);
+      const cell = this.idleSoundGrid.get(key);
+      if (cell) {
+        cell.push(zombie);
+      } else {
+        this.idleSoundGrid.set(key, [zombie]);
+      }
+    }
+  }
+
+  private idleSoundGridKey(position: Vec3): string {
+    return `${Math.floor(position[0] / this.idleSoundGridCellBlocks)},${Math.floor(position[2] / this.idleSoundGridCellBlocks)}`;
+  }
+
+  private nextIdleSoundInterval(zombie: Zombie): number {
+    const { intervalSimSeconds, density } = zombie.type.idleSound;
+    return (
+      inRange(zombie.soundRng, intervalSimSeconds) *
+      (1 + (this.idleSoundDensity(zombie) - 1) * density.penaltyPerNeighbour)
+    );
+  }
+
+  private idleSoundDensity(zombie: Zombie): number {
+    const radiusBlocks = zombie.type.idleSound.density.radiusMetres / this.options.blockSize;
+    const cellRadius = Math.ceil(radiusBlocks / this.idleSoundGridCellBlocks);
+    const cellX = Math.floor(zombie.body.pos[0] / this.idleSoundGridCellBlocks);
+    const cellZ = Math.floor(zombie.body.pos[2] / this.idleSoundGridCellBlocks);
+    let density = 0;
+    for (let x = cellX - cellRadius; x <= cellX + cellRadius; x++) {
+      for (let z = cellZ - cellRadius; z <= cellZ + cellRadius; z++) {
+        for (const nearby of this.idleSoundGrid.get(`${x},${z}`) ?? []) {
+          if (horizontalDistance(zombie.body.pos, nearby.body.pos) <= radiusBlocks) {
+            density += 1;
+          }
+        }
+      }
+    }
+    return density;
+  }
+
   private updateIdleSound(): void {
     const scratch = this.tickScratch;
     const { zombie, dt, pos } = scratch;
@@ -2844,7 +2917,7 @@ export class ZombieSystem {
     zombie.idleSoundTimer -= dt;
     if (zombie.idleSoundTimer <= 0) {
       this.options.onSound?.(zombie.type.sounds.idle, copy(pos), zombie);
-      zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
+      zombie.idleSoundTimer = this.nextIdleSoundInterval(zombie);
     }
   }
 
@@ -3472,6 +3545,7 @@ export class ZombieSystem {
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
     scratch.groundedAtTickStart = groundedAtTickStart;
+    this.indexIdleSoundDensity();
     for (const [id, zombie] of entries) {
       groundedAtTickStart.set(zombie, zombie.body.onGround);
       this.captureRenderPrevious(zombie, time);
