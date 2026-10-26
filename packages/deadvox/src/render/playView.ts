@@ -568,7 +568,7 @@ export const createPlayView = (
       carriedPiece.update(
         dt,
         camera.quaternion,
-        carried?.floorLocked ? { pos: handling.floorPlacement ?? carried.pos, blockSize: s } : undefined,
+        carried?.floorLocked && handling.floorPlacement ? { pos: handling.floorPlacement, blockSize: s } : undefined,
       );
       held.update(camera, pose, recoil, { ...handling, lift });
       playerMeshes.syncHeldView(pose, handling);

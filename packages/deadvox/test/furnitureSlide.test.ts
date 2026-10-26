@@ -186,6 +186,35 @@ describe('floor furniture steps', () => {
       expect(entity.floorLocked).toBeUndefined();
     }
   });
+  it('keeps a dragged piece at its last valid preview when placement becomes invalid', () => {
+    const { inventory, entity, mover } = fixture();
+    expect(liftFurniture(mover, entity, true)).toBeUndefined();
+    const meshes = new FurnitureMeshes(mover.blockSize);
+    const view = new CarriedPiece(
+      inventory.entities,
+      (piece, def) => meshes.pieceMesh(piece, def),
+      registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
+    );
+    const aimed: Vec3 = [spec.pos[0] + 3, spec.pos[1], spec.pos[2] + 1];
+
+    view.update(1, new Quaternion());
+    expect(view.floorGroup.visible).toBe(false);
+    const spot = placement(mover, aimed);
+    expect(spot).toHaveProperty('pos');
+    if (!('pos' in spot)) {
+      throw new Error(spot.refusal);
+    }
+    view.update(1, new Quaternion(), { pos: spot.pos, blockSize: mover.blockSize });
+    const previewPosition = view.floorGroup.position.toArray();
+    expect(previewPosition).not.toEqual([0, 0, 0]);
+
+    expect(placement({ ...mover, terrainSolid: () => false }, aimed)).toHaveProperty('refusal');
+    view.update(1, new Quaternion());
+    expect(view.floorGroup.visible).toBe(true);
+    expect(view.floorGroup.position.toArray()).toEqual(previewPosition);
+    expect(placeFurniture(mover, aimed)).toBeUndefined();
+  });
+
   it('turns and tips a dragged piece like a held one, and the level-floor check still guards setting down', () => {
     const { inventory, entity, mover } = fixture();
     expect(liftFurniture(mover, entity, true)).toBeUndefined();

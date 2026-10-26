@@ -23,6 +23,7 @@ export class CarriedPiece {
   private readonly size = new Vector3();
   private drawn = '';
   private bobRealSeconds = 0;
+  private hasFloorPlacement = false;
 
   constructor(
     entities: BlockEntities,
@@ -49,6 +50,7 @@ export class CarriedPiece {
       this.group.clear();
       this.floorGroup.clear();
       this.bobRealSeconds = 0;
+      this.hasFloorPlacement = false;
       if (carried) {
         (carried.floorLocked ? this.floorGroup : this.group).add(this.fitted(carried));
       }
@@ -63,7 +65,9 @@ export class CarriedPiece {
           0,
           (floor.pos[2] - carried.pos[2]) * floor.blockSize,
         );
+        this.hasFloorPlacement = true;
       }
+      this.floorGroup.visible = this.hasFloorPlacement;
       return;
     }
     this.bobRealSeconds += dt;
