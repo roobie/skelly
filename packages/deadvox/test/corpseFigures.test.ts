@@ -1,7 +1,7 @@
 import { Box3, Color, Mesh, type MeshStandardMaterial, type Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { buildRegistry, validateContent } from '../src/core/content.ts';
+import { type ContentSource, validateContent } from '../src/core/content.ts';
 import { rotatedSize, rotationOf } from '../src/core/orientation.ts';
 import { FIGURE_LIMBS, type FurnitureDef } from '../src/core/schema.ts';
 import type { Facing } from '../src/core/templates.ts';
@@ -9,6 +9,7 @@ import { baseSources } from '../src/game/bundledContent.ts';
 import { CorpseFigures } from '../src/render/corpseFigures.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
 
 const registry = baseRegistry();
@@ -101,12 +102,23 @@ describe('dead human bodies', () => {
 });
 
 describe('the content check for dead humans', () => {
-  const body = { ...deadHumans[0]!, id: 'corpse_check_body' };
+  const body = { ...deadHumans[0]!, id: 'corpse_check_body', material: FIXTURE_MATERIAL };
+  const baseSource = (name: string) => baseSources.find(({ source }) => source.endsWith(name))!;
+  /** The figure and its own models only, so the check runs without building the whole pack. */
+  const figureSources = (): ContentSource[] => {
+    const modelRows = (baseSource('models-items.json').data as { models: { id: string }[] }).models;
+    const figure = registry.figures.get(body.corpse!.figure)!;
+    const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
+    return [
+      baseSource('figures-player.json'),
+      { source: 'corpse-models.json', data: { models: modelRows.filter(({ id }) => ids.has(id)) } },
+    ];
+  };
 
   it('refuses a body whose figure has no such outfit and accepts one in an outfit it has', () => {
     const unknown = { ...body, id: 'corpse_check_unknown', corpse: { ...body.corpse!, outfit: 'no_such_outfit' } };
-    const { issues } = buildRegistry([
-      ...baseSources,
+    const { issues } = buildFixtureRegistry([
+      ...figureSources(),
       { source: 'corpse-check.json', data: { furniture: [body, unknown] } },
     ]);
     expect(issues.filter(({ source }) => source === 'corpse-check.json').map(({ path }) => path)).toEqual([
