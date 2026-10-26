@@ -78,6 +78,8 @@ Revisit only when the project owner wants it or a gameplay need requires it. Bef
 - Measure cost first. A naive nearest-surface search was far too slow for every frame; an exact closed-form distance brought both detectors well under the frame budget. Prove the budget before building on a detector.
 - Choose the detector by what it must see. The cell-based detector lowers the gun early near thin things. The refined detector avoids that but needs authored shape boxes for every model that can be held or approached.
 
+## GPU resource ownership
+
 Renderer memory counters do not cover every instance buffer or VAO. Dispose owned instanced resources on removal and presentation teardown, but never dispose shared model geometry/materials. Delayed asset loads may replace a fallback only while the owning slot still exists. See `test/browser/case-visual-pool.mjs`.
 
 ## Shader interpolation
