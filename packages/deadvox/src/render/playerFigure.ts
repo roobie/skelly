@@ -6,6 +6,9 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ItemDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { firearmAimOffHand } from '../core/firearmAimOffHand.ts';
+import { firearmAimHandPose } from '../core/firearmAimPose.ts';
+import { readyFirearmPose } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -173,6 +176,8 @@ export interface PlayerFigurePose {
   wornItems?: WornPresentation;
   heldItems?: FigureHeldItems;
   holdReady?: boolean;
+  /** Draw empty fists through the same ready-pose source as the player's first-person presentation. */
+  emptyFists?: boolean;
   eye?: Vec3;
   pitch?: number;
 }
@@ -452,6 +457,7 @@ export class PlayerMeshes {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and mounts resolve in one frame.
   private syncHeld(pose: PlayerFigurePose): void {
     const source = pose.heldItems ?? pose.inventory;
     this.heldFrame.visible = pose.thirdPerson === true;
@@ -461,8 +467,24 @@ export class PlayerMeshes {
       return;
     }
     const { registry, hands } = source;
-    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}`;
+    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}:${pose.emptyFists}:${this.handling.readiness?.uid}`;
     const presentation = this.prepareHeld(source, version);
+    this.addEmptyFists(presentation, hands, pose.emptyFists ?? false);
+    const aimOffHand = firearmAimOffHand(
+      hands,
+      this.handling.readiness,
+      (() => {
+        const firearmSide = (['right', 'left'] as const).find(
+          (hand) => hands[hand]?.uid === this.handling.readiness?.uid,
+        );
+        const side = firearmSide === 'right' ? 'left' : 'right';
+        const supportArm = presentation.arms.get(side);
+        return supportArm !== undefined && supportArm.parent !== presentation.torso;
+      })(),
+    );
+    if (aimOffHand?.mode === 'support') {
+      presentation.addAimSupport(aimOffHand.firearmSide);
+    }
     this.positionHeldFrame(pose, registry);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
@@ -472,7 +494,17 @@ export class PlayerMeshes {
     const holdingSide = hands.left ? 'left' : 'right';
     const leading = pose.inventory ? dominantSide(pose.inventory.character) : holdingSide;
     const handPose = this.handPose ?? readyMeleePose(pose.holdReady ?? false, this.figure.holds, leading);
-    presentation.poseStatic(hands, handPose, {
+    const readyAmount = this.handling.readiness ? Math.max(0, Math.min(1, this.handling.readiness.progress)) : 0;
+    const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
+    const active = firearmAimHandPose({
+      side: aimOffHand?.side ?? leading,
+      aimOffHand,
+      readyPose: this.handling.readiness ? readyFirearmPose(leading, this.figure.holds) : undefined,
+      holds: this.figure.holds,
+      easedReady,
+    });
+    const activeHandPose = active && aimOffHand ? { ...handPose, [aimOffHand.side]: active } : handPose;
+    presentation.poseStatic(hands, activeHandPose, {
       leading,
       ready: pose.holdReady ?? false,
       handling: this.handling,
@@ -485,6 +517,18 @@ export class PlayerMeshes {
       const hold = presentation.holds.get(side);
       anchor.position.set(...(hold?.at ?? [0, 0, 0]));
       presentation.solve(side, shoulder, presentation.displayPalms.get(side) ?? (hold ? anchor : undefined));
+    }
+  }
+
+  /** Adds the unarmed half of an explicitly posed pair of hands. */
+  private addEmptyFists(presentation: HeldPresentation, hands: FigureHeldItems['hands'], emptyFists: boolean): void {
+    if (!emptyFists) {
+      return;
+    }
+    for (const side of ['right', 'left'] as const) {
+      if (!hands[side]) {
+        presentation.addFist(side);
+      }
     }
   }
 

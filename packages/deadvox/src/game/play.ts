@@ -150,7 +150,7 @@ import { startingLoadout } from './loadout.ts';
 import {
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
-  shouldEnterMeleeReady,
+  shouldEnterMeleeGuard,
   startPlayerMelee,
   unarmedMeleeWeapon,
 } from './melee.ts';
@@ -171,7 +171,7 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
-import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
+import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
@@ -3138,14 +3138,30 @@ export const startPlay = (
     return true;
   };
 
-  const shouldPlayerBlock = (): boolean =>
-    shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
-      meleeWeaponHeld: selectPrimaryAction(inventory).kind === 'melee',
-      handsEmpty: !(inventory.hands.right || inventory.hands.left),
-      debugBuild: debugTools?.buildOn ?? false,
-      inputLocked: compression.locksInput,
-    });
+  const meleeReadiness = (meleeWeaponHeld: boolean, emptyHand?: HandSide) => ({
+    rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
+    meleeWeaponHeld,
+    handsEmpty:
+      emptyHand === undefined ? !(inventory.hands.right || inventory.hands.left) : !inventory.hands[emptyHand],
+    debugBuild: debugTools?.buildOn ?? false,
+    inputLocked: compression.locksInput,
+  });
+  const shouldPlayerBlock = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    return shouldEnterMeleeGuard({ ...meleeReadiness(false), firearmHeld: action.kind === 'firearm' });
+  };
+
+  const startPrimaryMelee = (action: ReturnType<typeof selectPrimaryAction>): void => {
+    const selected = primaryMeleeAction(
+      action,
+      meleeReadiness(action.kind === 'melee', action.kind === 'fists' ? action.hand : undefined),
+    );
+    if (!selected) {
+      return;
+    }
+    // On a ladder only the free hand swings.
+    swing(session.ladderHold.freeHand(selected.hand));
+  };
 
   const activateIgniter = (item: Item, hand: HandSide): void => {
     const target = ignitionTargetForHand(inventory, hand);
@@ -3212,7 +3228,7 @@ export const startPlay = (
         togglePin(action.item);
         return;
       case 'melee':
-        swing(action.hand);
+        startPrimaryMelee(action);
         return;
       case 'ignite':
         activateIgniter(action.item, action.hand);
@@ -3233,8 +3249,7 @@ export const startPlay = (
         );
         return;
       case 'fists':
-        // On a ladder only the free hand swings.
-        swing(session.ladderHold.freeHand(action.hand));
+        startPrimaryMelee(action);
         return;
       case 'noop':
         return;
@@ -3589,14 +3604,7 @@ export const startPlay = (
 
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
-    const selectedMelee = meleeSelection();
-    const ready = shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
-      meleeWeaponHeld: selectedMelee.item !== undefined,
-      handsEmpty: !(inventory.hands.right || inventory.hands.left),
-      debugBuild: debugTools?.buildOn ?? false,
-      inputLocked: compression.locksInput,
-    });
+    const ready = shouldPlayerBlock();
     const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))

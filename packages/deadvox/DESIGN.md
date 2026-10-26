@@ -1342,6 +1342,16 @@ A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. The lamp's authored grip must leave the flame visible; see
 `src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
+En-garde raises both hands close to the chin with elbows in, whether they are
+empty or holding items, so it reads as a guard whatever the player carries. A
+firearm on aim is not a melee guard: a free off hand supports the gun, an
+off-hand item in use stays raised and forward, and any other off-hand item rests. The off-hand state makes
+it clear whether the player is aiming with a free hand or still using what it
+holds. The rule is shared by first person, third person and the mannequin so
+other players and the third-person camera see the same hands. See
+`src/render/hands.ts`, `HeldItems.update`, and
+`src/content/base/figures-player.jsonnet`, `holds`.
+
 **Held screens.** An item with a screen is held at a raised spot with the screen
 facing the eye and the palm on the item's back, the way a person holds a compass
 or a phone, so the hand can never sit between the eye and the screen. Content

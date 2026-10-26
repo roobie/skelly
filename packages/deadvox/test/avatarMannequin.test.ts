@@ -1,10 +1,13 @@
-import { Scene } from 'three';
+import { Scene, Vector3 } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
-import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
+import { makeScale } from '../src/core/scale.ts';
+import { AvatarMannequin, createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const figure = registry.figures.get('player')!;
@@ -30,7 +33,7 @@ describe('debug avatar mannequin', () => {
     for (const stance of stances) {
       for (const moving of [false, true]) {
         const offered = mannequin!.poses.filter(
-          (pose) => !pose.hold && pose.stance === stance && pose.moving === moving,
+          (pose) => !(pose.hold || pose.emptyFists) && pose.stance === stance && pose.moving === moving,
         );
         expect(offered, `${stance} moving=${moving}`).toHaveLength(1);
         while (mannequin!.pose !== offered[0]) {
@@ -40,6 +43,92 @@ describe('debug avatar mannequin', () => {
         expect(mannequin!.pose).toBe(offered[0]);
       }
     }
+  });
+
+  it('raises both hands over their rest height in en-garde for every hold state', () => {
+    const gripY = (mannequin: AvatarMannequin, side: 'right' | 'left'): number => {
+      mannequin.group.updateMatrixWorld(true);
+      const arm = mannequin.group.getObjectByName(`first-person-arm-${side}`)!;
+      return arm.getObjectByName('grip-anchor')!.getWorldPosition(new Vector3()).y;
+    };
+    for (const name of [
+      'en-garde',
+      'en-garde-crowbar-right',
+      'en-garde-canned-beans-left',
+      'en-garde-crowbar-right-canned-beans-left',
+    ]) {
+      const { mannequin } = mannequinFor(true, `?debug=1&mannequin=${name}`);
+      const { pose } = mannequin!;
+      expect(pose.name).toBe(name);
+      const rest = new AvatarMannequin(
+        new PlayerMeshes(0.5, figure, registry.models, models),
+        [{ ...pose, ready: false }],
+        {
+          registry,
+          blockSize: 0.5,
+          placement: figure.mannequinPlacement,
+          requested: 'rest',
+        },
+      );
+      try {
+        mannequin!.sync([0, 0, 0], 0, 0);
+        rest.sync([0, 0, 0], 0, 0);
+        for (const side of ['right', 'left'] as const) {
+          expect(gripY(mannequin!, side), `${name}/${side}`).toBeGreaterThan(gripY(rest, side));
+        }
+      } finally {
+        mannequin!.dispose();
+        rest.dispose();
+      }
+    }
+  });
+
+  it('uses the player firearm-aim owner to mount the mannequin free hand at the firearm support point', () => {
+    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=aim-firearm');
+    expect(mannequin!.pose.name).toBe('aim-firearm');
+    mannequin!.sync([0, 0, 0], 0, 0);
+    mannequin!.group.updateMatrixWorld(true);
+    const held = mannequin!.group.getObjectByName('held-item-right')!;
+    const grip = mannequin!.group
+      .getObjectByName('first-person-arm-left')!
+      .getObjectByName('grip-anchor')!
+      .getWorldPosition(new Vector3());
+    const support = held.localToWorld(new Vector3(...figure.holds.supportForward));
+    expect(grip.distanceTo(support)).toBeLessThan(1e-6);
+  });
+
+  it('raises an active off-hand item through the third-person aim owner', () => {
+    const firearm = [...registry.items.values()].find((item) => item.firearm && !item.twoHanded)!;
+    const light = [...registry.items.values()].find((item) => item.light && !item.twoHanded && !item.firearm)!;
+    const gripHeight = (on: boolean): number => {
+      const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
+      meshes.sync({
+        body: createPlayerBody(makeScale(0.5), 0, 0, 0),
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance: 'standing',
+        dt: 0,
+        thirdPerson: true,
+        heldItems: {
+          registry,
+          hands: {
+            right: { uid: 1, type: firearm.id, count: 1, condition: 1 },
+            left: { uid: 2, type: light.id, count: 1, condition: 1, on },
+          },
+        },
+      });
+      meshes.syncHeldView(undefined, { readiness: { uid: 1, progress: 1, aimingDownSights: false } });
+      meshes.group.updateMatrixWorld(true);
+      const height = meshes.group
+        .getObjectByName('first-person-arm-left')!
+        .getObjectByName('grip-anchor')!
+        .getWorldPosition(new Vector3()).y;
+      meshes.dispose();
+      return height;
+    };
+    expect(gripHeight(true)).toBeGreaterThan(gripHeight(false));
   });
 
   it('steps through the offered poses and wraps round', () => {

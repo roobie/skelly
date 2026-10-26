@@ -33,6 +33,8 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
+import { firearmAimHandPose } from '../core/firearmAimPose.ts';
 import type { Job } from '../core/handling.ts';
 import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -284,6 +286,7 @@ export class HeldItems {
     const { loweredPitchRadians } = firearmsCombatTuning(this.inventory.registry);
     const leadingSide = dominantSide(this.inventory.character);
     const readyPose = readiness ? readyFirearmPose(leadingSide, this.figure.holds) : undefined;
+    const aimOffHand = firearmAimOffHand(this.inventory.hands, readiness, this.firearmSupportMounted(readiness));
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
     this.torso.rotation.y = renderPose?.torsoYaw ?? 0;
@@ -298,10 +301,14 @@ export class HeldItems {
         handling,
         leadingSide,
         readyPose,
+        aimOffHand,
         readyAmount,
         easedReady,
         loweredPitchRadians,
       });
+    }
+    if (aimOffHand?.mode === 'support') {
+      this.placeFirearmAimSupport(aimOffHand, readiness!.uid, easedReady);
     }
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
@@ -338,6 +345,32 @@ export class HeldItems {
     }
   }
 
+  /** Whether the gun already owns its off-hand support arm through its model hold. */
+  private firearmSupportMounted(readiness: HeldPresentationFrame['readiness']): boolean {
+    if (!readiness) {
+      return false;
+    }
+    const firearmSide = (['right', 'left'] as const).find((hand) => this.inventory.hands[hand]?.uid === readiness.uid);
+    if (!firearmSide) {
+      return false;
+    }
+    const side = firearmSide === 'right' ? 'left' : 'right';
+    return this.arms.get(side)?.parent !== this.torso;
+  }
+
+  /** Moves an empty off hand toward the firearm's content-owned support side while aiming. */
+  private placeFirearmAimSupport({ side, firearmSide }: FirearmAimOffHand, uid: number, easedReady: number): void {
+    const arm = this.arms.get(side);
+    const held = this.shown.get(uid);
+    if (!(arm?.parent && held)) {
+      return;
+    }
+    const [x, y, z] = this.figure.holds.supportForward;
+    const target = held.localToWorld(new Vector3(firearmSide === 'right' ? x : -x, y, z));
+    arm.position.lerp(arm.parent.worldToLocal(target), easedReady);
+    this.handsOff.add(side);
+  }
+
   private poseHeldHand({
     side,
     main,
@@ -346,6 +379,7 @@ export class HeldItems {
     handling,
     leadingSide,
     readyPose,
+    aimOffHand,
     readyAmount,
     easedReady,
     loweredPitchRadians,
@@ -357,19 +391,24 @@ export class HeldItems {
     handling: HeldHandlingFrame;
     leadingSide: HandSide;
     readyPose: ReturnType<typeof readyMeleePose> | undefined;
+    aimOffHand: FirearmAimOffHand | undefined;
     readyAmount: number;
     easedReady: number;
     loweredPitchRadians: number;
   }): void {
     const neutral = { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
-    const hand = pose?.[side] ?? neutral;
+    const activeHand = firearmAimHandPose({ side, aimOffHand, readyPose, holds: this.figure.holds, easedReady });
+    const hand = activeHand ?? pose?.[side] ?? neutral;
     const target = readyPose?.[side];
-    const stanceHand = target
-      ? {
-          offset: hand.offset.map((value, index) => value + (target.offset[index]! - value) * easedReady) as Vec3,
-          rotation: hand.rotation.map((value, index) => value + (target.rotation[index]! - value) * easedReady) as Vec3,
-        }
-      : hand;
+    const stanceHand =
+      !activeHand && target
+        ? {
+            offset: hand.offset.map((value, index) => value + (target.offset[index]! - value) * easedReady) as Vec3,
+            rotation: hand.rotation.map(
+              (value, index) => value + (target.rotation[index]! - value) * easedReady,
+            ) as Vec3,
+          }
+        : hand;
     const base = this.handBases.get(side);
     const arm = this.arms.get(side);
     if (!(base && arm)) {

@@ -300,6 +300,19 @@ export class HeldPresentation {
     this.addArm(side, this.mirror(side, this.figure.holds.oneHand), 'fist');
   }
 
+  /** Mounts a genuinely free hand at an aimed one-handed firearm's generic support point. */
+  addAimSupport(side: HandSide): void {
+    const held = this.heldByHand.get(side);
+    if (!(held instanceof Group)) {
+      return;
+    }
+    const other = side === 'right' ? 'left' : 'right';
+    const origin = held.position.toArray() as Vec3;
+    const offset = this.mirror(side, this.figure.holds.supportForward);
+    const grip = origin.map((value, index) => value + offset[index]!) as Vec3;
+    this.addArm(other, grip, 'fist', { mount: { held, origin } });
+  }
+
   private mirror(side: HandSide, at: Vec3): Vec3 {
     return [side === 'right' ? at[0] : -at[0], at[1], at[2]];
   }
