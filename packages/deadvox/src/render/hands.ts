@@ -424,15 +424,18 @@ export class HeldItems {
     const transform = this.presentation.handTransform(side, stanceHand)!;
     const item = this.inventory.hands[side];
     if (!item) {
-      const lowered = this.figure.holds.emptyHands.loweredOffset;
-      transform.offset = transform.offset.map(
-        (value, axis) => value + lowered[axis]! * this.emptyHandsLowered * (axis === 0 && side === 'left' ? -1 : 1),
+      const lowered = this.figure.holds.emptyHands.loweredOffset.map(
+        (value, axis) => value * this.emptyHandsLowered * (axis === 0 && side === 'left' ? -1 : 1),
       ) as Vec3;
-      // Relaxed hands hang world-down: countering pitch hides them level but reveals them when the player looks down.
+      // Only the relaxed portion hangs world-down; guards and reaches remain camera-relative.
       this.handPosition
-        .set(...transform.offset)
+        .set(...lowered)
         .applyQuaternion(this.poseRotation.setFromEuler(this.poseEuler.set(-main.rotation.x, 0, 0)));
-      transform.offset = [this.handPosition.x, this.handPosition.y, this.handPosition.z];
+      transform.offset = [
+        transform.offset[0] + this.handPosition.x,
+        transform.offset[1] + this.handPosition.y,
+        transform.offset[2] + this.handPosition.z,
+      ];
     }
     this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
     this.applyViewPose(main, pose, transform);

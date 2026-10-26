@@ -281,7 +281,7 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>
 
 /**
  * The player's world body from its figure row, each part drawn once its model loads. The body, head included,
- * stays drawn in first person, where the head sits behind the eye; the arms show only in third person.
+ * stays drawn in first person, where the head sits behind the eye; view-arm counterparts are shadow-only.
  */
 export class PlayerMeshes {
   readonly group = new Group();
@@ -414,7 +414,9 @@ export class PlayerMeshes {
       const side = ARM_SIDE[part.name];
       const viewArm = isArm(part.name) && !thirdPerson && Boolean(side && this.presentation?.arms.has(side));
       drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side))) || viewArm;
-      this.setShadowOnly(drawn, viewArm);
+      if (isArm(part.name)) {
+        this.setShadowOnly(drawn, viewArm);
+      }
       this.posePoint(part.at, part.name, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
@@ -565,17 +567,19 @@ export class PlayerMeshes {
         return;
       }
       if (!object.userData.shadowOnlyMaterial) {
-        object.material = (Array.isArray(object.material) ? object.material : [object.material]).map((material) =>
-          material.clone(),
-        ) as Material[];
+        object.material = Array.isArray(object.material)
+          ? object.material.map((material) => material.clone())
+          : object.material.clone();
         object.userData.shadowOnlyMaterial = true;
       }
       for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
         material.colorWrite = !shadowOnly;
+        material.depthWrite = !shadowOnly;
       }
     });
   }
 
+  /** Adds each part whose model has loaded since the last sync. */
   private syncModels(): void {
     for (const part of this.layout.parts) {
       if (this.drawn.has(part) || !this.models.has(part.model)) {

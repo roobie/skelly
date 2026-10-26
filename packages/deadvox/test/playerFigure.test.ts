@@ -779,6 +779,7 @@ describe('player figure', () => {
     let shadowOnly = false;
     arm.traverse((object) => {
       if (object instanceof Mesh) {
+        expect(Array.isArray(object.material)).toBe(false);
         shadowOnly ||=
           object.castShadow &&
           !(Array.isArray(object.material) ? object.material : [object.material]).some(
@@ -840,9 +841,12 @@ describe('player figure', () => {
     const inventory = new Inventory(registry);
     const held = new HeldItems(inventory, figureModels, playerFigure);
     const camera = new PerspectiveCamera(75, 1, 0.01, 16);
-    const visibleVertices = (pitch: number): number => {
+    const visibleVertices = (
+      pitch: number,
+      handling: Parameters<typeof held.update>[3] = { firearms: [], dt: 1 },
+    ): number => {
       camera.rotation.set(pitch, 0, 0, 'YXZ');
-      held.update(camera, readyMeleePose(false), 0, { firearms: [], dt: 1 });
+      held.update(camera, readyMeleePose(false), 0, handling);
       camera.updateMatrixWorld(true);
       const frustum = new Frustum().setFromProjectionMatrix(
         new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
@@ -867,6 +871,13 @@ describe('player figure', () => {
     };
     expect(visibleVertices(-0.8)).toBeGreaterThan(0);
     expect(visibleVertices(0)).toBe(0);
+    for (const handling of [
+      { firearms: [], emptyHandsReady: true, dt: 1 },
+      { firearms: [], grab: { progress: 0 }, dt: 1 },
+    ]) {
+      expect(visibleVertices(-0.8, handling)).toBeGreaterThan(0);
+      expect(visibleVertices(0.6, handling)).toBeGreaterThan(0);
+    }
     held.dispose();
   });
 
