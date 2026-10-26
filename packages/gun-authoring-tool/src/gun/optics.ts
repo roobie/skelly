@@ -1,6 +1,7 @@
 import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { type Reticle, ReticleSchema } from '@skelly/thing-core/reticle';
 import {
   array,
   boolean,
@@ -17,6 +18,7 @@ import {
 import appearance from './appearance.json' with { type: 'json' };
 import fixedPrism from './fixedPrism.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
+import reticleContent from './reticles.json' with { type: 'json' };
 
 export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>
   solids.filter((solid) => solid.kind === 'box' && solid.id.endsWith('foot'));
@@ -45,7 +47,9 @@ export interface OpticCatalogEntry {
   readonly opticalAxisY: number;
   /** Host feed modes explicitly excluded by the authored mount; geometry is still checked separately. */
   readonly excludedHostFeeds?: readonly string[];
-  readonly reticleKind: 'dot' | 'crosshair' | 'chevron';
+  readonly reticle: Reticle;
+  readonly reticleReference: string;
+  readonly reticleSource: string;
   /** Magnification range for export; absent on non-magnifying sights. */
   readonly magnification?: { readonly min: number; readonly max: number };
   readonly ocularX: number;
@@ -202,10 +206,19 @@ const sightline = (startX: number, axisY: number, ironCoWitness: boolean, length
 });
 
 const makeEntry = (
-  entry: Omit<OpticCatalogEntry, 'keepOuts'> & { readonly sightlineStartX: number },
+  entry: Omit<OpticCatalogEntry, 'keepOuts' | 'reticle' | 'reticleReference' | 'reticleSource'> & {
+    readonly sightlineStartX: number;
+  },
 ): OpticCatalogEntry => {
   const { sightlineStartX, ...rest } = entry;
-  return { ...rest, keepOuts: [sightline(sightlineStartX, entry.opticalAxisY, entry.ironCoWitness)] };
+  const authored = reticleContent[entry.id];
+  return {
+    ...rest,
+    reticle: parse(ReticleSchema, authored.reticle),
+    reticleReference: authored.reference,
+    reticleSource: authored.source,
+    keepOuts: [sightline(sightlineStartX, entry.opticalAxisY, entry.ironCoWitness)],
+  };
 };
 
 const railMount = ({
@@ -259,11 +272,10 @@ const ContentSolid = variant('kind', [
 
 const MICRO_HOUSING_DISPLAY = { bevel: false, outline: false, mergeGroup: 'micro-housing' } as const;
 
-/** Manufacturer-class visual envelopes; lens glass is a look only, and no zoom, reticle, NV or thermal behavior is simulated. */
+/** Manufacturer-class visual envelopes and authored optical metadata. */
 export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   'mini-reflex': makeEntry({
     id: 'mini-reflex',
-    reticleKind: 'dot',
     label: 'Closed micro dot (ACRO P-2 class)',
     reference:
       'Aimpoint ACRO P-2, 47 × 33 × 31 mm (L × W × H); modeled at BR’s approximately 51 × 30 × 30 mm mounted class',
@@ -339,7 +351,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'tube-dot': makeEntry({
     id: 'tube-dot',
-    reticleKind: 'dot',
     label: 'Tube dot (Micro T-2 class)',
     reference: 'Aimpoint Micro T-2, 68 × 41 × 41 mm class',
     source: 'https://www.aimpoint.com/products/red-dot-sights/micro-t-2',
@@ -368,7 +379,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   holographic: makeEntry({
     id: 'holographic',
-    reticleKind: 'dot',
     label: 'Compact holographic (XPS2 class)',
     reference: 'EOTECH XPS2, 96.5 × 53.3 × 63.5 mm (L × W × H); deliberately about 8% smaller at BR’s visual request',
     source: 'https://www.eotechinc.com/eotech-hws-xps2',
@@ -413,7 +423,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'fixed-prism-4x': makeEntry({
     id: 'fixed-prism-4x',
-    reticleKind: 'chevron',
     label: 'Fixed 4× prism (TA31 class)',
     magnification: { min: 4, max: 4 },
     reference: fixedPrism.reference,
@@ -433,7 +442,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'lpvo-1-6x': makeEntry({
     id: 'lpvo-1-6x',
-    reticleKind: 'crosshair',
     label: 'Low-power variable optic (Razor Gen II-E class)',
     magnification: { min: 1, max: 6 },
     reference: 'Vortex Razor HD Gen II-E 1–6×24, approximately 257 mm long',
@@ -473,7 +481,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'hunting-3-9x': makeEntry({
     id: 'hunting-3-9x',
-    reticleKind: 'crosshair',
     label: 'Hunting scope (3–9×40 class)',
     magnification: { min: 3, max: 9 },
     reference: 'Vortex Crossfire II 3–9×40: L1 11.86 in, H1 1.89 in; turret envelope estimated',
@@ -521,7 +528,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'high-mag-5-25x': makeEntry({
     id: 'high-mag-5-25x',
-    reticleKind: 'crosshair',
     label: 'High-magnification scope (ATACR 5–25×56 class)',
     magnification: { min: 5, max: 25 },
     reference: 'Nightforce ATACR 5–25×56 F1 class, approximately 363 mm long',
@@ -561,7 +567,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'digital-thermal': makeEntry({
     id: 'digital-thermal',
-    reticleKind: 'crosshair',
     label: 'Digital optic (Thermion 2 XQ50 Pro class)',
     magnification: { min: 3, max: 12 },
     reference: 'Pulsar Thermion 2 XQ50 Pro, approximately 343 mm long',

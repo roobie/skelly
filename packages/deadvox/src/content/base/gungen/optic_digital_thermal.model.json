@@ -7,7 +7,38 @@
       "kind": "optic",
       "mount": "rail-top",
       "properties": {
-        "reticleKind": "crosshair",
+        "reticle": {
+          "focalPlane": "first",
+          "referenceMagnification": 12,
+          "primitives": [
+            { "kind": "line", "from": [-0.82, 0], "to": [-0.075, 0], "width": 0.012, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0.075, 0], "to": [0.82, 0], "width": 0.012, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0, 0.075], "to": [0, 0.82], "width": 0.012, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0, -0.075], "to": [0, -0.82], "width": 0.012, "color": [0.025, 0.025, 0.025] },
+            { "kind": "dot", "center": [0, 0], "radius": 0.021, "color": [0.95, 0.075, 0.035] },
+            {
+              "kind": "line",
+              "from": [-0.065, -0.25],
+              "to": [0.065, -0.25],
+              "width": 0.012,
+              "color": [0.025, 0.025, 0.025]
+            },
+            {
+              "kind": "line",
+              "from": [-0.065, -0.45],
+              "to": [0.065, -0.45],
+              "width": 0.012,
+              "color": [0.025, 0.025, 0.025]
+            },
+            {
+              "kind": "line",
+              "from": [-0.065, -0.65],
+              "to": [0.065, -0.65],
+              "width": 0.012,
+              "color": [0.025, 0.025, 0.025]
+            }
+          ]
+        },
         "magnification": { "min": 3, "max": 12 },
         "railSpanNotches": { "minOffset": -3, "maxOffset": 3 }
       },

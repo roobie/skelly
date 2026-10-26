@@ -1,7 +1,14 @@
+import type { Reticle } from '@skelly/thing-core/reticle';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { insideLensAperture, type LensAperture, opticFieldOfView, opticViewSettings } from '../src/core/opticView.ts';
 import type { ItemDef, ModelDef } from '../src/core/schema.ts';
+
+const reticle: Reticle = {
+  focalPlane: 'second',
+  referenceMagnification: 1,
+  primitives: [{ kind: 'dot', center: [0, 0], radius: 0.02, color: [1, 0, 0] }],
+};
 
 const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachment']>['properties']): ModelDef => ({
   id: 'optic_fixture_model',
@@ -12,7 +19,7 @@ const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachme
       kind: 'optic',
       mount: 'rail-top',
       mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
-      properties: { ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
+      properties: { reticle, ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
     },
   },
 });
@@ -55,24 +62,23 @@ const registryFor = (
 describe('optic view settings', () => {
   it('uses the core-mod value for a variable optic and preserves the exported reticle', () => {
     const item = itemFor(4);
-    const model = modelFor({ magnification: { min: 1, max: 6 }, reticleKind: 'chevron' });
-    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, reticleKind: 'chevron' });
+    const model = modelFor({ magnification: { min: 1, max: 6 }, reticle });
+    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, reticle });
   });
 
   it('uses a fixed exported power and one-times for a reflex', () => {
-    expect(
-      opticViewSettings(itemFor(), modelFor({ magnification: { min: 4, max: 4 }, reticleKind: 'crosshair' })),
-    ).toEqual({ magnification: 4, reticleKind: 'crosshair' });
-    expect(opticViewSettings(itemFor(), modelFor({ reticleKind: 'dot' }))).toEqual({
+    expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 4, max: 4 }, reticle }))).toEqual({
+      magnification: 4,
+      reticle,
+    });
+    expect(opticViewSettings(itemFor(), modelFor({ reticle }))).toEqual({
       magnification: 1,
-      reticleKind: 'dot',
+      reticle,
     });
   });
 
   it('does not invent a setting for an unconfigured variable optic', () => {
-    expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 2, max: 8 }, reticleKind: 'dot' }))).toBe(
-      undefined,
-    );
+    expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 2, max: 8 }, reticle }))).toBe(undefined);
   });
 
   it('requires zoom tuning for supported variable optics and rejects it on fixed models', () => {
@@ -87,14 +93,20 @@ describe('optic view settings', () => {
     expect(fixed.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticZoom' })]));
   });
 
+  it('rejects an optic export with no authored reticle', () => {
+    expect(registryFor({ reticle: undefined }).issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'models[0].gun.attachment' })]),
+    );
+  });
+
   it('validates authored power against the export range', () => {
-    const valid = registryFor({ magnification: { min: 1, max: 6 }, reticleKind: 'dot' }, 5);
+    const valid = registryFor({ magnification: { min: 1, max: 6 }, reticle }, 5);
     expect(valid.issues).toEqual([]);
-    const invalid = registryFor({ magnification: { min: 1, max: 6 }, reticleKind: 'dot' }, 7);
+    const invalid = registryFor({ magnification: { min: 1, max: 6 }, reticle }, 7);
     expect(invalid.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticMagnification' })]),
     );
-    const missing = registryFor({ magnification: { min: 1, max: 6 }, reticleKind: 'dot' }, undefined, true);
+    const missing = registryFor({ magnification: { min: 1, max: 6 }, reticle }, undefined, true);
     expect(missing.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticMagnification' })]),
     );

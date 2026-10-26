@@ -2,6 +2,7 @@ import type { PartAppearance, PartDef, PartInstance, PortDef, Resolved } from '@
 import { applyDir, applyPoint, type Vec3 } from '@skelly/engine/foundation/math.ts';
 import { localSolidBounds } from '@skelly/engine/shapes/geometry.ts';
 import { MATERIALS } from '@skelly/thing-core/materials';
+import type { Reticle } from '@skelly/thing-core/reticle';
 import appearanceContent from './appearance.json' with { type: 'json' };
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, LENS_SLOT, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
@@ -15,7 +16,7 @@ interface MagnificationRange {
 
 interface AttachmentProperties {
   readonly magnification?: MagnificationRange;
-  readonly reticleKind?: 'dot' | 'crosshair' | 'chevron';
+  readonly reticle?: Reticle;
   readonly noiseFactor?: number;
   readonly wearClass?: 'real' | 'improvised';
   readonly handlingClass?: string;
@@ -255,7 +256,7 @@ const opticMetadata = (
     kind: 'optic',
     mount: optic.mount.kind,
     properties: {
-      reticleKind: optic.reticleKind,
+      reticle: optic.reticle,
       ...(optic.magnification === undefined ? {} : { magnification: optic.magnification }),
       ...(span ? { railSpanNotches: span } : {}),
     },

@@ -6,7 +6,14 @@
       "id": "optic-tube-dot",
       "kind": "optic",
       "mount": "rail-top",
-      "properties": { "reticleKind": "dot", "railSpanNotches": { "minOffset": -1, "maxOffset": 1 } },
+      "properties": {
+        "reticle": {
+          "focalPlane": "second",
+          "referenceMagnification": 1,
+          "primitives": [{ "kind": "dot", "center": [0, 0], "radius": 0.019, "color": [0.95, 0.075, 0.035] }]
+        },
+        "railSpanNotches": { "minOffset": -1, "maxOffset": 1 }
+      },
       "sight": {
         "kind": "optic",
         "eye": [-0.0345, 0.023, 0],

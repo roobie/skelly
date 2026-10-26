@@ -4,6 +4,7 @@
 // Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
 import { MATERIALS } from '@skelly/thing-core/materials';
+import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
@@ -1839,7 +1840,7 @@ const AttachmentPropertiesSchema = strictObject({
       check(({ min, max }) => max >= min, 'maximum magnification cannot be below minimum'),
     ),
   ),
-  reticleKind: optional(picklist(['dot', 'crosshair', 'chevron'])),
+  reticle: optional(ReticleSchema),
   noiseFactor: optional(Fraction),
   wearClass: optional(picklist(['real', 'improvised'])),
   handlingClass: optional(pipe(string(), nonEmpty('must not be empty'))),
@@ -1875,9 +1876,12 @@ const attachmentSpanCheck = check(
   attachmentSpanMatchesMount,
   'rail attachments need a notch span and muzzle attachments cannot have one',
 );
+const attachmentHasReticle = ({ kind, properties }: InferOutput<typeof AttachmentFieldsSchema>): boolean =>
+  (kind === 'optic') === (properties.reticle !== undefined);
 const AttachmentSchema = pipe(
   AttachmentFieldsSchema,
   attachmentSpanCheck,
+  check(attachmentHasReticle, 'optics need an authored reticle and other attachments cannot have one'),
   check(
     ({ kind, properties }) => (kind === 'suppressor') === (properties.noiseFactor !== undefined),
     'suppressors need a noise factor and other attachments cannot have one',
@@ -1889,6 +1893,10 @@ const FittedAttachmentSchema = pipe(
     node: pipe(string(), nonEmpty('must not be empty')),
     mountedAt: pipe(string(), nonEmpty('must not be empty')),
   }),
+  check(
+    (value) => attachmentHasReticle(value),
+    'optics need an authored reticle and other attachments cannot have one',
+  ),
   check(
     (value) => attachmentSpanMatchesMount(value),
     'rail attachments need a notch span and muzzle attachments cannot have one',

@@ -1,13 +1,12 @@
+import type { Reticle } from '@skelly/thing-core/reticle';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Item } from './items.ts';
 import type { ItemDef, ModelDef } from './schema.ts';
 
-export type ReticleKind = 'dot' | 'crosshair' | 'chevron';
-
 export interface OpticViewSettings {
   readonly magnification: number;
-  readonly reticleKind?: ReticleKind;
+  readonly reticle?: Reticle;
 }
 
 export interface OpticZoomFrame {
@@ -58,7 +57,7 @@ export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSe
   const magnification = item.opticMagnification ?? range?.min ?? 1;
   return {
     magnification,
-    ...(attachment.properties.reticleKind === undefined ? {} : { reticleKind: attachment.properties.reticleKind }),
+    ...(attachment.properties.reticle === undefined ? {} : { reticle: attachment.properties.reticle }),
   };
 };
 

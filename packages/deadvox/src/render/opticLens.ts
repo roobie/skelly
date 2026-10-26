@@ -1,4 +1,14 @@
-import { HalfFloatType, PerspectiveCamera, type Scene, Vector2, type WebGLRenderer, WebGLRenderTarget } from 'three';
+import { MAX_RETICLE_PRIMITIVES, reticleScale } from '@skelly/thing-core/reticle';
+import {
+  HalfFloatType,
+  PerspectiveCamera,
+  type Scene,
+  Vector2,
+  Vector3,
+  Vector4,
+  type WebGLRenderer,
+  WebGLRenderTarget,
+} from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { OpticLensFrame } from '../core/opticView.ts';
 import { opticFieldOfView } from '../core/opticView.ts';
@@ -11,7 +21,11 @@ const OPTIC_LENS_SHADER = {
     uZoomActive: { value: 0 },
     uLensCenter: { value: new Vector2(0.5, 0.5) },
     uLensRadius: { value: new Vector2(0.25, 0.4) },
-    uReticleKind: { value: -1 },
+    uReticleCount: { value: 0 },
+    uReticleScale: { value: 1 },
+    uReticleGeometry: { value: Array.from({ length: MAX_RETICLE_PRIMITIVES }, () => new Vector4()) },
+    uReticleStyle: { value: Array.from({ length: MAX_RETICLE_PRIMITIVES }, () => new Vector3()) },
+    uReticleColor: { value: Array.from({ length: MAX_RETICLE_PRIMITIVES }, () => new Vector3()) },
   },
   vertexShader: `
 varying vec2 vUv;
@@ -25,27 +39,34 @@ uniform sampler2D uZoomTexture;
 uniform float uZoomActive;
 uniform vec2 uLensCenter;
 uniform vec2 uLensRadius;
-uniform int uReticleKind;
+uniform int uReticleCount;
+uniform float uReticleScale;
+uniform vec4 uReticleGeometry[${MAX_RETICLE_PRIMITIVES}];
+uniform vec3 uReticleStyle[${MAX_RETICLE_PRIMITIVES}];
+uniform vec3 uReticleColor[${MAX_RETICLE_PRIMITIVES}];
 varying vec2 vUv;
 
-float stroke(float distance, float width) {
-  return 1.0 - smoothstep(width, width + 0.004, distance);
-}
-
-float reticle(vec2 p) {
-  if (uReticleKind == 0) {
-    return 1.0 - smoothstep(0.022, 0.035, length(p));
+vec3 reticle(vec2 p, vec3 color, float aperture) {
+  p /= uReticleScale;
+  float aa = max(length(fwidth(p)) * 0.5, 0.0001);
+  for (int i = 0; i < ${MAX_RETICLE_PRIMITIVES}; i++) {
+    if (i >= uReticleCount) break;
+    vec4 g = uReticleGeometry[i];
+    vec3 s = uReticleStyle[i];
+    float distance;
+    if (s.x < 0.5) {
+      distance = length(p - g.xy) - s.y;
+    } else if (s.x < 1.5) {
+      distance = abs(length(p - g.xy) - s.y) - s.z * 0.5;
+    } else {
+      vec2 segment = g.zw - g.xy;
+      float t = clamp(dot(p - g.xy, segment) / dot(segment, segment), 0.0, 1.0);
+      distance = length(p - g.xy - t * segment) - s.z * 0.5;
+    }
+    float mark = (1.0 - smoothstep(-aa, aa, distance)) * aperture;
+    color = mix(color, uReticleColor[i], mark);
   }
-  if (uReticleKind == 1) {
-    float horizontal = stroke(abs(p.y), 0.009) * step(0.10, abs(p.x)) * step(abs(p.x), 0.88);
-    float vertical = stroke(abs(p.x), 0.009) * step(0.10, abs(p.y)) * step(abs(p.y), 0.88);
-    return max(horizontal, vertical);
-  }
-  if (uReticleKind == 2) {
-    float chevron = stroke(abs(p.y - (0.16 - 1.4 * abs(p.x))), 0.009) * step(abs(p.x), 0.14);
-    return chevron;
-  }
-  return 0.0;
+  return color;
 }
 
 void main() {
@@ -57,8 +78,7 @@ void main() {
   vec3 color = mix(source.rgb, lens, aperture);
   float frame = smoothstep(0.96, 0.99, radius) * (1.0 - smoothstep(1.09, 1.13, radius));
   color = mix(color, vec3(0.035, 0.04, 0.045), frame);
-  float mark = reticle(local) * aperture;
-  color = mix(color, vec3(0.95, 0.075, 0.035), mark);
+  color = reticle(local, color, aperture);
   gl_FragColor = vec4(color, source.a);
 }`,
 };
@@ -97,3 +117,22 @@ export class OpticLensRenderer {
 }
 
 export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER);
+
+export const setReticleUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
+  const { reticle } = frame;
+  const { uniforms } = pass;
+  uniforms.uReticleCount!.value = reticle?.primitives.length ?? 0;
+  uniforms.uReticleScale!.value = reticle ? reticleScale(reticle, frame.magnification) : 1;
+  reticle?.primitives.forEach((primitive, index) => {
+    const geometry: Vector4 = uniforms.uReticleGeometry!.value[index];
+    const style: Vector3 = uniforms.uReticleStyle!.value[index];
+    if (primitive.kind === 'line') {
+      geometry.set(...primitive.from, ...primitive.to);
+      style.set(2, 0, primitive.width);
+    } else {
+      geometry.set(...primitive.center, 0, 0);
+      style.set(primitive.kind === 'dot' ? 0 : 1, primitive.radius, primitive.kind === 'ring' ? primitive.width : 0);
+    }
+    uniforms.uReticleColor!.value[index].set(...primitive.color);
+  });
+};

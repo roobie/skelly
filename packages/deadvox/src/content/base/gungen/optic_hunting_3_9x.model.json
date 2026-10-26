@@ -7,7 +7,18 @@
       "kind": "optic",
       "mount": "rail-top",
       "properties": {
-        "reticleKind": "crosshair",
+        "reticle": {
+          "focalPlane": "second",
+          "referenceMagnification": 1,
+          "primitives": [
+            { "kind": "line", "from": [-0.87, 0], "to": [-0.42, 0], "width": 0.035, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0.42, 0], "to": [0.87, 0], "width": 0.035, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0, 0.42], "to": [0, 0.87], "width": 0.035, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0, -0.42], "to": [0, -0.87], "width": 0.035, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [-0.42, 0], "to": [0.42, 0], "width": 0.006, "color": [0.025, 0.025, 0.025] },
+            { "kind": "line", "from": [0, -0.42], "to": [0, 0.42], "width": 0.006, "color": [0.025, 0.025, 0.025] }
+          ]
+        },
         "magnification": { "min": 3, "max": 9 },
         "railSpanNotches": { "minOffset": -3, "maxOffset": 3 }
       },

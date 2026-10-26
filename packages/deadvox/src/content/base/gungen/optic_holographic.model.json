@@ -6,7 +6,21 @@
       "id": "optic-holographic",
       "kind": "optic",
       "mount": "rail-top",
-      "properties": { "reticleKind": "dot", "railSpanNotches": { "minOffset": -1, "maxOffset": 1 } },
+      "properties": {
+        "reticle": {
+          "focalPlane": "second",
+          "referenceMagnification": 1,
+          "primitives": [
+            { "kind": "ring", "center": [0, 0], "radius": 0.48, "width": 0.012, "color": [0.95, 0.075, 0.035] },
+            { "kind": "dot", "center": [0, 0], "radius": 0.014, "color": [0.95, 0.075, 0.035] },
+            { "kind": "line", "from": [-0.59, 0], "to": [-0.48, 0], "width": 0.012, "color": [0.95, 0.075, 0.035] },
+            { "kind": "line", "from": [0.48, 0], "to": [0.59, 0], "width": 0.012, "color": [0.95, 0.075, 0.035] },
+            { "kind": "line", "from": [0, 0.48], "to": [0, 0.59], "width": 0.012, "color": [0.95, 0.075, 0.035] },
+            { "kind": "line", "from": [0, -0.59], "to": [0, -0.48], "width": 0.012, "color": [0.95, 0.075, 0.035] }
+          ]
+        },
+        "railSpanNotches": { "minOffset": -1, "maxOffset": 1 }
+      },
       "sight": {
         "kind": "optic",
         "eye": [-0.043125, 0.0345, 0],

@@ -1,7 +1,9 @@
 import { dominantSide } from '../core/character.ts';
+import { firearmSlotIds } from '../core/firearmFitting.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
+import { opticViewSettings } from '../core/opticView.ts';
 
 const LOADOUTS = ['ar', 'ak', 'pump', 'hunting', 'magazine', 'grenade', 'revolver', 'revolver-open'] as const;
 type LoadoutChoice = (typeof LOADOUTS)[number];
@@ -52,7 +54,36 @@ export const equipDebugLoadout = (
   } else {
     equipRifles(inventory, backpack, choice);
   }
+  const optic = new URLSearchParams(search).get('optic');
+  if (optic) {
+    equipPreviewOptic(inventory, optic);
+  }
   return true;
+};
+
+const equipPreviewOptic = (inventory: Inventory, type: string): void => {
+  const firearm = inventory.hands[dominantSide(inventory.character)];
+  const definition = inventory.registry.items.get(type);
+  const model = definition?.model ? inventory.registry.models.get(definition.model) : undefined;
+  if (!(firearm && definition && model?.gun?.attachment?.kind === 'optic' && opticViewSettings(definition, model))) {
+    throw new Error('Preview needs a firearm and an optic item');
+  }
+  for (const [slot, child] of Object.entries(firearm.slots ?? {})) {
+    const childDef = defOf(inventory.registry, child.type);
+    if (childDef.model && inventory.registry.models.get(childDef.model)?.gun?.attachment?.kind === 'optic') {
+      inventory.fitSlot(firearm, slot, undefined);
+    }
+  }
+  const optic = inventory.create(type);
+  for (const slot of firearmSlotIds(inventory.registry, defOf(inventory.registry, firearm.type))) {
+    try {
+      inventory.fitSlot(firearm, slot, optic);
+      return;
+    } catch {
+      // fitSlot rolls an uncertified choice back; another rail station may fit.
+    }
+  }
+  throw new Error('No certified preview station for this optic');
 };
 
 const equipRevolver = (inventory: Inventory, backpack: Item, open: boolean): void => {

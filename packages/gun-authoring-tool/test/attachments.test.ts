@@ -376,7 +376,7 @@ const attachmentMetadataProblems = (id: string, attachment: AttachmentMetadata |
   if (!attachment.mountFrame) {
     problems.push('exported mount connector frame is missing');
   }
-  if (id.startsWith('optic-') && (!attachment.properties.reticleKind || attachment.sight?.kind !== 'optic')) {
+  if (id.startsWith('optic-') && (!attachment.properties.reticle || attachment.sight?.kind !== 'optic')) {
     problems.push('optic reticle or sight frame is missing');
   }
   if (!hasExpectedRailSpan(attachment)) {
