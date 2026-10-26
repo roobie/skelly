@@ -1,4 +1,5 @@
 local params(values) = { [key]: std.toString(values[key]) for key in std.objectFields(values) };
+local bags = import 'bag-measures.libsonnet';
 local atom(id, family, massKg, dimensions, finish, solid='body') = {
   id: id,
   exportMass: 'parts',
@@ -30,15 +31,9 @@ local garment(id, massKg, style, body, trim, dimensions) = atom(
   garment('utility_vest', 0.900, 'vest', 'polymer-od-green', 'paint-charcoal', {
     width: 0.38, height: 0.06, depth: 0.30, sleeveLength: 0, hoodDepth: 0, pocketDepth: 0.035, cargoDepth: 0, legGap: 0,
   }),
-  atom('fanny_pack', 'bag', 0.200, {
-    width: 0.32, height: 0.14, depth: 0.10, pocketHeight: 0.075, pocketDepth: 0.025, flapHeight: 0, strapWidth: 0.018, handleHeight: 0,
-  }, { body: 'plastic-blue', trim: 'paint-charcoal' }),
-  atom('school_backpack', 'bag', 0.600, {
-    width: 0.34, height: 0.46, depth: 0.17, pocketHeight: 0.15, pocketDepth: 0.035, flapHeight: 0, strapWidth: 0.025, handleHeight: 0.04,
-  }, { body: 'plastic-red', trim: 'paint-charcoal' }, 'handle'),
-  atom('hiking_backpack', 'bag', 1.400, {
-    width: 0.40, height: 0.58, depth: 0.24, pocketHeight: 0.18, pocketDepth: 0.05, flapHeight: 0.12, strapWidth: 0.03, handleHeight: 0.05,
-  }, { body: 'cord-olive', trim: 'paint-charcoal' }, 'handle'),
+  atom('fanny_pack', 'bag', 0.200, bags.fanny_pack, bags.finish.fanny_pack),
+  atom('school_backpack', 'bag', 0.600, bags.school_backpack, bags.finish.school_backpack, 'handle'),
+  atom('hiking_backpack', 'bag', 1.400, bags.hiking_backpack, bags.finish.hiking_backpack, 'handle'),
   // A fitted chamfered crown clears the bust's square hair corners without an oversized circular cap.
   atom('baseball_cap', 'cap', 0.080, {
     width: 0.204, depth: 0.244, height: 0.08, chamfer: 0.04,

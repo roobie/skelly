@@ -2609,6 +2609,87 @@
     }
   },
   {
+    "id": "utility_vest_worn",
+    "file": "assets/models/utility_vest_worn.glb",
+    "parts": {
+      "shell": {
+        "node": "shell:compound",
+        "massKg": 0.9,
+        "centreOfMass": [0.003167715684404601, 0.43289363595905656, 0.02443620064848368]
+      }
+    }
+  },
+  {
+    "id": "stab_vest_worn",
+    "file": "assets/models/stab_vest_worn.glb",
+    "parts": {
+      "shell": {
+        "node": "shell:compound",
+        "massKg": 2.5,
+        "centreOfMass": [0.0019683822326272203, 0.47175982076552253, 0.005856108950395857]
+      }
+    }
+  },
+  {
+    "id": "school_backpack_worn",
+    "file": "assets/models/school_backpack_worn.glb",
+    "parts": {
+      "straps": {
+        "node": "straps:straps",
+        "massKg": 0.1,
+        "centreOfMass": [0, 0.5510754716981132, 0.004322740814299901]
+      },
+      "bag": {
+        "node": "bag:bag",
+        "massKg": 0.6,
+        "centreOfMass": [0.00007721305777615998, 0.3735526027324011, -0.24779172793626178]
+      }
+    }
+  },
+  {
+    "id": "hiking_backpack_worn",
+    "file": "assets/models/hiking_backpack_worn.glb",
+    "parts": {
+      "straps": {
+        "node": "straps:straps",
+        "massKg": 0.1,
+        "centreOfMass": [0, 0.5483161478599223, 0.001333657587548633]
+      },
+      "bag": {
+        "node": "bag:bag",
+        "massKg": 1.4,
+        "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.29055790462864456]
+      }
+    }
+  },
+  {
+    "id": "fanny_pack_worn",
+    "file": "assets/models/fanny_pack_worn.glb",
+    "parts": {
+      "belt": {
+        "node": "belt:belt",
+        "massKg": 0.05,
+        "centreOfMass": [-3.924937663359562e-18, 0.152, 0.00029181494661921926]
+      },
+      "bag": {
+        "node": "bag:bag",
+        "massKg": 0.15,
+        "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.1749469345698094]
+      }
+    }
+  },
+  {
+    "id": "weapon_sling_worn",
+    "file": "assets/models/weapon_sling_worn.glb",
+    "parts": {
+      "shell": {
+        "node": "shell:compound",
+        "massKg": 0.15,
+        "centreOfMass": [-0.232, 0.5190280146163216, -0.06863580998781973]
+      }
+    }
+  },
+  {
     "id": "tape_roll",
     "file": "assets/models/tape_roll.glb",
     "parts": {

@@ -1,0 +1,11 @@
+{
+  "id": "stab_vest_worn",
+  "file": "assets/models/stab_vest_worn.glb",
+  "parts": {
+    "shell": {
+      "node": "shell:compound",
+      "massKg": 2.5,
+      "centreOfMass": [0.0019683822326272203, 0.47175982076552253, 0.005856108950395857]
+    }
+  }
+}

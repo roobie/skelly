@@ -1416,11 +1416,13 @@ same gun instance keeps its rounds and attachments. The slung gun takes no
 pocket space, but its full weight counts toward carried encumbrance. Slinging
 is an ordinary worn-item move, and a displaced long gun prefers a free shoulder
 over a pocket or the ground. Every long gun may take the Deadvox sling mount;
-the sling itself has no model or handling effect. Rare loot and authored fitted
-guns make this carrying option discoverable. See `SLING_SLOT` in
-`src/core/firearmFitting.ts` and `Inventory.carriedWeight` in
-`src/core/inventory.ts`. Third-person rendering waits for worn-gear rendering
-(#582).
+the sling has no handling effect. Rare loot and authored fitted guns make this
+carrying option discoverable. A slung gun hangs at the wearer's side on a fixed
+sling path, not across the back, so it clears a pack; it is drawn with whatever
+is fitted to it, and its sling's strap over the shoulder
+(`DESIGN.md`, "Worn items seen"). See `src/core/firearmFitting.ts`, `SLING_SLOT`;
+`src/core/inventory.ts`, `Inventory.carriedWeight`; and
+`src/content/base/models-firearms.libsonnet`, `slung`.
 
 ### Light mount on a long gun
 
@@ -1753,6 +1755,17 @@ the renderer. Attachment does not decide whether a garment needs rigid segments
 or skin deformation; that choice needs a visual comparison before multiplying
 clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
 `src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
+
+Rigid carry and armour, packs, vests, a fanny pack and a slung gun, are authored
+on the torso in the bust's own frame and fitted to the bust's measures, so they
+follow the body when it changes. They stack in layers outward from the body, so
+any mix of them worn together keeps clear of the torso and of each other, standing
+or crouched; the swinging limbs are left out of that rule because they already pass
+through the body. A worn item's fitted parts draw with it, so an item looks the same
+worn as held, and a fitted part's own worn model, such as a sling's strap, draws
+beside it. Carry stays drawn in first person, as the body does. See
+`packages/thing-authoring-tool/worn-carry.libsonnet`, `fit`; `src/render/playerFigure.ts`,
+`wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. It belongs with the hands because the world camera cannot draw that close
