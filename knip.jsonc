@@ -63,7 +63,6 @@
         "src/soundsPage.ts!",
         "tools/bench-expressions.mjs",
         "tools/police-item-models.mjs",
-        "tools/military-item-models.mjs",
         "tools/probe-wasm-expressions.mjs",
         "tools/rapier-f64/candidate.ts",
         "src/spikes/expressions/benchmark.ts",

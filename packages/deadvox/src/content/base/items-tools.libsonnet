@@ -251,12 +251,11 @@ local items = [
     id: 'night_vision_goggles',
     name: 'Night-vision goggles',
     category: 'light',
-    weight: 550,
     size: [2, 2],
     description: 'Battery-powered night-vision goggles with an infrared lamp.',
     model: 'night_vision_goggles',
     wearable: { slot: 'eyes', encumbrance: 0 },
-    figureModels: [{ model: 'night_vision_goggles', frame: 'head', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 180, 0] }],
+    figureModels: [{ model: 'night_vision_goggles', frame: 'head', pivot: [0, 0, 0], at: [0, 0.04, 0], turn: [0, 180, 0] }],
     // The light stands in for the infrared lamp: wide, dim and seen only from close up.
     light: {
       radius: 14,

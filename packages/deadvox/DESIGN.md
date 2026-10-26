@@ -9,7 +9,7 @@ read_if:
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
-  - you change equipped gear, shared human attachment frames or inside-headgear presentation
+  - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
@@ -1710,7 +1710,9 @@ slot shows on the player figure, and dead humans wear real items through the sam
 presentation path. The player gears up: gear that changes protection, carry or role
 must be readable at a glance on self, in shadows and outside views, and on bodies,
 where it tells the player what loot they carry. Colour alone cannot stand in for
-an equipped item. Item-owned presentation and figure-owned attachment frames keep
+an equipped item. Floating optics and a head breaking through its cap read as
+loose props rather than worn gear, so fit must preserve the equipped silhouette.
+Item-owned presentation and figure-owned attachment frames keep
 gear additions independent of human renderers and equipment ownership. The same
 human must serve different equipment owners without manufacturing inventory in
 the renderer. Attachment does not decide whether a garment needs rigid segments

@@ -39,5 +39,9 @@ local garment(id, massKg, style, body, trim, dimensions) = atom(
   atom('hiking_backpack', 'bag', 1.400, {
     width: 0.40, height: 0.58, depth: 0.24, pocketHeight: 0.18, pocketDepth: 0.05, flapHeight: 0.12, strapWidth: 0.03, handleHeight: 0.05,
   }, { body: 'cord-olive', trim: 'paint-charcoal' }, 'handle'),
-  atom('baseball_cap', 'cap', 0.080, { radius: 0.10, height: 0.08, brimDepth: 0.09, brimWidth: 0.19 }, { body: 'plastic-blue', trim: 'paint-charcoal' }),
+  // A fitted chamfered crown clears the bust's square hair corners without an oversized circular cap.
+  atom('baseball_cap', 'cap', 0.080, {
+    width: 0.204, depth: 0.244, height: 0.08, chamfer: 0.04,
+    brimDepth: 0.09, brimWidth: 0.19, brimThickness: 0.01, brimHeight: 0.014,
+  }, { body: 'plastic-blue', trim: 'paint-charcoal' }) + { voxelGrain: 0.004 },
 ]

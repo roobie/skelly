@@ -77,6 +77,41 @@ local pieces =
   + pivot('left') + pivot('right')
   + strap(1) + strap(-1)
   + [box('chin_cup', 'strap', [-0.098, -0.118, -0.005], [0.098, -0.105, 0.06])];
+local g = {
+  eyeSpacing: 0.076,
+  tubeRadius: 0.023,
+  tubeBack: 0.102,
+  tubeFront: 0.178,
+  lensDepth: 0.004,
+  strapHalfWidth: 0.093,
+  strapFront: 0.103,
+  strapBack: 0.105,
+  strapWall: 0.004,
+  strapBottom: 0.026,
+  strapTop: 0.048,
+};
+// Hair makes the rear corners square; a circular band either floats off the sides or cuts those corners.
+local strapOutline(x, front, back) = [
+  [-back + 0.002, -x], [front - 0.025, -x], [front, -x + 0.025], [front, x - 0.025],
+  [front - 0.025, x], [-back + 0.002, x], [-back, x - 0.002], [-back, -x + 0.002],
+];
+local strapInner = strapOutline(g.strapHalfWidth, g.strapFront, g.strapBack);
+local strapOuter = strapOutline(g.strapHalfWidth + g.strapWall, g.strapFront + g.strapWall, g.strapBack + g.strapWall);
+local goggleStrap = [
+  {
+    id: 'strap_%d' % i, kind: 'prism', slot: 'strap', axis: 'y',
+    profile: [strapInner[i], strapOuter[i], strapOuter[(i + 1) % 8], strapInner[(i + 1) % 8]],
+    start: g.strapBottom, end: g.strapTop,
+  }
+  for i in std.range(0, 7)
+];
+local optic(side) = [
+  turned('tube_%s' % side, 'body', 'z', disc(g.tubeRadius, g.tubeFront - g.tubeBack),
+         [if side == 'left' then g.eyeSpacing / 2 else -g.eyeSpacing / 2, 0, g.tubeBack]),
+  turned('lens_%s' % side, 'lens', 'z', disc(g.tubeRadius * 0.85, g.lensDepth),
+         [if side == 'left' then g.eyeSpacing / 2 else -g.eyeSpacing / 2, 0, g.tubeFront]),
+];
+local goggleAnchor(solid, fraction) = { part: 'goggles', solid: solid, fraction: fraction };
 [
   {
     id: 'riot_helmet',
@@ -91,5 +126,36 @@ local pieces =
     }],
     connections: [],
     handling: { part: 'helmet', solid: 'dome', fraction: [0.5, 0.5, 0.5], turn: [0, 0, -90], hold: 'upright', roll: 0 },
+  },
+  {
+    id: 'night_vision_goggles',
+    exportMass: 'parts',
+    voxelGrain: 0.002,
+    parts: [{
+      id: 'goggles', family: 'compound', massKg: 0.55,
+      params: params({ pieces: goggleStrap + optic('left') + optic('right') + [
+        box('bridge', 'body', [-0.064, 0.014, 0.103], [0.064, 0.034, 0.125]),
+      ] }),
+      finish: { body: 'polymer-od-green', strap: 'rubber-black', lens: 'glass-lens-green' },
+      ports: [],
+    }],
+    connections: [],
+    handling: { part: 'goggles', solid: 'bridge', fraction: [0.5, 0.5, 0.5], turn: [0, 0, -90], hold: 'upright', roll: 0 },
+    anchors: {
+      eye_left: goggleAnchor('tube_left', [0.5, 0.5, 0]),
+      eye_right: goggleAnchor('tube_right', [0.5, 0.5, 0]),
+      lens_left: goggleAnchor('lens_left', [0.5, 0.5, 1]),
+      lens_right: goggleAnchor('lens_right', [0.5, 0.5, 1]),
+      lens_left_edge: goggleAnchor('lens_left', [1, 0.5, 1]),
+      lens_right_edge: goggleAnchor('lens_right', [1, 0.5, 1]),
+      strap_left_inner: goggleAnchor('strap_4', [0, 0.5, 0.5]),
+      strap_left_outer: goggleAnchor('strap_4', [1, 0.5, 0.5]),
+      strap_right_inner: goggleAnchor('strap_0', [1, 0.5, 0.5]),
+      strap_right_outer: goggleAnchor('strap_0', [0, 0.5, 0.5]),
+      strap_front_inner: goggleAnchor('strap_2', [0.5, 0.5, 0]),
+      strap_front_outer: goggleAnchor('strap_2', [0.5, 0.5, 1]),
+      strap_back_inner: goggleAnchor('strap_6', [0.5, 0.5, 1]),
+      strap_back_outer: goggleAnchor('strap_6', [0.5, 0.5, 0]),
+    },
   },
 ]

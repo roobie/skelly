@@ -25,7 +25,7 @@
       },
       "figureModels": [
         {
-          "at": [0, 0.040000000000000001, 0],
+          "at": [0, 0.10000000000000001, 0],
           "frame": "head",
           "model": "baseball_cap",
           "pivot": [0, 0, 0],
