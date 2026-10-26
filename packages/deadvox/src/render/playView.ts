@@ -91,9 +91,14 @@ const damageOpacity = (detached: boolean, vignette: number, sightImpaired: boole
   detached ? '0' : String(Math.max(vignette, sightImpaired ? 0.2 : 0));
 
 /** The drug vignette and night vision belong to the player's eyes, so a spectator gets neither. */
-const setViewEffects = (mood: Engine['mood'], frame: PlayCameraFrame): NightVision | undefined => {
+const setViewEffects = (
+  mood: Engine['mood'],
+  frame: PlayCameraFrame,
+  worldBorders = false,
+): NightVision | undefined => {
   const player = frame.spectator === undefined;
-  const nightVision = player ? frame.nightVision : undefined;
+  const source = player ? frame.nightVision : undefined;
+  const nightVision = source && worldBorders ? { ...source, edge: { ...source.edge, darkening: 0 } } : source;
   mood?.setDrugVignette(player ? (frame.drugVignette ?? 0) : 0);
   mood?.setNightVision(nightVision);
   return nightVision;
@@ -553,7 +558,7 @@ export const createPlayView = (
         updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
       damage.style.opacity = damageOpacity(detached, feedback.vignetteOpacity, sightImpaired);
-      nightVision = setViewEffects(engine.mood, frame);
+      nightVision = setViewEffects(engine.mood, frame, opticsSpike === 'world');
     },
     updateHeld: (
       dt: number,
