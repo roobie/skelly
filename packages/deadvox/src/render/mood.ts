@@ -63,7 +63,7 @@ import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass, setNightFlareUniforms } from './moodOutput.ts';
 import { type NightVisionFlare, NO_FLARE } from './nightVisionFlare.ts';
-import { OpticLensRenderer, opticLensPass, setReticleUniforms } from './opticLens.ts';
+import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from './opticLens.ts';
 import { ScreenScale } from './screenScale.ts';
 
 /** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
@@ -426,7 +426,7 @@ export class Mood {
     uniforms.uZoomActive!.value = frame.magnification > 1 ? 1 : 0;
     uniforms.uLensCenter!.value.set(...frame.center);
     uniforms.uLensRadius!.value.set(...frame.radius);
-    setReticleUniforms(opticPass, frame);
+    setOpticLensUniforms(opticPass, frame);
   }
 
   /**

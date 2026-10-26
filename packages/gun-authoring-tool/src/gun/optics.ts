@@ -1,6 +1,7 @@
 import type { KeepOut } from '@skelly/engine/assembly/schema.ts';
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import type { RevolvedSolid, Solid, SolidFinish, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import { type OpticAperture, OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { type Reticle, ReticleSchema } from '@skelly/thing-core/reticle';
 import {
   array,
@@ -47,6 +48,7 @@ export interface OpticCatalogEntry {
   readonly opticalAxisY: number;
   /** Host feed modes explicitly excluded by the authored mount; geometry is still checked separately. */
   readonly excludedHostFeeds?: readonly string[];
+  readonly aperture: OpticAperture;
   readonly reticle: Reticle;
   readonly reticleReference: string;
   readonly reticleSource: string;
@@ -206,7 +208,7 @@ const sightline = (startX: number, axisY: number, ironCoWitness: boolean, length
 });
 
 const makeEntry = (
-  entry: Omit<OpticCatalogEntry, 'keepOuts' | 'reticle' | 'reticleReference' | 'reticleSource'> & {
+  entry: Omit<OpticCatalogEntry, 'keepOuts' | 'aperture' | 'reticle' | 'reticleReference' | 'reticleSource'> & {
     readonly sightlineStartX: number;
   },
 ): OpticCatalogEntry => {
@@ -214,6 +216,7 @@ const makeEntry = (
   const authored = reticleContent[entry.id];
   return {
     ...rest,
+    aperture: parse(OpticApertureSchema, authored.aperture),
     reticle: parse(ReticleSchema, authored.reticle),
     reticleReference: authored.reference,
     reticleSource: authored.source,

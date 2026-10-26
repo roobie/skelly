@@ -1,5 +1,9 @@
 {
   "digital-thermal": {
+    "aperture": {
+      "aspectRatio": 1,
+      "exponent": 2
+    },
     "reference": "Pulsar Thermion scalable electronic crosshair",
     "reticle": {
       "focalPlane": "first",
@@ -65,6 +69,10 @@
     "source": "https://pulsarnv.com/products/thermion-2-xq50-pro"
   },
   "fixed-prism-4x": {
+    "aperture": {
+      "aspectRatio": 1,
+      "exponent": 2
+    },
     "reference": "Trijicon TA31F chevron with BDC ladder",
     "reticle": {
       "focalPlane": "second",
@@ -124,9 +132,13 @@
     "source": "https://www.trijicon.com/products/details/ta31f"
   },
   "high-mag-5-25x": {
+    "aperture": {
+      "aspectRatio": 1,
+      "exponent": 2
+    },
     "reference": "Nightforce ATACR F1 MIL-R graduated crosshair",
     "reticle": {
-      "focalPlane": "first",
+      "focalPlane": "second",
       "primitives": [
         {
           "color": [0.025000000000000001, 0.025000000000000001, 0.025000000000000001],
@@ -280,6 +292,10 @@
     "source": "https://www.nightforceoptics.com/technology/reticles/mil-r/"
   },
   "holographic": {
+    "aperture": {
+      "aspectRatio": 1.0909090909090908,
+      "exponent": 6
+    },
     "reference": "EOTECH XPS2-0 ring and dot",
     "reticle": {
       "focalPlane": "second",
@@ -331,6 +347,10 @@
     "source": "https://www.eotechinc.com/eotech-hws-xps2"
   },
   "hunting-3-9x": {
+    "aperture": {
+      "aspectRatio": 1,
+      "exponent": 2
+    },
     "reference": "Vortex Crossfire II V-Plex duplex",
     "reticle": {
       "focalPlane": "second",
@@ -383,6 +403,10 @@
     "source": "https://vortexoptics.com/vortex-crossfire-ii-3-9x40-riflescope.html"
   },
   "lpvo-1-6x": {
+    "aperture": {
+      "aspectRatio": 1,
+      "exponent": 2
+    },
     "reference": "Vortex Razor HD Gen II-E JM-1 BDC illuminated center dot",
     "reticle": {
       "focalPlane": "second",
@@ -455,6 +479,10 @@
     "source": "https://vortexoptics.com/razor-hd-gen-ii-e-1-6x24.html"
   },
   "mini-reflex": {
+    "aperture": {
+      "aspectRatio": 1.2,
+      "exponent": 6
+    },
     "reference": "Aimpoint ACRO P-2 single dot",
     "reticle": {
       "focalPlane": "second",
@@ -471,6 +499,10 @@
     "source": "https://aimpoint.us/acro-p-2-red-dot-reflex-sight-3-5-moa-200691/"
   },
   "tube-dot": {
+    "aperture": {
+      "aspectRatio": 1,
+      "exponent": 2
+    },
     "reference": "Aimpoint Micro T-2 single dot",
     "reticle": {
       "focalPlane": "second",

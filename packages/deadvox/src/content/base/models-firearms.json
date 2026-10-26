@@ -639,6 +639,10 @@
             "mountedAt": "receiver.rail.3",
             "node": "sight:sight",
             "properties": {
+              "aperture": {
+                "aspectRatio": 1,
+                "exponent": 2
+              },
               "magnification": {
                 "max": 6,
                 "min": 1
@@ -3812,6 +3816,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1,
+              "exponent": 2
+            },
             "magnification": {
               "max": 9,
               "min": 3

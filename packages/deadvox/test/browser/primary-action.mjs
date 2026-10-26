@@ -3004,11 +3004,12 @@ try {
       const model = r.inventory.registry.models.get(definition.model);
       const expected = {
         magnification: definition.opticMagnification ?? model.gun.attachment.properties.magnification?.min ?? 1,
+        aperture: model.gun.attachment.properties.aperture,
         reticle: model.gun.attachment.properties.reticle,
       };
       const frame = r.view.held.opticLensFrame;
       return {
-        frame: { magnification: frame.magnification, reticle: frame.reticle },
+        frame: { magnification: frame.magnification, aperture: frame.aperture, reticle: frame.reticle },
         expected,
         range: model.gun.attachment.properties.magnification,
         step: definition.opticZoom?.step,

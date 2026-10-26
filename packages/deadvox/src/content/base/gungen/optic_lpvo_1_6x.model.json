@@ -7,6 +7,7 @@
       "kind": "optic",
       "mount": "rail-top",
       "properties": {
+        "aperture": { "aspectRatio": 1, "exponent": 2 },
         "reticle": {
           "focalPlane": "second",
           "referenceMagnification": 1,

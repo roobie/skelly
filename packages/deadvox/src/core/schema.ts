@@ -4,6 +4,7 @@
 // Units: grams, millilitres, metres and seconds; inventory space is in cells.
 
 import { MATERIALS } from '@skelly/thing-core/materials';
+import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
@@ -1840,6 +1841,7 @@ const AttachmentPropertiesSchema = strictObject({
       check(({ min, max }) => max >= min, 'maximum magnification cannot be below minimum'),
     ),
   ),
+  aperture: optional(OpticApertureSchema),
   reticle: optional(ReticleSchema),
   noiseFactor: optional(Fraction),
   wearClass: optional(picklist(['real', 'improvised'])),
@@ -1876,12 +1878,16 @@ const attachmentSpanCheck = check(
   attachmentSpanMatchesMount,
   'rail attachments need a notch span and muzzle attachments cannot have one',
 );
-const attachmentHasReticle = ({ kind, properties }: InferOutput<typeof AttachmentFieldsSchema>): boolean =>
-  (kind === 'optic') === (properties.reticle !== undefined);
+const attachmentHasOpticPresentation = ({ kind, properties }: InferOutput<typeof AttachmentFieldsSchema>): boolean =>
+  (kind === 'optic') === (properties.reticle !== undefined) &&
+  (kind === 'optic') === (properties.aperture !== undefined);
 const AttachmentSchema = pipe(
   AttachmentFieldsSchema,
   attachmentSpanCheck,
-  check(attachmentHasReticle, 'optics need an authored reticle and other attachments cannot have one'),
+  check(
+    attachmentHasOpticPresentation,
+    'optics need an authored reticle and aperture; other attachments cannot have them',
+  ),
   check(
     ({ kind, properties }) => (kind === 'suppressor') === (properties.noiseFactor !== undefined),
     'suppressors need a noise factor and other attachments cannot have one',
@@ -1894,8 +1900,8 @@ const FittedAttachmentSchema = pipe(
     mountedAt: pipe(string(), nonEmpty('must not be empty')),
   }),
   check(
-    (value) => attachmentHasReticle(value),
-    'optics need an authored reticle and other attachments cannot have one',
+    (value) => attachmentHasOpticPresentation(value),
+    'optics need an authored reticle and aperture; other attachments cannot have them',
   ),
   check(
     (value) => attachmentSpanMatchesMount(value),

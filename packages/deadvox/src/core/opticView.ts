@@ -1,3 +1,4 @@
+import { type OpticAperture, opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import type { Reticle } from '@skelly/thing-core/reticle';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -6,6 +7,7 @@ import type { ItemDef, ModelDef } from './schema.ts';
 
 export interface OpticViewSettings {
   readonly magnification: number;
+  readonly aperture: OpticAperture;
   readonly reticle?: Reticle;
 }
 
@@ -50,6 +52,10 @@ export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSe
   if (attachment?.kind !== 'optic') {
     return undefined;
   }
+  const { aperture } = attachment.properties;
+  if (!aperture) {
+    return undefined;
+  }
   const range = attachment.properties.magnification;
   if (range && range.min < range.max && (item.opticMagnification === undefined || item.opticZoom === undefined)) {
     return undefined;
@@ -57,6 +63,7 @@ export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSe
   const magnification = item.opticMagnification ?? range?.min ?? 1;
   return {
     magnification,
+    aperture,
     ...(attachment.properties.reticle === undefined ? {} : { reticle: attachment.properties.reticle }),
   };
 };
@@ -111,13 +118,17 @@ export const projectLensAperture = ({
   };
 };
 
-/** The pixel-space ellipse predicate shared by lens clip tests and its shader counterpart. */
-export const insideLensAperture = (point: readonly [number, number], aperture: LensAperture): boolean => {
+/** The pixel-space profile predicate shared by lens clip tests and its shader counterpart. */
+export const insideLensAperture = (
+  point: readonly [number, number],
+  aperture: LensAperture,
+  shape: OpticAperture,
+): boolean => {
   const [rx, ry] = aperture.radius;
   if (!(rx > 0 && ry > 0)) {
     return false;
   }
   const dx = (point[0] - aperture.center[0]) / rx;
   const dy = (point[1] - aperture.center[1]) / ry;
-  return dx * dx + dy * dy <= 1;
+  return opticApertureDistance(dx, dy, shape) <= 1;
 };

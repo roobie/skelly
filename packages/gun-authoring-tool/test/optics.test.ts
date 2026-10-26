@@ -15,6 +15,7 @@ import {
 } from '@skelly/engine/shapes/geometry.ts';
 import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
+import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { Ray, Vector3 } from 'three';
 import { safeParse } from 'valibot';
@@ -43,10 +44,11 @@ import {
 import { uToMm } from '../src/gun/units.ts';
 import { loadDesignAssembly, type MutableAssembly } from './helpers.ts';
 
-it('every catalog optic authors a nonempty lens-bounded reticle with a public reference', () => {
+it('every catalog optic authors a valid aperture and lens-bounded reticle with a public reference', () => {
   const optics = Object.values(OPTIC_CATALOG);
   expect(optics.length).toBeGreaterThan(0);
   for (const optic of optics) {
+    expect(safeParse(OpticApertureSchema, optic.aperture).success, optic.id).toBe(true);
     expect(safeParse(ReticleSchema, optic.reticle).success, optic.id).toBe(true);
     expect(optic.reticleReference.length, optic.id).toBeGreaterThan(0);
     expect(new URL(optic.reticleSource).protocol, optic.id).toBe('https:');

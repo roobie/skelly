@@ -28,7 +28,7 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
         kind: 'optic',
         mount: 'rail-top',
         mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
-        properties: { magnification: range },
+        properties: { magnification: range, aperture: { aspectRatio: 1, exponent: 2 } },
       },
     },
   };

@@ -21,6 +21,7 @@ const OPTIC_LENS_SHADER = {
     uZoomActive: { value: 0 },
     uLensCenter: { value: new Vector2(0.5, 0.5) },
     uLensRadius: { value: new Vector2(0.25, 0.4) },
+    uLensShape: { value: new Vector2() },
     uReticleCount: { value: 0 },
     uReticleScale: { value: 1 },
     uReticleGeometry: { value: Array.from({ length: MAX_RETICLE_PRIMITIVES }, () => new Vector4()) },
@@ -39,6 +40,7 @@ uniform sampler2D uZoomTexture;
 uniform float uZoomActive;
 uniform vec2 uLensCenter;
 uniform vec2 uLensRadius;
+uniform vec2 uLensShape;
 uniform int uReticleCount;
 uniform float uReticleScale;
 uniform vec4 uReticleGeometry[${MAX_RETICLE_PRIMITIVES}];
@@ -72,7 +74,8 @@ vec3 reticle(vec2 p, vec3 color, float aperture) {
 void main() {
   vec4 source = texture2D(tDiffuse, vUv);
   vec2 local = (vUv - uLensCenter) / uLensRadius;
-  float radius = length(local);
+  vec2 profile = abs(local) / vec2(uLensShape.x, 1.0);
+  float radius = pow(pow(profile.x, uLensShape.y) + pow(profile.y, uLensShape.y), 1.0 / uLensShape.y);
   float aperture = 1.0 - smoothstep(0.96, 1.0, radius);
   vec3 lens = mix(source.rgb, texture2D(uZoomTexture, vUv).rgb, uZoomActive);
   vec3 color = mix(source.rgb, lens, aperture);
@@ -118,9 +121,10 @@ export class OpticLensRenderer {
 
 export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER);
 
-export const setReticleUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
-  const { reticle } = frame;
+export const setOpticLensUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
+  const { reticle, aperture } = frame;
   const { uniforms } = pass;
+  uniforms.uLensShape!.value.set(aperture.aspectRatio, aperture.exponent);
   uniforms.uReticleCount!.value = reticle?.primitives.length ?? 0;
   uniforms.uReticleScale!.value = reticle ? reticleScale(reticle, frame.magnification) : 1;
   reticle?.primitives.forEach((primitive, index) => {

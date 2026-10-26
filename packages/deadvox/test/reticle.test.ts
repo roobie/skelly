@@ -1,7 +1,7 @@
 import { type Reticle, ReticleSchema, reticleScale } from '@skelly/thing-core/reticle';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
-import { opticLensPass, setReticleUniforms } from '../src/render/opticLens.ts';
+import { opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
 
 const reticle: Reticle = {
   focalPlane: 'first',
@@ -27,19 +27,35 @@ describe('reticle boundary', () => {
     expect(safeParse(ReticleSchema, { ...reticle, primitives: [] }).success).toBe(false);
   });
 
-  it('scales first-plane marks with power but keeps second-plane marks fixed', () => {
+  it('scales first-plane shader marks with power but keeps second-plane screen size fixed', () => {
+    const pass = opticLensPass();
+    const frame = {
+      center: [0.5, 0.5] as const,
+      radius: [0.2, 0.2] as const,
+      aperture: { aspectRatio: 1, exponent: 2 },
+    };
     const low = 2;
     const high = 6;
-    expect(reticleScale(reticle, high) / reticleScale(reticle, low)).toBe(high / low);
-    expect(reticleScale({ ...reticle, focalPlane: 'second' }, high)).toBe(
-      reticleScale({ ...reticle, focalPlane: 'second' }, low),
-    );
+    for (const focalPlane of ['first', 'second'] as const) {
+      const scales = [low, high].map((magnification) => {
+        setOpticLensUniforms(pass, { ...frame, magnification, reticle: { ...reticle, focalPlane } });
+        return pass.uniforms.uReticleScale!.value;
+      });
+      expect(scales[1] / scales[0]).toBe(focalPlane === 'first' ? high / low : 1);
+    }
+    pass.dispose();
   });
 
   it('packs every primitive and clears the previous sight picture when no reticle is active', () => {
     const pass = opticLensPass();
-    const frame = { center: [0.5, 0.5] as const, radius: [0.2, 0.2] as const, magnification: 4 };
-    setReticleUniforms(pass, { ...frame, reticle });
+    const frame = {
+      center: [0.5, 0.5] as const,
+      radius: [0.2, 0.2] as const,
+      magnification: 4,
+      aperture: { aspectRatio: 1.3, exponent: 6 },
+    };
+    setOpticLensUniforms(pass, { ...frame, reticle });
+    expect(pass.uniforms.uLensShape!.value.toArray()).toEqual([frame.aperture.aspectRatio, frame.aperture.exponent]);
     expect(pass.uniforms.uReticleCount!.value).toBe(reticle.primitives.length);
     expect(pass.uniforms.uReticleScale!.value).toBe(reticleScale(reticle, frame.magnification));
     for (const [index, primitive] of reticle.primitives.entries()) {
@@ -58,7 +74,7 @@ describe('reticle boundary', () => {
         ]);
       }
     }
-    setReticleUniforms(pass, frame);
+    setOpticLensUniforms(pass, frame);
     expect(pass.uniforms.uReticleCount!.value).toBe(0);
     pass.dispose();
   });

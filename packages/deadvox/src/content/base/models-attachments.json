@@ -69,6 +69,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1,
+              "exponent": 2
+            },
             "magnification": {
               "max": 12,
               "min": 3
@@ -163,6 +167,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1,
+              "exponent": 2
+            },
             "magnification": {
               "max": 4,
               "min": 4
@@ -251,6 +259,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1,
+              "exponent": 2
+            },
             "magnification": {
               "max": 25,
               "min": 5
@@ -260,7 +272,7 @@
               "minOffset": -3
             },
             "reticle": {
-              "focalPlane": "first",
+              "focalPlane": "second",
               "primitives": [
                 {
                   "color": [0.025000000000000001, 0.025000000000000001, 0.025000000000000001],
@@ -436,6 +448,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1.0909090909090908,
+              "exponent": 6
+            },
             "railSpanNotches": {
               "maxOffset": 1,
               "minOffset": -1
@@ -512,6 +528,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1,
+              "exponent": 2
+            },
             "magnification": {
               "max": 6,
               "min": 1
@@ -613,6 +633,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1.2,
+              "exponent": 6
+            },
             "railSpanNotches": {
               "maxOffset": 1,
               "minOffset": -1
@@ -654,6 +678,10 @@
             "up": [1, 0, 0]
           },
           "properties": {
+            "aperture": {
+              "aspectRatio": 1,
+              "exponent": 2
+            },
             "railSpanNotches": {
               "maxOffset": 1,
               "minOffset": -1
