@@ -92,6 +92,8 @@ export interface HeldHandlingFrame extends HeldPresentationFrame {
   /** Metres the arms and held item are raised, to show a blow deflected. */
   readonly lift?: number;
   readonly magazineRaise?: Readonly<ReturnType<typeof createMagazineRaise>>;
+  /** Wall-leeway debug spike: radians a long gun is lowered about its butt, before the arms solve. */
+  readonly wallLowerRadians?: number;
 }
 
 /** Advance actor-owned smoothing once, then give both presentation adapters the same snapshot. */
@@ -451,7 +453,9 @@ export class ActorAnimator {
       }
     }
     const [turnPitch, turnYaw, turnRoll] = handlingTurn;
-    const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
+    const loweredPitch = itemDefinition?.firearm
+      ? -loweredPitchRadians * (1 - firearmReadiness) - (handling.wallLowerRadians ?? 0)
+      : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
     if (!aimingDownSights) {
       this.poseAim(item, readyAim);
@@ -523,6 +527,7 @@ export class ActorAnimator {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
+            extraLoweredPitch: handling.wallLowerRadians,
             adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
               ?.adsApertureFill,
             ...(this.viewPlacement ? { verticalFovDegrees: this.viewPlacement.fov } : {}),

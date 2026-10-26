@@ -791,6 +791,14 @@
       ]
     },
     {
+      "id": "debug.wall-mode-toggle",
+      "keys": [
+        {
+          "code": "NumpadDecimal"
+        }
+      ]
+    },
+    {
       "id": "debug.map-slice-down",
       "keys": [
         {

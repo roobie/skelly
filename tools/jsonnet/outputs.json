@@ -21,6 +21,10 @@
       "output": "packages/deadvox/src/config/vehicleFeasibility.json"
     },
     {
+      "source": "packages/deadvox/src/config/wallLeeway.jsonnet",
+      "output": "packages/deadvox/src/config/wallLeeway.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/assets/manifest.jsonnet",
       "output": "packages/deadvox/src/content/base/assets/manifest.json"
     },

@@ -96,6 +96,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('debug.freeze-shamblers', 'KeyO'),
     one('debug.review-map-toggle', 'KeyM'),
     one('debug.freeze-game', 'Numpad5'),
+    one('debug.wall-mode-toggle', 'NumpadDecimal'),
     one('debug.map-slice-down', 'NumpadDivide'),
     one('debug.map-slice-up', 'NumpadMultiply'),
     one('debug.map-slice-surface', 'Backspace'),

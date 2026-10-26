@@ -69,6 +69,7 @@ import {
 } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { TransientDebugDraw } from './transientDraw.ts';
+import { createWallSpike } from './wallSpike.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
 
@@ -607,7 +608,23 @@ interface ActionContext {
   exportInputReplay: () => void;
   chooseInputReplay: () => void;
   look: LookControls;
+  /** The wall-leeway spike's detector toggle, present only when the page asked for `wall=`. */
+  wallMode?: { readonly detail: () => string; readonly toggle: () => void } | undefined;
 }
+
+const wallModeActions = (wallMode: ActionContext['wallMode']): Omit<Action, 'key'>[] =>
+  wallMode
+    ? [
+        {
+          id: 'debug.wall-mode-toggle',
+          label: 'Wall detection',
+          group: 'tools',
+          param: 'wall=',
+          detail: wallMode.detail,
+          run: wallMode.toggle,
+        },
+      ]
+    : [];
 
 /** The mannequin's controls fill their own panel group, which exists only when the page asked for a mannequin. */
 const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key'>[] =>
@@ -656,6 +673,7 @@ export const createDebugActions = ({
   exportInputReplay,
   chooseInputReplay,
   look,
+  wallMode,
 }: ActionContext): Action[] =>
   (
     [
@@ -736,6 +754,7 @@ export const createDebugActions = ({
         state: hooks.thirdPerson.enabled,
         run: hooks.thirdPerson.toggle,
       },
+      ...wallModeActions(wallMode),
       ...mannequinActions(hooks.mannequin),
       {
         id: 'debug.perception-labels-toggle',
@@ -1136,6 +1155,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
   });
   const aimOverlay = new DebugAimOverlay(hooks.engine.scene, hooks.engine.config.scale.blockSize);
+  const wallSpike = createWallSpike(hooks.engine, location.search);
   let aimReadout: HTMLElement | null = null;
   let lookReadout: HTMLElement | null = null;
   let download: { url: string; name: string } | undefined;
@@ -1313,6 +1333,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     exportInputReplay,
     chooseInputReplay,
     look,
+    wallMode: wallSpike && { detail: () => wallSpike.mode, toggle: () => wallSpike.toggle() },
     build,
     spawnMenu,
     toggleSpawn,
@@ -1811,6 +1832,16 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     drawShell();
   });
   const runtime: DebugRuntime = {
+    ...(wallSpike
+      ? {
+          sampleWall: (sample, solid) =>
+            wallSpike.sample(
+              sample,
+              solid,
+              `${labelForAction('debug.gate')} + ${labelForAction('debug.wall-mode-toggle')}`,
+            ),
+        }
+      : {}),
     setCrosshairVisible(visible: boolean) {
       if (crosshairVisible === visible) {
         return;

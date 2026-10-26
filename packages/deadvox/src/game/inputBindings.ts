@@ -200,6 +200,7 @@ const INPUT_ACTIONS: readonly Action[] = [
   mapRow('debug.map-slice-up', 'Review map: cut higher'),
   mapRow('debug.map-slice-surface', 'Review map: back to the surface'),
   debugRow('debug.freeze-game', 'Freeze game'),
+  debugRow('debug.wall-mode-toggle', 'Wall detection: cells or refined'),
   debugRow('debug.tone-cycle', 'Tone mapping'),
   debugRow('debug.exposure-decrease', 'Exposure −'),
   debugRow('debug.exposure-increase', 'Exposure +'),

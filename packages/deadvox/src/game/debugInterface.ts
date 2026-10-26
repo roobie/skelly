@@ -3,10 +3,12 @@ import type { Vec3 } from '../core/coords.ts';
 import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
+import type { SolidAt } from '../core/raycast.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
+import type { WallPoseSample } from '../debug/wallLeeway.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
@@ -158,6 +160,11 @@ export interface DebugRuntime {
   wheel: (delta: number) => void;
   stepNoclip: (step: DebugNoclipStep) => void;
   update: (readout: DebugReadout) => void;
+  /**
+   * The wall-leeway spike, only with `?wall=`: compares both detectors for the actor's held long gun (undefined when
+   * none) and returns the selected detector's lowering in radians.
+   */
+  readonly sampleWall?: (sample: WallPoseSample | undefined, solid: SolidAt) => number;
 }
 
 export interface DebugModule {

@@ -195,6 +195,8 @@ export interface HeldFirearmTransformInput {
   readonly aimFrame: AimFrame;
   readonly handlingTurn?: Vec3;
   readonly loweredPitchRadians: number;
+  /** Further downward pitch about the seated butt; only the wall-leeway debug spike sets it. */
+  readonly extraLoweredPitch?: number | undefined;
   readonly adsApertureFill?: number | undefined;
   readonly verticalFovDegrees?: number;
 }
@@ -225,21 +227,27 @@ export const heldFirearmTransform = ({
   aimFrame,
   handlingTurn = [0, 0, 0],
   loweredPitchRadians,
+  extraLoweredPitch = 0,
   adsApertureFill,
   verticalFovDegrees = PLAYER_VIEW_FOV_DEGREES,
 }: HeldFirearmTransformInput): HeldFirearmTransform => {
   if (
-    !(model.grip && model.anchors?.muzzle && [progress, loweredPitchRadians, ...handlingTurn].every(Number.isFinite)) ||
+    !(
+      model.grip &&
+      model.anchors?.muzzle &&
+      [progress, loweredPitchRadians, extraLoweredPitch, ...handlingTurn].every(Number.isFinite)
+    ) ||
     progress < 0 ||
     progress > 1 ||
-    loweredPitchRadians < 0
+    loweredPitchRadians < 0 ||
+    extraLoweredPitch < 0
   ) {
     throw new Error(`Invalid held firearm pose for ${model.id}`);
   }
   const pose = readyFirearmPose(leadingSide, holds)[side];
   const eased = progress * progress * (3 - 2 * progress);
   const handRotation = aimingDownSights ? ([0, 0, 0] as Vec3) : (pose.rotation.map((value) => value * eased) as Vec3);
-  const loweredPitch = -loweredPitchRadians * (1 - progress);
+  const loweredPitch = -loweredPitchRadians * (1 - progress) - extraLoweredPitch;
   const sight = aimingDownSights ? sightFrame(model) : undefined;
   const applyAlignedRoot = (vector: Vec3, turn: Vec3): Vec3 =>
     alignToSight(rotateYXZ(rotateYXZ(vector, [loweredPitch + turn[0], turn[1], turn[2]]), handRotation), sight);

@@ -35,7 +35,7 @@ import { VehicleShapes } from './vehicleShapes.ts';
 import { vehicleModel, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
-const INSET = 0.02;
+export const INSET = 0.02;
 const BODY_DOOR_SHADE = 0.62;
 const BODY_DOOR_HANDLE_COLOR = '#c6b98e';
 const BODY_DOOR_HANDLE_SIZE_M = { alongWidth: 0.1, acrossWidth: 0.06, height: 0.22 } as const;

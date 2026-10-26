@@ -1,0 +1,10 @@
+{
+  "curveExponent": 1,
+  "marginMetres": 0.02,
+  "maxLowerDegrees": 70,
+  "radiusExtraMetres": 0.01,
+  "radiusScale": 1,
+  "reachMetres": 0.10000000000000001,
+  "regionPaddingBlocks": 1,
+  "steps": 35
+}

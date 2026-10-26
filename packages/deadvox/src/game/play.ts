@@ -3602,6 +3602,60 @@ export const startPlay = (
     };
   };
 
+  /**
+   * Wall-leeway spike (`?wall=`): the held long gun at full hip readiness with neutral sway, from the actor's own eye
+   * and look, so both detectors and the animator share one pose that no observing camera moves.
+   */
+  const wallSpikePresentation = (sampleWall: NonNullable<DebugRuntime['sampleWall']>) => {
+    const selected = selectPrimaryAction(inventory);
+    const model =
+      selected.kind === 'firearm'
+        ? (sightedFirearmModel(registry, selected.item) ?? firearmHandlingFor(selected.item, registry).model)
+        : undefined;
+    const tuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
+    if (selected.kind !== 'firearm' || !model?.hands || !tuning) {
+      sampleWall(undefined, session.physicalSolid);
+      return {};
+    }
+    const { item } = selected;
+    const side = inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const);
+    const pose = {
+      holds: registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      model,
+      side,
+      leadingSide: dominantSide(inventory.character),
+      twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
+      progress: 1,
+      aimingDownSights: false,
+      aimFrame: NEUTRAL_AIM,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+      adsApertureFill: tuning.adsApertureFill,
+      verticalFovDegrees: camera.fov,
+    };
+    const base = heldFirearmTransform(pose);
+    const handlingTurn = handlingRotation(
+      model,
+      side,
+      firearms.frames().find((entry) => entry.uid === item.uid),
+      { x: base.rootOffset[0], y: base.rootOffset[1] },
+    );
+    const wallLowerRadians = sampleWall(
+      {
+        pose: { ...pose, handlingTurn },
+        eye: eye(),
+        yaw: spectator.avatarYaw(input.yaw),
+        pitch: spectator.avatarPitch(input.pitch),
+        blockSize: s,
+      },
+      session.physicalSolid,
+    );
+    return {
+      readiness: { uid: item.uid, progress: 1, aimingDownSights: false },
+      aim: NEUTRAL_AIM,
+      wallLowerRadians,
+    };
+  };
+
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const ready = shouldPlayerBlock();
@@ -3623,6 +3677,7 @@ export const startPlay = (
       job: handlingJob,
       ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
       ...throwingPresentation(),
+      ...(debugTools?.sampleWall ? wallSpikePresentation(debugTools.sampleWall) : {}),
       dt,
     });
   };
