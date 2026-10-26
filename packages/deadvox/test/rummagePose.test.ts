@@ -133,7 +133,8 @@ it('held unpacking converges without mutating game state and returns after compl
   expect(f.queue.tick(f.queue.remaining).failed).toEqual([]);
   expect(f.inventory.itemByUid(f.item.uid)).toBeUndefined();
   const relaxed = f.project();
-  expect(f.project().wrists).toEqual(relaxed.wrists);
+  expect(relaxed.wrists[1]).toEqual(rest.wrists[1]);
+  expect(relaxed.wrists[0]!.y).toBeLessThan(rest.wrists[0]!.y);
 });
 
 it('a cancelled two-handed move restores the support arm local baseline', () => {

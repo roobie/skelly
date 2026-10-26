@@ -3134,18 +3134,26 @@ export const startPlay = (
     return true;
   };
 
-  const meleeReadiness = (meleeWeaponHeld: boolean) => ({
+  const meleeReadiness = (meleeWeaponHeld: boolean, emptyHand?: HandSide) => ({
     rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
     meleeWeaponHeld,
-    handsEmpty: !(inventory.hands.right || inventory.hands.left),
+    handsEmpty:
+      emptyHand === undefined ? !(inventory.hands.right || inventory.hands.left) : !inventory.hands[emptyHand],
     debugBuild: debugTools?.buildOn ?? false,
     inputLocked: compression.locksInput,
   });
-  const shouldPlayerBlock = (): boolean =>
-    shouldEnterMeleeReady(meleeReadiness(selectPrimaryAction(inventory).kind === 'melee'));
+  const shouldPlayerBlock = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    return shouldEnterMeleeReady(
+      meleeReadiness(action.kind === 'melee', action.kind === 'fists' ? action.hand : undefined),
+    );
+  };
 
   const startPrimaryMelee = (action: ReturnType<typeof selectPrimaryAction>): void => {
-    const selected = primaryMeleeAction(action, meleeReadiness(action.kind === 'melee'));
+    const selected = primaryMeleeAction(
+      action,
+      meleeReadiness(action.kind === 'melee', action.kind === 'fists' ? action.hand : undefined),
+    );
     if (!selected) {
       return;
     }
@@ -3601,7 +3609,7 @@ export const startPlay = (
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
-    const ready = shouldEnterMeleeReady(meleeReadiness(selectedMelee.item !== undefined));
+    const ready = shouldEnterMeleeReady(meleeReadiness(selectedMelee.item !== undefined, selectedMelee.hand));
     const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
