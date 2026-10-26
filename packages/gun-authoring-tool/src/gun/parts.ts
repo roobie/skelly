@@ -56,7 +56,6 @@ import {
 } from './boltCartridge.ts';
 import { COMPACT_SMG_PROPORTIONS } from './compactSmgProportions.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
-import { METRES_PER_UNIT } from './exportFrame.ts';
 import { MAGAZINE_PROFILES, magazineProfileContent } from './magazineProfiles.ts';
 import type { MuzzleBore } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
@@ -83,6 +82,7 @@ import { SMG_HANDLE_PROPORTIONS } from './smgHandleProportions.ts';
 import { cutSporterAction, sporterActionDetails, sporterFurniture, sporterLower, sporterStock } from './sporter.ts';
 import { SPORTER_PROPORTIONS } from './sporterProportions.ts';
 import { taperedStockSolids } from './taperedStock.ts';
+import { inchesToMm, mmToU } from './units.ts';
 
 const SIGHT_GRAIN = GRID / 4;
 const sportingStockParams = SPORTER_PROPORTIONS.stock;
@@ -242,14 +242,13 @@ const PUMP_TUBE_MAX_LENGTH_PERCENT = Math.max(...PUMP_TUBE_LENGTH_PERCENTAGES.ma
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
 const MAGAZINE_DEPTH = 5.5;
 const MAGAZINE_WIDTH = 2.5;
-const mmToMagazineUnits = (millimetres: number): number => millimetres / (METRES_PER_UNIT * 1000);
-const snapMagazineDimension = (millimetres: number): number => Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
+const snapMagazineDimension = (millimetres: number): number => Math.round(mmToU(millimetres) / GRID) * GRID;
 // Brownells listing for the USGI straight 20-round magazine: https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983
 // Its delivery dimensions (127 x 66 x 25 mm) corroborate the outer box within about 3 mm; they are package dimensions, not the body envelope.
 export const STANAG20_SOURCED_WIDTH_MM = 24.8;
 const STANAG20_BODY_BOX_U = {
-  length: snapMagazineDimension(4.895 * 25.4),
-  depth: snapMagazineDimension(2.54 * 25.4),
+  length: snapMagazineDimension(inchesToMm(4.895)),
+  depth: snapMagazineDimension(inchesToMm(2.54)),
   width: snapMagazineDimension(STANAG20_SOURCED_WIDTH_MM),
 } as const;
 const STANAG30_CENTERLINE_LENGTH_U = snapMagazineDimension(190);
