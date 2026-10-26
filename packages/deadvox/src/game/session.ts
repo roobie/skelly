@@ -1716,6 +1716,13 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
+  const cancelUnreachableDrag = (): void => {
+    const carried = entities.carrying();
+    if (carried?.floorLocked && !inventory.canReachEntity(carried)) {
+      entities.place(carried, carried.pos);
+    }
+  };
+
   const observeEntry = (
     run: ScenarioRun,
     discovery: ScenarioDiscovery,
@@ -1975,9 +1982,11 @@ export const createSession = (options: SessionOptions) => {
         descend: sampledInput().descending,
         dt,
       });
+      cancelUnreachableDrag();
       return;
     }
     advancePlayerBody(dt, time, pacedIntent);
+    cancelUnreachableDrag();
   };
 
   // The player is held still until there is ground under them. Inputs are locked
@@ -2496,7 +2505,14 @@ export const createSession = (options: SessionOptions) => {
     turnFurniture: () => turnCarried(inventory),
     tipFurniture: () => tipCarried(inventory),
     /** Where the carried piece would stand if put down at an aimed cell, or why it can't be. */
-    furniturePlacement: (aimed: Readonly<Vec3>) => placement(furnitureMover(), aimed),
+    furniturePlacement: (aimed: Readonly<Vec3>) => {
+      const result = placement(furnitureMover(), aimed);
+      const carried = entities.carrying();
+      if (carried?.floorLocked && 'pos' in result) {
+        entities.moveCarried(carried, result.pos);
+      }
+      return result;
+    },
     /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       if (scenarioRun?.won) {

@@ -638,6 +638,15 @@ export class BlockEntities {
     this.standing += 1;
   }
 
+  /** Records the last valid floor preview, so canceling a drag leaves the piece there. */
+  moveCarried(entity: BlockEntity, pos: Readonly<Vec3>): void {
+    if (!entity.carried) {
+      throw new Error('Only a carried block entity can move');
+    }
+    entity.pos = [...pos];
+    this.version += 1;
+  }
+
   /** Turns and tips the carried piece; its box follows, so fit and the put-down preview read the turned box. */
   orient(entity: BlockEntity, pose: Pose): void {
     if (!entity.carried) {

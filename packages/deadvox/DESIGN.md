@@ -519,8 +519,12 @@ because rearranging a room should not require destroying its contents. See `src/
   end. Dragging reuses picking up and holding, constrained to the floor plane:
   one interaction to learn and one code path to maintain, rather than a separate
   drag mode. Pushing remains a floor step because it moves an obstacle without
-  holding it. See `src/core/furnitureMove.ts`, `liftFurniture`, `placement` and
-  `slideFurniture`, and `src/game/session.ts`, `liftPiece` and `slidePiece`.
+  holding it. A drag holds its last valid floor position while a target is
+  blocked, then ends once that piece leaves interaction reach, so it cannot
+  teleport through an obstacle. See `src/core/furnitureMove.ts`,
+  `liftFurniture`, `placement` and `slideFurniture`, and
+  `src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
+  `cancelUnreachableDrag`.
 - **Movement choices.** A tap on movable furniture does its ordinary use (open,
   search, rest, read), so the common action stays one tap. A tap-and-hold opens
   the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a

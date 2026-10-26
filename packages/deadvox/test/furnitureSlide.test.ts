@@ -142,6 +142,35 @@ describe('floor furniture steps', () => {
     expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
   });
 
+  it('cancels a drag at its last valid placement after an obstacle leaves it out of reach', () => {
+    const { session, world, advance, setWalking } = runtime();
+    const entity = session.inventory.furnish(spec)!;
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
+    const validAimed: Vec3 = [spec.pos[0] + 1, spec.pos[1], spec.pos[2] + 1];
+    const valid = session.furniturePlacement(validAimed);
+    expect(valid).toHaveProperty('pos');
+    if (!('pos' in valid)) {
+      throw new Error(valid.refusal);
+    }
+    const lastValid = [...valid.pos];
+    const invalidAimed: Vec3 = [validAimed[0] + 2, validAimed[1], validAimed[2] - 2];
+    const invalidBase: Vec3 = [
+      invalidAimed[0] - Math.floor(entity.size[0] / 2),
+      invalidAimed[1],
+      invalidAimed[2] - Math.floor(entity.size[2] / 2),
+    ];
+    world.setBlock(...invalidBase, registry.blockIds.get('stone')!);
+    expect(session.furniturePlacement(invalidAimed)).toHaveProperty('refusal');
+
+    setWalking(true);
+    for (let frame = 0; frame < 300 && session.entities.carrying(); frame++) {
+      advance(1 / 60);
+    }
+    setWalking(false);
+    expect(session.entities.carrying()).toBeUndefined();
+    expect(entity.pos).toEqual(lastValid);
+  });
+
   it('drains carried furniture stamina only while the player moves', () => {
     const { session, advance, setWalking } = runtime();
     const entity = session.inventory.furnish(spec)!;
