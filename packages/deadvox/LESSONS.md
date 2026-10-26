@@ -76,7 +76,7 @@ The game does not lower the held gun near walls. The gain is too small for the p
 Revisit only when the project owner wants it or a gameplay need requires it. Before reviving it:
 
 - Measure cost first. A naive nearest-surface search was far too slow for every frame; an exact closed-form distance brought both detectors well under the frame budget. Prove the budget before building on a detector.
-- Choose the detector by what it must see. The cell-based detector lowers the gun early near thin things. The refined detector avoids that but needs authored shape boxes for every model that can be held or approached.
+- Choose the detector by what it must see. The cell-based detector lowers the gun early near thin things. The refined detector uses authored shapes for supported furniture, which improves fidelity there. Extending it needs more shape coverage or authoring, and its cell fallbacks remain, so it can still lower early near unsupported thin things.
 
 ## GPU resource ownership
 
