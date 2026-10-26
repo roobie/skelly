@@ -167,7 +167,7 @@ it('final arm solving samples the rummage mover output in world and overlay, and
     f.update(f.camera, f.pose, 0, { firearms: [], job: queue.jobs[0] });
     expect(f.transforms()).not.toEqual(rest);
     expect(solved.some(({ owner }) => owner.frame.name === 'world-held-items')).toBe(true);
-    expect(solved.some(({ owner }) => owner.frame.name === 'held-items-view')).toBe(true);
+    expect(solved.some(({ owner }) => owner.frame.name === 'held-optical-source')).toBe(true);
     for (const { anchor, point, hand } of solved) {
       expect(anchor.getWorldPosition(new Vector3()).distanceTo(point)).toBeLessThan(1e-8);
       expect(hand.getWorldPosition(new Vector3()).distanceTo(point)).toBeLessThan(1e-8);

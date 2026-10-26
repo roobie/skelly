@@ -24,17 +24,13 @@ import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { type ItemLook, itemLook } from './itemLook.ts';
-import type { ModelLibrary } from './models.ts';
-import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
-
-/** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
-export const PLAYER_BODY_REAR_OFFSET = 0.19;
+import { LENS, type ModelLibrary } from './models.ts';
+import { castsAndReceives, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 
 export interface PlayerFigurePlacement {
   bodyPosition: Vec3;
   yaw: number;
   blockSize: number;
-  thirdPerson: boolean;
 }
 
 /** Places a metre offset from the block-based body base exactly as the world figure is drawn. */
@@ -43,15 +39,14 @@ export const setPlayerFigurePosition = (
   placement: PlayerFigurePlacement,
   localPosition: readonly [number, number, number],
 ): void => {
-  const { bodyPosition, yaw, blockSize, thirdPerson } = placement;
+  const { bodyPosition, yaw, blockSize } = placement;
   const [localX, localY, localZ] = localPosition;
-  const rearOffset = thirdPerson ? 0 : PLAYER_BODY_REAR_OFFSET;
   const cos = Math.cos(yaw);
   const sin = Math.sin(yaw);
   target.set(
-    bodyPosition[0] * blockSize + sin * rearOffset + localX * cos + localZ * sin,
+    bodyPosition[0] * blockSize + localX * cos + localZ * sin,
     bodyPosition[1] * blockSize + localY,
-    bodyPosition[2] * blockSize + cos * rearOffset - localX * sin + localZ * cos,
+    bodyPosition[2] * blockSize - localX * sin + localZ * cos,
   );
 };
 
@@ -296,10 +291,7 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: Map<Material, Material>
   });
 };
 
-/**
- * The player's world body from its figure row, each part drawn once its model loads. The body, head included,
- * stays drawn in first person, where the head sits behind the eye; the arms show only in third person.
- */
+/** The actor's common body and held presentation, independent of the observing camera. */
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly heldFrame = new Group();
@@ -379,7 +371,7 @@ export class PlayerMeshes {
     this.stancePoses = figure.stancePoses;
     this.gait = figure.gait;
     this.models = models;
-    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
+    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize };
   }
 
   setLayer(layer: number): void {
@@ -405,13 +397,11 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { thirdPerson = false } = pose;
     if (!this.fixedPose) {
       this.blendStance(pose.stance, pose.dt);
     }
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
-    this.placement.thirdPerson = thirdPerson;
     this.syncModels();
     this.syncWorn(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
@@ -430,17 +420,14 @@ export class PlayerMeshes {
       });
     }
     for (const [part, drawn] of this.drawn) {
-      // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
       const side = ARM_SIDE[part.name];
-      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side)));
+      drawn.visible = !(side && this.presentation?.arms.has(side));
       this.posePoint(part.at, part.name, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
-    for (const [name, frame] of this.attachmentFrames) {
-      frame.visible = thirdPerson || !this.figure.attachmentFrames[name]!.insideView;
-    }
+    this.applySelfMask();
   }
 
   dispose(): void {
@@ -460,10 +447,9 @@ export class PlayerMeshes {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and mounts resolve in one frame.
   private syncHeld(pose: PlayerFigurePose): void {
     const source = pose.heldItems ?? pose.inventory;
-    this.heldFrame.visible = pose.thirdPerson === true;
+    this.heldFrame.visible = true;
     if (!source) {
       this.animator?.dispose();
       this.animator = undefined;
@@ -514,7 +500,7 @@ export class PlayerMeshes {
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
       if (side) {
-        drawn.visible = pose.thirdPerson === true && !this.presentation!.arms.has(side);
+        drawn.visible = !this.presentation!.arms.has(side);
       }
     }
   }
@@ -627,6 +613,78 @@ export class PlayerMeshes {
     return attachment;
   }
 
+  private applySelfMask(): void {
+    if (this.layer !== PLAYER_FIGURE_LAYER) {
+      return;
+    }
+    for (const pivots of this.pivots.values()) {
+      const head = pivots.find((pivot) => pivot.name === FIGURE_PIVOT.head);
+      head?.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+    }
+    // Head-mounted gear stays on its own frame; only its optical interior remains transitional.
+    for (const [name, frame] of this.attachmentFrames) {
+      const layer = this.figure.attachmentFrames[name]!.insideView ? PLAYER_SELF_MASK_LAYER : this.layer;
+      frame.traverse((object) => object.layers.set(layer));
+    }
+    for (const group of this.attachments.get('eyes')?.groups ?? []) {
+      group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+    }
+  }
+
+  aimDirection(out: Vector3): void {
+    this.heldFrame.getWorldDirection(out).negate();
+  }
+
+  eyePosition(out: Vector3): void {
+    this.heldFrame.getWorldPosition(out);
+  }
+
+  shoulderPosition(side: HandSide, out: Vector3): void {
+    if (!this.lastPose) {
+      return;
+    }
+    this.posePoint(this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'], 'body', this.lastPose);
+    out.copy(this.dummy.position);
+  }
+
+  private shownModelOf(item: Item): Object3D | undefined {
+    const direct = this.animator?.modelOf(item);
+    if (direct) {
+      return direct;
+    }
+    const source = this.lastPose?.heldItems ?? this.lastPose?.inventory;
+    const contains = (candidate: Item): boolean =>
+      candidate === item ||
+      Object.values(candidate.slots ?? {}).some((child) => child !== undefined && contains(child));
+    const root = Object.values(source?.hands ?? {}).find((entry) => entry && contains(entry));
+    if (root) {
+      return this.animator?.modelOf(root);
+    }
+    return [...this.attachments.values()].find((entry) => contains(entry.item))?.groups[0];
+  }
+
+  lensOf(item: Item, out: Vector3): boolean {
+    const lens = this.shownModelOf(item)?.getObjectByName(LENS);
+    if (!lens) {
+      return false;
+    }
+    this.group.updateMatrixWorld(true);
+    lens.getWorldPosition(out);
+    return true;
+  }
+
+  lightPositionOf(item: Item, out: Vector3): boolean {
+    const model = this.shownModelOf(item);
+    if (!model) {
+      return false;
+    }
+    this.group.updateMatrixWorld(true);
+    if (!this.lensOf(item, out)) {
+      model.getWorldPosition(out);
+    }
+    return true;
+  }
+
   /** A limb's walking swing about its joint, in radians: the legs swing opposite ways, each arm against its leg. */
   private gaitSwing(name: FigurePartName, gaitPhase: number): number {
     const swing = Math.sin(gaitPhase) * RADIANS;
@@ -666,11 +724,6 @@ export class PlayerMeshes {
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
     this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
-    if (!this.placement.thirdPerson) {
-      // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
-      const headAboveHip = FIGURE_BOXES.head.at[1] - hip;
-      this.localPosition[2] -= headAboveHip * Math.sin(-torsoForwardDegrees * RADIANS);
-    }
     setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
     this.dummy.rotation.set(stride + swing, yaw, 0);

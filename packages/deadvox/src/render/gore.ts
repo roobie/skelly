@@ -161,7 +161,6 @@ export class Gore {
     bodyPosition: [0, 0, 0],
     yaw: 0,
     blockSize: 1,
-    thirdPerson: false,
   };
   private readonly normal = new Vector3();
   private nextDroplet = 0;
@@ -397,7 +396,6 @@ export class Gore {
     this.playerPlacement.bodyPosition = player.pos;
     this.playerPlacement.yaw = player.yaw;
     this.playerPlacement.blockSize = this.blockSize;
-    this.playerPlacement.thirdPerson = player.thirdPerson;
     for (const region of BODY_REGIONS) {
       const drip = player.drip(region);
       if (!(drip && this.rng.chance(DRIPS_PER_SECOND * drip.rate * dt))) {

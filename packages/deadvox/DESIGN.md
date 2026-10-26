@@ -7,7 +7,7 @@ read_if:
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
-  - you change the player figure's look, its authored parts, its clothes or how it is posed
+  - you change the player figure's look, its authored parts, its clothes, own-camera mask or common placement
   - you add a dead human, change figure outfits or the corpse pose, or change how dead bodies are drawn
   - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
@@ -1619,18 +1619,27 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-First-person and world-body handling share one animation implementation and
-held-item-and-arms mechanism, with each view supplying its own shoulder frame.
-This applies to all items, not just guns: the world body is what others and the
-mannequin see, so it must show the same holds and action feedback as first person.
-One animation source prevents those drifting, lets the mannequin judge them from
-outside, and gives later NPCs and other players the same source. Observer motion
-must not change the actor's physical pose. Hold, readiness and support tuning
-belongs to content so another figure need not inherit the player's proportions.
-See `src/render/actorAnimator.ts`, `ActorAnimator`;
-`src/render/heldPresentation.ts`, `HeldPresentation`;
-`src/render/playerFigure.ts`, `PlayerMeshes`; `src/render/hands.ts`, `HeldItems`; and
-`src/content/base/figures-player.jsonnet`, `holds`.
+First person observes the same posed body and held objects as external views,
+because the player must see their own physical presence rather than a
+camera-specific substitute that disagrees with what others see. Observer motion
+must not change the actor's placement, lean or handling. The owning camera masks
+the head and eyes-slot equipment because surfaces enclosing the eye would block
+its view; external cameras and normal shadows retain them. Body shoulders remain
+attached rather than moving to suit the observing camera. See
+`src/render/playerFigure.ts`, `PlayerMeshes` and `setPlayerFigurePosition`;
+`src/render/actorAnimator.ts`, `ActorAnimator`; and
+`src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
+
+ADS eye alignment and the visor/scope effect boundary remain separate design
+work. The optical adapter remains for that work, not as another visible arm or
+held-item owner; authored head-slot interiors retain their matching world-frame
+exclusion during this transition. See `src/render/hands.ts`, `HeldItems`.
+
+Hands and held objects use normal world depth. Visible wall intersections are
+accepted as the bounded body rollout's limitation, not hidden with a depth-clear
+redraw or a camera-specific pose. Held-object obstruction reaction is the
+follow-up: its common pose and action policy must be settled before contact
+behaviour replaces that limitation. See `src/render/playView.ts`, `render`.
 
 Shoulders are body attachments, not movable reach handles. When an authored grip
 cannot be reached at authored limb lengths, preserving shoulder and hand contact
@@ -1780,12 +1789,10 @@ beside it. Carry stays drawn in first person, as the body does. See
 `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
-through. It belongs with the hands because the world camera cannot draw that close
-to the eye. It blurs under painkillers for the same reason the hands do: it is part
-of what the drugged player sees. Its strength is moddable content, not a player
-setting like the HUD's options: the frame belongs to the item worn, so a mod that
-changes the item changes how it looks from inside. See `src/render/hands.ts`,
-`HeldItems`.
+through. The visor/scope boundary work must distinguish that optical effect from
+a second physical item. Optical strength belongs to content rather than a HUD
+setting because it describes the worn item. See `src/render/hands.ts`, `HeldItems`,
+and [Character](#character).
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
@@ -2707,17 +2714,11 @@ with the tools, which is accepted.
 The figure is a content row, so a mod or a second character ships its own row
 and part models without a code change. The row names the body and limb models
 and the anchors they join at, and holds every value that shapes the drawn
-figure: hip height, walking swing, the arm rig and where the view hangs the
-arms. One arm model serves both views: the world body swings it whole, and the
-first-person view bends it at its authored joints to reach the held grip, so
-the two views never diverge in look or proportion and the arm bends where a
-rigid model could not. The view's shoulder is a row value, not a renderer
-constant, because a figure with other proportions needs other shoulders. Every
-part is an authored model, with no box stand-in, so a row that names a missing
-model, anchor or rig part, or puts the right view shoulder left of or above the
-eye, fails validation instead of drawing a partial body. Hit regions keep a box layout,
-because the body simulation, not the drawn shape, decides where a hit lands, so
-gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
+figure. Shared authored joints and grips keep idle and active arms connected to
+the body rather than making first person another art obligation. Missing model,
+anchor or rig data must fail validation instead of silently drawing a partial
+body. Hit regions keep a box layout because the body simulation, not the drawn
+shape, decides where a hit lands. Gore placement must not change with the observer. See `src/core/schema.ts`, `FigureSchema`,
 `src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
@@ -3100,10 +3101,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   doors and windows. Only diffuse sky light goes through the grid
   (`src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
-  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
-  hands share the room's sky visibility, so they do not glow in enclosed dark
-  spaces; see `src/render/playView.ts`, `prepareLighting`, and
-  `src/render/hands.ts`, `HeldItems.render`. Light from torches, lamps and hot
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). The actor's
+  hands receive world lighting rather than a camera-specific lighting copy, so
+  they must not glow in enclosed dark spaces; see `src/render/skylight.ts`,
+  `Skylight`, and `src/render/playerFigure.ts`, `PlayerMeshes`. Light from torches, lamps and hot
   zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
@@ -3147,9 +3148,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   furniture cells as blocking rather than holding light, because held light would
   blend the light outside a closed door into the floor of a sealed room. See
   `src/core/skyTransport.ts`, `visitCell`.
-- First-person hands must not stay sunlit when a wall blocks the player's light,
-  but nearby lights still need to reach them. Their separate scene prevents wall
-  clipping; see `src/render/hands.ts`, its file header.
+- The owning camera uses world depth for the actor, so nearby surfaces can hide
+  hands and items rather than being painted over. The accepted contact limitation
+  and its replacement belong in [Character](#character); see
+  `src/render/playView.ts`, `render`.
 
 ## Audio
 

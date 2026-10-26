@@ -73,16 +73,17 @@ const measureGlowstickFloor = async (page, uid, label, capture) => {
 // Puts a compass in the dominant hand by daylight and counts how many pixels of the square around
 // its card differ visibly between the first frame that shows the card and the next frame, drawn
 // with only the card hidden. A page screenshot costs seconds per frame on the software renderer in
-// CI, so this reads the drawing buffer right after the held layer, the frame's last draw, in one
+// CI, so this reads the drawing buffer after the optical adapter, the frame's last draw, in one
 // page call. The shown window also comes back as a PNG for the artifact.
 const heldCompassCardChange = (page) =>
   page.evaluate((noon) => {
     const r = globalThis.primaryActionTest;
     const { sim } = r.session;
     sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
+    r.input.pitch = 0;
     r.setHand(r.dominant, r.inventory.create('compass'));
     const { held } = r.view;
-    const { scene, camera } = held.warmUpTarget;
+    const { scene, camera } = r.engine;
     const gl = r.engine.renderer.getContext();
     let window;
     const read = (dial) => {
@@ -333,12 +334,73 @@ const heldItemChecks = async (chromium, port) => {
     assert.ok(Math.abs(restored / baseline - 1) < 0.02, 'removing the helmet restores the scene ratio');
     assert.deepEqual(pageErrors, []);
   });
+  await timePhase('own-head-mask-assertions', async () => {
+    const uid = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.create('night_vision_goggles');
+      if (!r.inventory.add(item, { kind: 'worn' })) {
+        throw new Error('Could not wear eyes-slot fixture');
+      }
+      return item.uid;
+    });
+    await page.waitForFunction(() => globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('worn-eyes'));
+    const frame = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const { group: actor } = r.view.playerMeshes;
+      const counts = { head: 0, eyes: 0, body: 0 };
+      globalThis.ownBodyDraws = counts;
+      for (const [role, name] of [
+        ['head', 'figure-head'],
+        ['eyes', 'worn-eyes'],
+        ['body', 'figure-leftLeg'],
+      ]) {
+        actor.getObjectByName(name).traverse((object) => {
+          if (!object.isMesh) {
+            return;
+          }
+          const before = object.onBeforeRender;
+          object.onBeforeRender = function (...args) {
+            before.apply(this, args);
+            if (args[2] === r.engine.camera) {
+              counts[role] += 1;
+            }
+          };
+        });
+      }
+      r.input.pitch = -1.3;
+      return r.frames;
+    });
+    await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, frame);
+    const own = await page.evaluate(() => ({ ...globalThis.ownBodyDraws }));
+    assert.equal(own.head, 0, 'own-camera world pass excludes the head');
+    assert.equal(own.eyes, 0, 'own-camera world pass excludes eyes-slot equipment');
+    assert.ok(own.body > 0, 'looking down draws the canonical world legs');
+    const externalFrame = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.input.pitch = 0;
+      r.thirdPerson.toggle();
+      return r.frames;
+    });
+    await page.waitForFunction((start) => globalThis.primaryActionTest.frames > start + 1, externalFrame);
+    const external = await page.evaluate(() => ({ ...globalThis.ownBodyDraws }));
+    assert.ok(external.head > 0 && external.eyes > 0, 'external world pass draws head and eyes-slot equipment');
+    await page.evaluate((itemUid) => {
+      const r = globalThis.primaryActionTest;
+      const result = r.inventory.move(r.inventory.itemByUid(itemUid), { kind: 'pile', pos: r.feet() });
+      if (!result.ok) {
+        throw new Error(result.reason);
+      }
+      r.thirdPerson.toggle();
+      r.input.pitch = -0.55;
+    }, uid);
+  });
   await timePhase('held-compass-pixel-assertion', async () => {
     // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
     // night. Hiding only the card isolates its own pixels from the lit floor and the arm around it.
     const { png, ...change } = await heldCompassCardChange(page);
     await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), Buffer.from(png, 'base64'));
     process.stdout.write(`Held compass card pixels: ${JSON.stringify(change)}\n`);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass-world.png'), await capture());
     assert.ok(
       change.changed > change.pixels / 20,
       'the held compass card is visible: hiding it changes its marks and needle on screen',

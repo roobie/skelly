@@ -29,17 +29,12 @@ import { opticViewSettings } from '../src/core/opticView.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/core/schema.ts';
-import { createPlayerBody as createBody } from '../src/game/player.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { renderMeleePose } from '../src/render/meleePose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
-import {
-  FIGURE_PIVOT,
-  firstPersonShoulder,
-  PLAYER_BODY_REAR_OFFSET,
-  PlayerMeshes,
-} from '../src/render/playerFigure.ts';
+import { FIGURE_PIVOT, firstPersonShoulder, PlayerMeshes } from '../src/render/playerFigure.ts';
+import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -278,6 +273,41 @@ describe('held light presentation', () => {
     held.dispose();
   });
 
+  it('never redraws physical arms or items or clears world depth in the retained optical adapter', () => {
+    const inventory = new Inventory(registry);
+    inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
+    const held = new HeldItems(inventory, figureModels, playerFigure);
+    const camera = new PerspectiveCamera();
+    held.update(camera);
+    const { scene } = held.warmUpTarget;
+    expect(scene.getObjectByName('held-item-right')).toBeDefined();
+    expect(scene.getObjectByName('first-person-arm-right')).toBeDefined();
+    let renders = 0;
+    const renderer = {
+      autoClear: true,
+      clearDepth: () => {
+        throw new Error('Optical adapter cleared world depth');
+      },
+      render: () => {
+        renders += 1;
+        scene.traverseVisible((object) => {
+          expect(object.name.startsWith('first-person-arm-') || object.name.startsWith('held-item-')).toBe(false);
+        });
+      },
+    } as unknown as Parameters<typeof held.render>[0];
+    held.render(renderer, camera, {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera,
+      radiusM: 1,
+      farPlaneScale: 1,
+    });
+    expect(renders).toBe(1);
+    expect(renderer.autoClear).toBe(true);
+    held.dispose();
+  });
+
   it.each(fallbackLightHands)('$id in the $side hand draws by its light definition', ({ id, definition, side }) => {
     const inventory = new Inventory(registry);
     const light = inventory.create(id);
@@ -386,43 +416,32 @@ describe('optic lens presentation', () => {
 });
 
 describe('player figure', () => {
-  it('keeps the world body out of a level or upward first-person view in every stance', () => {
-    const senses = registry.player.get('player')!;
-    const body = createBody(scale, [4, 1, 4], senses);
-    const eyeDrop: Record<PlayerStance, number> = {
-      standing: 0,
-      crouching: senses.crouch.eyeDropMetres,
-      prone: senses.prone.eyeDropMetres,
-    };
+  it('keeps all actor transforms observer-independent through stance lean and dynamic held posing', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const inventory = new Inventory(registry);
+    inventory.add(inventory.create('baseball_bat'), { kind: 'hand', side: 'right' });
+    const meshes = playerMeshes();
     for (const stance of ['standing', 'crouching', 'prone'] as const) {
-      const meshes = playerMeshes();
-      meshes.sync({
+      const pose = {
         body,
-        yaw: 0,
-        stepOffset: 0,
-        gaitPhase: 0,
-        moving: false,
+        yaw: 0.4,
+        pitch: -0.6,
+        stepOffset: 0.02,
+        gaitPhase: 0.7,
+        moving: true,
         stance,
-        dt: playerFigure.stancePoses.blendRealSeconds,
-      });
-      const vertices = drawnVertices(meshes);
-      for (const pitch of [0, 0.25, 0.5, Math.PI / 3]) {
-        const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
-        camera.rotation.order = 'YXZ';
-        camera.position.set(
-          body.pos[0] * scale.blockSize,
-          body.pos[1] * scale.blockSize + senses.eye - eyeDrop[stance],
-          body.pos[2] * scale.blockSize,
-        );
-        camera.rotation.set(pitch, 0, 0);
-        camera.updateMatrixWorld(true);
-        const frustum = new Frustum().setFromProjectionMatrix(
-          new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
-        );
-        expect(vertices.length, 'the figure draws').toBeGreaterThan(0);
-        const visible = new Set(vertices.filter(({ at }) => frustum.containsPoint(at)).map(({ part }) => part));
-        expect([...visible], `${stance} at pitch ${pitch}`).toEqual([]);
-      }
+        dt: 1,
+        inventory,
+      };
+      const snapshot = (thirdPerson: boolean) => {
+        meshes.sync({ ...pose, thirdPerson });
+        meshes.syncHeldView(readyMeleePose(true, playerFigure.holds), { firearms: [] });
+        meshes.group.updateMatrixWorld(true);
+        const transforms: number[][] = [];
+        meshes.group.traverse((object) => transforms.push(object.matrixWorld.toArray()));
+        return transforms;
+      };
+      expect(snapshot(false), stance).toEqual(snapshot(true));
     }
   });
 
@@ -459,7 +478,7 @@ describe('player figure', () => {
     }
   });
 
-  it('draws every figure-row part, hides only the arms in first person, and sets the body back only there', () => {
+  it('keeps body placement and idle arms identical when only the observer changes', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
     const bodyZ = (thirdPerson: boolean) => {
@@ -469,11 +488,33 @@ describe('player figure', () => {
     const firstPerson = bodyZ(false);
     expect(meshes.loaded).toBe(true);
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
-      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(!name.endsWith('Arm'));
+      expect(drawnPart(meshes, name).visible, `${name} in first person`).toBe(true);
     }
-    expect(firstPerson - bodyZ(true)).toBeCloseTo(PLAYER_BODY_REAR_OFFSET);
+    expect(firstPerson).toBeCloseTo(bodyZ(true));
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
       expect(drawnPart(meshes, name).visible, `${name} in third person`).toBe(true);
+    }
+  });
+
+  it('masks the own head and every eyes-slot surface without removing external colour or shadows', () => {
+    const meshes = wearOnFigure('night_vision_goggles');
+    const own = new PerspectiveCamera();
+    own.layers.enable(PLAYER_FIGURE_LAYER);
+    const external = new PerspectiveCamera();
+    external.layers.enable(PLAYER_FIGURE_LAYER);
+    external.layers.enable(PLAYER_SELF_MASK_LAYER);
+    for (const root of [drawnHead(meshes), meshes.group.getObjectByName('worn-eyes')!]) {
+      let count = 0;
+      root.traverse((object) => {
+        if (object instanceof Mesh) {
+          count += 1;
+          expect(object.visible).toBe(true);
+          expect(own.layers.test(object.layers)).toBe(false);
+          expect(external.layers.test(object.layers)).toBe(true);
+          expect(object.castShadow).toBe(true);
+        }
+      });
+      expect(count).toBeGreaterThan(0);
     }
   });
 
@@ -706,7 +747,7 @@ describe('player figure', () => {
     expect(Math.sign(reach('rightArm'))).toBe(-1);
   });
 
-  it('draws one pair of arms: no body arm on a side whose first-person view arm draws, all body arms in third person', () => {
+  it('draws exactly one actor arm on each side for idle, one-hand and two-hand roles in every view', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
     const bodyArmShown = (side: 'left' | 'right') => {
@@ -716,7 +757,7 @@ describe('player figure', () => {
           count += 1;
         }
       });
-      expect(count).toBeLessThanOrEqual(1);
+      expect(count).toBe(1);
       return count === 1;
     };
     // Empty hands draw fists; a one-handed and a two-handed item each draw their own grip.
@@ -725,13 +766,9 @@ describe('player figure', () => {
       if (held) {
         inventory.add(inventory.create(held), { kind: 'hand', side: 'right' });
       }
-      const view = new HeldItems(inventory, undefined, playerFigure);
-      view.update(new PerspectiveCamera(), readyMeleePose(false));
-      const viewArms = (heldState(view) as { arms: Map<'left' | 'right', Group> }).arms;
-      expect(viewArms.size, `${held} view arms`).toBeGreaterThan(0);
       meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
-      for (const side of viewArms.keys()) {
-        expect(bodyArmShown(side), `${held}: ${side} body arm in first person`).toBe(false);
+      for (const side of ['left', 'right'] as const) {
+        expect(bodyArmShown(side), `${held}: ${side} body arm in first person`).toBe(true);
       }
       meshes.sync({
         body,
@@ -746,7 +783,6 @@ describe('player figure', () => {
       for (const side of ['left', 'right'] as const) {
         expect(bodyArmShown(side), `${held}: ${side} body arm in third person`).toBe(true);
       }
-      view.dispose();
     }
   });
 

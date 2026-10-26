@@ -58,6 +58,7 @@ import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
+import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
@@ -573,9 +574,9 @@ export const createPlayView = (
       const carried = inventory.entities.carrying();
       carriedPiece.update(dt, camera.quaternion, s, carried?.floorLocked ? handling.floorPlacement : undefined);
       updateHeldViews(camera, pose, recoil, { ...handling, dt, lift });
-      flashlight.update({ registry, lit: light, held, camera, inventory, piles });
+      flashlight.update({ registry, lit: light, held: playerMeshes, camera, inventory, piles });
       lightPool.update(inventory, {
-        held,
+        held: playerMeshes,
         piles,
         camera,
         blockSize: s,
@@ -595,6 +596,11 @@ export const createPlayView = (
       }
       const start = performance.now();
       const ownView = !(thirdPerson || detached);
+      if (ownView) {
+        camera.layers.disable(PLAYER_SELF_MASK_LAYER);
+      } else {
+        camera.layers.enable(PLAYER_SELF_MASK_LAYER);
+      }
       drawCounters?.begin();
       try {
         mood.render(

@@ -104,6 +104,8 @@ export class OpticLensRenderer {
     }
     const previous = renderer.getRenderTarget();
     this.zoomCamera.copy(camera);
+    // The magnified image is the environment, never the actor or its held/worn geometry.
+    this.zoomCamera.layers.set(0);
     this.zoomCamera.fov = opticFieldOfView(camera.fov, frame.magnification);
     this.zoomCamera.updateProjectionMatrix();
     try {

@@ -6,6 +6,8 @@ import type { Mesh, Object3D } from 'three';
  * without it (render/shadows.ts), so the figure never blocks the player's own beam.
  */
 export const PLAYER_FIGURE_LAYER = 1;
+/** Own-head colour exclusion; external views and the sun still see these surfaces. */
+export const PLAYER_SELF_MASK_LAYER = 2;
 
 /** Makes `object` and everything under it cast and receive shadows (a no-op while no light casts). Returns it. */
 export const castsAndReceives = <T extends Object3D>(object: T): T => {
