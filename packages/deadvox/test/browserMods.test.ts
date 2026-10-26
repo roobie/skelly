@@ -5,9 +5,11 @@ import * as bundledContent from '../src/game/bundledContent.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createWorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { reuseBundledBuilds } from './bundledContentReuse.ts';
 import fixture from './fixtures/mods/browser-mod.json' with { type: 'json' };
 
 const base = bundledContent.buildBundledContent();
+reuseBundledBuilds();
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.restoreAllMocks();

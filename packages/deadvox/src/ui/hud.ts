@@ -4,6 +4,7 @@ import { html, render, type TemplateResult } from 'lit-html';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { handlingWeights, type Inventory, type Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
+import { countText, decimalText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
@@ -25,7 +26,7 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined, text: Q
     case 'pocket':
       return fillText(text.pocket, {
         container: inv.name(at.owner).toLowerCase(),
-        secs: (inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells).toFixed(1),
+        secs: decimalText(inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells),
       });
     default:
       return '';
@@ -55,7 +56,10 @@ export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewMo
       return {
         key: labelForAction(`quickbar.use.${i + 1}`),
         filled: true,
-        name: item.count > 1 ? fillText(text.count, { item: inv.name(item), count: item.count }) : inv.name(item),
+        name:
+          item.count > 1
+            ? fillText(text.count, { item: inv.name(item), count: countText(item.count) })
+            : inv.name(item),
         where: whereText(inv, item, at, text),
       };
     }),
@@ -152,7 +156,7 @@ export const timedActionHandlingPresentation = (
 });
 
 const progressLabel = (text: HandlingText, elapsed: number, total: number): string =>
-  fillText(text.progress, { done: elapsed.toFixed(1), total: total.toFixed(1) });
+  fillText(text.progress, { done: decimalText(elapsed), total: decimalText(total) });
 
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource, text: HandlingText): HandlingViewModel => {
@@ -212,7 +216,7 @@ const handlingTemplate = (vm: HandlingViewModel, text: HandlingText): TemplateRe
       : {
           minimum: {
             percent: vm.minimumPercent,
-            label: fillText(text.minimumRelease, { percent: vm.minimumPercent }),
+            label: fillText(text.minimumRelease, { percent: countText(vm.minimumPercent) }),
           },
         }),
     detail: html`${vm.next ? html`<span>${vm.next}</span>` : ''}

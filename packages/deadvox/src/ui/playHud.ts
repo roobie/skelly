@@ -5,6 +5,7 @@ import { type Camera, Vector3 } from 'three';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Needs } from '../core/needs.ts';
+import { countText, decimalText, hundredthsText, statText } from '../core/numberText.ts';
 import type { PainReading } from '../core/pain.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
@@ -132,7 +133,7 @@ export interface PlayHudState extends PlayStatus {
 type StatsText = ScreenText['stats'];
 /** Readout entries on one line are spaced apart rather than punctuated. */
 const GAP = '   ';
-const whole = (template: string, value: number): string => fillText(template, { value: value.toFixed(0) });
+const whole = (template: string, value: number): string => fillText(template, { value: countText(value) });
 
 export const playNeedsText = (
   { needs, pain, painTier, health, blood, bleeding, sprinting, lightCharge }: PlayStatus,
@@ -148,11 +149,11 @@ export const playNeedsText = (
     ].join(GAP),
     // Fatigue is sleep debt, not a share: 100 is a normal night's sleep and it can go past it.
     [whole(text.food, calories), whole(text.water, hydration), whole(text.fatigue, fatigue)].join(GAP),
-    painTier ? fillText(text.painTier, { value: pain.felt.toFixed(0), tier: painTier }) : whole(text.pain, pain.felt),
+    painTier ? fillText(text.painTier, { value: countText(pain.felt), tier: painTier }) : whole(text.pain, pain.felt),
     fillText(text.painParts, {
-      acute: pain.acute.toFixed(0),
-      injuries: pain.injuries.toFixed(0),
-      relief: pain.relief.toFixed(0),
+      acute: countText(pain.acute),
+      injuries: countText(pain.injuries),
+      relief: countText(pain.relief),
     }),
     // Only a tier content marks `warn` gets the warning sign (`DESIGN.md`, "Bleeding").
     ...bleeding.map(({ region, label, warn }) =>
@@ -169,10 +170,10 @@ export const playHudText = (
   text: StatsText,
 ): TemplateResult | '' => {
   const { calendar, speed, paused, carriedGrams, fps, seed, radiusMetres, walking, meshed, pending, looking } = state;
-  const [x, y, z] = state.positionMetres.map((v) => v.toFixed(1));
+  const [x, y, z] = state.positionMetres.map(decimalText);
   const clock = [
     formatClock(calendar),
-    ...(speed > 1.05 ? [fillText(text.speed, { speed: speed.toFixed(0) })] : []),
+    ...(speed > 1.05 ? [fillText(text.speed, { speed: countText(speed) })] : []),
     ...(paused ? [text.paused] : []),
   ].join(GAP);
   const gait = fillHint(walking ? text.walking : text.jogging, { key: keyCap('movement.walk-toggle') });
@@ -180,14 +181,14 @@ export const playHudText = (
     [
       optionalLine(visible.clock, clock),
       optionalLine(visible.stats, playNeedsText(state, text)),
-      optionalLine(visible.stats, fillText(text.carrying, { kg: (carriedGrams / 1000).toFixed(1) })),
+      optionalLine(visible.stats, fillText(text.carrying, { kg: hundredthsText(carriedGrams / 1000) })),
       optionalLine(
         visible.details,
-        [fillText(text.fps, { fps: fps.toFixed(0) }), fillText(text.seed, { seed })].join(GAP),
+        [fillText(text.fps, { fps: countText(fps) }), fillText(text.seed, { seed: countText(seed) })].join(GAP),
       ),
-      optionalLine(visible.details, html`${fillText(text.radius, { radius: radiusMetres })}${GAP}${gait}`),
+      optionalLine(visible.details, html`${fillText(text.radius, { radius: statText(radiusMetres) })}${GAP}${gait}`),
       optionalLine(visible.details, fillText(text.position, { x: x!, y: y!, z: z! })),
-      optionalLine(visible.details, fillText(text.chunks, { meshed, pending })),
+      optionalLine(visible.details, fillText(text.chunks, { meshed: countText(meshed), pending: countText(pending) })),
       optionalLine(visible.interaction && Boolean(looking), fillText(text.looking, { name: looking })),
     ].filter((line) => line !== ''),
   );

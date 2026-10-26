@@ -6,6 +6,7 @@ import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
+import { countText } from '../core/numberText.ts';
 import { stowTarget } from '../core/options.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
@@ -72,7 +73,10 @@ export class MagazineHandling {
     const spec = magazineSpec(this.inventory.registry, magazine.type)!;
     this.queue.enqueueAction(
       MAGAZINE_LOAD_ACTION,
-      fillText(loading.loadRound, { count: magazine.cartridges!.length + 1, capacity: spec.capacity }),
+      fillText(loading.loadRound, {
+        count: countText(magazine.cartridges!.length + 1),
+        capacity: countText(spec.capacity),
+      }),
       defOf(this.inventory.registry, round.type).ammo!.loadSimSeconds * this.reloadFactor(),
       { uid: magazine.uid, ammoUid: round.uid },
     );
@@ -139,7 +143,12 @@ export class MagazineHandling {
   describe(item: Item): string[] {
     const spec = magazineSpec(this.inventory.registry, item.type);
     return spec
-      ? [fillText(this.text.magazine.cartridgesDetail, { count: item.cartridges!.length, capacity: spec.capacity })]
+      ? [
+          fillText(this.text.magazine.cartridgesDetail, {
+            count: countText(item.cartridges!.length),
+            capacity: countText(spec.capacity),
+          }),
+        ]
       : [];
   }
 
