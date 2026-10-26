@@ -233,6 +233,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'layouts.shamblers.window.fromGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'layouts.shamblers.window.toGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'zombies.wander.idleSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'zombies.idleSound.intervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.wander.strollSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.wander.lookIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.wander.bodyTurnDegreesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
