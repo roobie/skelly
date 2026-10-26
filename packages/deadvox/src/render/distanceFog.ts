@@ -1,3 +1,4 @@
+// biome-ignore-all lint/style/useNamingConvention: three.js shader chunk names retain their exact spelling.
 // Fog by horizontal distance from the camera, so the fogged range is a circle around the player
 // that turning in place does not move. three fogs by depth along the view, which lets a surface at
 // the screen's side show farther than one straight ahead.
@@ -48,7 +49,12 @@ export const withDistanceFog = (
   return {
     fog_pars_vertex: replaced(chunks.fog_pars_vertex, 'fog_pars_vertex', VARYING, FOG_VIEW),
     fog_vertex: replaced(chunks.fog_vertex, 'fog_vertex', DEPTH, 'vFogView = mvPosition.xyz;'),
-    fog_pars_fragment: replaced(chunks.fog_pars_fragment, 'fog_pars_fragment', VARYING, distanceFunction(farPlaneScale)),
+    fog_pars_fragment: replaced(
+      chunks.fog_pars_fragment,
+      'fog_pars_fragment',
+      VARYING,
+      distanceFunction(farPlaneScale),
+    ),
     fog_fragment: replaced(chunks.fog_fragment, 'fog_fragment', 'vFogDepth', 'fogDistance()'),
   };
 };

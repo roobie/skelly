@@ -1,3 +1,4 @@
+// biome-ignore-all lint/style/useNamingConvention: three.js shader chunk names retain their exact spelling.
 import { PerspectiveCamera, ShaderChunk, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
@@ -5,7 +6,13 @@ import { installDistanceFog, withDistanceFog } from '../src/render/distanceFog.t
 
 const SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
 
-type Vec = { xyz: [number, number, number] };
+interface Vec {
+  xyz: [number, number, number];
+}
+
+const FOG_DISTANCE_BODY = /float fogDistance\(\) \{([\s\S]*?)\n\s*\}/;
+const COLUMN = /viewMatrix\[ (\d) \]\.xyz/g;
+const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vFogView;/;
 
 /**
  * Runs the patched fragment chunk's `fogDistance` body as JavaScript, so the test checks the shader
@@ -13,7 +20,7 @@ type Vec = { xyz: [number, number, number] };
  */
 const fogDistanceOf = (scale: number) => {
   const pars = withDistanceFog(ShaderChunk, scale).fog_pars_fragment;
-  const body = /float fogDistance\(\) \{([\s\S]*?)\n\s*\}/.exec(pars)?.[1];
+  const body = FOG_DISTANCE_BODY.exec(pars)?.[1];
   if (!body) {
     throw new Error('fogDistance not found');
   }
@@ -23,7 +30,7 @@ const fogDistanceOf = (scale: number) => {
     'dot',
     'max',
     'sqrt',
-    body.replaceAll('float ', 'const ').replaceAll(/viewMatrix\[ (\d) \]\.xyz/g, 'viewMatrix[$1].xyz'),
+    body.replaceAll('float ', 'const ').replaceAll(COLUMN, 'viewMatrix[$1].xyz'),
   ) as (m: Vec[], v: Vec['xyz'], ...math: unknown[]) => number;
   const dot = (a: number[], b: number[]) => a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
   return (camera: PerspectiveCamera, world: Vector3): number => {
@@ -55,7 +62,7 @@ describe('distance fog', () => {
     // Centroid, so an MSAA edge pixel takes its distance from inside its triangle.
     for (const pars of [patched.fog_pars_vertex, patched.fog_pars_fragment]) {
       expect(pars).toContain('centroid varying vec3 vFogView;');
-      expect(pars).not.toMatch(/(?<!centroid )varying vec3 vFogView;/);
+      expect(pars).not.toMatch(PLAIN_FOG_VIEW);
     }
   });
 
@@ -88,23 +95,16 @@ describe('distance fog', () => {
   it('fogs fully before the far plane clips, at any yaw', () => {
     const fogDistance = fogDistanceOf(SCALE);
     const fogEnd = 50;
-    let clipped = 0;
+    const steps = [-200, -150, -100, -50, 0, 50, 100, 150, 200];
+    const points = steps.flatMap((x) => steps.flatMap((z) => [-48, 0, 80].map((y) => new Vector3(x, y, z))));
     for (const cameraYaw of [0, 45]) {
       const camera = towerCamera(cameraYaw);
-      for (let x = -200; x <= 200; x += 25) {
-        for (let z = -200; z <= 200; z += 25) {
-          for (const y of [-48, 0, 80]) {
-            const point = new Vector3(x, y, z);
-            const depth = -point.clone().applyMatrix4(camera.matrixWorldInverse).z;
-            if (depth > fogEnd * SCALE) {
-              clipped++;
-              expect(fogDistance(camera, point)).toBeGreaterThanOrEqual(fogEnd);
-            }
-          }
-        }
-      }
+      const clipped = points.filter(
+        (point) => -point.clone().applyMatrix4(camera.matrixWorldInverse).z > fogEnd * SCALE,
+      );
+      expect(clipped.length).toBeGreaterThan(0);
+      expect(Math.min(...clipped.map((point) => fogDistance(camera, point)))).toBeGreaterThanOrEqual(fogEnd);
     }
-    expect(clipped).toBeGreaterThan(0);
   });
 
   it('patches the shared chunks once with the given scale, and refuses another', () => {

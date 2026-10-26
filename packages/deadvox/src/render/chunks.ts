@@ -517,8 +517,7 @@ export class ChunkMeshes implements ColumnReveal {
     for (const [mesh, box] of this.boxes) {
       const dx = Math.max(box.min.x - x, 0, x - box.max.x);
       const dz = Math.max(box.min.z - z, 0, z - box.max.z);
-      mesh.visible =
-        this.canReveal(mesh) && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
+      mesh.visible = this.canReveal(mesh) && dx * dx + dz * dz < fogEndM * fogEndM && this.frustum.intersectsBox(box);
     }
   }
 

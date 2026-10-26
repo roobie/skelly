@@ -3,13 +3,7 @@
 // `patchHeightFog`), so it needs no depth texture or extra pass and works with or without
 // post-processing. The parameters are one shared set of uniforms, driven by `Mood`.
 
-import {
-  Color,
-  type IUniform,
-  type Material,
-  Vector3,
-  type WebGLProgramParametersWithUniforms,
-} from 'three';
+import { Color, type IUniform, type Material, Vector3, type WebGLProgramParametersWithUniforms } from 'three';
 import type { LookDefaultsDef } from '../core/schema.ts';
 import { type HotCategory, patchHotCheck } from './hotCheck.ts';
 

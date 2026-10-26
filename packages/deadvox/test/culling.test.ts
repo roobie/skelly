@@ -1,4 +1,15 @@
-import { Box3, DirectionalLight, Fog, Frustum, HemisphereLight, Matrix4, PerspectiveCamera, Scene, Vector3 } from 'three';
+import {
+  Box3,
+  DirectionalLight,
+  type Fog,
+  Frustum,
+  HemisphereLight,
+  Matrix4,
+  type Object3D,
+  PerspectiveCamera,
+  Scene,
+  Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { CHUNK } from '../src/core/coords.ts';
@@ -108,48 +119,53 @@ describe('culling', () => {
     const scene = setup();
     applySky(scene.sky, skyAt(dayHour, BASE_DAY_CYCLE));
     const fogEnd = fogFar(scene.scene);
-    const c = CHUNK;
-    const span = Math.ceil(fogEnd / (c * BLOCK_M)) + 1; // whole chunks, reaching past the fog on every side
     const others = new Set(scene.meshes.group.children); // not chunks: never drawn
-    for (let x = -span; x < span; x++) {
-      for (let z = -span; z < span; z++) {
-        scene.meshes.set(`${x},${z}`, [x * c, 0, z * c], floor);
+    const span = Math.ceil(fogEnd / (CHUNK * BLOCK_M)) + 1; // whole chunks, reaching past the fog on every side
+    for (let x = -span; x < span; x += 1) {
+      for (let z = -span; z < span; z += 1) {
+        scene.meshes.set(`${x},${z}`, [x * CHUNK, 0, z * CHUNK], floor);
       }
     }
-    const camera = scene.camera;
+    const chunks = scene.meshes.group.children.filter((child) => !others.has(child));
     // Above the ground and looking down a little, as from a tower, so the view reaches the fog's end.
-    camera.position.set(1, 20, 1);
-    const eye = new Vector3(1, BLOCK_M, 1);
-    // A camera with no far plane, to tell what is in view from what the fog ends.
-    const unbounded = camera.clone();
-    unbounded.far = 1e6;
-    let inViewBeyond = 0;
-    for (const yawDegrees of [0, 20, 45, 90, 135, 200, 315]) {
-      camera.rotation.set(-0.2, (yawDegrees * Math.PI) / 180, 0);
-      camera.updateMatrixWorld();
-      unbounded.rotation.copy(camera.rotation);
-      unbounded.updateMatrixWorld();
-      unbounded.updateProjectionMatrix();
-      const frustum = new Frustum().setFromProjectionMatrix(
-        new Matrix4().multiplyMatrices(unbounded.projectionMatrix, unbounded.matrixWorldInverse),
-      );
-      scene.meshes.cull(camera, fogEnd);
-      for (const mesh of scene.meshes.group.children.filter((child) => !others.has(child))) {
-        // The floor's own box, in metres.
-        const box = new Box3(
-          new Vector3(mesh.position.x, 1, mesh.position.z).multiplyScalar(BLOCK_M),
-          new Vector3(mesh.position.x + c, 1, mesh.position.z + c).multiplyScalar(BLOCK_M),
-        );
-        const near = box.clampPoint(eye, new Vector3()).sub(eye);
-        const inside = Math.hypot(near.x, near.z) < fogEnd;
-        const inView = frustum.intersectsBox(box);
-        if (inView && !inside) {
-          inViewBeyond++;
-        }
-        expect(mesh.visible, `yaw ${yawDegrees} at ${mesh.position.toArray().join(',')}`).toBe(inView && inside);
-      }
-    }
-    // Some ground beyond the fog's end was in view, so the disc's edge was tested.
-    expect(inViewBeyond).toBeGreaterThan(0);
+    scene.camera.position.set(1, 20, 1);
+    const inViewBeyond = [0, 20, 45, 90, 135, 200, 315].map((yawDegrees) => {
+      const expected = discAtYaw(scene.camera, yawDegrees, fogEnd, chunks);
+      scene.meshes.cull(scene.camera, fogEnd);
+      expect(chunks.map((mesh) => mesh.visible)).toEqual(expected.shown);
+      return expected.inViewBeyond;
+    });
+    // Some ground beyond the fog's end was in view at every yaw, so the disc's edge was tested.
+    expect(inViewBeyond.every((count) => count > 0)).toBe(true);
   });
 });
+
+/**
+ * Turns the camera to the yaw and returns which floor chunks should show: those in view of the same
+ * camera without a far plane and nearer than the fog's end horizontally.
+ */
+const discAtYaw = (camera: PerspectiveCamera, yawDegrees: number, fogEnd: number, chunks: Object3D[]) => {
+  camera.rotation.set(-0.2, (yawDegrees * Math.PI) / 180, 0);
+  camera.updateMatrixWorld();
+  const unbounded = camera.clone();
+  unbounded.far = 1e6;
+  unbounded.updateProjectionMatrix();
+  const frustum = new Frustum().setFromProjectionMatrix(
+    new Matrix4().multiplyMatrices(unbounded.projectionMatrix, unbounded.matrixWorldInverse),
+  );
+  const eye = new Vector3(camera.position.x, BLOCK_M, camera.position.z);
+  let inViewBeyond = 0;
+  const shown = chunks.map(({ position }) => {
+    // The floor's own box, in metres.
+    const box = new Box3(
+      new Vector3(position.x, 1, position.z).multiplyScalar(BLOCK_M),
+      new Vector3(position.x + CHUNK, 1, position.z + CHUNK).multiplyScalar(BLOCK_M),
+    );
+    const near = box.clampPoint(eye, new Vector3()).sub(eye);
+    const inside = Math.hypot(near.x, near.z) < fogEnd;
+    const inView = frustum.intersectsBox(box);
+    inViewBeyond += inView && !inside ? 1 : 0;
+    return inView && inside;
+  });
+  return { shown, inViewBeyond };
+};
