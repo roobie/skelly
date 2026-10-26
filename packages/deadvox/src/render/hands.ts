@@ -26,12 +26,12 @@ import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { mountedOptic, type OpticLensFrame, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
-import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import { OPTICS_SPIKE_LAYER, type OpticsSpike } from './opticsSpike.ts';
+import { OPTICS_SPIKE_LAYER, type OpticsEye, type OpticsSpike, opticsEyeDistance } from './opticsSpike.ts';
 import { firstPersonShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
@@ -51,6 +51,7 @@ export class HeldItems {
   private readonly animator: ActorAnimator;
   private visor: Object3D | undefined;
   private opticsSpike: OpticsSpike | undefined;
+  private opticsEye: OpticsEye = 'fill';
   private readonly opticEffects = new Group();
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private drawn = '';
@@ -93,8 +94,9 @@ export class HeldItems {
     this.scene.add(this.view, this.light, this.ambient, this.camera, presentation.warmUp(), modelMaterialWarmUp(false));
   }
 
-  configureOpticsSpike(world: Scene, mode: OpticsSpike): void {
+  configureOpticsSpike(world: Scene, mode: OpticsSpike, eye: OpticsEye): void {
     this.opticsSpike = mode;
+    this.opticsEye = eye;
     world.add(this.view);
     this.scene.add(this.opticEffects);
     this.opticEffects.add(this.opticWindow);
@@ -134,6 +136,7 @@ export class HeldItems {
       handling,
       viewPlacement: {
         fov: main.fov,
+        useAuthoredEyeRelief: this.opticsEye === 'relief',
         poseItem: (frame) => this.poseOptic(frame, main),
       },
     });
@@ -162,12 +165,13 @@ export class HeldItems {
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
+    const distance = opticsEyeDistance(this.opticsEye, modelDefinition?.gun?.sight, fill, main.fov);
     if (
       !(
         active &&
         settings &&
         diameter !== undefined &&
-        fill !== undefined &&
+        distance !== undefined &&
         firearmPose?.sightEyeOffset &&
         firearmPose.sightDirection &&
         firearmPose.sightUp
@@ -175,7 +179,6 @@ export class HeldItems {
     ) {
       return;
     }
-    const distance = opticWindowDistance(diameter, fill, main.fov);
     const innerRadius = diameter / 2;
     const outerRadius = innerRadius * 1.12;
     const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
@@ -305,7 +308,6 @@ export class HeldItems {
     } finally {
       renderer.autoClear = autoClear;
     }
-
   }
 
   private clearVisor(): void {

@@ -1,15 +1,17 @@
-import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { Group, type Object3D, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
-import { mountedOptic } from '../src/core/opticView.ts';
+import { mountedOptic, projectLensAperture } from '../src/core/opticView.ts';
+import { opticWindowDistance } from '../src/core/opticWindow.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
 import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { configureOpticsSpike } from '../src/render/opticsSpike.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -177,6 +179,53 @@ it('final arm solving samples the rummage mover output in world and overlay, and
     expect(f.transforms()).toEqual(rest);
   } finally {
     spy.mockRestore();
+    f.dispose();
+  }
+});
+
+it.each([
+  ['?optics=world', false],
+  ['?optics=world&eye=fill', false],
+  ['?optics=world&eye=relief', true],
+  ['?optics=effect&eye=relief', false],
+] as const)('eye placement and projected aperture agree for %s', async (search, relief) => {
+  const f = await fixture();
+  const transform = vi.spyOn(HeldPresentation.prototype, 'firearmTransform');
+  vi.stubGlobal('location', { search });
+  const scene = new Scene();
+  try {
+    configureOpticsSpike(f.view, scene, f.camera);
+    f.view.update(f.camera, f.pose, 0, {
+      firearms: [],
+      readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+    });
+    const [input] = transform.mock.calls.at(-1)!;
+    expect(input.aimingDownSights).toBe(true);
+    const sight = input.model.gun!.sight!;
+    if (relief) {
+      expect(input.adsApertureFill).toBeUndefined();
+    } else {
+      expect(input.adsApertureFill).toBeGreaterThan(0);
+    }
+    const distance = relief
+      ? sight.eyeReliefMetres
+      : opticWindowDistance(sight.ocularDiameterMetres!, input.adsApertureFill!, f.camera.fov);
+    const expected = projectLensAperture({
+      center: [0, 0, -distance],
+      right: [1, 0, 0],
+      up: [0, 1, 0],
+      radius: sight.ocularDiameterMetres! / 2,
+      verticalFovDegrees: f.camera.fov,
+      aspect: f.camera.aspect,
+    });
+    expect(expected).toBeDefined();
+    expect(f.view.opticLensFrame).toBeDefined();
+    expect(f.view.opticLensFrame!.radius[0]).toBeCloseTo(expected!.radius[0]);
+    expect(f.view.opticLensFrame!.radius[1]).toBeCloseTo(expected!.radius[1]);
+    expect(scene.getObjectByName('held-item-right')!.visible).toBe(true);
+  } finally {
+    transform.mockRestore();
+    vi.unstubAllGlobals();
     f.dispose();
   }
 });

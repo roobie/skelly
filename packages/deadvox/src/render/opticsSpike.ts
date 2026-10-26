@@ -1,7 +1,10 @@
 import type { PerspectiveCamera, Scene } from 'three';
+import type { ModelDef } from '../core/content.ts';
+import { opticWindowDistance } from '../core/opticWindow.ts';
 import type { HeldItems } from './hands.ts';
 
 export type OpticsSpike = 'effect' | 'world';
+export type OpticsEye = 'fill' | 'relief';
 
 const opticsSpikeFromSearch = (search: string): OpticsSpike | undefined => {
   const choice = new URLSearchParams(search).get('optics');
@@ -15,12 +18,30 @@ export const configureOpticsSpike = (
 ): OpticsSpike | undefined => {
   const mode = opticsSpikeFromSearch(globalThis.location?.search ?? '');
   if (mode) {
-    held.configureOpticsSpike(scene, mode);
+    const eye: OpticsEye =
+      mode === 'world' && new URLSearchParams(globalThis.location?.search ?? '').get('eye') === 'relief'
+        ? 'relief'
+        : 'fill';
+    held.configureOpticsSpike(scene, mode, eye);
     camera.layers.enable(OPTICS_SPIKE_LAYER);
     camera.near = 0.01;
     camera.updateProjectionMatrix();
   }
   return mode;
+};
+
+export const opticsEyeDistance = (
+  eye: OpticsEye,
+  sight: NonNullable<ModelDef['gun']>['sight'],
+  fill: number | undefined,
+  fov: number,
+): number | undefined => {
+  if (eye === 'relief') {
+    return sight?.eyeReliefMetres;
+  }
+  return sight?.ocularDiameterMetres !== undefined && fill !== undefined
+    ? opticWindowDistance(sight.ocularDiameterMetres, fill, fov)
+    : undefined;
 };
 
 // The magnified scene must not magnify the close-eye gun or worn gear a second time.

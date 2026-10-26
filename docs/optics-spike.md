@@ -1,6 +1,7 @@
 ---
 read_if:
   - you evaluate camera-only optical borders against authored world geometry
+  - you compare authored eye relief with aperture-fill-derived ADS placement
 ---
 
 # Optical border comparison
@@ -14,7 +15,16 @@ See `packages/deadvox/src/render/opticsSpike.ts`, `opticsSpikeFromSearch`;
 `packages/deadvox/src/render/playerFigure.ts`, `PlayerMeshes.opticsSpikeWorldBorders`.
 The opt-in boundary keeps ordinary play unchanged while the presentation is
 unsettled. Existing pose owners remain separate deliberately: consolidating them
-would obscure the border comparison with an unrelated animation migration.
+would obscure the optical comparison with an unrelated animation migration.
+
+Eye placement is a separate judgement from border ownership: realistic eye relief
+can make the sight picture smaller, regardless of how its border is drawn. The
+comparison must project the aperture from the same distance used to place the
+instrument, or the image and housing would disagree. See
+`packages/deadvox/src/render/opticsSpike.ts`, `opticsEyeDistance`; and
+`packages/deadvox/src/render/actorAnimator.ts`, `ActorViewPlacement`.
+This compares relative eye-to-instrument placement, not a shared physical ADS
+pose or a change to the gameplay camera trajectory.
 
 Authored world geometry is the limit of this experiment. Missing close-eye
 interiors are a result to report, not permission to invent replacement assets.

@@ -115,6 +115,7 @@ export interface ActorEyeFrame {
 
 export interface ActorViewPlacement {
   readonly fov: number;
+  readonly useAuthoredEyeRelief?: boolean;
   readonly poseItem: (frame: ActorItemPose) => void;
 }
 
@@ -487,6 +488,12 @@ export class ActorAnimator {
     }
   }
 
+  private adsApertureFill(): number | undefined {
+    return this.viewPlacement?.useAuthoredEyeRelief
+      ? undefined
+      : this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
+  }
+
   private heldFirearmPresentation({
     side,
     handling,
@@ -523,8 +530,7 @@ export class ActorAnimator {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
-            adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
-              ?.adsApertureFill,
+            adsApertureFill: this.adsApertureFill(),
             ...(this.viewPlacement ? { verticalFovDegrees: this.viewPlacement.fov } : {}),
           }
         : undefined;
