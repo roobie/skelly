@@ -2,10 +2,19 @@ import { expect, it, vi } from 'vitest';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { chunksFor } from '../src/core/scale.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
-import { applyWeatheringConfig, makeConfig as makeContentConfig } from '../src/game/config.ts';
+import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '../src/game/config.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
+
+it('turns saving off for a debug run unless save=1 is also set', () => {
+  const enabled = (query: string) => savingEnabledFromUrl(new URLSearchParams(query));
+  expect(enabled('')).toBe(true);
+  expect(enabled('save=1')).toBe(true);
+  expect(enabled('debug=1')).toBe(false);
+  expect(enabled('debug=1&save=0')).toBe(false);
+  expect(enabled('debug=1&save=1')).toBe(true);
+});
 
 it('starts the gauntlet when no world is selected, including debug previews', () => {
   expect(makeConfig(1, 96).site).toBe('gauntlet');
