@@ -130,6 +130,16 @@ describe('floor furniture steps', () => {
     );
   });
 
+  it('starts dragging a heavy piece within interaction reach', () => {
+    const { entity, mover } = fixture();
+    const playerAtInteractionReach = {
+      ...player(),
+      pos: [spec.pos[0] - 3, spec.pos[1], spec.pos[2] + 1] as Vec3,
+    };
+
+    expect(liftFurniture({ ...mover, player: playerAtInteractionReach }, entity, true)).toBeUndefined();
+  });
+
   it('drains carried furniture stamina only while the player moves', () => {
     const { session, advance, setWalking } = runtime();
     const entity = session.inventory.furnish(spec)!;
