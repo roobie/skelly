@@ -42,7 +42,7 @@ export class CarriedPiece {
   }
 
   /** Catches up with the carry state and bobs the piece; `dt` is real seconds, `camera` the view's world turn. */
-  update(dt: number, camera: Quaternion, floorPlacement?: Readonly<Vec3>, blockSize?: number): void {
+  update(dt: number, camera: Quaternion, blockSize: number, floorPlacement?: Readonly<Vec3>): void {
     const carried = this.entities.carrying();
     const key = carried ? `${carried.uid}:${this.entities.version}` : '';
     if (key !== this.drawn) {
@@ -63,7 +63,7 @@ export class CarriedPiece {
         this.floorUid = carried.uid;
         this.floorGroup.position.set(0, 0, 0);
       }
-      if (floorPlacement && blockSize !== undefined) {
+      if (floorPlacement) {
         this.floorGroup.position.set(
           (floorPlacement[0] - carried.pos[0]) * blockSize,
           0,

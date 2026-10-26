@@ -176,7 +176,7 @@ describe('floor furniture steps', () => {
         (piece, def) => meshes.pieceMesh(piece, def),
         registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
       );
-      view.update(1, new Quaternion(), spot.pos, mover.blockSize);
+      view.update(1, new Quaternion(), mover.blockSize, spot.pos);
       expect(view.group.children).toHaveLength(0);
       expect(new Box3().setFromObject(view.floorGroup).min.y).toBeCloseTo(height * mover.blockSize);
       expect(placeFurniture(mover, aimed)).toBeUndefined();
@@ -197,7 +197,7 @@ describe('floor furniture steps', () => {
     );
     const aimed: Vec3 = [spec.pos[0] + 3, spec.pos[1], spec.pos[2] + 1];
 
-    view.update(1, new Quaternion());
+    view.update(1, new Quaternion(), mover.blockSize);
     expect(view.floorGroup.visible).toBe(true);
     expect(view.floorGroup.position.toArray()).toEqual([0, 0, 0]);
     const spot = placement(mover, aimed);
@@ -205,15 +205,15 @@ describe('floor furniture steps', () => {
     if (!('pos' in spot)) {
       throw new Error(spot.refusal);
     }
-    view.update(1, new Quaternion(), spot.pos, mover.blockSize);
+    view.update(1, new Quaternion(), mover.blockSize, spot.pos);
     const previewPosition = view.floorGroup.position.toArray();
     expect(previewPosition).not.toEqual([0, 0, 0]);
 
     expect(placement({ ...mover, terrainSolid: () => false }, aimed)).toHaveProperty('refusal');
-    view.update(1, new Quaternion());
+    view.update(1, new Quaternion(), mover.blockSize);
     expect(view.floorGroup.position.toArray()).toEqual(previewPosition);
     expect(turnCarried(inventory)).toBeUndefined();
-    view.update(1, new Quaternion());
+    view.update(1, new Quaternion(), mover.blockSize);
     expect(view.floorGroup.visible).toBe(true);
     expect(view.floorGroup.position.toArray()).toEqual(previewPosition);
     expect(placeFurniture(mover, aimed)).toBeUndefined();
