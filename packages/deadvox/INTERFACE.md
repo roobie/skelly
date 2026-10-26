@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're writing or changing any player-visible text
+  - you're showing a number to the player
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
@@ -35,6 +36,8 @@ Hover and focus details use one or two sentences of plain fact. No wordplay, con
 The interface affords actions rather than writing procedures. Control labels come from bindings so rebinding cannot leave stale labels. Numbers stay available on surfaces the player opens rather than being pushed during play, keeping simulation facts accessible without undermining diegesis. Gungen and mobgen viewers are development tools, outside this rule.
 
 The labels and messages a screen draws are content, like the rest of the game's text, so a pack can reword or translate them without a code edit. Code names a key and validation rejects content that lacks it, so a missing line is an error rather than a silent default. A line marks each value code fills in as a `{slot}`, so a pack can reword or reorder around it; validation rejects a line that drops a slot or names one code never fills, and a slot holding a bound key is drawn as its key cap. See `src/core/schema.ts`, `UiScreenTextSchema`, and `src/ui/keyCap.ts`, `fillHint`.
+
+Every number a player reads is formatted through one precision table, `src/core/numberText.ts`, whose kinds (`countText`, `decimalText` and the rest) own each value's precision, because accumulated simulation values carry float noise no line should show and precision belongs in one place, not in literals at call sites. The fillers accept only formatted strings — `src/core/textTemplate.ts`, `fillText`, and `src/ui/keyCap.ts`, `fillHint` — so the compiler rejects a raw number reaching a line.
 
 ## Class 3: the character's voice
 

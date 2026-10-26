@@ -25,6 +25,7 @@ import { dropSpots, type Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
+import { countText } from '../core/numberText.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
@@ -1037,8 +1038,8 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       LOAD_ACTION,
       fillText(this.text.loading.loadRound, {
-        count: (gun.firearm?.tube?.length ?? 0) + 1,
-        capacity: firearmHandlingFor(gun, this.inventory.registry).model.gun!.internalMagazine!.capacity,
+        count: countText((gun.firearm?.tube?.length ?? 0) + 1),
+        capacity: countText(firearmHandlingFor(gun, this.inventory.registry).model.gun!.internalMagazine!.capacity),
       }),
       defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
@@ -1206,8 +1207,8 @@ export class FirearmMechanics {
       const loaded = cylinder.chambers.filter((chamber) => chamber.state === 'round').length;
       return [
         fillText(cylinder.open ? text.openCylinderDetail : text.cylinderDetail, {
-          loaded,
-          chambers: cylinder.chambers.length,
+          loaded: countText(loaded),
+          chambers: countText(cylinder.chambers.length),
         }),
       ];
     }
@@ -1217,7 +1218,10 @@ export class FirearmMechanics {
       return [
         fillText(text.chamberDetail, { contents: this.chamberWords(item, text.spentCase) }),
         spec
-          ? fillText(text.magazineDetail, { count: magazine.cartridges!.length, capacity: spec.capacity })
+          ? fillText(text.magazineDetail, {
+              count: countText(magazine.cartridges!.length),
+              capacity: countText(spec.capacity),
+            })
           : text.noMagazineDetail,
       ];
     }
@@ -1236,12 +1240,15 @@ export class FirearmMechanics {
               }),
             ]
           : []),
-        fillText(text.magazineDetail, { count: item.firearm?.tube?.length ?? 0, capacity }),
+        fillText(text.magazineDetail, {
+          count: countText(item.firearm?.tube?.length ?? 0),
+          capacity: countText(capacity),
+        }),
       ];
     }
     return [
       fillText(text.chamberDetail, { contents: this.chamberWords(item, text.firedHull) }),
-      fillText(text.tubeDetail, { count: item.firearm!.tube!.length, capacity }),
+      fillText(text.tubeDetail, { count: countText(item.firearm!.tube!.length), capacity: countText(capacity) }),
     ];
   }
 

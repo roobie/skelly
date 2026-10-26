@@ -19,6 +19,7 @@ import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } 
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { PILE_GRID } from '../core/inventoryScale.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
+import { countText, decimalText, hundredthsText, percentText, statText } from '../core/numberText.ts';
 import {
   batterySlotRefusal,
   bestPocket,
@@ -306,8 +307,8 @@ interface InventoryScreenViewModel {
 
 type InventoryText = ScreenText['inventory'];
 
-const secs = (text: InventoryText, s: number) => fillText(text.secs, { value: s.toFixed(1) });
-const kg = (text: InventoryText, g: number) => fillText(text.kg, { value: (g / 1000).toFixed(2) });
+const secs = (text: InventoryText, s: number) => fillText(text.secs, { value: decimalText(s) });
+const kg = (text: InventoryText, g: number) => fillText(text.kg, { value: hundredthsText(g / 1000) });
 const occupiedHand = (inv: Pick<Inventory, 'hands' | 'registry'>, side: 'right' | 'left'): string | undefined => {
   const other = inv.hands[side === 'right' ? 'left' : 'right'];
   return !inv.hands[side] && other && defOf(inv.registry, other.type).twoHanded
@@ -617,7 +618,7 @@ const inventoryTemplate = (
       aria-orientation="vertical"
       aria-valuemin="0"
       aria-valuemax="100"
-      aria-valuenow=${Math.round(splitRatio * 100)}
+      aria-valuenow=${countText(splitRatio * 100)}
     ></div>
     <section class="inv-pane" data-pane="around">
       <h3>${text.around}</h3>
@@ -689,16 +690,19 @@ const inventoryTemplate = (
       ${vm.skills.map(
         (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
-          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: skill.level })}</span></div>
+          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
           <div class="inv-skill-practice">${
             Number.isFinite(skill.nextLevelPractice)
-              ? fillText(text.practice, { practice: skill.practice, next: skill.nextLevelPractice })
-              : fillText(text.practiceMax, { practice: skill.practice })
+              ? fillText(text.practice, {
+                  practice: decimalText(skill.practice),
+                  next: countText(skill.nextLevelPractice),
+                })
+              : fillText(text.practiceMax, { practice: decimalText(skill.practice) })
           }</div>
           ${
             Number.isFinite(skill.nextLevelPractice)
               ? html`
-            <div class="inv-skill-progress" role="progressbar" aria-label=${fillText(text.skillProgress, { skill: skill.name })} aria-valuemin="0" aria-valuemax=${skill.nextLevelPractice} aria-valuenow=${skill.practice}>
+            <div class="inv-skill-progress" role="progressbar" aria-label=${fillText(text.skillProgress, { skill: skill.name })} aria-valuemin="0" aria-valuemax=${countText(skill.nextLevelPractice)} aria-valuenow=${decimalText(skill.practice)}>
               <span style=${`width:${skill.progress}%`}></span>
             </div>
           `
@@ -1223,7 +1227,7 @@ export class InventoryScreen {
       }
     }
     if (queued > 0) {
-      this.hooks.notice(fillText(this.text().taking, { count: queued, category }));
+      this.hooks.notice(fillText(this.text().taking, { count: countText(queued), category }));
     } else {
       this.refuse(fillText(this.text().noneToTake, { category }));
     }
@@ -1354,9 +1358,9 @@ export class InventoryScreen {
     body.style.setProperty('--inv-you-fr', factors.you);
     body.style.setProperty('--inv-around-fr', factors.around);
     const splitter = body.querySelector<HTMLElement>('[data-inventory-splitter]');
-    splitter?.setAttribute('aria-valuemin', String(Math.round(bounds.min * 100)));
-    splitter?.setAttribute('aria-valuemax', String(Math.round(bounds.max * 100)));
-    splitter?.setAttribute('aria-valuenow', String(Math.round(applied * 100)));
+    splitter?.setAttribute('aria-valuemin', countText(bounds.min * 100));
+    splitter?.setAttribute('aria-valuemax', countText(bounds.max * 100));
+    splitter?.setAttribute('aria-valuenow', countText(applied * 100));
   }
 
   private scrollSelectedItemIntoView(): boolean {
@@ -1383,12 +1387,12 @@ export class InventoryScreen {
     const character = this.hooks.character();
     const alarm = this.hooks.wakeGameHour?.();
     const bodyView = {
-      health: `${Math.round(body.health)}%`,
-      blood: `${Math.round(body.blood)}%`,
-      shock: `${Math.round(body.shock)}%`,
+      health: percentText(body.health),
+      blood: percentText(body.blood),
+      shock: percentText(body.shock),
       regions: BODY_REGIONS.map((region) => ({
         region,
-        damage: `${Math.round(body.regionDamage[region])}%`,
+        damage: percentText(body.regionDamage[region]),
         bleeding: body.bleedingTier(region),
         infection: body.wounds[region]?.infection ?? 'none',
       })),
@@ -1418,7 +1422,7 @@ export class InventoryScreen {
 
     const piles = this.hooks.nearby().map(
       (pile): PileViewModel => ({
-        label: fillText(text.onFloor, { distance: this.hooks.distance(pile).toFixed(1) }),
+        label: fillText(text.onFloor, { distance: decimalText(this.hooks.distance(pile)) }),
         grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
@@ -1435,7 +1439,7 @@ export class InventoryScreen {
             label:
               def.container!.pockets.length > 1 || spec.name
                 ? fillText(text.pocketReach, {
-                    pocket: spec.name ?? fillText(text.pocket, { number: i + 1 }),
+                    pocket: spec.name ?? fillText(text.pocket, { number: countText(i + 1) }),
                     span: secs(text, spec.handlingSimSeconds),
                   })
                 : undefined,
@@ -1449,7 +1453,7 @@ export class InventoryScreen {
       return {
         uid: entity.uid,
         charger: this.hooks.charger?.(entity),
-        label: fillText(text.furniture, { name: def.name, distance: this.hooks.entityDistance(entity).toFixed(1) }),
+        label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
         searching: !entity.searched && this.hooks.searching(entity),
         targeted: entity.uid === this.targetEntity()?.uid,
         searchLabel:
@@ -1502,7 +1506,7 @@ export class InventoryScreen {
       vehicleId: view.vehicleId,
       label: fillText(this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.vehicle.heading, {
         vehicle: view.name,
-        distance: opened.distanceMetres.toFixed(1),
+        distance: decimalText(opened.distanceMetres),
       }),
       sites: view.sites.map((site): VehicleSiteViewModel => {
         const siteOptions = site.actions.map((action) => vehicleOptionViewModel(action, text));
@@ -1575,12 +1579,12 @@ export class InventoryScreen {
       uid: String(item.uid),
       className: `${className} cat-${def.category}${item === this.selected ? ' selected' : ''}${unmatched ? ' inv-item-unmatched' : ''}`,
       title: fillText(text.itemTitle, {
-        item: item.count > 1 ? fillText(text.count, { item: def.name, count: item.count }) : def.name,
+        item: item.count > 1 ? fillText(text.count, { item: def.name, count: countText(item.count) }) : def.name,
         condition: conditionWord(this.inv.registry, item.condition),
       }),
       name: workName(this.inv.registry, item),
       picture: this.hooks.pictures?.picture(item),
-      count: item.count > 1 ? fillText(text.countBadge, { count: item.count }) : undefined,
+      count: item.count > 1 ? fillText(text.countBadge, { count: countText(item.count) }) : undefined,
       style:
         Object.keys(itemStyle).length > 0
           ? Object.entries(itemStyle)
@@ -1623,7 +1627,7 @@ export class InventoryScreen {
       empty: false,
       ...(battery ? { battery } : {}),
       category: def.category,
-      name: item.count > 1 ? fillText(text.count, { item: name, count: item.count }) : name,
+      name: item.count > 1 ? fillText(text.count, { item: name, count: countText(item.count) }) : name,
       condition: conditionWord(this.inv.registry, item.condition),
       description: def.description,
       lines: this.inspect(item),
@@ -1694,9 +1698,9 @@ export class InventoryScreen {
     const lines = [
       fillText(text.weightSize, {
         weight: kg(text, weightOf(this.inv.registry, item)),
-        width: def.size[0],
-        height: def.size[1],
-        condition: Math.round(item.condition * 100),
+        width: countText(def.size[0]),
+        height: countText(def.size[1]),
+        condition: countText(item.condition * 100),
       }),
     ];
     if (item.work) {
@@ -1705,43 +1709,48 @@ export class InventoryScreen {
           ? fillText(text.recipe, { recipe: item.work.recipe })
           : fillText(text.takingApart, { item: defOf(this.inv.registry, item.work.source).name }),
         fillText(text.progress, {
-          done: item.work.elapsed.toFixed(1),
-          total: item.work.duration.toFixed(1),
+          done: decimalText(item.work.elapsed),
+          total: decimalText(item.work.duration),
         }),
       );
     }
     if (def.stack) {
-      lines.push(fillText(text.stacks, { count: def.stack }));
+      lines.push(fillText(text.stacks, { count: countText(def.stack) }));
     }
     if (def.twoHanded) {
       lines.push(text.twoHanded);
     }
     if (def.food) {
-      lines.push(fillText(text.food, { calories: def.food.calories, water: def.food.water }));
+      lines.push(fillText(text.food, { calories: statText(def.food.calories), water: statText(def.food.water) }));
     }
     if (def.tool) {
       lines.push(
         Object.entries(def.tool.qualities)
-          .map(([quality, level]) => fillText(text.quality, { quality, level }))
+          .map(([quality, level]) => fillText(text.quality, { quality, level: countText(level) }))
           .join(' · '),
       );
     }
     if (def.weapon) {
       const m = def.weapon.melee;
       lines.push(
-        fillText(text.melee, { damage: m.damage, type: m.type, reach: m.reach, recovery: m.cooldownSimSeconds }),
+        fillText(text.melee, {
+          damage: statText(m.damage),
+          type: m.type,
+          reach: statText(m.reach),
+          recovery: decimalText(m.cooldownSimSeconds),
+        }),
       );
     }
     if (def.light) {
-      lines.push(fillText(text.light, { radius: def.light.radius, seenFrom: def.light.seenFrom }));
+      lines.push(fillText(text.light, { radius: statText(def.light.radius), seenFrom: statText(def.light.seenFrom) }));
     }
     if (def.wearable) {
-      lines.push(fillText(text.worn, { slot: def.wearable.slot, encumbrance: def.wearable.encumbrance }));
+      lines.push(fillText(text.worn, { slot: def.wearable.slot, encumbrance: statText(def.wearable.encumbrance) }));
     }
     lines.push(...this.hooks.describe(item));
     if (def.container) {
       const sizes = def.container.pockets.map((p) =>
-        fillText(text.pocketSize, { width: p.grid[0], height: p.grid[1] }),
+        fillText(text.pocketSize, { width: countText(p.grid[0]), height: countText(p.grid[1]) }),
       );
       lines.push(fillText(text.pockets, { sizes: sizes.join(', ') }));
     }

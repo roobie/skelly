@@ -27,6 +27,7 @@ import { damageWord, type Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
+import { countText } from '../core/numberText.ts';
 import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
@@ -2036,7 +2037,7 @@ export const startPlay = (
     }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showRefusal(fillText(lines.play.quickbarEmpty, { slot: slot + 1 }), sim.time);
+      showRefusal(fillText(lines.play.quickbarEmpty, { slot: countText(slot + 1) }), sim.time);
       return;
     }
     if (held) {

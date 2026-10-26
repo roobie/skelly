@@ -12,10 +12,10 @@ export type HintText = string | TemplateResult;
 /** The one way a bound key is shown to the player; its look is `.keycap` in `src/ui/style.css`. */
 export const keyCap = (actionId: string): TemplateResult => html`<kbd class="keycap">${labelForAction(actionId)}</kbd>`;
 
-/** A content text line with its `{slot}`s filled; a key cap or other markup can fill a slot. */
+/** A content text line with its `{slot}`s filled; a key cap or other markup can fill a slot. A number must pass `src/core/numberText.ts` first, so raw floats cannot reach the player. */
 export const fillHint = (
   template: string,
-  slots: Readonly<Record<string, HintText | number | DirectiveResult>>,
+  slots: Readonly<Record<string, HintText | DirectiveResult>>,
 ): TemplateResult => html`${fillParts(template, slots)}`;
 
 /** Hint lines joined by newlines, or empty when there are none. */

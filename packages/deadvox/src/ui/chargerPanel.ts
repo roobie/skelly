@@ -1,6 +1,7 @@
 import { batteryCapacityMicrojoules, batteryEnergy } from '../core/battery.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { decimalText } from '../core/numberText.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { FurnitureDef, ScreenText } from '../core/schema.ts';
 import type { SitePower } from '../core/sitePower.ts';
@@ -73,7 +74,7 @@ export const chargerPanel = (
     kind: 'meta',
     status: active ? workingStatus : idleStatus,
     ...(active && remaining !== undefined
-      ? { remaining: fillText(text.remaining, { gameSeconds: (remaining / 1000).toFixed(1) }) }
+      ? { remaining: fillText(text.remaining, { gameSeconds: decimalText(remaining / 1000) }) }
       : {}),
     actions,
   };
