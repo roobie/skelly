@@ -14,4 +14,6 @@
   steps: 35,
   // Cells gathered beyond the swept proxy's reach.
   regionPaddingBlocks: 1,
+  // 1 runs both detectors for the HUD comparison; 0 runs only the selected one, at half the cost where both lower.
+  compare: 1,
 }

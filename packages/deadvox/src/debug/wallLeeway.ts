@@ -248,13 +248,119 @@ export const gunProxy = (sample: WallPoseSample, lower: number, radius: number, 
   return { butt, muzzle, tip, radius };
 };
 
-const pointBoxDistance = (point: Vec3, box: WallBox): { distance: number; closest: Vec3 } => {
-  const closest = point.map((value, axis) => Math.min(box.max[axis]!, Math.max(box.min[axis]!, value))) as Vec3;
-  return { distance: Math.hypot(...point.map((value, axis) => value - closest[axis]!)), closest };
+/** Squared distance from the point at `t` on segment `a`→`a + d` to the box. */
+const squaredAt = (a: Vec3, d: Vec3, box: WallBox, t: number): number => {
+  let sum = 0;
+  for (let axis = 0; axis < 3; axis++) {
+    const p = a[axis]! + d[axis]! * t;
+    const outside = Math.max(box.min[axis]! - p, p - box.max[axis]!, 0);
+    sum += outside * outside;
+  }
+  return sum;
 };
 
-const along = (from: Vec3, to: Vec3, t: number): Vec3 =>
-  from.map((value, axis) => value + (to[axis]! - value) * t) as Vec3;
+const breaks = new Float64Array(8);
+
+/** Inserts a crossing strictly inside the segment into `breaks`, kept sorted; returns the new count. */
+const addBreak = (t: number, count: number): number => {
+  if (!(t > 0 && t < 1)) {
+    return count;
+  }
+  let at = count;
+  while (at > 0 && breaks[at - 1]! > t) {
+    breaks[at] = breaks[at - 1]!;
+    at -= 1;
+  }
+  breaks[at] = t;
+  return count + 1;
+};
+
+/** The minimising t of the squared distance on piece `breaks[piece]`..`breaks[piece + 1]`, where each axis keeps one side of its slab. */
+const pieceMinimum = (a: Vec3, d: Vec3, box: WallBox, piece: number): number => {
+  const t0 = breaks[piece]!;
+  const t1 = breaks[piece + 1]!;
+  const middle = (t0 + t1) / 2;
+  // f(t) = A t² + B t + C on this piece; only A and B place the minimum.
+  let quadratic = 0;
+  let linear = 0;
+  for (let axis = 0; axis < 3; axis++) {
+    const p = a[axis]! + d[axis]! * middle;
+    let bound: number | undefined;
+    if (p < box.min[axis]!) {
+      bound = box.min[axis]!;
+    } else if (p > box.max[axis]!) {
+      bound = box.max[axis]!;
+    }
+    if (bound !== undefined) {
+      quadratic += d[axis]! * d[axis]!;
+      linear += 2 * d[axis]! * (a[axis]! - bound);
+    }
+  }
+  return quadratic > 0 ? Math.min(t1, Math.max(t0, -linear / (2 * quadratic))) : t0;
+};
+
+/**
+ * The segment parameter nearest the box. Between the points where the segment crosses a slab plane, each axis is
+ * either inside its slab or a fixed side of it, so the squared distance is one quadratic there: minimising each
+ * piece and keeping the least is exact. Ties keep the earliest piece.
+ */
+const nearestT = (a: Vec3, d: Vec3, box: WallBox): number => {
+  breaks[0] = 0;
+  let count = 1;
+  for (let axis = 0; axis < 3; axis++) {
+    if (d[axis] !== 0) {
+      count = addBreak((box.min[axis]! - a[axis]!) / d[axis]!, count);
+      count = addBreak((box.max[axis]! - a[axis]!) / d[axis]!, count);
+    }
+  }
+  breaks[count] = 1;
+  count += 1;
+  let bestT = 0;
+  let best = Number.POSITIVE_INFINITY;
+  for (let piece = 0; piece + 1 < count; piece++) {
+    const t = pieceMinimum(a, d, box, piece);
+    const value = squaredAt(a, d, box, t);
+    if (value < best) {
+      best = value;
+      bestT = t;
+    }
+  }
+  return bestT;
+};
+
+const segmentOf = (proxy: GunProxy): Vec3 => [
+  proxy.tip[0] - proxy.butt[0],
+  proxy.tip[1] - proxy.butt[1],
+  proxy.tip[2] - proxy.butt[2],
+];
+
+/** The proxy's clearance from one box: surface distance minus radius. */
+export const boxClearance = (proxy: GunProxy, box: WallBox, d: Vec3 = segmentOf(proxy)): number =>
+  Math.sqrt(squaredAt(proxy.butt, d, box, nearestT(proxy.butt, d, box))) - proxy.radius;
+
+/** Whether the box is farther than `reach` from the proxy's axis on some axis, so it cannot be within `reach`. */
+export const boxBeyond = (proxy: GunProxy, box: WallBox, reach: number): boolean => {
+  for (let axis = 0; axis < 3; axis++) {
+    const low = Math.min(proxy.butt[axis]!, proxy.tip[axis]!) - reach;
+    const high = Math.max(proxy.butt[axis]!, proxy.tip[axis]!) + reach;
+    if (box.min[axis]! > high || box.max[axis]! < low) {
+      return true;
+    }
+  }
+  return false;
+};
+
+/** Whether every box keeps `margin` clear of the proxy; stops at the first that does not. */
+const keepsMargin = (proxy: GunProxy, boxes: readonly WallBox[], margin: number): boolean => {
+  const d = segmentOf(proxy);
+  const reach = proxy.radius + margin;
+  for (const box of boxes) {
+    if (!boxBeyond(proxy, box, reach) && boxClearance(proxy, box, d) < margin) {
+      return false;
+    }
+  }
+  return true;
+};
 
 export interface WallContact {
   /** Surface distance minus the proxy radius; negative means overlap. */
@@ -266,30 +372,32 @@ export interface WallContact {
   readonly box?: WallBox;
 }
 
-/** The swept proxy against every box: distance to a box is convex along the segment, so a golden-section search is exact. */
-export const proxyContact = (proxy: GunProxy, boxes: readonly WallBox[]): WallContact => {
-  let best: WallContact = { clearance: Number.POSITIVE_INFINITY };
-  const golden = (Math.sqrt(5) - 1) / 2;
-  for (const box of boxes) {
-    const at = (t: number) => pointBoxDistance(along(proxy.butt, proxy.tip, t), box).distance;
-    let low = 0;
-    let high = 1;
-    for (let step = 0; step < 48; step++) {
-      const a = high - golden * (high - low);
-      const b = low + golden * (high - low);
-      if (at(a) <= at(b)) {
-        high = b;
-      } else {
-        low = a;
-      }
+/** The swept proxy's nearest box, its hit points, and optionally every box's clearance in `clearances`. */
+export const proxyContact = (proxy: GunProxy, boxes: readonly WallBox[], clearances?: Float64Array): WallContact => {
+  const d = segmentOf(proxy);
+  let clearance = Number.POSITIVE_INFINITY;
+  let bestIndex = -1;
+  let bestT = 0;
+  for (let index = 0; index < boxes.length; index++) {
+    const box = boxes[index]!;
+    const t = nearestT(proxy.butt, d, box);
+    const own = Math.sqrt(squaredAt(proxy.butt, d, box, t)) - proxy.radius;
+    if (clearances) {
+      clearances[index] = own;
     }
-    const from = along(proxy.butt, proxy.tip, (low + high) / 2);
-    const { distance, closest } = pointBoxDistance(from, box);
-    if (distance - proxy.radius < best.clearance) {
-      best = { clearance: distance - proxy.radius, hit: closest, from, box };
+    if (own < clearance) {
+      clearance = own;
+      bestIndex = index;
+      bestT = t;
     }
   }
-  return best;
+  if (bestIndex < 0) {
+    return { clearance };
+  }
+  const box = boxes[bestIndex]!;
+  const from = proxy.butt.map((value, axis) => value + d[axis]! * bestT) as Vec3;
+  const hit = from.map((value, axis) => Math.min(box.max[axis]!, Math.max(box.min[axis]!, value))) as Vec3;
+  return { clearance, hit, from, box };
 };
 
 interface WallLowering {
@@ -297,7 +405,6 @@ interface WallLowering {
   readonly radians: number;
   readonly resolved: boolean;
   readonly proxy: GunProxy;
-  readonly contact: WallContact;
 }
 
 const loweringAngle = (coefficient: number, tuning: WallTuning): number =>
@@ -316,8 +423,7 @@ const solveLowering = (
     const coefficient = step / steps;
     const radians = loweringAngle(coefficient, tuning);
     const proxy = gunProxy(sample, radians, radius, tuning.reachMetres);
-    const contact = proxyContact(proxy, boxes);
-    last = { coefficient, radians, resolved: contact.clearance >= tuning.marginMetres, proxy, contact };
+    last = { coefficient, radians, resolved: keepsMargin(proxy, boxes, tuning.marginMetres), proxy };
     if (last.resolved) {
       return last;
     }
@@ -337,6 +443,8 @@ interface WallModeResult {
   readonly boxes: readonly WallBox[];
   /** The intended (unlowered) proxy's contact. */
   readonly contact: WallContact;
+  /** The intended proxy's clearance from each of `boxes`, by index. */
+  readonly clearances: Float64Array;
   readonly lowering: WallLowering;
   readonly cost: WallModeCost;
 }
@@ -344,16 +452,24 @@ interface WallModeResult {
 export interface WallComparison {
   readonly radius: number;
   readonly intended: GunProxy;
-  readonly modes: Readonly<Record<WallMode, WallModeResult>>;
-  /** Refined clearance minus cells clearance at the intended pose, in metres. */
+  /** The modes asked for; the comparison fields need both. */
+  readonly modes: Readonly<Partial<Record<WallMode, WallModeResult>>>;
+  /** Refined clearance minus cells clearance at the intended pose, in metres; NaN with one mode. */
   readonly gap: number;
-  /** Cells lowering minus refined lowering, in degrees: how much less refined lowers the gun. */
+  /** Cells lowering minus refined lowering, in degrees: how much less refined lowers the gun; NaN with one mode. */
   readonly lowerGapDegrees: number;
   readonly unrefined: readonly string[];
 }
 
-/** Both modes from one proxy, one curve and one margin: only the boxes differ. */
-export const compareWalls = (world: WallWorld, sample: WallPoseSample, tuning: WallTuning): WallComparison => {
+const BOTH_MODES: readonly WallMode[] = ['cells', 'refined'];
+
+/** The asked modes from one proxy, one curve and one margin: only the boxes differ. */
+export const compareWalls = (
+  world: WallWorld,
+  sample: WallPoseSample,
+  tuning: WallTuning,
+  only: readonly WallMode[] = BOTH_MODES,
+): WallComparison => {
   const radius = authoredProxyRadius(sample.pose.model) * tuning.radiusScale + tuning.radiusExtraMetres;
   const intended = gunProxy(sample, 0, radius, tuning.reachMetres);
   // The muzzle sweeps an arc, so sample it rather than only its ends.
@@ -372,20 +488,23 @@ export const compareWalls = (world: WallWorld, sample: WallPoseSample, tuning: W
     const start = performance.now();
     const boxes = gatherWallBoxes(world, mode, low, high);
     const gathered = performance.now();
-    const contact = proxyContact(intended, boxes);
+    const clearances = new Float64Array(boxes.length);
+    const contact = proxyContact(intended, boxes, clearances);
     const lowering = solveLowering(sample, boxes, radius, tuning);
     const steps = Math.round(lowering.coefficient * Math.max(1, Math.round(tuning.steps))) + 1;
     const cost = { gatherRealMs: gathered - start, solveRealMs: performance.now() - gathered, steps };
-    return { boxes, contact, lowering, cost };
+    return { boxes, contact, clearances, lowering, cost };
   };
-  const modes = { cells: run('cells'), refined: run('refined') };
-  const unrefined = [...new Set(modes.refined.boxes.flatMap((box) => (box.unrefined ? [box.unrefined] : [])))];
+  const modes: Partial<Record<WallMode, WallModeResult>> = Object.fromEntries(only.map((mode) => [mode, run(mode)]));
+  const { cells, refined } = modes;
+  const unrefined = [...new Set((refined?.boxes ?? []).flatMap((box) => (box.unrefined ? [box.unrefined] : [])))];
   return {
     radius,
     intended,
     modes,
-    gap: modes.refined.contact.clearance - modes.cells.contact.clearance,
-    lowerGapDegrees: ((modes.cells.lowering.radians - modes.refined.lowering.radians) * 180) / Math.PI,
+    gap: cells && refined ? refined.contact.clearance - cells.contact.clearance : Number.NaN,
+    lowerGapDegrees:
+      cells && refined ? ((cells.lowering.radians - refined.lowering.radians) * 180) / Math.PI : Number.NaN,
     unrefined,
   };
 };

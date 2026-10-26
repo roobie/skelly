@@ -17,11 +17,19 @@ const metres = (value: number): string =>
   Number.isFinite(value) ? `${value >= 0 ? '+' : ''}${(value * 100).toFixed(1)} cm` : 'none in range';
 const point = (value: readonly number[]): string => value.map((axis) => axis.toFixed(3)).join(', ');
 
+const SHOWN = ['cells', 'refined'] as const;
+/** The debug readout's own cadence; the overlay still rebuilds every frame. */
+const READOUT_EVERY_MS = 250;
+
 const modeLine = (shown: WallMode, selected: boolean, comparison: WallComparison): string => {
+  const result = comparison.modes[shown];
+  if (!result) {
+    return `  ${shown.padEnd(7)} not run (wall.compare=0)`;
+  }
   const {
     contact: { clearance, box },
     lowering,
-  } = comparison.modes[shown];
+  } = result;
   const state = lowering.resolved ? 'clears' : 'UNRESOLVED';
   const kind = box ? ` on ${box.unrefined ? `unrefined ${box.unrefined}` : box.kind}` : '';
   const degrees = ((lowering.radians * 180) / Math.PI).toFixed(1);
@@ -60,12 +68,16 @@ const costLines = (summary: ReturnType<ReturnType<typeof costRecorder>['summary'
   `cost ms p50/p95 over ${summary.spike.frames} frames: ${COST_PARTS.map(
     (part) => `${part} ${summary[part].p50.toFixed(3)}/${summary[part].p95.toFixed(3)}`,
   ).join(' · ')}`,
-  `  ${(['cells', 'refined'] as const)
-    .map((shown) => {
-      const { boxes, cost } = comparison.modes[shown];
-      return `${shown} ${boxes.length} boxes × ${cost.steps + 1} sweeps (gather ${cost.gatherRealMs.toFixed(3)} · solve ${cost.solveRealMs.toFixed(3)})`;
-    })
-    .join(' · ')}`,
+  `  ${SHOWN.flatMap((shown) => {
+    const result = comparison.modes[shown];
+    if (!result) {
+      return [];
+    }
+    const { boxes, cost } = result;
+    return [
+      `${shown} ${boxes.length} boxes × ${cost.steps + 1} sweeps (gather ${cost.gatherRealMs.toFixed(3)} · solve ${cost.solveRealMs.toFixed(3)})`,
+    ];
+  }).join(' · ')}`,
 ];
 
 /** One `wall=` session: the selected detector, both results, the overlay and its readout. */
@@ -86,6 +98,7 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
   const costs = costRecorder();
   let frame = 0;
   let shownCost = '';
+  let readoutAt = Number.NEGATIVE_INFINITY;
 
   const describe = (sample: WallPoseSample, comparison: WallComparison, keyLabel: string): string => {
     const lines = [
@@ -97,12 +110,16 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
       `  butt ${point(comparison.intended.butt)} · muzzle ${point(comparison.intended.muzzle)} m`,
       `  eye ${point(sample.eye.map((axis) => axis * sample.blockSize))} m · yaw ${sample.yaw.toFixed(3)} · pitch ${sample.pitch.toFixed(3)}`,
     ];
-    lines.push(...(['cells', 'refined'] as const).map((shown) => modeLine(shown, shown === mode, comparison)));
-    // Clearance bottoms out at −radius once the axis is inside a box, so the lowering gap carries the comparison then.
-    lines.push(
-      `gap refined − cells: clearance ${metres(comparison.gap)} · lowering ${comparison.lowerGapDegrees.toFixed(1)}° less`,
-    );
-    lines.push(`unrefined here: ${comparison.unrefined.length > 0 ? comparison.unrefined.join('; ') : 'none'}`);
+    lines.push(...SHOWN.map((shown) => modeLine(shown, shown === mode, comparison)));
+    if (comparison.modes.cells && comparison.modes.refined) {
+      // Clearance bottoms out at −radius once the axis is inside a box, so the lowering gap carries the comparison then.
+      lines.push(
+        `gap refined − cells: clearance ${metres(comparison.gap)} · lowering ${comparison.lowerGapDegrees.toFixed(1)}° less`,
+      );
+    }
+    if (comparison.modes.refined) {
+      lines.push(`unrefined here: ${comparison.unrefined.length > 0 ? comparison.unrefined.join('; ') : 'none'}`);
+    }
     lines.push('known limit: open door leaves are ignored in both modes');
     return lines.join('\n');
   };
@@ -116,13 +133,15 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
     },
     toggle(): void {
       mode = mode === 'cells' ? 'refined' : 'cells';
+      readoutAt = Number.NEGATIVE_INFINITY;
     },
-    /** Both detectors from the same sample; the selected one's lowering goes back to the animator. */
+    /** Both detectors from the same sample, or only the selected one without the comparison; its lowering goes back to the animator. */
     sample(sample: WallPoseSample | undefined, solid: SolidAt, keyLabel: string): number {
       if (!sample) {
         last = undefined;
         overlay.update(undefined, mode, tuning);
         readout.textContent = 'WALL SPIKE · hold a long gun (?loadout=hunting)';
+        readoutAt = Number.NEGATIVE_INFINITY;
         return 0;
       }
       const start = performance.now();
@@ -136,17 +155,22 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
         },
         sample,
         tuning,
+        tuning.compare ? SHOWN : [mode],
       );
       const compared = performance.now();
       last = comparison;
       overlay.update(comparison, mode, tuning);
-      const text = describe(sample, comparison, keyLabel);
-      readout.textContent = `${text}\n${shownCost}`;
+      if (compared - readoutAt >= READOUT_EVERY_MS) {
+        readoutAt = compared;
+        readout.textContent = `${describe(sample, comparison, keyLabel)}\n${shownCost}`;
+      }
       costs.record('spike', performance.now() - start);
       costs.record('both', compared - start);
-      for (const shown of ['cells', 'refined'] as const) {
-        const { gatherRealMs, solveRealMs } = comparison.modes[shown].cost;
-        costs.record(shown, gatherRealMs + solveRealMs);
+      for (const shown of SHOWN) {
+        const cost = comparison.modes[shown]?.cost;
+        if (cost) {
+          costs.record(shown, cost.gatherRealMs + cost.solveRealMs);
+        }
       }
       // Summarising sorts every window, so it runs outside the timed span and only every few frames.
       frame += 1;
@@ -156,18 +180,26 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
         readout.dataset.wallCost = JSON.stringify({
           ...summary,
           detail: Object.fromEntries(
-            (['cells', 'refined'] as const).map((shown) => [
-              shown,
-              {
-                boxes: comparison.modes[shown].boxes.length,
-                ...comparison.modes[shown].cost,
-                resolved: comparison.modes[shown].lowering.resolved,
-              },
-            ]),
+            SHOWN.flatMap((shown) => {
+              const result = comparison.modes[shown];
+              return result
+                ? [
+                    [
+                      shown,
+                      {
+                        boxes: result.boxes.length,
+                        ...result.cost,
+                        resolved: result.lowering.resolved,
+                        coefficient: result.lowering.coefficient,
+                      },
+                    ],
+                  ]
+                : [];
+            }),
           ),
         });
       }
-      return comparison.modes[mode].lowering.radians;
+      return comparison.modes[mode]!.lowering.radians;
     },
   };
 };

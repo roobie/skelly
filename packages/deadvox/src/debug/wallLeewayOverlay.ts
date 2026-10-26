@@ -1,8 +1,9 @@
 import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type Scene } from 'three';
 import type { Vec3 } from '../core/coords.ts';
 import {
+  boxBeyond,
+  boxClearance,
   type GunProxy,
-  proxyContact,
   type WallBox,
   type WallComparison,
   type WallMode,
@@ -36,6 +37,7 @@ const EDGES = [
 /** Boxes farther than this from the swept proxy are left undrawn so the floor does not bury the samples. */
 const DRAW_WITHIN_METRES = 0.75;
 const RING_SEGMENTS = 16;
+const SHOWN = ['cells', 'refined'] as const;
 
 const cross = (a: Vec3, b: Vec3): Vec3 => [
   a[1] * b[2] - a[2] * b[1],
@@ -72,14 +74,19 @@ export class WallLeewayOverlay {
       this.flush();
       return;
     }
-    const lowered = comparison.modes[mode].lowering;
+    const selected = comparison.modes[mode];
+    if (!selected) {
+      this.flush();
+      return;
+    }
+    const lowered = selected.lowering;
     this.nearBoxes(comparison, lowered.proxy);
     this.capsule(comparison.intended, WALL_COLOURS.intended);
     this.capsule(lowered.proxy, lowered.resolved ? WALL_COLOURS.lowered : WALL_COLOURS.unresolved);
     // The margin shell around the lowered proxy, so the clearance it must keep is visible.
     this.capsule({ ...lowered.proxy, radius: lowered.proxy.radius + tuning.marginMetres }, WALL_COLOURS.lowered, 8);
-    for (const shown of ['cells', 'refined'] as const) {
-      const { hit, from } = comparison.modes[shown].contact;
+    for (const shown of SHOWN) {
+      const { hit, from } = comparison.modes[shown]?.contact ?? {};
       if (hit && from) {
         this.cross(hit, 0.04, WALL_COLOURS[shown]);
         this.segment(from, hit, WALL_COLOURS[shown]);
@@ -94,14 +101,22 @@ export class WallLeewayOverlay {
     this.line.material.dispose();
   }
 
-  /** Each mode's boxes near the intended or the lowered proxy. */
+  /** Each mode's boxes near the intended proxy (the detector's own clearances) or the lowered one. */
   private nearBoxes(comparison: WallComparison, lowered: GunProxy): void {
-    const near = (box: WallBox) =>
-      [comparison.intended, lowered].some((proxy) => proxyContact(proxy, [box]).clearance <= DRAW_WITHIN_METRES);
-    for (const shown of ['cells', 'refined'] as const) {
-      for (const box of comparison.modes[shown].boxes.filter(near)) {
-        this.box(box, box.unrefined ? WALL_COLOURS.unrefined : WALL_COLOURS[shown]);
+    const reach = lowered.radius + DRAW_WITHIN_METRES;
+    for (const shown of SHOWN) {
+      const result = comparison.modes[shown];
+      if (!result) {
+        continue;
       }
+      result.boxes.forEach((box, index) => {
+        const near =
+          result.clearances[index]! <= DRAW_WITHIN_METRES ||
+          (!boxBeyond(lowered, box, reach) && boxClearance(lowered, box) <= DRAW_WITHIN_METRES);
+        if (near) {
+          this.box(box, box.unrefined ? WALL_COLOURS.unrefined : WALL_COLOURS[shown]);
+        }
+      });
     }
   }
 

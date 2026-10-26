@@ -27,7 +27,9 @@ const SAMPLES = [
   ['garage shelves', 'testHouse', '-13.00,21.00,-9.90,0.0,4.0,0'],
   ['brick wall control', 'testHouse', '-20.60,21.00,-10.00,90.0,0.0,0'],
   ['terrace edging control', 'testHouse', '5.00,24.50,-2.00,90.0,-55.0,0'],
-  ['worst: pressed into brick', 'testHouse', `${process.env.WALL_COST_WORST ?? '-20.85'},21.00,-10.00,90.0,0.0,0`],
+  ['near-worst: pressed into brick', 'testHouse', '-20.85,21.00,-10.00,90.0,0.0,0'],
+  // Every lowering step tried and still unresolved.
+  ['worst: max steps', 'testHouse', '-21.00,21.00,-10.00,90.0,0.0,0'],
 ];
 
 const frameWork = {
@@ -59,11 +61,12 @@ try {
   await vite.listen();
   const { port } = vite.httpServer.address();
   browser = await launchChromium(STAGE, { headless: true, renderMode });
+  /** `wall` is the spike's query suffix, empty for the spike off. */
   const measure = async (site, cam, wall) => {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    const query = `debug=1&site=${site}&seed=1&loadout=hunting&time=12%3A00&fog=0&freeze=1&cam=${cam}${wall ? '&wall=refined' : ''}`;
+    const query = `debug=1&site=${site}&seed=1&loadout=hunting&time=12%3A00&fog=0&freeze=1&cam=${cam}${wall}`;
     await page.goto(browserStageUrl(STAGE, `http://127.0.0.1:${port}/?${query}`, renderMode), {
       waitUntil: 'domcontentloaded',
     });
@@ -100,9 +103,11 @@ try {
   };
   const only = process.env.WALL_COST_ONLY;
   for (const [name, site, cam] of SAMPLES.filter(([label]) => !only || label.startsWith(only))) {
-    const on = await measure(site, cam, true);
-    const off = await measure(site, cam, false);
-    console.log(JSON.stringify({ name, site, cam, on, off }));
+    const on = await measure(site, cam, '&wall=refined');
+    // Only the selected detector: the HUD comparison off.
+    const single = await measure(site, cam, '&wall=refined&wall.compare=0');
+    const off = await measure(site, cam, '');
+    console.log(JSON.stringify({ name, site, cam, on, single, off }));
   }
   console.log(JSON.stringify({ renderMode, frames: FRAMES, userAgent: await browser.version() }));
 } finally {

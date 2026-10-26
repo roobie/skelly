@@ -11,6 +11,7 @@ import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { Facing } from '../src/core/templates.ts';
 import type { World } from '../src/core/world.ts';
 import {
+  boxClearance,
   compareWalls,
   type GunProxy,
   gatherWallBoxes,
@@ -152,9 +153,9 @@ describe('wall leeway spike', () => {
     const { world } = worldWith([], terrain);
     // Facing the wall (−x) close enough that the muzzle needs lowering.
     const comparison = compareWalls(world, rifleSample([2.5, 3.2, 0.5], Math.PI / 2, 0), wallTuning(''));
-    expect(comparison.modes.cells.lowering.coefficient).toBeGreaterThan(0);
+    expect(comparison.modes.cells!.lowering.coefficient).toBeGreaterThan(0);
     expect(comparison.gap).toBe(0);
-    expect(comparison.modes.refined.lowering.radians).toBe(comparison.modes.cells.lowering.radians);
+    expect(comparison.modes.refined!.lowering.radians).toBe(comparison.modes.cells!.lowering.radians);
   });
 
   it('shape boxes sit where the renderer draws the piece in every pose', () => {
@@ -185,10 +186,10 @@ describe('wall leeway spike', () => {
     const comparison = compareWalls(world, sample, tuning);
     expect(heldFirearmTransform({ ...sample.pose, extraLoweredPitch: 0 })).toEqual(heldFirearmTransform(sample.pose));
     expect(comparison.intended).toEqual(gunProxy(sample, 0, comparison.radius, tuning.reachMetres));
-    expect(comparison.modes.cells.lowering.radians).toBeGreaterThan(comparison.modes.refined.lowering.radians);
+    expect(comparison.modes.cells!.lowering.radians).toBeGreaterThan(comparison.modes.refined!.lowering.radians);
     // Each mode's lowered gun is the shared proxy at that mode's angle: only the boxes chose the angle.
     for (const mode of ['cells', 'refined'] as const) {
-      const { radians, proxy } = comparison.modes[mode].lowering;
+      const { radians, proxy } = comparison.modes[mode]!.lowering;
       expect(proxy).toEqual(gunProxy(sample, radians, comparison.radius, tuning.reachMetres));
     }
   });
@@ -212,5 +213,157 @@ describe('wall leeway spike', () => {
     expect([...labels].some((label) => label.includes(registry.blocks[chainLink]!.name))).toBe(true);
     expect(labels.has('vehicle')).toBe(true);
     expect(gatherWallBoxes(withVehicle, 'cells', [-1, -1, -1], [10, 5, 3]).some((box) => box.unrefined)).toBe(false);
+  });
+
+  describe('closed-form contact matches the golden-section search it replaced', () => {
+    // The old search narrows t to about 1e-10 of the segment, so it is within this of the exact distance.
+    const toleranceMetres = 1e-9;
+    const golden = (Math.sqrt(5) - 1) / 2;
+    const referenceClearance = (proxy: GunProxy, box: WallBox): number => {
+      const distance = (t: number) => {
+        const point = proxy.butt.map((value, axis) => value + (proxy.tip[axis]! - value) * t);
+        return Math.hypot(
+          ...point.map((value, axis) => value - Math.min(box.max[axis]!, Math.max(box.min[axis]!, value))),
+        );
+      };
+      let low = 0;
+      let high = 1;
+      for (let step = 0; step < 48; step++) {
+        const a = high - golden * (high - low);
+        const b = low + golden * (high - low);
+        if (distance(a) <= distance(b)) {
+          high = b;
+        } else {
+          low = a;
+        }
+      }
+      return distance((low + high) / 2) - proxy.radius;
+    };
+    /** The old linear solve: the first step whose nearest box keeps the margin. */
+    const referenceLowering = (sample: WallPoseSample, boxes: readonly WallBox[], radius: number) => {
+      const tuning = wallTuning('');
+      const steps = Math.max(1, Math.round(tuning.steps));
+      for (let step = 0; step <= steps; step++) {
+        const coefficient = step / steps;
+        const radians = ((tuning.maxLowerDegrees * Math.PI) / 180) * coefficient ** tuning.curveExponent;
+        const proxy = gunProxy(sample, radians, radius, tuning.reachMetres);
+        if (Math.min(...boxes.map((box) => referenceClearance(proxy, box))) >= tuning.marginMetres) {
+          return { coefficient, resolved: true };
+        }
+      }
+      return { coefficient: 1, resolved: false };
+    };
+
+    // Seeded so a failure reproduces.
+    let seed = 0x9e_37_79_b9;
+    const random = () => {
+      seed = (seed + 0x6d_2b_79_f5) | 0;
+      let value = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      value ^= value + Math.imul(value ^ (value >>> 7), 61 | value);
+      return ((value ^ (value >>> 14)) >>> 0) / 4_294_967_296;
+    };
+    const between = (low: number, high: number) => low + (high - low) * random();
+    const randomBox = (): WallBox => {
+      const min = [0, 1, 2].map(() => between(-1, 1)) as Vec3;
+      return { min, max: min.map((value) => value + between(0.01, 1)) as Vec3, kind: 'cell' } as WallBox;
+    };
+    const randomProxy = (box: WallBox): GunProxy => {
+      const butt = [0, 1, 2].map(() => between(-2.5, 2.5)) as Vec3;
+      const tip = butt.map((value) => value + between(-2, 2)) as Vec3;
+      // Some segments run parallel to a face or have no length, the cases with no slab crossings.
+      const shape = random();
+      if (shape < 0.15) {
+        tip[Math.floor(random() * 3)] = butt[Math.floor(random() * 3)]!;
+      } else if (shape < 0.2) {
+        tip.splice(0, 3, ...butt);
+      } else if (shape < 0.4) {
+        // Through the box, so the axis ends inside it.
+        const inside = box.min.map((value, axis) => between(value, box.max[axis]!)) as Vec3;
+        tip.splice(0, 3, ...inside.map((value, axis) => 2 * value - butt[axis]!));
+      }
+      return { butt, muzzle: butt, tip, radius: 0.062 };
+    };
+
+    it('agrees on every box of random segment and box pairs', () => {
+      let inside = 0;
+      let clear = 0;
+      for (let pair = 0; pair < 4000; pair++) {
+        const box = randomBox();
+        const proxy = randomProxy(box);
+        const expected = referenceClearance(proxy, box);
+        expect(Math.abs(boxClearance(proxy, box) - expected)).toBeLessThan(toleranceMetres);
+        if (expected < -proxy.radius + toleranceMetres) {
+          inside += 1;
+        } else if (expected > 0) {
+          clear += 1;
+        }
+      }
+      // Both the overlapping and the clear branch were exercised.
+      expect(inside).toBeGreaterThan(100);
+      expect(clear).toBeGreaterThan(100);
+    });
+
+    it('picks the same nearest box and clearance across a box set', () => {
+      for (let set = 0; set < 300; set++) {
+        const boxes = Array.from({ length: 12 }, randomBox);
+        const proxy = randomProxy(boxes[0]!);
+        const expected = boxes.map((box) => referenceClearance(proxy, box));
+        const nearest = Math.min(...expected);
+        const contact = proxyContact(proxy, boxes);
+        expect(Math.abs(contact.clearance - nearest)).toBeLessThan(toleranceMetres);
+        expect(expected[boxes.indexOf(contact.box!)]! - nearest).toBeLessThan(toleranceMetres);
+      }
+    });
+
+    it('gives the old lowering at door, table and wall poses, in either mode and with one mode run', () => {
+      const brick = blockId('brick');
+      const fixtures = [
+        {
+          pieces: [spec('wood_door', [0, 0, 0])],
+          eyes: [
+            [0.9, 3.2, 2.8],
+            [0.9, 3.2, 2.2],
+            [1.3, 3.2, 1.8],
+          ],
+          yaw: 0,
+        },
+        {
+          pieces: [spec('range_table', [0, 0, 0])],
+          eyes: [
+            [1.5, 3.2, 3.0],
+            [1.5, 2.6, 2.4],
+          ],
+          yaw: 0,
+        },
+        {
+          pieces: [],
+          terrain: ((x, y) => (x === 0 && y >= 0 && y < 6 ? brick : 0)) as Terrain,
+          eyes: [
+            [2.5, 3.2, 0.5],
+            [1.9, 3.2, 0.5],
+            [1.4, 3.2, 0.5],
+          ],
+          yaw: Math.PI / 2,
+        },
+      ];
+      const tuning = wallTuning('');
+      const coefficients: number[] = [];
+      for (const { pieces, terrain, eyes, yaw } of fixtures) {
+        const { world } = worldWith(pieces, terrain);
+        for (const eye of eyes) {
+          const sample = rifleSample(eye as Vec3, yaw, -0.2);
+          const both = compareWalls(world, sample, tuning);
+          for (const mode of ['cells', 'refined'] as const) {
+            const result = both.modes[mode]!;
+            const expected = referenceLowering(sample, result.boxes, both.radius);
+            expect({ coefficient: result.lowering.coefficient, resolved: result.lowering.resolved }).toEqual(expected);
+            expect(compareWalls(world, sample, tuning, [mode]).modes[mode]!.lowering).toEqual(result.lowering);
+            coefficients.push(expected.coefficient);
+          }
+        }
+      }
+      expect(coefficients.some((coefficient) => coefficient === 0)).toBe(true);
+      expect(coefficients.some((coefficient) => coefficient > 0)).toBe(true);
+    });
   });
 });
