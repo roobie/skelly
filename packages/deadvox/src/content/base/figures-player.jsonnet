@@ -71,7 +71,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         aimActiveOffHand: { offset: [0, 0.25, 0.02], rotation: [0, 0, 0] },
         // Relaxed hands hang below the view; en-garde returns them at the same authored rate on either side.
         emptyHands: {
-          loweredOffset: [0, -0.5, 0.08],
+          loweredOffset: [0, -0.1, 0.08],
           transitionTimeConstantRealSeconds: 0.2,
         },
       },

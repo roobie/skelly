@@ -795,6 +795,23 @@ describe('player figure', () => {
     held.dispose();
   });
 
+  it('keeps relaxed empty arms in a downward first-person view', () => {
+    const inventory = new Inventory(registry);
+    const held = new HeldItems(inventory, figureModels, playerFigure);
+    const camera = new PerspectiveCamera(75, 1, 0.01, 16);
+    camera.rotation.set(-0.8, 0, 0, 'YXZ');
+    held.update(camera, readyMeleePose(false), 0, { firearms: [], dt: 1 });
+    camera.updateMatrixWorld(true);
+    const frustum = new Frustum().setFromProjectionMatrix(
+      new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+    );
+    const { arms } = held as unknown as { arms: Map<'left' | 'right', Group> };
+    for (const side of ['left', 'right'] as const) {
+      expect(frustum.intersectsBox(new Box3().setFromObject(arms.get(side)!, true)), side).toBe(true);
+    }
+    held.dispose();
+  });
+
   it('lowers each relaxed empty hand and raises it for a pickup reach', () => {
     const inventory = new Inventory(registry);
     const held = new HeldItems(inventory, undefined, playerFigure);
