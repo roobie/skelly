@@ -28,7 +28,6 @@ import {
   string,
 } from 'valibot';
 import content from '../items.json' with { type: 'json' };
-import { SkinSchema } from './skin.ts';
 import { avatarArm, avatarLeg } from './families/avatarLimbs.ts';
 import { bearTrap } from './families/bearTrap.ts';
 import { block } from './families/block.ts';
@@ -53,6 +52,7 @@ import { openTin } from './families/openTin.ts';
 import { carton, vessel } from './families/package.ts';
 import { ring } from './families/ring.ts';
 import { spool } from './families/spool.ts';
+import { SkinSchema } from './skin.ts';
 
 const positive = pipe(number(), finite(), minValue(Number.MIN_VALUE));
 const name = pipe(string(), nonEmpty());

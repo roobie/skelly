@@ -4,9 +4,21 @@
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
 import { MATERIALS } from '@skelly/thing-core/materials';
-import { Bone, Box3, type BufferGeometry, Group, type Material, MathUtils, Matrix4, Mesh, Object3D, SkinnedMesh, Vector3 } from 'three';
-import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import {
+  Bone,
+  Box3,
+  type BufferGeometry,
+  Group,
+  type Material,
+  MathUtils,
+  Matrix4,
+  Mesh,
+  Object3D,
+  SkinnedMesh,
+  Vector3,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
@@ -182,14 +194,20 @@ export const instantiateSkin = (scene: Object3D) => {
   const meshes: SkinnedMesh[] = [];
   root.traverse((node) => {
     if (node instanceof Bone) {
-      if (bones.has(node.name)) throw new Error(`Duplicate skin joint ${node.name}`);
+      if (bones.has(node.name)) {
+        throw new Error(`Duplicate skin joint ${node.name}`);
+      }
       node.updateMatrix();
       node.matrixAutoUpdate = false;
       bones.set(node.name, node);
     }
-    if (node instanceof SkinnedMesh) meshes.push(node);
+    if (node instanceof SkinnedMesh) {
+      meshes.push(node);
+    }
   });
-  if (meshes.length === 0) throw new Error('Model has no skin');
+  if (meshes.length === 0) {
+    throw new Error('Model has no skin');
+  }
   return {
     root,
     bones,
@@ -199,12 +217,14 @@ export const instantiateSkin = (scene: Object3D) => {
       const desired = new Map<Bone, Matrix4>();
       for (const [name, bone] of bones) {
         const frame = frames.get(name);
-        if (!frame || !frame.elements.every(Number.isFinite) || frame.determinant() === 0) throw new Error(`Invalid or missing joint frame ${name}`);
+        if (!frame?.elements.every(Number.isFinite) || frame.determinant() === 0) {
+          throw new Error(`Invalid or missing joint frame ${name}`);
+        }
         desired.set(bone, root.matrixWorld.clone().multiply(frame));
       }
       for (const [bone, world] of desired) {
-        const parent = bone.parent;
-        const parentWorld = parent instanceof Bone ? desired.get(parent)! : parent?.matrixWorld ?? new Matrix4();
+        const { parent } = bone;
+        const parentWorld = parent instanceof Bone ? desired.get(parent)! : (parent?.matrixWorld ?? new Matrix4());
         bone.matrix.copy(parentWorld).invert().multiply(world);
         bone.matrixWorldNeedsUpdate = true;
       }
@@ -212,7 +232,9 @@ export const instantiateSkin = (scene: Object3D) => {
     },
     bounds: () => visibleBounds(root),
     dispose(): void {
-      for (const skeleton of new Set(meshes.map((mesh) => mesh.skeleton))) skeleton.dispose();
+      for (const skeleton of new Set(meshes.map((mesh) => mesh.skeleton))) {
+        skeleton.dispose();
+      }
     },
   };
 };
@@ -243,7 +265,11 @@ export class ModelLibrary {
         (gltf) => {
           try {
             let skinned = false;
-            gltf.scene.traverse((node) => { if (node instanceof SkinnedMesh) skinned = true; });
+            gltf.scene.traverse((node) => {
+              if (node instanceof SkinnedMesh) {
+                skinned = true;
+              }
+            });
             if (skinned) {
               applyModelMaterials(gltf.scene, MATERIALS);
               this.skins.set(def.id, gltf.scene);
