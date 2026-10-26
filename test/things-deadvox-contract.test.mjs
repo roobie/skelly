@@ -56,7 +56,9 @@ const itemModels = new Set([...registry.items.values()].map(({ model }) => model
 const figureModels = new Set([
   ...figureParts.map(({ model }) => model),
   ...[...registry.items.values()]
-    .flatMap((item) => (item.figureModels ?? []).map(({ model }) => model))
+    .flatMap((item) =>
+      (item.figureModels ?? []).flatMap(({ model, overTorso }) => [model, ...Object.values(overTorso ?? {})]),
+    )
     .filter((model) => !itemModels.has(model)),
 ]);
 

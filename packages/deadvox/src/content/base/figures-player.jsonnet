@@ -1,5 +1,16 @@
+// Temporary role readability on the underwear base; delete with corpse-owned equipment in #1366.
+local outfit(skin, shirt, pants, shoe) = {
+  torso: { skin: shirt }, pelvis: { underwear: pants },
+  neck: { skin: skin }, head: { skin: skin },
+  upper: { skin: shirt }, fore: { skin: skin }, palm: { skin: skin },
+  fingers: { skin: skin }, thumb: { skin: skin },
+  thigh: { skin: pants }, shin: { skin: pants }, foot: { skin: shoe },
+};
 local limb(model, joint) = { model: model, joint: joint };
 local segment(part, pivot) = { part: part, pivot: pivot };
+local frame(part, pivot=null) = {
+  part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
+} + if pivot == null then {} else { pivot: pivot };
 local handPose(fingers, thumbAcross, thumbIn) = {
   fingersDegrees: fingers,
   thumbAcrossDegrees: thumbAcross,
@@ -54,7 +65,18 @@ local handPose(fingers, thumbAcross, thumbIn) = {
       // their models are authored, and stay drawn in first person as the body does.
       attachmentFrames: {
         head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
-        torso: { part: 'body', at: [0, 0, 0], turn: [0, 0, 0], insideView: false },
+        torso: frame('body'),
+        clothing_body: frame('body'),
+        left_sleeve: frame('leftArm'),
+        right_sleeve: frame('rightArm'),
+        left_cuff: frame('leftArm', 'elbow'),
+        right_cuff: frame('rightArm', 'elbow'),
+        left_trouser: frame('leftLeg'),
+        right_trouser: frame('rightLeg'),
+        left_hem: frame('leftLeg', 'knee'),
+        right_hem: frame('rightLeg', 'knee'),
+        left_boot: frame('leftLeg', 'ankle'),
+        right_boot: frame('rightLeg', 'ankle'),
       },
       holds: {
         // The chin-high guard must stay inside both view and world arm reach.
@@ -107,17 +129,10 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         },
         blendRealSeconds: 0.2,
       },
-      // Each dead human wears one of these over the player's models (`DESIGN.md`, "Dead humans"); dead skin is pale.
       outfits: {
-        police_uniform: {
-          skin: '#b39e8f', shirt: '#33415e', pants: '#232937', shoe: '#121212',
-        },
-        special_ops_uniform: {
-          skin: '#a99a8b', shirt: '#3d4434', pants: '#363b2e', shoe: '#17140f',
-        },
-        lab_coat: {
-          skin: '#b6a597', shirt: '#d9d9d1', pants: '#585b62', shoe: '#2d2622',
-        },
+        police_uniform: outfit('#b39e8f', '#33415e', '#232937', '#121212'),
+        special_ops_uniform: outfit('#a99a8b', '#3d4434', '#363b2e', '#17140f'),
+        lab_coat: outfit('#b6a597', '#d9d9d1', '#585b62', '#2d2622'),
       },
       // On its back, legs out and a little bent, feet fallen outward and the head tipped back.
       corpsePose: {

@@ -3730,12 +3730,12 @@
     },
     {
       "anchors": {
-        "eye_left": [0.0350000000000001, 0.82000000000000006, 0.10000000000000001],
-        "eye_right": [-0.034999999999999906, 0.82000000000000006, 0.10000000000000001],
-        "head": [0, 0.70000000000000007, 0],
-        "hip_left": [0.084999999999999992, 0.020400000000000001, 0],
-        "hip_right": [-0.085000000000000006, 0.020400000000000001, 0],
-        "neck": [0, 0.60999999999999999, 0],
+        "eye_left": [0.035000000000000198, 0.82000000000000006, 0.10000000000000001],
+        "eye_right": [-0.034999999999999809, 0.82000000000000006, 0.10000000000000001],
+        "head": [8.5725275940314732e-17, 0.70000000000000007, 0],
+        "hip_left": [0.084999999999999992, 0.020399999999999991, 0],
+        "hip_right": [-0.085000000000000006, 0.020400000000000012, 0],
+        "neck": [7.470345474798854e-17, 0.60999999999999999, 0],
         "shoulder_left": [0.23500000000000001, 0.54000000000000004, 0],
         "shoulder_right": [-0.23500000000000001, 0.54000000000000004, 0]
       },
@@ -3743,13 +3743,23 @@
       "id": "player_bust",
       "parts": {
         "head": {
-          "centreOfMass": [1.0201979643961859e-16, 0.83341319444444451, -0.0073888888888888875],
+          "centreOfMass": [2.0408347653397456e-16, 0.83341319444444451, -0.0073888888888888875],
           "massKg": 5,
           "node": "head:head"
         },
+        "neck": {
+          "centreOfMass": [8.0214365344151642e-17, 0.65500000000000003, 0],
+          "massKg": 1,
+          "node": "neck:neck"
+        },
+        "pelvis": {
+          "centreOfMass": [-0.00069924812030074134, 0.085000000000000006, -0.00038345864661654128],
+          "massKg": 7,
+          "node": "pelvis:pelvis"
+        },
         "torso": {
-          "centreOfMass": [-0.0011775237273511652, 0.34576682484900773, -0.0019654874892148406],
-          "massKg": 33,
+          "centreOfMass": [-0.0013832182750140743, 0.42175061479659864, -0.0025713312198157095],
+          "massKg": 25,
           "node": "torso:torso"
         }
       }
@@ -3787,7 +3797,7 @@
           "node": "thumb:thumb"
         },
         "upper": {
-          "centreOfMass": [0, -0.14138554216867472, 0],
+          "centreOfMass": [0, -0.14999999999999999, 0],
           "massKg": 1.8999999999999999,
           "node": "upper:upper"
         }
@@ -3795,7 +3805,7 @@
     },
     {
       "anchors": {
-        "ankle": [-9.3475202004825779e-17, -0.72999999999999998, 0],
+        "ankle": [-0.0050000000000000912, -0.72999999999999998, 0],
         "hip": [0, 0, 0],
         "knee": [0, -0.41999999999999998, 0]
       },
@@ -3803,12 +3813,12 @@
       "id": "player_leg",
       "parts": {
         "foot": {
-          "centreOfMass": [-1.9030544570482657e-16, -0.77829471397538019, 0.078895727733526433],
+          "centreOfMass": [-1.8949847352001549e-16, -0.77500000000000002, 0.070000000000000007],
           "massKg": 1,
           "node": "foot:foot"
         },
         "shin": {
-          "centreOfMass": [-0.0038859008835959233, -0.59283903188628506, -0.0003592009220130615],
+          "centreOfMass": [-0.0046124031007752624, -0.56999999999999995, -0.00042635658914728643],
           "massKg": 3,
           "node": "shin:shin"
         },
@@ -3868,6 +3878,38 @@
         }
       },
       "roll": 0
+    },
+    {
+      "file": "assets/models/worn_jacket_body.glb",
+      "id": "worn_jacket_body"
+    },
+    {
+      "file": "assets/models/worn_jacket_upper.glb",
+      "id": "worn_jacket_upper"
+    },
+    {
+      "file": "assets/models/worn_jacket_fore.glb",
+      "id": "worn_jacket_fore"
+    },
+    {
+      "file": "assets/models/worn_trousers_pelvis.glb",
+      "id": "worn_trousers_pelvis"
+    },
+    {
+      "file": "assets/models/worn_trousers_thigh.glb",
+      "id": "worn_trousers_thigh"
+    },
+    {
+      "file": "assets/models/worn_trousers_shin.glb",
+      "id": "worn_trousers_shin"
+    },
+    {
+      "file": "assets/models/worn_boot_shaft.glb",
+      "id": "worn_boot_shaft"
+    },
+    {
+      "file": "assets/models/worn_boot_foot.glb",
+      "id": "worn_boot_foot"
     },
     {
       "file": "assets/models/utility_vest_worn.glb",
@@ -3945,6 +3987,87 @@
       "parts": {
         "shell": {
           "centreOfMass": [-0.23200000000000001, 0.51902801461632164, -0.068635809987819735],
+          "massKg": 0.14999999999999999,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/utility_vest_worn_jacket.glb",
+      "id": "utility_vest_worn_jacket",
+      "parts": {
+        "shell": {
+          "centreOfMass": [0.00017977528089887604, 0.44398901373283406, 0.038466716604244694],
+          "massKg": 0.90000000000000002,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stab_vest_worn_jacket.glb",
+      "id": "stab_vest_worn_jacket",
+      "parts": {
+        "shell": {
+          "centreOfMass": [0.0002245390560029198, 0.46766966187298414, 0.011311900367132515],
+          "massKg": 2.5,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/school_backpack_worn_jacket.glb",
+      "id": "school_backpack_worn_jacket",
+      "parts": {
+        "bag": {
+          "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.27979172793626184],
+          "massKg": 0.59999999999999998,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.54339638783269983, 0.051175855513308006],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hiking_backpack_worn_jacket.glb",
+      "id": "hiking_backpack_worn_jacket",
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.32255790462864453],
+          "massKg": 1.3999999999999999,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.54172326454033781, 0.048192307692307722],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fanny_pack_worn_jacket.glb",
+      "id": "fanny_pack_worn_jacket",
+      "parts": {
+        "bag": {
+          "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.19494693456980938],
+          "massKg": 0.14999999999999999,
+          "node": "bag:bag"
+        },
+        "belt": {
+          "centreOfMass": [0, 0.15200000000000002, 0.00031775700934579654],
+          "massKg": 0.050000000000000003,
+          "node": "belt:belt"
+        }
+      }
+    },
+    {
+      "file": "assets/models/weapon_sling_worn_jacket.glb",
+      "id": "weapon_sling_worn_jacket",
+      "parts": {
+        "shell": {
+          "centreOfMass": [-0.19999999999999998, 0.57424324324324316, -0.080945945945945938],
           "massKg": 0.14999999999999999,
           "node": "shell:compound"
         }

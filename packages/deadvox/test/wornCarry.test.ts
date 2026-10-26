@@ -1,6 +1,6 @@
 // Carry and armour worn on the torso (`DESIGN.md`, "Worn items seen"), drawn from their exported models on the real
 // figure: each item shows while worn, taking one off leaves the rest, and the whole kit clears the body and itself.
-import { Box3, Mesh, type Object3D, Vector3 } from 'three';
+import { Box3, Mesh, type Object3D, Ray, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { ItemDef } from '../src/core/content.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
@@ -32,8 +32,13 @@ for (const def of registry.items.values()) {
 const outfits = Array.from({ length: Math.max(...[...bySlot.values()].map((defs) => defs.length)) }, (_, index) =>
   [...bySlot.values()].map((defs) => defs[index % defs.length]!),
 );
+const underLayers = [...registry.items.values()].filter((def) => def.wearable?.figureFit);
 const models = (await loadFigureModels(registry, 'player', [
-  ...new Set([...[...bySlot.values()].flat(), sling].flatMap((def) => def.figureModels!.map(({ model }) => model))),
+  ...new Set(
+    [...[...bySlot.values()].flat(), sling, ...underLayers].flatMap((def) =>
+      def.figureModels!.flatMap(({ model, overTorso }) => [model, ...Object.values(overTorso ?? {})]),
+    ),
+  ),
 ])) as unknown as ModelLibrary;
 Object.assign(models, { version: 1 });
 
@@ -88,6 +93,53 @@ const drawnAs = (meshes: PlayerMeshes, item: Item) => {
 };
 
 describe('worn carry and armour on the figure', () => {
+  it('switches vest fits with the torso under-layer and keeps the whole chest shell outside the jacket', () => {
+    const vests = bySlot.get('vest') ?? [];
+    expect(vests.length).toBeGreaterThan(0);
+    expect(underLayers.length).toBeGreaterThan(0);
+    for (const under of underLayers) {
+      for (const vest of vests) {
+        const inventory = new Inventory(registry);
+        wear(inventory, inventory.create(vest.id));
+        const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
+        meshes.sync(pose(inventory));
+        const [bare] = wornObjects(meshes, 'vest');
+        expect(bare).toBeDefined();
+        const garment = wear(inventory, inventory.create(under.id));
+        meshes.sync(pose(inventory));
+        meshes.group.updateMatrixWorld(true);
+        const outer = wornObjects(meshes, 'vest');
+        const bodyFrames = new Set(
+          Object.entries(figure.attachmentFrames)
+            .filter(([, attachment]) => attachment.part === 'body')
+            .map(([name]) => `wear-frame-${name}`),
+        );
+        const inner = wornObjects(meshes, 'torso').filter((object) => bodyFrames.has(object.parent!.name));
+        expect(outer[0]).not.toBe(bare);
+        const surfaces = [
+          { name: 'under-layer', shell: shellOf(meshesUnder(inner)) },
+          { name: 'vest', shell: shellOf(meshesUnder(outer)) },
+        ];
+        expect(surfaces.every(({ shell }) => shell.points.length > 0)).toBe(true);
+        const frame = meshes.group.getObjectByName('wear-frame-torso')!;
+        expect(overlapsOf(surfaces)).toEqual([]);
+        const anchors = registry.models.get(figure.body.model)!.anchors!;
+        const chest = new Vector3(...anchors[figure.body.joints.leftShoulder]!)
+          .add(new Vector3(...anchors[figure.body.joints.rightShoulder]!))
+          .multiplyScalar(0.5);
+        const vestFront = frontAt(meshesUnder(outer), frame, chest);
+        const jacketFront = frontAt(meshesUnder(inner), frame, chest);
+        expect(vestFront.length).toBeGreaterThan(0);
+        expect(jacketFront.length).toBeGreaterThan(0);
+        expect(Math.min(...vestFront)).toBeGreaterThan(Math.max(...jacketFront));
+        expect(inventory.move(garment, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+        meshes.sync(pose(inventory));
+        expect(wornObjects(meshes, 'vest')[0]).not.toBe(outer[0]);
+        meshes.dispose();
+      }
+    }
+  });
+
   it('draws each item while it is worn, on the figure layer with shadows, and removes only the item taken off', () => {
     for (const outfit of outfits) {
       const inventory = new Inventory(registry);
@@ -195,6 +247,21 @@ const trianglesOf = (part: Mesh): Triangle[] => {
     vertex(3 * t + 1),
     vertex(3 * t + 2),
   ]);
+};
+
+/** Both sides of the front shell at the chest, so an outer face cannot conceal an embedded inner face. */
+const frontAt = (parts: readonly Mesh[], frame: Object3D, chest: Vector3): number[] => {
+  const triangles = parts
+    .flatMap(trianglesOf)
+    .map(([a, b, c]): Triangle => [frame.worldToLocal(a), frame.worldToLocal(b), frame.worldToLocal(c)]);
+  const bounds = new Box3().setFromPoints(triangles.flat());
+  const origin = chest.clone();
+  origin.z = bounds.max.z + bounds.getSize(new Vector3()).z;
+  const ray = new Ray(origin, new Vector3(0, 0, -1));
+  return triangles.flatMap(([a, b, c]) => {
+    const hit = ray.intersectTriangle(a, b, c, false, new Vector3());
+    return hit && hit.z > chest.z ? [hit.z] : [];
+  });
 };
 
 /** Points just inside the surface behind a triangle, near each corner and at its centre. */
