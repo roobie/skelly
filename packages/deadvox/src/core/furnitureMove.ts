@@ -556,7 +556,6 @@ const oversizedFurniture = (inventory: Inventory, entity: BlockEntity, blockSize
 const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | undefined => {
   const { inventory } = mover;
   const messages = messagesOf(inventory);
-  const tuning = reachTuning(inventory.registry).furnitureMove.slide;
   const refusal = inventory.entities.useRefusal(entity);
   if (refusal) {
     return refusal;
@@ -567,16 +566,7 @@ const slideRefusal = (mover: FurnitureMover, entity: BlockEntity): string | unde
   if (!oversizedFurniture(inventory, entity, mover.blockSize)) {
     return messages.carryInstead;
   }
-  const chest: Vec3 = [
-    mover.player.pos[0],
-    mover.player.pos[1] + reachTuning(inventory.registry).chestHeightMetres / mover.blockSize,
-    mover.player.pos[2],
-  ];
-  if (
-    entity.carried ||
-    !inventory.canReachEntity(entity) ||
-    inventory.entities.distance(entity, chest) * mover.blockSize > tuning.reachMetres
-  ) {
+  if (entity.carried || !inventory.canReachEntity(entity)) {
     return messages.outOfReach;
   }
   if (mover.stamina < furnitureMoveStamina(inventory, entity, 'drag')) {

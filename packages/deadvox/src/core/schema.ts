@@ -350,7 +350,6 @@ const InventoryTuningSchema = strictObject({
       carry: strictObject({ basePerSimSecond: SimRate, perKgPerSimSecond: SimRate }),
     }),
     slide: strictObject({
-      reachMetres: Positive,
       stepSimSeconds: PositiveSimSeconds,
     }),
     /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */

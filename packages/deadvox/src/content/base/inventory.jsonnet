@@ -26,7 +26,7 @@
           drag: { base: 8, perKg: 0.1 },
           carry: { basePerSimSecond: 4, perKgPerSimSecond: 0.05 },
         },
-        slide: { reachMetres: 2, stepSimSeconds: 2 },
+        slide: { stepSimSeconds: 2 },
         carriedView: {
           offsetMetres: [0, -0.5, -0.9],
           sizeMetres: 0.45,

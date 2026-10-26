@@ -15,6 +15,7 @@ import {
   turnCarried,
 } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -60,7 +61,7 @@ const fixture = () => {
   return { inventory, entity, mover };
 };
 
-const runtime = (restore?: SaveSnapshot) => {
+const runtime = (restore?: SaveSnapshot, spawn = player().pos) => {
   const world = new World();
   const stone = registry.blockIds.get('stone')!;
   if (!restore) {
@@ -80,7 +81,7 @@ const runtime = (restore?: SaveSnapshot) => {
     scale: makeScale(0.5),
     seed: 7,
     start: 43_200,
-    spawn: player().pos,
+    spawn,
     ready: () => true,
     ...(restore ? { restore } : {}),
     controls: {
@@ -131,13 +132,14 @@ describe('floor furniture steps', () => {
   });
 
   it('starts dragging a heavy piece within interaction reach', () => {
-    const { entity, mover } = fixture();
-    const playerAtInteractionReach = {
-      ...player(),
-      pos: [spec.pos[0] - 3, spec.pos[1], spec.pos[2] + 1] as Vec3,
-    };
+    const blockSize = 0.5;
+    const reachCells = Math.ceil(reachTuning(registry).reachMetres / blockSize) - 1;
+    const spawn: Vec3 = [spec.pos[0] - reachCells, spec.pos[1], spec.pos[2] + 1];
+    const { session } = runtime(undefined, spawn);
+    const entity = session.inventory.furnish(spec)!;
 
-    expect(liftFurniture({ ...mover, player: playerAtInteractionReach }, entity, true)).toBeUndefined();
+    expect(session.inventory.canReachEntity(entity)).toBe(true);
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
   });
 
   it('drains carried furniture stamina only while the player moves', () => {

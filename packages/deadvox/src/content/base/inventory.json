@@ -49,7 +49,6 @@
         },
         "maxSizeMetres": 1,
         "slide": {
-          "reachMetres": 2,
           "stepSimSeconds": 2
         }
       },
