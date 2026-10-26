@@ -4,7 +4,7 @@
 // selected scenario; the benchmark's has the test house. Either can have
 // the stress-test city instead (`?site=city`).
 
-import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
@@ -73,11 +73,18 @@ export function createEngine(
   }
 
   const scene = new Scene();
-  // The far plane is set by the sky: it ends where the fog does.
+  // The far plane is set by the sky from where the fog ends.
   const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.05, radiusM);
   camera.rotation.order = 'YXZ';
   camera.layers.enable(PLAYER_FIGURE_LAYER);
-  const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM };
+  const sky: SkyTargets = {
+    scene,
+    light: new DirectionalLight(),
+    ambient: new HemisphereLight(),
+    camera,
+    radiusM,
+    farPlaneScale: config.fogFarPlaneScale,
+  };
   // The sun sits in a rig so shadows can move its box with the player without touching the light's
   // direction (its position within the rig, which the hands' light copies, stays a unit vector).
   const sunRig = new Group();
@@ -109,7 +116,7 @@ export function createEngine(
       camera.position.y / scale.blockSize,
       camera.position.z / scale.blockSize,
     ]);
-    meshes.cull(cam);
+    meshes.cull(cam, scene.fog instanceof Fog ? scene.fog.far : undefined);
   };
 
   const mood = renderer ? new Mood(renderer, scene, camera, graphicsTuning) : undefined;

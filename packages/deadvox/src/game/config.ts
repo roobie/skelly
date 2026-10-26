@@ -25,6 +25,8 @@ export interface GameConfig {
   readyRadiusChunks: number;
   /** Content-owned streaming hysteresis in chunks, which may be fractional. */
   streamHysteresisChunks: number;
+  /** Content-owned camera far plane as a multiple of the fog's end. */
+  fogFarPlaneScale: number;
   /** Calendar seconds at the start (time of day on day 1). */
   start: number;
   /** Debug keys are on (`?debug=1`). */
@@ -105,6 +107,7 @@ export const makeConfig = (
     radiusChunks: chunksFor(scale, radiusM),
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
     streamHysteresisChunks: graphics.streamHysteresisM / (CHUNK * scale.blockSize),
+    fogFarPlaneScale: graphics.fogFarPlaneScale,
     start: defaultStart(content),
     debug: false,
     site: 'gauntlet',

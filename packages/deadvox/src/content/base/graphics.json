@@ -28,6 +28,7 @@
         "label": "Fast camouflage pattern",
         "options": [false, true]
       },
+      "fogFarPlaneScale": 1.5,
       "gore": {
         "dripSourceCap": 6,
         "dropletCap": 128,

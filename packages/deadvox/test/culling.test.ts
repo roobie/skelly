@@ -1,5 +1,6 @@
-import { DirectionalLight, HemisphereLight, PerspectiveCamera, Scene } from 'three';
+import { Box3, DirectionalLight, Fog, Frustum, HemisphereLight, Matrix4, PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { skyAt } from '../src/core/sky.ts';
@@ -24,6 +25,9 @@ const floor: MeshData = {
 };
 
 const RADIUS_M = 96;
+const BLOCK_M = 0.5;
+const FAR_PLANE_SCALE = graphicsFile.graphics[0]!.fogFarPlaneScale;
+const fogFar = (scene: Scene) => (scene.fog as Fog).far;
 const dayHour = phaseMidpoint('day') / 3600;
 const nightHour = phaseMidpoint('night') / 3600;
 
@@ -37,18 +41,19 @@ const setup = () => {
     ambient: new HemisphereLight(),
     camera,
     radiusM: RADIUS_M,
+    farPlaneScale: FAR_PLANE_SCALE,
   };
-  const meshes = new ChunkMeshes(0.5, BUNDLED_CONTENT.registry);
+  const meshes = new ChunkMeshes(BLOCK_M, BUNDLED_CONTENT.registry);
   scene.add(meshes.group);
   return { scene, camera, sky, meshes };
 };
 
 /** Looks along −z from just above the origin, and culls. */
-const cullFromOrigin = ({ camera, meshes }: ReturnType<typeof setup>) => {
+const cullFromOrigin = ({ scene, camera, meshes }: ReturnType<typeof setup>) => {
   camera.position.set(0, 2, 0);
   camera.rotation.set(0, 0, 0);
   camera.updateMatrixWorld();
-  meshes.cull(camera);
+  meshes.cull(camera, fogFar(scene));
 };
 
 const visible = (meshes: ChunkMeshes) =>
@@ -59,14 +64,13 @@ describe('culling', () => {
     const { scene, camera, sky } = setup();
     for (const hour of [dayHour, nightHour]) {
       applySky(sky, skyAt(hour, BASE_DAY_CYCLE));
-      const fog = scene.fog as { far: number };
-      expect(camera.far).toBe(fog.far);
-      expect(camera.far).toBeLessThanOrEqual(RADIUS_M);
+      expect(camera.far).toBe(fogFar(scene) * FAR_PLANE_SCALE);
+      expect(fogFar(scene)).toBeLessThanOrEqual(RADIUS_M);
     }
     applySky(sky, skyAt(dayHour, BASE_DAY_CYCLE));
-    const day = camera.far;
+    const day = fogFar(scene);
     applySky(sky, skyAt(nightHour, BASE_DAY_CYCLE));
-    expect(camera.far).toBeLessThan(day / 2);
+    expect(fogFar(scene)).toBeLessThan(day / 2);
     // The projection follows, so culling does too.
     const fresh = camera.clone();
     fresh.updateProjectionMatrix();
@@ -87,10 +91,10 @@ describe('culling', () => {
   it('culls with the tight box, not the whole chunk', () => {
     const scene = setup();
     applySky(scene.sky, skyAt(dayHour, BASE_DAY_CYCLE));
-    const fogFar = scene.camera.far;
-    // Just past the far plane: the chunk's 16 m sphere would reach back inside it, but its
+    const fogEnd = fogFar(scene.scene);
+    // Just past the fog's end: the chunk's 16 m sphere would reach back inside it, but its
     // flat floor at the chunk's near edge is still beyond.
-    const z = -Math.ceil((fogFar + 1) / 0.5);
+    const z = -Math.ceil((fogEnd + 1) / 0.5);
     scene.meshes.set('past', [-CHUNK / 2, 0, z - CHUNK], floor);
     cullFromOrigin(scene);
     expect(visible(scene.meshes)).toEqual([]);
@@ -98,5 +102,54 @@ describe('culling', () => {
     scene.meshes.set('past', [-CHUNK / 2, 0, z - CHUNK + 8], floor);
     cullFromOrigin(scene);
     expect(visible(scene.meshes)).toHaveLength(1);
+  });
+
+  it('draws the same horizontal disc at every yaw: shown exactly when in view and nearer than the fog end', () => {
+    const scene = setup();
+    applySky(scene.sky, skyAt(dayHour, BASE_DAY_CYCLE));
+    const fogEnd = fogFar(scene.scene);
+    const c = CHUNK;
+    const span = Math.ceil(fogEnd / (c * BLOCK_M)) + 1; // whole chunks, reaching past the fog on every side
+    const others = new Set(scene.meshes.group.children); // not chunks: never drawn
+    for (let x = -span; x < span; x++) {
+      for (let z = -span; z < span; z++) {
+        scene.meshes.set(`${x},${z}`, [x * c, 0, z * c], floor);
+      }
+    }
+    const camera = scene.camera;
+    // Above the ground and looking down a little, as from a tower, so the view reaches the fog's end.
+    camera.position.set(1, 20, 1);
+    const eye = new Vector3(1, BLOCK_M, 1);
+    // A camera with no far plane, to tell what is in view from what the fog ends.
+    const unbounded = camera.clone();
+    unbounded.far = 1e6;
+    let inViewBeyond = 0;
+    for (const yawDegrees of [0, 20, 45, 90, 135, 200, 315]) {
+      camera.rotation.set(-0.2, (yawDegrees * Math.PI) / 180, 0);
+      camera.updateMatrixWorld();
+      unbounded.rotation.copy(camera.rotation);
+      unbounded.updateMatrixWorld();
+      unbounded.updateProjectionMatrix();
+      const frustum = new Frustum().setFromProjectionMatrix(
+        new Matrix4().multiplyMatrices(unbounded.projectionMatrix, unbounded.matrixWorldInverse),
+      );
+      scene.meshes.cull(camera, fogEnd);
+      for (const mesh of scene.meshes.group.children.filter((child) => !others.has(child))) {
+        // The floor's own box, in metres.
+        const box = new Box3(
+          new Vector3(mesh.position.x, 1, mesh.position.z).multiplyScalar(BLOCK_M),
+          new Vector3(mesh.position.x + c, 1, mesh.position.z + c).multiplyScalar(BLOCK_M),
+        );
+        const near = box.clampPoint(eye, new Vector3()).sub(eye);
+        const inside = Math.hypot(near.x, near.z) < fogEnd;
+        const inView = frustum.intersectsBox(box);
+        if (inView && !inside) {
+          inViewBeyond++;
+        }
+        expect(mesh.visible, `yaw ${yawDegrees} at ${mesh.position.toArray().join(',')}`).toBe(inView && inside);
+      }
+    }
+    // Some ground beyond the fog's end was in view, so the disc's edge was tested.
+    expect(inViewBeyond).toBeGreaterThan(0);
   });
 });
