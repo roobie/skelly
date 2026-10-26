@@ -1,5 +1,5 @@
 import { mkdirSync, readFileSync } from 'node:fs';
-import { dirname, extname, resolve as resolvePath } from 'node:path';
+import { dirname, resolve as resolvePath } from 'node:path';
 import { parseArgs } from 'node:util';
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Resolved } from '@skelly/engine/assembly/schema.ts';
@@ -18,6 +18,7 @@ import {
 } from '../gun/traceProjection.ts';
 import { parseTraceRecord, resolveTraceReference } from '../gun/traceRecord.ts';
 import { parseTraceSvg } from '../gun/traceSvg.ts';
+import { photoDataUrl, positiveArgument } from './traceCli.ts';
 
 const dataUrl = (mime: string, bytes: Buffer): string => `data:${mime};base64,${bytes.toString('base64')}`;
 const coordinates = (raw: string, count: number): number[] => {
@@ -97,9 +98,9 @@ export const main = async (): Promise<void> => {
     view,
     modelDatum: coordinates(required('model-datum'), 3) as unknown as Vec3,
     photoDatum: coordinates(required('photo-datum'), 2) as unknown as TracePoint,
-    mmPerPixel: Number(required('mm-per-pixel')),
+    mmPerPixel: positiveArgument(required('mm-per-pixel'), '--mm-per-pixel'),
   };
-  const barMm = Number(required('bar-mm'));
+  const barMm = positiveArgument(required('bar-mm'), '--bar-mm');
   const barPixels = scaleBarPixels(barMm, projection.mmPerPixel);
   const output = required('out');
   const design = loadGunDesign(readFileSync(required('design'), 'utf8'));
@@ -117,17 +118,7 @@ export const main = async (): Promise<void> => {
     const parsed = parseTraceSvg(svg);
     trace = { url: dataUrl('image/svg+xml', Buffer.from(svg)), width: parsed.width, height: parsed.height };
   }
-  const photoPath = required('photo');
-  const mime = (
-    { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' } as Record<
-      string,
-      string
-    >
-  )[extname(photoPath).toLowerCase()];
-  if (!mime) {
-    throw new Error('Photo must be PNG, JPEG or WebP');
-  }
-  const photoUrl = dataUrl(mime, readFileSync(photoPath));
+  const photoUrl = photoDataUrl(required('photo'));
   const { chromium } = await import('playwright');
   const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-gpu'] });
   try {

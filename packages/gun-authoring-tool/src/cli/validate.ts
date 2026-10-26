@@ -5,19 +5,21 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { formatParseError, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { checkTraceRecords } from './traceCheck.ts';
 
+const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 const args = process.argv.slice(2);
 const files =
   args.length > 0
     ? args
-    : readdirSync('fixtures')
+    : readdirSync(join(packageRoot, 'fixtures'))
         .filter((f) => f.endsWith('.json'))
         .sort()
-        .map((f) => join('fixtures', f));
+        .map((f) => join(packageRoot, 'fixtures', f));
 
 const expectationNote = (expected: string[] | undefined, matches: boolean): string => {
   if (expected === undefined) {
@@ -26,7 +28,7 @@ const expectationNote = (expected: string[] | undefined, matches: boolean): stri
   return matches ? '  (as expected)' : `  (expected: ${expected.join(', ') || 'pass'})`;
 };
 
-const traceIssues = checkTraceRecords(process.cwd());
+const traceIssues = checkTraceRecords(packageRoot);
 for (const issue of traceIssues) {
   console.log(`INVALID TRACE  ${issue}`);
 }
