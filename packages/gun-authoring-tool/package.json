@@ -17,6 +17,7 @@
     "export:deadvox": "node src/cli/refreshDeadvox.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
+    "trace:overlay": "node src/cli/traceOverlay.ts",
     "mesh-stats": "node src/cli/mesh-stats.ts"
   },
   "dependencies": {

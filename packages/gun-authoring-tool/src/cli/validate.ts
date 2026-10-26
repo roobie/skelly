@@ -8,6 +8,7 @@ import process from 'node:process';
 import { formatParseError, parseAssemblyJson } from '@skelly/engine/assembly/parseAssembly.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
+import { checkTraceRecords } from './traceCheck.ts';
 
 const args = process.argv.slice(2);
 const files =
@@ -25,7 +26,11 @@ const expectationNote = (expected: string[] | undefined, matches: boolean): stri
   return matches ? '  (as expected)' : `  (expected: ${expected.join(', ') || 'pass'})`;
 };
 
-let unexpected = 0;
+const traceIssues = checkTraceRecords(process.cwd());
+for (const issue of traceIssues) {
+  console.log(`INVALID TRACE  ${issue}`);
+}
+let unexpected = traceIssues.length;
 for (const file of files) {
   const parsed = parseAssemblyJson(readFileSync(file, 'utf8'));
   if (!parsed.ok) {

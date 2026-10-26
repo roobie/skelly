@@ -1,7 +1,6 @@
 import { GRID } from '@skelly/engine/foundation/conventions.ts';
-import { METRES_PER_UNIT } from './exportFrame.ts';
+import { mmToU } from './units.ts';
 
-const mmToU = (millimetres: number): number => millimetres / (METRES_PER_UNIT * 1000);
 const snap = (value: number): number => Math.round(value / GRID) * GRID;
 
 const barrelTipThreadedU = 17.5;

@@ -26,21 +26,21 @@ describe('trace arithmetic', () => {
     const points = [
       [8, 7],
       [2, 3],
-      [5, 9],
+      [5, 10],
     ] as const;
     const spans = featureSpans(points, 2);
-    expect(spans).toEqual({ widthMm: 12, heightMm: 12 });
+    expect(spans).toEqual({ widthMm: 12, heightMm: 14 });
     expect(featureSpans([...points].reverse(), 2)).toEqual(spans);
     expect(
       featureSpans(
         [
           [18, 0],
           [12, -4],
-          [15, 2],
+          [15, 3],
         ],
         4,
       ),
-    ).toEqual({ widthMm: 24, heightMm: 24 });
+    ).toEqual({ widthMm: 24, heightMm: 28 });
     expect(featureSpans([origin], 2)).toEqual({ widthMm: 0, heightMm: 0 });
   });
 

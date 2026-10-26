@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { roundProfiles } from '../src/ammo/roundProfile.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { magazineCenterline } from '../src/gun/magazineCenterline.ts';
 import { exportMagazineGlb } from '../src/gun/magazineExport.ts';
 import {
@@ -13,10 +12,10 @@ import {
   magazineRoundColumn,
   magazineRoundPoses,
   nominalCapacityForMagazine,
-  UNITS_PER_MM,
 } from '../src/gun/magazineGeometry.ts';
 import { magazine, STANAG20_SOURCED_WIDTH_MM } from '../src/gun/parts.ts';
 import { GUN_PREFABS } from '../src/gun/prefabs.ts';
+import { mmToU, uToMm } from '../src/gun/units.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
 const cartridge = loadCartridgeFile('7.62x39.json') as MetallicCartridge;
@@ -42,7 +41,7 @@ describe('generated magazine round columns', () => {
     expect(poses).toHaveLength(column.capacity);
     expect(poses.every(({ at, tilt }) => at.every(Number.isFinite) && Number.isFinite(tilt))).toBe(true);
     const centerline = magazineCenterline(part.displaySolids ?? part.solids)!;
-    const diameter = Math.max(...roundProfiles(cartridge).loadedCase.map(([, radius]) => radius)) * 2 * UNITS_PER_MM;
+    const diameter = mmToU(Math.max(...roundProfiles(cartridge).loadedCase.map(([, radius]) => radius)) * 2);
     const interiorHalfWidth = (centerline.width - 2 * MAGAZINE_WALL_U) / 2;
     for (let first = 0; first < column.rounds.length; first++) {
       const a = column.rounds[first]!;
@@ -91,9 +90,8 @@ describe('generated magazine round columns', () => {
     const thirtyCenterline = magazineCenterline(thirty.solids)!;
     expect(top).toEqual(sharedTop);
     expect(new Set(thirtyCenterline.sectionWidths.slice(2))).toEqual(new Set([twentyCenterline.sectionWidths.at(-1)]));
-    const maximumWidthMm =
-      Math.max(...twentyCenterline.sectionWidths, ...thirtyCenterline.sectionWidths) * METRES_PER_UNIT * 1000;
-    const gridStepMm = GRID * METRES_PER_UNIT * 1000;
+    const maximumWidthMm = uToMm(Math.max(...twentyCenterline.sectionWidths, ...thirtyCenterline.sectionWidths));
+    const gridStepMm = uToMm(GRID);
     const nearestGridWidthMm = Math.round(STANAG20_SOURCED_WIDTH_MM / gridStepMm) * gridStepMm;
     expect(maximumWidthMm).toBeCloseTo(nearestGridWidthMm, 7);
     if (!(body?.kind === 'extruded-polygon' && floorplate?.kind === 'extruded-polygon')) {

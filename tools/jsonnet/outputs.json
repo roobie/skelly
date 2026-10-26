@@ -401,6 +401,10 @@
       "output": "packages/gun-authoring-tool/exports/deadvox.json"
     },
     {
+      "source": "packages/gun-authoring-tool/references/fal-profile.trace.jsonnet",
+      "output": "packages/gun-authoring-tool/references/fal-profile.trace.json"
+    },
+    {
       "source": "packages/gun-authoring-tool/src/gun/appearance.jsonnet",
       "output": "packages/gun-authoring-tool/src/gun/appearance.json"
     },
