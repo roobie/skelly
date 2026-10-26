@@ -57,7 +57,9 @@ interface that removes its eye-facing surface; see
 `packages/gun-authoring-tool/test/optics.test.ts`,
 "voxel holographic battery presents an opaque eye-facing surface rather than a hole through glass neighbours".
 Relief and housing dimensions remain content choices rather than optic-specific
-rendering rules.
+rendering rules. A sight datum and its clearance corridor may bisect aperture-edge
+grid stations: centring the sight must not move the opening to satisfy a grid
+check. See `packages/gun-authoring-tool/test/partSweepChecks.ts`, `definePartChecks`.
 
 The aperture clips a finite glass opening, but the reticle represents the sight's
 aim direction on the world image. Attaching both to the glass centre introduces
