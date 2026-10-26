@@ -1,6 +1,6 @@
 // Carry and armour worn on the torso (`DESIGN.md`, "Worn items seen"), drawn from their exported models on the real
 // figure: each item shows while worn, taking one off leaves the rest, and the whole kit clears the body and itself.
-import { Mesh, type Object3D, Vector3 } from 'three';
+import { Box3, Mesh, type Object3D, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { ItemDef } from '../src/core/content.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
@@ -136,13 +136,14 @@ describe('worn carry and armour on the figure', () => {
     expect(showsPart()).toBe(false);
   });
 
-  it('keeps every worn item out of the torso and out of each other, standing and crouched', () => {
-    for (const outfit of outfits) {
-      const inventory = new Inventory(registry);
-      for (const def of outfit) {
-        wear(inventory, inventory.create(def.id));
-      }
-      for (const stance of ['standing', 'crouching'] as const) {
+  it.each(['standing', 'crouching'] as const)(
+    'keeps every worn item out of the torso and out of each other, %s',
+    (stance) => {
+      for (const outfit of outfits) {
+        const inventory = new Inventory(registry);
+        for (const def of outfit) {
+          wear(inventory, inventory.create(def.id));
+        }
         const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
         meshes.sync(pose(inventory, stance));
         meshes.group.updateMatrixWorld(true);
@@ -152,10 +153,10 @@ describe('worn carry and armour on the figure', () => {
           ...outfit.map((def) => ({ name: def.id, shell: shellOf(meshesUnder(wornObjects(meshes, slotOf(def)))) })),
         ];
         expect(solids.filter(({ shell }) => shell.points.length === 0)).toEqual([]);
-        expect({ stance, overlaps: overlapsOf(solids) }).toEqual({ stance, overlaps: [] });
+        expect(overlapsOf(solids)).toEqual([]);
       }
-    }
-  });
+    },
+  );
 });
 
 /** Each pair of solids where one reaches inside the other, and by how many probes. */
@@ -207,46 +208,52 @@ const probesOf = ([a, b, c]: Triangle): Vector3[] => {
   });
 };
 
-/** Whether a ray from `point` along `ACROSS` crosses the triangle (Möller–Trumbore). */
-const crosses = (point: Vector3, [a, b, c]: Triangle): boolean => {
+/** The terms of a ray–triangle test (Möller–Trumbore) along `ACROSS` that do not depend on the ray's start. */
+interface Crossing {
+  a: Vector3;
+  edge1: Vector3;
+  edge2: Vector3;
+  p: Vector3;
+  det: number;
+}
+
+const crossingOf = ([a, b, c]: Triangle): Crossing => {
   const edge1 = b.clone().sub(a);
   const edge2 = c.clone().sub(a);
   const p = new Vector3().crossVectors(ACROSS, edge2);
-  const det = edge1.dot(p);
+  return { a, edge1, edge2, p, det: edge1.dot(p) };
+};
+
+const fromCorner = new Vector3();
+const across = new Vector3();
+/** Whether a ray from `point` along `ACROSS` crosses the triangle. */
+const crosses = (point: Vector3, { a, edge1, edge2, p, det }: Crossing): boolean => {
   if (Math.abs(det) < 1e-12) {
     return false;
   }
-  const s = point.clone().sub(a);
-  const u = s.dot(p) / det;
-  const q = new Vector3().crossVectors(s, edge1);
-  const v = ACROSS.dot(q) / det;
-  return u >= 0 && v >= 0 && u + v <= 1 && edge2.dot(q) / det > 1e-9;
+  const u = fromCorner.subVectors(point, a).dot(p) / det;
+  if (u < 0 || u > 1) {
+    return false;
+  }
+  const v = ACROSS.dot(across.crossVectors(fromCorner, edge1)) / det;
+  return v >= 0 && u + v <= 1 && edge2.dot(across) / det > 1e-9;
 };
 
 /** The world-space surface of `parts`. */
 const shellOf = (parts: readonly Mesh[]): Shell => {
   const triangles = parts.flatMap(trianglesOf);
-  const points = new Map(
-    triangles.flatMap(probesOf).map((probe) => [
-      probe
-        .toArray()
-        .map((value) => value.toFixed(5))
-        .join(','),
-      probe,
-    ]),
-  );
   const min = new Vector3(Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY);
   const max = new Vector3(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
   for (const corner of triangles.flat()) {
     min.min(corner);
     max.max(corner);
   }
-  const bounds = { min, max };
+  const crossings = triangles.map(crossingOf);
+  const bounds = new Box3(min, max);
   return {
-    points: [...points.values()],
+    points: triangles.flatMap(probesOf),
     // An odd number of crossings along a ray leaves the point inside.
     contains: (point) =>
-      point.clone().clamp(bounds.min, bounds.max).equals(point) &&
-      triangles.filter((triangle) => crosses(point, triangle)).length % 2 === 1,
+      bounds.containsPoint(point) && crossings.filter((crossing) => crosses(point, crossing)).length % 2 === 1,
   };
 };
