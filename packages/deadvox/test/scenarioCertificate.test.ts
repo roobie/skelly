@@ -10,7 +10,11 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { scenarioCertificate, scenarioLotResourceCertificate } from '../src/core/scenarioCertificate.ts';
+import {
+  type CertificatePhase,
+  scenarioCertificate,
+  scenarioLotResourceCertificate,
+} from '../src/core/scenarioCertificate.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
@@ -39,6 +43,8 @@ const UNDERGROUND_OVERLAP = /overlaps the city/;
 // The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
 // CPU, instead of vitest's flat default (#792).
 const WALK_MS_PER_STOREY = 4800;
+// What a case needs to link the storeys before a rule that reads them (objective, fixed resources, the portal).
+const ROUTED_PHASES: CertificatePhase[] = ['floors', 'ladders', 'stairs'];
 const scale = makeScale(0.5);
 const grid = cityGridOf(registry, profile.city);
 const base = buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile });
@@ -141,7 +147,7 @@ describe('final composed body-route certificate', () => {
     const clear = new ScenarioRouteSpace(siteOf(plan));
     expect(perimeterRouteIssues(crossing, clear, [entry], '.city.service')).toEqual([]);
     const obstruction = inside.map((value, axis) => (value + outside[axis]!) / 2) as Vec3;
-    const result = scenarioCertificate(new ObstructedSite(obstruction, plan));
+    const result = scenarioCertificate(new ObstructedSite(obstruction, plan), ['start', 'service']);
     expect(result.space.path(entry, inside, { placement: plan.service! })).toBeDefined();
     expect(result.issues.map(([path]) => path)).toEqual(['.city.service.routes[0]']);
   });
@@ -242,7 +248,9 @@ describe('final composed body-route certificate', () => {
           original(cx, cz).filter((point) => !atKey(point.destination)),
         );
       }
-      expect(scenarioCertificate(site).issues.some(([path]) => path === `.composition.seals[${index}]`)).toBe(true);
+      expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(
+        `.composition.seals[${index}]`,
+      );
     },
   );
 
@@ -265,7 +273,7 @@ describe('final composed body-route certificate', () => {
           : spawn,
       ),
     );
-    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain('.composition.seals[0]');
+    expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain('.composition.seals[0]');
   });
 
   it('rejects a keycard container out of reach of where its taker stands', () => {
@@ -275,7 +283,7 @@ describe('final composed body-route certificate', () => {
     const { standing } = composition.seals[held - 1]!;
     const seals = composition.seals.map((seal, index) => (index === held ? { ...seal, standing } : seal));
     const site = siteOf({ ...base, composition: { ...composition, seals } });
-    expect(scenarioCertificate(site).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
+    expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
   });
 
   it(
@@ -324,7 +332,7 @@ describe('final composed body-route certificate', () => {
           !(registry.furniture.get(spec.type)?.climbable && spec.pos[0] === ladder[0] && spec.pos[2] === ladder[2]),
       ),
     );
-    expect(scenarioCertificate(site).issues).toContainEqual([
+    expect(scenarioLotResourceCertificate(site).issues).toContainEqual([
       `.composition.resources[${index}].key.climbs[0]`,
       expect.stringMatching(COMPOSED_LADDER),
     ]);
@@ -368,7 +376,7 @@ describe('final composed body-route certificate', () => {
       throw new Error('Production lab has no descent witness');
     }
     const obstruction: Vec3 = [descent.ladder[0] + 1, descent.ladder[1] + 4, descent.ladder[2]];
-    const result = scenarioCertificate(new ObstructedSite(obstruction));
+    const result = scenarioCertificate(new ObstructedSite(obstruction), ['ladders']);
     expect(
       result.issues.some(
         ([path, message]) => path === '.composition.descents[0]' && message.includes('continuous body-clear shaft'),
@@ -391,8 +399,8 @@ describe('final composed body-route certificate', () => {
       }
     });
     try {
-      const result = scenarioCertificate(site);
-      expect(result.issues.some(([path]) => path === '.composition.objectiveFace')).toBe(true);
+      const result = scenarioCertificate(site, ROUTED_PHASES.concat('objective'));
+      expect(result.issues.map(([path]) => path)).toContain('.composition.objectiveFace');
     } finally {
       stamp.mockRestore();
     }
@@ -461,7 +469,7 @@ describe('final composed body-route certificate', () => {
       }
     });
     try {
-      const result = scenarioCertificate(site);
+      const result = scenarioCertificate(site, ['start', 'underground']);
       expect(
         result.issues.some(
           ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
@@ -519,12 +527,15 @@ describe('final composed body-route certificate', () => {
   });
 
   it('rejects a fixed resource whose declared standing route is obstructed', () => {
-    const result = scenarioCertificate(new ObstructedSite(base.composition!.resources[0]!.standing));
-    expect(result.issues.some(([path]) => path.startsWith('.composition.resources'))).toBe(true);
+    const result = scenarioCertificate(
+      new ObstructedSite(base.composition!.resources[0]!.standing),
+      ROUTED_PHASES.concat('resources'),
+    );
+    expect(result.issues.some(([path]) => path === '.composition.resources[0]')).toBe(true);
   });
 
   it('rejects cyclic fixed keys behind their mutually dependent locked portals', () => {
-    const result = scenarioCertificate(cyclicSite(registry, base, scale));
+    const result = scenarioCertificate(cyclicSite(registry, base, scale), ROUTED_PHASES.concat('resources'));
     expect(result.issues.some(([path]) => path === '.portal')).toBe(true);
     expect(result.issues.some(([path]) => path.startsWith('.composition.resources'))).toBe(true);
   });
@@ -533,6 +544,7 @@ describe('final composed body-route certificate', () => {
     const missing = base.composition!.leads[0]!;
     const result = scenarioCertificate(
       siteOf({ ...base, placements: base.placements.filter((placement) => placement !== missing) }),
+      ['start', 'leads'],
     );
     expect(result.issues.some(([path]) => path === '.composition.leads')).toBe(true);
   });
