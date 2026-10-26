@@ -19,6 +19,8 @@ export interface AvatarPose {
   name: string;
   stance: PlayerStance;
   moving: boolean;
+  /** Whether this ordinary hold is derived from `heldItemPoses`. */
+  catalogue?: boolean;
   hold?: ItemHoldPose;
   secondaryHold?: ItemHoldPose;
   /** Overrides the selected hold's ordinary readiness for a debug comparison pose. */
@@ -42,19 +44,34 @@ const avatarPoses = (figure: FigureDef, registry: Registry): AvatarPose[] => {
     ready: true,
     emptyFists: true,
   });
-  const crowbar = { name: 'crowbar-right-ready', itemType: 'crowbar', side: 'right', ready: true } as const;
-  const beans = { name: 'canned_beans-left-ready', itemType: 'canned_beans', side: 'left', ready: true } as const;
+  const candidates = [...registry.items.values()];
+  const handItem = candidates.find(
+    (item) => item.model && !item.twoHanded && !item.firearm && !item.heldDisplay && !item.weapon?.melee,
+  );
+  const meleeItem = candidates.find((item) => item.weapon?.melee && !item.twoHanded) ?? handItem;
+  const handHold = (item: NonNullable<typeof handItem>, side: 'right' | 'left'): ItemHoldPose => ({
+    name: `${item.id}-${side}-ready`,
+    itemType: item.id,
+    side,
+    ready: true,
+  });
+  const guardSamples = meleeItem && handItem ? [handHold(meleeItem, 'right'), handHold(handItem, 'left')] : undefined;
   return [
     ...stances,
     enGarde('en-garde'),
-    enGarde('en-garde-crowbar-right', crowbar),
-    enGarde('en-garde-canned-beans-left', beans),
-    enGarde('en-garde-crowbar-right-canned-beans-left', crowbar, beans),
+    ...(guardSamples
+      ? [
+          enGarde('en-garde-crowbar-right', guardSamples[0]),
+          enGarde('en-garde-canned-beans-left', guardSamples[1]),
+          enGarde('en-garde-crowbar-right-canned-beans-left', ...guardSamples),
+        ]
+      : []),
     ...heldItemPoses(registry).map(
       (hold): AvatarPose => ({
         name: hold.name,
         stance: 'standing',
         moving: false,
+        catalogue: true,
         hold,
       }),
     ),

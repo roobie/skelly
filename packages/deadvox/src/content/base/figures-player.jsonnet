@@ -51,7 +51,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
       holds: {
-        reachLeadMetres: 0.08,
+        // The chin-high guard must stay inside both view and world arm reach.
+        reachLeadMetres: 0.3,
         oneHand: [0.2, -0.2, -0.38],
         twoHand: [0.08, -0.22, -0.42],
         display: [0.14, -0.13, -0.3],

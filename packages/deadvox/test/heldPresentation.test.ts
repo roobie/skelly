@@ -52,7 +52,7 @@ it('both views resolve registry item holds through one owner, including the mann
   // Different tuning makes a view that retains the old constants disagree with the owner.
   figure.holds.oneHand[0] *= 0.8;
   figure.holds.twoHand[1] *= 0.9;
-  figure.holds.readyPrimary.offset[1] *= 0.7;
+  figure.holds.guardPrimary.offset[1] *= 0.7;
   figure.holds.supportUpright[0] += figure.holds.oneHand[0] * 0.2;
   figure.holds.supportForward[0] += figure.holds.oneHand[0] * 0.2;
   const registry = { ...base, items, figures: new Map([[figure.id, figure]]) };
@@ -79,7 +79,9 @@ it('both views resolve registry item holds through one owner, including the mann
     },
     '?mannequin=',
   )!;
-  expect(mannequin.poses.flatMap((pose) => (pose.hold ? [pose.hold] : []))).toEqual(catalogue);
+  expect(mannequin.poses.filter((pose) => pose.catalogue).flatMap((pose) => (pose.hold ? [pose.hold] : []))).toEqual(
+    catalogue,
+  );
   expect(new Set(catalogue.map((pose) => pose.itemType))).toEqual(new Set(items.keys()));
   const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
   try {
