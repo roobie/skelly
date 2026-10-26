@@ -1,4 +1,5 @@
 import type { Scene } from 'three';
+import { percentile } from '../bench/stats.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { Engine } from '../game/engine.ts';
 import {
@@ -27,6 +28,46 @@ const modeLine = (shown: WallMode, selected: boolean, comparison: WallComparison
   return `${selected ? '▶' : ' '} ${shown.padEnd(7)} clearance ${metres(clearance)}${kind} · lower c ${lowering.coefficient.toFixed(3)} (${degrees}°) ${state}`;
 };
 
+/** Frames the cost readout summarises. */
+const COST_FRAMES = 600;
+const COST_SUMMARY_EVERY = 15;
+const COST_PARTS = ['cells', 'refined', 'both', 'spike'] as const;
+type CostPart = (typeof COST_PARTS)[number];
+
+/** Rolling per-frame CPU cost of the spike: each detector, both as `compareWalls` runs them, and the whole frame hook. */
+const costRecorder = () => {
+  const samples: Record<CostPart, number[]> = { cells: [], refined: [], both: [], spike: [] };
+  return {
+    record(part: CostPart, ms: number): void {
+      const list = samples[part];
+      list.push(ms);
+      if (list.length > COST_FRAMES) {
+        list.shift();
+      }
+    },
+    summary() {
+      return Object.fromEntries(
+        COST_PARTS.map((part) => [
+          part,
+          { p50: percentile(samples[part], 0.5), p95: percentile(samples[part], 0.95), frames: samples[part].length },
+        ]),
+      ) as Record<CostPart, { p50: number; p95: number; frames: number }>;
+    },
+  };
+};
+
+const costLines = (summary: ReturnType<ReturnType<typeof costRecorder>['summary']>, comparison: WallComparison) => [
+  `cost ms p50/p95 over ${summary.spike.frames} frames: ${COST_PARTS.map(
+    (part) => `${part} ${summary[part].p50.toFixed(3)}/${summary[part].p95.toFixed(3)}`,
+  ).join(' · ')}`,
+  `  ${(['cells', 'refined'] as const)
+    .map((shown) => {
+      const { boxes, cost } = comparison.modes[shown];
+      return `${shown} ${boxes.length} boxes × ${cost.steps + 1} sweeps (gather ${cost.gatherMs.toFixed(3)} · solve ${cost.solveMs.toFixed(3)})`;
+    })
+    .join(' · ')}`,
+];
+
 /** One `wall=` session: the selected detector, both results, the overlay and its readout. */
 export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'entities' | 'scene'>, search: string) => {
   const initial = wallModeFromUrl(search);
@@ -42,6 +83,9 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
     'position:fixed;right:0.375rem;top:2.5rem;margin:0;padding:0.375rem 0.5rem;background:rgba(0,0,0,0.72);color:#fff;font:12px/1.35 monospace;pointer-events:none;z-index:40;white-space:pre';
   document.body.append(readout);
   let last: WallComparison | undefined;
+  const costs = costRecorder();
+  let frame = 0;
+  let shownCost = '';
 
   const describe = (sample: WallPoseSample, comparison: WallComparison, keyLabel: string): string => {
     const lines = [
@@ -81,6 +125,7 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
         readout.textContent = 'WALL SPIKE · hold a long gun (?loadout=hunting)';
         return 0;
       }
+      const start = performance.now();
       const comparison = compareWalls(
         {
           world: engine.world,
@@ -92,9 +137,36 @@ export const createWallSpike = (engine: Pick<Engine, 'world' | 'registry' | 'ent
         sample,
         tuning,
       );
+      const compared = performance.now();
       last = comparison;
       overlay.update(comparison, mode, tuning);
-      readout.textContent = describe(sample, comparison, keyLabel);
+      const text = describe(sample, comparison, keyLabel);
+      readout.textContent = `${text}\n${shownCost}`;
+      costs.record('spike', performance.now() - start);
+      costs.record('both', compared - start);
+      for (const shown of ['cells', 'refined'] as const) {
+        const { gatherMs, solveMs } = comparison.modes[shown].cost;
+        costs.record(shown, gatherMs + solveMs);
+      }
+      // Summarising sorts every window, so it runs outside the timed span and only every few frames.
+      frame += 1;
+      if (frame % COST_SUMMARY_EVERY === 0) {
+        const summary = costs.summary();
+        shownCost = costLines(summary, comparison).join('\n');
+        readout.dataset.wallCost = JSON.stringify({
+          ...summary,
+          detail: Object.fromEntries(
+            (['cells', 'refined'] as const).map((shown) => [
+              shown,
+              {
+                boxes: comparison.modes[shown].boxes.length,
+                ...comparison.modes[shown].cost,
+                resolved: comparison.modes[shown].lowering.resolved,
+              },
+            ]),
+          ),
+        });
+      }
       return comparison.modes[mode].lowering.radians;
     },
   };

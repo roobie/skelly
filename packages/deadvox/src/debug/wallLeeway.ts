@@ -325,11 +325,20 @@ const solveLowering = (
   return last!;
 };
 
+/** One mode's CPU cost for one sample, in milliseconds, with the counts that drive it. */
+interface WallModeCost {
+  readonly gatherMs: number;
+  readonly solveMs: number;
+  /** Lowering steps tried, the resolved one included. */
+  readonly steps: number;
+}
+
 interface WallModeResult {
   readonly boxes: readonly WallBox[];
   /** The intended (unlowered) proxy's contact. */
   readonly contact: WallContact;
   readonly lowering: WallLowering;
+  readonly cost: WallModeCost;
 }
 
 export interface WallComparison {
@@ -360,8 +369,14 @@ export const compareWalls = (world: WallWorld, sample: WallPoseSample, tuning: W
     (axis) => Math.max(...points.map((point) => point[axis]!)) / sample.blockSize + pad,
   ) as Vec3;
   const run = (mode: WallMode): WallModeResult => {
+    const start = performance.now();
     const boxes = gatherWallBoxes(world, mode, low, high);
-    return { boxes, contact: proxyContact(intended, boxes), lowering: solveLowering(sample, boxes, radius, tuning) };
+    const gathered = performance.now();
+    const contact = proxyContact(intended, boxes);
+    const lowering = solveLowering(sample, boxes, radius, tuning);
+    const steps = Math.round(lowering.coefficient * Math.max(1, Math.round(tuning.steps))) + 1;
+    const cost = { gatherMs: gathered - start, solveMs: performance.now() - gathered, steps };
+    return { boxes, contact, lowering, cost };
   };
   const modes = { cells: run('cells'), refined: run('refined') };
   const unrefined = [...new Set(modes.refined.boxes.flatMap((box) => (box.unrefined ? [box.unrefined] : [])))];
