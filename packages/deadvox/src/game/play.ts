@@ -44,6 +44,7 @@ import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, real
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { sightedFirearmModel } from '../render/firearmSight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
+import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
 import { markInteractionTarget } from '../render/interactionMarker.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -3564,13 +3565,7 @@ export const startPlay = (
 
   const handlingPresentation = () => {
     const [job] = queue.jobs;
-    const item = job?.kind === 'move' ? inventory.itemByUid(job.itemUid) : undefined;
-    const location = item ? inventory.locate(item) : undefined;
-    const progress =
-      job?.kind === 'move' && location?.kind === 'pile' && job.duration > 0
-        ? Math.max(0, Math.min(1, job.elapsed / job.duration))
-        : undefined;
-    return { job, progress };
+    return { job, progress: worldGrabProgress(inventory, job) };
   };
 
   const throwingPresentation = () => {
