@@ -711,8 +711,20 @@ describe('player figure', () => {
     const bodyArmShown = (side: 'left' | 'right') => {
       let count = 0;
       meshes.group.traverseVisible((object) => {
-        if (object.name === `figure-${side}Arm` || object.name === `first-person-arm-${side}`) {
+        if (object.name === `first-person-arm-${side}`) {
           count += 1;
+        }
+        if (object.name === `figure-${side}Arm`) {
+          let colourWrites = false;
+          // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: material visibility belongs to each mesh.
+          object.traverse((part) => {
+            if (part instanceof Mesh) {
+              for (const material of Array.isArray(part.material) ? part.material : [part.material]) {
+                colourWrites ||= material.colorWrite;
+              }
+            }
+          });
+          count += Number(colourWrites);
         }
       });
       expect(count).toBeLessThanOrEqual(1);
@@ -747,6 +759,35 @@ describe('player figure', () => {
       }
       view.dispose();
     }
+  });
+
+  it('keeps first-person world arms shadow-only while view arms draw', () => {
+    const inventory = new Inventory(registry);
+    expect(inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' })).toBe(true);
+    const meshes = playerMeshes();
+    meshes.sync({
+      body: createPlayerBody(scale, 4, 1, 4),
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      ...STANDING,
+      inventory,
+    });
+    const arm = meshes.group.getObjectByName('figure-rightArm')!;
+    expect(arm.visible).toBe(true);
+    let shadowOnly = false;
+    arm.traverse((object) => {
+      if (object instanceof Mesh) {
+        shadowOnly ||=
+          object.castShadow &&
+          !(Array.isArray(object.material) ? object.material : [object.material]).some(
+            (material) => material.colorWrite,
+          );
+      }
+    });
+    expect(shadowOnly).toBe(true);
+    meshes.dispose();
   });
 
   it('keeps idle first-person grips camera-relative when the camera turns', () => {
@@ -795,20 +836,37 @@ describe('player figure', () => {
     held.dispose();
   });
 
-  it('keeps relaxed empty arms in a downward first-person view', () => {
+  it('reveals relaxed empty arm geometry only when the first-person view looks down', () => {
     const inventory = new Inventory(registry);
     const held = new HeldItems(inventory, figureModels, playerFigure);
     const camera = new PerspectiveCamera(75, 1, 0.01, 16);
-    camera.rotation.set(-0.8, 0, 0, 'YXZ');
-    held.update(camera, readyMeleePose(false), 0, { firearms: [], dt: 1 });
-    camera.updateMatrixWorld(true);
-    const frustum = new Frustum().setFromProjectionMatrix(
-      new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
-    );
-    const { arms } = held as unknown as { arms: Map<'left' | 'right', Group> };
-    for (const side of ['left', 'right'] as const) {
-      expect(frustum.intersectsBox(new Box3().setFromObject(arms.get(side)!, true)), side).toBe(true);
-    }
+    const visibleVertices = (pitch: number): number => {
+      camera.rotation.set(pitch, 0, 0, 'YXZ');
+      held.update(camera, readyMeleePose(false), 0, { firearms: [], dt: 1 });
+      camera.updateMatrixWorld(true);
+      const frustum = new Frustum().setFromProjectionMatrix(
+        new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+      );
+      const { arms } = held as unknown as { arms: Map<'left' | 'right', Group> };
+      let visible = 0;
+      for (const arm of arms.values()) {
+        // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the assertion counts rendered geometry, not bounds.
+        arm.traverse((object) => {
+          if (!(object instanceof Mesh)) {
+            return;
+          }
+          const positions = object.geometry.getAttribute('position');
+          for (let index = 0; index < positions.count; index++) {
+            if (frustum.containsPoint(object.localToWorld(new Vector3().fromBufferAttribute(positions, index)))) {
+              visible += 1;
+            }
+          }
+        });
+      }
+      return visible;
+    };
+    expect(visibleVertices(-0.8)).toBeGreaterThan(0);
+    expect(visibleVertices(0)).toBe(0);
     held.dispose();
   });
 

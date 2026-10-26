@@ -412,7 +412,9 @@ export class PlayerMeshes {
     for (const [part, drawn] of this.drawn) {
       // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
       const side = ARM_SIDE[part.name];
-      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side)));
+      const viewArm = isArm(part.name) && !thirdPerson && Boolean(side && this.presentation?.arms.has(side));
+      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side))) || viewArm;
+      this.setShadowOnly(drawn, viewArm);
       this.posePoint(part.at, part.name, pose);
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
@@ -556,6 +558,24 @@ export class PlayerMeshes {
   }
 
   /** Adds each part whose model has loaded since the last sync. */
+  /** Keeps world arms in the shadow pass while first-person view arms supply their colour. */
+  private setShadowOnly(drawn: Object3D, shadowOnly: boolean): void {
+    drawn.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      if (!object.userData.shadowOnlyMaterial) {
+        object.material = (Array.isArray(object.material) ? object.material : [object.material]).map((material) =>
+          material.clone(),
+        ) as Material[];
+        object.userData.shadowOnlyMaterial = true;
+      }
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        material.colorWrite = !shadowOnly;
+      }
+    });
+  }
+
   private syncModels(): void {
     for (const part of this.layout.parts) {
       if (this.drawn.has(part) || !this.models.has(part.model)) {
