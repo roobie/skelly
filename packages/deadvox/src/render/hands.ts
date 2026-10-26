@@ -6,6 +6,7 @@
 // models need their own flame or self-lit material. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
+import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
   Box3,
   BoxGeometry,
@@ -709,6 +710,7 @@ export class HeldItems {
     if (
       !(
         active &&
+        settings &&
         diameter !== undefined &&
         fill !== undefined &&
         rootOffset &&
@@ -724,10 +726,20 @@ export class HeldItems {
     const distance = opticWindowDistance(diameter, fill, fov);
     const innerRadius = diameter / 2;
     const outerRadius = innerRadius * 1.12;
-    const shape = `${innerRadius}:${outerRadius}`;
+    const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
     if (shape !== this.opticWindowShape) {
       this.opticWindow.geometry.dispose();
-      this.opticWindow.geometry = new RingGeometry(innerRadius, outerRadius, 64);
+      const geometry = new RingGeometry(innerRadius, outerRadius, 64);
+      const positions = geometry.getAttribute('position');
+      for (let index = 0; index < positions.count; index++) {
+        const x = positions.getX(index);
+        const y = positions.getY(index);
+        const radius = Math.hypot(x, y);
+        const scale = 1 / opticApertureDistance(x / radius, y / radius, settings.aperture);
+        positions.setXY(index, x * scale, y * scale);
+      }
+      geometry.computeBoundingSphere();
+      this.opticWindow.geometry = geometry;
       this.opticWindowShape = shape;
     }
     this.opticRootRight.fromArray(rootRotation[0]);
