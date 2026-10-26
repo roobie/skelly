@@ -479,17 +479,14 @@ own figure keeps every human in the world one body plan, so improving the player
 figure improves every corpse.
 
 The body stays furniture: its pockets, loot, placement keys, picking and saves belong
-to the piece, and only its drawing changes. A figure row authors outfits, each a colour
-for the material slots it repaints, and the pose its corpses lie in; a furniture row's
-`corpse` names the figure and the outfit. A new dead human is therefore a content row
-with no code. An outfit repaints only the slots the figure's models export and adds no
-geometry. See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`, and
+to the piece, and only its drawing changes, so a role's gameplay never depends on how
+it looks. The outfit is content the furniture row chooses, so a new dead human needs
+no code. See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`, and
 `src/render/corpseFigures.ts`, `CorpseFigures`.
 
-The figure rests on its lowest point, centred over the piece's footprint with its head
-toward the piece's +x, so the pose needs no hip drop and the body stays within the
-cells the piece claims for picking. It shows no damage steps; the hint still names the
-band.
+A dead human shows no damage steps, because its look comes from the figure and outfit
+rather than its material; the hint still names the band, so the player can still judge
+its condition.
 
 ### Ladders and hatches
 
