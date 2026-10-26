@@ -26,6 +26,7 @@ export const PLAYER: PlayerDef = {
   load: { light: 20_000, heavy: 40_000, slowest: 0.6, handlingScale: 0.5 },
   aim: {
     moveYawPerSpeed: 0.0045,
+    lookSensitivityRadiansPerPixel: 0.0022,
     lookLagPerRadian: 0.035,
     lookSettleSimSeconds: simSeconds(0.22),
     recoilRecoverySimSeconds: simSeconds(0.34),

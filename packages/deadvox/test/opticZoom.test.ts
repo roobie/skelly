@@ -28,7 +28,7 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
         kind: 'optic',
         mount: 'rail-top',
         mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
-        properties: { magnification: range },
+        properties: { magnification: range, aperture: { aspectRatio: 1, exponent: 2 } },
       },
     },
   };
@@ -73,6 +73,18 @@ describe('optic wheel zoom', () => {
     expect(zoom.wheel(undefined, true, -1)).toBe(false);
     const bare: Item = { uid: 100, type: 'fixture_bare_weapon', count: 1, condition: 1 };
     expect(zoom.wheel(bare, true, -1)).toBe(false);
+  });
+
+  it('owns the power applied by aimed variable and fixed optics', () => {
+    const { zoom, weapon, initial, tuning } = fixture();
+    const variable = weapon();
+    expect(zoom.appliedPower(variable, false)).toBe(1);
+    expect(zoom.appliedPower(variable, true)).toBe(initial);
+    zoom.wheel(variable, true, -1);
+    expect(zoom.appliedPower(variable, true)).toBe(initial + tuning.step);
+
+    const fixed = fixture(true, true);
+    expect(fixed.zoom.appliedPower(fixed.weapon(), true)).toBe(fixed.range.min);
   });
 
   it('does not take the wheel through a fixed optic', () => {

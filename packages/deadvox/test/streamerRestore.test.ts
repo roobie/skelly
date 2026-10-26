@@ -76,6 +76,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     scale,
     structures: [],
     radius: 0,
+    hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
   const loaded: string[] = [];
@@ -121,6 +122,7 @@ it('reports generated-column transitions that match the generated-column snapsho
     scale,
     structures: [],
     radius: 0,
+    hysteresis: 1,
   });
   const observedGenerated = new Set<string>();
   streamer.onColumn = (cx, cz) => observedGenerated.add(`${cx},${cz}`);
@@ -157,6 +159,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
     scale,
     structures: [],
     radius: 0,
+    hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
   const liveLoads = vi.fn();
@@ -200,6 +203,7 @@ describe('saved columns', () => {
       scale,
       structures: [],
       radius: 0,
+      hysteresis: 1,
       stamp,
     });
   };

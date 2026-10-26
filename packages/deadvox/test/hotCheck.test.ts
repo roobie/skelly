@@ -4,7 +4,6 @@ import { patchHeightFog } from '../src/render/heightFog.ts';
 import { HOT_CHECK_LIMIT, hotCheckOn, hotCheckUniform, patchHotCheck, setHotCheck } from '../src/render/hotCheck.ts';
 
 // A declaration not preceded by `centroid `.
-const PLAIN_FOG_DEPTH = /(?<!centroid )varying float vFogDepth;/;
 const PLAIN_FOG_VIEW = /(?<!centroid )varying vec3 vHeightFogView;/;
 
 const shader = (): WebGLProgramParametersWithUniforms =>
@@ -54,13 +53,10 @@ describe('hot-pixel check patch', () => {
     expect(s.uniforms.uHotCheck).toBe(hotCheckUniform);
   });
 
-  it('declares the height-fog varyings centroid, once each, and clamps the mist', () => {
+  it('declares the height-fog varying centroid and clamps the mist', () => {
     const s = shader();
     patchHeightFog(s);
     for (const code of [s.vertexShader, s.fragmentShader]) {
-      expect(code).toContain('centroid varying float vFogDepth;');
-      expect(code).not.toMatch(PLAIN_FOG_DEPTH);
-      expect(code.split('varying float vFogDepth;')).toHaveLength(2);
       expect(code).toContain('centroid varying vec3 vHeightFogView;');
       expect(code).not.toMatch(PLAIN_FOG_VIEW);
     }

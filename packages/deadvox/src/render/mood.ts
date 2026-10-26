@@ -52,7 +52,7 @@ import {
   targetColorScale,
   VIGNETTE,
 } from '../core/mood.ts';
-import type { OpticLensFrame, ReticleKind } from '../core/opticView.ts';
+import type { OpticLensFrame } from '../core/opticView.ts';
 import type { NightVision } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
 import { AdaptiveScale } from './adaptiveScale.ts';
@@ -63,10 +63,8 @@ import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
 import { createMoodOutputPass, setNightFlareUniforms } from './moodOutput.ts';
 import { type NightVisionFlare, NO_FLARE } from './nightVisionFlare.ts';
-import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
+import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from './opticLens.ts';
 import { ScreenScale } from './screenScale.ts';
-
-const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
 
 /** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
 const MSAA_SAMPLES = 4;
@@ -428,7 +426,7 @@ export class Mood {
     uniforms.uZoomActive!.value = frame.magnification > 1 ? 1 : 0;
     uniforms.uLensCenter!.value.set(...frame.center);
     uniforms.uLensRadius!.value.set(...frame.radius);
-    uniforms.uReticleKind!.value = frame.reticleKind === undefined ? -1 : RETICLE_UNIFORM[frame.reticleKind];
+    setOpticLensUniforms(opticPass, frame);
   }
 
   /**

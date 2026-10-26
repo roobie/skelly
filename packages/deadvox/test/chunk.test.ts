@@ -30,9 +30,9 @@ describe('Chunk', () => {
 });
 
 describe('farColumns', () => {
-  it('picks columns beyond the keep distance (square)', () => {
-    const columns = ['0,0', '3,0', '4,0', '-4,4', '0,-5'];
-    expect(farColumns(columns, [0, 0], 3)).toEqual(['4,0', '-4,4', '0,-5']);
-    expect(farColumns(columns, [4, 0], 3)).toEqual(['0,0', '-4,4', '0,-5']);
+  it('picks columns beyond the keep distance in the horizontal plane, corners included', () => {
+    const columns = ['0,0', '3,0', '4,0', '2,2', '3,3', '0,-5'];
+    expect(farColumns(columns, [0, 0], 3)).toEqual(['4,0', '3,3', '0,-5']);
+    expect(farColumns(columns, [4, 0], 3)).toEqual(['0,0', '3,3', '0,-5']);
   });
 });

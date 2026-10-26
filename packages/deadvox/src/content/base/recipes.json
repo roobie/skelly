@@ -580,6 +580,15 @@
           "adsApertureFill": 0.84999999999999998,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
+          "breathHold": {
+            "painWeakeningPerRatio": 0.5,
+            "recoverySimSeconds": 3,
+            "recoverySwayScale": 2.5,
+            "staminaPerSimSecond": 12,
+            "steadyingMinimum": 0.5,
+            "steadyingSkillHalfLifeLevels": 5,
+            "steadyingSkillRange": 0.40000000000000002
+          },
           "caseEjection": {
             "flightSimSeconds": 0.47999999999999998,
             "landingLiftMetres": 0.0060000000000000001,

@@ -50,6 +50,7 @@ describe('liquid enclosure', () => {
       scale: makeScale(0.5),
       structures: [],
       radius: 0,
+      hysteresis: 1,
       surface: {
         height: () => (top === 'water' ? 2 * CHUNK - 1 : 3 * CHUNK - 1),
         top: () => ROCK,

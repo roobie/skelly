@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're changing optic envelopes, geometry or receiver mounting constraints
+  - you're authoring or reviewing reticle families and their export
   - you're authoring or resizing an iron rear sight's notch or aperture
   - you're changing how an optic's lens glass looks or which coating tint it shows
   - you're changing the cross section of a round optic body
@@ -9,7 +10,15 @@ read_if:
 
 # Optic reference envelopes
 
-Optics are static, persisted attachment choices. Their catalog shapes are visual classes based on cited products, not manufacturer CAD; reticles, zoom, night vision and thermal behavior are outside this model. The catalog owns source dimensions and mount requirements in `src/gun/optics.ts`, `OPTIC_CATALOG`.
+Optics are static, persisted attachment choices. Their catalog shapes are visual classes based on cited products, not manufacturer CAD; night vision and thermal imaging are outside this model. The catalog owns source dimensions and mount requirements in `src/gun/optics.ts`, `OPTIC_CATALOG`.
+
+## Reticle references
+
+Reticle families belong to content because choosing another sight picture must not require a renderer edit. The visual references are inspirations, not calibrated ballistic solutions: stylized lens proportions and gameplay ammunition do not establish real-world subtensions or zeroes. The family, source and primitive composition are authored together in `src/gun/reticles.jsonnet`; see `src/gun/optics.ts`, `OPTIC_CATALOG`, for their catalog mapping. The prism includes a drop ladder because an isolated chevron misses the TA31F sight picture.
+
+Shared validation keeps authored marks within the reference lens and bounds the renderer's work; see `packages/thing-core/src/reticle.ts`, `ReticleSchema`. Focal-plane behavior travels with the reticle because the same primitive renderer must serve fixed-size ocular marks and marks that scale with magnification. At powers beyond a reference lens, the aperture clips scaled marks rather than moving them; see `packages/thing-core/src/reticle.ts`, `reticleScale`, and `packages/deadvox/src/render/opticLens.ts`, `setOpticLensUniforms`.
+
+The aperture profile travels with the optic rather than its identity because a box-housed sight should not acquire a tube's circular window. One authored profile drives the see-through mask and the held rim, keeping those two boundaries aligned while leaving reticle proportions independent of the window's width; see `packages/thing-core/src/opticAperture.ts`, `opticApertureDistance`, and `packages/deadvox/src/render/opticLens.ts`, `setOpticLensUniforms`. The high-magnification family's visual reference does not require copying its focal plane: keeping aiming marks at a constant apparent size makes the sight picture stable while zooming.
 
 ## Fixed prism reference
 

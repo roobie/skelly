@@ -1,7 +1,16 @@
+import type { OpticAperture } from '@skelly/thing-core/optic-aperture';
+import type { Reticle } from '@skelly/thing-core/reticle';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { insideLensAperture, type LensAperture, opticFieldOfView, opticViewSettings } from '../src/core/opticView.ts';
 import type { ItemDef, ModelDef } from '../src/core/schema.ts';
+
+const aperture: OpticAperture = { aspectRatio: 1, exponent: 2 };
+const reticle: Reticle = {
+  focalPlane: 'second',
+  referenceMagnification: 1,
+  primitives: [{ kind: 'dot', center: [0, 0], radius: 0.02, color: [1, 0, 0] }],
+};
 
 const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachment']>['properties']): ModelDef => ({
   id: 'optic_fixture_model',
@@ -12,7 +21,7 @@ const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachme
       kind: 'optic',
       mount: 'rail-top',
       mountFrame: { normal: [0, -1, 0], up: [1, 0, 0] },
-      properties: { ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
+      properties: { aperture, reticle, ...properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
     },
   },
 });
@@ -55,24 +64,25 @@ const registryFor = (
 describe('optic view settings', () => {
   it('uses the core-mod value for a variable optic and preserves the exported reticle', () => {
     const item = itemFor(4);
-    const model = modelFor({ magnification: { min: 1, max: 6 }, reticleKind: 'chevron' });
-    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, reticleKind: 'chevron' });
+    const model = modelFor({ magnification: { min: 1, max: 6 }, reticle });
+    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, aperture, reticle });
   });
 
   it('uses a fixed exported power and one-times for a reflex', () => {
-    expect(
-      opticViewSettings(itemFor(), modelFor({ magnification: { min: 4, max: 4 }, reticleKind: 'crosshair' })),
-    ).toEqual({ magnification: 4, reticleKind: 'crosshair' });
-    expect(opticViewSettings(itemFor(), modelFor({ reticleKind: 'dot' }))).toEqual({
+    expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 4, max: 4 }, reticle }))).toEqual({
+      magnification: 4,
+      aperture,
+      reticle,
+    });
+    expect(opticViewSettings(itemFor(), modelFor({ reticle }))).toEqual({
       magnification: 1,
-      reticleKind: 'dot',
+      aperture,
+      reticle,
     });
   });
 
   it('does not invent a setting for an unconfigured variable optic', () => {
-    expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 2, max: 8 }, reticleKind: 'dot' }))).toBe(
-      undefined,
-    );
+    expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 2, max: 8 }, reticle }))).toBe(undefined);
   });
 
   it('requires zoom tuning for supported variable optics and rejects it on fixed models', () => {
@@ -87,14 +97,36 @@ describe('optic view settings', () => {
     expect(fixed.issues).toEqual(expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticZoom' })]));
   });
 
+  it('uses the exported aperture profile rather than optic identity', () => {
+    const rounded: OpticAperture = { aspectRatio: 1.4, exponent: 6 };
+    const lens: LensAperture = { center: [0.5, 0.5], radius: [0.2, 0.2] };
+    const corner = [lens.center[0] + lens.radius[0] * 0.8, lens.center[1] + lens.radius[1] * 0.8] as const;
+    for (const [shape, includesCorner] of [
+      [aperture, false],
+      [rounded, true],
+    ] as const) {
+      const settings = opticViewSettings(itemFor(), modelFor({ aperture: shape }));
+      expect(settings?.aperture).toEqual(shape);
+      expect(insideLensAperture(corner, lens, settings!.aperture)).toBe(includesCorner);
+    }
+    expect(opticViewSettings(itemFor(), modelFor({ aperture: undefined }))).toBeUndefined();
+    expect(registryFor({ aperture: undefined }).issues.length).toBeGreaterThan(0);
+  });
+
+  it('rejects an optic export with no authored reticle', () => {
+    expect(registryFor({ reticle: undefined }).issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'models[0].gun.attachment' })]),
+    );
+  });
+
   it('validates authored power against the export range', () => {
-    const valid = registryFor({ magnification: { min: 1, max: 6 }, reticleKind: 'dot' }, 5);
+    const valid = registryFor({ magnification: { min: 1, max: 6 }, reticle }, 5);
     expect(valid.issues).toEqual([]);
-    const invalid = registryFor({ magnification: { min: 1, max: 6 }, reticleKind: 'dot' }, 7);
+    const invalid = registryFor({ magnification: { min: 1, max: 6 }, reticle }, 7);
     expect(invalid.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticMagnification' })]),
     );
-    const missing = registryFor({ magnification: { min: 1, max: 6 }, reticleKind: 'dot' }, undefined, true);
+    const missing = registryFor({ magnification: { min: 1, max: 6 }, reticle }, undefined, true);
     expect(missing.issues).toEqual(
       expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticMagnification' })]),
     );
@@ -110,9 +142,9 @@ describe('optic lens projection', () => {
   });
 
   it('clips the lens image to its projected aperture', () => {
-    const aperture: LensAperture = { center: [0.5, 0.5], radius: [0.2, 0.3] };
-    expect(insideLensAperture([0.5, 0.5], aperture)).toBe(true);
-    expect(insideLensAperture([0.7, 0.5], aperture)).toBe(true);
-    expect(insideLensAperture([0.71, 0.5], aperture)).toBe(false);
+    const lens: LensAperture = { center: [0.5, 0.5], radius: [0.2, 0.3] };
+    expect(insideLensAperture([0.5, 0.5], lens, aperture)).toBe(true);
+    expect(insideLensAperture([0.7, 0.5], lens, aperture)).toBe(true);
+    expect(insideLensAperture([0.71, 0.5], lens, aperture)).toBe(false);
   });
 });

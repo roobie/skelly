@@ -1,6 +1,7 @@
 import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { CHUNK } from '../core/coords.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
@@ -22,6 +23,10 @@ export interface GameConfig {
   radiusChunks: number;
   /** Content-owned startup ring, capped by the view radius. */
   readyRadiusChunks: number;
+  /** Content-owned streaming hysteresis in chunks, which may be fractional. */
+  streamHysteresisChunks: number;
+  /** Content-owned camera far plane as a multiple of the fog's end. */
+  fogFarPlaneScale: number;
   /** Calendar seconds at the start (time of day on day 1). */
   start: number;
   /** Debug keys are on (`?debug=1`). */
@@ -101,6 +106,8 @@ export const makeConfig = (
     radiusM,
     radiusChunks: chunksFor(scale, radiusM),
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
+    streamHysteresisChunks: graphics.streamHysteresisM / (CHUNK * scale.blockSize),
+    fogFarPlaneScale: graphics.fogFarPlaneScale,
     start: defaultStart(content),
     debug: false,
     site: 'gauntlet',
