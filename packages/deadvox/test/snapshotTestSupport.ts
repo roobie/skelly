@@ -138,6 +138,7 @@ export function createRuntime(
     ready?: (x: number, z: number) => boolean;
     zombieReady?: (x: number, z: number) => boolean;
     readyHeld?: () => boolean;
+    aimingDownSights?: () => boolean;
     useDominant?: () => void;
     wobbleFlatOverride?: number;
     wobbleNoiseScaleOverride?: number;
@@ -231,6 +232,7 @@ export function createRuntime(
       intent: options.intent ?? (() => view.intent),
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       ...(options.readyHeld ? { readyHeld: options.readyHeld } : {}),
+      ...(options.aimingDownSights ? { aimingDownSights: options.aimingDownSights } : {}),
       ...(options.useDominant ? { useDominant: options.useDominant } : {}),
       consumeStanceToggle: () => {
         const pressed = view.stanceToggle;

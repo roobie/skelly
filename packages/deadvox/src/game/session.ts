@@ -6,7 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
-import { AimController, type AimWobbleNoiseTuning, aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
+import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying, NEUTRAL_AIM } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -217,7 +217,14 @@ const createSessionAim = ({
       smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
     } satisfies AimWobbleNoiseTuning,
     wobbleNoiseStrengthScale: wobbleNoiseScaleOverride ?? 1,
-    ...(restored ? { state: restored.character.aim, wobbleNoiseState: restored.character.aim.wobbleNoise } : {}),
+    breathHold: tuning.breathHold,
+    ...(restored
+      ? {
+          state: restored.character.aim,
+          wobbleNoiseState: restored.character.aim.wobbleNoise,
+          breathHoldState: restored.character.aim.breath,
+        }
+      : {}),
     variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
     stridePhase: footstepClock.stridePhase,
   });
@@ -238,6 +245,7 @@ const advanceSessionAim = ({
   aimSway,
   firing,
   stridePhase,
+  breath,
 }: {
   aim: AimController;
   firearms: FirearmMechanics;
@@ -253,10 +261,22 @@ const advanceSessionAim = ({
   aimSway: number;
   firing: boolean;
   stridePhase: number;
+  breath: {
+    readonly wanted: boolean;
+    readonly stamina: number;
+    readonly windedBelow: number;
+    readonly painRatio: number;
+  };
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
   const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
   aim.advance({
+    breath: {
+      wanted: breath.wanted,
+      stamina: breath.stamina,
+      windedBelow: breath.windedBelow,
+      steadying: breathSteadying(skillEffectLevel(skillLevel), breath.painRatio, tuning.breathHold),
+    },
     dt,
     velocity,
     blockSize,
@@ -309,6 +329,8 @@ export interface SessionControls {
   readyHeld?: () => boolean;
   /** True only while the player is in the melee en-garde stance. */
   blocking?: () => boolean;
+  /** Sights are toggled on; the session still requires a ready firearm. */
+  aimingDownSights?: () => boolean;
   /** True only while an automatic firearm is selected and its trigger is held. */
   automaticFireHeld?: () => boolean;
   /** Applies a requested camera-pitch shift and returns the amount accepted by its pitch limits. */
@@ -1146,7 +1168,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
-  const updateAim = (dt: number, firing: boolean): void => {
+  const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
     advanceSessionAim({
       aim,
       firearms,
@@ -1162,7 +1184,34 @@ export const createSession = (options: SessionOptions) => {
       aimSway: sim.body.consequences.aimSway * sim.body.pain.effects.aimSway,
       firing,
       stridePhase: footstepClock.stridePhase,
+      breath: {
+        wanted: breathWanted,
+        stamina: sim.needs.stamina,
+        windedBelow: sim.body.staminaRules.windedBelow,
+        painRatio: sim.body.pain.ratio,
+      },
     });
+    const cue = aim.breathCue;
+    if (cue) {
+      playPlayerSound(`breath_${cue}`);
+    }
+  };
+  /** `DESIGN.md`, "Holding breath": the sprint key in ADS, standing or crouched, holding still on the ground. */
+  const breathHoldWanted = (intent: MoveIntent, readyGait: boolean): boolean => {
+    const heldFirearm = firearmInHands();
+    return (
+      readyGait &&
+      intent.sprint &&
+      heldFirearm !== undefined &&
+      firearms.isReady(heldFirearm.uid) &&
+      Boolean(controls.aimingDownSights?.()) &&
+      playerStance !== 'prone' &&
+      !ladderHold.on &&
+      body.onGround &&
+      intent.forward === 0 &&
+      intent.right === 0 &&
+      !intent.jump
+    );
   };
   const applyAimViewPitchShift = (): void => {
     const requested = aim.pendingViewPitchShift;
@@ -1833,7 +1882,7 @@ export const createSession = (options: SessionOptions) => {
     const readyGait = advancePlayerReadiness(dt, intent, moving);
     controls.consumeDominantUse?.();
     controls.consumeOffUse?.();
-    updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
+    updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()), breathHoldWanted(intent, readyGait));
     // Losing control or another hands action drops a held charge rather than releasing a free strike.
     if (!moving || handling || throwCharge.active || ladderHold.refusal(dominantSide(character)) !== undefined) {
       playerCombat.cancelCharge();
@@ -1874,6 +1923,12 @@ export const createSession = (options: SessionOptions) => {
       if (sim.needs.stamina <= 0) {
         putDownWornOut();
       }
+    } else if (aim.breathHeld) {
+      spendStamina(
+        sim.needs,
+        currentFirearmsCombatTuning().breathHold.staminaPerSimSecond * dt,
+        bodyTuning.staminaRegenDelaySimSeconds,
+      );
     } else {
       stepStamina(sim.needs, dt, sprinting, {
         ...sim.body.staminaRules,

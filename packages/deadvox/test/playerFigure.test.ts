@@ -3,6 +3,7 @@ import {
   Box3,
   BoxGeometry,
   DirectionalLight,
+  DoubleSide,
   Euler,
   Frustum,
   Group,
@@ -53,7 +54,10 @@ const HOLD = {
 };
 const STANDING = { stance: 'standing', dt: 0 } as const;
 
-const figureModels = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
+const figureModels = {
+  version: 1,
+  ...(await loadFigureModels(registry, 'player', ['riot_helmet'])),
+} as unknown as ModelLibrary;
 /** The figure's models and no item model, so held items keep their stand-in shapes. */
 const figureOnlyModels = {
   ...figureModels,
@@ -429,6 +433,62 @@ describe('player figure', () => {
     for (const name of ['body', ...FIGURE_LIMBS] as const) {
       expect(drawnPart(meshes, name).visible, `${name} in third person`).toBe(true);
     }
+  });
+
+  it('fits the worn riot helmet over the drawn head: it covers the crown and sides and nothing of it lies inside', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const inventory = new Inventory(registry);
+    expect(inventory.add(inventory.create('riot_helmet'), { kind: 'worn' })).toBe(true);
+    const meshes = playerMeshes();
+    meshes.sync({
+      body,
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      ...STANDING,
+      thirdPerson: true,
+      inventory,
+    });
+    meshes.group.updateMatrixWorld(true);
+    const head = drawnPart(meshes, 'body')
+      .getObjectByName(FIGURE_PIVOT.head)!
+      .children.find((object) => object.userData.part === playerFigure.body.head.part)!;
+    expect(head).toBeDefined();
+    const helmet = meshes.group.getObjectByName('worn-head')!;
+    expect(helmet.visible).toBe(true);
+    const headBounds = new Box3().setFromObject(head, true);
+    const helmetBounds = new Box3().setFromObject(helmet, true);
+    for (const axis of ['x', 'z'] as const) {
+      expect(helmetBounds.min[axis], `helmet reaches past the head at -${axis}`).toBeLessThan(headBounds.min[axis]);
+      expect(helmetBounds.max[axis], `helmet reaches past the head at +${axis}`).toBeGreaterThan(headBounds.max[axis]);
+    }
+    expect(helmetBounds.max.y, 'helmet stands above the crown').toBeGreaterThan(headBounds.max.y);
+    // The head's voxel surfaces are closed with no faces between its materials, so a ray's crossings tell inside.
+    head.traverse((object) => {
+      if (object instanceof Mesh) {
+        object.material = new MeshBasicMaterial({ side: DoubleSide });
+      }
+    });
+    const ray = new Raycaster();
+    // The figure draws on its own layer.
+    ray.layers.enableAll();
+    // Both models' voxel faces lie on shared planes, so an axis ray would run along them; this one crosses them.
+    const across = new Vector3(1, 0.31, 0.17).normalize();
+    ray.set(headBounds.getCenter(new Vector3()), across);
+    expect(ray.intersectObject(head, true).length % 2, 'the head centre reads as inside').toBe(1);
+    const inside: Vector3[] = [];
+    helmet.traverse((object) => {
+      const position = object instanceof Mesh ? object.geometry.getAttribute('position') : undefined;
+      for (let index = 0; index < (position?.count ?? 0); index++) {
+        const at = new Vector3().fromBufferAttribute(position!, index).applyMatrix4(object.matrixWorld);
+        ray.set(at, across);
+        if (ray.intersectObject(head, true).length % 2 === 1) {
+          inside.push(at);
+        }
+      }
+    });
+    expect(inside, 'helmet points inside the head').toEqual([]);
   });
 
   it('poses the drawn body for the stance it is given, inside that stance’s height, blending between stances', () => {

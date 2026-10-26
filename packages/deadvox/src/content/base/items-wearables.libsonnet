@@ -131,9 +131,8 @@
       "name": "Riot helmet",
       "model": "riot_helmet",
       "category": "clothing",
-      "weight": 1400,
       "size": [2, 2],
-      "figureModels": [{ "model": "riot_helmet", "frame": "head", "pivot": [0, 0, 0], "at": [0, 0.04, 0], "turn": [0, 180, 0] }],
+      "figureModels": [{ "model": "riot_helmet", "frame": "head", "pivot": [0, 0, 0], "at": [0, 0, 0], "turn": [0, 180, 0] }],
       "wearable": {
         "slot": "head",
         "encumbrance": 3,

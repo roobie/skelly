@@ -249,7 +249,7 @@
       },
       "figureModels": [
         {
-          "at": [0, 0.040000000000000001, 0],
+          "at": [0, 0, 0],
           "frame": "head",
           "model": "riot_helmet",
           "pivot": [0, 0, 0],
@@ -278,7 +278,6 @@
         "warmth": 1,
         "wearPerDamage": 0.0015
       },
-      "weight": 1400,
       "workInProgress": false
     },
     {

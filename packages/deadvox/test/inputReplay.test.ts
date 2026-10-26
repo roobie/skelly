@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import type { Item } from '../src/core/items.ts';
 import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
@@ -393,6 +393,7 @@ const playSession = (
           : () => true,
       sampleAtPlayerTick: () => replayInputSample(replay, player),
       readyHeld: () => startState.readyHeld,
+      aimingDownSights: () => startState.aimingDownSights && startState.readyHeld,
       useDominant: () => {
         routeDominantUse(
           startState.throwingStance,
@@ -838,6 +839,56 @@ describe('input replay', () => {
 
     expect(sourceEnd.character.player.firearmReadyWalking).toBe(true);
     expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('replays a breath held through the sights from a standalone segment start', async () => {
+    const site = levelSite(createRuntime().world, fixtureZombieColumn, 1, 3);
+    const initial = createRuntime(undefined, false, undefined, { spawn: [site.x + 0.5, site.ground, site.z + 0.5] });
+    const backpack = initial.inventory.hands.right;
+    const pile = { kind: 'pile' as const, pos: [site.x, site.ground, site.z] as Vec3 };
+    if (!(backpack && initial.inventory.move(backpack, pile).ok)) {
+      throw new Error('Could not clear a hand for the replay firearm');
+    }
+    const rifle = initial.inventory.create('rifle_assault');
+    if (!initial.inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the replay firearm');
+    }
+    const start = capture(initial);
+    const startState: ReplayStartState = {
+      throwingStance: false,
+      readyHeld: true,
+      aimingDownSights: true,
+      inventoryOpen: false,
+    };
+    const recorder = new InputReplayRecorder(start, 1, [], { startState });
+    const source = createRuntime(start, false, undefined, {
+      readyHeld: () => true,
+      aimingDownSights: () => true,
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        return live;
+      },
+    });
+    source.sim.paused = false;
+    source.view.intent.sprint = true;
+    for (let tick = 0; tick < 120; tick++) {
+      source.session.frame(1 / 60);
+    }
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replayWith = (aimingDownSights: boolean) =>
+      capture(
+        playSession(decoded.snapshot, decoded.inputs, {
+          endSimTimestamp: decoded.endSimTimestamp,
+          startState: { ...decoded.startState, aimingDownSights },
+        }),
+      );
+
+    expect(decoded.startState.aimingDownSights).toBe(true);
+    expect(sourceEnd.character.aim.breath.held).toBe(true);
+    expect(await replayStateFingerprint(replayWith(true))).toBe(await replayStateFingerprint(sourceEnd));
+    expect(await replayStateFingerprint(replayWith(false))).not.toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('constructs the replay session at the decoded recording snapshot position', async () => {

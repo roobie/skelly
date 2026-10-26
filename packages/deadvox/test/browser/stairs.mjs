@@ -241,6 +241,10 @@ try {
       { timeout: 60_000 },
     );
     if (mode === 'lighting-cellar') {
+      const undergroundSun = await timePhase('buried-sun-receiver-rule', () =>
+        page.evaluate(async (path) => (await import(path)).undergroundSunProof(), '/test/browser/underground-sun.ts'),
+      );
+      process.stdout.write(`UNDERGROUND_SUN ${JSON.stringify(undergroundSun)}\n`);
       await timePhase('far-sun-receiver-rule', () =>
         page.evaluate(async (path) => (await import(path)).farSunProof(), '/test/farSun.ts'),
       );
