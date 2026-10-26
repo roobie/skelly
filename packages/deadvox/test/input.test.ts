@@ -35,6 +35,7 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
     }
   };
   input = new Input(target, allowed, () => true, viewerInputAllowed);
+  input.setLookSensitivity(1, () => 1);
   keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
   return { input, target, document, targetListeners, windowListeners, documentListeners };
 };
@@ -85,9 +86,8 @@ describe('pointer input', () => {
   it('scales look by applied optic power on each mouse event', () => {
     const { input, target, document, documentListeners } = fixture();
     document.pointerLockElement = target;
-    let aiming = false;
     let power = 1;
-    input.setLookSensitivity(() => (aiming ? 1 / power : 1));
+    input.setLookSensitivity(1, () => power);
     const turn = () => {
       input.yaw = 0;
       documentListeners.get('mousemove')!({ movementX: 10, movementY: 0 } as MouseEvent);
@@ -95,7 +95,6 @@ describe('pointer input', () => {
     };
 
     const unaimed = turn();
-    aiming = true;
     expect(turn()).toBe(unaimed);
     power = 2;
     const magnified = turn();

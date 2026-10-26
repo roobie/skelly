@@ -154,7 +154,7 @@ import {
 } from './melee.ts';
 import { routeModalCommand } from './modalCommand.ts';
 import { OpticZoom } from './opticZoom.ts';
-import { playerTuning, type MoveIntent } from './player.ts';
+import { type MoveIntent, playerTuning } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -1084,8 +1084,8 @@ export const startPlay = (
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
   const { lookSensitivityRadiansPerPixel } = playerTuning(registry).aim;
-  input.setLookSensitivity(
-    () => lookSensitivityRadiansPerPixel / opticZoom.appliedPower(zoomFirearm(), isAimingDownSights()),
+  input.setLookSensitivity(lookSensitivityRadiansPerPixel, () =>
+    opticZoom.appliedPower(zoomFirearm(), isAimingDownSights()),
   );
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet, {

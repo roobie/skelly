@@ -63,7 +63,7 @@ export class Input {
   private readonly cancelOnBlurAllowed: () => boolean;
   private readonly viewerInputAllowed: () => boolean;
   private mouseLookOverride: ((movementX: number, movementY: number) => boolean) | undefined;
-  private lookSensitivity: () => number = () => 1;
+  private lookSensitivity: { base: number; appliedPower: () => number } | undefined;
   constructor(
     target: HTMLElement,
     dominantUseAllowed: () => boolean = () => true,
@@ -122,7 +122,11 @@ export class Input {
       if (this.mouseLookOverride?.(event.movementX, event.movementY)) {
         return;
       }
-      const sensitivity = this.lookSensitivity();
+      const { lookSensitivity } = this;
+      if (!lookSensitivity) {
+        throw new Error('Missing look sensitivity');
+      }
+      const sensitivity = lookSensitivity.base / lookSensitivity.appliedPower();
       if (!(Number.isFinite(sensitivity) && sensitivity > 0)) {
         throw new Error('Invalid look sensitivity');
       }
@@ -146,8 +150,8 @@ export class Input {
   setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
     this.mouseLookOverride = override;
   }
-  setLookSensitivity(sensitivity: () => number): void {
-    this.lookSensitivity = sensitivity;
+  setLookSensitivity(base: number, appliedPower: () => number): void {
+    this.lookSensitivity = { base, appliedPower };
   }
   setAimingDownSightsAllowed(allowed: () => boolean): void {
     this.aimingDownSightsAllowed = allowed;
