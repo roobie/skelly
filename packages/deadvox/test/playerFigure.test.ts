@@ -43,6 +43,7 @@ import {
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
+import { heldState } from './heldState.ts';
 import { createPlayerBody, PLAYER } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -284,7 +285,7 @@ describe('held light presentation', () => {
     expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
     const held = new HeldItems(inventory, undefined, playerFigure);
     held.update(new PerspectiveCamera());
-    const { shown } = held as unknown as { shown: Map<number, Group> };
+    const { shown } = heldState(held) as { shown: Map<number, Group> };
     let visibleBody = false;
     let flame = false;
     shown.get(light.uid)?.traverse((object) => {
@@ -325,7 +326,7 @@ describe('held light presentation', () => {
     } as unknown as import('../src/render/models.ts').ModelLibrary;
     const held = new HeldItems(inventory, models, playerFigure);
     held.update(new PerspectiveCamera());
-    const { shown } = held as unknown as { shown: Map<number, Group> };
+    const { shown } = heldState(held) as { shown: Map<number, Group> };
     let tube: Mesh | undefined;
     shown.get(glowstick.uid)?.traverse((object) => {
       if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) {
@@ -726,7 +727,7 @@ describe('player figure', () => {
       }
       const view = new HeldItems(inventory, undefined, playerFigure);
       view.update(new PerspectiveCamera(), readyMeleePose(false));
-      const viewArms = (view as unknown as { arms: Map<'left' | 'right', Group> }).arms;
+      const viewArms = (heldState(view) as { arms: Map<'left' | 'right', Group> }).arms;
       expect(viewArms.size, `${held} view arms`).toBeGreaterThan(0);
       meshes.sync({ body, yaw: 0, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory });
       for (const side of viewArms.keys()) {
@@ -752,7 +753,7 @@ describe('player figure', () => {
   it('keeps idle first-person grips camera-relative when the camera turns', () => {
     const inventory = new Inventory(registry);
     const held = new HeldItems(inventory, undefined, playerFigure);
-    const internals = held as unknown as { view: Group; arms: Map<'left' | 'right', Group> };
+    const internals = heldState(held) as { view: Group; arms: Map<'left' | 'right', Group> };
     const camera = new PerspectiveCamera();
     camera.rotation.set(0, Math.PI / 2, 0, 'YXZ');
     held.update(camera, readyMeleePose(false));
@@ -765,7 +766,7 @@ describe('player figure', () => {
   it('rigs each idle view arm from the authored arm model: shoulder on its anchor, hand on the held grip', () => {
     const inventory = new Inventory(registry);
     const held = new HeldItems(inventory, figureModels, playerFigure);
-    const internals = held as unknown as ArmInternals;
+    const internals = heldState(held) as ArmInternals;
     const camera = new PerspectiveCamera();
     held.update(camera);
     internals.view.updateMatrixWorld(true);
@@ -804,7 +805,7 @@ describe('player figure', () => {
       heldLook: () => (modelLoaded ? { root: new Group(), parts: [], slots: {} } : undefined),
     } as unknown as NonNullable<ConstructorParameters<typeof HeldItems>[1]>;
     const held = new HeldItems(inventory, models, playerFigure);
-    const internals = held as unknown as { scene: Group; arms: Map<'left' | 'right', Group> };
+    const internals = heldState(held) as { scene: Group; arms: Map<'left' | 'right', Group> };
     const camera = new PerspectiveCamera();
     const renderedArmCount = () => {
       let count = 0;
@@ -923,7 +924,7 @@ describe('player figure', () => {
     const knife = inventory.create('kitchen_knife');
     inventory.add(knife, { kind: 'hand', side: 'right' });
     const held = new HeldItems(inventory, undefined, playerFigure);
-    const internals = held as unknown as {
+    const internals = heldState(held) as {
       view: Group;
       arms: Map<'left' | 'right', Group>;
       heldByHand: Map<'left' | 'right', Group>;
@@ -960,7 +961,7 @@ describe('player figure', () => {
     const flashlight = inventory.create('flashlight');
     expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
     const held = new HeldItems(inventory, undefined, playerFigure);
-    const internals = held as unknown as {
+    const internals = heldState(held) as {
       view: Group;
       arms: Map<'left' | 'right', Group>;
       heldByHand: Map<'left' | 'right', Group>;
@@ -1032,7 +1033,7 @@ describe('player figure', () => {
       const mirrored = ([x, y, z]: Vec3): Vector3 =>
         new Vector3(z, y, -x).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
       const held = new HeldItems(inventory, figureOnlyModels, playerFigure);
-      const internals = held as unknown as ArmInternals & { heldByHand: Map<'left' | 'right', Group> };
+      const internals = heldState(held) as ArmInternals & { heldByHand: Map<'left' | 'right', Group> };
       try {
         held.update(new PerspectiveCamera());
         internals.view.updateMatrixWorld(true);
@@ -1085,7 +1086,7 @@ describe('player figure', () => {
           const bat = inventory.create('baseball_bat');
           inventory.add(bat, { kind: 'hand', side });
           const held = new HeldItems(inventory, undefined, playerFigure);
-          const internals = held as unknown as {
+          const internals = heldState(held) as {
             view: Group;
             arms: Map<'left' | 'right', Group>;
             heldByHand: Map<'left' | 'right', Group>;
@@ -1142,7 +1143,7 @@ describe('player figure', () => {
           inventory.add(inventory.create(item), { kind: 'hand', side });
         }
         const held = new HeldItems(inventory, figureOnlyModels, playerFigure);
-        const internals = held as unknown as ArmInternals;
+        const internals = heldState(held) as ArmInternals;
         held.update(camera);
         const arm = internals.arms.get(side)!;
         const rig = internals.armRigs.get(side)!;

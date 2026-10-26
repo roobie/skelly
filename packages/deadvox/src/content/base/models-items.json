@@ -3910,6 +3910,168 @@
     {
       "file": "assets/models/worn_boot_foot.glb",
       "id": "worn_boot_foot"
+    },
+    {
+      "file": "assets/models/utility_vest_worn.glb",
+      "id": "utility_vest_worn",
+      "parts": {
+        "shell": {
+          "centreOfMass": [0.0031677156844046009, 0.43289363595905656, 0.024436200648483682],
+          "massKg": 0.90000000000000002,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stab_vest_worn.glb",
+      "id": "stab_vest_worn",
+      "parts": {
+        "shell": {
+          "centreOfMass": [0.0019683822326272203, 0.47175982076552253, 0.0058561089503958571],
+          "massKg": 2.5,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/school_backpack_worn.glb",
+      "id": "school_backpack_worn",
+      "parts": {
+        "bag": {
+          "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.24779172793626178],
+          "massKg": 0.59999999999999998,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.55107547169811322, 0.0043227408142999012],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hiking_backpack_worn.glb",
+      "id": "hiking_backpack_worn",
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.29055790462864456],
+          "massKg": 1.3999999999999999,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.54831614785992233, 0.001333657587548633],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fanny_pack_worn.glb",
+      "id": "fanny_pack_worn",
+      "parts": {
+        "bag": {
+          "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.17494693456980939],
+          "massKg": 0.14999999999999999,
+          "node": "bag:bag"
+        },
+        "belt": {
+          "centreOfMass": [-3.9249376633595619e-18, 0.152, 0.00029181494661921926],
+          "massKg": 0.050000000000000003,
+          "node": "belt:belt"
+        }
+      }
+    },
+    {
+      "file": "assets/models/weapon_sling_worn.glb",
+      "id": "weapon_sling_worn",
+      "parts": {
+        "shell": {
+          "centreOfMass": [-0.23200000000000001, 0.51902801461632164, -0.068635809987819735],
+          "massKg": 0.14999999999999999,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/utility_vest_worn_jacket.glb",
+      "id": "utility_vest_worn_jacket",
+      "parts": {
+        "shell": {
+          "centreOfMass": [0.00017977528089887604, 0.44398901373283406, 0.038466716604244694],
+          "massKg": 0.90000000000000002,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/stab_vest_worn_jacket.glb",
+      "id": "stab_vest_worn_jacket",
+      "parts": {
+        "shell": {
+          "centreOfMass": [0.0002245390560029198, 0.46766966187298414, 0.011311900367132515],
+          "massKg": 2.5,
+          "node": "shell:compound"
+        }
+      }
+    },
+    {
+      "file": "assets/models/school_backpack_worn_jacket.glb",
+      "id": "school_backpack_worn_jacket",
+      "parts": {
+        "bag": {
+          "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.27979172793626184],
+          "massKg": 0.59999999999999998,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.54339638783269983, 0.051175855513308006],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/hiking_backpack_worn_jacket.glb",
+      "id": "hiking_backpack_worn_jacket",
+      "parts": {
+        "bag": {
+          "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.32255790462864453],
+          "massKg": 1.3999999999999999,
+          "node": "bag:bag"
+        },
+        "straps": {
+          "centreOfMass": [0, 0.54172326454033781, 0.048192307692307722],
+          "massKg": 0.10000000000000001,
+          "node": "straps:straps"
+        }
+      }
+    },
+    {
+      "file": "assets/models/fanny_pack_worn_jacket.glb",
+      "id": "fanny_pack_worn_jacket",
+      "parts": {
+        "bag": {
+          "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.19494693456980938],
+          "massKg": 0.14999999999999999,
+          "node": "bag:bag"
+        },
+        "belt": {
+          "centreOfMass": [0, 0.15200000000000002, 0.00031775700934579654],
+          "massKg": 0.050000000000000003,
+          "node": "belt:belt"
+        }
+      }
+    },
+    {
+      "file": "assets/models/weapon_sling_worn_jacket.glb",
+      "id": "weapon_sling_worn_jacket",
+      "parts": {
+        "shell": {
+          "centreOfMass": [-0.19999999999999998, 0.57424324324324316, -0.080945945945945938],
+          "massKg": 0.14999999999999999,
+          "node": "shell:compound"
+        }
+      }
     }
   ]
 }

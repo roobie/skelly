@@ -51,10 +51,16 @@ const figureParts = [...registry.figures.values()].flatMap((figure) => [
     };
   }),
 ]);
-const figureModels = new Set(figureParts.map(({ model }) => model));
-const wornModels = new Set(
-  [...registry.items.values()].flatMap((item) => (item.figureModels ?? []).map(({ model }) => model)),
-);
+// Models drawn only on a figure: its parts, and the worn looks items name in their `figureModels` but none holds.
+const itemModels = new Set([...registry.items.values()].map(({ model }) => model));
+const figureModels = new Set([
+  ...figureParts.map(({ model }) => model),
+  ...[...registry.items.values()]
+    .flatMap((item) =>
+      (item.figureModels ?? []).flatMap(({ model, overTorso }) => [model, ...Object.values(overTorso ?? {})]),
+    )
+    .filter((model) => !itemModels.has(model)),
+]);
 
 describe('thing tool exports satisfy the Deadvox contract', () => {
   it('validates and reproduces every recipe model without orphaned records', () => {
@@ -105,8 +111,9 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
   it('builds the registry with one authoritative mass source for each item', () => {
     assert.deepEqual(issues, []);
     for (const row of recipe) {
-      if (!registry.items.has(row.source) && (figureModels.has(row.id) || wornModels.has(row.id))) {
-        // Presentation-only models do not introduce items or a second mass source beside the loose item model.
+      if (figureModels.has(row.id)) {
+        // A model drawn only on a figure belongs to its figure row or to the item worn; no item holds it.
+        assert.equal(registry.items.has(row.source), false);
         assert.ok(registry.models.get(row.id));
         continue;
       }
@@ -209,7 +216,7 @@ describe('thing tool exports satisfy the Deadvox contract', () => {
     );
   });
   it('reports the sum of authored parts as the multi-part item weight', () => {
-    // A figure part is multi-part too, but no item holds it, so it has no weight to report.
+    // A model drawn only on a figure is multi-part too, but no item holds it, so it has no weight to report.
     const multi = recipe.filter(
       (row) => !figureModels.has(row.id) && catalogue.items.find(({ id }) => id === row.source).parts.length > 1,
     );

@@ -29,6 +29,7 @@ export const mainSourceOverlays = [
   // palm, so hands and held display stay on the figure's revision too.
   'render/playerFigure.ts',
   'render/hands.ts',
+  'render/heldPresentation.ts',
   'render/heldDisplay.ts',
   // The view constructs the flashlight, and the flashlight installs the near-field falloff; the three change together.
   'render/flashlight.ts',

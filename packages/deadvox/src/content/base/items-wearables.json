@@ -284,6 +284,7 @@
       "size": [3, 3],
       "wearable": {
         "encumbrance": 12,
+        "figureFit": "jacket",
         "slot": "torso",
         "warmth": 35,
         "wearPerDamage": 0.001
@@ -320,6 +321,18 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "utility_vest_worn",
+          "overTorso": {
+            "jacket": "utility_vest_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "utility_vest",
       "model": "utility_vest",
       "name": "Utility vest",
@@ -339,6 +352,18 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Police"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "stab_vest_worn",
+          "overTorso": {
+            "jacket": "stab_vest_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "stab_vest",
       "model": "stab_vest",
       "name": "Stab vest",
@@ -412,6 +437,18 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "fanny_pack_worn",
+          "overTorso": {
+            "jacket": "fanny_pack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "fanny_pack",
       "model": "fanny_pack",
       "name": "Fanny pack",
@@ -443,6 +480,18 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "school_backpack_worn",
+          "overTorso": {
+            "jacket": "school_backpack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "school_backpack",
       "model": "school_backpack",
       "name": "School backpack",
@@ -474,6 +523,18 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "hiking_backpack_worn",
+          "overTorso": {
+            "jacket": "hiking_backpack_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "hiking_backpack",
       "model": "hiking_backpack",
       "name": "Hiking backpack",

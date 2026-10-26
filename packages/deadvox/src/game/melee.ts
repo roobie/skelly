@@ -49,14 +49,22 @@ export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassD
   });
 };
 
-export const shouldEnterMeleeReady = (input: {
+export interface MeleeReadinessInput {
   rightMouseHeld: boolean;
   meleeWeaponHeld: boolean;
   handsEmpty: boolean;
+  /** A firearm uses right mouse for aim, never for a melee guard. */
+  firearmHeld?: boolean;
   debugBuild: boolean;
   inputLocked: boolean;
-}): boolean =>
-  input.rightMouseHeld && (input.meleeWeaponHeld || input.handsEmpty) && !input.debugBuild && !input.inputLocked;
+}
+
+/** En-garde is available for defence regardless of what occupies the player's hands. */
+export const shouldEnterMeleeGuard = (input: MeleeReadinessInput): boolean =>
+  input.rightMouseHeld && !input.firearmHeld && !input.debugBuild && !input.inputLocked;
+
+export const shouldEnterMeleeReady = (input: MeleeReadinessInput): boolean =>
+  shouldEnterMeleeGuard(input) && (input.meleeWeaponHeld || input.handsEmpty);
 
 /** Applies content class defaults and per-weapon overrides once, before the action is saved. */
 export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {

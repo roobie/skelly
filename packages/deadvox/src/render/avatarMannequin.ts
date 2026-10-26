@@ -20,7 +20,15 @@ export interface AvatarPose {
   name: string;
   stance: PlayerStance;
   moving: boolean;
+  /** Whether this ordinary hold is derived from `heldItemPoses`. */
+  catalogue?: boolean;
   hold?: ItemHoldPose;
+  secondaryHold?: ItemHoldPose;
+  /** Overrides the selected hold's ordinary readiness for a debug comparison pose. */
+  ready?: boolean;
+  /** Displays firearm aim using the same readiness owner as the player. */
+  aim?: boolean;
+  emptyFists?: boolean;
 }
 
 /** Every pose the figure row defines: standing and each stance it poses, each still and walking. */
@@ -30,13 +38,48 @@ const avatarPoses = (figure: FigureDef, registry: Registry): AvatarPose[] => {
     { name: stance, stance, moving: false },
     { name: `${stance}-walking`, stance, moving: true },
   ]);
+  const enGarde = (name: string, hold?: ItemHoldPose, secondaryHold?: ItemHoldPose): AvatarPose => ({
+    name,
+    stance: 'standing',
+    moving: false,
+    ...(hold ? { hold } : {}),
+    ...(secondaryHold ? { secondaryHold } : {}),
+    ready: true,
+    emptyFists: true,
+  });
+  const candidates = [...registry.items.values()];
+  const handItem = candidates.find(
+    (item) => item.model && !item.twoHanded && !item.firearm && !item.heldDisplay && !item.weapon?.melee,
+  );
+  const meleeItem = candidates.find((item) => item.weapon?.melee && !item.twoHanded) ?? handItem;
+  const handHold = (item: NonNullable<typeof handItem>, side: 'right' | 'left'): ItemHoldPose => ({
+    name: `${item.id}-${side}-ready`,
+    itemType: item.id,
+    side,
+    ready: true,
+  });
+  const guardSamples = meleeItem && handItem ? [handHold(meleeItem, 'right'), handHold(handItem, 'left')] : undefined;
+  const firearm = candidates.find((item) => item.id === 'revolver_357');
+  const firearmAim = firearm ? handHold(firearm, 'right') : undefined;
   return [
     ...stances,
+    enGarde('en-garde'),
+    ...(firearmAim
+      ? [{ name: 'aim-firearm', stance: 'standing' as const, moving: false, hold: firearmAim, aim: true }]
+      : []),
+    ...(guardSamples
+      ? [
+          enGarde('en-garde-crowbar-right', guardSamples[0]),
+          enGarde('en-garde-canned-beans-left', guardSamples[1]),
+          enGarde('en-garde-crowbar-right-canned-beans-left', ...guardSamples),
+        ]
+      : []),
     ...heldItemPoses(registry).map(
       (hold): AvatarPose => ({
         name: hold.name,
         stance: 'standing',
         moving: false,
+        catalogue: true,
         hold,
       }),
     ),
@@ -179,15 +222,24 @@ export class AvatarMannequin {
       this.placed = true;
       this.place();
     }
-    const { moving, stance, hold } = this.pose;
-    const item = hold && this.sample(hold.itemType);
-    figurePose.heldItems = { registry: this.registry, hands: hold && item ? { [hold.side]: item } : {} };
-    figurePose.holdReady = hold?.ready ?? false;
+    const { moving, stance, hold, secondaryHold, ready, aim, emptyFists } = this.pose;
+    const hands: Partial<Record<'right' | 'left', Item>> = {};
+    for (const sample of [hold, secondaryHold]) {
+      if (!sample) {
+        continue;
+      }
+      hands[sample.side] = this.sample(sample.itemType);
+    }
+    figurePose.heldItems = { registry: this.registry, hands };
+    const aimed = aim && hold ? { uid: hands[hold.side]!.uid, progress: 1, aimingDownSights: false } : undefined;
+    figurePose.holdReady = ready ?? hold?.ready ?? emptyFists ?? false;
+    figurePose.emptyFists = emptyFists ?? false;
     figurePose.gaitPhase += dt * GAIT_RATE;
     figurePose.moving = moving;
     figurePose.stance = stance;
     figurePose.dt = dt;
     this.meshes.sync(figurePose);
+    this.meshes.syncHeldView(undefined, { firearms: [], ...(aimed ? { readiness: aimed } : {}) });
   }
 
   private sample(type: string): Item {

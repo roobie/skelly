@@ -220,6 +220,18 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "weapon_sling_worn",
+          "overTorso": {
+            "jacket": "weapon_sling_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "weapon_sling",
       "model": "weapon_sling",
       "name": "Weapon sling",

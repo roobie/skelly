@@ -7,6 +7,15 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [-0.25, 0.26000000000000001, -0.19],
+          "frame": "torso",
+          "model": "rifle_hunting",
+          "pivot": [-0.216, 0, 0],
+          "turn": [90, -90, 0]
+        }
+      ],
       "firearm": {
         "bolt": true,
         "boltCloseSound": "rifle_bolt_close",
@@ -52,6 +61,15 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [-0.25, 0.26000000000000001, -0.19],
+          "frame": "torso",
+          "model": "shotgun_pump",
+          "pivot": [-0.216, 0, 0],
+          "turn": [90, -90, 0]
+        }
+      ],
       "firearm": {
         "dispersionRadians": 0,
         "dryFireSound": "shotgun_dry_click",
@@ -95,6 +113,15 @@
         "tiers": [],
         "usage": []
       },
+      "figureModels": [
+        {
+          "at": [-0.25, 0.26000000000000001, -0.19],
+          "frame": "torso",
+          "model": "shotgun_pump",
+          "pivot": [-0.216, 0, 0],
+          "turn": [90, -90, 0]
+        }
+      ],
       "id": "debug_shotgun_pump",
       "model": "shotgun_pump",
       "name": "Pump shotgun (debug)",
@@ -110,6 +137,15 @@
         "tiers": ["Tier2", "Tier3"],
         "usage": ["Military"]
       },
+      "figureModels": [
+        {
+          "at": [-0.25, 0.26000000000000001, -0.19],
+          "frame": "torso",
+          "model": "rifle_assault",
+          "pivot": [-0.15898999999999999, 0, 0],
+          "turn": [90, -90, 0]
+        }
+      ],
       "firearm": {
         "dispersionRadians": 0.012,
         "dryFireSound": "firearm_dry_click",
@@ -151,6 +187,15 @@
         "tiers": ["Tier2", "Tier3"],
         "usage": ["Military"]
       },
+      "figureModels": [
+        {
+          "at": [-0.25, 0.26000000000000001, -0.19],
+          "frame": "torso",
+          "model": "rifle_ak",
+          "pivot": [-0.22223999999999999, 0, 0],
+          "turn": [90, -90, 0]
+        }
+      ],
       "firearm": {
         "dispersionRadians": 0.017999999999999999,
         "dryFireSound": "firearm_dry_click",

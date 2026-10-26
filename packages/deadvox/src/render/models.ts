@@ -338,6 +338,18 @@ export class ModelLibrary {
     return { ...held, slots: this.attachParts(modelFrame(held.root, 'held'), look) };
   }
 
+  /** An item's look in its model's own file frame, with whatever is fitted, as a worn figure model draws it. */
+  partLook(look: ItemLook): Object3D | undefined {
+    const prepared = this.ready.get(look.model);
+    if (!prepared) {
+      return undefined;
+    }
+    const root = new Group().add(prepared.scene.clone());
+    hideShed(root, look.hidden);
+    this.attachParts(root, look);
+    return root;
+  }
+
   /** An item's look on the ground, resting on y = 0 with whatever is fitted; built once per look. */
   groundLook(look: ItemLook): Object3D | undefined {
     const cached = this.composedGround.get(look.key);

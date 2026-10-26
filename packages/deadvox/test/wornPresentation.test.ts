@@ -16,6 +16,7 @@ import { readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
+import type { ItemLook } from '../src/render/itemLook.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { FIGURE_PIVOT, type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -98,6 +99,7 @@ const library = () => {
       }
       return model;
     },
+    partLook: (look: ItemLook) => models.part(look.model),
   };
   return { available, models: models as unknown as ModelLibrary };
 };
@@ -382,13 +384,18 @@ describe('shared worn presentation', () => {
     }
   });
 
-  it('rejects missing worn models, frames, covered parts and posed pivots at the content boundary', () => {
+  it('rejects missing worn models, under-layer fits, frames, covered parts and posed pivots at the content boundary', () => {
     const broken = structuredClone(fixtureFigure);
     broken.attachmentFrames.shin!.pivot = 'fixture_missing_pivot';
     const item = {
       ...fixtureItem,
       figureModels: [
-        { ...segment, model: 'fixture_missing_model', frame: 'fixture_missing_frame' },
+        {
+          ...segment,
+          model: 'fixture_missing_model',
+          frame: 'fixture_missing_frame',
+          overTorso: { fixture: 'fixture_missing_fit_model' },
+        },
         { ...segment, frame: 'head', covers: ['fixture_missing_part'] },
       ],
     };
@@ -398,7 +405,16 @@ describe('shared worn presentation', () => {
         data: {
           figures: [broken],
           models: [...base.models.values()],
-          items: [item],
+          items: [
+            item,
+            {
+              ...fixtureItem,
+              id: 'fixture_under',
+              name: 'Fixture under-layer',
+              figureModels: undefined,
+              wearable: { slot: 'torso', encumbrance: 0, figureFit: 'fixture_layer' },
+            },
+          ],
         },
       },
     ]);
@@ -407,6 +423,14 @@ describe('shared worn presentation', () => {
         expect.objectContaining({
           path: 'items[0].figureModels[0].model',
           message: 'no model "fixture_missing_model"',
+        }),
+        expect.objectContaining({
+          path: 'items[0].figureModels[0].overTorso.fixture',
+          message: 'no model "fixture_missing_fit_model"',
+        }),
+        expect.objectContaining({
+          path: 'items[0].figureModels[0].overTorso',
+          message: 'no fit "fixture_layer" selected by "fixture_under"',
         }),
         expect.objectContaining({
           path: 'items[0].figureModels[0].frame',

@@ -1,0 +1,12 @@
+{
+  "id": "hiking_backpack_worn",
+  "file": "assets/models/hiking_backpack_worn.glb",
+  "parts": {
+    "straps": { "node": "straps:straps", "massKg": 0.1, "centreOfMass": [0, 0.5483161478599223, 0.001333657587548633] },
+    "bag": {
+      "node": "bag:bag",
+      "massKg": 1.4,
+      "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.29055790462864456]
+    }
+  }
+}

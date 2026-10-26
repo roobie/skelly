@@ -15,13 +15,17 @@ local garment(id, pieces, finish) = {
   connections: [],
 };
 local jacket = { cloth: 'cloth-shirt-player', trim: 'paint-charcoal', fastener: 'steel-grey' };
+local measures = import 'jacket-measures.libsonnet';
+local jacketLevel(id) =
+  local d = measures[id];
+  prism(id, 'cloth', d.bottom, d.top, d.width, d.depth, d.chamfer);
 local trousers = { cloth: 'cloth-pants-player', trim: 'paint-charcoal' };
 local rubber = { cloth: 'rubber-black', trim: 'paint-charcoal' };
 [
   garment('worn_jacket_body', [
-    prism('hem', 'cloth', 0.08, 0.23, 0.37, 0.24, 0.025),
-    prism('waist', 'cloth', 0.2, 0.38, 0.35, 0.235, 0.025),
-    prism('chest', 'cloth', 0.35, 0.62, 0.44, 0.26, 0.03),
+    jacketLevel('hem'),
+    jacketLevel('waist'),
+    jacketLevel('chest'),
     prism('collar', 'trim', 0.6, 0.66, 0.16, 0.16, 0.02),
     box('zip', 'fastener', [-0.006, 0.09, 0.129], [0.006, 0.61, 0.14]),
     box('left-pocket', 'trim', [-0.155, 0.16, 0.12], [-0.04, 0.25, 0.14]),

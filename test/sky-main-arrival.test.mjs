@@ -27,6 +27,7 @@ it('main overlays keep play, view and their presentation constructor contracts o
   assert.ok(mainSourceOverlays.includes('render/playView.ts'));
   assert.ok(mainSourceOverlays.includes('render/playerFigure.ts'));
   assert.ok(mainSourceOverlays.includes('render/hands.ts'));
+  assert.ok(mainSourceOverlays.includes('render/heldPresentation.ts'));
   assert.ok(mainSourceOverlays.includes('render/heldDisplay.ts'));
   assert.ok(mainSourceOverlays.includes('render/acidEffects.ts'));
   assert.ok(mainSourceOverlays.includes('render/gore.ts'));

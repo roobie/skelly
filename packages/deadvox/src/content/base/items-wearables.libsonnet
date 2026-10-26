@@ -3,6 +3,8 @@ local worn(model, frame, covers) = {
   pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0],
 };
 local pair(model, left, right, covers) = [worn(model, left, covers), worn(model, right, covers)];
+// Worn carry and armour models are authored in the bust's frame, so they sit on the torso frame as drawn.
+local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }, frame: 'torso', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0] }];
 {
   "items": [
     {
@@ -91,6 +93,7 @@ local pair(model, left, right, covers) = [worn(model, left, covers), worn(model,
       "size": [3, 3],
       "wearable": {
         "slot": "torso",
+        figureFit: 'jacket',
         "encumbrance": 12,
         "warmth": 35,
         "wearPerDamage": 0.001
@@ -108,6 +111,7 @@ local pair(model, left, right, covers) = [worn(model, left, covers), worn(model,
       "name": "Utility vest",
       "category": "clothing",
       "model": "utility_vest",
+      "figureModels": onTorso('utility_vest_worn'),
       "size": [3, 3],
       "wearable": {
         "slot": "vest",
@@ -128,6 +132,7 @@ local pair(model, left, right, covers) = [worn(model, left, covers), worn(model,
       "id": "stab_vest",
       "name": "Stab vest",
       "model": "stab_vest",
+      "figureModels": onTorso('stab_vest_worn'),
       "category": "clothing",
       "weight": 2500,
       "size": [3, 3],
@@ -160,6 +165,7 @@ local pair(model, left, right, covers) = [worn(model, left, covers), worn(model,
       "name": "Fanny pack",
       "category": "bag",
       "model": "fanny_pack",
+      "figureModels": onTorso('fanny_pack_worn'),
       "size": [2, 2],
       "wearable": { "slot": "waist", "encumbrance": 3 },
       "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8 }] }
@@ -169,6 +175,7 @@ local pair(model, left, right, covers) = [worn(model, left, covers), worn(model,
       "name": "School backpack",
       "category": "bag",
       "model": "school_backpack",
+      "figureModels": onTorso('school_backpack_worn'),
       "size": [4, 4],
       "wearable": { "slot": "back", "encumbrance": 10 },
       "container": {
@@ -183,6 +190,7 @@ local pair(model, left, right, covers) = [worn(model, left, covers), worn(model,
       "name": "Hiking backpack",
       "category": "bag",
       "model": "hiking_backpack",
+      "figureModels": onTorso('hiking_backpack_worn'),
       "size": [4, 5],
       "wearable": { "slot": "back", "encumbrance": 12 },
       "container": {

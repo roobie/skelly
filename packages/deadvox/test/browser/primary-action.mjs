@@ -451,7 +451,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       }
     }, fixture.offUid);
     await page.waitForFunction(() => {
-      const hands = globalThis.primaryActionTest.view.held.heldByHand;
+      const hands = globalThis.primaryActionTest.view.held.animator.presentation.heldByHand;
       return hands.has('left') && hands.has('right');
     });
     await pressAction(page, 'player.throw');
@@ -1841,8 +1841,14 @@ try {
       });
     const strike = async () => {
       const before = await observe();
-      await page.mouse.click(640, 450);
-      await page.waitForFunction((count) => globalThis.primaryActionTest.swings.length > count, before.swings.length);
+      await page.mouse.down({ button: 'right' });
+      await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
+      try {
+        await page.mouse.click(640, 450);
+        await page.waitForFunction((count) => globalThis.primaryActionTest.swings.length > count, before.swings.length);
+      } finally {
+        await page.mouse.up({ button: 'right' });
+      }
       const after = await observe();
       assert.equal(after.swings.length, before.swings.length + 1, 'one click admits one swing');
       assert.ok(after.stamina < before.stamina, 'an admitted swing spends stamina');
@@ -2109,12 +2115,14 @@ try {
       };
     });
     await page.waitForFunction(() => {
-      const hands = globalThis.primaryActionTest.view.held.heldByHand;
+      const hands = globalThis.primaryActionTest.view.held.animator.presentation.heldByHand;
       return hands.has('right') && hands.has('left');
     });
     const normalThrowPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+      return Object.fromEntries(
+        ['right', 'left'].map((side) => [side, r.view.held.animator.presentation.arms.get(side).position.toArray()]),
+      );
     });
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.interaction = false;
@@ -2124,7 +2132,7 @@ try {
     await page.waitForFunction((normal) => {
       const r = globalThis.primaryActionTest;
       return ['right', 'left'].every((side) => {
-        const pose = r.view.held.arms.get(side).position;
+        const pose = r.view.held.animator.presentation.arms.get(side).position;
         return pose.y > normal[side][1] && pose.z > normal[side][2];
       });
     }, normalThrowPose);
@@ -2135,7 +2143,9 @@ try {
     await page.waitForFunction(() => !document.querySelector('#throw-stance').hidden);
     const stanceThrowPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+      return Object.fromEntries(
+        ['right', 'left'].map((side) => [side, r.view.held.animator.presentation.arms.get(side).position.toArray()]),
+      );
     });
     for (const side of ['right', 'left']) {
       assert.ok(stanceThrowPose[side][1] > normalThrowPose[side][1], `${side} hand is raised in throwing stance`);
@@ -2288,7 +2298,7 @@ try {
     await page.waitForFunction((normal) => {
       const r = globalThis.primaryActionTest;
       return ['right', 'left'].every((side) =>
-        r.view.held.arms
+        r.view.held.animator.presentation.arms
           .get(side)
           .position.toArray()
           .every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001),
@@ -2296,7 +2306,9 @@ try {
     }, normalThrowPose);
     const restoredThrowPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+      return Object.fromEntries(
+        ['right', 'left'].map((side) => [side, r.view.held.animator.presentation.arms.get(side).position.toArray()]),
+      );
     });
     for (const side of ['right', 'left']) {
       assert.ok(restoredThrowPose[side].every((value, axis) => Math.abs(value - normalThrowPose[side][axis]) < 0.001));
@@ -2574,27 +2586,27 @@ try {
     });
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
-      return r.view.held.heldByHand.has(r.dominant);
+      return r.view.held.animator.presentation.heldByHand.has(r.dominant);
     });
     const firearmRestPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       return {
-        hand: r.view.held.arms.get(r.dominant).position.toArray(),
-        item: r.view.held.heldByHand.get(r.dominant).position.toArray(),
+        hand: r.view.held.animator.presentation.arms.get(r.dominant).position.toArray(),
+        item: r.view.held.animator.presentation.heldByHand.get(r.dominant).position.toArray(),
       };
     });
     await pressAction(page, 'player.throw');
     await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
     await page.waitForFunction((rest) => {
       const r = globalThis.primaryActionTest;
-      const hand = r.view.held.arms.get(r.dominant).position;
+      const hand = r.view.held.animator.presentation.arms.get(r.dominant).position;
       return hand.y > rest.hand[1] && hand.z > rest.hand[2];
     }, firearmRestPose);
     const firearmThrowPose = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       return {
-        hand: r.view.held.arms.get(r.dominant).position.toArray(),
-        item: r.view.held.heldByHand.get(r.dominant).position.toArray(),
+        hand: r.view.held.animator.presentation.arms.get(r.dominant).position.toArray(),
+        item: r.view.held.animator.presentation.heldByHand.get(r.dominant).position.toArray(),
       };
     });
     for (const key of ['hand', 'item']) {

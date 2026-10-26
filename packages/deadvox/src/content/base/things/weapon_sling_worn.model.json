@@ -1,0 +1,11 @@
+{
+  "id": "weapon_sling_worn",
+  "file": "assets/models/weapon_sling_worn.glb",
+  "parts": {
+    "shell": {
+      "node": "shell:compound",
+      "massKg": 0.15,
+      "centreOfMass": [-0.232, 0.5190280146163216, -0.06863580998781973]
+    }
+  }
+}

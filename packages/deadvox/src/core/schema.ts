@@ -923,6 +923,7 @@ const CompressionTuningSchema = strictObject({
 const WearableSchema = pipe(
   strictObject({
     slot: picklist(CLOTHING_SLOTS),
+    figureFit: optional(Id),
     viewModel: optional(
       strictObject({
         model: Id,
@@ -943,6 +944,10 @@ const WearableSchema = pipe(
       ),
     ),
   }),
+  check(
+    (wearable) => wearable.figureFit === undefined || wearable.slot === 'torso',
+    'an under-layer fit requires the torso slot',
+  ),
   check(
     (wearable) => wearable.viewModel === undefined || wearable.slot === 'head',
     'a first-person model requires the head slot',
@@ -1476,6 +1481,7 @@ const ItemSchema = strictObject({
     array(
       strictObject({
         model: Id,
+        overTorso: optional(record(Id, Id)),
         frame: Id,
         covers: optional(array(Id)),
         pivot: tuple([number(), number(), number()]),
@@ -3619,8 +3625,13 @@ const HeldPosesSchema = strictObject({
   display: Point,
   supportUpright: Point,
   supportForward: Point,
+  /** Firearm-ready hand transforms; guard transforms stay separate so they cannot move a weapon bore. */
   readyPrimary: ReadyHandSchema,
   readySupport: ReadyHandSchema,
+  guardPrimary: ReadyHandSchema,
+  guardSupport: ReadyHandSchema,
+  /** Raised free-hand transform while an active off-hand item accompanies an aimed firearm. */
+  aimActiveOffHand: ReadyHandSchema,
 });
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 

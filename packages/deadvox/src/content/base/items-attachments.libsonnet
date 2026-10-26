@@ -109,6 +109,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "name": "Weapon sling",
       "category": "misc",
       "model": "weapon_sling",
+      // Its strap over the shoulder, drawn while the long gun it is fitted to is slung.
+      "figureModels": [{ model: 'weapon_sling_worn', overTorso: { jacket: 'weapon_sling_worn_jacket' }, frame: 'torso', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0] }],
       "size": [1, 1],
       "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
       "sling": true
