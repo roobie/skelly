@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { stdout } from 'node:process';
+import { stripVTControlCharacters } from 'node:util';
 
 const mutants = [
   {
@@ -40,7 +41,10 @@ for (const mutant of mutants) {
     });
     const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`;
     stdout.write(`${output}\n`);
-    if (result.status !== 1 || !output.includes(`FAIL  test/actorAnimator.test.ts > ${mutant.test}`)) {
+    if (
+      result.status !== 1 ||
+      !stripVTControlCharacters(output).includes(`FAIL  test/actorAnimator.test.ts > ${mutant.test}`)
+    ) {
       throw new Error(`Mutant was not killed by its behaviour test: ${mutant.name}`);
     }
     stdout.write(`KILLED: ${mutant.name}\n`);
