@@ -154,6 +154,8 @@ export interface PlayerFigurePose {
   inventory?: Inventory;
   heldItems?: FigureHeldItems;
   holdReady?: boolean;
+  /** Draw empty fists through the same ready-pose source as the player's first-person presentation. */
+  emptyFists?: boolean;
   eye?: Vec3;
   pitch?: number;
 }
@@ -381,8 +383,9 @@ export class PlayerMeshes {
       return;
     }
     const { registry, hands } = source;
-    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}`;
+    const version = `${pose.inventory?.version}:${this.models.version}:${hands.right?.uid}:${hands.right?.type}:${hands.left?.uid}:${hands.left?.type}:${pose.emptyFists}`;
     const presentation = this.prepareHeld(source, version);
+    this.addEmptyFists(presentation, hands, pose.emptyFists ?? false);
     this.positionHeldFrame(pose, registry);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
@@ -405,6 +408,18 @@ export class PlayerMeshes {
       const hold = presentation.holds.get(side);
       anchor.position.set(...(hold?.at ?? [0, 0, 0]));
       presentation.solve(side, shoulder, presentation.displayPalms.get(side) ?? (hold ? anchor : undefined));
+    }
+  }
+
+  /** Adds the unarmed half of an explicitly posed pair of hands. */
+  private addEmptyFists(presentation: HeldPresentation, hands: FigureHeldItems['hands'], emptyFists: boolean): void {
+    if (!emptyFists) {
+      return;
+    }
+    for (const side of ['right', 'left'] as const) {
+      if (!hands[side]) {
+        presentation.addFist(side);
+      }
     }
   }
 

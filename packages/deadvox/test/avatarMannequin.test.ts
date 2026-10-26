@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 
@@ -30,7 +31,7 @@ describe('debug avatar mannequin', () => {
     for (const stance of stances) {
       for (const moving of [false, true]) {
         const offered = mannequin!.poses.filter(
-          (pose) => !pose.hold && pose.stance === stance && pose.moving === moving,
+          (pose) => !(pose.hold || pose.emptyFists) && pose.stance === stance && pose.moving === moving,
         );
         expect(offered, `${stance} moving=${moving}`).toHaveLength(1);
         while (mannequin!.pose !== offered[0]) {
@@ -40,6 +41,20 @@ describe('debug avatar mannequin', () => {
         expect(mannequin!.pose).toBe(offered[0]);
       }
     }
+  });
+
+  it('draws empty en-garde through the player ready-pose source', () => {
+    const sync = vi.spyOn(PlayerMeshes.prototype, 'sync');
+    const { mannequin } = mannequinFor(true, '?debug=1&mannequin=en-garde');
+    mannequin!.sync([0, 0, 0], 0, 0);
+    expect(mannequin!.pose).toMatchObject({ name: 'en-garde', emptyFists: true });
+    expect(sync).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        heldItems: { registry, hands: {} },
+        holdReady: true,
+        emptyFists: true,
+      }),
+    );
   });
 
   it('steps through the offered poses and wraps round', () => {

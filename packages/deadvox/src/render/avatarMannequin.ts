@@ -20,6 +20,7 @@ export interface AvatarPose {
   stance: PlayerStance;
   moving: boolean;
   hold?: ItemHoldPose;
+  emptyFists?: boolean;
 }
 
 /** Every pose the figure row defines: standing and each stance it poses, each still and walking. */
@@ -31,6 +32,7 @@ const avatarPoses = (figure: FigureDef, registry: Registry): AvatarPose[] => {
   ]);
   return [
     ...stances,
+    { name: 'en-garde', stance: 'standing', moving: false, emptyFists: true },
     ...heldItemPoses(registry).map(
       (hold): AvatarPose => ({
         name: hold.name,
@@ -161,7 +163,7 @@ export class AvatarMannequin {
       this.placed = true;
       this.place();
     }
-    const { moving, stance, hold } = this.pose;
+    const { moving, stance, hold, emptyFists } = this.pose;
     let item = hold && this.samples.get(hold.itemType);
     if (hold && !item) {
       // A mannequin sample is presentation only, not a simulated inventory item with ownership or persistence.
@@ -169,7 +171,8 @@ export class AvatarMannequin {
       this.samples.set(hold.itemType, item);
     }
     figurePose.heldItems = { registry: this.registry, hands: hold && item ? { [hold.side]: item } : {} };
-    figurePose.holdReady = hold?.ready ?? false;
+    figurePose.holdReady = hold?.ready ?? emptyFists ?? false;
+    figurePose.emptyFists = emptyFists ?? false;
     figurePose.gaitPhase += dt * GAIT_RATE;
     figurePose.moving = moving;
     figurePose.stance = stance;
