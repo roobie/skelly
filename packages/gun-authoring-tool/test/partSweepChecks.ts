@@ -10,6 +10,7 @@ const onGridWithCarrierClearance = (value: number, step: number, family: PartFam
   if (onGrid(value, step)) {
     return true;
   }
+  // Receiver cavities and the SMG handle stem in its slot stand one running clearance off the grid.
   if (family.name !== 'receiver' && family.name !== 'smg-handle') {
     return false;
   }
@@ -17,6 +18,8 @@ const onGridWithCarrierClearance = (value: number, step: number, family: PartFam
   return Math.abs(Math.abs(value - nearest) - BOLT_CARRIER_RUNNING_CLEARANCE_U) < 1e-9;
 };
 
+// Each case checks only the PartDef that `build(params)` returns: grid alignment, orthonormal
+// ports, unique port ids and positive box sizes. No rules or geometry checks run.
 const BATCH_CASE_TIMEOUT_MS = 40;
 
 export const definePartChecks = (family: PartFamily, cases: Record<string, string>[], batchSize = 1): void => {
@@ -32,9 +35,13 @@ export const definePartChecks = (family: PartFamily, cases: Record<string, strin
     const def = family.build(params);
     const bounds = (box: { center: readonly number[]; half: readonly number[] }) =>
       box.center.flatMap((center, axis) => [center - box.half[axis]!, center + box.half[axis]!]);
+    // Guard geometry preserves the pistol golden and exact contact with angled grips; it has its own geometry tests.
+    // Explicit metal handle parts use sub-grid clearances; their ownership, contact and motion have dedicated geometry tests.
     const explicitCarrierStyle = family.name === 'bolt-carrier' && params.handleStyle !== undefined;
+    // AR hand corridors follow the thin, 0.05u-authored handle; body stations retain their usual grid.
     const fineHandleIds = new Set(['charging-handle', 'rear-t-hand-grip-clearance', 'rear-t-hand-clearance']);
     const fineHandleKeepOuts = def.keepOuts.filter((k) => family.name === 'receiver' && fineHandleIds.has(k.id));
+    // Sights traced onto a barrel keep the sight families' finer grid.
     const barrelSights = def.solids.filter((s) => family.name === 'barrel' && s.id.startsWith('front-sight-'));
     const numbers = [
       ...def.solids.flatMap((s) =>
@@ -91,6 +98,7 @@ export const definePartChecks = (family: PartFamily, cases: Record<string, strin
 
   for (let start = 0; start < cases.length; start += batchSize) {
     const batch = cases.slice(start, start + batchSize);
+    // The timeout scales with the batch's case count, never a flat number.
     it(
       `cases ${start}-${start + batch.length - 1}: geometry and port definitions are valid on the ${gridStep}u grid`,
       () => {

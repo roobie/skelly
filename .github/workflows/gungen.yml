@@ -74,7 +74,7 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
@@ -92,7 +92,7 @@ jobs:
       - run: npm ci --prefix ../..
         timeout-minutes: 3
       - name: Unit suite shard ${{ matrix.shard }}
-        run: timeout 300 npm test -- --shard=${{ matrix.shard }}
+        run: timeout 180 npm test -- --shard=${{ matrix.shard }}
 
   check:
     needs: [fast, unit]
