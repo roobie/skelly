@@ -1017,7 +1017,17 @@ renderer.setSize(stage.clientWidth, stage.clientHeight);
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
-applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, skyAt(12, requireDayCycle(registry)));
+applySky(
+  {
+    scene,
+    light: sunlight,
+    ambient,
+    camera,
+    radiusM: 96,
+    farPlaneScale: registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.fogFarPlaneScale ?? 1,
+  },
+  skyAt(12, requireDayCycle(registry)),
+);
 sunlight.position.normalize().multiplyScalar(20);
 sunlight.castShadow = true;
 sunlight.shadow.mapSize.set(2048, 2048);

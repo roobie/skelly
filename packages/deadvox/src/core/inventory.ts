@@ -63,6 +63,7 @@ import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, wal
 import { type LiquidTransferPlan, planLiquidTransfer } from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
+import { countText } from './numberText.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
@@ -967,7 +968,7 @@ export class Inventory {
       return refuse(held);
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
-      return coreRefusal(this.registry, 'partCount', { count: String(count), total: String(item.count) });
+      return coreRefusal(this.registry, 'partCount', { count: countText(count), total: countText(item.count) });
     }
     const handHeld = this.handMoveRefusal(item, from, target);
     if (handHeld) {

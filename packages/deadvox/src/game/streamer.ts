@@ -21,14 +21,42 @@ import { revealedColumns } from '../render/columnReveal.ts';
 import type { FromMesher, ToMesher } from '../worker/protocol.ts';
 
 const COLUMNS_PER_FRAME = 2;
-/** Chunk data is dropped this many columns beyond the generated ring, so walking back and forth doesn't regenerate. */
-const UNLOAD_MARGIN = 2;
 
-/** Column keys ("cx,cz") farther than `keep` columns (square distance) from the centre column. */
+/** True when a column `dx, dz` columns from the centre column lies within `radius` of it, centre to centre. */
+const withinRadius = (dx: number, dz: number, radius: number): boolean => dx * dx + dz * dz <= radius * radius;
+
+/** Column offsets within `radius` of the centre column, nearest first. */
+const discOffsets = (radius: number): [number, number][] => {
+  const offsets: [number, number][] = [];
+  const r = Math.floor(radius);
+  for (let dz = -r; dz <= r; dz++) {
+    for (let dx = -r; dx <= r; dx++) {
+      if (withinRadius(dx, dz, radius)) {
+        offsets.push([dx, dz]);
+      }
+    }
+  }
+  return offsets.sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
+};
+
+/** `disc` and every column touching it, so each disc column has all eight neighbours; nearest first. */
+const grownOffsets = (disc: readonly (readonly [number, number])[]): [number, number][] => {
+  const grown = new Map<string, [number, number]>();
+  for (const [x, z] of disc) {
+    for (let dz = z - 1; dz <= z + 1; dz++) {
+      for (let dx = x - 1; dx <= x + 1; dx++) {
+        grown.set(`${dx},${dz}`, [dx, dz]);
+      }
+    }
+  }
+  return [...grown.values()].sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
+};
+
+/** Column keys ("cx,cz") farther than `keep` columns from the centre column. */
 export const farColumns = (columns: Iterable<string>, [pcx, pcz]: readonly [number, number], keep: number): string[] =>
   [...columns].filter((col) => {
     const [cx, cz] = col.split(',').map(Number) as [number, number];
-    return Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) > keep;
+    return !withinRadius(cx - pcx, cz - pcz, keep);
   });
 
 export interface StreamerOptions {
@@ -53,8 +81,10 @@ export interface StreamerOptions {
   surface?: Surface | undefined;
   /** Writes buildings into each chunk as it generates. */
   stamp?: ((chunk: Chunk) => void) | undefined;
-  /** Mesh radius in chunks (square). Terrain is generated one column further out. */
+  /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
+  /** Chunks beyond the rings that meshes and chunk data stay, so a column on the edge does not churn. */
+  hysteresis: number;
   /** When given, per-column and per-chunk timings are appended here. */
   stats?: StreamerStats;
 }
@@ -83,11 +113,15 @@ export class Streamer {
   failure: string | undefined;
 
   get loadingWorkUnits(): number {
-    const columns = (this.opts.radius * 2 + 1) ** 2;
-    return (this.opts.radius * 2 + 3) ** 2 + columns * (this.opts.scale.maxCy - this.opts.scale.minCy + 1);
+    return this.offsets.length + this.meshOffsets.length * (this.opts.scale.maxCy - this.opts.scale.minCy + 1);
   }
   private replayControlled = false;
-  private readonly offsets: [number, number][] = [];
+  /** The generated ring, nearest first. */
+  private readonly offsets: [number, number][];
+  private readonly offsetKeys: Set<string>;
+  /** The meshed disc, nearest first. */
+  private readonly meshOffsets: [number, number][];
+  private readonly discs = new Map<number, [number, number][]>();
   private nextWorker = 0;
   private skyReply: ((result: SkyResult, ms: number) => void) | undefined;
   private pendingSky: SkySnapshot | undefined;
@@ -163,14 +197,9 @@ export class Streamer {
     }
     this.maxInFlight = count * 2;
 
-    // Nearest columns first.
-    const r = opts.radius + 1;
-    for (let dz = -r; dz <= r; dz++) {
-      for (let dx = -r; dx <= r; dx++) {
-        this.offsets.push([dx, dz]);
-      }
-    }
-    this.offsets.sort((a, b) => a[0] ** 2 + a[1] ** 2 - (b[0] ** 2 + b[1] ** 2));
+    this.meshOffsets = discOffsets(opts.radius);
+    this.offsets = grownOffsets(this.meshOffsets);
+    this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
 
   get pending(): number {
@@ -202,7 +231,7 @@ export class Streamer {
     if (this.generated.has(`${cx},${cz}`)) {
       return true;
     }
-    if (!(this.replayControlled && this.inRange(cx, cz))) {
+    if (!(this.replayControlled && this.offsetKeys.has(`${cx - this.center[0]},${cz - this.center[1]}`))) {
       return false;
     }
     this.generate(cx, cz, false);
@@ -233,25 +262,31 @@ export class Streamer {
   }
 
   /**
-   * Columns within `within` chunks of (x, z) (square) that aren't fully meshed yet:
+   * Columns within `within` chunks of (x, z)'s column that aren't fully meshed yet:
    * not generated, or with a chunk waiting for or being meshed. Zero means no holes.
    */
   unmeshedColumns(x: number, z: number, within: number): number {
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
-    const { minCy, maxCy } = this.opts.scale;
-    let count = 0;
-    for (let cz = pcz - within; cz <= pcz + within; cz++) {
-      for (let cx = pcx - within; cx <= pcx + within; cx++) {
-        let done = this.generated.has(`${cx},${cz}`);
-        for (let cy = minCy; done && cy <= maxCy; cy++) {
-          const key = chunkKey(cx, cy, cz);
-          done = !(this.dirty.has(key) || this.inFlight.has(key));
-        }
-        count += done ? 0 : 1;
+    let disc = this.discs.get(within);
+    if (!disc) {
+      disc = discOffsets(within);
+      this.discs.set(within, disc);
+    }
+    return disc.filter(([dx, dz]) => !this.columnMeshed(pcx + dx, pcz + dz)).length;
+  }
+
+  private columnMeshed(cx: number, cz: number): boolean {
+    if (!this.generated.has(`${cx},${cz}`)) {
+      return false;
+    }
+    for (let cy = this.opts.scale.minCy; cy <= this.opts.scale.maxCy; cy++) {
+      const key = chunkKey(cx, cy, cz);
+      if (this.dirty.has(key) || this.inFlight.has(key)) {
+        return false;
       }
     }
-    return count;
+    return true;
   }
 
   unmeshedRecordedColumns(
@@ -262,11 +297,7 @@ export class Streamer {
   ): number {
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
-    return columns.filter(
-      ([cx, cz]) =>
-        Math.max(Math.abs(cx - pcx), Math.abs(cz - pcz)) <= within &&
-        this.unmeshedColumns(cx * CHUNK, cz * CHUNK, 0) > 0,
-    ).length;
+    return columns.filter(([cx, cz]) => withinRadius(cx - pcx, cz - pcz, within) && !this.columnMeshed(cx, cz)).length;
   }
 
   // Replay may start with a partial ring: mesh the recorded boundary without inventing terrain,
@@ -302,7 +333,6 @@ export class Streamer {
     }
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
-    const { radius } = this.opts;
 
     let budget = COLUMNS_PER_FRAME;
     for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
@@ -317,12 +347,9 @@ export class Streamer {
     if (this.generationFailed) {
       return;
     }
-    for (const [dx, dz] of this.offsets) {
+    for (const [dx, dz] of this.meshOffsets) {
       if (this.occupied >= this.maxInFlight) {
         break;
-      }
-      if (Math.max(Math.abs(dx), Math.abs(dz)) > radius) {
-        continue;
       }
       const cx = pcx + dx;
       const cz = pcz + dz;
@@ -359,7 +386,7 @@ export class Streamer {
       const cx = this.center[0] + dx;
       const cz = this.center[1] + dz;
       const key = `${cx},${cz}`;
-      if (!this.completeColumns.has(key) && this.unmeshedColumns(cx * CHUNK, cz * CHUNK, 0) === 0) {
+      if (!this.completeColumns.has(key) && this.columnMeshed(cx, cz)) {
         this.completeColumns.add(key);
       }
     }
@@ -373,8 +400,9 @@ export class Streamer {
    * the player returns; touched ones stay in memory for the session (`DESIGN.md`, "Edits persist").
    */
   private unloadFar(): void {
-    const { world, scale, radius } = this.opts;
-    for (const col of farColumns(this.generated, this.center, radius + 1 + UNLOAD_MARGIN)) {
+    const { world, scale, radius, hysteresis } = this.opts;
+    // The generated ring reaches less than a diagonal step past the mesh disc.
+    for (const col of farColumns(this.generated, this.center, radius + Math.SQRT2 + hysteresis)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
       const pinned = world.isTouched(cx, cz);
       for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
@@ -391,8 +419,9 @@ export class Streamer {
     }
   }
 
+  /** Whether a column's meshes stay drawn. */
   private inRange(cx: number, cz: number): boolean {
-    return Math.max(Math.abs(cx - this.center[0]), Math.abs(cz - this.center[1])) <= this.opts.radius + 1;
+    return withinRadius(cx - this.center[0], cz - this.center[1], this.opts.radius + this.opts.hysteresis);
   }
 
   private neighboursGenerated(cx: number, cz: number): boolean {

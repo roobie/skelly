@@ -1,4 +1,5 @@
 import { html, render } from 'lit-html';
+import { countText, decimalText } from '../core/numberText.ts';
 import type { ScenarioRunState } from '../core/scenarioRun.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
@@ -27,11 +28,11 @@ export const showWin = (
     exportRun: () => void;
   },
 ): void => {
-  const hrs = ((run.completedAtGameTimestamp! - run.startedAtGameTimestamp) / 3600).toFixed(1);
+  const hrs = decimalText((run.completedAtGameTimestamp! - run.startedAtGameTimestamp) / 3600);
   render(
     html`<div class="card">
     <h1>${text.heading}</h1>
-    <p>${fillText(text.seed, { seed })}</p>
+    <p>${fillText(text.seed, { seed: countText(seed) })}</p>
     <p>${fillText(text.played, { hrs })}</p>
     <p>${checkpointMessages[checkpoint]}</p>
     <button type="button" @click=${exportRun}>${text.export}</button>

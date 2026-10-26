@@ -4,13 +4,16 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { swapBattery } from '../src/core/lights.ts';
+import { countText, decimalText } from '../src/core/numberText.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { fillText } from '../src/core/textTemplate.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
@@ -729,6 +732,25 @@ describe('inventory screen Lit rendering', () => {
 
     expect(character.skills[skill.id]).toBeGreaterThan(initialLevel);
     expect(row()?.dataset.level).toBe(String(character.skills[skill.id]));
+  });
+
+  it('rounds the practice the skills panel shows, so accumulated float noise never reaches its text', () => {
+    const { screen, root, character } = setup();
+    const [skill] = registry.skills.values();
+    if (!skill) {
+      throw new Error('The skill screen needs a registry skill fixture');
+    }
+    // A block absorbing part of a hit awards practice as a product, which is where the tail enters.
+    character.awardPractice(skill.id, 2.5 * 0.46);
+    screen.selectTab('skills');
+
+    const text = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.inventory;
+    const practice = character.practice[skill.id]!;
+    const next = practiceForNextLevel(registry, character.skills[skill.id]!);
+    const expected = fillText(text.practice, { practice: decimalText(practice), next: countText(next) });
+    const row = root.querySelector<HTMLElement>(`[data-skill="${skill.id}"]`);
+    expect(row?.querySelector('.inv-skill-practice')?.textContent).toBe(expected);
+    expect(row?.querySelector('.inv-skill-progress')?.getAttribute('aria-valuenow')).toBe(decimalText(practice));
   });
   it('shows the nested battery slot of a mounted light in firearm details', () => {
     const mounted = withDefaultMountedLight(registry, 'rifle_assault', 'flashlight');

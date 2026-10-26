@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { actionText, fillParts } from '../src/core/actionText.ts';
+import { actionText } from '../src/core/actionText.ts';
+import { fillParts } from '../src/core/textTemplate.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('splits a hint around every placeholder, repeated ones included, keeping the text between them', () => {
