@@ -9,7 +9,7 @@ read_if:
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
-  - you change equipped gear seen from inside, on the player figure or on dead humans
+  - you change equipped gear fit, shared human attachment frames or inside-headgear presentation
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
@@ -1577,9 +1577,6 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-Worn items carry their own part model that covers or replaces the body part
-under it, so gear shows on the body without the body knowing about gear.
-
 First-person and world-body holds share one held-item-and-arms owner, with each
 view supplying its own shoulder frame. This applies to all items, not just guns:
 the world body is what others and the mannequin see, so it must show the same
@@ -1715,8 +1712,17 @@ slot shows on the player figure, and dead humans wear real items through the sam
 presentation path. The player gears up: gear that changes protection, carry or role
 must be readable at a glance on self, in shadows and outside views, and on bodies,
 where it tells the player what loot they carry. Colour alone cannot stand in for
-an equipped item. See `src/core/schema.ts`, `WearSlot` and `WearableSchema`;
-`src/render/playerFigure.ts`, `PlayerMeshes`.
+an equipped item. Floating optics and a head breaking through its cap read as
+loose props rather than worn gear, so fit must preserve the equipped silhouette.
+Forehead lamps must leave the eye line clear so hands-free lighting does not
+read as an obstruction over the eyes.
+Item-owned presentation and figure-owned attachment frames keep
+gear additions independent of human renderers and equipment ownership. The same
+human must serve different equipment owners without manufacturing inventory in
+the renderer. Attachment does not decide whether a garment needs rigid segments
+or skin deformation; that choice needs a visual comparison before multiplying
+clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
+`src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
 through. It belongs with the hands because the world camera cannot draw that close
