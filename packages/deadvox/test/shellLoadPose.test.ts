@@ -10,6 +10,7 @@ import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -138,6 +139,19 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       },
     } as unknown as ModelLibrary;
     const held = new HeldItems(inventory, models, figure);
+    const world = new PlayerMeshes(0.5, figure, content.models, models);
+    world.sync({
+      body: { pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0, height: 0, onGround: true },
+      yaw: 0,
+      eye: [0, 0, 0],
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      stance: 'standing',
+      dt: 0,
+      thirdPerson: true,
+      inventory,
+    });
     const camera = new PerspectiveCamera();
     const supportSide = holdingSide === 'right' ? 'left' : 'right';
     const { scene } = held.warmUpTarget;
@@ -151,7 +165,9 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       });
     const update = () => {
       const before = state();
-      held.update(camera, undefined, 0, { firearms: mechanics.frames(), job: queue.jobs[0] });
+      const handling = { firearms: mechanics.frames(), job: queue.jobs[0] };
+      held.update(camera, undefined, 0, handling);
+      world.syncHeldView(undefined, handling);
       expect(state()).toEqual(before);
       const grip = scene.getObjectByName(`first-person-arm-${supportSide}`)?.getObjectByName('grip-anchor');
       const gunRoot = scene.getObjectByName('load-gun-probe');
@@ -160,6 +176,16 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       }
       const port = gunRoot.localToWorld(new Vector3(...heldAnchorOffset(model, 'loading_port')));
       const wrist = grip.getWorldPosition(new Vector3());
+      const worldGun = world.group.getObjectByName('load-gun-probe')!;
+      const worldGrip = world.group.getObjectByName(`first-person-arm-${supportSide}`)!.getObjectByName('grip-anchor')!;
+      const worldWrist = worldGun.worldToLocal(worldGrip.getWorldPosition(new Vector3()));
+      expect(worldWrist.distanceTo(gunRoot.worldToLocal(wrist.clone()))).toBeLessThan(1e-8);
+      const viewRound = scene.getObjectByName('load-shell-probe');
+      const worldRound = world.group.getObjectByName('load-shell-probe');
+      expect(worldRound?.visible).toBe(viewRound?.visible);
+      if (viewRound && worldRound) {
+        expect(worldRound.position.distanceTo(viewRound.position)).toBeLessThan(1e-8);
+      }
       return {
         wrist,
         wristLocal: gunRoot.worldToLocal(wrist.clone()),
@@ -219,6 +245,7 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
       expect(scene.getObjectByName('load-shell-probe')).toBeUndefined();
     } finally {
       held.dispose();
+      world.dispose();
     }
   },
 );

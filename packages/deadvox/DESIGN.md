@@ -1607,15 +1607,17 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-First-person and world-body holds share one held-item-and-arms owner, with each
-view supplying its own shoulder frame. This applies to all items, not just guns:
-the world body is what others and the mannequin see, so it must show the same
-holds as first person. One owner prevents those holds drifting, lets the mannequin
-judge them from outside, and gives later NPCs and other players the same source.
-Hold, readiness and support tuning belongs to content so another figure need not
-inherit the player's proportions. See `src/render/heldPresentation.ts`,
-`HeldPresentation`; `src/render/playerFigure.ts`, `PlayerMeshes`;
-`src/render/hands.ts`, `HeldItems`; and
+First-person and world-body handling share one animation implementation and
+held-item-and-arms mechanism, with each view supplying its own shoulder frame.
+This applies to all items, not just guns: the world body is what others and the
+mannequin see, so it must show the same holds and action feedback as first person.
+One animation source prevents those drifting, lets the mannequin judge them from
+outside, and gives later NPCs and other players the same source. Observer motion
+must not change the actor's physical pose. Hold, readiness and support tuning
+belongs to content so another figure need not inherit the player's proportions.
+See `src/render/actorAnimator.ts`, `ActorAnimator`;
+`src/render/heldPresentation.ts`, `HeldPresentation`;
+`src/render/playerFigure.ts`, `PlayerMeshes`; `src/render/hands.ts`, `HeldItems`; and
 `src/content/base/figures-player.jsonnet`, `holds`.
 
 Shoulders are body attachments, not movable reach handles. When an authored grip
