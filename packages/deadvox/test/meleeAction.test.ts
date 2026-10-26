@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import type { ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { readyFirearmPose } from '../src/core/heldPose.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
@@ -251,6 +252,14 @@ describe('melee pose and contact contract', () => {
     for (const side of ['right', 'left'] as const) {
       expect(ready[side].offset[1]).toBeGreaterThan(0);
     }
+  });
+
+  it('keeps the firearm-ready pose unchanged when guard tuning changes', () => {
+    const holds = structuredClone(registry.figures.get('player')!.holds);
+    const firearmReady = readyFirearmPose('right', holds);
+    holds.guardPrimary.offset[1] += 1;
+    holds.guardSupport.offset[1] += 1;
+    expect(readyFirearmPose('right', holds)).toEqual(firearmReady);
   });
 
   it('eases fist-only torso yaw to 30 degrees at contact and back to the unchanged rest pose', () => {
