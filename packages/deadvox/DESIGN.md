@@ -9,7 +9,7 @@ read_if:
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, its authored parts, its clothes or how it is posed
   - you change shared held-item presentation, arm attachment or the mannequin's item-hold catalogue
-  - you change worn head gear seen from inside or on the player figure
+  - you change equipped gear seen from inside, on the player figure or on dead humans
   - you add a wear slot or change what night-vision goggles do to the view
   - you change browser mod identity, startup admission or default mod selection
   - you change streaming reveal or loading readiness
@@ -1708,16 +1708,21 @@ activation must not replay dormant time. See `src/core/scheduler.ts`,
 `Simulation.leaveExposure`, `Simulation.endExposure` and `Simulation.actionRefusal`;
 `src/core/longAction.ts`, `LongActions.interruptExposure`.
 
-**Worn items seen.** Head gear can sit in front of the eyes, so the player should
-see what they look through. It belongs with the hands because the world camera
-cannot draw that close to the eye. It blurs under painkillers for the same reason
-the hands do: it is part of what the drugged player sees. Its strength is moddable
-content, not a player setting like the HUD's options: the frame belongs to the
-item worn, so a mod that changes the item changes how it looks from inside.
-Worn items belong on the body figure so the player's shadow and outside views
-show what they wear. Other slots follow the helmet when an item or view needs
-them. See `src/core/schema.ts`, `WearableSchema`; `src/render/hands.ts`,
-`HeldItems`; `src/render/playerFigure.ts`, `PlayerMeshes`.
+**Worn items seen.** Equipped gear shall be visibly equipped. Every equipped
+slot shows on the player figure, and dead humans wear real items through the same
+presentation path. The player gears up: gear that changes protection, carry or role
+must be readable at a glance on self, in shadows and outside views, and on bodies,
+where it tells the player what loot they carry. Colour alone cannot stand in for
+an equipped item. See `src/core/schema.ts`, `WearSlot` and `WearableSchema`;
+`src/render/playerFigure.ts`, `PlayerMeshes`.
+
+Head gear can sit in front of the eyes, so the player should see what they look
+through. It belongs with the hands because the world camera cannot draw that close
+to the eye. It blurs under painkillers for the same reason the hands do: it is part
+of what the drugged player sees. Its strength is moddable content, not a player
+setting like the HUD's options: the frame belongs to the item worn, so a mod that
+changes the item changes how it looks from inside. See `src/render/hands.ts`,
+`HeldItems`.
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
