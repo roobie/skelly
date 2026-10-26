@@ -918,9 +918,9 @@ Tests prove that the final composition can be finished, because a locally valid
 template cannot protect the route from later stamping or furniture. Play doesn't
 wait on a runtime proof, because proving the route at world build stalled the main
 thread before Go. The accepted risk is that a seed no test covers can be
-unfinishable; a playtest report of such a seed becomes a fixed-seed test. Default
-tests certify fixed seeds, and a seed sweep runs behind the `DEADVOX_SWEEPS` flag as
-its own CI step. The certificate reads the same planned, stamped chunks and
+unfinishable; a playtest report of such a seed becomes a fixed-seed test. The
+fixed-seed certificates and the seed sweep run only in the manual slow-test workflow,
+so a PR is not gated on them; `AGENTS.md`, "Tests" says why. The certificate reads the same planned, stamped chunks and
 furniture occupancy as play, without materializing the whole city. Authored entrances and perimeter crossings belong to that
 proof: finding a detour around a fence does not certify a blocked breach. Furniture anchored across a chunk boundary still
 belongs to an envelope that crosses that boundary. Clearance caching is private

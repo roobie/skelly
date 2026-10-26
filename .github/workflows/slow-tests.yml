@@ -1,0 +1,50 @@
+name: slow-tests
+
+# Whole-world, scenario-walk and long-sweep tests run only on demand; `AGENTS.md`, "Tests" says why.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deadvox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: packages/deadvox
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache go-jsonnet
+        uses: actions/cache@v4
+        with:
+          path: tools/jsonnet/bin
+          key: jsonnet-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tools/jsonnet/runtime.json') }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
+        timeout-minutes: 3
+      - name: Install pinned go-jsonnet
+        run: npm --prefix ../.. run jsonnet:setup
+      - run: npm run test:sweeps
+
+  gungen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: packages/gun-authoring-tool
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../.. --no-audit --no-fund --prefer-offline
+        timeout-minutes: 3
+      - run: npm run test:sweeps

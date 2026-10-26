@@ -785,7 +785,7 @@ describe('glb export: deadvox model entry', () => {
     expectSightLineClear(exported(design('archetype-ak')), 'design archetype-ak.json');
   });
 
-  // This exhaustive corpus check exceeds the default timeout under load. The authored AK is the default sentinel because its sight line passes closest to another solid.
+  // This exhaustive corpus check is too slow for the default run. The authored AK is the default sentinel because its sight line passes closest to another solid.
   sweepGroup('published sight-line clearance corpus', () => {
     it('keeps every exported sight line clear of other solids', () => {
       // Sightless designs have no line to check; the sight-metadata corpus test ties metadata to sight parts.

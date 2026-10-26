@@ -9,7 +9,7 @@ import { type CompiledTemplate, compileAssembly, type PlacedPiece, placedPoint }
 import { startupContent } from './baseRegistry.ts';
 import { buildingLootEvidence, buildingVariants, cityBuildingDraws } from './fixtures/cityBuildings.ts';
 import { fixturePool, fixtureScenario, fixtureScenarioSources, fixtureService } from './fixtures/scenario.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -438,9 +438,8 @@ describe('content-owned city building types', () => {
     );
   });
 
-  it(
-    'every authored city building has valid assemblies and reachable eligible loot',
-    () => {
+  sweepGroup('in every bundled scenario city', () => {
+    it('every authored city building has valid assemblies and reachable eligible loot', () => {
       expect(BUNDLED_CONTENT.issues).toEqual([]);
       const { registry } = BUNDLED_CONTENT;
       const scenarios = [...registry.scenarios.values()];
@@ -476,7 +475,7 @@ describe('content-owned city building types', () => {
           .flatMap(({ id }) => buildingVariants(registry, registry.mapAssemblies.get(id)!)),
       );
       expect(buildings.length).toBeGreaterThan(0);
-      for (const template of buildings) {
+      const expectReachableRolledLoot = (template: CompiledTemplate): void => {
         const evidence = buildingLootEvidence(registry, template);
         expect(evidence.standing).toBeGreaterThan(0);
         // Fixed stock is an incidental bonus that validation checks. The building promises the rolled loot on the
@@ -489,11 +488,12 @@ describe('content-owned city building types', () => {
           }
           expect(source.items.length, source.label).toBeGreaterThan(0);
         }
+      };
+      for (const template of buildings) {
+        expectReachableRolledLoot(template);
       }
-    },
-    // One city plan per bundled scenario costs less than a site's build, so a site's budget each is generous.
-    BUNDLED_CONTENT.registry.scenarios.size * GAUNTLET_SITE_MS,
-  );
+    });
+  });
 });
 
 const insideKitPlane = (compiled: CompiledTemplate, x: number, z: number, y: number): boolean =>

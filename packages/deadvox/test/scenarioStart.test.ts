@@ -12,7 +12,6 @@ import { type BlockBox, stampChunk } from '../src/core/structure.ts';
 import { templateReachableStandingPositions } from '../src/core/templateSpatial.ts';
 import { gameHours } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const registry = baseRegistry();
 const profile = [...registry.scenarios.values()].find((row) => row.composition)!;
@@ -90,21 +89,17 @@ it('keeps every start-storey container reachable from the roof through supported
   }
 });
 
-it(
-  'refuses start reservations that overlap authored lots or leave the street grid',
-  () => {
-    const own = structuredClone(profile);
-    const cell = plan.candidates[0]!;
-    own.composition!.start.cell = [...cell];
-    expect(scenarioStartIssues(registry, own)).toEqual([]);
-    expect(() => buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own })).toThrow(
-      'overlaps reserved building',
-    );
-    own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
-    expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
-  },
-  GAUNTLET_SITE_MS,
-);
+it('refuses start reservations that overlap authored lots or leave the street grid', () => {
+  const own = structuredClone(profile);
+  const cell = plan.candidates[0]!;
+  own.composition!.start.cell = [...cell];
+  expect(scenarioStartIssues(registry, own)).toEqual([]);
+  expect(() => buildCityPlan({ seed: 9, registry, floor: plan.floor, grid, scenario: own })).toThrow(
+    'overlaps reserved building',
+  );
+  own.composition!.start.cell = [grid.blocksX, grid.blocksZ];
+  expect(scenarioStartIssues(registry, own).some(([path]) => path === '.composition.start.cell')).toBe(true);
+});
 
 it('refuses a start overtopped by a fixed or pooled authored building', () => {
   for (const pooled of [false, true]) {

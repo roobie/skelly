@@ -5,6 +5,9 @@ import { pagesAnalyticsPlugin } from '../../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../../testPool.ts';
 
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
+// The manual sweep run has no per-test timer: its work is bounded, so only the workflow's job timeout caps a hang.
+// biome-ignore lint/style/noProcessEnv: the sweep gate is env-driven; see test/sweeps.ts.
+const sweepTimeout = process.env.GUNGEN_SWEEPS === '1' ? { testTimeout: 0 } : {};
 
 export default defineConfig({
   base: './',
@@ -15,5 +18,6 @@ export default defineConfig({
   test: {
     ...TEST_POOL,
     include: ['test/**/*.test.ts'],
+    ...sweepTimeout,
   },
 });

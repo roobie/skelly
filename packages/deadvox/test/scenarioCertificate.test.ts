@@ -31,7 +31,6 @@ import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
-import { GAUNTLET_SITE_MS } from './siteTimeouts.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
@@ -40,12 +39,6 @@ if (!profile) {
 }
 const COMPOSED_LADDER = /composed ladder/;
 const UNDERGROUND_OVERLAP = /overlaps the city/;
-// The heavy cases are CPU-bound, so their timeouts scale with the simulated work and leave headroom for a shared
-// CPU, instead of vitest's flat default (#792).
-const WALK_MS_PER_STOREY = 4800;
-// The two walks are bounded by frames and by the descent chain, never by time: their work is finite and deterministic,
-// so a wall-clock budget can only fail them under host load. Vitest reads 0 as no timer; the job timeout still caps a hang.
-const NO_TIMER = 0;
 // What a case needs to link the storeys before a rule that reads them (objective, fixed resources, the portal).
 const ROUTED_PHASES: CertificatePhase[] = ['floors', 'ladders', 'stairs'];
 const scale = makeScale(0.5);
@@ -169,23 +162,19 @@ describe('final composed body-route certificate', () => {
     expect(result.issues.map(([path]) => path)).toEqual(['.city.service.routes[0]']);
   });
 
-  it(
-    'rejects an obstruction stamped after the service portal was locally certified',
-    () => {
-      const original = CitySite.prototype.stamp;
-      const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
-        original.call(this, chunk);
-        obstruct(chunk, this.plan.portal!.lower);
-      });
-      try {
-        const { issues } = scenarioCertificate(new GauntletSite({ seed: 9, registry, scale, scenario: profile }));
-        expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
-      } finally {
-        stamp.mockRestore();
-      }
-    },
-    GAUNTLET_SITE_MS,
-  );
+  it('rejects an obstruction stamped after the service portal was locally certified', () => {
+    const original = CitySite.prototype.stamp;
+    const stamp = vi.spyOn(CitySite.prototype, 'stamp').mockImplementation(function (this: CitySite, chunk: Chunk) {
+      original.call(this, chunk);
+      obstruct(chunk, this.plan.portal!.lower);
+    });
+    try {
+      const { issues } = scenarioCertificate(new GauntletSite({ seed: 9, registry, scale, scenario: profile }));
+      expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
+    } finally {
+      stamp.mockRestore();
+    }
+  });
 
   it.each(witness.loops)(
     'keeps storey %# an interior loop when a public room doorway is blocked with the bulkheads closed',
@@ -304,37 +293,33 @@ describe('final composed body-route certificate', () => {
     expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
   });
 
-  it(
-    "keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted",
-    () => {
-      const site = siteOf();
-      const space = new ScenarioRouteSpace(site);
-      const entry = site.plan.portal!.lower;
-      const composition = site.plan.composition!;
-      expect(composition.seals.length).toBeGreaterThan(0);
-      for (const seal of composition.seals) {
-        expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
-        for (const door of seal.doors) {
-          space.blocked(...door);
-          const definition = space.entities.defOf(space.entities.at(...door)!);
-          expect(definition.door).toBeDefined();
-          expect(definition.door!.methods).toEqual({});
-        }
-        const [, level] = seal.doors[0]!;
-        const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
-        expect(links.length).toBeGreaterThan(0);
-        for (const link of links) {
-          expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
-        }
-        space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
-        for (const link of links) {
-          expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
-        }
+  it("keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted", () => {
+    const site = siteOf();
+    const space = new ScenarioRouteSpace(site);
+    const entry = site.plan.portal!.lower;
+    const composition = site.plan.composition!;
+    expect(composition.seals.length).toBeGreaterThan(0);
+    for (const seal of composition.seals) {
+      expect(space.path(entry, seal.standing, { steps: true })).toBeDefined();
+      for (const door of seal.doors) {
+        space.blocked(...door);
+        const definition = space.entities.defOf(space.entities.at(...door)!);
+        expect(definition.door).toBeDefined();
+        expect(definition.door!.methods).toEqual({});
       }
-      expect(scenarioCertificate(site).issues).toEqual([]);
-    },
-    NO_TIMER,
-  );
+      const [, level] = seal.doors[0]!;
+      const links = [...composition.descents, ...composition.stairs].filter((link) => link.upper[1] === level);
+      expect(links.length).toBeGreaterThan(0);
+      for (const link of links) {
+        expect(space.path(entry, link.upper, { steps: true })).toBeUndefined();
+      }
+      space.admitLock(space.entities.at(...seal.doors[0]!)!.lock!.id);
+      for (const link of links) {
+        expect(space.path(entry, link.upper, { steps: true })).toBeDefined();
+      }
+    }
+    expect(scenarioCertificate(site).issues).toEqual([]);
+  });
 
   it('rejects a keyed lot resource whose key route has lost its climb', () => {
     const index = base.composition!.resources.findIndex((resource) => resource.key?.climbs.length);
@@ -470,45 +455,40 @@ describe('final composed body-route certificate', () => {
     expect(space.clear([CHUNK + 1, base.floor + 1, 6])).toBe(false);
   });
 
-  it(
-    'rejects a sewer tunnel walled off between its mouth and the lab port',
-    () => {
-      const [sewer] = base.underground;
-      if (!sewer) {
-        throw new Error('Production city has no underground witness');
-      }
-      const { placement, definition } = sewer;
-      const mouth = placedPoint(placement, definition.mouths[0]!.lower);
-      const outside = placedPoint(placement, definition.ports[0]!.outside);
-      const z = Math.floor((mouth[2] + outside[2]) / 2);
-      const [width] = footprint(placement);
-      const [west, bottom] = placement.origin;
-      const site = siteOf();
-      const original = site.stamp.bind(site);
-      const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
-        original(chunk);
-        for (let x = west; x < west + width; x++) {
-          for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
-            obstruct(chunk, [x, y, z]);
-          }
+  it('rejects a sewer tunnel walled off between its mouth and the lab port', () => {
+    const [sewer] = base.underground;
+    if (!sewer) {
+      throw new Error('Production city has no underground witness');
+    }
+    const { placement, definition } = sewer;
+    const mouth = placedPoint(placement, definition.mouths[0]!.lower);
+    const outside = placedPoint(placement, definition.ports[0]!.outside);
+    const z = Math.floor((mouth[2] + outside[2]) / 2);
+    const [width] = footprint(placement);
+    const [west, bottom] = placement.origin;
+    const site = siteOf();
+    const original = site.stamp.bind(site);
+    const stamp = vi.spyOn(site, 'stamp').mockImplementation((chunk) => {
+      original(chunk);
+      for (let x = west; x < west + width; x++) {
+        for (let y = bottom + 1; y < bottom + placement.template.groundLayer!; y++) {
+          obstruct(chunk, [x, y, z]);
         }
-      });
-      try {
-        const phases = ['start' as CertificatePhase].concat(ROUTED_PHASES, 'seals', 'underground');
-        expectQuietWhenHealthy(phases, (path) => path.startsWith('.city.underground'));
-        const result = scenarioCertificate(site, phases);
-        expect(
-          result.issues.some(
-            ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
-          ),
-        ).toBe(true);
-      } finally {
-        stamp.mockRestore();
       }
-      // Two routed certificates: the healthy control and the walled site.
-    },
-    2 * WALK_MS_PER_STOREY,
-  );
+    });
+    try {
+      const phases = ['start' as CertificatePhase].concat(ROUTED_PHASES, 'seals', 'underground');
+      expectQuietWhenHealthy(phases, (path) => path.startsWith('.city.underground'));
+      const result = scenarioCertificate(site, phases);
+      expect(
+        result.issues.some(
+          ([path, message]) => path === '.city.underground[0].ports[0]' && message.includes('from the mouth'),
+        ),
+      ).toBe(true);
+    } finally {
+      stamp.mockRestore();
+    }
+  });
 
   it('admits the sewer port only where its threshold crosses the service shell', () => {
     expect(undergroundPortIssues(registry, profile, compiled)).toEqual([]);
@@ -602,56 +582,48 @@ const stampProbeCells = [
   ).values(),
 ];
 
-it(
-  'resolves production service ownership, furnished loot and terrain stamps independently of chunk request order',
-  () => {
-    const first = siteOf();
-    const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
-    expect(stampProbeCells.length).toBeGreaterThan(1);
-    const service = first.plan.service!.template;
-    expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
-    const selected = (site: CitySite) => ({
-      origin: site.plan.service!.origin,
-      turn: site.plan.service!.turn,
-      provenance: site.plan.service!.template.provenance,
-    });
-    const before = structuredClone(selected(first));
-    const request = (site: CitySite, order: readonly Vec3[]) => {
-      const terrain = {
-        seed: site.seed,
-        shape: terrainShapeOf(registry),
-        scale,
-        surface: site.surface,
-        blocks: sitePalette(registry).terrain,
-      };
-      return new Map(
-        order.map((cell) => {
-          const chunk = generateChunk(terrain, cell);
-          site.stamp(chunk);
-          return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
-        }),
-      );
+it('resolves production service ownership, furnished loot and terrain stamps independently of chunk request order', () => {
+  const first = siteOf();
+  const second = siteOf(buildCityPlan({ seed: 9, registry, floor: 64, grid, scenario: profile }));
+  expect(stampProbeCells.length).toBeGreaterThan(1);
+  const service = first.plan.service!.template;
+  expect(service.provenance!.some((owner) => owner && owner.slotPath.split('/').length > 2)).toBe(true);
+  const selected = (site: CitySite) => ({
+    origin: site.plan.service!.origin,
+    turn: site.plan.service!.turn,
+    provenance: site.plan.service!.template.provenance,
+  });
+  const before = structuredClone(selected(first));
+  const request = (site: CitySite, order: readonly Vec3[]) => {
+    const terrain = {
+      seed: site.seed,
+      shape: terrainShapeOf(registry),
+      scale,
+      surface: site.surface,
+      blocks: sitePalette(registry).terrain,
     };
-    const forward = request(first, stampProbeCells);
-    const backward = request(second, [...stampProbeCells].reverse());
-    // Native deep equality avoids matcher traversal overhead on dense chunk and provenance arrays.
-    for (const cell of stampProbeCells) {
-      const key = cell.join(',');
-      deepStrictEqual(backward.get(key), forward.get(key), `chunk ${key}`);
-    }
-    deepStrictEqual(selected(first), before, 'forward selection remains unchanged');
-    deepStrictEqual(selected(second), before, 'backward selection matches the original');
-  },
-  stampProbeCells.length * 2 * 1000,
-);
+    return new Map(
+      order.map((cell) => {
+        const chunk = generateChunk(terrain, cell);
+        site.stamp(chunk);
+        return [cell.join(','), { blocks: chunk.toArray(), furniture: site.furnitureIn(cell[0], cell[2]) }] as const;
+      }),
+    );
+  };
+  const forward = request(first, stampProbeCells);
+  const backward = request(second, [...stampProbeCells].reverse());
+  // Native deep equality avoids matcher traversal overhead on dense chunk and provenance arrays.
+  for (const cell of stampProbeCells) {
+    const key = cell.join(',');
+    deepStrictEqual(backward.get(key), forward.get(key), `chunk ${key}`);
+  }
+  deepStrictEqual(selected(first), before, 'forward selection remains unchanged');
+  deepStrictEqual(selected(second), before, 'backward selection matches the original');
+});
 
-it(
-  'walks closed lids, opens descents, returns alive and activates the objective from the goal-face save',
-  () => {
-    traverseScenario(siteOf(), profile, scale);
-  },
-  NO_TIMER,
-);
+it('walks closed lids, opens descents, returns alive and activates the objective from the goal-face save', () => {
+  traverseScenario(siteOf(), profile, scale);
+});
 
 describe('lab threat by depth', () => {
   // Follow the scenario's authored storeys, including rebuilt levels outside the grid kit.
