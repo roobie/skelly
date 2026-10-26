@@ -86,7 +86,7 @@ local pieces =
       family: 'compound',
       massKg: 1.4,
       params: params({ pieces: pieces }),
-      finish: { shell: 'paint-charcoal', trim: 'rubber-black', visor: 'glass-clear', curtain: 'polymer-black', strap: 'polymer-black', metal: 'steel-grey' },
+      finish: { shell: 'paint-police-blue', trim: 'rubber-black', visor: 'glass-clear', curtain: 'polymer-black', strap: 'polymer-black', metal: 'steel-grey' },
       ports: [],
     }],
     connections: [],
