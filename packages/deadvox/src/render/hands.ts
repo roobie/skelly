@@ -1242,6 +1242,7 @@ export class HeldItems {
     this.syncHand('left', hands.left);
     this.syncFistHand('right');
     this.syncFistHand('left');
+    this.presentation.syncWorn(this.inventory);
   }
 
   private clearVisor(): void {

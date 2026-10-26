@@ -130,7 +130,18 @@ export const buildArmRig = (
   const gripFromWrist = anchorOf(model, rig.grip).sub(pivots.hand).applyQuaternion(MODEL_TO_HAND[side]);
   gripFromWrist.z += halfThickness;
   handModel.position.copy(gripFromWrist).negate();
-  const built: ArmRig = {
+  const modelOrigin = new Object3D();
+  modelOrigin.position.copy(pivots.upper).negate();
+  shoulder.add(modelOrigin);
+  const built = {
+    attachmentParents: new Map<string | undefined, Object3D>([
+      [undefined, modelOrigin],
+      [rig.upper.pivot, shoulder],
+      [rig.fore.pivot, elbow],
+      [rig.hand.pivot, handModel],
+      [rig.fingers.pivot, knuckles],
+      [rig.thumb.pivot, thumb],
+    ]),
     side,
     shoulder,
     elbow,

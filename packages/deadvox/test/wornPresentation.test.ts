@@ -1,9 +1,21 @@
-import { Group, type Object3D, Quaternion, Vector3 } from 'three';
-import { describe, expect, it } from 'vitest';
+import {
+  BoxGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  type Object3D,
+  PerspectiveCamera,
+  Quaternion,
+  Vector3,
+} from 'three';
+import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry, type FigureDef, type ItemDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { HeldItems } from '../src/render/hands.ts';
+import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { FIGURE_PIVOT, type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -79,6 +91,11 @@ const library = () => {
       }
       const model = new Group();
       model.name = 'fixture-item-model';
+      if (id === segment.model) {
+        const surface = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
+        surface.name = 'fixture-garment-surface';
+        model.add(surface);
+      }
       return model;
     },
   };
@@ -247,6 +264,121 @@ describe('shared worn presentation', () => {
         const pivot = attachment.children[0]!.localToWorld(new Vector3(...segment.pivot));
         expect(pivot.distanceTo(frame.localToWorld(new Vector3(...segment.at)))).toBeLessThan(1e-8);
       }
+    }
+  });
+
+  it('keeps sleeves and gloves visible on replacement holding arms and fists in both views, then strips them', () => {
+    const specs = (['left', 'right'] as const).flatMap((side) =>
+      (['upper', 'fore', 'hand'] as const).map((joint) => ({
+        name: `fixture_${side}_${joint}`,
+        side,
+        joint,
+        slot: joint === 'hand' ? ('hands' as const) : ('torso' as const),
+      })),
+    );
+    const armFigure: FigureDef = {
+      ...fixtureFigure,
+      attachmentFrames: {
+        ...fixtureFigure.attachmentFrames,
+        ...Object.fromEntries(
+          specs.map(({ name, side, joint }) => [
+            name,
+            {
+              part: side === 'left' ? 'leftArm' : 'rightArm',
+              ...(joint === 'upper' ? {} : { pivot: figure.armRig[joint].pivot }),
+              at: [0.02, -0.03, 0.01],
+              turn: [5, 10, 15],
+              insideView: false,
+            },
+          ]),
+        ),
+      },
+    };
+    const garments = (['torso', 'hands'] as const).map(
+      (slot): ItemDef => ({
+        ...fixtureItem,
+        id: `fixture_${slot}`,
+        wearable: { slot, encumbrance: 0 },
+        figureModels: specs
+          .filter((spec) => spec.slot === slot)
+          .map(({ name, joint }) => ({ ...segment, frame: name, covers: [figure.armRig[joint].part] })),
+      }),
+    );
+    const armRegistry = {
+      ...registry,
+      items: new Map([
+        ...registry.items,
+        ...garments.map((def) => [def.id, def] as const),
+        [carriedItem.id, { ...carriedItem, twoHanded: true }],
+      ]),
+    };
+    const inventory = new Inventory(armRegistry);
+    const worn = garments.map((def) => inventory.create(def.id));
+    for (const item of worn) {
+      expect(inventory.add(item, { kind: 'worn' })).toBe(true);
+    }
+    const held = inventory.create(carriedItem.id);
+    expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+    const { models } = library();
+    const world = new PlayerMeshes(0.5, armFigure, armRegistry.models, models);
+    const view = new HeldItems(inventory, models, armFigure);
+    const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
+    const camera = new PerspectiveCamera();
+    const update = () => {
+      view.update(camera, readyMeleePose(false, armFigure.holds, 'right'), 0);
+      world.sync({ ...pose(), heldItems: inventory, wornItems: inventory });
+    };
+    try {
+      update();
+      const firstOwner = build.mock.contexts[0] as HeldPresentation;
+      const worldOwner = build.mock.contexts[1] as HeldPresentation;
+      expect(firstOwner).toBeDefined();
+      expect(worldOwner).toBeDefined();
+      const expectClothed = (owner: HeldPresentation): void => {
+        for (const { name, side, joint, slot } of specs) {
+          const arm = owner.arms.get(side)!;
+          expect(arm).toBeDefined();
+          const visible = new Set<Object3D>();
+          arm.traverseVisible((node) => visible.add(node));
+          const frame = arm.getObjectByName(`wear-frame-${name}`);
+          const surface = frame?.getObjectByName(`worn-${slot}`)?.getObjectByName('fixture-garment-surface');
+          expect(surface).toBeDefined();
+          expect(visible.has(surface!), `${side}/${joint} garment is drawn`).toBe(true);
+          const covered: Object3D[] = [];
+          arm.traverse((node) => {
+            if (node.userData.part === armFigure.armRig[joint].part) {
+              covered.push(node);
+            }
+          });
+          expect(covered.length).toBeGreaterThan(0);
+          expect(covered.every((node) => !node.visible)).toBe(true);
+        }
+      };
+      expectClothed(firstOwner);
+      expectClothed(worldOwner);
+      expect(inventory.move(held, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      update();
+      expectClothed(firstOwner);
+      for (const item of worn) {
+        expect(inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      }
+      expect(inventory.move(held, { kind: 'hand', side: 'right' }).ok).toBe(true);
+      update();
+      for (const owner of [firstOwner, worldOwner]) {
+        expect(owner.arms.size).toBeGreaterThan(0);
+        for (const arm of owner.arms.values()) {
+          const visible: Object3D[] = [];
+          arm.traverseVisible((node) => visible.push(node));
+          expect(visible.some((node) => node.name === 'fixture-garment-surface')).toBe(false);
+          for (const { part } of [armFigure.armRig.upper, armFigure.armRig.fore, armFigure.armRig.hand]) {
+            expect(visible.some((node) => node.userData.part === part)).toBe(true);
+          }
+        }
+      }
+    } finally {
+      build.mockRestore();
+      view.dispose();
+      world.dispose();
     }
   });
 

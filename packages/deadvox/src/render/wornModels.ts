@@ -1,0 +1,107 @@
+import { Group, type Object3D } from 'three';
+import type { FigureDef, ItemDef } from '../core/content.ts';
+import type { Vec3 } from '../core/coords.ts';
+import { defOf, type Item } from '../core/items.ts';
+import type { WearSlot } from '../core/schema.ts';
+import type { ModelLibrary } from './models.ts';
+import type { WornPresentation } from './playerFigure.ts';
+import { castsAndReceives } from './shadowFlags.ts';
+
+type Entry = NonNullable<ItemDef['figureModels']>[number];
+interface Attachment {
+  group: Group;
+  covered: Object3D[];
+}
+
+export class WornModels {
+  private readonly figure: FigureDef;
+  private readonly models: ModelLibrary;
+  private readonly frames: ReadonlyMap<string, Group>;
+  private readonly baseParts: ReadonlyMap<string, readonly Object3D[]>;
+  private readonly attachments = new Map<
+    WearSlot,
+    { item: Item; entries: readonly Entry[]; modelsVersion: number; groups: Attachment[] }
+  >();
+
+  constructor(
+    figure: FigureDef,
+    models: ModelLibrary,
+    frames: ReadonlyMap<string, Group>,
+    baseParts: ReadonlyMap<string, readonly Object3D[]>,
+  ) {
+    this.figure = figure;
+    this.models = models;
+    this.frames = frames;
+    this.baseParts = baseParts;
+  }
+
+  sync(source?: WornPresentation): void {
+    const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
+    for (const slot of slots) {
+      const item = source?.worn[slot];
+      const entries = item && defOf(source!.registry, item.type).figureModels;
+      const available = entries?.filter((entry) => this.frames.has(entry.frame)) ?? [];
+      const previous = this.attachments.get(slot);
+      if (
+        previous &&
+        previous.item === item &&
+        previous.entries === entries &&
+        previous.modelsVersion === this.models.version &&
+        previous.groups.length === available.length
+      ) {
+        continue;
+      }
+      for (const { group } of previous?.groups ?? []) {
+        group.removeFromParent();
+      }
+      this.attachments.delete(slot);
+      if (!(item && entries)) {
+        continue;
+      }
+      const groups = available.flatMap((entry) => this.attach(slot, entry) ?? []);
+      this.attachments.set(slot, { item, entries, modelsVersion: this.models.version, groups });
+    }
+    this.syncCoverage();
+  }
+
+  private syncCoverage(): void {
+    for (const nodes of this.baseParts.values()) {
+      for (const node of nodes) {
+        node.visible = true;
+      }
+    }
+    for (const { groups } of this.attachments.values()) {
+      for (const { covered } of groups) {
+        for (const node of covered) {
+          node.visible = false;
+        }
+      }
+    }
+  }
+
+  clear(): void {
+    this.sync();
+  }
+
+  private attach(slot: WearSlot, entry: Entry): Attachment | undefined {
+    const frame = this.frames.get(entry.frame);
+    const model = frame && this.models.part(entry.model);
+    if (!(frame && model)) {
+      return;
+    }
+    // Keep the authored item pivot on the frame even when the model is turned.
+    model.position.set(...entry.pivot).negate();
+    const attachment = new Group();
+    attachment.name = `worn-${slot}`;
+    attachment.position.set(...entry.at);
+    attachment.rotation.set(...(entry.turn.map((degrees) => (degrees * Math.PI) / 180) as Vec3));
+    attachment.add(model);
+    attachment.traverse((object) => {
+      object.layers.mask = frame.layers.mask;
+    });
+    frame.add(castsAndReceives(attachment));
+    const { part } = this.figure.attachmentFrames[entry.frame]!;
+    const covered = (entry.covers ?? []).flatMap((name) => this.baseParts.get(`${part}/${name}`) ?? []);
+    return { group: attachment, covered };
+  }
+}

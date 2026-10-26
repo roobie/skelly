@@ -3,11 +3,11 @@
 import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
-import type { FigureDef, ItemDef, ModelDef, Registry } from '../core/content.ts';
+import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
-import { defOf, type Item } from '../core/items.ts';
+import type { Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
@@ -24,6 +24,7 @@ import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { HeldPresentation, type HeldPresentationFrame } from './heldPresentation.ts';
 import type { ModelLibrary } from './models.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
+import { WornModels } from './wornModels.ts';
 
 /** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
 export const PLAYER_BODY_REAR_OFFSET = 0.19;
@@ -65,11 +66,6 @@ export const PLAYER_REGION_BOXES: Readonly<Record<BodyRegion, FigureBox>> = {
   leftLeg: legRegion(FIGURE_BOXES.leftLeg),
   rightLeg: legRegion(FIGURE_BOXES.rightLeg),
 };
-
-interface WornAttachment {
-  group: Group;
-  covered: Object3D[];
-}
 
 export interface WornPresentation {
   registry: Registry;
@@ -312,15 +308,7 @@ export class PlayerMeshes {
   private readonly pivotedParts: Readonly<Record<PivotedKind, readonly PivotedParts[]>>;
   private readonly attachmentFrames = new Map<string, Group>();
   private readonly baseParts = new Map<string, Object3D[]>();
-  private readonly attachments = new Map<
-    WearSlot,
-    {
-      item: Item;
-      entries: ItemDef['figureModels'];
-      modelsVersion: number;
-      groups: WornAttachment[];
-    }
-  >();
+  private readonly worn: WornModels;
   private readonly models: ModelLibrary;
   private layer = PLAYER_FIGURE_LAYER;
   private readonly dummy = new Object3D();
@@ -345,6 +333,7 @@ export class PlayerMeshes {
     models: ModelLibrary,
   ) {
     this.figure = figure;
+    this.worn = new WornModels(figure, models, this.attachmentFrames, this.baseParts);
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
     this.layout = playerFigureLayout(figure, modelDefs);
@@ -404,9 +393,10 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     this.syncModels();
-    this.syncWorn(pose.wornItems ?? pose.inventory);
+    this.worn.sync(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
     this.syncHeld(pose);
+    this.presentation?.syncWorn(pose.wornItems ?? pose.inventory);
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
@@ -581,69 +571,6 @@ export class PlayerMeshes {
     for (const key of STANCE_POSE_KEYS) {
       this.shownPose[key] = this.blendFrom[key] + (target[key] - this.blendFrom[key]) * this.blendProgress;
     }
-  }
-
-  private syncWorn(source?: WornPresentation): void {
-    const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
-    for (const slot of slots) {
-      const item = source?.worn[slot];
-      const entries = item && defOf(source!.registry, item.type).figureModels;
-      const previous = this.attachments.get(slot);
-      if (
-        previous &&
-        previous.item === item &&
-        previous.entries === entries &&
-        previous.modelsVersion === this.models.version &&
-        previous.groups.length === entries?.length
-      ) {
-        continue;
-      }
-      for (const { group } of previous?.groups ?? []) {
-        group.removeFromParent();
-      }
-      this.attachments.delete(slot);
-      if (!(item && entries)) {
-        continue;
-      }
-      const groups = entries.flatMap((entry) => this.attachWorn(slot, entry) ?? []);
-      this.attachments.set(slot, { item, entries, modelsVersion: this.models.version, groups });
-    }
-    this.syncBaseCoverage();
-  }
-
-  private syncBaseCoverage(): void {
-    for (const nodes of this.baseParts.values()) {
-      for (const node of nodes) {
-        node.visible = true;
-      }
-    }
-    for (const { groups } of this.attachments.values()) {
-      for (const { covered } of groups) {
-        for (const node of covered) {
-          node.visible = false;
-        }
-      }
-    }
-  }
-
-  private attachWorn(slot: WearSlot, entry: NonNullable<ItemDef['figureModels']>[number]): WornAttachment | undefined {
-    const frame = this.attachmentFrames.get(entry.frame);
-    const model = frame && this.models.part(entry.model);
-    if (!(frame && model)) {
-      return;
-    }
-    // Keep the authored item pivot on the frame even when the model is turned.
-    model.position.set(...entry.pivot).negate();
-    const attachment = new Group();
-    attachment.name = `worn-${slot}`;
-    attachment.position.set(...entry.at);
-    attachment.rotation.set(...(entry.turn.map((degrees) => degrees * RADIANS) as Vec3));
-    attachment.add(model);
-    attachment.traverse((object) => object.layers.set(this.layer));
-    frame.add(castsAndReceives(attachment));
-    const { part } = this.figure.attachmentFrames[entry.frame]!;
-    const covered = (entry.covers ?? []).flatMap((name) => this.baseParts.get(`${part}/${name}`) ?? []);
-    return { group: attachment, covered };
   }
 
   /** A limb's walking swing about its joint, in radians: the legs swing opposite ways, each arm against its leg. */
