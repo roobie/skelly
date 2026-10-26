@@ -71,7 +71,13 @@ export const TEMPORAL_FIELDS = [
   { path: 'skills[].inventory.handlingGroundSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills[].inventory.handlingWearSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
-    path: 'inventory[].furnitureMove.carryStaminaPerSimSecond',
+    path: 'inventory[].furnitureMove.fatigue.carry.basePerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  {
+    path: 'inventory[].furnitureMove.fatigue.carry.perKgPerSimSecond',
     clock: 'Sim',
     unit: 'PerSecond',
     dimension: 'rate',

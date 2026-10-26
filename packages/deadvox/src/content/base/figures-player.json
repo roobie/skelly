@@ -57,6 +57,15 @@
           "pivot": "shoulder"
         }
       },
+      "attachmentFrames": {
+        "head": {
+          "at": [0, 0.080399999999999999, 0],
+          "insideView": true,
+          "part": "body",
+          "pivot": "head",
+          "turn": [0, 180, 0]
+        }
+      },
       "body": {
         "head": {
           "part": "head",

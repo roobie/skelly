@@ -33,12 +33,22 @@
           "offsetMetres": [0, -0.5, -0.90000000000000002],
           "sizeMetres": 0.45000000000000001
         },
-        "carryStaminaPerSimSecond": 4,
-        "liftStamina": 15,
+        "fatigue": {
+          "carry": {
+            "basePerSimSecond": 4,
+            "perKgPerSimSecond": 0.050000000000000003
+          },
+          "drag": {
+            "base": 8,
+            "perKg": 0.10000000000000001
+          },
+          "lift": {
+            "base": 15,
+            "perKg": 0.20000000000000001
+          }
+        },
         "maxSizeMetres": 1,
         "slide": {
-          "reachMetres": 1,
-          "stamina": 8,
           "stepSimSeconds": 2
         }
       },

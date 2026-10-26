@@ -8,6 +8,7 @@
       "color": "#7a2f2f",
       "cover": true,
       "id": "rug",
+      "massKg": 2,
       "material": "wood",
       "name": "Rug",
       "shape": [
@@ -27,6 +28,7 @@
       "color": "#5b5f3c",
       "cover": true,
       "id": "bedroll",
+      "massKg": 2,
       "material": "wood",
       "name": "Bedroll",
       "rest": {
@@ -55,6 +57,7 @@
       "color": "#3d5a6c",
       "cover": true,
       "id": "tarp",
+      "massKg": 1.5,
       "material": "wood",
       "name": "Tarp",
       "shape": [
@@ -85,6 +88,7 @@
         ]
       },
       "id": "kitchen_cupboard",
+      "massKg": 8,
       "material": "wood",
       "name": "Kitchen cupboard",
       "size": [2, 2, 1],
@@ -112,6 +116,7 @@
         ]
       },
       "id": "counter",
+      "massKg": 4,
       "material": "plastic",
       "name": "Kitchen counter",
       "size": [2, 2, 1]
@@ -135,6 +140,7 @@
         ]
       },
       "id": "fridge",
+      "massKg": 80,
       "material": "steel",
       "name": "Fridge",
       "power": {
@@ -164,6 +170,7 @@
         ]
       },
       "id": "wardrobe",
+      "massKg": 16,
       "material": "wood",
       "name": "Wardrobe",
       "size": [2, 4, 1],
@@ -187,6 +194,7 @@
         ]
       },
       "id": "desk",
+      "massKg": 24,
       "material": "wood",
       "name": "Desk",
       "shape": [
@@ -248,6 +256,7 @@
       },
       "color": "#786b55",
       "id": "range_table",
+      "massKg": 32,
       "material": "wood",
       "name": "Simple wooden table",
       "shape": [
@@ -282,6 +291,7 @@
       },
       "color": "#e9e3cf",
       "id": "range_target",
+      "massKg": 5,
       "material": "wood",
       "name": "Paper target",
       "shotTarget": true,
@@ -306,6 +316,7 @@
         ]
       },
       "id": "range_rack",
+      "massKg": 16,
       "material": "wood",
       "name": "Gun rack",
       "size": [2, 4, 1]
@@ -325,6 +336,7 @@
         ]
       },
       "id": "shelf",
+      "massKg": 16,
       "material": "wood",
       "name": "Shelf",
       "shape": [
@@ -371,6 +383,7 @@
       },
       "color": "#79694b",
       "id": "fuel_generator",
+      "massKg": 16,
       "material": "steel",
       "name": "Generator",
       "power": {
@@ -387,6 +400,7 @@
       },
       "color": "#343a45",
       "id": "storage_battery",
+      "massKg": 4,
       "material": "steel",
       "name": "Storage battery",
       "power": {
@@ -403,6 +417,7 @@
       },
       "color": "#233d62",
       "id": "solar_panel",
+      "massKg": 16,
       "material": "steel",
       "name": "Solar panel",
       "power": {
@@ -419,6 +434,7 @@
       },
       "color": "#777b80",
       "id": "main_breaker",
+      "massKg": 4,
       "material": "steel",
       "name": "Main breaker",
       "power": {
@@ -435,6 +451,7 @@
       },
       "color": "#dbca99",
       "id": "electric_lamp",
+      "massKg": 6,
       "material": "steel",
       "name": "Electric lamp",
       "power": {
@@ -469,6 +486,7 @@
         ]
       },
       "id": "battery_charger",
+      "massKg": 2,
       "material": "steel",
       "name": "Battery charger",
       "power": {
@@ -538,6 +556,7 @@
       },
       "color": "#98734f",
       "id": "workbench",
+      "massKg": 24,
       "material": "wood",
       "name": "Workbench",
       "shape": [
@@ -596,6 +615,7 @@
       },
       "color": "#4d5a4a",
       "id": "grinding_wheel",
+      "massKg": 16,
       "material": "steel",
       "name": "Grinding wheel",
       "shape": [
@@ -649,6 +669,7 @@
         ]
       },
       "id": "crate",
+      "massKg": 16,
       "material": "wood",
       "name": "Crate",
       "shape": [
@@ -739,6 +760,7 @@
       },
       "color": "#343536",
       "id": "wood_stove",
+      "massKg": 24,
       "material": "steel",
       "name": "Wood stove",
       "shape": [
@@ -787,6 +809,7 @@
       },
       "color": "#6f7f95",
       "id": "bed",
+      "massKg": 16,
       "material": "wood",
       "name": "Bed",
       "rest": {
@@ -860,6 +883,7 @@
       },
       "color": "#8b7355",
       "id": "chair",
+      "massKg": 4,
       "material": "wood",
       "name": "Chair",
       "rest": {
@@ -905,6 +929,7 @@
       },
       "color": "#66776d",
       "id": "sofa",
+      "massKg": 32,
       "material": "wood",
       "name": "Sofa",
       "rest": {
@@ -993,6 +1018,7 @@
         }
       },
       "id": "wood_door",
+      "massKg": 16,
       "material": "wood",
       "name": "Burglary-safe wooden door",
       "size": [2, 4, 1]
@@ -1046,6 +1072,7 @@
         }
       },
       "id": "flimsy_wood_door",
+      "massKg": 16,
       "material": "wood",
       "name": "Flimsy wooden door",
       "size": [2, 4, 1]
@@ -1100,6 +1127,7 @@
         }
       },
       "id": "steel_armoury_door",
+      "massKg": 16,
       "material": "steel",
       "name": "Steel armoury door",
       "size": [2, 4, 1]

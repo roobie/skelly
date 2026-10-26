@@ -19,6 +19,7 @@
         "outfit": "police_uniform"
       },
       "id": "dead_officer_body",
+      "massKg": 16,
       "material": "wood",
       "name": "Dead officer",
       "size": [4, 1, 2],
@@ -39,6 +40,7 @@
         ]
       },
       "id": "police_weapon_cabinet",
+      "massKg": 16,
       "material": "wood",
       "name": "Weapon cabinet",
       "shape": [

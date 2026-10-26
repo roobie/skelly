@@ -259,6 +259,7 @@ describe('the content check for covers', () => {
     name: 'Cover',
     size: [2, 1, 2],
     color: '#445566',
+    massKg: 1,
     solid: false,
     cover: true,
     breach: fixtureBreach(),

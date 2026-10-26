@@ -24,6 +24,7 @@ export class CarriedPiece {
   private readonly size = new Vector3();
   private drawn = '';
   private bobRealSeconds = 0;
+  private floorUid: number | undefined;
 
   /**
    * `modelsVersion` goes up as models load (`src/render/models.ts`, `ModelLibrary`): a piece built before its models
@@ -48,7 +49,7 @@ export class CarriedPiece {
   }
 
   /** Catches up with the carry state and bobs the piece; `dt` is real seconds, `camera` the view's world turn. */
-  update(dt: number, camera: Quaternion, floor?: { pos: Readonly<Vec3>; blockSize: number }): void {
+  update(dt: number, camera: Quaternion, blockSize: number, floorPlacement?: Readonly<Vec3>): void {
     const carried = this.entities.carrying();
     const key = carried ? `${carried.uid}:${this.entities.version}:${this.modelsVersion()}` : '';
     if (key !== this.drawn) {
@@ -61,14 +62,19 @@ export class CarriedPiece {
       }
     }
     if (!carried) {
+      this.floorUid = undefined;
       return;
     }
     if (carried.floorLocked) {
-      if (floor) {
+      if (this.floorUid !== carried.uid) {
+        this.floorUid = carried.uid;
+        this.floorGroup.position.set(0, 0, 0);
+      }
+      if (floorPlacement) {
         this.floorGroup.position.set(
-          (floor.pos[0] - carried.pos[0]) * floor.blockSize,
+          (floorPlacement[0] - carried.pos[0]) * blockSize,
           0,
-          (floor.pos[2] - carried.pos[2]) * floor.blockSize,
+          (floorPlacement[2] - carried.pos[2]) * blockSize,
         );
       }
       return;

@@ -569,11 +569,7 @@ export const createPlayView = (
           ? deflectRise * Math.sin(Math.PI * (1 - deflectTime / deflectDuration))
           : 0;
       const carried = inventory.entities.carrying();
-      carriedPiece.update(
-        dt,
-        camera.quaternion,
-        carried?.floorLocked ? { pos: handling.floorPlacement ?? carried.pos, blockSize: s } : undefined,
-      );
+      carriedPiece.update(dt, camera.quaternion, s, carried?.floorLocked ? handling.floorPlacement : undefined);
       held.update(camera, pose, recoil, { ...handling, lift });
       playerMeshes.syncHeldView(pose, handling);
       flashlight.update({ registry, lit: light, held, camera, inventory, piles });

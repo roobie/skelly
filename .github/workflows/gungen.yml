@@ -39,7 +39,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  check:
+  fast:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -65,10 +65,40 @@ jobs:
       - run: npm --prefix ../tool-ui run typecheck
       - run: npm --prefix ../tool-ui test
       - run: npm run typecheck
-      - run: npm test
       - run: npm run validate
       - run: npm run check:designs
       - run: npx vite build
       - name: Viewer browser tests (managed Chromium)
         timeout-minutes: 2
         run: npm run test:browser
+
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ['1/6', '2/6', '3/6', '4/6', '5/6', '6/6']
+    defaults:
+      run:
+        working-directory: packages/gun-authoring-tool
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefix ../..
+        timeout-minutes: 3
+      - name: Unit suite shard ${{ matrix.shard }}
+        run: timeout 180 npm test -- --shard=${{ matrix.shard }}
+
+  check:
+    needs: [fast, unit]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Require successful Gungen checks
+        run: test '${{ needs.fast.result }}' = success && test '${{ needs.unit.result }}' = success

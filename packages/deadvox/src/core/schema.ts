@@ -345,15 +345,15 @@ const InventoryTuningSchema = strictObject({
   furnitureMove: strictObject({
     /** The largest piece the player can lift, along each side. */
     maxSizeMetres: Positive,
-    /** Stamina spent to lift a piece. */
-    liftStamina: NonNegative,
-    slide: strictObject({
-      reachMetres: Positive,
-      stepSimSeconds: PositiveSimSeconds,
-      stamina: NonNegative,
+    /** Stamina curves for moving furniture: each drains `base + perKg * massKg`. */
+    fatigue: strictObject({
+      lift: strictObject({ base: NonNegative, perKg: NonNegative }),
+      drag: strictObject({ base: NonNegative, perKg: NonNegative }),
+      carry: strictObject({ basePerSimSecond: SimRate, perKgPerSimSecond: SimRate }),
     }),
-    /** Stamina spent per Sim second of carrying; running out drops the piece. */
-    carryStaminaPerSimSecond: SimRate,
+    slide: strictObject({
+      stepSimSeconds: PositiveSimSeconds,
+    }),
     /** How the carried piece shows in first person, in view metres (x right, y up, z back from the eye). */
     carriedView: strictObject({
       offsetMetres: tuple([number(), number(), number()]),
@@ -929,13 +929,6 @@ const WearableSchema = pipe(
         darkening: Fraction,
       }),
     ),
-    figureModel: optional(
-      strictObject({
-        model: Id,
-        at: tuple([number(), number(), number()]),
-        turn: tuple([number(), number(), number()]),
-      }),
-    ),
     /** 0–100: how much it slows and hampers you. */
     encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
     warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
@@ -1478,6 +1471,17 @@ const ItemSchema = strictObject({
   twoHanded: optional(vBoolean()),
   container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
+  figureModels: optional(
+    array(
+      strictObject({
+        model: Id,
+        frame: Id,
+        pivot: tuple([number(), number(), number()]),
+        at: tuple([number(), number(), number()]),
+        turn: tuple([number(), number(), number()]),
+      }),
+    ),
+  ),
   food: optional(FoodSchema),
   serving: optional(strictObject({ food: Id, empty: Id })),
   treatment: optional(TreatmentSchema),
@@ -2194,6 +2198,8 @@ const FurnitureSchema = pipe(
     color: Color,
     /** The furniture material whose damage looks the piece shows (`DESIGN.md`, "Block entities"). */
     material: Id,
+    /** Estimated kilograms for a piece that can be lifted or dragged. */
+    massKg: optional(NonNegative),
     solid: optional(vBoolean()),
     /** A flat piece that may lie on a shut hatch (`DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
     cover: optional(literal(true)),
@@ -3639,6 +3645,16 @@ const FigureSchema = strictObject({
   /** Both arm models' rig; the two arms share it because each is the mirror of the other. */
   armRig: ArmRigSchema,
   holds: HeldPosesSchema,
+  attachmentFrames: record(
+    Id,
+    strictObject({
+      part: picklist(['body', ...FIGURE_LIMBS]),
+      pivot: optional(Id),
+      at: tuple([number(), number(), number()]),
+      turn: tuple([number(), number(), number()]),
+      insideView: vBoolean(),
+    }),
+  ),
   /** Both leg models' rig; the two legs share it because each is the mirror of the other. */
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */

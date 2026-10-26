@@ -15,6 +15,7 @@
         ]
       },
       "id": "hq_weapon_cabinet",
+      "massKg": 60,
       "material": "wood",
       "name": "Weapon cabinet",
       "shape": [
@@ -194,6 +195,7 @@
       },
       "color": "#77664c",
       "id": "hq_meeting_table",
+      "massKg": 72,
       "material": "wood",
       "name": "Meeting table",
       "shape": [
@@ -228,6 +230,7 @@
       },
       "color": "#59634e",
       "id": "hq_generator",
+      "massKg": 72,
       "material": "wood",
       "name": "Generator",
       "shape": [

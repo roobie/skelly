@@ -23,6 +23,7 @@ registry.furniture.set(crate.type, {
   name: 'Fixture crate',
   size: crate.size,
   color: '#808080',
+  massKg: 1,
   breach: fixtureBreach(),
   material: FIXTURE_MATERIAL,
 });

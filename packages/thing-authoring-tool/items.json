@@ -4705,13 +4705,18 @@
           "massKg": 0.080000000000000002,
           "params": {
             "brimDepth": "0.089999999999999997",
+            "brimHeight": "0.014",
+            "brimThickness": "0.01",
             "brimWidth": "0.19",
+            "chamfer": "0.040000000000000001",
+            "depth": "0.24399999999999999",
             "height": "0.080000000000000002",
-            "radius": "0.10000000000000001"
+            "width": "0.20399999999999999"
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.0040000000000000001
     },
     {
       "connections": [],
@@ -4754,10 +4759,65 @@
     },
     {
       "anchors": {
+        "housing_back": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "equipment",
+          "solid": "body"
+        },
+        "housing_bottom": {
+          "fraction": [0.5, 0, 0.5],
+          "part": "equipment",
+          "solid": "body"
+        },
+        "housing_top": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "equipment",
+          "solid": "body"
+        },
         "lens": {
           "fraction": [0.5, 0.5, 0],
           "part": "equipment",
           "solid": "lens"
+        },
+        "strap_back_inner": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "equipment",
+          "solid": "strap-2"
+        },
+        "strap_back_outer": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "equipment",
+          "solid": "strap-2"
+        },
+        "strap_front_inner": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "equipment",
+          "solid": "strap-6"
+        },
+        "strap_front_outer": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "equipment",
+          "solid": "strap-6"
+        },
+        "strap_left_inner": {
+          "fraction": [0, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-4"
+        },
+        "strap_left_outer": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-4"
+        },
+        "strap_right_inner": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-0"
+        },
+        "strap_right_outer": {
+          "fraction": [0, 0.5, 0.5],
+          "part": "equipment",
+          "solid": "strap-0"
         }
       },
       "connections": [],
@@ -4767,7 +4827,7 @@
         "hold": "forward",
         "part": "equipment",
         "roll": 0,
-        "solid": "strap",
+        "solid": "strap-2",
         "turn": [0, -90, 0]
       },
       "id": "headlamp",
@@ -4789,13 +4849,18 @@
             "housingWidth": "0.059999999999999998",
             "lensDepth": "0.0050000000000000001",
             "lensRadius": "0.017000000000000001",
-            "strapRadius": "0.095000000000000001",
-            "strapWall": "0.0030000000000000001",
+            "strapBack": "0.105",
+            "strapBackChamfer": "0.002",
+            "strapFront": "0.10299999999999999",
+            "strapFrontChamfer": "0.025000000000000001",
+            "strapHalfWidth": "0.092999999999999999",
+            "strapWall": "0.0040000000000000001",
             "strapWidth": "0.021999999999999999"
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [],
@@ -6077,6 +6142,16 @@
     },
     {
       "anchors": {
+        "eye_left": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "head",
+          "solid": "left-eye"
+        },
+        "eye_right": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "head",
+          "solid": "right-eye"
+        },
         "head": {
           "fraction": [0.5, 1, 0.5],
           "part": "torso",
@@ -6756,6 +6831,108 @@
           "ports": []
         }
       ]
+    },
+    {
+      "anchors": {
+        "eye_left": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "goggles",
+          "solid": "tube_left"
+        },
+        "eye_right": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "goggles",
+          "solid": "tube_right"
+        },
+        "lens_left": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "goggles",
+          "solid": "lens_left"
+        },
+        "lens_left_edge": {
+          "fraction": [1, 0.5, 1],
+          "part": "goggles",
+          "solid": "lens_left"
+        },
+        "lens_right": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "goggles",
+          "solid": "lens_right"
+        },
+        "lens_right_edge": {
+          "fraction": [1, 0.5, 1],
+          "part": "goggles",
+          "solid": "lens_right"
+        },
+        "strap_back_inner": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "goggles",
+          "solid": "strap_6"
+        },
+        "strap_back_outer": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "goggles",
+          "solid": "strap_6"
+        },
+        "strap_front_inner": {
+          "fraction": [0.5, 0.5, 0],
+          "part": "goggles",
+          "solid": "strap_2"
+        },
+        "strap_front_outer": {
+          "fraction": [0.5, 0.5, 1],
+          "part": "goggles",
+          "solid": "strap_2"
+        },
+        "strap_left_inner": {
+          "fraction": [0, 0.5, 0.5],
+          "part": "goggles",
+          "solid": "strap_4"
+        },
+        "strap_left_outer": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "goggles",
+          "solid": "strap_4"
+        },
+        "strap_right_inner": {
+          "fraction": [1, 0.5, 0.5],
+          "part": "goggles",
+          "solid": "strap_0"
+        },
+        "strap_right_outer": {
+          "fraction": [0, 0.5, 0.5],
+          "part": "goggles",
+          "solid": "strap_0"
+        }
+      },
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "goggles",
+        "roll": 0,
+        "solid": "bridge",
+        "turn": [0, 0, -90]
+      },
+      "id": "night_vision_goggles",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "body": "polymer-od-green",
+            "lens": "glass-lens-green",
+            "strap": "rubber-black"
+          },
+          "id": "goggles",
+          "massKg": 0.55000000000000004,
+          "params": {
+            "pieces": "[{\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_0\", \"kind\": \"prism\", \"profile\": [[-0.10299999999999999, -0.092999999999999999], [-0.107, -0.097000000000000003], [0.08199999999999999, -0.097000000000000003], [0.077999999999999986, -0.092999999999999999]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_1\", \"kind\": \"prism\", \"profile\": [[0.077999999999999986, -0.092999999999999999], [0.08199999999999999, -0.097000000000000003], [0.107, -0.072000000000000008], [0.10299999999999999, -0.068000000000000005]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_2\", \"kind\": \"prism\", \"profile\": [[0.10299999999999999, -0.068000000000000005], [0.107, -0.072000000000000008], [0.107, 0.072000000000000008], [0.10299999999999999, 0.068000000000000005]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_3\", \"kind\": \"prism\", \"profile\": [[0.10299999999999999, 0.068000000000000005], [0.107, 0.072000000000000008], [0.08199999999999999, 0.097000000000000003], [0.077999999999999986, 0.092999999999999999]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_4\", \"kind\": \"prism\", \"profile\": [[0.077999999999999986, 0.092999999999999999], [0.08199999999999999, 0.097000000000000003], [-0.107, 0.097000000000000003], [-0.10299999999999999, 0.092999999999999999]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_5\", \"kind\": \"prism\", \"profile\": [[-0.10299999999999999, 0.092999999999999999], [-0.107, 0.097000000000000003], [-0.109, 0.095000000000000001], [-0.105, 0.090999999999999998]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_6\", \"kind\": \"prism\", \"profile\": [[-0.105, 0.090999999999999998], [-0.109, 0.095000000000000001], [-0.109, -0.095000000000000001], [-0.105, -0.090999999999999998]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"y\", \"end\": 0.048000000000000001, \"id\": \"strap_7\", \"kind\": \"prism\", \"profile\": [[-0.105, -0.090999999999999998], [-0.109, -0.095000000000000001], [-0.107, -0.097000000000000003], [-0.10299999999999999, -0.092999999999999999]], \"slot\": \"strap\", \"start\": 0.025999999999999999}, {\"axis\": \"z\", \"id\": \"tube_left\", \"kind\": \"turned\", \"origin\": [0.037999999999999999, 0, 0.10199999999999999], \"profile\": [[0, 0], [0, 0.023], [0.075999999999999998, 0.023], [0.075999999999999998, 0], [0, 0]], \"slot\": \"body\"}, {\"axis\": \"z\", \"id\": \"lens_left\", \"kind\": \"turned\", \"origin\": [0.037999999999999999, 0, 0.17799999999999999], \"profile\": [[0, 0], [0, 0.019549999999999998], [0.0040000000000000001, 0.019549999999999998], [0.0040000000000000001, 0], [0, 0]], \"slot\": \"lens\"}, {\"axis\": \"z\", \"id\": \"tube_right\", \"kind\": \"turned\", \"origin\": [-0.037999999999999999, 0, 0.10199999999999999], \"profile\": [[0, 0], [0, 0.023], [0.075999999999999998, 0.023], [0.075999999999999998, 0], [0, 0]], \"slot\": \"body\"}, {\"axis\": \"z\", \"id\": \"lens_right\", \"kind\": \"turned\", \"origin\": [-0.037999999999999999, 0, 0.17799999999999999], \"profile\": [[0, 0], [0, 0.019549999999999998], [0.0040000000000000001, 0.019549999999999998], [0.0040000000000000001, 0], [0, 0]], \"slot\": \"lens\"}, {\"id\": \"bridge\", \"kind\": \"box\", \"max\": [0.064000000000000001, 0.034000000000000002, 0.125], \"min\": [-0.064000000000000001, 0.014, 0.10299999999999999], \"slot\": \"body\"}]"
+          },
+          "ports": []
+        }
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [],

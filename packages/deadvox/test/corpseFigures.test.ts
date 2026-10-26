@@ -113,7 +113,7 @@ describe('dead human bodies', () => {
       () => loading.version,
     );
     const shownSize = (): number => {
-      carried.update(0, new Quaternion());
+      carried.update(0, new Quaternion(), BLOCK_SIZE);
       carried.group.updateMatrixWorld(true);
       const meshes: Object3D[] = [];
       carried.group.traverseVisible((object) => (object instanceof Mesh ? meshes.push(object) : undefined));

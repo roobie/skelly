@@ -4,7 +4,9 @@ import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import {
+  advanceFloorLockedPlacement,
   type FurnitureMover,
+  furnitureMoveStamina,
   liftFurniture,
   placeFurniture,
   placement,
@@ -14,6 +16,7 @@ import {
   turnCarried,
 } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -59,7 +62,7 @@ const fixture = () => {
   return { inventory, entity, mover };
 };
 
-const runtime = (restore?: SaveSnapshot) => {
+const runtime = (restore?: SaveSnapshot, spawn = player().pos) => {
   const world = new World();
   const stone = registry.blockIds.get('stone')!;
   if (!restore) {
@@ -79,7 +82,7 @@ const runtime = (restore?: SaveSnapshot) => {
     scale: makeScale(0.5),
     seed: 7,
     start: 43_200,
-    spawn: player().pos,
+    spawn,
     ready: () => true,
     ...(restore ? { restore } : {}),
     controls: {
@@ -111,6 +114,132 @@ const runtime = (restore?: SaveSnapshot) => {
 };
 
 describe('floor furniture steps', () => {
+  it('drains stamina faster for a heavier carried piece under the same content curve', () => {
+    const lightInventory = new Inventory(registry);
+    const light = lightInventory.furnish(spec)!;
+    const heavierRegistry: Registry = {
+      ...registry,
+      furniture: new Map(registry.furniture).set(spec.type, {
+        ...registry.furniture.get(spec.type)!,
+        massKg: registry.furniture.get(spec.type)!.massKg! * 2,
+      }),
+    };
+    const heavyInventory = new Inventory(heavierRegistry);
+    const heavy = heavyInventory.furnish(spec)!;
+
+    expect(furnitureMoveStamina(lightInventory, light, 'carry')).toBeLessThan(
+      furnitureMoveStamina(heavyInventory, heavy, 'carry'),
+    );
+  });
+
+  it('starts dragging a heavy piece within interaction reach', () => {
+    const blockSize = 0.5;
+    const reachCells = Math.ceil(reachTuning(registry).reachMetres / blockSize) - 1;
+    const spawn: Vec3 = [spec.pos[0] - reachCells, spec.pos[1], spec.pos[2] + 1];
+    const { session } = runtime(undefined, spawn);
+    const entity = session.inventory.furnish(spec)!;
+
+    expect(session.inventory.canReachEntity(entity)).toBe(true);
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
+  });
+
+  it('cancels a drag at its last valid placement after the player walks away', () => {
+    const { session, world, advance, setWalking } = runtime();
+    const entity = session.inventory.furnish(spec)!;
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
+    const validAimed: Vec3 = [spec.pos[0] + 1, spec.pos[1], spec.pos[2] + 1];
+    const valid = session.furniturePlacement(validAimed);
+    expect(valid).toHaveProperty('pos');
+    if (!('pos' in valid)) {
+      throw new Error(valid.refusal);
+    }
+    const lastValid: Vec3 = [...valid.pos];
+    session.entities.moveCarried(entity, valid.pos);
+    const [lastX, lastY, lastZ] = lastValid;
+    const reachCells = Math.ceil(reachTuning(registry).reachMetres / makeScale(0.5).blockSize);
+    for (let x = lastX - reachCells; x < lastX + 4 * reachCells; x++) {
+      world.setBlock(x, lastY, lastZ - 1, registry.blockIds.get('stone')!);
+    }
+    for (let z = lastZ - 1; z < lastZ + entity.size[2]; z++) {
+      world.setBlock(lastX + entity.size[0], lastY, z, registry.blockIds.get('stone')!);
+    }
+
+    setWalking(true);
+    for (let frame = 0; frame < 300 && session.entities.carrying(); frame++) {
+      advance(1 / 60);
+    }
+    setWalking(false);
+    expect(session.entities.carrying()).toBeUndefined();
+    expect(entity.pos).toEqual(lastValid);
+  });
+
+  it('keeps floor-drag previews observational between simulation ticks', () => {
+    const { session } = runtime();
+    const entity = session.inventory.furnish(spec)!;
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
+    const { version } = session.entities;
+
+    expect(session.furniturePlacement([spec.pos[0], spec.pos[1], spec.pos[2] - 1])).toHaveProperty('pos');
+    expect(session.entities.version).toBe(version);
+  });
+
+  it('holds a floor-locked drag at a wall instead of setting it down beyond the wall', () => {
+    const { inventory, entity, mover } = fixture();
+    const aimed: Vec3 = [spec.pos[0] + 2, spec.pos[1], spec.pos[2] + 5];
+    const wallZ = spec.pos[2] + 3;
+    const reachCells = Math.ceil(reachTuning(registry).reachMetres / mover.blockSize) - 1;
+    const pathMover: FurnitureMover = {
+      ...mover,
+      player: { ...mover.player, pos: [aimed[0] + reachCells, spec.pos[1], wallZ] },
+      terrainSolid: (x, y, z) => y === 0 || (y === 1 && z === wallZ && x >= spec.pos[0] && x < aimed[0] + 2),
+    };
+    expect(liftFurniture(pathMover, entity, true)).toBeUndefined();
+
+    for (let step = 0; step < reachCells; step++) {
+      const result = advanceFloorLockedPlacement(pathMover, aimed);
+      expect(result).toHaveProperty('pos');
+      if (!('pos' in result)) {
+        throw new Error(result.refusal);
+      }
+      inventory.entities.moveCarried(entity, result.pos);
+    }
+
+    expect(entity.pos[2] + entity.size[2]).toBeLessThanOrEqual(wallZ);
+    expect(placeFurniture(pathMover, aimed)).toBeUndefined();
+    expect(entity.pos[2] + entity.size[2]).toBeLessThanOrEqual(wallZ);
+  });
+
+  it('does not let a floor drag cut between blocked orthogonal steps', () => {
+    const { entity, mover } = fixture();
+    const aimed: Vec3 = [spec.pos[0] + 3, spec.pos[1], spec.pos[2] + 2];
+    const reachCells = Math.ceil(reachTuning(registry).reachMetres / mover.blockSize) - 1;
+    const cornerMover: FurnitureMover = {
+      ...mover,
+      player: { ...mover.player, pos: [aimed[0] + reachCells, spec.pos[1], aimed[2] + 1] },
+      terrainSolid: (x, y, z) =>
+        y === 0 ||
+        (y === 1 &&
+          ((x === spec.pos[0] + entity.size[0] && z === spec.pos[2]) || (x === spec.pos[0] && z === aimed[2]))),
+    };
+    expect(liftFurniture(cornerMover, entity, true)).toBeUndefined();
+
+    expect(advanceFloorLockedPlacement(cornerMover, aimed)).toEqual({ pos: spec.pos });
+  });
+
+  it('drains carried furniture stamina only while the player moves', () => {
+    const { session, advance, setWalking } = runtime();
+    const entity = session.inventory.furnish(spec)!;
+    expect(session.liftFurniture(entity.uid, true)).toBeUndefined();
+    const held = session.sim.needs.stamina;
+
+    advance(1);
+    expect(session.sim.needs.stamina).toBe(held);
+
+    setWalking(true);
+    advance(1);
+    expect(session.sim.needs.stamina).toBeLessThan(held);
+  });
+
   it('uses the hold path without changing floor height for any aimed height', () => {
     for (const [height, aimedHeight] of [
       [-8, -40],
@@ -143,9 +272,10 @@ describe('floor furniture steps', () => {
         (piece, def) => meshes.pieceMesh(piece, def),
         registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
       );
-      view.update(1, new Quaternion(), { pos: spot.pos, blockSize: mover.blockSize });
+      view.update(1, new Quaternion(), mover.blockSize, spot.pos);
       expect(view.group.children).toHaveLength(0);
       expect(new Box3().setFromObject(view.floorGroup).min.y).toBeCloseTo(height * mover.blockSize);
+      inventory.entities.moveCarried(entity, spot.pos);
       expect(placeFurniture(mover, aimed)).toBeUndefined();
       expect(entity.pos[1]).toBe(height);
       expect(entity.pos[0]).not.toBe(spec.pos[0]);
@@ -153,6 +283,39 @@ describe('floor furniture steps', () => {
       expect(entity.floorLocked).toBeUndefined();
     }
   });
+  it('keeps a dragged piece at its last valid preview when placement becomes invalid', () => {
+    const { inventory, entity, mover } = fixture();
+    expect(liftFurniture(mover, entity, true)).toBeUndefined();
+    const meshes = new FurnitureMeshes(mover.blockSize);
+    const view = new CarriedPiece(
+      inventory.entities,
+      (piece, def) => meshes.pieceMesh(piece, def),
+      registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
+    );
+    const aimed: Vec3 = [spec.pos[0] + 3, spec.pos[1], spec.pos[2] + 1];
+
+    view.update(1, new Quaternion(), mover.blockSize);
+    expect(view.floorGroup.visible).toBe(true);
+    expect(view.floorGroup.position.toArray()).toEqual([0, 0, 0]);
+    const spot = placement(mover, aimed);
+    expect(spot).toHaveProperty('pos');
+    if (!('pos' in spot)) {
+      throw new Error(spot.refusal);
+    }
+    view.update(1, new Quaternion(), mover.blockSize, spot.pos);
+    const previewPosition = view.floorGroup.position.toArray();
+    expect(previewPosition).not.toEqual([0, 0, 0]);
+
+    expect(placement({ ...mover, terrainSolid: () => false }, aimed)).toHaveProperty('refusal');
+    view.update(1, new Quaternion(), mover.blockSize);
+    expect(view.floorGroup.position.toArray()).toEqual(previewPosition);
+    expect(turnCarried(inventory)).toBeUndefined();
+    view.update(1, new Quaternion(), mover.blockSize);
+    expect(view.floorGroup.visible).toBe(true);
+    expect(view.floorGroup.position.toArray()).toEqual(previewPosition);
+    expect(placeFurniture(mover, aimed)).toBeUndefined();
+  });
+
   it('turns and tips a dragged piece like a held one, and the level-floor check still guards setting down', () => {
     const { inventory, entity, mover } = fixture();
     expect(liftFurniture(mover, entity, true)).toBeUndefined();
@@ -227,9 +390,7 @@ describe('floor furniture steps', () => {
     );
     expect(entity.pos).toEqual(spec.pos);
     expect(liftFurniture(mover, entity, true)).toBeUndefined();
-    expect(placeFurniture({ ...mover, terrainSolid }, [8, 40, 6])).toBe(
-      obstacle === 'hole' ? messages.floorOnly : messages.noRoom,
-    );
+    expect(advanceFloorLockedPlacement({ ...mover, terrainSolid }, [8, 40, 6])).toEqual({ pos: spec.pos });
     expect(entity.carried).toBe(true);
     expect(entity.pos).toEqual(spec.pos);
   });
@@ -308,9 +469,10 @@ describe('floor furniture steps', () => {
       version: formatVersion,
       contentLookup: (kind, id) => contentLookup(registry, kind, id),
     });
+    const heldPos: Vec3 = [...restored.pos];
     const resumed = runtime(savedHold.snapshot);
     expect(resumed.session.entities.carrying()).toMatchObject({ uid: restored.uid, floorLocked: true });
-    expect(resumed.session.placeFurniture([7, 20, 6])).toBeUndefined();
-    expect(resumed.session.entities.byUid(restored.uid)?.pos).toEqual(spec.pos);
+    expect(resumed.session.placeFurniture([heldPos[0] + 2, heldPos[1], heldPos[2] + 1])).toBeUndefined();
+    expect(resumed.session.entities.byUid(restored.uid)?.pos).toEqual(heldPos);
   });
 });

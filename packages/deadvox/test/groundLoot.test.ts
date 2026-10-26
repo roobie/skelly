@@ -74,6 +74,7 @@ const fixtureData = (): ContentFile => ({
       name: 'Fixture container',
       size: [1, 1, 1],
       color: '#808080',
+      massKg: 1,
       container: { pockets: [{ grid: [2, 2], handlingSimSeconds: simSeconds(0) }] },
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
@@ -305,6 +306,7 @@ describe('ground loot', () => {
         name: 'Fixture board',
         size: [1, 1, 1],
         color: '#808080',
+        massKg: 1,
         breach: fixtureBreach(),
         material: FIXTURE_MATERIAL,
       });

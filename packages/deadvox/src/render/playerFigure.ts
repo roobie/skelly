@@ -3,7 +3,7 @@
 import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
-import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
+import type { FigureDef, ItemDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -66,8 +66,10 @@ export const PLAYER_REGION_BOXES: Readonly<Record<BodyRegion, FigureBox>> = {
   rightLeg: legRegion(FIGURE_BOXES.rightLeg),
 };
 
-/** Worn models attach where their `figureModel` is authored: about the head region's centre. */
-const WORN_SLOTS: readonly WearSlot[] = ['head', 'eyes'];
+export interface WornPresentation {
+  registry: Registry;
+  worn: Readonly<Partial<Record<WearSlot, Item>>>;
+}
 
 type FigurePartName = 'body' | FigureLimb;
 
@@ -82,8 +84,6 @@ interface FigurePart {
 interface PlayerFigureLayout {
   hipHeight: number;
   joints: Readonly<Record<FigureJoint, Vec3>>;
-  /** Where the head turns on the body. */
-  head: Vec3;
   parts: readonly FigurePart[];
 }
 
@@ -125,7 +125,6 @@ const playerFigureLayout = (
   return {
     hipHeight,
     joints,
-    head: bodyPoint(body.head.pivot),
     parts: [{ name: 'body', model: body.model, at }, ...limbs],
   };
 };
@@ -152,6 +151,7 @@ export interface PlayerFigurePose {
   dt: number;
   thirdPerson?: boolean;
   inventory?: Inventory;
+  wornItems?: WornPresentation;
   heldItems?: FigureHeldItems;
   holdReady?: boolean;
   eye?: Vec3;
@@ -294,9 +294,18 @@ export class PlayerMeshes {
   private readonly pivots = new Map<FigurePart, Object3D[]>();
   private readonly modelDefs: ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
   private readonly pivotedParts: Readonly<Record<PivotedKind, readonly PivotedParts[]>>;
-  private attachments: Group[] = [];
-  private wornVersion = '';
+  private readonly attachmentFrames = new Map<string, Group>();
+  private readonly attachments = new Map<
+    WearSlot,
+    {
+      item: Item;
+      entries: ItemDef['figureModels'];
+      modelsVersion: number;
+      groups: Group[];
+    }
+  >();
   private readonly models: ModelLibrary;
+  private layer = PLAYER_FIGURE_LAYER;
   private readonly dummy = new Object3D();
   private readonly placement: PlayerFigurePlacement;
   private readonly localPosition: Vec3 = [0, 0, 0];
@@ -312,7 +321,6 @@ export class PlayerMeshes {
   private outfit: Outfit | undefined;
   /** Each loaded material and its copy in the outfit's colour, so parts that shared a material share its copy. */
   private readonly dressed = new Map<Material, Material>();
-  private layer = PLAYER_FIGURE_LAYER;
 
   constructor(
     blockSize: number,
@@ -349,6 +357,11 @@ export class PlayerMeshes {
     this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
   }
 
+  setLayer(layer: number): void {
+    this.layer = layer;
+    this.group.traverse((object) => object.layers.set(layer));
+  }
+
   /** Whether every part's model has loaded and is drawn. */
   get loaded(): boolean {
     return this.drawn.size === this.layout.parts.length;
@@ -367,8 +380,7 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { inventory, thirdPerson = false } = pose;
-    this.syncWorn(inventory);
+    const { thirdPerson = false } = pose;
     if (!this.fixedPose) {
       this.blendStance(pose.stance, pose.dt);
     }
@@ -376,6 +388,7 @@ export class PlayerMeshes {
     this.placement.yaw = pose.yaw;
     this.placement.thirdPerson = thirdPerson;
     this.syncModels();
+    this.syncWorn(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
     this.syncHeld(pose);
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
@@ -400,14 +413,8 @@ export class PlayerMeshes {
       drawn.quaternion.copy(this.dummy.quaternion);
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
-    if (this.attachments.length > 0) {
-      this.posePoint(FIGURE_BOXES.head.at, 'head', pose);
-    }
-    for (const attachment of this.attachments) {
-      // Worn head gear is drawn from inside in first person, so the body copy shows only in third person.
-      attachment.visible = thirdPerson;
-      attachment.position.copy(this.dummy.position);
-      attachment.quaternion.copy(this.dummy.quaternion);
+    for (const [name, frame] of this.attachmentFrames) {
+      frame.visible = thirdPerson || !this.figure.attachmentFrames[name]!.insideView;
     }
   }
 
@@ -481,7 +488,7 @@ export class PlayerMeshes {
         }
       }
       this.heldVersion = version;
-      this.heldFrame.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
+      this.heldFrame.traverse((object) => object.layers.set(this.layer));
       castsAndReceives(this.heldFrame);
     }
     return presentation;
@@ -522,6 +529,20 @@ export class PlayerMeshes {
       model.traverse((object) => object.layers.set(this.layer));
       this.drawn.set(part, model);
       this.group.add(castsAndReceives(model));
+      for (const [name, entry] of Object.entries(this.figure.attachmentFrames)) {
+        if (entry.part !== part.name) {
+          continue;
+        }
+        const index = chain.findIndex((pivot) => pivot.pivot === entry.pivot);
+        const parent = entry.pivot === undefined ? scene : this.pivots.get(part)![index]!;
+        const frame = new Group();
+        frame.name = `wear-frame-${name}`;
+        frame.layers.set(this.layer);
+        frame.position.set(...entry.at);
+        frame.rotation.set(...(entry.turn.map((degrees) => degrees * RADIANS) as Vec3));
+        parent.add(frame);
+        this.attachmentFrames.set(name, frame);
+      }
     }
   }
 
@@ -538,32 +559,49 @@ export class PlayerMeshes {
     }
   }
 
-  private syncWorn(inventory?: Inventory): void {
-    const version = `${inventory?.version}:${this.models.version}`;
-    if (version === this.wornVersion) {
-      return;
-    }
-    this.wornVersion = version;
-    for (const attachment of this.attachments) {
-      attachment.removeFromParent();
-    }
-    this.attachments = [];
-    for (const slot of WORN_SLOTS) {
-      const item = inventory?.worn[slot];
-      const entry = item && defOf(inventory!.registry, item.type).wearable?.figureModel;
-      const model = entry && this.models.part(entry.model);
-      if (!(entry && model)) {
+  private syncWorn(source?: WornPresentation): void {
+    const slots = new Set([...this.attachments.keys(), ...(Object.keys(source?.worn ?? {}) as WearSlot[])]);
+    for (const slot of slots) {
+      const item = source?.worn[slot];
+      const entries = item && defOf(source!.registry, item.type).figureModels;
+      const previous = this.attachments.get(slot);
+      if (
+        previous &&
+        previous.item === item &&
+        previous.entries === entries &&
+        previous.modelsVersion === this.models.version &&
+        previous.groups.length === entries?.length
+      ) {
         continue;
       }
-      model.position.set(...entry.at);
-      model.rotation.set(...(entry.turn.map((degrees) => degrees * RADIANS) as [number, number, number]));
-      const attachment = new Group();
-      attachment.name = `worn-${slot}`;
-      attachment.add(model);
-      attachment.traverse((object) => object.layers.set(PLAYER_FIGURE_LAYER));
-      this.attachments.push(attachment);
-      this.group.add(castsAndReceives(attachment));
+      for (const group of previous?.groups ?? []) {
+        group.removeFromParent();
+      }
+      this.attachments.delete(slot);
+      if (!(item && entries)) {
+        continue;
+      }
+      const groups = entries.flatMap((entry) => this.attachWorn(slot, entry) ?? []);
+      this.attachments.set(slot, { item, entries, modelsVersion: this.models.version, groups });
     }
+  }
+
+  private attachWorn(slot: WearSlot, entry: NonNullable<ItemDef['figureModels']>[number]): Group | undefined {
+    const frame = this.attachmentFrames.get(entry.frame);
+    const model = frame && this.models.part(entry.model);
+    if (!(frame && model)) {
+      return;
+    }
+    // Keep the authored item pivot on the frame even when the model is turned.
+    model.position.set(...entry.pivot).negate();
+    const attachment = new Group();
+    attachment.name = `worn-${slot}`;
+    attachment.position.set(...entry.at);
+    attachment.rotation.set(...(entry.turn.map((degrees) => degrees * RADIANS) as Vec3));
+    attachment.add(model);
+    attachment.traverse((object) => object.layers.set(this.layer));
+    frame.add(castsAndReceives(attachment));
+    return attachment;
   }
 
   /** A limb's walking swing about its joint, in radians: the legs swing opposite ways, each arm against its leg. */
@@ -584,20 +622,15 @@ export class PlayerMeshes {
   }
 
   /**
-   * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint and the head tips about
-   * its pivot, then all lean.
+   * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint, then all lean.
    */
-  private posePoint(at: Vec3, name: FigurePartName | 'head', pose: PlayerFigurePose): void {
+  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose): void {
     const { yaw, stepOffset, gaitPhase, moving } = pose;
     const hip = this.layout.hipHeight;
-    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees, armsForwardDegrees, headUpDegrees } =
-      this.shownPose;
+    const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees, armsForwardDegrees } = this.shownPose;
     let pivot: Vec3 = [0, hip, 0];
     let stride = 0;
-    if (name === 'head') {
-      pivot = this.layout.head;
-      stride = headUpDegrees * RADIANS;
-    } else if (name !== 'body') {
+    if (name !== 'body') {
       pivot = this.layout.joints[FIGURE_LIMB_JOINTS[name]];
       stride = (moving ? this.gaitSwing(name, gaitPhase) : 0) + (isArm(name) ? armsForwardDegrees * RADIANS : 0);
     }
