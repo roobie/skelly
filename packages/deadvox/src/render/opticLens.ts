@@ -23,6 +23,7 @@ const OPTIC_LENS_SHADER = {
     uZoomActive: { value: 0 },
     uBorder: { value: 1 },
     uLensCenter: { value: new Vector2(0.5, 0.5) },
+    uReticleCenter: { value: new Vector2(0.5, 0.5) },
     uLensRadius: { value: new Vector2(0.25, 0.4) },
     uLensShape: { value: new Vector2() },
     uReticleCount: { value: 0 },
@@ -43,6 +44,7 @@ uniform sampler2D uZoomTexture;
 uniform float uZoomActive;
 uniform float uBorder;
 uniform vec2 uLensCenter;
+uniform vec2 uReticleCenter;
 uniform vec2 uLensRadius;
 uniform vec2 uLensShape;
 uniform int uReticleCount;
@@ -85,7 +87,7 @@ void main() {
   vec3 color = mix(source.rgb, lens, aperture);
   float frame = smoothstep(0.96, 0.99, radius) * (1.0 - smoothstep(1.09, 1.13, radius));
   color = mix(color, vec3(0.035, 0.04, 0.045), frame * uBorder);
-  color = reticle(local, color, aperture);
+  color = reticle((vUv - uReticleCenter) / uLensRadius, color, aperture);
   gl_FragColor = vec4(color, source.a);
 }`,
 };
@@ -133,6 +135,7 @@ export const setOpticLensUniforms = (pass: ShaderPass, frame: OpticLensFrame): v
   const { reticle, aperture } = frame;
   const { uniforms } = pass;
   uniforms.uZoomActive!.value = opticRendersWorld(frame) ? 1 : 0;
+  uniforms.uReticleCenter!.value.set(...frame.reticleCenter);
   uniforms.uBorder!.value = frame.border === false ? 0 : 1;
   uniforms.uLensShape!.value.set(aperture.aspectRatio, aperture.exponent);
   uniforms.uReticleCount!.value = reticle?.primitives.length ?? 0;

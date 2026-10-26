@@ -12,8 +12,9 @@
     }
   },
   "holographic": {
+    "batteryRearX": -3,
     "batteryTopY": 1,
     "eyeReliefU": 14,
-    "hoodFrontX": -3
+    "hoodFrontX": 0.25
   }
 }

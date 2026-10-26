@@ -7,13 +7,16 @@ import {
   type Object3D,
   PerspectiveCamera,
   Scene,
+  type Vector2,
   Vector3,
+  type WebGLRenderer,
 } from 'three';
 import { expect, it, vi } from 'vitest';
+import { aimBasis } from '../src/core/aim.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
-import { mountedOptic, type OpticLensFrame, projectLensAperture } from '../src/core/opticView.ts';
+import { insideLensAperture, mountedOptic, type OpticLensFrame, projectLensAperture } from '../src/core/opticView.ts';
 import { opticWindowDistance } from '../src/core/opticWindow.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
@@ -22,6 +25,7 @@ import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
 import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
 import { configureOpticsSpike } from '../src/render/opticsSpike.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -311,6 +315,8 @@ it.each([
     expect(f.view.opticLensFrame).toBeDefined();
     expect(f.view.opticLensFrame!.radius[0]).toBeCloseTo(expected!.radius[0]);
     expect(f.view.opticLensFrame!.radius[1]).toBeCloseTo(expected!.radius[1]);
+    expect(f.view.opticLensFrame!.reticleCenter[0]).toBeCloseTo(expected!.center[0]);
+    expect(f.view.opticLensFrame!.reticleCenter[1]).toBeCloseTo(expected!.center[1]);
     expect(scene.getObjectByName('held-item-right')!.visible).toBe(true);
   } finally {
     transform.mockRestore();
@@ -357,6 +363,85 @@ it('holographic relief changes the physical eye distance and its projected windo
     transform.mockRestore();
     vi.unstubAllGlobals();
     f.dispose();
+  }
+});
+
+it.each(['optic_holographic', 'optic_lpvo_1_6x'])(
+  '%s relief reticle follows the world-image aim ray rather than a translated glass window',
+  async (opticType) => {
+    const f = await fixture(true, `?loadout=ar&optic=${opticType}`);
+    const world = new Scene();
+    f.view.configureOpticsSpike(world, 'world', 'relief');
+    const optic = mountedOptic(f.registry, f.item)!;
+    const magnification = optic.model.gun!.attachment!.properties.magnification?.max ?? 1;
+    const pass = opticLensPass();
+    const lens = new OpticLensRenderer();
+    const imageCamera = f.camera.clone();
+    const renderer = {
+      getDrawingBufferSize: (out: Vector2) => out.set(8, 8),
+      getRenderTarget: () => null,
+      setRenderTarget: () => undefined,
+      render: (_scene: Scene, camera: PerspectiveCamera) => imageCamera.copy(camera),
+    } as unknown as WebGLRenderer;
+    const aim = { yaw: 0.01, pitch: -0.012 };
+    const centers: number[][] = [];
+    try {
+      for (const lift of [0, 0.002]) {
+        f.view.update(f.camera, f.pose, 0, {
+          firearms: [],
+          aim,
+          lift,
+          readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+          ...(magnification > 1 ? { opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification } } : {}),
+        });
+        const frame = f.view.opticLensFrame!;
+        expect(frame).toBeDefined();
+        setOpticLensUniforms(pass, frame);
+        lens.prepare(renderer, world, f.camera, frame);
+        const ray = new Vector3(...aimBasis(0, 0, aim).forward).project(imageCamera);
+        expect(pass.uniforms.uReticleCenter!.value.x).toBeCloseTo((ray.x + 1) / 2);
+        expect(pass.uniforms.uReticleCenter!.value.y).toBeCloseTo((ray.y + 1) / 2);
+        expect(frame.reticleCenter[1]).not.toBeCloseTo(frame.center[1]);
+        expect(insideLensAperture(frame.reticleCenter, frame, frame.aperture)).toBe(true);
+        centers.push([...frame.center]);
+      }
+      expect(centers[0]).not.toEqual(centers[1]);
+    } finally {
+      lens.dispose();
+      pass.dispose();
+      f.dispose();
+    }
+  },
+);
+
+it('ADS-only housing is intact when lowered or ready and restored immediately on leaving ADS', async () => {
+  const f = await fixture();
+  const scene = new Scene();
+  f.view.configureOpticsSpike(scene, 'world', 'relief');
+  const hood = new Mesh(new BufferGeometry(), new MeshBasicMaterial());
+  hood.geometry.userData.piece = 'optic-ads-housing';
+  const body = new Mesh(new BufferGeometry(), new MeshBasicMaterial());
+  const handling = { firearms: [], readiness: { uid: f.item.uid, progress: 1, aimingDownSights: false } };
+  try {
+    f.view.update(f.camera, f.pose, 0, handling);
+    scene.getObjectByName('held-item-right')!.add(hood, body);
+    for (const [progress, aimingDownSights] of [
+      [0, false],
+      [1, false],
+      [1, true],
+      [1, false],
+      [0, false],
+    ] as const) {
+      f.view.update(f.camera, f.pose, 0, { ...handling, readiness: { uid: f.item.uid, progress, aimingDownSights } });
+      expect(hood.visible).toBe(!aimingDownSights);
+      expect(body.visible).toBe(true);
+    }
+  } finally {
+    f.dispose();
+    for (const mesh of [hood, body]) {
+      mesh.geometry.dispose();
+      (mesh.material as MeshBasicMaterial).dispose();
+    }
   }
 });
 

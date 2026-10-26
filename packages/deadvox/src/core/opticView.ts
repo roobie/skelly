@@ -37,6 +37,7 @@ export interface LensAperture {
 }
 
 export interface OpticLensFrame extends LensAperture, OpticViewSettings {
+  readonly reticleCenter: readonly [number, number];
   readonly border?: boolean;
   readonly excludeSelf?: boolean;
   readonly worldAtUnity?: boolean;
@@ -82,6 +83,16 @@ const project = (point: Vec3, verticalFovDegrees: number, aspect: number): reado
   }
   const halfHeight = depth * Math.tan((verticalFovDegrees * Math.PI) / 360);
   return [point[0] / (halfHeight * aspect), point[1] / halfHeight];
+};
+
+export const projectOpticReticle = (
+  direction: Vec3,
+  verticalFovDegrees: number,
+  aspect: number,
+  magnification: number,
+): readonly [number, number] | undefined => {
+  const ndc = project(direction, opticFieldOfView(verticalFovDegrees, magnification), aspect);
+  return ndc ? [(ndc[0] + 1) / 2, (ndc[1] + 1) / 2] : undefined;
 };
 
 /** Projects the exported ocular circle from the same camera-local frame as the held optic window. */

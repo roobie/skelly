@@ -17,7 +17,7 @@ import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
 import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';
-import { Mesh, Ray, Raycaster, Vector3 } from 'three';
+import { Box3, Mesh, Ray, Raycaster, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -201,10 +201,12 @@ describe('optic catalog', () => {
     },
   );
 
-  it('holographic relief rays clear the hood and forward battery through the central window', () => {
+  it('holographic ADS relief rays clear the unmasked geometry through the central window', () => {
     const optic = getOptic('holographic');
     const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0);
-    const metal = optic.solids.filter(({ slot }) => slot !== LENS_SLOT);
+    const metal = optic.solids.filter(
+      (solid) => solid.slot !== LENS_SLOT && solid.display?.piece !== 'optic-ads-housing',
+    );
     expect(metal.length).toBeGreaterThan(0);
     for (const [vertical, lateral] of [
       [0, 0],
@@ -229,6 +231,48 @@ describe('optic catalog', () => {
           ).toBeNull();
         }
       }
+    }
+  });
+
+  it('exports the complete holographic hood as ADS-only pieces rather than deleting its housing', async () => {
+    const optic = getOptic('holographic');
+    const hood = optic.solids.filter((solid) => solid.display?.piece === 'optic-ads-housing');
+    expect(hood.length).toBeGreaterThan(0);
+    const row = exportRecipe.find(({ id }) => id === 'optic_holographic')!;
+    const result = exportAttachmentGlb(
+      'optic-holographic',
+      { id: 'fixture-holo', file: 'assets/models/fixture-holo.glb' },
+      undefined,
+      { voxelGrain: row.voxel.grain, voxelDetailGrain: row.voxel.detailGrain },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(JSON.stringify(result.error));
+    }
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(result.glb).buffer, '');
+    const exported: Mesh[] = [];
+    scene.traverse((mesh) => {
+      if (mesh instanceof Mesh && mesh.geometry.userData.piece === 'optic-ads-housing') {
+        exported.push(mesh);
+      }
+    });
+    expect(exported.length).toBeGreaterThan(0);
+    const drawnSolids = exported.flatMap((mesh) => mesh.geometry.userData.solids as string[]);
+    for (const solid of hood) {
+      expect(drawnSolids).toContain(solid.id);
+    }
+    const expected = new Box3();
+    for (const solid of hood) {
+      const [low, high] = localSolidBounds(solid);
+      expected.expandByPoint(new Vector3(...low).multiplyScalar(METRES_PER_UNIT));
+      expected.expandByPoint(new Vector3(...high).multiplyScalar(METRES_PER_UNIT));
+    }
+    const actual = new Box3();
+    for (const mesh of exported) {
+      actual.union(new Box3().setFromObject(mesh));
+    }
+    for (const bound of ['min', 'max'] as const) {
+      expect(actual[bound].distanceTo(expected[bound])).toBeLessThan(row.voxel.detailGrain! * Math.sqrt(3));
     }
   });
 

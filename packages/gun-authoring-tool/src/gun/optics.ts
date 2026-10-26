@@ -144,6 +144,8 @@ const eyecup = (centerY: number, cup: (typeof opticPresentation.cups)['lpvo-1-6x
   display: { piece: 'optic-eyecup' },
 });
 
+const adsHousing = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-ads-housing' } });
+
 const ringBand = (id: string, centerX: number, centerY: number, radius: number): Solid =>
   scopeBody(
     id,
@@ -416,15 +418,15 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         lensGlass,
       ),
       box('mount-foot', [-2.75, 0, -0.75], [2.75, 0.5, 0.75]),
-      box('lower-battery-section', [-3.75, 0.5, -2.25], [opticPresentation.holographic.hoodFrontX, 1.5, 2.25]),
+      box('lower-battery-section', [-3.75, 0.5, -2.25], [opticPresentation.holographic.batteryRearX, 1.5, 2.25]),
       box(
         'forward-battery-cap',
-        [opticPresentation.holographic.hoodFrontX, 0.5, -2.25],
+        [opticPresentation.holographic.batteryRearX, 0.5, -2.25],
         [4, opticPresentation.holographic.batteryTopY, 2.25],
       ),
-      box('window-left-side', [-3.75, 1.5, -2.25], [opticPresentation.holographic.hoodFrontX, 4.25, -1.5]),
-      box('window-right-side', [-3.75, 1.5, 1.5], [opticPresentation.holographic.hoodFrontX, 4.25, 2.25]),
-      {
+      adsHousing(box('window-left-side', [-3.75, 1.5, -2.25], [opticPresentation.holographic.hoodFrontX, 4.25, -1.5])),
+      adsHousing(box('window-right-side', [-3.75, 1.5, 1.5], [opticPresentation.holographic.hoodFrontX, 4.25, 2.25])),
+      adsHousing({
         id: 'window-hood-roof',
         kind: 'extruded-polygon',
         axis: 'x',
@@ -436,7 +438,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
           [4.25, 2.25],
         ],
         slot: 'metal',
-      },
+      }),
     ],
   }),
   'fixed-prism-4x': makeEntry({

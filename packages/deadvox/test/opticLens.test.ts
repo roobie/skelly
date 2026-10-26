@@ -25,6 +25,7 @@ it.each([
       excludeSelf: true,
       aperture: { aspectRatio: 1, exponent: 2 },
       center: [0.5, 0.5],
+      reticleCenter: [0.5, 0.5],
       radius: [0.2, 0.2],
     };
     const lens = new OpticLensRenderer();

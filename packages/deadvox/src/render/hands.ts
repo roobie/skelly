@@ -1,7 +1,7 @@
 // See `DESIGN.md`, "Hands: what you see is what's there".
 // The optics comparison is isolated so judging borders does not require an actor-owner refactor.
 
-import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
+import { type OpticAperture, opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
   DirectionalLight,
   DoubleSide,
@@ -25,7 +25,13 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
-import { mountedOptic, type OpticLensFrame, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
+import {
+  mountedOptic,
+  type OpticLensFrame,
+  opticViewSettings,
+  projectLensAperture,
+  projectOpticReticle,
+} from '../core/opticView.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
@@ -175,11 +181,7 @@ export class HeldItems {
     const tube = opticsTubePresentation(this.opticsTube, settings?.magnification ?? 1);
     if (heldModel) {
       heldModel.visible = this.opticsSpike !== undefined || !active;
-      heldModel.traverse((object) => {
-        if (object instanceof Mesh && object.geometry.userData.piece === 'optic-eyecup') {
-          object.visible = tube.cups;
-        }
-      });
+      this.syncOpticPieces(heldModel, active, tube.cups);
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
@@ -198,23 +200,7 @@ export class HeldItems {
       return;
     }
     const innerRadius = diameter / 2;
-    const outerRadius = innerRadius * 1.12;
-    const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
-    if (shape !== this.opticWindowShape) {
-      this.opticWindow.geometry.dispose();
-      const geometry = new RingGeometry(innerRadius, outerRadius, 64);
-      const positions = geometry.getAttribute('position');
-      for (let index = 0; index < positions.count; index++) {
-        const x = positions.getX(index);
-        const y = positions.getY(index);
-        const radius = Math.hypot(x, y);
-        const scale = 1 / opticApertureDistance(x / radius, y / radius, settings.aperture);
-        positions.setXY(index, x * scale, y * scale);
-      }
-      geometry.computeBoundingSphere();
-      this.opticWindow.geometry = geometry;
-      this.opticWindowShape = shape;
-    }
+    this.syncOpticWindow(innerRadius, settings.aperture);
     const matrix = new Matrix4().makeBasis(
       ...(firearmPose.rootRotation.map((axis) => new Vector3(...axis)) as [Vector3, Vector3, Vector3]),
     );
@@ -242,15 +228,61 @@ export class HeldItems {
       verticalFovDegrees: main.fov,
       aspect: main.aspect,
     });
-    if (aperture) {
+    const reticleCenter = projectOpticReticle(
+      [forward.x, forward.y, forward.z],
+      main.fov,
+      main.aspect,
+      settings.magnification,
+    );
+    if (aperture && reticleCenter) {
       this.opticViewFrame = {
         ...settings,
         ...aperture,
+        reticleCenter,
         ...(this.opticsSpike
           ? { border: this.opticsSpike === 'effect', excludeSelf: true, worldAtUnity: tube.worldAtUnity }
           : {}),
       };
     }
+  }
+
+  private syncOpticWindow(innerRadius: number, aperture: OpticAperture): void {
+    const outerRadius = innerRadius * 1.12;
+    const shape = `${innerRadius}:${outerRadius}:${aperture.aspectRatio}:${aperture.exponent}`;
+    if (shape === this.opticWindowShape) {
+      return;
+    }
+    this.opticWindow.geometry.dispose();
+    const geometry = new RingGeometry(innerRadius, outerRadius, 64);
+    const positions = geometry.getAttribute('position');
+    for (let index = 0; index < positions.count; index++) {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const radius = Math.hypot(x, y);
+      const scale = 1 / opticApertureDistance(x / radius, y / radius, aperture);
+      positions.setXY(index, x * scale, y * scale);
+    }
+    geometry.computeBoundingSphere();
+    this.opticWindow.geometry = geometry;
+    this.opticWindowShape = shape;
+  }
+
+  private syncOpticPieces(model: Object3D, active: boolean, cups: boolean): void {
+    model.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      switch (object.geometry.userData.piece) {
+        case 'optic-eyecup':
+          object.visible = cups;
+          break;
+        case 'optic-ads-housing':
+          object.visible = !active;
+          break;
+        default:
+          break;
+      }
+    });
   }
 
   get opticLensFrame(): OpticLensFrame | undefined {

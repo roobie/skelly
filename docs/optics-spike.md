@@ -3,6 +3,7 @@ read_if:
   - you evaluate camera-only optical borders against authored world geometry
   - you compare authored eye relief with aperture-fill-derived ADS placement
   - you compare an ocular world disc with relief-sized eyecup geometry
+  - you change ADS-only housing visibility or reticle projection
 ---
 
 # Optical border comparison
@@ -42,10 +43,21 @@ Eyecups are authored content sized to the relief placement, not a general fix fo
 every eye distance or field of view. See
 `packages/gun-authoring-tool/src/gun/optics.ts`, `eyecup`; and
 `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`.
-The holographic comparison uses a shallow hood and a separate lower battery
-front because a deep hood narrows the physical window. Keeping the opaque front
-below the transparent pane also avoids a voxel-shared interface that removes its
-eye-facing surface; see `packages/gun-authoring-tool/test/optics.test.ts`,
+An ADS-only mask must not change the instrument seen outside ADS. The housing
+remains authored and exported; its display-piece metadata selects temporary
+visibility in `packages/deadvox/src/render/hands.ts`, `HeldItems.syncOpticPieces`.
+Keeping the opaque battery front below the transparent pane avoids a voxel-shared
+interface that removes its eye-facing surface; see
+`packages/gun-authoring-tool/test/optics.test.ts`,
 "voxel holographic battery presents an opaque eye-facing surface rather than a hole through glass neighbours".
-The relief choice must remain a content value rather than a special rendering
-rule for that sight.
+Relief and housing dimensions remain content choices rather than optic-specific
+rendering rules.
+
+The aperture clips a finite glass opening, but the reticle represents the sight's
+aim direction on the world image. Attaching both to the glass centre introduces
+parallax when the instrument translates relative to the eye. Project the sight
+direction through the image camera's field of view instead; see
+`packages/deadvox/src/core/opticView.ts`, `projectOpticReticle`; and
+`packages/deadvox/src/render/opticLens.ts`, `setOpticLensUniforms`.
+The reticle stays clipped by the physical aperture; its centre is independent of
+that aperture's finite distance.
