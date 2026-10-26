@@ -72,7 +72,6 @@ const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
-const SAVES_OFF = /saves are off/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 
@@ -1162,7 +1161,29 @@ try {
       });
       assert.equal(await reloaded.evaluate(() => deadvoxSaveTest.controller.restored === undefined), true);
       assert.equal(await reloaded.locator('#continue').isHidden(), true);
-      assert.match(await reloaded.locator('#save-status').textContent(), SAVES_OFF);
+      const disabled = await reloaded.evaluate(async () => {
+        const { controller, storage } = deadvoxSaveTest;
+        const status = document.querySelector('#save-status');
+        const before = status.textContent;
+        let storageTouched = false;
+        for (const method of ['requestPersistence', 'status']) {
+          storage[method] = () => {
+            storageTouched = true;
+            return Promise.resolve(undefined);
+          };
+        }
+        const persist = document.querySelector('#save-persist');
+        const { hidden } = persist;
+        persist.click();
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        return {
+          showsDebugMessage: before.includes(controller.text.debugRun),
+          unchanged: status.textContent === before,
+          hidden,
+          storageTouched,
+        };
+      });
+      assert.deepEqual(disabled, { showsDebugMessage: true, unchanged: true, hidden: true, storageTouched: false });
       assert.deepEqual(pageErrors, []);
     } finally {
       await context.close();

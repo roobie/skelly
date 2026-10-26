@@ -130,6 +130,7 @@ export class SaveController {
   private readonly text: SaveText;
   private readonly goLabels: ScreenText['menu'];
   private readonly environmentProblem: string | undefined;
+  private readonly savingEnabled: boolean;
   private checkpoints: CheckpointSchedule | undefined;
   private queued: { snapshot: Readonly<SaveSnapshot>; reason: string } | undefined;
   private writing = false;
@@ -162,6 +163,7 @@ export class SaveController {
     this.goLabels = text.menu;
     this.newWorldGoLabel = text.save.newWorld;
     this.statusText = text.save.checkingSaves;
+    this.savingEnabled = savingEnabled;
     this.environmentProblem = savingEnabled ? saveEnvironmentProblem(text.save) : text.save.debugRun;
     if (!this.environmentProblem) {
       this.identity = currentSaveVersionIdentity(bundledMods, browserMods);
@@ -790,7 +792,7 @@ export class SaveController {
   }
 
   private async requestPersistence(): Promise<void> {
-    if (this.requestingPersistence) {
+    if (this.requestingPersistence || !this.savingEnabled) {
       return;
     }
     this.requestingPersistence = true;
@@ -848,6 +850,10 @@ export class SaveController {
     return !(this.entered || this.requestedContinue) && this.restored !== undefined;
   }
 
+  private get canOfferPersistence(): boolean {
+    return this.savingEnabled && this.storage.canRequestPersistence && this.storageStatus?.persistent !== true;
+  }
+
   private render(): void {
     const status = $('save-status');
     const button = $('continue') as HTMLButtonElement;
@@ -882,7 +888,7 @@ export class SaveController {
     $('save-rescan').hidden = this.entered || !this.storageUnavailable || Boolean(this.environmentProblem);
     const persist = $('save-persist');
     if (persist) {
-      persist.hidden = !this.storage.canRequestPersistence || this.storageStatus?.persistent === true;
+      persist.hidden = !this.canOfferPersistence;
       (persist as HTMLButtonElement).disabled = this.requestingPersistence;
     }
     const exportButton = $('save-export');
