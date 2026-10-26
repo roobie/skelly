@@ -869,6 +869,7 @@ export const startPlay = (
       intent: (): MoveIntent => input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
       readyHeld: () => input.rightMouseHeld,
+      aimingDownSights: () => input.aimingDownSights && input.rightMouseActionHeld,
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),

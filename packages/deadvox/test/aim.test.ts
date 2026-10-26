@@ -47,6 +47,7 @@ const createAim = (
     },
     wobbleSeed,
     wobbleNoise: quietNoise,
+    breathHold: stanceTuning.breathHold,
     variance,
   });
 const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning, variance = 1) =>
@@ -60,6 +61,7 @@ const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning, variance = 1) =>
     },
     wobbleSeed,
     wobbleNoise,
+    breathHold: stanceTuning.breathHold,
     variance,
   });
 
@@ -93,6 +95,7 @@ it('restores and advances saved look offsets at the geometric limit beyond core 
     wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
     wobbleSeed,
     wobbleNoise: quietNoise,
+    breathHold: stanceTuning.breathHold,
   });
   const frame = restored.advance(step({ variance: 2 }));
   expect(Number.isFinite(frame.yaw) && Number.isFinite(frame.pitch)).toBe(true);
@@ -111,6 +114,7 @@ it.each(['lookYaw', 'lookPitch'] as const)('refuses impossible saved %s before r
         wobbleShape: { verticalToHorizontalRatio: 0.5, archPower: 1, phaseOffsetRadians: 0 },
         wobbleSeed,
         wobbleNoise: quietNoise,
+        breathHold: stanceTuning.breathHold,
       }),
   ).toThrow('Invalid aim state');
 });

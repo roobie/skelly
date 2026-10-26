@@ -33,6 +33,8 @@ export interface AimStep {
   readonly recoilRecoveryRate: number;
   /** Fraction of the shared two-step footfall stride. */
   readonly stridePhase: number;
+  /** Absent means no hold is asked for. */
+  readonly breath?: BreathHoldStep | undefined;
 }
 
 export interface AimWobbleShape {
@@ -58,8 +60,85 @@ export interface AimWobbleNoiseState {
   readonly rng: RngState;
 }
 
+/** Held breath and the recovery after it gives out (`DESIGN.md`, "Holding breath"). */
+export interface BreathHoldState {
+  readonly held: boolean;
+  readonly recoveryRemainingSimSeconds: number;
+}
+
+export const INITIAL_BREATH_HOLD: BreathHoldState = Object.freeze({ held: false, recoveryRemainingSimSeconds: 0 });
+
+export interface BreathHoldTuning {
+  readonly staminaPerSimSecond: number;
+  readonly recoverySimSeconds: number;
+  /** Drift multiplier during recovery; above 1. */
+  readonly recoverySwayScale: number;
+  /** Share of drift a hold removes at skill zero without pain. */
+  readonly steadyingMinimum: number;
+  readonly steadyingSkillRange: number;
+  readonly steadyingSkillHalfLifeLevels: number;
+  /** Share of steadying lost per unit of felt-pain ratio. */
+  readonly painWeakeningPerRatio: number;
+}
+
+/** One step's breath input: whether the player asks to hold, and the stamina the winded line gates. */
+export interface BreathHoldStep {
+  readonly wanted: boolean;
+  readonly stamina: number;
+  readonly windedBelow: number;
+  /** Share of drift removed while held, from `breathSteadying`. */
+  readonly steadying: number;
+}
+
+export type BreathCue = 'inhale' | 'exhale' | 'gasp';
+
+/**
+ * Recovery counts down first, so a hold may start on the step it ends. A held breath gives out at the winded line
+ * before release is considered, and giving out starts the recovery that refuses a new hold.
+ */
+export const advanceBreathHold = (
+  state: BreathHoldState,
+  dt: number,
+  step: Pick<BreathHoldStep, 'wanted' | 'stamina' | 'windedBelow'> | undefined,
+  recoverySimSeconds: number,
+): { readonly state: BreathHoldState; readonly cue?: BreathCue } => {
+  const recoveryRemainingSimSeconds = Math.max(0, state.recoveryRemainingSimSeconds - dt);
+  const wanted = step?.wanted ?? false;
+  if (state.held) {
+    if (step !== undefined && step.stamina <= step.windedBelow) {
+      return { state: { held: false, recoveryRemainingSimSeconds: recoverySimSeconds }, cue: 'gasp' };
+    }
+    return wanted
+      ? { state: { held: true, recoveryRemainingSimSeconds } }
+      : { state: { held: false, recoveryRemainingSimSeconds }, cue: 'exhale' };
+  }
+  if (step?.wanted && recoveryRemainingSimSeconds <= 0 && step.stamina >= step.windedBelow) {
+    return { state: { held: true, recoveryRemainingSimSeconds }, cue: 'inhale' };
+  }
+  return { state: { held: false, recoveryRemainingSimSeconds } };
+};
+
+/** Firearms skill strengthens the hold and felt pain weakens it; the result is the share of drift removed. */
+export const breathSteadying = (effectLevel: number, painRatio: number, tuning: BreathHoldTuning): number => {
+  const skilled =
+    tuning.steadyingMinimum +
+    tuning.steadyingSkillRange * (effectLevel / (effectLevel + tuning.steadyingSkillHalfLifeLevels));
+  return Math.max(0, Math.min(1, skilled * (1 - tuning.painWeakeningPerRatio * Math.max(0, painRatio))));
+};
+
+export const assertBreathHoldState = (state: BreathHoldState): void => {
+  if (
+    typeof state?.held !== 'boolean' ||
+    !(Number.isFinite(state.recoveryRemainingSimSeconds) && state.recoveryRemainingSimSeconds >= 0) ||
+    (state.held && state.recoveryRemainingSimSeconds > 0)
+  ) {
+    throw new Error('Invalid breath hold state');
+  }
+};
+
 export interface AimSnapshotState extends AimState {
   readonly wobbleNoise: AimWobbleNoiseState;
+  readonly breath: BreathHoldState;
 }
 
 const assertWobbleNoiseOptions = (tuning: AimWobbleNoiseTuning, strengthScale: number): void => {
@@ -254,6 +333,8 @@ interface AimControllerOptions {
   readonly wobbleNoise: AimWobbleNoiseTuning;
   readonly wobbleNoiseStrengthScale?: number;
   readonly wobbleNoiseState?: AimWobbleNoiseState;
+  readonly breathHold: Pick<BreathHoldTuning, 'recoverySimSeconds' | 'recoverySwayScale'>;
+  readonly breathHoldState?: BreathHoldState;
 }
 
 export class AimController {
@@ -270,6 +351,10 @@ export class AimController {
   private wobbleNoisePitch: AimWobbleNoiseAxisState;
   private stridePhase = 0;
   private viewPitchShift = 0;
+  private readonly breathHold: Pick<BreathHoldTuning, 'recoverySimSeconds' | 'recoverySwayScale'>;
+  private breath: BreathHoldState;
+  private breathSteadying = 0;
+  private lastBreathCue: BreathCue | undefined;
 
   constructor({
     tuning,
@@ -282,8 +367,23 @@ export class AimController {
     wobbleNoise,
     wobbleNoiseStrengthScale = 1,
     wobbleNoiseState,
+    breathHold,
+    breathHoldState = INITIAL_BREATH_HOLD,
   }: AimControllerOptions) {
     assertAimState(state);
+    assertBreathHoldState(breathHoldState);
+    if (
+      !(
+        Number.isFinite(breathHold.recoverySimSeconds) &&
+        breathHold.recoverySimSeconds >= 0 &&
+        Number.isFinite(breathHold.recoverySwayScale) &&
+        breathHold.recoverySwayScale >= 1
+      )
+    ) {
+      throw new Error('Invalid breath hold tuning');
+    }
+    this.breathHold = { ...breathHold };
+    this.breath = { ...breathHoldState };
     this.tuning = { ...tuning };
     if (!(Number.isFinite(variance) && variance > 0)) {
       throw new Error('Invalid aim variance');
@@ -342,6 +442,23 @@ export class AimController {
     return this.viewPitchShift;
   }
 
+  get breathHeld(): boolean {
+    return this.breath.held;
+  }
+
+  /** The breath sound the last step started, if any; presentation only. */
+  get breathCue(): BreathCue | undefined {
+    return this.lastBreathCue;
+  }
+
+  /** Holding breath damps only the drift; recovery after giving out makes it worse. */
+  private breathDriftScale(): number {
+    if (this.breath.held) {
+      return 1 - this.breathSteadying;
+    }
+    return this.breath.recoveryRemainingSimSeconds > 0 ? this.breathHold.recoverySwayScale : 1;
+  }
+
   /** Discard unaccepted overflow and rebase look sampling for the accepted camera shift. */
   applyViewPitchShift(requested: number, applied: number): void {
     if (
@@ -373,7 +490,7 @@ export class AimController {
       shape: this.wobbleShape,
       stridePhase: this.stridePhase,
       wobbleNoise: { yaw: this.wobbleNoiseYaw.smooth, pitch: this.wobbleNoisePitch.smooth },
-      wobbleNoiseStrengthScale: this.wobbleNoiseStrengthScale,
+      wobbleNoiseStrengthScale: this.wobbleNoiseStrengthScale * this.breathDriftScale(),
     });
     this.state.frame = result.frame;
     this.viewPitchShift = result.viewPitchShift;
@@ -387,6 +504,7 @@ export class AimController {
         pitch: Object.freeze({ ...this.wobbleNoisePitch }),
         rng: Object.freeze([...this.wobbleNoiseRng.state()]) as unknown as RngState,
       }),
+      breath: Object.freeze({ ...this.breath }),
     });
   }
 
@@ -400,6 +518,7 @@ export class AimController {
     firing,
     recoilRecoveryRate,
     stridePhase,
+    breath,
   }: AimStep): AimFrame {
     if (
       !(
@@ -419,6 +538,22 @@ export class AimController {
     ) {
       throw new Error('Invalid aim step');
     }
+    if (
+      breath !== undefined &&
+      !(
+        typeof breath.wanted === 'boolean' &&
+        [breath.stamina, breath.windedBelow].every(Number.isFinite) &&
+        Number.isFinite(breath.steadying) &&
+        breath.steadying >= 0 &&
+        breath.steadying <= 1
+      )
+    ) {
+      throw new Error('Invalid breath step');
+    }
+    const breathStep = advanceBreathHold(this.breath, dt, breath, this.breathHold.recoverySimSeconds);
+    this.breath = breathStep.state;
+    this.lastBreathCue = breathStep.cue;
+    this.breathSteadying = breath?.steadying ?? 0;
     const { state } = this;
     const speed = Math.hypot(velocity[0], velocity[2]) * blockSize;
     this.variance = variance;

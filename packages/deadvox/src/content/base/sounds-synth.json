@@ -2,7 +2,7 @@
   "sounds": [
     {
       "category": "body",
-      "description": "Preview only; no game event plays it.",
+      "description": "Holding breath to steady aim starts.",
       "gain": 0.5,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "breath_inhale",
@@ -59,7 +59,7 @@
     },
     {
       "category": "body",
-      "description": "Preview only; no game event plays it.",
+      "description": "A held breath is let go.",
       "gain": 0.5,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "breath_exhale",
@@ -116,7 +116,7 @@
     },
     {
       "category": "body",
-      "description": "Preview only; no game event plays it.",
+      "description": "A held breath gives out at the winded line.",
       "gain": 0.59999999999999998,
       "gainJitter": [0.90000000000000002, 1.05],
       "id": "breath_gasp",

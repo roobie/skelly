@@ -171,6 +171,18 @@ export const TEMPORAL_FIELDS = [
     unit: 'Seconds',
     dimension: 'duration',
   },
+  {
+    path: 'skills.combat.firearms.breathHold.staminaPerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  {
+    path: 'skills.combat.firearms.breathHold.recoverySimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'skills.combat.melee.joltRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.melee.deflectRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'player.crouch.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
