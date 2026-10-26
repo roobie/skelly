@@ -2,7 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
-import { type ActionText, actionText, fillParts, fillText } from '../core/actionText.ts';
+import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
@@ -570,7 +570,7 @@ const handlingPresentationFor = ({
   const { cancel } = actionText(inventory.registry).hints;
   const inactive = {
     ...queue,
-    cancelLabel: queue.cancelLabel ?? html`${fillParts(cancel, { key: keyCap('handling.stop') })}`,
+    cancelLabel: queue.cancelLabel ?? fillHint(cancel, { key: keyCap('handling.stop') }),
   };
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
@@ -2619,17 +2619,15 @@ export const startPlay = (
     }
     const dismember = session.downedBodyPlan(id, 'dismember');
     const values = { key: keyCap('world.interact'), finish: finish.label.toLowerCase() };
-    return html`${
-      dismember.ok
-        ? fillParts(lines.hints.downedBody, values)
-        : fillParts(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() })
-    }`;
+    return dismember.ok
+      ? fillHint(lines.hints.downedBody, values)
+      : fillHint(lines.hints.downedBodyRefused, { ...values, reason: dismember.reason.toLowerCase() });
   };
 
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): HintText => {
     if (session.isObjective(entity)) {
-      return html`${fillParts(lines.hints.activate, { key: keyCap('world.interact'), name: nameOf(entity) })}`;
+      return fillHint(lines.hints.activate, { key: keyCap('world.interact'), name: nameOf(entity) });
     }
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
     const prying = pryHint(entity);
@@ -3409,13 +3407,13 @@ export const startPlay = (
       return playCarryText(
         'refusal' in carry.spot
           ? carry.spot.refusal
-          : html`${fillParts(lines.hints.setDown, { key, name: nameOf(carry.entity) })}`,
+          : fillHint(lines.hints.setDown, { key, name: nameOf(carry.entity) }),
         screenText.interaction,
       );
     }
     switch (target?.kind) {
       case 'item':
-        return html`${fillParts(lines.hints.groundItem, { key, item: inventory.name(target.item) })}`;
+        return fillHint(lines.hints.groundItem, { key, item: inventory.name(target.item) });
       case 'furniture':
         return powerControlHint(target.entity) ?? furnitureInteractionHint(target.entity);
       case 'body':

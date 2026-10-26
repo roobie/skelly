@@ -6,6 +6,7 @@ import { coreMessage } from './coreText.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
 import { craftComponentEligible, type Item, isEmpty } from './items.ts';
+import { countText } from './numberText.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 
 interface CraftComponent {
@@ -354,9 +355,9 @@ const componentRefusal = (snapshot: ReachSnapshot, status: CraftRequirements, pr
   );
   if (alternative) {
     return coreMessage(registry, 'componentsShort', {
-      count: String(alternative.needed),
+      count: countText(alternative.needed),
       item: registry.items.get(alternative.item)!.name.toLowerCase(),
-      found: String(alternative.available),
+      found: countText(alternative.available),
     });
   }
   return coreMessage(registry, Object.keys(prefer).length > 0 ? 'preferredCompete' : 'componentsCompete');

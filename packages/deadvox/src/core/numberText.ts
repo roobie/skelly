@@ -10,8 +10,11 @@ export const countText = (value: number): string => String(Math.round(value));
 /** One fixed decimal for values that tick while the player watches: times, distances, speeds, practice. */
 export const decimalText = (value: number): string => value.toFixed(1);
 
-/** Two fixed decimals for small ratios read at a glance: volumes, carried weight. */
+/** Two fixed decimals for small ratios read at a glance: carried weight. */
 export const hundredthsText = (value: number): string => value.toFixed(2);
+
+/** Liquid volumes in millilitres: three decimals at most, trailing zeros dropped, so reservoir amounts as small as a sip stay readable. */
+export const volumeText = (value: number): string => String(Math.round(value * 1000) / 1000);
 
 /** Authored stat values, whole or fractional: one decimal at most, trailing zeros dropped. */
 export const statText = (value: number): string => String(Math.round(value * 10) / 10);

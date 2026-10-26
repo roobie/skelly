@@ -19,7 +19,7 @@ import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } 
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
 import { PILE_GRID } from '../core/inventoryScale.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { countText, decimalText, hundredthsText, percentText, statText } from '../core/numberText.ts';
+import { countText, decimalText, hundredthsText, percentText, statText, volumeText } from '../core/numberText.ts';
 import {
   batterySlotRefusal,
   bestPocket,
@@ -1663,8 +1663,8 @@ export class InventoryScreen {
     const option = otherHandPour(item, this.hooks.reach());
     return {
       reservoir: coreLabel(this.inv.registry, 'reservoir', {
-        volume: String((item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0) / 1000),
-        capacity: String(vessel.capacityMicrolitres / 1000),
+        volume: volumeText((item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0) / 1000),
+        capacity: volumeText(vessel.capacityMicrolitres / 1000),
       }),
       ...(vessel.pour
         ? {
