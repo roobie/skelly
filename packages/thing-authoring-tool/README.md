@@ -8,7 +8,7 @@ read_if:
 
 # Thing authoring tool
 
-## Skin capability gate
+## Skinned export
 
 Weights must be evaluated in common bind space after voxel meshing so duplicated
 vertices at finish boundaries cannot acquire different deformation rules. See
@@ -22,6 +22,14 @@ keep greedy meshing so supporting skins does not inflate ordinary models. See
 `packages/thing-export/src/skin.ts`, `preserveSkinFace`. Band extents and profiles
 belong to authoring content, not anatomy-specific exporter constants; see
 `test/fixtures/bend-strip.jsonnet` and `src/skin.ts`, `authoredSkin`.
+
+The exporter and consumer proofs live in their owning packages so tests do not
+introduce runtime import edges between them. The consumer reads a committed model
+rather than importing its producer. For fixture regeneration, see
+`test/export-skin-fixture.ts`, `writeRecipeExports`, and
+`packages/deadvox/test/skinExport.test.ts`, `load`. Regeneration uses the same item
+export and file-writing mechanisms as production assets, while keeping fixture
+content out of the production catalogue.
 
 Each displayed skin owns its mutable skeleton because posing or disposing one
 figure must not change another. Immutable geometry may remain shared. Full joint
