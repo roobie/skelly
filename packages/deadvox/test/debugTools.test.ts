@@ -4,6 +4,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { mountedOptic, opticViewSettings } from '../src/core/opticView.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -226,6 +227,32 @@ describe('debug starting equipment', () => {
     expect(inventory.hands[dominantSide(inventory.character)]?.type).toBe('frag_grenade');
     const packed = inventory.worn.back?.pockets?.flat().filter(({ item }) => item.type === 'frag_grenade') ?? [];
     expect(packed.length).toBeGreaterThan(1);
+  });
+
+  it('previews every supported optic through certified loadout fitting with a usable reticle', () => {
+    const optics = [...registry.items.values()].filter((item) => {
+      const model = item.model ? registry.models.get(item.model) : undefined;
+      return model && opticViewSettings(item, model);
+    });
+    expect(optics.length).toBeGreaterThan(0);
+    for (const optic of optics) {
+      let previewed = false;
+      for (const host of ['ar', 'hunting']) {
+        const inventory = new Inventory(registry);
+        try {
+          equipDebugLoadout(inventory, true, true, `?loadout=${host}&optic=${optic.id}`);
+        } catch {
+          continue;
+        }
+        const firearm = inventory.hands[dominantSide(inventory.character)]!;
+        const fitted = mountedOptic(registry, firearm);
+        expect(fitted?.item.id).toBe(optic.id);
+        expect(opticViewSettings(fitted!.item, fitted!.model)?.reticle?.primitives.length).toBeGreaterThan(0);
+        previewed = true;
+        break;
+      }
+      expect(previewed, optic.id).toBe(true);
+    }
   });
 
   it('keeps ordinary starting hands empty', () => {
