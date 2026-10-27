@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html';
 import { getBuildRevision } from '../core/buildInfo.ts';
 import type { HandBackFile } from '../game/playtestTools.ts';
+import { isOwnError } from './ownError.ts';
 
 export interface ErrorReportContext {
   readonly seed: number;
@@ -148,10 +149,14 @@ export const installErrorReportHandler = (): void => {
   };
 
   globalThis.addEventListener('error', (event) => {
-    show(event.error ?? event.message);
+    if (isOwnError(event, location.origin)) {
+      show(event.error ?? event.message);
+    }
   });
   globalThis.addEventListener('unhandledrejection', (event) => {
-    show(event.reason);
+    if (isOwnError(event, location.origin)) {
+      show(event.reason);
+    }
   });
   copyButton.addEventListener('click', async () => {
     try {
