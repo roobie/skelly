@@ -1691,9 +1691,13 @@ prone fit.
 Firearm shots start at the shared posed muzzle and follow the barrel, never the
 observing camera or a wall-dependent eye fallback: every observer must see the
 same physical truth. Obstruction handling belongs to #1376 rather than changing
-shot origin. See `src/game/firearmAim.ts`, `firearmBoreRay`. Sight-to-bore zeroing
-remains under #1383; a ballistic correction must not disagree with the visible
-barrel.
+shot origin. See `src/game/firearmAim.ts`, `firearmBoreRay`.
+
+Sights stay parallel to the bore, with no finite-distance zeroing: straight
+hitscan rays have no drop, so impact stays one sight height below the aim point
+at every range. Tilting the sights would introduce an error that grows with
+range instead of correcting a curved trajectory. Revisit zeroing when bullet
+drop exists. See `src/core/pellets.ts`, `PelletShot`.
 
 Steep look-down hip lean is part of the same pose: looking through the avatar's
 centreline is not realistic biomechanics. It must not move the collision body,
