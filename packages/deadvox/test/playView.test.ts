@@ -581,8 +581,9 @@ describe('play presentation ownership', () => {
     expect(cases).toHaveBeenCalledTimes(1);
   });
 
-  it('passes the shared stride phase and the stance to the drawn body', () => {
-    const { view } = fixture();
+  it('passes stride, stance and ADS posture to the body without rolling the camera', () => {
+    const { view, engine } = fixture();
+    const ads = { side: 'right' as const, model: registry.models.get(registry.items.get('rifle_assault')!.model!)! };
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, -1], halfWidth: 0.6, height: 3.6, onGround: true };
     const sync = vi.spyOn(view.playerMeshes, 'sync');
     const damage = { style: { opacity: '' } } as unknown as HTMLElement;
@@ -596,12 +597,14 @@ describe('play presentation ownership', () => {
         pitch: 0,
         stridePhase: 0.25,
         stance: 'prone',
+        ads,
         eye: [2, 4.24, 6],
         sightImpaired: false,
       },
       damage,
     );
-    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2, stance: 'prone' }));
+    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2, stance: 'prone', ads }));
+    expect(engine.camera.rotation.z).toBeCloseTo(0);
     view.dispose();
   });
 

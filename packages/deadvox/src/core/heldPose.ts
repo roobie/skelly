@@ -14,7 +14,7 @@ const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right'
 const mirrorModelZ = (side: HandSide, [x, y, z]: Vec3): Vec3 => [x, y, side === 'right' ? z : -z];
 
 /** From a long gun's grip to its butt, in the view's frame; the lowered gun turns about the butt. */
-const gripToButt = (model: ModelDef): Vec3 => {
+export const heldButtOffset = (model: ModelDef): Vec3 => {
   if (!(model.hands && model.grip)) {
     throw new Error(`Model ${model.id} needs hands and a grip`);
   }
@@ -41,7 +41,7 @@ export const heldGripOffset = ({
 }): Vec3 => {
   if (model?.hands) {
     const seat = mirrorViewX(side, model.hands.seat);
-    const toGrip = rotateYXZ(gripToButt(model).map((value) => -value) as Vec3, [loweredPitch, 0, 0]);
+    const toGrip = rotateYXZ(heldButtOffset(model).map((value) => -value) as Vec3, [loweredPitch, 0, 0]);
     return seat.map((value, index) => value + toGrip[index]!) as Vec3;
   }
   return mirrorViewX(side, twoHanded ? holds.twoHand : holds.oneHand);
@@ -227,7 +227,7 @@ const seatedFirearmRoot = (model: ModelDef, seat: Vec3 | undefined, turn: (point
   if (!(seat && model.hands)) {
     return undefined;
   }
-  const butt = turn(gripToButt(model));
+  const butt = turn(heldButtOffset(model));
   return seat.map((value, axis) => value - butt[axis]!) as Vec3;
 };
 

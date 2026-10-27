@@ -74,6 +74,7 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly stridePhase: number;
+  readonly ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
   readonly stance: PlayerStance;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
@@ -531,6 +532,7 @@ export const createPlayView = (
         moving,
         stance,
         stancePose: figureStancePose(playerFigure, stance),
+        ads: frame.ads,
         dt,
         inventory,
         eye,

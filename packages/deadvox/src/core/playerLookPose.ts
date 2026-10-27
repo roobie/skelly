@@ -1,7 +1,19 @@
+import { type AimFrame, NEUTRAL_AIM } from './aim.ts';
 import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { heldFirearmTransform } from './heldPose.ts';
 import type { HandSide } from './inventory.ts';
 import type { PlayerStance } from './playerStance.ts';
+import {
+  add,
+  axisRotation,
+  inverseRotation,
+  multiplyRotation,
+  type Quaternion,
+  rotateVector,
+  rotationBetween,
+  sub,
+} from './spatial.ts';
 
 const RADIANS = Math.PI / 180;
 type Models = ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
@@ -33,10 +45,17 @@ const rotate = ([x, y, z]: Vec3, angle: number): Vec3 => [
   y * Math.cos(angle) - z * Math.sin(angle),
   y * Math.sin(angle) + z * Math.cos(angle),
 ];
-const about = (point: Vec3, pivot: Vec3, angle: number): Vec3 => {
-  const offset = rotate(point.map((v, i) => v - pivot[i]!) as Vec3, angle);
-  return offset.map((v, i) => v + pivot[i]!) as Vec3;
-};
+const turnX = (angle: number): Quaternion => axisRotation([1, 0, 0], angle);
+const turnZ = (angle: number): Quaternion => axisRotation([0, 0, 1], angle);
+const about = (point: Vec3, pivot: Vec3, rotation: Quaternion): Vec3 =>
+  add(rotateVector(rotation, sub(point, pivot)), pivot);
+
+export interface PlayerAdsPose {
+  readonly model: ModelDef;
+  readonly side: HandSide;
+  readonly aimFrame?: AimFrame | undefined;
+  readonly adsApertureFill?: number | undefined;
+}
 
 export interface PlayerLookPose {
   readonly hip: Vec3;
@@ -48,6 +67,11 @@ export interface PlayerLookPose {
   readonly neckTurn: number;
   readonly headTurn: number;
   readonly hipDrop: number;
+  readonly spineRotation: Quaternion;
+  readonly neckRotation: Quaternion;
+  readonly headRotation: Quaternion;
+  readonly neckScale: number;
+  readonly eyeFromHead: Vec3;
   readonly eye: Vec3;
   readonly shoulders: Readonly<Record<HandSide, Vec3>>;
   readonly stockSeats: Readonly<Record<HandSide, Vec3>>;
@@ -56,14 +80,51 @@ export interface PlayerLookPose {
 export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso' | 'neck' | 'head'): Vec3 => {
   let at = point;
   if (part === 'head') {
-    at = about(at, pose.head, pose.headTurn);
+    at = about(at, pose.head, pose.headRotation);
+    at = at.map((value, axis) => value + (pose.head[axis]! - pose.neck[axis]!) * (pose.neckScale - 1)) as Vec3;
+  } else if (part === 'neck') {
+    at = [at[0], pose.neck[1] + (at[1] - pose.neck[1]) * pose.neckScale, at[2]];
   }
   if (part !== 'torso') {
-    at = about(at, pose.neck, pose.neckTurn);
+    at = about(at, pose.neck, pose.neckRotation);
   }
-  at = about(at, pose.spine, pose.spineTurn);
-  at = about(at, pose.hip, pose.hipTurn);
+  at = about(at, pose.spine, pose.spineRotation);
+  at = about(at, pose.hip, turnX(pose.hipTurn));
   return [at[0], at[1] - pose.hipDrop, at[2]];
+};
+
+const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef, pitch: number): PlayerLookPose => {
+  const gun = heldFirearmTransform({
+    holds: figure.holds,
+    model: ads.model,
+    side: ads.side,
+    leadingSide: ads.side,
+    twoHanded: true,
+    progress: 1,
+    aimingDownSights: true,
+    aimFrame: ads.aimFrame ?? NEUTRAL_AIM,
+    loweredPitchRadians: 0,
+    stockSeat: pose.stockSeats[ads.side],
+    adsApertureFill: ads.adsApertureFill,
+  });
+  if (!gun.sightEyeOffset) {
+    return pose;
+  }
+  const delta = rotate(gun.rootOffset.map((value, axis) => value + gun.sightEyeOffset![axis]!) as Vec3, pitch);
+  const targetEye = add(pose.eye, delta);
+  const headWorld = multiplyRotation(
+    turnX(pitch),
+    turnZ(-figure.aimPose.ads.headRollDegrees * RADIANS * (ads.side === 'right' ? 1 : -1)),
+  );
+  const headEye = rotateVector(headWorld, pose.eyeFromHead);
+  const neckWorld = playerPosePoint(pose, pose.neck, 'torso');
+  const torso = multiplyRotation(turnX(pose.hipTurn), pose.spineRotation);
+  const neckToHead = rotateVector(inverseRotation(torso), sub(sub(targetEye, headEye), neckWorld));
+  const rest = sub(pose.head, pose.neck);
+  const neckScale = Math.hypot(...neckToHead) / Math.hypot(...rest);
+  const neckRotation = rotationBetween(rest, neckToHead);
+  const headRotation = multiplyRotation(inverseRotation(multiplyRotation(torso, neckRotation)), headWorld);
+  return { ...pose, neckScale, neckRotation, headRotation };
 };
 
 export const playerLookPose = ({
@@ -72,12 +133,14 @@ export const playerLookPose = ({
   pitch,
   stance,
   stancePose = figureStancePose(figure, stance),
+  ads,
 }: {
   figure: FigureDef;
   models: Models;
   pitch: number;
   stance: PlayerStance;
   stancePose?: FigureStancePose;
+  ads?: PlayerAdsPose | undefined;
 }): PlayerLookPose => {
   const anchors = models.get(figure.body.model)?.anchors;
   const anchor = (name: string): Vec3 => {
@@ -109,7 +172,9 @@ export const playerLookPose = ({
   const spineTurn = limit(pitch * (pitch < 0 ? torsoShare.down : torsoShare.up) - hipAimTurn, torsoLimitDegrees);
   const neckTurn = limit((needed - spineTurn) * neckShare, neckLimitDegrees);
   const headTurn = limit(needed - spineTurn - neckTurn, headLimitDegrees);
-  const pose: PlayerLookPose = {
+  const eyes = figure.body.eyes.map(point);
+  const eyeAnchor = eyes[0]!.map((value, axis) => (value + eyes[1]![axis]!) / 2) as Vec3;
+  let pose: PlayerLookPose = {
     hip: [0, figure.hipHeightMetres, 0],
     spine: point(figure.body.spine.pivot),
     neck: point(figure.body.neck.pivot),
@@ -119,30 +184,45 @@ export const playerLookPose = ({
     neckTurn,
     headTurn,
     hipDrop: stancePose.hipDropMetres,
+    spineRotation: multiplyRotation(
+      turnX(spineTurn),
+      turnZ(ads ? figure.aimPose.ads.torsoRollDegrees * RADIANS * (ads.side === 'right' ? 1 : -1) : 0),
+    ),
+    neckRotation: turnX(neckTurn),
+    headRotation: turnX(headTurn),
+    neckScale: 1,
+    eyeFromHead: eyeAnchor.map((value, axis) => value - point(figure.body.head.pivot)[axis]!) as Vec3,
     eye: [0, 0, 0],
     shoulders: { right: [0, 0, 0], left: [0, 0, 0] },
     stockSeats: { right: [0, 0, 0], left: [0, 0, 0] },
   };
-  const eyes = figure.body.eyes.map(point);
-  const eye = playerPosePoint(pose, eyes[0]!.map((v, i) => (v + eyes[1]![i]!) / 2) as Vec3, 'head');
+  const eye = playerPosePoint(pose, eyeAnchor, 'head');
   const shoulders = Object.fromEntries(
     (['right', 'left'] as const).map((side) => [
       side,
       playerPosePoint(pose, point(figure.body.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder']), 'torso'),
     ]),
   ) as Record<HandSide, Vec3>;
-  const stockSeats = Object.fromEntries(
-    (['right', 'left'] as const).map((side) => {
-      const down = Math.max(0, -Math.sin(pitch));
-      const seat = stockShoulderOffset.up.map(
-        (value, axis) => value + (stockShoulderOffset.down[axis]! - value) * down,
-      ) as Vec3;
-      const offset: Vec3 = [seat[0] * (side === 'right' ? 1 : -1), seat[1], seat[2]];
-      const turned = rotate(offset, hipTurn + spineTurn);
-      return [side, rotate(shoulders[side].map((v, i) => v + turned[i]! - eye[i]!) as Vec3, -pitch)];
-    }),
-  ) as Record<HandSide, Vec3>;
-  return { ...pose, eye, shoulders, stockSeats };
+  const stockSeats = (atEye: Vec3) =>
+    Object.fromEntries(
+      (['right', 'left'] as const).map((side) => {
+        const down = Math.max(0, -Math.sin(pitch));
+        const seat = ads
+          ? figure.aimPose.ads.stockShoulderOffset
+          : (stockShoulderOffset.up.map(
+              (value, axis) => value + (stockShoulderOffset.down[axis]! - value) * down,
+            ) as Vec3);
+        const offset: Vec3 = [seat[0] * (side === 'right' ? 1 : -1), seat[1], seat[2]];
+        const turned = rotateVector(multiplyRotation(turnX(hipTurn), pose.spineRotation), offset);
+        return [side, rotate(shoulders[side].map((v, i) => v + turned[i]! - atEye[i]!) as Vec3, -pitch)];
+      }),
+    ) as Record<HandSide, Vec3>;
+  pose = { ...pose, eye, shoulders, stockSeats: stockSeats(eye) };
+  if (ads) {
+    pose = adsLookPose(pose, ads, figure, pitch);
+  }
+  const posedEye = playerPosePoint(pose, eyeAnchor, 'head');
+  return { ...pose, eye: posedEye, stockSeats: stockSeats(posedEye) };
 };
 
 export const playerEyePosition = ({
@@ -153,6 +233,7 @@ export const playerEyePosition = ({
   stance,
   figure,
   models,
+  ads,
 }: {
   feet: Readonly<Vec3>;
   blockSize: number;
@@ -161,8 +242,9 @@ export const playerEyePosition = ({
   stance: PlayerStance;
   figure: FigureDef;
   models: Models;
+  ads?: PlayerAdsPose | undefined;
 }): Vec3 => {
-  const { eye } = playerLookPose({ figure, models, pitch, stance });
+  const { eye } = playerLookPose({ figure, models, pitch, stance, ads });
   return [
     feet[0] + (eye[0] * Math.cos(yaw) + eye[2] * Math.sin(yaw)) / blockSize,
     feet[1] + eye[1] / blockSize,

@@ -1,15 +1,62 @@
-import { Vector3 } from 'three';
+import { Matrix4, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
+import { aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { sightedFirearmModel } from '../src/core/firearmSight.ts';
+import { heldButtOffset, heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { sightedFirearmModel } from '../src/render/firearmSight.ts';
+import { playerLookPose } from '../src/core/playerLookPose.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame } from '../src/render/models.ts';
 import { baseRegistry as loadBaseRegistry } from './baseRegistry.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 
 const baseRegistry = loadBaseRegistry();
+
+it('seats iron sights at the anatomical ADS eye without releasing either shoulder', () => {
+  const figure = baseRegistry.figures.get('player')!;
+  const model = baseRegistry.models.get(baseRegistry.items.get('rifle_ak')!.model!)!;
+  expect(model.gun?.sight?.kind).toBe('iron');
+  const cases = [
+    ['right', 'standing', 0],
+    ['left', 'crouching', 0],
+    ['right', 'crouching', -LOOK_PITCH_LIMIT],
+    ['left', 'standing', -LOOK_PITCH_LIMIT],
+    ['right', 'standing', LOOK_PITCH_LIMIT],
+    ['left', 'crouching', LOOK_PITCH_LIMIT],
+  ] as const;
+  for (const [side, stance, pitch] of cases) {
+    const aimFrame = stance === 'crouching' ? { yaw: 0.02, pitch: -0.03 } : NEUTRAL_AIM;
+    const body = playerLookPose({ figure, models: baseRegistry.models, pitch, stance, ads: { model, side, aimFrame } });
+    const pose = heldFirearmTransform({
+      holds: figure.holds,
+      model,
+      side,
+      leadingSide: side,
+      twoHanded: true,
+      progress: 1,
+      aimingDownSights: true,
+      aimFrame,
+      loweredPitchRadians: 0,
+      stockSeat: body.stockSeats[side],
+    });
+    const label = `${side} ${stance} ${pitch}`;
+    expect(
+      new Vector3(...pose.rootOffset).add(new Vector3(...pose.sightEyeOffset!)).length(),
+      `${label}: sight eye`,
+    ).toBeLessThan(1e-6);
+    expect(new Vector3(...pose.sightDirection!).dot(new Vector3(...aimDirection(0, 0, aimFrame)))).toBeCloseTo(1);
+    const rotation = new Matrix4().makeBasis(
+      ...(pose.rootRotation.map((axis) => new Vector3(...axis)) as [Vector3, Vector3, Vector3]),
+    );
+    const seat = new Vector3(...heldButtOffset(model))
+      .applyMatrix4(rotation)
+      .add(new Vector3(...pose.rootOffset))
+      .applyAxisAngle(new Vector3(1, 0, 0), pitch)
+      .add(new Vector3(...body.eye));
+    expect(seat.distanceTo(new Vector3(...body.shoulders[side])), `${label}: shoulder contact`).toBeLessThan(0.1);
+  }
+});
 
 it('aligns ADS through the fitted optic frame and restores irons when removed', () => {
   const { registry, fitted } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');

@@ -126,6 +126,7 @@ export class HeldItems {
     }
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
+    this.presentation.stockSeats = handling.stockSeats;
     this.animator.update(main, {
       pose,
       recoil,

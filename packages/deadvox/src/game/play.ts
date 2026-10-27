@@ -18,6 +18,7 @@ import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
+import { sightedFirearmModel } from '../core/firearmSight.ts';
 import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
@@ -29,6 +30,7 @@ import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { countText } from '../core/numberText.ts';
 import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
+import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { playerEyePosition, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
@@ -44,7 +46,6 @@ import { soundVariantKey } from '../core/soundSynth.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
-import { sightedFirearmModel } from '../render/firearmSight.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -872,7 +873,7 @@ export const startPlay = (
       intent: (): MoveIntent => input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
       readyHeld: () => input.rightMouseHeld,
-      aimingDownSights: () => input.aimingDownSights && input.rightMouseActionHeld,
+      aimingDownSights: () => input.aimingDownSights && isAimingDownSights(),
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
@@ -2542,6 +2543,7 @@ export const startPlay = (
       stance: session.stance,
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
+      ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
     });
 
   const stockSeat = (side: HandSide): Vec3 =>
@@ -2550,6 +2552,7 @@ export const startPlay = (
       models: registry.models,
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
+      ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
     }).stockSeats[side];
 
   /** Part boxes for picking: the same projection vehicle reach measures to. */
@@ -3529,6 +3532,7 @@ export const startPlay = (
         pitch: spectator.avatarPitch(input.pitch),
         stridePhase: session.playerStridePhase,
         stance: session.stance,
+        ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
         eye: eye(),
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }

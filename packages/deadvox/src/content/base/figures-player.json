@@ -2,6 +2,11 @@
   "figures": [
     {
       "aimPose": {
+        "ads": {
+          "headRollDegrees": 45,
+          "stockShoulderOffset": [-0.059999999999999998, 0.029999999999999999, 0.01],
+          "torsoRollDegrees": 25
+        },
         "headLimitDegrees": [60, 60],
         "neckLimitDegrees": [35, 35],
         "neckShare": 0.5,

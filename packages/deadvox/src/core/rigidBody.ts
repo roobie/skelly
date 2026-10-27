@@ -1,6 +1,16 @@
 import type { Vec3 } from './coords.ts';
 
-export type Quaternion = readonly [number, number, number, number];
+import {
+  add,
+  cross,
+  dot,
+  type Quaternion,
+  multiplyRotation as qmul,
+  normalizeRotation as qnorm,
+  rotateVector as rotate,
+  scale,
+  sub,
+} from './spatial.ts';
 export type Tensor3 = readonly [Vec3, Vec3, Vec3];
 export interface RigidBody {
   mass: number;
@@ -22,19 +32,6 @@ export interface RigidWorld {
   blockSize: number;
 }
 
-const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
-const cross = (a: Vec3, b: Vec3): Vec3 => [
-  a[1] * b[2] - a[2] * b[1],
-  a[2] * b[0] - a[0] * b[2],
-  a[0] * b[1] - a[1] * b[0],
-];
-const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const scale = (a: Vec3, s: number): Vec3 => [a[0] * s, a[1] * s, a[2] * s];
-const qnorm = (q: Quaternion): Quaternion => {
-  const n = Math.hypot(...q) || 1;
-  return [q[0] / n, q[1] / n, q[2] / n, q[3] / n];
-};
 const axisAngle = (omega: Vec3, dt: number): Quaternion => {
   const spin = Math.hypot(...omega);
   const halfAngle = (spin * dt) / 2;
@@ -47,16 +44,6 @@ const axisAngle = (omega: Vec3, dt: number): Quaternion => {
         Math.cos(halfAngle),
       ]
     : [0, 0, 0, 1];
-};
-const qmul = (a: Quaternion, b: Quaternion): Quaternion => [
-  a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1],
-  a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0],
-  a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3],
-  a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2],
-];
-const rotate = (q: Quaternion, v: Vec3): Vec3 => {
-  const t = scale(cross([q[0], q[1], q[2]], v), 2);
-  return add(v, add(scale(t, q[3]), cross([q[0], q[1], q[2]], t)));
 };
 const inverseRotate = (q: Quaternion, v: Vec3): Vec3 => rotate([-q[0], -q[1], -q[2], q[3]], v);
 const matVec = (m: Tensor3, v: Vec3): Vec3 => [dot(m[0], v), dot(m[1], v), dot(m[2], v)];

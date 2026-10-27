@@ -71,6 +71,7 @@ import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { playerEyePosition, playerLookPose } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
@@ -1034,6 +1035,7 @@ export const createSession = (options: SessionOptions) => {
               models: registry.models,
               pitch: sampledInput().pitch,
               stance: playerStance,
+              ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
             }).stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
             yaw: sampledInput().yaw,
             pitch: sampledInput().pitch,
@@ -1160,6 +1162,7 @@ export const createSession = (options: SessionOptions) => {
       stance: playerStance,
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
+      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
     });
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;

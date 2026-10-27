@@ -7,7 +7,8 @@ import { materialOf, shadeOf, type Voxels, worldPosition } from '@mobgen/core/vo
 import { crowdEmission } from '@mobgen/mob/crowd.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import { type Quaternion, type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
+import { type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
+import type { Quaternion } from '../core/spatial.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 

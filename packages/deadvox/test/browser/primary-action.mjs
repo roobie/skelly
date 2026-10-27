@@ -26,6 +26,7 @@ const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
 const reloadInputModule = '/src/game/reloadInput.ts';
 const magazineModule = '/src/core/magazine.ts';
+const heldPoseModule = '/src/core/heldPose.ts';
 const optionsModule = '/src/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
 const pileLayoutModule = '/src/core/pileLayout.ts';
@@ -709,7 +710,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
             r.session.frame(1 / 20);
           }
         };
-        const gunType = 'rifle_assault';
+        const gunType = 'rifle_ak';
         const calibre = magazineWellCalibre(registry, gunType);
         const ids = [...registry.items.keys()].sort();
         const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
@@ -723,6 +724,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
           throw new Error('Could not pocket the loaded replay magazine');
         }
         const gun = r.inventory.create(gunType);
+        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
+          const model = child && registry.models.get(registry.items.get(child.type).model);
+          if (model?.gun?.attachment?.sight?.kind === 'optic') {
+            r.inventory.fitSlot(gun, slot, undefined);
+          }
+        }
         r.setHand('left', gun);
         must(firearms.loadNext(gun.uid, sim.time));
         settle();
@@ -751,6 +758,45 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    const adsFrame = await page.evaluate(() => globalThis.primaryActionTest.frames);
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame + 1, adsFrame);
+    const irons = await page.evaluate(
+      async ({ uid, moduleUrl }) => {
+        const r = globalThis.primaryActionTest;
+        const { modelToView } = await import(moduleUrl);
+        const item = r.inventory.itemByUid(uid);
+        const model = r.inventory.registry.models.get(r.inventory.registry.items.get(item.type).model);
+        const { sight } = model.gun;
+        const held = r.view.playerMeshes.group.getObjectByName('held-item-left');
+        const V = r.engine.camera.position.constructor;
+        const eye = modelToView(
+          model,
+          sight.eye.map((value, axis) => value - sight.direction[axis] * sight.eyeReliefMetres - model.grip.at[axis]),
+        );
+        const worldEye = held.localToWorld(new V(...eye));
+        const butt = held.localToWorld(
+          new V(
+            ...modelToView(
+              model,
+              model.hands.butt.map((value, axis) => value - model.grip.at[axis]),
+            ),
+          ),
+        );
+        const shoulder = new V();
+        r.view.playerMeshes.shoulderPosition('left', shoulder);
+        return {
+          kind: sight.kind,
+          eyeError: worldEye.distanceTo(r.engine.camera.position),
+          shoulderError: butt.distanceTo(shoulder),
+          roll: r.engine.camera.rotation.z,
+        };
+      },
+      { uid: firearm.uid, moduleUrl: heldPoseModule },
+    );
+    assert.equal(irons.kind, 'iron');
+    assert(irons.eyeError < 0.01, `physical irons meet the anatomical eye: ${irons.eyeError} m`);
+    assert(irons.shoulderError < 0.1, `ADS retains shoulder contact: ${irons.shoulderError} m`);
+    assert(Math.abs(irons.roll) < 1e-6, 'head cant does not roll the camera');
     await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
     const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
     await waitForSimulation(

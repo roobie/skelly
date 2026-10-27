@@ -6,6 +6,7 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
 import { firearmAimHandPose } from '../core/firearmAimPose.ts';
+import { sightedFirearmModel } from '../core/firearmSight.ts';
 import type { Job } from '../core/handling.ts';
 import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
 import { type HandSide, Inventory } from '../core/inventory.ts';
@@ -27,7 +28,6 @@ import {
   revolverOpenAmount,
   sampleActionPose,
 } from './firearmModel.ts';
-import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import type { HeldPresentation, HeldPresentationFrame } from './heldPresentation.ts';
@@ -82,6 +82,7 @@ interface OffHandGrip {
 }
 
 export interface HeldHandlingFrame extends HeldPresentationFrame {
+  readonly stockSeats?: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
   readonly throwing?: { readonly chargeProgress: number };

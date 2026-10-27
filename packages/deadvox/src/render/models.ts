@@ -19,6 +19,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
+import { attachmentFrame } from '../core/attachmentFrame.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
@@ -71,24 +72,9 @@ const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof
 /** The frame a slot's `at` and `turn` place a part in: the base model's file frame. */
 export const fittedPartFrame = (slot: ItemLookSlot): Group => {
   const frame = new Group();
-  frame.position.set(...slot.at);
-  if (slot.direction && slot.up) {
-    if (!slot.mountFrame) {
-      throw new Error(`Fitted model ${slot.model ?? slot.slot} has no exported mount frame`);
-    }
-    const sourceNormal = new Vector3(...slot.mountFrame.normal).normalize();
-    const sourceUp = new Vector3(...slot.mountFrame.up).normalize();
-    const sourceSide = sourceNormal.clone().cross(sourceUp).normalize();
-    const targetNormal = new Vector3(...slot.direction).negate().normalize();
-    const targetUp = new Vector3(...slot.up).normalize();
-    const targetSide = targetNormal.clone().cross(targetUp).normalize();
-    const sourceFrame = new Matrix4().makeBasis(sourceNormal, sourceUp, sourceSide);
-    const targetFrame = new Matrix4().makeBasis(targetNormal, targetUp, targetSide);
-    frame.quaternion.setFromRotationMatrix(targetFrame.multiply(sourceFrame.invert()));
-  } else if (slot.turn) {
-    const [tx, ty, tz] = slot.turn;
-    frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
-  }
+  const transform = attachmentFrame(slot);
+  frame.position.fromArray(transform.at);
+  frame.quaternion.fromArray(transform.rotation);
   return frame;
 };
 

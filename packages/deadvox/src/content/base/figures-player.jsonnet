@@ -118,6 +118,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         neckLimitDegrees: [35, 35],
         headLimitDegrees: [60, 60],
         stockShoulderOffset: { up: [-0.03, 0.025, 0.02], down: [-0.03, 0.025, -0.06] },
+        ads: {
+          torsoRollDegrees: 25,
+          headRollDegrees: 45,
+          stockShoulderOffset: [-0.06, 0.03, 0.01],
+        },
       },
       lookDownLean: { startPitchDegrees: 60, torsoForwardDegrees: 15 },
       mannequinPlacement: { aheadMetres: 1.2, asideMetres: 1.2 },

@@ -6,6 +6,7 @@ import { heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { mountedOptic } from '../src/core/opticView.ts';
+import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { playerEyePosition } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
@@ -201,8 +202,15 @@ it('shares an anatomical eye, shouldered stock and connected arms throughout aim
         [0, 1].map((progress) => ({ stance, pitch, progress })),
       ),
     );
-    for (const { stance, pitch, progress } of cases) {
-      const label = `${stance} pitch ${pitch} ready ${progress}`;
+    const poses = cases.flatMap((entry) =>
+      (entry.progress === 1 ? [false, true] : [false]).map((aimingDownSights) => ({
+        ...entry,
+        aimingDownSights,
+      })),
+    );
+    for (const { stance, pitch, progress, aimingDownSights } of poses) {
+      const label = `${stance} pitch ${pitch} ready ${progress} ADS ${aimingDownSights}`;
+      const ads = playerAdsPose(f.inventory, aimingDownSights);
       const eye = playerEyePosition({
         feet: f.actor.body.pos,
         blockSize: 0.5,
@@ -211,12 +219,13 @@ it('shares an anatomical eye, shouldered stock and connected arms throughout aim
         stance,
         figure,
         models: f.registry.models,
+        ads,
       });
       const stepOffset = 0.07;
-      f.world.sync({ ...f.actor, eye, stance, pitch, stepOffset, dt: 1 });
+      f.world.sync({ ...f.actor, eye, stance, pitch, stepOffset, dt: 1, ads });
       f.update(f.camera, f.pose, 0, {
         firearms: [],
-        readiness: { uid: f.item.uid, progress, aimingDownSights: false },
+        readiness: { uid: f.item.uid, progress, aimingDownSights },
       });
       const held = f.physical().getObjectByName('held-item-right')!;
       const buttOffset = modelToView(

@@ -3688,6 +3688,11 @@ const FigureSchema = strictObject({
     neckLimitDegrees: tuple([Positive, Positive]),
     headLimitDegrees: tuple([Positive, Positive]),
     stockShoulderOffset: strictObject({ up: Point, down: Point }),
+    ads: strictObject({
+      torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      stockShoulderOffset: Point,
+    }),
   }),
   lookDownLean: strictObject({
     startPitchDegrees: pipe(

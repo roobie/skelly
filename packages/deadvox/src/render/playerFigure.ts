@@ -1,6 +1,6 @@
 // The player's world body: the figure row's authored models posed about their joints.
 
-import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type Vector3 } from 'three';
+import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
@@ -156,6 +156,7 @@ export interface PlayerFigurePose {
   eye?: Vec3;
   pitch?: number;
   stancePose?: FigureStancePose;
+  ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
@@ -311,6 +312,7 @@ export class PlayerMeshes {
   private readonly models: ModelLibrary;
   private layer = PLAYER_FIGURE_LAYER;
   private readonly dummy = new Object3D();
+  private readonly jointTurn = new Quaternion();
   private readonly placement: PlayerFigurePlacement;
   private readonly localPosition: Vec3 = [0, 0, 0];
   private readonly stancePoses: FigureDef['stancePoses'];
@@ -402,6 +404,7 @@ export class PlayerMeshes {
       pitch: pose.pitch ?? 0,
       stance: pose.stance,
       stancePose: this.shownPose,
+      ads: pose.ads,
     });
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
@@ -423,6 +426,18 @@ export class PlayerMeshes {
       turns[pivotedKind(part.name)].forEach((degrees, index) => {
         pivots[index]!.rotation.x = degrees * RADIANS;
       });
+      if (part.name === 'body' && !this.fixedPose) {
+        const look = this.lookPose;
+        [look.spineRotation, look.neckRotation, look.headRotation].forEach((turn, index) => {
+          pivots[index]!.quaternion.set(-turn[0], turn[1], -turn[2], turn[3]);
+        });
+        const anchors = this.modelDefs.get(part.model)!.anchors!;
+        pivots[2]!.position
+          .set(...anchors[this.figure.body.head.pivot]!)
+          .sub(new Vector3(...anchors[this.figure.body.neck.pivot]!))
+          .multiplyScalar(look.neckScale);
+        pivots[1]!.getObjectByName('figure-neck-skin')!.scale.y = look.neckScale;
+      }
     }
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
@@ -433,6 +448,10 @@ export class PlayerMeshes {
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
     this.applySelfMask();
+  }
+
+  get stockSeats(): PlayerLookPose['stockSeats'] | undefined {
+    return this.lookPose?.stockSeats;
   }
 
   dispose(): void {
@@ -524,6 +543,20 @@ export class PlayerMeshes {
     this.heldFrame.updateMatrixWorld(true);
   }
 
+  private addNeckSkin(part: FigurePart): void {
+    if (part.name !== 'body') {
+      return;
+    }
+    const neck = this.pivots.get(part)![1]!;
+    const skin = new Group();
+    skin.name = 'figure-neck-skin';
+    const nodes = neck.children.filter((node) => node.userData.part === this.figure.body.neck.part);
+    neck.add(skin);
+    for (const node of nodes) {
+      skin.attach(node);
+    }
+  }
+
   /** Adds each part whose model has loaded since the last sync. */
   private syncModels(): void {
     for (const part of this.layout.parts) {
@@ -538,6 +571,7 @@ export class PlayerMeshes {
       }
       const chain = this.pivotedParts[pivotedKind(part.name)];
       this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
+      this.addNeckSkin(part);
       scene.traverse((node) => {
         if (typeof node.userData.part === 'string') {
           const key = `${part.name}/${node.userData.part}`;
@@ -690,7 +724,9 @@ export class PlayerMeshes {
       const point = playerPosePoint(this.lookPose!, [at[0], localY, localZ], 'torso');
       point[1] += stepOffset;
       setPlayerFigurePosition(this.dummy.position, this.placement, point);
-      this.dummy.rotation.set(stride + this.lookPose!.hipTurn + this.lookPose!.spineTurn, yaw, 0, 'YXZ');
+      this.dummy.rotation.set(this.lookPose!.hipTurn, yaw, 0, 'YXZ');
+      this.dummy.quaternion.multiply(this.jointTurn.fromArray(this.lookPose!.spineRotation));
+      this.dummy.rotateX(stride);
       return;
     }
     const upperSwing = this.fixedPose ? -torsoForwardDegrees * RADIANS : this.lookPose!.hipTurn;

@@ -125,11 +125,11 @@ import type { LookDefaults } from '../core/mood.ts';
 import {
   angularVelocity,
   applyImpulseAtClampedPoint,
-  type Quaternion,
   type RigidBody,
   type RigidWorld,
   stepRigidBody,
 } from '../core/rigidBody.ts';
+import type { Quaternion } from '../core/spatial.ts';
 import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import { acidSpitWindupProgress, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
