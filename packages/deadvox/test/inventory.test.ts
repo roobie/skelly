@@ -410,6 +410,33 @@ describe('handling time', () => {
     expect(inv.locate(soup)).toMatchObject({ kind: 'pocket', owner: hoodie, pocket: 0 });
     expect(inv.locate(beans)?.kind).toBe('pile');
   });
+
+  it('fails a batch move whose reserved spot an earlier queued move filled, instead of swapping', () => {
+    const singleCell = {
+      ...registry,
+      items: new Map(
+        [...registry.items].map(([id, def]) => {
+          if (id === 'jeans') {
+            const [first, ...rest] = def.container!.pockets;
+            return [id, { ...def, container: { ...def.container!, pockets: [{ ...first!, grid: [1, 1] }, ...rest] } }];
+          }
+          return [id, id === 'rag' || id === 'chocolate_bar' ? { ...def, size: [1, 1] } : def];
+        }),
+      ),
+    } as typeof registry;
+    const { inv, jeans } = dressed(singleCell);
+    const queue = new HandlingQueue(inv);
+    const rag = onFloor(inv, 'rag');
+    const bar = onFloor(inv, 'chocolate_bar');
+    const pocket = { kind: 'pocket', owner: jeans, pocket: 0 } as const;
+    expect(queue.enqueue(rag, pocket).ok).toBe(true);
+    const [reserved] = inv.planBatch([{ item: bar, targets: [pocket] }]);
+    expect(queue.enqueue(bar, reserved!.target).ok).toBe(true);
+    const result = queue.tick(60);
+    expect(result.failed).toEqual([{ job: expect.objectContaining({ itemUid: bar.uid }), reason: expect.any(String) }]);
+    expect(inv.locate(rag)).toMatchObject({ kind: 'pocket', owner: jeans, pocket: 0 });
+    expect(inv.locate(bar)?.kind).toBe('pile');
+  });
 });
 
 describe('registry-aware item tree restoration', () => {

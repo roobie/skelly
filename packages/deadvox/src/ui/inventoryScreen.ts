@@ -29,6 +29,7 @@ import {
   options,
   otherHandPour,
   pourRefusal,
+  quickestPockets,
   quickMove,
 } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
@@ -874,6 +875,7 @@ export class InventoryScreen {
     | 'name'
     | 'plan'
     | 'planAdd'
+    | 'planBatch'
     | 'registry'
     | 'scaleHandlingTime'
     | 'targetState'
@@ -911,6 +913,7 @@ export class InventoryScreen {
       | 'name'
       | 'plan'
       | 'planAdd'
+      | 'planBatch'
       | 'registry'
       | 'scaleHandlingTime'
       | 'targetState'
@@ -1244,15 +1247,15 @@ export class InventoryScreen {
         .filter((c) => c.searched)
         .flatMap((c) => c.pockets ?? []),
     ];
-    for (const grid of around) {
-      for (const { item: other } of [...grid]) {
-        if (defOf(this.inv.registry, other.type).category !== category) {
-          continue;
-        }
-        const best = bestPocket(this.inv, other);
-        if (best && this.tryQueue(other, best.target) === undefined) {
-          queued += 1;
-        }
+    const like = around
+      .flatMap((grid) => grid.map((p) => p.item))
+      .filter((other) => defOf(this.inv.registry, other.type).category === category);
+    const batch = this.inv.planBatch(
+      like.map((other) => ({ item: other, targets: quickestPockets(this.inv, other).map((o) => o.target) })),
+    );
+    for (const { item: other, target } of batch) {
+      if (this.tryQueue(other, target) === undefined) {
+        queued += 1;
       }
     }
     if (queued > 0) {

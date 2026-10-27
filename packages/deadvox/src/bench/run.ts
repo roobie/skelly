@@ -17,10 +17,17 @@ import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import { figureSeedPool } from '../core/zombieFigure.ts';
-import { ZombieSystem } from '../core/zombies.ts';
-import { type SiteName, siteFromUrl } from '../game/config.ts';
+import {
+  BACKGROUND_ZOMBIE_RATE,
+  BACKGROUND_ZOMBIE_SLICE_COUNT,
+  BACKGROUND_ZOMBIE_SLICE_RATE,
+  ZombieSystem,
+} from '../core/zombies.ts';
+import type { StartupContent } from '../game/bundledContent.ts';
+import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
+import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import type { StreamerStats } from '../game/streamer.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
@@ -39,7 +46,8 @@ import {
   type RunResult,
   saveRecord,
 } from './plan.ts';
-import { benchDraw, benchNightVisionFromUrl, benchPostFromUrl, postUrlPart } from './post.ts';
+import { applyBenchWeathering, benchDraw, benchNightVisionFromUrl, benchPostFromUrl, postUrlPart } from './post.ts';
+import { syncClock } from './renderClock.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, mean, sampleStats } from './stats.ts';
@@ -98,7 +106,16 @@ export const benchRunFromUrl = (
   };
 };
 
-export const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
+const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
+
+export const benchGameConfig = (run: BenchRun, params: URLSearchParams, content: StartupContent): GameConfig => {
+  const { blockSize, radiusM } = currentConfig(run);
+  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
+  const { site, storeys, density } = run;
+  Object.assign(config, { site, storeys, density });
+  applyBenchWeathering(config);
+  return config;
+};
 
 export const environment = (engine: RenderedEngine): Environment => {
   const { renderer } = engine;
@@ -193,7 +210,11 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const daylightScale = flashlightDaylightScale(skyAt(hour, dayCycle));
   const gl = renderer.getContext();
   const pixel = new Uint8Array(4);
+  let sceneRender = { calls: 0, triangles: 0 };
   const drawScene = benchDraw(engine, {
+    reportSceneRender: (counted) => {
+      sceneRender = counted;
+    },
     post: run.post,
     nightVision: run.nightVision,
     skyAngle: hour,
@@ -351,17 +372,34 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
     }
   };
   let zombieAccumulator = 0;
+  let backgroundAccumulator = 0;
+  let backgroundSlice = 0;
+  let backgroundStepTime = 0;
   const advanceShamblers = (dt: number): void => {
     if (!(zombies && zombieMeshes)) {
       return;
     }
     zombieAccumulator += dt;
-    while (zombieAccumulator >= 1 / 20) {
-      zombies.tick(1 / 20);
-      zombieAccumulator -= 1 / 20;
+    backgroundAccumulator += dt;
+    while (zombieAccumulator >= 1 / ZOMBIE_RATE) {
+      zombies.tickActive(1 / ZOMBIE_RATE);
+      zombieAccumulator -= 1 / ZOMBIE_RATE;
+    }
+    while (backgroundAccumulator >= 1 / BACKGROUND_ZOMBIE_SLICE_RATE) {
+      backgroundStepTime += 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
+      zombies.tickBackground(
+        1 / BACKGROUND_ZOMBIE_RATE,
+        backgroundStepTime,
+        backgroundSlice,
+        BACKGROUND_ZOMBIE_SLICE_COUNT,
+      );
+      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
+      backgroundAccumulator -= 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
     }
     zombieMeshes.setCamera?.(camera);
-    zombieMeshes.sync(zombies.store, dt, Math.min(1, zombieAccumulator * 20));
+    const renderTime = backgroundStepTime + backgroundAccumulator;
+    const clock = syncClock(renderTime, renderTime - zombieAccumulator, backgroundStepTime);
+    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
   };
 
   let phase: Phase = 'load';
@@ -523,8 +561,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       work[measured].push(performance.now() - start);
     }
     if (measured === 'look') {
-      drawCalls.push(renderer.info.render.calls);
-      triangles.push(renderer.info.render.triangles);
+      drawCalls.push(sceneRender.calls);
+      triangles.push(sceneRender.triangles);
     }
     hud.textContent = [
       `Benchmark ${run.index + 1}/${run.plan.length}: ${s} m blocks, ${config.radiusM} m radius, ${benchSiteLabel(run)}`,

@@ -21,8 +21,13 @@ import { SPENT_CASE_SCATTER_CAP } from '/src/core/scatterPile.ts';
 const raw = import.meta.glob('./src/content/base/*.json', { eager: true, import: 'default' });
 const { registry, issues } = buildRegistry(Object.entries(raw).map(([source, data]) => ({ source, data })));
 if (issues.length) throw new Error(JSON.stringify(issues));
-const modelDef = registry.models.get('case_5_d_56x45');
-if (!modelDef) throw new Error('Missing case_5_d_56x45 model definition');
+const caseItem = [...registry.items.values()].find((item) => {
+  const model = registry.models.get(item.model);
+  return item.pileDisplay === 'scatter' && model?.gun?.calibre;
+});
+if (!caseItem) throw new Error('Content has no calibre-backed spent-case item');
+const modelDef = registry.models.get(caseItem.model);
+if (!modelDef) throw new Error('Missing model ' + caseItem.model + ' for spent-case content');
 const mode = new URLSearchParams(location.search).get('mode');
 const modelErrors = [];
 const models = new ModelLibrary(
@@ -59,7 +64,7 @@ camera.position.set(0.25, 2.5, 3);
 camera.lookAt(0.25, 1, 0.25);
 const inventory = new Inventory(registry);
 const addPile = () => {
-  if (!inventory.add(inventory.create('spent_case_5_d_56x45', 100), { kind: 'pile', pos: [0, 2, 0] })) throw new Error('Could not seed case pile');
+  if (!inventory.add(inventory.create(caseItem.id, 100), { kind: 'pile', pos: [0, 2, 0] })) throw new Error('Could not seed case pile');
 };
 addPile();
 const piles = new PileMeshes(0.5, models, 13);

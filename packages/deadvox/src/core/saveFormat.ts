@@ -156,7 +156,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 62;
+export const SAVE_SCHEMA_VERSION = 63;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -428,6 +428,7 @@ itemSchema = obj({
         }),
       ),
       readying: opt(obj({ elapsed: nonNegative, duration: positive })),
+      lastShotAtSimSeconds: opt(nonNegative),
       cycle: opt(
         obj({
           mode: enumeration(['fire', 'hand']),
@@ -730,10 +731,10 @@ const meleeAction = nullable(
       damage: positive,
       reach: positive,
       cooldown: positive,
-      contactFraction: opt(num({ min: 0, max: 1 })),
-      windupCapSimSeconds: opt(positive),
-      stamina: opt(nonNegative),
-      impulse: opt(nonNegative),
+      contactFraction: num({ min: 0, max: 1 }),
+      windupCapSimSeconds: positive,
+      stamina: nonNegative,
+      impulse: nonNegative,
       damageVariance: opt(num({ min: 0, max: 1 })),
       headDamageMultiplier: opt(positive),
       limbDamageMultiplier: opt(positive),

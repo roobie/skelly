@@ -80,10 +80,9 @@ export interface RunResult {
   /**
    * Milliseconds for `renderer.render` until the GPU has drawn the frame (a one-pixel
    * read waits for it), while looking around: the CPU's submit and the GPU's drawing,
-   * one after the other. Runs from before it existed
-   * don't have it.
+   * one after the other.
    */
-  render?: SampleStats;
+  render: SampleStats;
   jog: MovingStats;
   sprint: MovingStats;
   /** The tab was hidden during the run, so its frame times are unreliable. */
@@ -105,21 +104,20 @@ export interface ShamblerRunResult {
   active?: number;
   background?: number;
   seed: number;
-  /** Which renderer drew the zombies. Absent on records from before this existed — treat as 'boxes'
-   * (report.ts does). */
-  actors?: ActorRenderer;
+  /** Which renderer drew the zombies. */
+  actors: ActorRenderer;
   frame: FrameStats;
   zombieTick: SampleStats;
   backgroundTick?: SampleStats;
   renderSubmit: SampleStats;
   /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ZombieMeshes'
-   * instance-matrix writes for 'boxes'). Absent on records from before this existed. */
-  actorSync?: SampleStats;
+   * instance-matrix writes for 'boxes'). */
+  actorSync: SampleStats;
   /** Scene-pass renderer.info.render.calls/.triangles from one measured frame — the population is fixed
    * for the whole run, so any one measured frame is representative. Post runs sample before the later
-   * full-screen passes reset the renderer counters. Absent on records from before this existed. */
-  draws?: number;
-  triangles?: number;
+   * full-screen passes reset the renderer counters. */
+  draws: number;
+  triangles: number;
   holesMax: number;
   holeFraction: number;
   interrupted: boolean;
@@ -128,8 +126,8 @@ export interface ShamblerRunResult {
 export interface BenchRecord {
   startedAt: string;
   quick: boolean;
-  /** What stood around spawn; records from before the city don't say (the test house). */
-  site?: string;
+  /** What stood around spawn. */
+  site: string;
   /** The exact first-look tree workload, retained in the exported JSON. */
   forest?: {
     seed: number;
@@ -148,8 +146,8 @@ export interface BenchRecord {
       sprintMetresPerSecond: number;
     };
   };
-  /** Time of day (`&time=HH:MM`); records from before it existed ran at noon. */
-  time?: string;
+  /** Time of day (`&time=HH:MM`). */
+  time: string;
   post?: boolean;
   nightVision?: boolean;
   flareSources?: readonly (readonly [number, number, number])[];
@@ -175,13 +173,36 @@ export interface BenchRecord {
   shamblers?: ShamblerRunResult[];
 }
 
-const KEY = 'deadvox.bench.v2';
+const KEY = 'deadvox.bench.v3';
+
+const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+
+// A record this code did not write would mix runs measured under other rules into one comparison.
+const isRecord = (value: unknown): value is BenchRecord =>
+  isObject(value) &&
+  typeof value.startedAt === 'string' &&
+  typeof value.quick === 'boolean' &&
+  typeof value.site === 'string' &&
+  typeof value.time === 'string' &&
+  Array.isArray(value.runs) &&
+  value.runs.every((run) => isObject(run) && isObject(run.render)) &&
+  (value.shamblers === undefined ||
+    (Array.isArray(value.shamblers) &&
+      value.shamblers.every(
+        (run) =>
+          isObject(run) &&
+          typeof run.actors === 'string' &&
+          isObject(run.actorSync) &&
+          typeof run.draws === 'number' &&
+          typeof run.triangles === 'number',
+      )));
 
 // Storage can be unavailable (private windows, blocked site data); callers show why.
 export const loadRecord = (): BenchRecord | undefined => {
   try {
     const text = globalThis.localStorage.getItem(KEY);
-    return text === null ? undefined : (JSON.parse(text) as BenchRecord);
+    const parsed: unknown = text === null ? undefined : JSON.parse(text);
+    return isRecord(parsed) ? parsed : undefined;
   } catch {
     return undefined;
   }

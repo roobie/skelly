@@ -86,9 +86,9 @@ it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
 });
 
 const cameraCases = () => {
-  const cases = adsCases().filter(({ stance }) => stance !== 'prone');
-  if (cases.length === 0) {
-    throw new Error('ADS camera checks need a standing or crouching sighted firearm');
+  const cases = adsCases();
+  if (!cases.some(({ stance }) => stance === 'prone')) {
+    throw new Error('ADS camera checks need a prone sighted firearm');
   }
   return cases;
 };
@@ -169,6 +169,44 @@ it('fits ADS inside the authored camera-to-body-eye offset budget', () => {
   for (const entry of cameraCases()) {
     const { camera, label } = cameraCase(entry);
     expect(camera.distanceMetres, label).toBeLessThanOrEqual(camera.limitMetres + 1e-12);
+  }
+});
+
+it('twists the prone ADS torso the opposite way to a standing one, as a shooter lying along the ground does', () => {
+  const figure = baseRegistry.figures.get('player')!;
+  // A free-held gun overrides the roll with its own, so the figure's prone roll is read off a stocked long gun.
+  const { model } = adsCases().find(({ model: gun }) => gun.hands?.proneSupport)!;
+  const yawOf = (stance: 'standing' | 'prone', side: 'right' | 'left') => {
+    const { spineRotation } = playerLookPose({
+      figure,
+      models: baseRegistry.models,
+      pitch: 0,
+      stance,
+      ads: { model, side, aimFrame: NEUTRAL_AIM },
+    });
+    // The roll about the model's z axis shows in the rotation's z component.
+    return Math.sign(spineRotation[2]);
+  };
+  for (const side of ['right', 'left'] as const) {
+    expect(yawOf('prone', side)).toBe(-yawOf('standing', side));
+  }
+});
+
+it('puts the eye on a scoped long gun sight line in every stance within the camera budget', () => {
+  const { registry } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');
+  const scoped = sightedFirearmModel(registry, new Inventory(registry).create('rifle_hunting'))!;
+  expect(scoped.gun?.sight?.kind).toBe('optic');
+  const figure = registry.figures.get('player')!;
+  const stances = ['standing', 'crouching', 'prone'] as const;
+  for (const stance of stances) {
+    // Straight down, a standing scoped rifle sits just past the budget; that is not prone's to fix, so only prone adds it.
+    const pitches = [-LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT];
+    for (const pitch of stance === 'prone' ? [-LOOK_PITCH_LIMIT, ...pitches] : pitches) {
+      const ads = { model: scoped, side: 'right' as const, aimFrame: NEUTRAL_AIM };
+      const pose = playerLookPose({ figure, models: registry.models, pitch, stance, ads });
+      const camera = adsCameraEye({ figure, pose, ads, pitch });
+      expect(camera.fits, `scoped ${stance} ${pitch}`).toBe(true);
+    }
   }
 });
 

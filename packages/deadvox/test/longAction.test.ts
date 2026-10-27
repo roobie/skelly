@@ -395,6 +395,37 @@ describe('core long actions', () => {
     ).toBeUndefined();
     expect(sim.actions.job).toMatchObject({ jobType: 'forceDoor', stopped: false, elapsed, nextStrike });
   });
+  it('saves a pry resumed with a faster plan and continues as the uninterrupted run', () => {
+    const forcing = (strikes: number[]) => ({
+      validate: () => undefined,
+      strike: (_entityUid: number, _toolUid: number, _method: string, time: number) => strikes.push(time),
+      finish: () => undefined,
+    });
+    const slow = { method: 'fixture', durationSimSeconds: 100, strikeIntervalSimSeconds: 50 };
+    // A skill gain between stop and resume plans a shorter pry with a shorter strike interval.
+    const fast = { method: 'fixture', durationSimSeconds: 30, strikeIntervalSimSeconds: 15 };
+    const uninterrupted = { ...make(), strikes: [] as number[] };
+    const saving = { ...make(), strikes: [] as number[] };
+    for (const { sim, strikes } of [uninterrupted, saving]) {
+      sim.actions.forcing = forcing(strikes);
+      expect(sim.actions.beginForcing(7, 11, slow)).toBeUndefined();
+      sim.scheduler.advance(40);
+      sim.actions.stop();
+      expect(sim.actions.beginForcing(7, 11, fast)).toBeUndefined();
+    }
+    const first = snapshot(saving);
+    expect(snapshot(saving)).toEqual(first);
+    const restored = { ...make(), strikes: [] as number[] };
+    restored.sim.actions.forcing = forcing(restored.strikes);
+    restored.sim.restoreState(first.simulation);
+    expect(() => restored.sim.actions.restoreState(first.action)).not.toThrow();
+    restored.sim.paused = false;
+    for (const { sim } of [uninterrupted, restored]) {
+      sim.scheduler.advance(5);
+    }
+    expect(restored.sim.actions.snapshotState()).toEqual(uninterrupted.sim.actions.snapshotState());
+    expect(restored.strikes).toEqual(uninterrupted.strikes.slice(saving.strikes.length));
+  });
   it('Read resumes the same interrupted book from its saved progress', () => {
     const runtime = make();
     const book = runtime.inv.create('field_manual');

@@ -36,7 +36,7 @@ import { createScreenCommandDispatcher } from '../src/game/screenCommandDispatch
 import { Survival } from '../src/game/survival.ts';
 import { ItemPictures } from '../src/render/itemPictures.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
@@ -1276,6 +1276,56 @@ describe('inventory screen Lit rendering', () => {
     expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it('takes all like items into every pocket with room and counts only what was queued with room', () => {
+    const half = 2;
+    const fixture = baseRegistryWith([
+      {
+        source: 'take-all-pockets',
+        data: {
+          items: [
+            {
+              ...registry.items.get('hoodie')!,
+              container: {
+                pockets: [
+                  { name: 'First', grid: [half, 1], handlingSimSeconds: 0.5 },
+                  { name: 'Second', grid: [half, 1], handlingSimSeconds: 1 },
+                ],
+              },
+            },
+            { ...registry.items.get('jeans')!, container: undefined },
+            {
+              id: 'take_all_like',
+              workInProgress: false,
+              notLoot: false,
+              name: 'Like item',
+              category: 'misc',
+              weight: 1,
+              size: [1, 1],
+              economy: { usage: [], tiers: [] },
+            },
+          ],
+        },
+      },
+    ]);
+    const t = setup(fixture);
+    const pos: [number, number, number] = [0, 0, 0];
+    // One more than both pockets hold, so a refused overflow item shows the count excludes it.
+    const like = Array.from({ length: half * 2 + 1 }, () => t.inv.create('take_all_like'));
+    for (const item of like) {
+      expect(t.inv.add(item, { kind: 'pile', pos })).toBe(true);
+    }
+    t.screen.update();
+    t.screen.selected = like[0];
+
+    expect(t.screen.onAction('inventory.take-all-like')).toBe(true);
+    t.queue.tick(t.queue.remaining);
+
+    const pocketed = like.filter((item) => t.inv.locate(item)?.kind === 'pocket');
+    expect(pocketed).toHaveLength(half * 2);
+    const { inventory } = fixture.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+    expect(t.notices).toEqual([fillText(inventory.taking, { count: countText(pocketed.length), category: 'misc' })]);
   });
 
   it('refuses to cycle or put when no container is in reach', () => {

@@ -884,6 +884,7 @@ export const startPlay = (
         intent: (): MoveIntent => input.intent(),
         sampleAtPlayerTick: samplePlayerInput,
         readyHeld: () => input.rightMouseHeld,
+        firearmReady: (uid) => isFirearmReady(uid),
         aimingDownSights: () => debugGunPose.aimingDownSights(input.aimingDownSights) && isAimingDownSights(),
         blocking: () => shouldPlayerBlock(),
         consumeDominantUse: () => input.consumeDominantUse(),
@@ -2517,6 +2518,9 @@ export const startPlay = (
       case 'light.worn-toggle':
         toggleWornLights();
         return true;
+      case 'hand.use-forward':
+        useForwardButton();
+        return true;
       default:
         return dispatchReplayQuickbar(action);
     }
@@ -2866,6 +2870,24 @@ export const startPlay = (
     refusalReason(survival.toggleWornLights());
   }
 
+  function useForwardButton(): void {
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('hand.use-forward', 'down', inputContext());
+      pendingPlayerTickActions.enqueue(useForwardButtonNow);
+      return;
+    }
+    useForwardButtonNow();
+  }
+
+  function useForwardButtonNow(): void {
+    // Instant off-hand use shares Survival's owner with a quickbar second press.
+    const item = offHandUse(registry, inventory);
+    const reason = item && survival.use(item);
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
+  }
+
   function dropHeldItemForThrowingStance(): void {
     if (!replayPlayer) {
       if (sim.body.actionRefusal) {
@@ -3151,25 +3173,8 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
-    const fired = firearms.fire({
-      aimFrame: aim.frame,
-      ready: isFirearmReady(item.uid),
-      aimingDownSights: isAimingDownSights(),
-      sprinting: session.sprinting,
-      item,
-      ...heldBodyInput(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
-      feet: feet(),
-      eye: eye(),
-      yaw: input.yaw,
-      pitch: input.pitch,
-      seed: config.seed,
-      simTime: time,
-      blockSize: s,
-    });
-    if (!fired) {
-      return false;
-    }
-    return true;
+    const shot = session.firearmShotInput(item.uid, time);
+    return shot !== undefined && firearms.fire(shot);
   };
 
   const triggerWeapon = (weapon: Item | undefined, pressed: boolean) => {
@@ -3359,12 +3364,7 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
-    // Instant off-hand use shares Survival's owner with a quickbar second press.
-    const item = offHandUse(registry, inventory);
-    const reason = item && survival.use(item);
-    if (reason) {
-      showRefusal(reason, sim.time);
-    }
+    useForwardButton();
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);

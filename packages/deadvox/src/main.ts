@@ -4,7 +4,7 @@
 import { loadRecord } from './bench/plan.ts';
 import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
-import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
+import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from './core/assets.ts';
@@ -18,7 +18,6 @@ import {
   DEFAULT_RADIUS_M,
   makeConfig,
   savingEnabledFromUrl,
-  siteFromUrl,
 } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
@@ -315,11 +314,7 @@ if (bench === 'report') {
   }
 } else {
   const run = benchRunFromUrl(params, content.registry);
-  const { blockSize, radiusM } = currentConfig(run);
   const stats: StreamerStats = { genMs: [], meshMs: [], triangles: [] };
-  const config = makeConfig(Number(params.get('seed') ?? 1) | 0, radiusM, content, blockSize);
-  // The test house is defined in metres, so it compares across block sizes; `&site=city` benchmarks the city.
-  Object.assign(config, siteFromUrl(params, 'testHouse', content.registry));
-  applyBenchWeathering(config);
+  const config = benchGameConfig(run, params, content);
   startBench(createEngine(config, view, stats, { graphicsSource: 'mod' }), run, stats);
 }

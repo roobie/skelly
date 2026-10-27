@@ -179,10 +179,10 @@ export class Streamer {
       const worker = new Worker(new URL('../worker/mesh.worker.ts', import.meta.url), { type: 'module' });
       worker.onmessage = (e: MessageEvent<FromMesher>) => this.receive(worker, e.data);
       worker.onerror = (event) => {
-        this.failure = event.message || 'World mesh worker failed';
+        this.failure ??= event.message || 'World mesh worker failed';
       };
       worker.onmessageerror = () => {
-        this.failure = 'World mesh worker reply could not be decoded';
+        this.failure ??= 'World mesh worker reply could not be decoded';
       };
       this.send(worker, {
         type: 'init',
@@ -328,8 +328,12 @@ export class Streamer {
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
   update(x: number, z: number): void {
-    if (this.generationFailed || this.failure) {
+    if (this.generationFailed) {
       return;
+    }
+    if (this.failure) {
+      // Escapes the frame like an unhandled generation failure: the loading mask during load, the error report after.
+      throw new Error(this.failure);
     }
     const pcx = toChunk(Math.floor(x));
     const pcz = toChunk(Math.floor(z));
@@ -529,6 +533,12 @@ export class Streamer {
     }
     if (msg.type === 'vehicle') {
       return; // vehicle shapes go to the render's own worker, never to this one
+    }
+    if (msg.type === 'meshFailed') {
+      this.inFlight.delete(msg.key);
+      this.dirty.add(msg.key);
+      this.failure ??= `World mesh worker failed on chunk ${msg.key}: ${msg.message}`;
+      return;
     }
     this.receiveMesh(msg);
     this.dispatchSky();

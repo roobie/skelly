@@ -59,6 +59,22 @@ const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 
 describe('content-owned item and world policies', () => {
+  it('refuses zombie abilities without a runtime mechanism', () => {
+    const zombie = [...baseRegistry.zombies.values()][0]!;
+    for (const ability of [
+      'leap',
+      'scream',
+      'explode',
+      'heatAura',
+      'lightEmitter',
+      'armoured',
+      'regenerate',
+      'burrow',
+    ]) {
+      expect(safeParse(ContentFileSchema, { zombies: [{ ...zombie, abilities: [ability] }] }).success).toBe(false);
+    }
+  });
+
   it('requires explicit item policies, region drops and world liveness', () => {
     const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);
@@ -674,16 +690,19 @@ describe('content', () => {
   });
 
   it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    // Both fields are required by the file schema, so parsing the two edited files finds them without a registry build.
     const files = structuredClone(base) as {
       source: string;
       data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
     }[];
-    const items = files.flatMap(({ data }) => data.items ?? []);
-    const ammunition = items.find((item) => item.ammo !== undefined)!;
-    const firearm = items.find((item) => item.firearm !== undefined)!;
-    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
-    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
-    const { issues } = buildRegistry(files);
+    const ammunitionFile = files.find(({ data }) => data.items?.some((item) => item.ammo !== undefined))!;
+    const firearmFile = files.find(({ data }) => data.items?.some((item) => item.firearm !== undefined))!;
+    Reflect.deleteProperty(ammunitionFile.data.items!.find((item) => item.ammo !== undefined)!.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(
+      firearmFile.data.items!.find((item) => item.firearm !== undefined)!.firearm!,
+      'pelletSpreadScale',
+    );
+    const issues = [...new Set([ammunitionFile, firearmFile])].flatMap(validateContent);
     expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
     expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
   });
@@ -2879,7 +2898,7 @@ describe('templates', () => {
         ],
       },
     };
-    expect(buildRegistry([...base, doors, t]).issues).toEqual([]);
+    expect(buildRegistry([...templateBase, doors, t]).issues).toEqual([]);
   });
 
   it('validates optional windows on template spawn markers', () => {
@@ -3247,6 +3266,47 @@ describe('content', () => {
       'models[2].hands.firing',
     ]);
     expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual(baseline);
+  });
+
+  it('refuses a prone support hold that authors an orientation or finger pose, since it only moves the hand', () => {
+    const gun = [...baseRegistry.models.values()].find((model) => model.hands?.proneSupport)!;
+    expect(safeParse(ModelSchema, gun).success).toBe(true);
+    for (const extra of [{ palm: [1, 0, 0] }, { fingers: [0, 1, 0] }, { pose: 'holding' }]) {
+      const hands = { ...gun.hands!, proneSupport: { ...gun.hands!.proneSupport, ...extra } };
+      expect(safeParse(ModelSchema, { ...gun, hands }).success, Object.keys(extra)[0]).toBe(false);
+    }
+  });
+
+  it('requires a prone support hold on a stocked long gun but not on a free-held one', () => {
+    const models = [...baseRegistry.models.values()].filter((candidate) => candidate.hands);
+    const stocked = models.find((candidate) => candidate.hands!.butt && candidate.hands!.proneSupport)!;
+    const freeHeld = models.find((candidate) => !candidate.hands!.butt)!;
+    const { proneSupport: _removed, ...withoutProne } = stocked.hands!;
+    // Map and site sections cost most of a full build and no hands check reads them; see the hands fixture test.
+    const worldSections = new Set([
+      'templates',
+      'layouts',
+      'mapPieces',
+      'mapAssemblies',
+      'mapPools',
+      'mapStyles',
+      'scenarios',
+      'siteGeneration',
+      'cityBenchmarks',
+    ]);
+    const sources = base.map(({ source, data: content }) => ({
+      source,
+      data: Object.fromEntries(Object.entries(content as object).filter(([section]) => !worldSections.has(section))),
+    }));
+    const fixtureSource = 'prone-hold-fixture.json';
+    const fixtures = [
+      { ...stocked, id: 'fixture_stocked_no_prone', hands: withoutProne },
+      { ...freeHeld, id: 'fixture_free_held' },
+    ];
+    const { issues } = buildRegistry([...sources, { source: fixtureSource, data: { models: fixtures } }]);
+    expect(issues.filter((issue) => issue.source === fixtureSource).map(({ path }) => path)).toEqual([
+      'models[0].hands.proneSupport',
+    ]);
   });
 
   it('requires standoff curves to have ordered, distinct interpolation endpoints', () => {
