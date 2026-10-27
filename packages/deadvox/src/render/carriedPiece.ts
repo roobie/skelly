@@ -37,6 +37,7 @@ export class CarriedPiece {
     modelsVersion: () => number = () => 0,
   ) {
     this.group.name = 'carried-piece';
+    this.group.visible = false;
     this.entities = entities;
     this.build = build;
     this.tuning = tuning;
@@ -60,6 +61,7 @@ export class CarriedPiece {
       if (carried) {
         (carried.floorLocked ? this.floorGroup : this.group).add(this.fitted(carried));
       }
+      this.group.visible = this.group.children.length > 0;
     }
     if (!carried) {
       this.floorUid = undefined;

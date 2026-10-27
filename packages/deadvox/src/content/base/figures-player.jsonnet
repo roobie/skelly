@@ -11,6 +11,8 @@ local segment(part, pivot) = { part: part, pivot: pivot };
 local frame(part, pivot=null) = {
   part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
 } + if pivot == null then {} else { pivot: pivot };
+local bust = [model for model in (import 'models-items.jsonnet').models if model.id == 'player_bust'][0];
+local torsoFrame = frame('body', 'spine') + { at: [0 - value for value in bust.anchors.spine] };
 local handPose(fingers, thumbAcross, thumbIn) = {
   fingersDegrees: fingers,
   thumbAcrossDegrees: thumbAcross,
@@ -30,7 +32,10 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           leftShoulder: 'shoulder_left',
           rightShoulder: 'shoulder_right',
         },
+        spine: segment('torso', 'spine'),
+        neck: segment('neck', 'neck'),
         head: segment('head', 'head'),
+        eyes: ['eye_left', 'eye_right'],
       },
       // Each limb is mirror-symmetric, so one model hangs on either side.
       limbs: {
@@ -50,6 +55,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         fingers: segment('fingers', 'knuckles'),
         thumb: segment('thumb', 'thumb_root'),
         grip: 'grip',
+        elbowPole: {
+          up: [std.sqrt(0.5), -std.sqrt(0.5), 0],
+          down: [0.5, -0.5, -std.sqrt(0.5)],
+        },
+        minimumBendDegrees: { up: 0, down: 45 },
         handPoses: {
           fist: handPose(95, 60, 45),
           holding: handPose(80, 50, 30),
@@ -63,12 +73,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         // Where the view hangs the right arm, from the eye; the left mirrors it.
         shoulderFromEye: [0.3, -0.55, 0.05],
       },
-      // Head gear sits on the head and turns with it; carry and armour sit on the torso in the bust's own frame, where
-      // their models are authored, and stay drawn in first person as the body does.
+      // Gear shares the body's anchors and camera mask so it cannot reveal a hidden body's interior.
       attachmentFrames: {
         head: { part: 'body', pivot: 'head', at: [0, 0.0804, 0], turn: [0, 180, 0], insideView: true },
-        torso: frame('body'),
-        clothing_body: frame('body'),
+        torso: torsoFrame,
+        clothing_body: torsoFrame,
         left_sleeve: frame('leftArm'),
         right_sleeve: frame('rightArm'),
         left_cuff: frame('leftArm', 'elbow'),
@@ -103,11 +112,28 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         foot: segment('foot', 'ankle'),
       },
       gait: { legSwingDegrees: 12.6, armSwingDegrees: 10 },
+      aimPose: {
+        torsoShare: { down: 0.1, up: 0.55 },
+        neckShare: 0.5,
+        torsoLimitDegrees: [45, 80],
+        neckLimitDegrees: [35, 35],
+        headLimitDegrees: [60, 60],
+        stockShoulderOffset: { up: [-0.03, 0.025, 0.02], down: [-0.03, 0.025, -0.06] },
+        ads: {
+          cameraOffsetLimitMetres: 0.2,
+          cameraWallMarginMetres: 0.01,
+          ownBodyClipMetres: 0.08,
+          ownBodyHide: ['spine', 'neck'],
+          stockShoulderLimitMetres: 0.1,
+          torsoRollDegrees: 25,
+          headRollDegrees: 45,
+          neckLengthToleranceFraction: 0.05,
+          stockShoulderOffset: [-0.06, 0.03, 0.01],
+        },
+      },
+      lookDownLean: { startPitchDegrees: 60, torsoForwardDegrees: 15 },
       mannequinPlacement: { aheadMetres: 1.2, asideMetres: 1.2 },
-      // Each pose keeps the drawn body under its stance's body height in player.jsonnet. The crouch reads as a crouch:
-      // knees bent, feet flat under the hips, torso leaning forward, head up looking ahead and arms in a guard for
-      // balance, elbows bent with the forearms raised in front. Its ankle turns the foot back to level, and its hip
-      // drop puts the soles on the ground.
+      // Collision follows stance, not gaze; fitting the drawing back into that box would detach the aimed head.
       stancePoses: {
         crouching: {
           hipDropMetres: 0.374,

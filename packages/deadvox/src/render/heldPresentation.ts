@@ -15,6 +15,7 @@ import type { Vec3 } from '../core/coords.ts';
 import {
   type HeldFirearmTransformInput,
   type HeldHoldFrame,
+  type HeldSeatFrame,
   heldFirearmTransform,
   heldGripOffset,
   heldHoldFrame,
@@ -83,6 +84,8 @@ export class HeldPresentation {
   readonly registry: Registry;
   readonly figure: FigureDef;
   readonly models: ModelLibrary | undefined;
+  stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
+  seatFrame: HeldSeatFrame | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -135,7 +138,12 @@ export class HeldPresentation {
   }
 
   firearmTransform(input: Omit<HeldFirearmTransformInput, 'holds'>): ReturnType<typeof heldFirearmTransform> {
-    return heldFirearmTransform({ ...input, holds: this.figure.holds });
+    return heldFirearmTransform({
+      ...input,
+      holds: this.figure.holds,
+      stockSeat: input.stockSeat ?? this.stockSeats?.[input.side],
+      seatFrame: input.seatFrame ?? this.seatFrame,
+    });
   }
 
   handTransform(side: HandSide, pose: HandPose): ReturnType<typeof interpolateHandPose> | undefined {
@@ -402,14 +410,24 @@ export class HeldPresentation {
     const handFrame = gripFrame
       ? rotation.clone().invert().multiply(gripFrame.getWorldQuaternion(new Quaternion()))
       : undefined;
-    const elbowBendSide = this.holds.get(side)?.elbowBendSide;
-    const solved = solveArmRig(rig, {
-      shoulder,
-      grip,
-      handFrame,
-      bendSide: elbowBendSide ? new Vector3(...elbowBendSide) : new Vector3(side === 'right' ? 1 : -1, 0, 0),
-      up: new Vector3(0, 1, 0),
-    });
+    const inverse = rotation.clone().invert();
+    const right = new Vector3(1, 0, 0).applyQuaternion(rotation);
+    right.y = 0;
+    right.normalize().applyQuaternion(inverse);
+    const up = new Vector3(0, 1, 0).applyQuaternion(inverse);
+    const back = new Vector3().crossVectors(right, up);
+    const down = Math.max(0, up.z);
+    const pole = this.figure.armRig.elbowPole;
+    const authored = this.holds.get(side)?.elbowBendSide;
+    const [outward, vertical, backward] =
+      authored ?? (pole.up.map((value, axis) => value + (pole.down[axis]! - value) * down) as Vec3);
+    const bendSide = right
+      .multiplyScalar(authored ? outward : (side === 'right' ? 1 : -1) * outward)
+      .addScaledVector(up, vertical)
+      .addScaledVector(back, backward);
+    const minimum = this.figure.armRig.minimumBendDegrees;
+    const minimumBendDegrees = minimum.up + (minimum.down - minimum.up) * down;
+    const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up, minimumBendDegrees });
     this.placeSolved(side, { solution: solved, grip });
   }
 

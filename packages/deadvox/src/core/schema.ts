@@ -1869,14 +1869,25 @@ const AttachmentPropertiesSchema = strictObject({
     ),
   ),
 });
-const AttachmentSightSchema = strictObject({
-  kind: picklist(['optic', 'iron']),
-  eye: Point,
-  direction: UnitVector,
-  up: UnitVector,
-  eyeReliefMetres: Positive,
-  ocularDiameterMetres: optional(Positive),
-});
+const SightEyeRangeSchema = pipe(
+  tuple([NonNegative, Positive]),
+  check(([near, far]) => near < far, 'iron eye range must have near < far'),
+);
+const AttachmentSightSchema = pipe(
+  strictObject({
+    kind: picklist(['optic', 'iron']),
+    eye: Point,
+    direction: UnitVector,
+    up: UnitVector,
+    eyeReliefMetres: Positive,
+    eyeDistanceRangeMetres: optional(SightEyeRangeSchema),
+    ocularDiameterMetres: optional(Positive),
+  }),
+  check(
+    ({ kind, eyeDistanceRangeMetres }) => (kind === 'iron') === (eyeDistanceRangeMetres !== undefined),
+    'only iron sights require an eye distance range',
+  ),
+);
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip', 'muzzle-device']),
@@ -1997,6 +2008,7 @@ const GunModelSchema = pipe(
         kind: picklist(['iron', 'optic']),
         eye: Point,
         eyeReliefMetres: NonNegative,
+        eyeDistanceRangeMetres: optional(SightEyeRangeSchema),
         ocularDiameterMetres: optional(Positive),
         direction: UnitVector,
         up: UnitVector,
@@ -2034,6 +2046,10 @@ const GunModelSchema = pipe(
   check(
     ({ sight }) => sight?.kind !== 'optic' || sight.ocularDiameterMetres !== undefined,
     'optic sight metadata needs an ocular opening diameter',
+  ),
+  check(
+    ({ sight }) => sight === undefined || (sight.kind === 'iron') === (sight.eyeDistanceRangeMetres !== undefined),
+    'only iron sights require an eye distance range',
   ),
   check(
     ({ internalMagazine, calibre, capacity, rounds }) =>
@@ -2104,6 +2120,12 @@ const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: Unit
 
 /** Authored palm contacts avoid inferring a shoulder seat for free-held firearms. */
 const HandsModelSchema = strictObject({
+  ads: optional(
+    strictObject({
+      cameraOffsetLimitMetres: optional(NonNegative),
+      stockShoulderLimitMetres: optional(NonNegative),
+    }),
+  ),
   seat: Point,
   butt: optional(Point),
   loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
@@ -2119,7 +2141,6 @@ const HandsModelSchema = strictObject({
       ),
     ),
   ),
-  viewOffset: optional(Point),
   adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
@@ -3613,6 +3634,12 @@ const ArmRigSchema = strictObject({
   thumb: ArmSegmentSchema,
   /** The anchor on the palm's midline a held item's grip sits against, moved out to the palm's face. */
   grip: Id,
+  /** A body-relative pole keeps the elbow bend independent of where the eye looks. */
+  elbowPole: strictObject({ up: UnitVector, down: UnitVector }),
+  minimumBendDegrees: strictObject({
+    up: pipe(number(), minValue(0), maxValue(90)),
+    down: pipe(number(), minValue(0), maxValue(90)),
+  }),
   /** One closing per `HAND_POSES` name; a held model's hold names the one its hand takes. */
   handPoses: strictObject({
     fist: HandPoseSchema,
@@ -3670,7 +3697,10 @@ const FigureSchema = strictObject({
   body: strictObject({
     model: Id,
     joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: Id, rightShoulder: Id }),
+    spine: ArmSegmentSchema,
+    neck: ArmSegmentSchema,
     head: ArmSegmentSchema,
+    eyes: tuple([Id, Id]),
   }),
   limbs: strictObject({
     leftArm: FigureLimbSchema,
@@ -3695,6 +3725,35 @@ const FigureSchema = strictObject({
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
+  aimPose: strictObject({
+    torsoShare: strictObject({ down: Fraction, up: Fraction }),
+    neckShare: Fraction,
+    torsoLimitDegrees: tuple([Positive, Positive]),
+    neckLimitDegrees: tuple([Positive, Positive]),
+    headLimitDegrees: tuple([Positive, Positive]),
+    stockShoulderOffset: strictObject({ up: Point, down: Point }),
+    ads: strictObject({
+      cameraOffsetLimitMetres: NonNegative,
+      cameraWallMarginMetres: NonNegative,
+      ownBodyClipMetres: NonNegative,
+      ownBodyHide: array(picklist(['spine', 'neck', 'head'])),
+      stockShoulderLimitMetres: NonNegative,
+      torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      neckLengthToleranceFraction: pipe(
+        Fraction,
+        check((value) => value < 1, 'neck length must remain positive'),
+      ),
+      stockShoulderOffset: Point,
+    }),
+  }),
+  lookDownLean: strictObject({
+    startPitchDegrees: pipe(
+      NonNegative,
+      check((value) => value < 90, 'look-down lean must start before straight down'),
+    ),
+    torsoForwardDegrees: pipe(NonNegative, maxValue(90)),
+  }),
   /** Where the debug mannequin stands from the player, along and across the player's facing. */
   mannequinPlacement: strictObject({ aheadMetres: Positive, asideMetres: Positive }),
   stancePoses: strictObject({
@@ -3771,7 +3830,6 @@ const SkillSchema = pipe(
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
-            adsApertureFill: pipe(Positive, maxValue(0.95)),
             skillZeroHandling: FirearmsSkillZeroHandlingSchema,
             wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
             wobbleLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),

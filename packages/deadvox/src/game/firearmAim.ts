@@ -2,7 +2,7 @@ import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
 import type { ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget.ts';
-import { heldFirearmTransform } from '../core/heldPose.ts';
+import { type HeldSeatFrame, heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { HeldPosesDef } from '../core/schema.ts';
@@ -21,10 +21,10 @@ export interface FirearmBoreRayInput {
   readonly twoHanded: boolean;
   readonly aimFrame: AimFrame;
   readonly handlingTurn?: Vec3;
+  readonly stockSeat?: Vec3 | undefined;
+  readonly seatFrame?: HeldSeatFrame | undefined;
   readonly aimingDownSights?: boolean;
   readonly loweredPitchRadians: number;
-  readonly adsApertureFill?: number | undefined;
-  readonly verticalFovDegrees?: number;
   readonly isSolid?: SolidAt;
 }
 
@@ -48,10 +48,10 @@ export const firearmBoreRay = ({
   twoHanded,
   aimFrame,
   handlingTurn,
+  stockSeat,
+  seatFrame,
   aimingDownSights = false,
   loweredPitchRadians,
-  adsApertureFill,
-  verticalFovDegrees,
   isSolid = () => false,
 }: FirearmBoreRayInput): FirearmBoreRay => {
   const pose = heldFirearmTransform({
@@ -64,10 +64,10 @@ export const firearmBoreRay = ({
     aimingDownSights,
     aimFrame,
     lookPitchRadians: pitch,
+    stockSeat,
+    seatFrame,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
     loweredPitchRadians,
-    adsApertureFill,
-    ...(verticalFovDegrees === undefined ? {} : { verticalFovDegrees }),
   });
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
   const worldVector = (vector: Vec3): Vec3 => [

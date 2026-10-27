@@ -7,6 +7,7 @@ read_if:
   - you investigate a save-lock timeout or browser CI launch failure
   - you add or use transient world-space debug geometry
   - you expose content-defined actors through debug spawning
+  - you inspect held-gun poses on the player's detached-camera avatar
 ---
 
 # Deadvox troubleshooting
@@ -27,6 +28,14 @@ A frozen page can hold the lock, so the last committed generation is the recover
 
 `?debug=1` is for authoring and diagnostics, including immutable preview measurements. Debug bindings remain rebindable; the held debug gate applies to authoring actions, while noclip flight is ungated only while noclip is active. Native text editing and focus remain browser-owned. A desktop OS may intercept a key before the browser receives it, so synthetic events cannot prove native key delivery. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and [CONTROLS.md](CONTROLS.md).
 
+The Tools gun-pose actions hold an authoring pose while the detached camera takes
+over input. Press the selected action again to return to ordinary mouse control;
+select another to replace the latch. The debug HUD names the latched pose. These
+requests use the player's normal readiness and anatomical solver, not a mannequin
+copy; detached flight still cannot move or fire the avatar. Use the live key
+labels in the Tools group because bindings remain rebindable. See
+`src/debug/index.ts`, `GUN_POSES`; `src/content/base/controls.jsonnet`, `controls`;
+and `src/game/debugGunPose.ts`, `DebugGunPose`.
 
 Use transient world-space primitives for spatial diagnostics rather than a one-off visualizer or permanent scene objects. Keep producers behind a debug group. Primitives without a duration retire at the next rendered frame; durations use the same frame Real clock, so simulation speed and pause do not affect expiry. The draw owner copies caller coordinates and releases its scene resources on disposal. Its bounded queue drops the oldest entry and counts overload. See `src/debug/transientDraw.ts`, `TransientDebugDraw`.
 

@@ -96,6 +96,17 @@ export class WornModels {
     this.sync();
   }
 
+  groupsOf(slot: WearSlot): readonly Group[] {
+    return this.attachments.get(slot)?.groups.map(({ group }) => group) ?? [];
+  }
+
+  modelOf(item: Item): Group | undefined {
+    const contains = (candidate: Item): boolean =>
+      candidate === item ||
+      Object.values(candidate.slots ?? {}).some((child) => child !== undefined && contains(child));
+    return [...this.attachments.values()].find((entry) => contains(entry.item))?.groups[0]?.group;
+  }
+
   private attach(slot: WearSlot, { entry, look }: WornEntry): Attachment | undefined {
     const frame = this.frames.get(entry.frame);
     // Self-model entries keep the whole item look, including parts fitted to a slung gun.

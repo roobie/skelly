@@ -182,11 +182,19 @@ export interface ArmTarget {
   /** The side the elbow bends toward. */
   readonly bendSide: Vector3;
   readonly up: Vector3;
+  readonly minimumBendDegrees?: number;
 }
 
 /** Shoulder and grip contacts win over length constraints: sliding the root leaves a floating sleeve. */
-export const solveArmRig = (rig: ArmRig, { shoulder, grip, handFrame, bendSide, up }: ArmTarget): ArmSolution => {
-  const reach = rig.upperLength + rig.foreLength;
+export const solveArmRig = (
+  rig: ArmRig,
+  { shoulder, grip, handFrame, bendSide, up, minimumBendDegrees = 0 }: ArmTarget,
+): ArmSolution => {
+  const reach = Math.sqrt(
+    rig.upperLength ** 2 +
+      rig.foreLength ** 2 +
+      2 * rig.upperLength * rig.foreLength * Math.cos(minimumBendDegrees * RADIANS),
+  );
   const solve = (hand: Quaternion) => {
     const wrist = grip.clone().sub(rig.gripFromWrist.clone().applyQuaternion(hand));
     const toWrist = wrist.clone().sub(shoulder);

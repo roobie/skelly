@@ -6,7 +6,10 @@ import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
+import { playerAdsPose } from '../src/core/playerAdsPose.ts';
+import { figureStancePose, playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import {
@@ -169,37 +172,49 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
       expect(palm.distanceTo(contact), label).toBeLessThan(1e-6);
       const wrist = rig.hand.localToWorld(rig.gripFromWrist.clone().negate());
       const reach = wrist.clone().sub(rig.shoulder.getWorldPosition(new Vector3()));
-      expect(reach.length(), `${label} reach=${reach.toArray()}`).toBeLessThanOrEqual(
-        rig.upperLength + rig.foreLength + 1e-6,
-      );
-      expect(rig.shoulder.scale.y, label).toBeLessThanOrEqual(1 + 1e-6);
-      expect(rig.elbow.scale.y, label).toBeLessThanOrEqual(1 + 1e-6);
+      expect
+        .soft(reach.length(), `${label} reach=${reach.toArray()}`)
+        .toBeLessThanOrEqual(rig.upperLength + rig.foreLength + 1e-6);
+      expect.soft(rig.shoulder.scale.y, label).toBeLessThanOrEqual(1 + 1e-6);
+      expect.soft(rig.elbow.scale.y, label).toBeLessThanOrEqual(1 + 1e-6);
     }
   };
 
-  const { registry, figure, models, inventory, gun, view } = await pistolFixture();
+  const { registry, figure, model, models, inventory, gun, view } = await pistolFixture();
   const scale = makeScale(0.5);
   const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
   const update = createHeldViews(inventory, view, world);
   const camera = new PerspectiveCamera();
+  const firstUpPitch =
+    (model.hands!.adsStandoffByPitch!.find((point) => point.pitchDegrees > 0)!.pitchDegrees * Math.PI) / 180;
   try {
     for (const stance of ['standing', 'crouching'] as const) {
-      for (const pitch of [0, -LOOK_PITCH_LIMIT / 2, -LOOK_PITCH_LIMIT, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT]) {
-        world.sync({
-          body: createPlayerBody(scale, 0, 0, 0),
-          inventory,
-          stance,
-          yaw: 0,
-          pitch,
-          stepOffset: 0,
-          gaitPhase: 0,
-          moving: false,
-          dt: figure.stancePoses.blendRealSeconds,
-          thirdPerson: true,
-        });
-        camera.position.copy(world.group.getObjectByName('world-held-items')!.position);
-        camera.rotation.set(pitch, 0, 0, 'YXZ');
+      for (const pitch of [
+        0,
+        -LOOK_PITCH_LIMIT / 2,
+        -LOOK_PITCH_LIMIT,
+        firstUpPitch / 2,
+        firstUpPitch,
+        LOOK_PITCH_LIMIT / 2,
+        LOOK_PITCH_LIMIT,
+      ]) {
         for (const aimingDownSights of [false, true]) {
+          world.sync({
+            body: createPlayerBody(scale, 0, 0, 0),
+            inventory,
+            stance,
+            stancePose: figureStancePose(figure, stance),
+            yaw: 0,
+            pitch,
+            stepOffset: 0,
+            gaitPhase: 0,
+            moving: false,
+            dt: 0,
+            thirdPerson: true,
+            ads: playerAdsPose(inventory, aimingDownSights),
+          });
+          world.eyePosition(camera.position);
+          camera.rotation.set(pitch, 0, 0, 'YXZ');
           update(camera, readyMeleePose(false, figure.holds), 0, {
             firearms: [],
             readiness: { uid: gun.uid, progress: aimingDownSights ? 1 : 0, aimingDownSights },
@@ -209,6 +224,39 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
           const label = `${stance} pitch=${pitch} ADS=${aimingDownSights}`;
           expectReachableGrip(source, label);
           expectReachableGrip(overlay, label);
+          const bodyPose = playerLookPose({
+            figure,
+            models: registry.models,
+            pitch,
+            stance,
+            ads: playerAdsPose(inventory, aimingDownSights),
+          });
+          const bore = firearmBoreRay({
+            holds: figure.holds,
+            model,
+            eye: [
+              camera.position.x / scale.blockSize,
+              camera.position.y / scale.blockSize,
+              camera.position.z / scale.blockSize,
+            ],
+            yaw: 0,
+            pitch,
+            blockSize: scale.blockSize,
+            side: 'right',
+            leadingSide: 'right',
+            twoHanded: true,
+            progress: aimingDownSights ? 1 : 0,
+            aimingDownSights,
+            aimFrame: NEUTRAL_AIM,
+            loweredPitchRadians: 0,
+            stockSeat: bodyPose.stockSeats.right,
+            seatFrame: playerHeldSeatFrame(bodyPose, pitch),
+          });
+          const gltfScene = source.heldByHand.get('right')!.children[0]!.children[0]!.children[0]!;
+          const muzzle = gltfScene.localToWorld(new Vector3(...model.anchors!.muzzle!));
+          expect(new Vector3(...bore.muzzle).multiplyScalar(scale.blockSize).distanceTo(muzzle), label).toBeLessThan(
+            1e-6,
+          );
         }
       }
     }

@@ -69,7 +69,6 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
       aimFrame: { yaw: 0, pitch: 0 },
       progress,
       loweredPitchRadians: tuning.loweredPitchRadians,
-      verticalFovDegrees: camera.fov,
     });
   const pointOnBore = (bore: ReturnType<typeof firearmBoreRay>): Vec3 =>
     bore.muzzle.map((value, axis) => value + bore.direction[axis]! * 100) as Vec3;

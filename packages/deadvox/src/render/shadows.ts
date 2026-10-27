@@ -47,6 +47,7 @@ import {
 } from 'three';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../core/mood.ts';
 import type { ChunkMeshes } from './chunks.ts';
+import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
 export const SUN_MAP_SIZE = 2048;
@@ -313,18 +314,28 @@ export class Shadows {
       return;
     }
     const { light, torches, meshes } = this;
+    const sunDraw = (): void => {
+      const { mask } = camera.layers;
+      camera.layers.enable(PLAYER_FIGURE_LAYER);
+      camera.layers.enable(PLAYER_SELF_MASK_LAYER);
+      try {
+        draw([light], scene, camera);
+      } finally {
+        camera.layers.mask = mask;
+      }
+    };
     if (!this.sunDue && needsMap(light)) {
       // A casting light whose map three.js hasn't allocated yet (its light out, or sun shadows just switched on):
       // its programs would bind three's placeholder, which GL rejects against a sampler2DShadow in the
       // `sampler2DShadow[]` uniform path (WebGLUniforms.js setValueT1Array). Let three's own pass allocate and
       // clear it, with no casters, so it reads as fully lit; `stale` stays set so the first real draw follows.
       this.sunCasters = meshes.selectShadowCasters(noBoxes, DoubleSide);
-      draw([light], scene, camera);
+      sunDraw();
     }
     if (this.sunDue) {
       light.shadow.updateMatrices(light);
       this.sunCasters = meshes.selectShadowCasters(inFrustum(light.shadow.getFrustum()), DoubleSide);
-      draw([light], scene, camera);
+      sunDraw();
       this.drawnAt.copy(this.snapped);
       this.drawnToSun.copy(this.toSun);
       this.drawnVersion = meshes.version;

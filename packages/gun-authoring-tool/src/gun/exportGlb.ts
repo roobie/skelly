@@ -42,6 +42,7 @@ import { BUILT_IN_FRONT_POST } from './parts.ts';
 import { gunModelParts, type PartItems, PartMassError } from './physical.ts';
 import pistolAction from './pistolAction.json' with { type: 'json' };
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
+import { ironGunEyeRange } from './sightView.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
@@ -93,6 +94,7 @@ export interface GunModelFields {
     readonly direction: Vec3;
     readonly up: Vec3;
     readonly eyeReliefMetres: number;
+    readonly eyeDistanceRangeMetres?: readonly [number, number];
     readonly ocularDiameterMetres?: number;
   };
   /** Unit barrel direction in the same local model frame as anchors. */
@@ -738,6 +740,7 @@ const sightMetadata = (resolved: Resolved, voxel?: VoxelFile): GunModelFields['s
     direction: modelDirection,
     up,
     eyeReliefMetres: round6(eyeReliefMetres),
+    ...(sightKind === 'iron' ? { eyeDistanceRangeMetres: ironGunEyeRange(resolved, eye, direction) } : {}),
     ...(ocularDiameterMetres === undefined ? {} : { ocularDiameterMetres: round6(ocularDiameterMetres) }),
   };
 };

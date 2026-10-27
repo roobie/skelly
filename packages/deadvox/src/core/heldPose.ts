@@ -5,7 +5,6 @@ import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide, Inventory } from './inventory.ts';
 import { type MeleeHand, type MeleePoseFrame, readyHandPair } from './meleePose.ts';
-import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from './opticWindow.ts';
 import type { HeldPosesDef } from './schema.ts';
 
 /** A hold authored for the right hand, mirrored across the view's x for the left. */
@@ -14,7 +13,7 @@ const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right'
 const mirrorModelZ = (side: HandSide, [x, y, z]: Vec3): Vec3 => [x, y, side === 'right' ? z : -z];
 
 /** From a long gun's grip to its butt, in the view's frame; the lowered gun turns about the butt. */
-const gripToButt = (model: ModelDef): Vec3 => {
+export const heldButtOffset = (model: ModelDef): Vec3 => {
   if (!(model.hands?.butt && model.grip)) {
     throw new Error(`Model ${model.id} needs a butt and a grip`);
   }
@@ -44,7 +43,7 @@ export const heldGripOffset = ({
     if (!model.hands.butt) {
       return seat;
     }
-    const toGrip = rotateYXZ(gripToButt(model).map((value) => -value) as Vec3, [loweredPitch, 0, 0]);
+    const toGrip = rotateYXZ(heldButtOffset(model).map((value) => -value) as Vec3, [loweredPitch, 0, 0]);
     return seat.map((value, index) => value + toGrip[index]!) as Vec3;
   }
   return mirrorViewX(side, twoHanded ? holds.twoHand : holds.oneHand);
@@ -173,8 +172,24 @@ export const readyFirearmPose = (leading: MeleeHand, holds: HeldPosesDef): Melee
   };
 };
 
-const heldSeatInView = (model: ModelDef, seat: Vec3, pitch: number): Vec3 =>
-  model.hands && !model.hands.butt ? rx(seat, -pitch) : seat;
+export interface HeldSeatFrame {
+  readonly origin: Vec3;
+  readonly right: Vec3;
+  readonly up: Vec3;
+  readonly back: Vec3;
+}
+
+const heldSeatInView = (model: ModelDef, seat: Vec3, pitch: number, frame?: HeldSeatFrame): Vec3 => {
+  if (!model.hands || model.hands.butt) {
+    return seat;
+  }
+  if (!frame) {
+    return rx(seat, -pitch);
+  }
+  return frame.origin.map(
+    (value, axis) => value + frame.right[axis]! * seat[0] + frame.up[axis]! * seat[1] + frame.back[axis]! * seat[2],
+  ) as Vec3;
+};
 
 export const heldAdsStandoffMetres = (model: ModelDef | undefined, pitch: number): number => {
   const points = model?.hands?.adsStandoffByPitch;
@@ -192,27 +207,31 @@ export const heldAdsStandoffMetres = (model: ModelDef | undefined, pitch: number
   return before.metres + (after.metres - before.metres) * blend;
 };
 
-const sightEyeBehind = (
-  model: ModelDef,
-  pitch: number,
-  fill: number | undefined,
-  fovDegrees: number,
-): Vec3 | undefined => {
+const subGrip = (model: ModelDef, point: Vec3): Vec3 => point.map((v, i) => v - model.grip!.at[i]!) as Vec3;
+
+const sightEyeBehind = (model: ModelDef, distance?: number): Vec3 | undefined => {
   const sight = model.gun?.sight;
   if (!sight) {
     return undefined;
   }
-  const relief = Math.max(
-    heldAdsStandoffMetres(model, pitch),
-    sight.kind === 'optic' && sight.ocularDiameterMetres !== undefined && fill !== undefined
-      ? opticWindowDistance(sight.ocularDiameterMetres, fill, fovDegrees)
-      : sight.eyeReliefMetres,
-  );
+  const relief = distance ?? sight.eyeReliefMetres;
   return [
     sight.eye[0] - sight.direction[0] * relief,
     sight.eye[1] - sight.direction[1] * relief,
     sight.eye[2] - sight.direction[2] * relief,
   ];
+};
+
+const heldSightEyes = (model: ModelDef, pitch: number) => {
+  const sightEye = sightEyeBehind(
+    model,
+    model.hands?.adsStandoffByPitch ? heldAdsStandoffMetres(model, pitch) : undefined,
+  );
+  const viewEye =
+    model.hands?.adsViewEyeReliefMetres === undefined
+      ? sightEye
+      : sightEyeBehind(model, model.hands.adsViewEyeReliefMetres);
+  return { sightEye, viewEye };
 };
 
 const inCameraFrame = (vector: Vec3, frame: AimFrame): Vec3 => {
@@ -235,9 +254,9 @@ export interface HeldFirearmTransformInput {
   readonly aimFrame: AimFrame;
   readonly lookPitchRadians?: number;
   readonly handlingTurn?: Vec3;
+  readonly stockSeat?: Vec3 | undefined;
+  readonly seatFrame?: HeldSeatFrame | undefined;
   readonly loweredPitchRadians: number;
-  readonly adsApertureFill?: number | undefined;
-  readonly verticalFovDegrees?: number;
 }
 
 export interface HeldFirearmTransform {
@@ -248,6 +267,7 @@ export interface HeldFirearmTransform {
   readonly muzzleDirection: Vec3;
   readonly muzzleUp: Vec3;
   readonly sightEyeOffset?: Vec3;
+  readonly sightEyeRangeOffsets?: readonly [Vec3, Vec3];
   readonly sightDirection?: Vec3;
   readonly sightUp?: Vec3;
   /** Root rotation columns in camera axes: right, up, back. */
@@ -266,6 +286,35 @@ export const heldTorsoForwardDegrees = ({ registry, hands }: Pick<Inventory, 're
 export const heldLoweredPitch = (model: ModelDef | undefined, progress: number, loweredPitchRadians: number): number =>
   -(model?.hands?.loweredPitchRadians ?? loweredPitchRadians) * (1 - progress);
 
+const restingFirearmRoot = (
+  input: Pick<HeldFirearmTransformInput, 'model' | 'side' | 'twoHanded' | 'holds'>,
+  loweredPitch: number,
+  rise: Vec3,
+): Vec3 => {
+  const grip = heldGripOffset({ ...input, loweredPitch });
+  return input.model.hands?.butt ? grip : (grip.map((value, axis) => value + rise[axis]!) as Vec3);
+};
+
+const seatedFirearmRoot = (model: ModelDef, seat: Vec3 | undefined, turn: (point: Vec3) => Vec3): Vec3 | undefined => {
+  if (!(seat && model.hands?.butt)) {
+    return undefined;
+  }
+  const butt = turn(heldButtOffset(model));
+  return seat.map((value, axis) => value - butt[axis]!) as Vec3;
+};
+
+/** Shared simulation/render firearm pose. Anchors and directions use the model's grip frame. */
+const sightRangeFrame = (model: ModelDef, rotate: (point: Vec3) => Vec3) => {
+  const range = model.gun?.sight?.eyeDistanceRangeMetres;
+  if (!range) {
+    return {};
+  }
+  const sightEyeRangeOffsets = range.map((distance) =>
+    rotate(modelToView(model, subGrip(model, sightEyeBehind(model, distance)!))),
+  ) as [Vec3, Vec3];
+  return { sightEyeRangeOffsets };
+};
+
 export const heldFirearmTransform = ({
   holds,
   model,
@@ -277,9 +326,9 @@ export const heldFirearmTransform = ({
   aimFrame,
   lookPitchRadians = 0,
   handlingTurn = [0, 0, 0],
+  stockSeat,
+  seatFrame,
   loweredPitchRadians,
-  adsApertureFill,
-  verticalFovDegrees = PLAYER_VIEW_FOV_DEGREES,
 }: HeldFirearmTransformInput): HeldFirearmTransform => {
   if (
     !(
@@ -304,26 +353,31 @@ export const heldFirearmTransform = ({
     const aligned = applyAlignedRoot(vector, handlingTurn);
     return progress >= 1 ? inCameraFrame(aligned, aimFrame) : aligned;
   };
-  const sightEye = sightEyeBehind(model, lookPitchRadians, adsApertureFill, verticalFovDegrees);
-  const seatRoot = model.hands?.butt
-    ? heldGripOffset({ side, twoHanded, model, loweredPitch, holds })
-    : (heldGripOffset({ side, twoHanded, model, holds }).map(
-        (value, index) => value + pose.offset[index]! * eased,
-      ) as Vec3);
-  const normalRoot = heldSeatInView(model, seatRoot, lookPitchRadians);
+  const { sightEye, viewEye } = heldSightEyes(model, lookPitchRadians);
+  const normalRoot = heldSeatInView(
+    model,
+    restingFirearmRoot(
+      { model, side, twoHanded, holds },
+      loweredPitch,
+      pose.offset.map((value) => value * eased) as Vec3,
+    ),
+    lookPitchRadians,
+    seatFrame,
+  );
   // Seat the undeviated sight eye at the view; aim and handling turns then pivot the firearm off that baseline.
-  const rootOffset =
-    aimingDownSights && model.gun?.sight && sightEye
+  const opticalRoot =
+    aimingDownSights && sightEye
       ? (applyAlignedRoot(
           modelToView(model, sightEye.map((value, index) => value - model.grip!.at[index]!) as Vec3),
           [0, 0, 0],
         ).map((value) => -value) as Vec3)
       : normalRoot;
+  const rootOffset = seatedFirearmRoot(model, stockSeat, applyRootRotation) ?? opticalRoot;
   const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));
   const muzzleDirection = applyRootRotation(modelToView(model, model.gun?.muzzleDirection ?? [1, 0, 0]));
   const muzzleUp = applyRootRotation(modelToView(model, [0, 1, 0]));
-  const sightEyeOffset = sightEye
-    ? applyRootRotation(modelToView(model, sightEye.map((value, index) => value - model.grip!.at[index]!) as Vec3))
+  const sightEyeOffset = viewEye
+    ? applyRootRotation(modelToView(model, viewEye.map((value, index) => value - model.grip!.at[index]!) as Vec3))
     : undefined;
   const sightDirection = model.gun?.sight
     ? applyRootRotation(modelToView(model, model.gun.sight.direction))
@@ -340,6 +394,7 @@ export const heldFirearmTransform = ({
     muzzleDirection: normalize(muzzleDirection),
     muzzleUp: normalize(muzzleUp),
     ...(sightEyeOffset ? { sightEyeOffset } : {}),
+    ...sightRangeFrame(model, applyRootRotation),
     ...(sightDirection ? { sightDirection: normalize(sightDirection) } : {}),
     ...(sightUp ? { sightUp: normalize(sightUp) } : {}),
     rootRotation,
@@ -360,6 +415,8 @@ export const heldEjectionPose = ({
   side,
   twoHanded,
   eye,
+  stockSeat,
+  seatFrame,
   yaw,
   pitch,
 }: {
@@ -367,6 +424,8 @@ export const heldEjectionPose = ({
   side: HandSide;
   twoHanded: boolean;
   eye: Vec3;
+  stockSeat?: Vec3 | undefined;
+  seatFrame?: HeldSeatFrame | undefined;
   yaw: number;
   pitch: number;
   holds: HeldPosesDef;
@@ -376,7 +435,9 @@ export const heldEjectionPose = ({
   }
   const local: Vec3 = model.anchors.ejection.map((value, index) => value - model.grip!.at[index]!) as Vec3;
   const at = modelToView(model, local);
-  const grip = heldSeatInView(model, heldGripOffset({ side, twoHanded, model, holds }), pitch);
+  const grip =
+    seatedFirearmRoot(model, stockSeat, (point) => point) ??
+    heldSeatInView(model, heldGripOffset({ side, twoHanded, model, holds }), pitch, seatFrame);
   const offset: Vec3 = at.map((value, index) => value + grip[index]!) as Vec3;
   const worldOffset = ry(rx(offset, pitch), yaw);
   const vector = ry(rx(modelToView(model, model.gun.action.ejectDirection), pitch), yaw);

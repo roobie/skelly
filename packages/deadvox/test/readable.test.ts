@@ -173,6 +173,8 @@ describe('authored readable text', () => {
       registry: {
         ...registry,
         zombies: BUNDLED_CONTENT.registry.zombies,
+        figures: BUNDLED_CONTENT.registry.figures,
+        models: BUNDLED_CONTENT.registry.models,
         siteGeneration: BUNDLED_CONTENT.registry.siteGeneration,
         dayCycle: BUNDLED_CONTENT.registry.dayCycle,
         ui: BUNDLED_CONTENT.registry.ui,

@@ -5,7 +5,7 @@ import { MapEntityStore } from '../src/core/entities.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
 import { Gore, type GoreBodies } from '../src/render/gore.ts';
-import { PLAYER_BODY_REAR_OFFSET, PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
+import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
 import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
@@ -58,13 +58,8 @@ describe('Gore', () => {
     };
 
     const regionBox = PLAYER_REGION_BOXES[region];
-    const assertWithinDrawnRegion = (origin: Vector3, thirdPerson: boolean): void => {
-      const rearOffset = thirdPerson ? 0 : PLAYER_BODY_REAR_OFFSET;
-      const figureOrigin = new Vector3(
-        playerPos[0] * BLOCK_SIZE + Math.sin(yaw) * rearOffset,
-        playerPos[1] * BLOCK_SIZE,
-        playerPos[2] * BLOCK_SIZE + Math.cos(yaw) * rearOffset,
-      );
+    const assertWithinDrawnRegion = (origin: Vector3): void => {
+      const figureOrigin = new Vector3(...playerPos).multiplyScalar(BLOCK_SIZE);
       const worldX = origin.x - figureOrigin.x;
       const worldZ = origin.z - figureOrigin.z;
       const local = new Vector3(
@@ -80,8 +75,8 @@ describe('Gore', () => {
       }
     };
 
-    assertWithinDrawnRegion(dripPosition(false), false);
-    assertWithinDrawnRegion(dripPosition(true), true);
+    assertWithinDrawnRegion(dripPosition(false));
+    assertWithinDrawnRegion(dripPosition(true));
   });
 
   it('stops player wound drips once the wound stops bleeding', () => {

@@ -647,6 +647,33 @@
       ]
     },
     {
+      "id": "debug.gun-pose-relaxed",
+      "keys": [
+        {
+          "code": "Digit7",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
+      "id": "debug.gun-pose-hip",
+      "keys": [
+        {
+          "code": "Digit8",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
+      "id": "debug.gun-pose-ads",
+      "keys": [
+        {
+          "code": "Digit9",
+          "modifier": "shift"
+        }
+      ]
+    },
+    {
       "id": "debug.mannequin-previous",
       "keys": [
         {

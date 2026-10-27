@@ -125,7 +125,7 @@ local slung(model) = [{
     import 'gungen/revolver.model.json',
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
-    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568),
+    longGunHands(import 'gungen/shotgun_pump.model.json', -0.568) { hands+: { ads: { stockShoulderLimitMetres: 0.09 } } },
     longGunHands(import 'gungen/rifle_hunting.model.json', -0.504),
     import 'gungen/round_308_h_winchester.model.json',
     import 'gungen/case_308_h_winchester.model.json',

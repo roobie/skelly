@@ -239,29 +239,32 @@
         }
       },
       "hands": {
+        "ads": {
+          "cameraOffsetLimitMetres": 0.29999999999999999
+        },
         "adsStandoffByPitch": [
           {
             "metres": 0.20999999999999999,
             "pitchDegrees": -90
           },
           {
-            "metres": 0.40000000000000002,
+            "metres": 0.23999999999999999,
             "pitchDegrees": -45
           },
           {
-            "metres": 0.59999999999999998,
+            "metres": 0.25,
             "pitchDegrees": -15
           },
           {
-            "metres": 0.65000000000000002,
+            "metres": 0.26000000000000001,
             "pitchDegrees": 0
           },
           {
-            "metres": 0.45000000000000001,
+            "metres": 0.25,
             "pitchDegrees": 15
           },
           {
-            "metres": 0.25,
+            "metres": 0.20000000000000001,
             "pitchDegrees": 45
           },
           {
@@ -270,7 +273,7 @@
           }
         ],
         "adsViewEyeReliefMetres": 0.20000000000000001,
-        "elbowBendSide": [0.40000000000000002, -1, 0.5],
+        "elbowBendSide": [0.40000000000000002, -1, 1],
         "firing": {
           "at": [-0.099142999999999995, -0.053199999999999997, 0.016],
           "fingers": [0.8660254037844386, 0.5, 0],
@@ -278,15 +281,14 @@
           "pose": "pistolWrap"
         },
         "loweredPitchRadians": 0,
-        "seat": [0, -0.38, -0.40000000000000002],
+        "seat": [0, -0.32000000000000001, -0.29999999999999999],
         "support": {
           "at": [-0.095142999999999991, -0.064199999999999993, -0.040000000000000001],
           "fingers": [0.8660254037844386, 0.5, 0],
           "palm": [0, 0, 1],
           "pose": "pistolCup"
         },
-        "torsoForwardDegrees": 20,
-        "viewOffset": [0, 0.22, 0.17999999999999999]
+        "torsoForwardDegrees": 20
       },
       "hold": "forward",
       "id": "pistol_service",

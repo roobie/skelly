@@ -71,7 +71,9 @@ import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
 import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
+import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
@@ -1023,16 +1025,27 @@ export const createSession = (options: SessionOptions) => {
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
     isSolid: physicalSolid,
-    pose: (uid) =>
-      inventory.hands.right?.uid === uid || inventory.hands.left?.uid === uid
-        ? {
-            feet: feet(),
-            eye: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
-            yaw: sampledInput().yaw,
-            pitch: sampledInput().pitch,
-            blockSize: s,
-          }
-        : undefined,
+    pose: (uid) => {
+      if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
+        return;
+      }
+      const look = playerLookPose({
+        figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+        models: registry.models,
+        pitch: sampledInput().pitch,
+        stance: playerStance,
+        ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+      });
+      return {
+        feet: feet(),
+        eye: playerEye(),
+        stockSeat: look.stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
+        seatFrame: playerHeldSeatFrame(look, sampledInput().pitch),
+        yaw: sampledInput().yaw,
+        pitch: sampledInput().pitch,
+        blockSize: s,
+      };
+    },
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
     onTrajectory: (trajectory, time) =>
@@ -1144,6 +1157,17 @@ export const createSession = (options: SessionOptions) => {
       loweredStance()?.eyeDropMetres,
       Player.eye,
     );
+  const playerEye = (): Vec3 =>
+    playerEyePosition({
+      feet: body.pos,
+      blockSize: s,
+      yaw: sampledInput().yaw,
+      pitch: sampledInput().pitch,
+      stance: playerStance,
+      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      models: registry.models,
+      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+    });
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
@@ -1720,7 +1744,7 @@ export const createSession = (options: SessionOptions) => {
 
   const dragAimedCell = (): Vec3 => {
     const input = sampledInput();
-    const origin: Vec3 = [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]];
+    const origin = playerEye();
     const direction = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
     const reachBlocks = reachTuning(registry).useReachMetres / s;
     const hit = raycast(origin, direction, reachBlocks, physicalSolid);
@@ -1923,7 +1947,7 @@ export const createSession = (options: SessionOptions) => {
     playerCombat.tick(dt, heldItemUids(), {
       held: Boolean(intent.useDominantHeld),
       aim: {
-        origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        origin: playerEye(),
         direction: aimDirection(playerInput.yaw, playerInput.pitch, NEUTRAL_AIM),
         yaw: playerInput.yaw,
         pitch: playerInput.pitch,
@@ -2193,7 +2217,7 @@ export const createSession = (options: SessionOptions) => {
     fixtures: power?.lights() ?? [],
     isBlocking: isLightBlocking,
     blockSize: s,
-    holder: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+    holder: playerEye(),
   });
   /** Carried paper is lit at the reader's eyes; a sign passes its own point. */
   const readingLight = (at?: Vec3): string | undefined => {
@@ -2308,7 +2332,7 @@ export const createSession = (options: SessionOptions) => {
       const pitch = controls.pitch();
       const selected = pickFurniture({
         entities,
-        origin: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
+        origin: playerEye(),
         direction: aimDirection(yaw, pitch, NEUTRAL_AIM),
         maxDistance: reachTuning(inventory.registry).reachMetres / s,
         blockSize: s,

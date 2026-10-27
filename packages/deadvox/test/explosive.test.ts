@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Mesh, PerspectiveCamera } from 'three';
+import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
 import { dominantSide } from '../src/core/character.ts';
@@ -23,9 +23,9 @@ import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import type { MoveIntent } from './playerFixture.ts';
 
@@ -229,12 +229,20 @@ describe('hand grenade', () => {
     );
     spy.mockRestore();
     await Promise.all(loads);
-    const held = new HeldItems(session.inventory, models, registry.figures.get('player')!);
-    const camera = new PerspectiveCamera();
+    const held = new PlayerMeshes(BLOCK, registry.figures.get('player')!, registry.models, models);
     const pinMeshesDrawn = () => {
-      held.update(camera);
+      held.sync({
+        body: session.body,
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance: 'standing',
+        dt: 0,
+        inventory: session.inventory,
+      });
       let drawn = 0;
-      held.warmUpTarget.scene.traverseVisible((child) => {
+      held.group.traverseVisible((child) => {
         if (child instanceof Mesh && child.geometry.userData.piece === piece) {
           drawn += 1;
         }

@@ -94,8 +94,6 @@ describe('actual-slot held placement', () => {
         aimingDownSights: true,
         aimFrame: NEUTRAL_AIM,
         loweredPitchRadians: firearms.loweredPitchRadians,
-        adsApertureFill: firearms.adsApertureFill,
-        verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
       });
       expect(pose.sightEyeOffset).toBeDefined();
       for (let axis = 0; axis < 3; axis++) {
@@ -227,8 +225,6 @@ describe('actual-slot held placement', () => {
       progress: 1,
       aimingDownSights: true,
       loweredPitchRadians: 0,
-      adsApertureFill: registry.skills.get('firearms_combat')!.combat!.firearms!.adsApertureFill,
-      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
     };
     const resting = heldFirearmTransform({ ...common, aimFrame: NEUTRAL_AIM });
     const recoilFrame = { yaw: 0.06, pitch: -0.03 };
