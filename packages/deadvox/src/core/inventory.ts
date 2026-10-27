@@ -142,13 +142,16 @@ export interface Spot {
 /** Where an item is now. */
 export type Location = TreeLocation<Item, Pile, BlockEntity>;
 
-/** Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. */
+/**
+ * Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. A spot asks to swap
+ * with its occupant unless it is `reserved`: a batch's reservation, which fails once something else has taken it.
+ */
 export type TargetState =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn' }
-  | { kind: 'pocket'; ownerUid: number; pocket: number; at?: Spot }
-  | { kind: 'pile'; pos: Vec3; at?: Spot }
-  | { kind: 'furniture'; entityUid: number; pocket: number; at?: Spot };
+  | { kind: 'pocket'; ownerUid: number; pocket: number; at?: Spot; reserved?: true }
+  | { kind: 'pile'; pos: Vec3; at?: Spot; reserved?: true }
+  | { kind: 'furniture'; entityUid: number; pocket: number; at?: Spot; reserved?: true };
 
 export interface InventoryState {
   nextItemUid: number;
@@ -163,9 +166,9 @@ export interface InventoryState {
 export type Target =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn' }
-  | { kind: 'pocket'; owner: Item; pocket: number; at?: Spot }
-  | { kind: 'pile'; pos: Vec3; at?: Spot }
-  | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot };
+  | { kind: 'pocket'; owner: Item; pocket: number; at?: Spot; reserved?: true }
+  | { kind: 'pile'; pos: Vec3; at?: Spot; reserved?: true }
+  | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot; reserved?: true };
 
 export interface VehicleTransfer {
   kind: 'install' | 'remove';
@@ -188,6 +191,10 @@ export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
+const spotPart = ({ at, reserved }: { at?: Spot; reserved?: true }) => ({
+  ...(at ? { at: { ...at } } : {}),
+  ...(reserved ? { reserved } : {}),
+});
 
 /** Why an item can't leave where it is, whatever the target. */
 const chargingBattery = (from: Location): boolean =>
@@ -623,21 +630,11 @@ export class Inventory {
       case 'worn':
         return { kind: 'worn' };
       case 'pocket':
-        return {
-          kind: 'pocket',
-          ownerUid: target.owner.uid,
-          pocket: target.pocket,
-          ...(target.at ? { at: { ...target.at } } : {}),
-        };
+        return { kind: 'pocket', ownerUid: target.owner.uid, pocket: target.pocket, ...spotPart(target) };
       case 'pile':
-        return { kind: 'pile', pos: [...target.pos], ...(target.at ? { at: { ...target.at } } : {}) };
+        return { kind: 'pile', pos: [...target.pos], ...spotPart(target) };
       case 'furniture':
-        return {
-          kind: 'furniture',
-          entityUid: target.entity.uid,
-          pocket: target.pocket,
-          ...(target.at ? { at: { ...target.at } } : {}),
-        };
+        return { kind: 'furniture', entityUid: target.entity.uid, pocket: target.pocket, ...spotPart(target) };
       default:
         throw new Error(`Unknown target kind ${String((target as { kind: string }).kind)}`);
     }
@@ -687,17 +684,13 @@ export class Inventory {
         return { kind: 'worn' };
       case 'pocket': {
         const owner = this.itemByUid(state.ownerUid);
-        return owner
-          ? { kind: 'pocket', owner, pocket: state.pocket, ...(state.at ? { at: { ...state.at } } : {}) }
-          : undefined;
+        return owner ? { kind: 'pocket', owner, pocket: state.pocket, ...spotPart(state) } : undefined;
       }
       case 'pile':
-        return { kind: 'pile', pos: [...state.pos], ...(state.at ? { at: { ...state.at } } : {}) };
+        return { kind: 'pile', pos: [...state.pos], ...spotPart(state) };
       case 'furniture': {
         const entity = this.entities.byUid(state.entityUid);
-        return entity
-          ? { kind: 'furniture', entity, pocket: state.pocket, ...(state.at ? { at: { ...state.at } } : {}) }
-          : undefined;
+        return entity ? { kind: 'furniture', entity, pocket: state.pocket, ...spotPart(state) } : undefined;
       }
       default:
         throw new Error(`Unknown target kind ${String((state as { kind: string }).kind)}`);
@@ -1267,13 +1260,9 @@ export class Inventory {
     for (const item of outputs) {
       let found = false;
       for (const pos of landings) {
-        const key = pileKey(pos);
-        const placed = grids.get(key) ?? this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
-        grids.set(key, placed);
-        const spot = findSpot(this.registry, { size: PILE_GRID, placed }, item);
+        const placed = this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
+        const spot = this.reserveSpot(grids, pileKey(pos), { size: PILE_GRID, placed }, item);
         if (spot) {
-          // Shadow occupancy reserves every output before transferring any of them.
-          placed.push({ item, ...spot });
           drops.push({ item, pos, spot });
           found = true;
           break;
@@ -1284,6 +1273,61 @@ export class Inventory {
       }
     }
     return drops;
+  }
+
+  // Shadow occupancy reserves every placement of a batch before transferring any of them.
+  private reserveSpot(shadow: Map<string, Placed[]>, key: string, grid: GridState, item: Item): Spot | undefined {
+    const placed = shadow.get(key) ?? [...grid.placed];
+    shadow.set(key, placed);
+    const spot = findSpot(this.registry, { size: grid.size, placed }, item);
+    if (spot) {
+      placed.push({ item, ...spot });
+    }
+    return spot;
+  }
+
+  /**
+   * Plans moving each item into the first of its targets that still has room once the earlier items are in.
+   * Each planned target pins the spot it reserved, so queued moves land where the batch planned them; a pin is
+   * `reserved`, so a spot taken meanwhile fails the move instead of swapping out what took it.
+   */
+  planBatch(moves: readonly { item: Item; targets: readonly Target[] }[]): { item: Item; target: Target }[] {
+    const shadow = new Map<string, Placed[]>();
+    const joined = new Map<Item, number>();
+    return moves.flatMap(({ item, targets }) => {
+      for (const target of targets) {
+        const pinned = this.reserveBatchTarget(shadow, joined, item, target);
+        if (pinned) {
+          return [{ item, target: pinned }];
+        }
+      }
+      return [];
+    });
+  }
+
+  /** The target pinned to a stack with room left by the batch so far, else to a free spot it reserves. */
+  private reserveBatchTarget(
+    shadow: Map<string, Placed[]>,
+    joined: Map<Item, number>,
+    item: Item,
+    target: Target,
+  ): Target | undefined {
+    if (target.kind === 'hand' || target.kind === 'worn' || !this.plan(item, target).ok) {
+      return undefined;
+    }
+    const { at: _pinned, ...where } = target;
+    const key = JSON.stringify(this.targetState(where));
+    const grid = this.gridOf(target);
+    const placed = shadow.get(key) ?? [...grid.placed];
+    shadow.set(key, placed);
+    const stack = placed.find(
+      (p) => stackRoom(this.registry, p.item, item, this.sameFood) - (joined.get(p.item) ?? 0) >= item.count,
+    );
+    if (stack) {
+      joined.set(stack.item, (joined.get(stack.item) ?? 0) + item.count);
+    }
+    const at = stack ? { x: stack.x, y: stack.y, rotated: stack.rotated } : this.reserveSpot(shadow, key, grid, item);
+    return at ? { ...target, at, reserved: true } : undefined;
   }
 
   private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
@@ -1501,7 +1545,8 @@ export class Inventory {
   }
 
   private planSwap(item: Item, target: Target, count: number, from: Location): { swap: Item; at?: Spot } | undefined {
-    if (count !== item.count) {
+    // A batch's reserved spot taken meanwhile fails the move; only a spot the player chose asks for a swap.
+    if (count !== item.count || ('reserved' in target && target.reserved)) {
       return undefined;
     }
     const otherItem = this.itemAtTarget(target, item);
