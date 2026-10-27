@@ -621,6 +621,7 @@
         },
         "mods": {
           "add": "Add",
+          "discard": "Discard stored selection",
           "down": "Down",
           "emptyResponse": "Empty response",
           "fetchFailed": "Could not fetch URL; the host may not allow browser access",
@@ -629,6 +630,7 @@
           "httpStatus": "HTTP {status}",
           "input": "JSON or URL",
           "inputLabel": "Mod JSON or URL",
+          "invalidSelection": "Stored mod selection unreadable · No mods loaded",
           "jsonFact": "Later JSON files replace whole definitions with the same id; the limit is {maxBytes} bytes per file. Selections are stored in this browser; saves require the same enabled mods in the same order.",
           "jsonLabel": "JSON files",
           "jsonOnly": ".json files only",
@@ -636,6 +638,7 @@
           "moveUp": "Move {mod} up",
           "remove": "Remove",
           "removeLabel": "Remove {mod}",
+          "saveFailed": "Could not save · Change not applied",
           "start": "Start",
           "storageFailed": "Mod storage unavailable · No mods loaded",
           "tooLarge": "File exceeds {maxBytes} bytes",
