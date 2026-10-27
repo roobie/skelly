@@ -482,6 +482,10 @@ export class PlayerMeshes {
     return this.lookPose?.stockSeats;
   }
 
+  get adsEyes(): PlayerLookPose['eyes'] | undefined {
+    return this.lookPose?.eyes;
+  }
+
   dispose(): void {
     this.animator?.dispose();
     this.animator = undefined;

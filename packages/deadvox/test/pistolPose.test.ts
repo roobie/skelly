@@ -5,7 +5,9 @@ import { expect, it } from 'vitest';
 import { adsCameraEye, nearestSightEyeOffset } from '../src/core/adsView.ts';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import type { Registry } from '../src/core/content.ts';
+import { sightedFirearmModel } from '../src/core/firearmSight.ts';
+import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { figureStancePose, playerHeldSeatFrame, playerLookPose } from '../src/core/playerLookPose.ts';
@@ -26,6 +28,7 @@ import { createHeldViews } from '../src/render/heldViews.ts';
 import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -98,8 +101,11 @@ it('brings the aimed pistol sight to the dominant eye on the dominant side of th
   }
 });
 
-const pistolFixture = async () => {
-  const registry = baseRegistry();
+const pistolFixture = async (
+  registry: Registry = baseRegistry(),
+  side: HandSide = 'right',
+  gunType = 'pistol_service',
+) => {
   const figure = registry.figures.get('player')!;
   const model = registry.models.get(registry.items.get('pistol_service')!.model!)!;
   const figures = await loadFigureModels(registry);
@@ -114,8 +120,8 @@ const pistolFixture = async () => {
     heldLook: () => ({ ...cloneHeldModel(prepared.held, paths), slots: {} }),
   } as unknown as ModelLibrary;
   const inventory = new Inventory(registry);
-  const gun = inventory.create('pistol_service');
-  if (!inventory.add(gun, { kind: 'hand', side: 'right' })) {
+  const gun = inventory.create(gunType);
+  if (!inventory.add(gun, { kind: 'hand', side })) {
     throw new Error('Pistol fixture could not equip its gun');
   }
   const view = new HeldItems(inventory, models, figure);
@@ -305,6 +311,60 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
   } finally {
     view.dispose();
     world.dispose();
+  }
+});
+
+it('seats the first-person optic window on the same eye as the world actor for either hand', async () => {
+  for (const side of ['right', 'left'] as const) {
+    const { registry: fitted } = withDefaultAttachment(baseRegistry(), 'pistol_service', 'optic_mini_reflex');
+    const { registry, figure, models, inventory, gun, view } = await pistolFixture(fitted, side);
+    const scale = makeScale(0.5);
+    const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
+    const update = createHeldViews(inventory, view, world);
+    const camera = new PerspectiveCamera();
+    try {
+      world.sync({
+        body: createPlayerBody(scale, 0, 0, 0),
+        inventory,
+        stance: 'standing',
+        stancePose: figureStancePose(figure, 'standing'),
+        yaw: 0,
+        pitch: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        dt: 0,
+        thirdPerson: true,
+        ads: playerAdsPose(inventory, true),
+      });
+      world.eyePosition(camera.position);
+      update(camera, readyMeleePose(false, figure.holds), 0, {
+        firearms: [],
+        readiness: { uid: gun.uid, progress: 1, aimingDownSights: true },
+      });
+      const input = {
+        model: sightedFirearmModel(registry, gun)!,
+        side,
+        leadingSide: side,
+        twoHanded: true,
+        progress: 1,
+        aimingDownSights: true,
+        aimFrame: NEUTRAL_AIM,
+        lookPitchRadians: 0,
+        loweredPitchRadians: 0,
+      };
+      const source = (world as unknown as { presentation: HeldPresentation }).presentation;
+      const overlay = (heldState(view) as { presentation: HeldPresentation }).presentation;
+      const actorPose = source.firearmTransform(input);
+      const overlayPose = overlay.firearmTransform(input);
+      expect(actorPose.sightEyeOffset, side).toBeDefined();
+      for (let axis = 0; axis < 3; axis++) {
+        expect(overlayPose.rootOffset[axis]!, `${side} axis ${axis}`).toBeCloseTo(actorPose.rootOffset[axis]!, 9);
+      }
+    } finally {
+      view.dispose();
+      world.dispose();
+    }
   }
 });
 
