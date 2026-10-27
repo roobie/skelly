@@ -666,13 +666,13 @@
     {
       "category": "note",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "camp_closing_note",
       "model": "folded_note",
       "name": "Playtest closing note",
-      "notLoot": false,
+      "notLoot": true,
       "readable": {
         "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing.",
         "title": "A note for the next visitor"

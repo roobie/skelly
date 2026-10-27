@@ -15,7 +15,7 @@ local palette = {
     { item: 'sample_note', count: 1, placement: 'surface' },
     { item: 'field_manual', count: 1, placement: 'surface' },
   ] },
-  Q: { furniture: 'crate', loot: 'sample_note_loot' }, N: { furniture: 'sample_sign' }, O: { furniture: 'wardrobe', facing: 'n' },
+  Q: { furniture: 'crate', items: [{ item: 'sample_note', count: 1 }] }, N: { furniture: 'sample_sign' }, O: { furniture: 'wardrobe', facing: 'n' },
   K: { furniture: 'crate', items: [
     { item: 'rechargeable_aa_battery', count: 1, charge: 0.25, placement: 'surface' },
     { item: 'flashlight', count: 1, charge: 0, placement: 'surface' },
