@@ -2206,6 +2206,18 @@ try {
     assert.equal(roundTrip.restoredHand, 'left');
     await toggleLight('hand.use-off', false);
     await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    // The forward button is recorded input: the replay artifact carries the press and replays it to the same light.
+    const litInEvent = await page.evaluate(() => {
+      document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
+      const r = globalThis.primaryActionTest;
+      return Boolean(r.inventory.itemByUid(r.lightUid)?.on);
+    });
+    assert.equal(litInEvent, false, 'the forward-button use waits for the player tick');
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.itemByUid(r.lightUid)?.on === true;
+    });
+    await toggleLight('hand.use-off', false);
     const interactionHintsBeforeThrowStance = await page.evaluate(
       () => globalThis.primaryActionTest.hudOptions.interaction,
     );
@@ -3742,6 +3754,7 @@ try {
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
     assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
     assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
+    assert.equal(replayArtifact.actions.filter((action) => action.action === 'hand.use-forward').length, 1);
     assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
     await timePhase('full-replay-import-accepted', async () => {
       const replayNavigation = page.waitForNavigation();
