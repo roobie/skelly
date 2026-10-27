@@ -42,6 +42,7 @@ const source = (options: GraphicsOptions) => ({
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,
         itemPictureCacheCapacity: 2,
+        modelLoadConcurrency: 2,
         unbuiltSkyCap: 0.5,
         itemViewer: {
           framing: 1,

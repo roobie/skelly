@@ -37,7 +37,7 @@ const load = async () => {
   const { registry, issues } = buildFixtureRegistry([{ source: 'skin-fixture', data: { models: [modelEntry] } }]);
   expect(issues).toEqual([]);
   const report = vi.fn();
-  const library = new ModelLibrary(registry, report, { [modelEntry.file]: 'fixture.glb' });
+  const library = new ModelLibrary(registry, report, { [modelEntry.file]: 'fixture.glb' }, 1);
   expect(report).not.toHaveBeenCalled();
   expect(library.has(modelEntry.id)).toBe(true);
   expect(library.groundParts(modelEntry.id)).toBeUndefined();

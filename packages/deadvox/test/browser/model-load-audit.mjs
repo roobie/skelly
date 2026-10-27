@@ -29,28 +29,27 @@ export const modelLoadAuditPlugin = {
 export const instrumentModelLoads = (code) => {
   const marker = '    const loader = new GLTFLoader();';
   assert(code.includes(marker), 'model loader audit admission point exists');
-  return `import { LoadingManager as AuditLoadingManager } from 'three';\n${code}`.replace(marker, '').replace(
-    '    for (const def of registry.models.values()) {',
-    `
-    for (const def of registry.models.values()) {
-      const manager = new AuditLoadingManager();
-      const started = new Map();
-      manager.setURLModifier((url) => { started.set(url, Date.now()); return url; });
-      manager.onError = (url) => globalThis.recordModelLoadAudit?.({
-        event: 'asset-error', model: def.id, file: def.file, url, startedAt: started.get(url),
-      });
-      const loader = new GLTFLoader(manager);
-      loader.register((parser) => {
-        const load = parser.textureLoader.load;
-        parser.textureLoader.load = function(url, onLoad, onProgress, onError) {
-          return load.call(this, url, onLoad, onProgress, (error) => {
-            globalThis.recordModelLoadAudit?.({event: 'texture-error', model: def.id, file: def.file,
-              url, reason: error?.name, message: error?.message, type: error?.type});
-            onError?.(error);
+  return `import { LoadingManager as AuditLoadingManager } from 'three';\n${code}`.replace(
+    marker,
+    `    const manager = new AuditLoadingManager();
+    const started = new Map();
+    manager.setURLModifier((url) => { started.set(url, Date.now()); return url; });
+    manager.onError = (url) => globalThis.recordModelLoadAudit?.({
+      event: 'asset-error', url, startedAt: started.get(url),
+    });
+    const loader = new GLTFLoader(manager);
+    loader.register((parser) => {
+      const load = parser.textureLoader.load;
+      parser.textureLoader.load = function(url, onLoad, onProgress, onError) {
+        return load.call(this, url, onLoad, onProgress, (error) => {
+          globalThis.recordModelLoadAudit?.({
+            event: 'texture-error', url, reason: error?.name, message: error?.message, type: error?.type,
           });
-        };
-        return {name: 'model-load-audit'};
-      });`,
+          onError?.(error);
+        });
+      };
+      return {name: 'model-load-audit'};
+    });`,
   );
 };
 

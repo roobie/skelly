@@ -434,31 +434,51 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
   );
 });
 
-it('bounds concurrent model fetches', () => {
+it('bounds model fetches, advances after success and gives requested models priority', async () => {
   const template = registry.models.get('lamp')!;
-  const defs = ['first', 'second', 'third'].map((id) => ({ ...template, id, file: `assets/models/${id}.glb` }));
-  const finishes: (() => void)[] = [];
+  const defs = ['first', 'second', 'third', 'fourth'].map((id) => ({
+    ...template,
+    id,
+    file: `assets/models/${id}.glb`,
+  }));
+  const callbacks = new Map<
+    string,
+    { onLoad: (gltf: Awaited<ReturnType<typeof parseGlb>>) => void; onError: () => void }
+  >();
   const started: string[] = [];
-  const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((url, _onLoad, _onProgress, onError) => {
+  const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((url, onLoad, _onProgress, onError) => {
     started.push(url);
-    finishes.push(() => onError!(new Error('fixture failure')));
+    callbacks.set(url, { onLoad, onError: () => onError!(new Error('fixture failure')) });
     return {} as GLTFLoader;
   });
-  const reports: string[] = [];
-  const models = new ModelLibrary(
-    { ...registry, models: new Map(defs.map((def) => [def.id, def])) },
-    (message) => reports.push(message),
-    Object.fromEntries(defs.map((def) => [def.file, def.file])),
-    2,
-  );
-  expect(started).toHaveLength(2);
-  finishes.shift()!();
-  expect(started).toHaveLength(3);
-  finishes.shift()!();
-  finishes.shift()!();
-  expect(reports).toHaveLength(3);
-  expect(models.version).toBe(0);
-  spy.mockRestore();
+  try {
+    const reports: string[] = [];
+    const models = new ModelLibrary(
+      { ...registry, models: new Map(defs.map((def) => [def.id, def])) },
+      (message) => reports.push(message),
+      Object.fromEntries(defs.map((def) => [def.file, def.file])),
+      2,
+    );
+    expect(started).toEqual(['assets/models/first.glb', 'assets/models/second.glb']);
+    expect(models.has('fourth')).toBe(false);
+    callbacks
+      .get('assets/models/first.glb')!
+      .onLoad(await parseGlb(readFileSync('test/fixtures/packs/lamp/assets/models/lamp.glb')));
+    expect(started).toEqual(['assets/models/first.glb', 'assets/models/second.glb', 'assets/models/fourth.glb']);
+    callbacks.get('assets/models/second.glb')!.onError();
+    expect(started).toEqual([
+      'assets/models/first.glb',
+      'assets/models/second.glb',
+      'assets/models/fourth.glb',
+      'assets/models/third.glb',
+    ]);
+    callbacks.get('assets/models/fourth.glb')!.onError();
+    callbacks.get('assets/models/third.glb')!.onError();
+    expect(reports).toHaveLength(3);
+    expect(models.version).toBe(1);
+  } finally {
+    spy.mockRestore();
+  }
 });
 
 it("draws a grenade without the pin and lever it has shed, by the exported glb's piece names", async () => {
@@ -475,6 +495,7 @@ it("draws a grenade without the pin and lever it has shed, by the exported glb's
       throw new Error(message);
     },
     { [def.file]: `${BASE}/${def.file}` },
+    1,
   );
   spy.mockRestore();
   await Promise.all(loads);

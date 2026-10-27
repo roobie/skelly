@@ -232,32 +232,34 @@ export class ModelLibrary {
   private readonly skins = new Map<string, Object3D>();
   /** Composed ground looks by `ItemLook.key`, so piles build each distinct look once. */
   private readonly composedGround = new Map<string, Object3D>();
+  private readonly pending: [ModelDef, string][];
+  private next = 0;
+  private readonly loadNext: () => void;
 
   /** `report` hears about models that can't be drawn; it's never called during construction. */
   constructor(
     registry: Registry,
     report: (message: string) => void,
-    files: Readonly<Record<string, string>> = PACK_FILES,
-    loadConcurrency = 8,
+    files: Readonly<Record<string, string>> | undefined,
+    loadConcurrency: number,
   ) {
     const loader = new GLTFLoader();
-    const pending = [...registry.models.values()].flatMap((def) => {
-      const url = files[def.file];
+    this.pending = [...registry.models.values()].flatMap((def) => {
+      const url = (files ?? PACK_FILES)[def.file];
       if (url === undefined) {
         queueMicrotask(() => report(`model "${def.id}": no file "${def.file}" in the pack`));
         return [];
       }
-      return [[def, url] as const];
+      return [[def, url] as [ModelDef, string]];
     });
-    let next = 0;
-    const load = (): void => {
-      const entry = pending[next];
-      next += 1;
+    this.loadNext = (): void => {
+      const entry = this.pending[this.next];
+      this.next += 1;
       if (entry === undefined) {
         return;
       }
       const [def, url] = entry;
-      const finish = () => load();
+      const finish = () => this.loadNext();
       loader.load(
         url,
         (gltf) => {
@@ -292,49 +294,74 @@ export class ModelLibrary {
       );
     };
     for (let slot = 0; slot < loadConcurrency; slot += 1) {
-      load();
+      this.loadNext();
+    }
+  }
+
+  private request(id: string): void {
+    const index = this.pending.findIndex(([def]) => def.id === id);
+    if (index >= this.next) {
+      const [entry] = this.pending.splice(index, 1);
+      this.pending.splice(this.next, 0, entry!);
+    }
+  }
+
+  private requestLook(look: ItemLook): void {
+    this.request(look.model);
+    for (const slot of look.slots) {
+      if (slot.model !== undefined) {
+        this.request(slot.model);
+      }
     }
   }
 
   has(id: string): boolean {
+    this.request(id);
     return this.ready.has(id) || this.skins.has(id);
   }
 
   /** Shared geometry/material parts and their prepared-ground transforms for instanced rendering. */
   groundParts(id: string): readonly GroundModelPart[] | undefined {
+    this.request(id);
     return this.ready.get(id)?.groundParts;
   }
 
   /** A copy on the ground as its model rests: centred over its origin, resting on y = 0. */
   ground(id: string): Object3D | undefined {
+    this.request(id);
     return this.ready.get(id)?.ground.clone();
   }
 
   /** A copy held at its grip in the model's configured pose. */
   held(id: string): HeldModel | undefined {
+    this.request(id);
     const prepared = this.ready.get(id);
     return prepared ? cloneHeldModel(prepared.held, prepared.actionParts) : undefined;
   }
 
   /** A copy of a model in its own file frame, as another model's part; undefined until it loads. */
   part(id: string): Object3D | undefined {
+    this.request(id);
     return this.ready.get(id)?.scene.clone();
   }
 
   /** An independently posed skin; never prepared as a rigid ground or held model. */
   skinned(id: string): ReturnType<typeof instantiateSkin> | undefined {
+    this.request(id);
     const scene = this.skins.get(id);
     return scene ? instantiateSkin(scene) : undefined;
   }
 
   /** A part model's bounds in its own file frame. */
   partBounds(id: string): Box3 | undefined {
+    this.request(id);
     const prepared = this.ready.get(id);
     return prepared && visibleBounds(prepared.scene);
   }
 
   /** An item's look held at its grip: the base model with each loaded part at its slot. */
   heldLook(look: ItemLook): ComposedHeld | undefined {
+    this.requestLook(look);
     const prepared = this.ready.get(look.model);
     if (!prepared) {
       return undefined;
@@ -346,6 +373,7 @@ export class ModelLibrary {
 
   /** An item's look in its model's own file frame, with whatever is fitted, as a worn figure model draws it. */
   partLook(look: ItemLook): Object3D | undefined {
+    this.requestLook(look);
     const prepared = this.ready.get(look.model);
     if (!prepared) {
       return undefined;
@@ -358,6 +386,7 @@ export class ModelLibrary {
 
   /** An item's look on the ground, resting on y = 0 with whatever is fitted; built once per look. */
   groundLook(look: ItemLook): Object3D | undefined {
+    this.requestLook(look);
     const cached = this.composedGround.get(look.key);
     if (cached) {
       return cached.clone();

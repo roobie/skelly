@@ -226,6 +226,7 @@ describe('hand grenade', () => {
         throw new Error(message);
       },
       { [def.file]: `${MODEL_ROOT}/${def.file}` },
+      1,
     );
     spy.mockRestore();
     await Promise.all(loads);
