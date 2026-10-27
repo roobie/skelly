@@ -3704,7 +3704,6 @@ export const startPlay = (
       ...viewpoint,
       blockSize: s,
       handlingTurn,
-      isSolid: session.physicalSolid,
     });
   };
 

@@ -1686,8 +1686,14 @@ parallax is accepted unless it becomes a multiplayer peeking problem. See
 
 Prone ADS needs its own chest-raised, elbow-supported posture under #550 before
 prone tuning changes; the standing and crouching camera fit does not establish
-prone fit. Moving shot start to the muzzle along the barrel belongs to #1383;
-the viewing-camera offset must not change the existing shot origin.
+prone fit.
+
+Firearm shots start at the shared posed muzzle and follow the barrel, never the
+observing camera or a wall-dependent eye fallback: every observer must see the
+same physical truth. Obstruction handling belongs to #1376 rather than changing
+shot origin. See `src/game/firearmAim.ts`, `firearmBoreRay`. Sight-to-bore zeroing
+remains under #1383; a ballistic correction must not disagree with the visible
+barrel.
 
 Steep look-down hip lean is part of the same pose: looking through the avatar's
 centreline is not realistic biomechanics. It must not move the collision body,
