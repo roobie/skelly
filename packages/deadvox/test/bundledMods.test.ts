@@ -3,14 +3,16 @@ import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/
 import { perceivePlayer } from '../src/core/zombies.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
-import { reuseBundledBuilds } from './bundledContentReuse.ts';
+import { startupContent } from './baseRegistry.ts';
+import { reuseBundledBuilds, withReusedBuilds } from './bundledContentReuse.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const base = buildBundledContent().registry;
 const PACKS_DIFFER = /content packs differ/;
 // Admitted once; every case below reads it and none changes it.
-const beginner = selectBundledMods(['beginner']);
-reuseBundledBuilds();
+const beginner = withReusedBuilds(() => selectBundledMods(['beginner']));
+// The suite's own build of the unmodded content stands in for a second one, so the no-mod case still compares two builds.
+reuseBundledBuilds(startupContent());
 
 describe('beginner bundled mod', () => {
   it('is admitted without issues', () => {
