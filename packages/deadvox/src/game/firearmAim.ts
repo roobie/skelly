@@ -4,7 +4,6 @@ import type { Vec3 } from '../core/coords.ts';
 import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget.ts';
 import { heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { HeldPosesDef } from '../core/schema.ts';
 import type { MeleeWeapon, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 
@@ -24,7 +23,6 @@ export interface FirearmBoreRayInput {
   readonly stockSeat?: Vec3 | undefined;
   readonly aimingDownSights?: boolean;
   readonly loweredPitchRadians: number;
-  readonly isSolid?: SolidAt;
 }
 
 export interface FirearmBoreRay {
@@ -50,7 +48,6 @@ export const firearmBoreRay = ({
   stockSeat,
   aimingDownSights = false,
   loweredPitchRadians,
-  isSolid = () => false,
 }: FirearmBoreRayInput): FirearmBoreRay => {
   const pose = heldFirearmTransform({
     holds,
@@ -77,12 +74,7 @@ export const firearmBoreRay = ({
   const muzzle = muzzleMetres.map((value) => value / blockSize) as Vec3;
   const direction = normalizeDirection(worldVector(pose.muzzleDirection));
   const muzzleUp = normalizeDirection(worldVector(pose.muzzleUp));
-  const eyeToMuzzle = muzzle.map((value, axis) => value - eye[axis]!) as Vec3;
-  const muzzleDistance = Math.hypot(...eyeToMuzzle);
-  const muzzleBlocked =
-    muzzleDistance > 0 &&
-    raycast(eye, eyeToMuzzle.map((value) => value / muzzleDistance) as Vec3, muzzleDistance, isSolid) !== undefined;
-  return { origin: muzzleBlocked ? eye : muzzle, muzzle, direction, up: muzzleUp };
+  return { origin: muzzle, muzzle, direction, up: muzzleUp };
 };
 
 export interface FirearmBoreTarget {
