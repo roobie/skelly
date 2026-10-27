@@ -3258,6 +3258,38 @@ describe('content', () => {
     }
   });
 
+  it('requires a prone support hold on a stocked long gun but not on a free-held one', () => {
+    const models = [...baseRegistry.models.values()].filter((candidate) => candidate.hands);
+    const stocked = models.find((candidate) => candidate.hands!.butt && candidate.hands!.proneSupport)!;
+    const freeHeld = models.find((candidate) => !candidate.hands!.butt)!;
+    const { proneSupport: _removed, ...withoutProne } = stocked.hands!;
+    // Map and site sections cost most of a full build and no hands check reads them; see the hands fixture test.
+    const worldSections = new Set([
+      'templates',
+      'layouts',
+      'mapPieces',
+      'mapAssemblies',
+      'mapPools',
+      'mapStyles',
+      'scenarios',
+      'siteGeneration',
+      'cityBenchmarks',
+    ]);
+    const sources = base.map(({ source, data: content }) => ({
+      source,
+      data: Object.fromEntries(Object.entries(content as object).filter(([section]) => !worldSections.has(section))),
+    }));
+    const fixtureSource = 'prone-hold-fixture.json';
+    const fixtures = [
+      { ...stocked, id: 'fixture_stocked_no_prone', hands: withoutProne },
+      { ...freeHeld, id: 'fixture_free_held' },
+    ];
+    const { issues } = buildRegistry([...sources, { source: fixtureSource, data: { models: fixtures } }]);
+    expect(issues.filter((issue) => issue.source === fixtureSource).map(({ path }) => path)).toEqual([
+      'models[0].hands.proneSupport',
+    ]);
+  });
+
   it('requires standoff curves to have ordered, distinct interpolation endpoints', () => {
     const model = [...baseRegistry.models.values()].find((candidate) => candidate.hands)!;
     const accepts = (points: { pitchDegrees: number; metres: number }[]) =>

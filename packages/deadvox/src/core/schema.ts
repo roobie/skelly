@@ -2162,7 +2162,8 @@ const HandsModelSchema = strictObject({
   /**
    * Where the support hand takes the gun while lying prone and aiming, nearer the body so the elbow hangs lower. It
    * moves the hand only: the palm, fingers and pose stay the support hold's, because the arm is built once with them.
-   * A gun without one keeps its support hold prone.
+   * A stocked gun (one that authors `butt`) must have it, which `checkHands` enforces; a free-held gun without one
+   * keeps its support hold prone.
    */
   proneSupport: optional(strictObject({ at: Point })),
 });
