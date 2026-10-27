@@ -155,6 +155,16 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         },
         blendRealSeconds: 0.2,
       },
+      proneAdsPose: {
+        hipDropMetres: 0.48,
+        torsoForwardDegrees: 55,
+        legsForwardDegrees: -90,
+        kneeBendDegrees: 0,
+        ankleDegrees: 0,
+        armsForwardDegrees: 0,
+        elbowBendDegrees: 0,
+        headUpDegrees: 0,
+      },
       outfits: {
         police_uniform: outfit('#b39e8f', '#33415e', '#232937', '#121212'),
         special_ops_uniform: outfit('#a99a8b', '#3d4434', '#363b2e', '#17140f'),

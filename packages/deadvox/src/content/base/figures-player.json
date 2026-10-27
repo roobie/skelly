@@ -396,6 +396,16 @@
           }
         }
       },
+      "proneAdsPose": {
+        "ankleDegrees": 0,
+        "armsForwardDegrees": 0,
+        "elbowBendDegrees": 0,
+        "headUpDegrees": 0,
+        "hipDropMetres": 0.47999999999999998,
+        "kneeBendDegrees": 0,
+        "legsForwardDegrees": -90,
+        "torsoForwardDegrees": 55
+      },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,
         "crouching": {

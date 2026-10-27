@@ -20,24 +20,26 @@ const RADIANS = Math.PI / 180;
 type Models = ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
 export type FigureStancePose = FigureDef['stancePoses']['prone'];
 
-export const figureStancePose = (figure: FigureDef, stance: PlayerStance): FigureStancePose =>
-  stance === 'standing'
-    ? {
-        hipDropMetres: 0,
-        torsoForwardDegrees: 0,
-        legsForwardDegrees: 0,
-        kneeBendDegrees: 0,
-        ankleDegrees: 0,
-        armsForwardDegrees: 0,
-        elbowBendDegrees: 0,
-        headUpDegrees: 0,
-      }
-    : figure.stancePoses[stance];
+export const figureStancePose = (figure: FigureDef, stance: PlayerStance, ads = false): FigureStancePose => {
+  if (stance === 'standing') {
+    return {
+      hipDropMetres: 0,
+      torsoForwardDegrees: 0,
+      legsForwardDegrees: 0,
+      kneeBendDegrees: 0,
+      ankleDegrees: 0,
+      armsForwardDegrees: 0,
+      elbowBendDegrees: 0,
+      headUpDegrees: 0,
+    };
+  }
+  return stance === 'prone' && ads ? figure.proneAdsPose : figure.stancePoses[stance];
+};
 
-export const playerLookLean = (figure: FigureDef, pitch: number, stance: PlayerStance): number => {
+export const playerLookLean = (figure: FigureDef, pitch: number, stance: PlayerStance, ads = false): number => {
   const { startPitchDegrees, torsoForwardDegrees } = figure.lookDownLean;
   const progress = Math.max(0, Math.min(1, (-pitch / RADIANS - startPitchDegrees) / (90 - startPitchDegrees)));
-  const stanceLean = stance === 'standing' ? 0 : figure.stancePoses[stance].torsoForwardDegrees;
+  const stanceLean = figureStancePose(figure, stance, ads).torsoForwardDegrees;
   return Math.min(torsoForwardDegrees * progress, Math.max(0, 90 - stanceLean)) * RADIANS;
 };
 
@@ -143,8 +145,8 @@ export const playerLookPose = ({
   models,
   pitch,
   stance,
-  stancePose = figureStancePose(figure, stance),
   ads,
+  stancePose = figureStancePose(figure, stance, ads !== undefined),
 }: {
   figure: FigureDef;
   models: Models;
@@ -172,7 +174,7 @@ export const playerLookPose = ({
     const at = anchor(name);
     return [origin[0] - at[0], origin[1] + at[1], origin[2] - at[2]];
   };
-  const hipAimTurn = -playerLookLean(figure, pitch, stance);
+  const hipAimTurn = -playerLookLean(figure, pitch, stance, ads !== undefined);
   const hipTurn = -stancePose.torsoForwardDegrees * RADIANS + hipAimTurn;
   const { torsoShare, neckShare, torsoLimitDegrees, neckLimitDegrees, headLimitDegrees, stockShoulderOffset } =
     figure.aimPose;

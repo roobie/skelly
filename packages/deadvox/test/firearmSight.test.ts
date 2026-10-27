@@ -85,9 +85,9 @@ it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
 });
 
 const cameraCases = () => {
-  const cases = adsCases().filter(({ stance }) => stance !== 'prone');
-  if (cases.length === 0) {
-    throw new Error('ADS camera checks need a standing or crouching sighted firearm');
+  const cases = adsCases();
+  if (!cases.some(({ stance }) => stance === 'prone')) {
+    throw new Error('ADS camera checks need a prone sighted firearm');
   }
   return cases;
 };

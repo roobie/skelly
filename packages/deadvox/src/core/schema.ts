@@ -3735,6 +3735,8 @@ const FigureSchema = strictObject({
     /** How long the drawn body takes to settle into a new stance. */
     blendRealSeconds: PositiveRealSeconds,
   }),
+  /** The prone body while aiming down sights: chest raised and propped on the elbows (`DESIGN.md`, "Character"). */
+  proneAdsPose: StancePoseSchema,
   /**
    * Temporary corpse role tint by outfit id, with a colour per model part's material slot. Omitted slots keep the
    * model colour. This is not clothing; delete with #1366 (`DESIGN.md`, "Dead humans").

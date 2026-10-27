@@ -557,7 +557,7 @@ export const createPlayView = (
         gaitPhase,
         moving,
         stance,
-        stancePose: figureStancePose(playerFigure, stance),
+        stancePose: figureStancePose(playerFigure, stance, frame.ads !== undefined),
         ads: frame.ads,
         dt,
         inventory,

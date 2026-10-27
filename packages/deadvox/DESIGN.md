@@ -1684,10 +1684,15 @@ parallax is accepted unless it becomes a multiplayer peeking problem. See
 `src/core/adsView.ts`, `guardAdsCamera`; and `src/render/playView.ts`,
 `updateCamera`.
 
-Prone ADS needs its own chest-raised, elbow-supported posture under #550 before
-prone tuning changes; the standing and crouching camera fit does not establish
-prone fit. Moving shot start to the muzzle along the barrel belongs to #1383;
-the viewing-camera offset must not change the existing shot origin.
+Prone ADS has its own posture, chest raised and propped on the elbows. A flat
+prone torso cannot lift the eye to the sight line within the neck limits, so the
+fit is fixed in the posture, shared by first person and the world body in one
+solve, before any per-gun aim value is loosened for prone. The self-mask applies
+to prone like the other stances because the raised torso and neck reach the near
+plane. See `src/content/base/figures-player.jsonnet`, `proneAdsPose`; and
+`src/core/playerLookPose.ts`, `figureStancePose`. Moving shot start to the
+muzzle along the barrel belongs to #1383; the viewing-camera offset must not
+change the existing shot origin.
 
 Steep look-down hip lean is part of the same pose: looking through the avatar's
 centreline is not realistic biomechanics. It must not move the collision body,
