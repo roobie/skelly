@@ -2159,6 +2159,13 @@ const HandsModelSchema = strictObject({
   adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
+  /**
+   * Where the support hand takes the gun while lying prone and aiming, nearer the body so the elbow hangs lower. It
+   * moves the hand only: the palm, fingers and pose stay the support hold's, because the arm is built once with them.
+   * A stocked gun (one that authors `butt`) must have it, which `checkHands` enforces; a free-held gun without one
+   * keeps its support hold prone.
+   */
+  proneSupport: optional(strictObject({ at: Point })),
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
@@ -3653,6 +3660,8 @@ const ArmRigSchema = strictObject({
   grip: Id,
   /** A body-relative pole keeps the elbow bend independent of where the eye looks. */
   elbowPole: strictObject({ up: UnitVector, down: UnitVector }),
+  /** The same pole while prone and aiming down sights: elbows point at the ground and carry the raised chest. */
+  proneAdsElbowPole: strictObject({ up: UnitVector, down: UnitVector }),
   minimumBendDegrees: strictObject({
     up: pipe(number(), minValue(0), maxValue(90)),
     down: pipe(number(), minValue(0), maxValue(90)),
@@ -3756,6 +3765,8 @@ const FigureSchema = strictObject({
       ownBodyHide: array(picklist(['spine', 'neck', 'head'])),
       stockShoulderLimitMetres: NonNegative,
       torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      /** The same roll lying prone, where it swings the shoulders along the ground; negative turns the other way. */
+      proneTorsoRollDegrees: pipe(number(), minValue(-90), maxValue(90)),
       headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       neckLengthToleranceFraction: pipe(
         Fraction,
@@ -3779,6 +3790,8 @@ const FigureSchema = strictObject({
     /** How long the drawn body takes to settle into a new stance. */
     blendRealSeconds: PositiveRealSeconds,
   }),
+  /** The prone body while aiming down sights: chest raised and propped on the elbows (`DESIGN.md`, "Character"). */
+  proneAdsPose: StancePoseSchema,
   /**
    * Temporary corpse role tint by outfit id, with a colour per model part's material slot. Omitted slots keep the
    * model colour. This is not clothing; delete with #1366 (`DESIGN.md`, "Dead humans").

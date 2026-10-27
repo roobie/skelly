@@ -11,6 +11,7 @@ import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
 import {
   type FigureStancePose,
+  figureStancePose,
   type PlayerLookPose,
   playerHeldSeatFrame,
   playerLookPose,
@@ -343,6 +344,7 @@ export class PlayerMeshes {
   private readonly stancePoses: FigureDef['stancePoses'];
   private readonly gait: FigureDef['gait'];
   private stance: PlayerStance = 'standing';
+  private stanceAds = false;
   /** The drawn pose blends from `blendFrom` to the stance's pose as `blendProgress` runs from 0 to 1. */
   private readonly blendFrom: StancePose = { ...STANDING_POSE };
   private blendProgress = 1;
@@ -424,7 +426,7 @@ export class PlayerMeshes {
       if (pose.stancePose) {
         Object.assign(this.shownPose, pose.stancePose);
       } else {
-        this.blendStance(pose.stance, pose.dt);
+        this.blendStance(pose.stance, pose.dt, pose.ads !== undefined);
       }
     }
     this.lookPose = playerLookPose({
@@ -441,7 +443,7 @@ export class PlayerMeshes {
     this.worn.sync(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
     this.syncHeld(pose);
-    this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined && pose.stance !== 'prone';
+    this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined;
     this.ownBodyClip.attach(this.drawn.values());
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
@@ -483,6 +485,10 @@ export class PlayerMeshes {
 
   get stockSeats(): PlayerLookPose['stockSeats'] | undefined {
     return this.lookPose?.stockSeats;
+  }
+
+  get proneAds(): boolean {
+    return this.lookPose?.proneAds ?? false;
   }
 
   get adsEyes(): PlayerLookPose['eyes'] | undefined {
@@ -543,6 +549,7 @@ export class PlayerMeshes {
       });
     }
     this.presentation!.stockSeats = this.lookPose!.stockSeats;
+    this.presentation!.proneAds = this.lookPose!.proneAds;
     this.presentation!.seatFrame = playerHeldSeatFrame(this.lookPose!, pose.pitch ?? 0);
     this.presentation!.adsEyes = this.lookPose!.eyes;
     this.animator!.setSource(source);
@@ -644,14 +651,15 @@ export class PlayerMeshes {
     }
   }
 
-  private blendStance(stance: PlayerStance, dt: number): void {
-    if (stance !== this.stance) {
+  private blendStance(stance: PlayerStance, dt: number, ads: boolean): void {
+    if (stance !== this.stance || ads !== this.stanceAds) {
       this.stance = stance;
+      this.stanceAds = ads;
       Object.assign(this.blendFrom, this.shownPose);
       this.blendProgress = 0;
     }
     this.blendProgress = Math.min(1, this.blendProgress + dt / this.stancePoses.blendRealSeconds);
-    const target = stance === 'standing' ? STANDING_POSE : this.stancePoses[stance];
+    const target = figureStancePose(this.figure, stance, ads);
     for (const key of STANCE_POSE_KEYS) {
       this.shownPose[key] = this.blendFrom[key] + (target[key] - this.blendFrom[key]) * this.blendProgress;
     }

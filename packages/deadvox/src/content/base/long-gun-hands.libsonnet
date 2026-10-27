@@ -14,6 +14,9 @@ local firingHold(model) =
   } else
     error 'long gun %s exports neither a grip part nor a stock part, so no firing hold fits it' % [model.id];
 
+// Lying prone, the support hand takes the gun this far ahead of the firing grip so the elbow can rest on the ground.
+local proneSupportAheadOfGripMetres = 0.04;
+
 function(model, buttX) model {
   hands: {
     seat: [0.15, -0.1, -0.12],
@@ -24,6 +27,9 @@ function(model, buttX) model {
       palm: [0, 1, 0],
       fingers: [0.7880108, 0, 0.6156615],
       pose: 'forend',
+    },
+    proneSupport: {
+      at: [model.grip.at[0] + proneSupportAheadOfGripMetres, model.anchors.support[1], 0],
     },
   },
 }
