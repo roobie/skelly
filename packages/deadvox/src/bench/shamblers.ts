@@ -12,10 +12,17 @@ import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import { figureSeedPool } from '../core/zombieFigure.ts';
-import { BACKGROUND_ZOMBIE_RATE, ZombieSystem } from '../core/zombies.ts';
+import {
+  BACKGROUND_ZOMBIE_RATE,
+  BACKGROUND_ZOMBIE_SLICE_COUNT,
+  BACKGROUND_ZOMBIE_SLICE_RATE,
+  ZombieSystem,
+} from '../core/zombies.ts';
 import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
+import { PHYSICS_RATE } from '../game/session.ts';
+import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
 import { ZombieMeshes } from '../render/zombies.ts';
@@ -34,6 +41,9 @@ import { environment } from './run.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
+
+const ACTIVE_FRAMES_PER_TICK = PHYSICS_RATE / ZOMBIE_RATE;
+const BACKGROUND_FRAMES_PER_SLICE = PHYSICS_RATE / BACKGROUND_ZOMBIE_SLICE_RATE;
 
 export interface ShamblerBenchRun {
   counts: number[];
@@ -274,19 +284,24 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep benchmark sampling inside the exact fixed-step loop it measures.
   const fixedSteps = (dt: number, measuring: boolean): void => {
     accumulator += dt;
-    while (accumulator >= 1 / 60) {
-      simTime += 1 / 60;
-      if (physicsFrame % 3 === 0) {
+    while (accumulator >= 1 / PHYSICS_RATE) {
+      simTime += 1 / PHYSICS_RATE;
+      if (physicsFrame % ACTIVE_FRAMES_PER_TICK === 0) {
         const tickStart = performance.now();
-        zombies.tickActive(1 / 20, simTime);
+        zombies.tickActive(1 / ZOMBIE_RATE, simTime);
         lastZombieTickAt = tickStart;
         if (measuring) {
           zombieTick.push(performance.now() - tickStart);
         }
       }
-      if (physicsFrame % 30 === 0) {
+      if (physicsFrame % BACKGROUND_FRAMES_PER_SLICE === 0) {
         const tickStart = performance.now();
-        zombies.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, simTime);
+        zombies.tickBackground(
+          1 / BACKGROUND_ZOMBIE_RATE,
+          simTime,
+          (physicsFrame / BACKGROUND_FRAMES_PER_SLICE) % BACKGROUND_ZOMBIE_SLICE_COUNT,
+          BACKGROUND_ZOMBIE_SLICE_COUNT,
+        );
         lastBackgroundTickAt = tickStart;
         if (measuring) {
           backgroundTick.push(performance.now() - tickStart);
@@ -294,12 +309,12 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       }
       playerBody.vel[0] = 0;
       playerBody.vel[2] = 0;
-      stepBody(playerBody, 1 / 60, engine.isSolid, {
+      stepBody(playerBody, 1 / PHYSICS_RATE, engine.isSolid, {
         ...physicsFor(scale, Player),
         obstacles: [...zombies.store.entries()].map(([, zombie]) => zombie.body),
       });
       physicsFrame += 1;
-      accumulator -= 1 / 60;
+      accumulator -= 1 / PHYSICS_RATE;
     }
   };
 
