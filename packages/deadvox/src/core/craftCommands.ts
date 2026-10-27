@@ -45,14 +45,18 @@ export class CraftCommands {
   }
   get currentUid(): number | undefined {
     const { job } = this.sim.actions;
-    if (job?.jobType === 'craft') {
+    if (job?.jobType === 'craft' && !job.stopped) {
       return job.workUid;
     }
     if (this.sim.actions.rest) {
       return undefined;
     }
+    // A held work item is the one a continue means, even when another item's stopped job is the last one.
     const held = this.inventory.hands[dominantSide(this.inventory.character)];
-    return held?.work ? held.uid : undefined;
+    if (held?.work) {
+      return held.uid;
+    }
+    return job?.jobType === 'craft' ? job.workUid : undefined;
   }
   startReason(): string | undefined {
     if (this.inventory.hands.right || this.inventory.hands.left) {

@@ -1492,6 +1492,11 @@ body.resting #handling {
 #handling[hidden] {
   display: none;
 }
+/* The handling gauge and its caption fill the space below the crosshair, so the prompt moves above the gauge. */
+body:has(#handling:not([hidden])) #prompt {
+  top: auto;
+  bottom: calc(50% + 3.5rem);
+}
 #errors {
   position: fixed;
   left: 0.75rem;
@@ -1817,8 +1822,7 @@ body.inventory-open.inventory-tab-crafting #crafting {
   overflow: auto;
   overscroll-behavior: contain;
 }
-#crafting[hidden],
-#craft-status[hidden] {
+#crafting[hidden] {
   display: none;
 }
 #crafting h2 {
@@ -1933,9 +1937,6 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .inv-occupied-hand {
   color: var(--muted);
   font-size: 0.75rem;
-}
-#craft-status {
-  position: static;
 }
 /* ---- rest and sleep (1.8) ---- */
 #rest {

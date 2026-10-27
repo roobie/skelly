@@ -24,6 +24,8 @@ export interface ItemAction {
   readonly battery?: 'unload';
   readonly opening?: true;
   readonly sharpening?: true;
+  /** Resuming a held, paused craft: the action list is where a paused craft's status lives. */
+  readonly continuing?: true;
 }
 
 /** What the treatment treats in the wound (`Body.canTreat`): its bleeding tier, else its infection stage. */

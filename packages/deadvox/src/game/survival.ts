@@ -268,7 +268,21 @@ export class Survival {
   }
 
   availableItemActions(item: Item): readonly ItemAction[] {
-    return itemActionsFor(item, this.inventory, this.sim.body);
+    const actions = itemActionsFor(item, this.inventory, this.sim.body);
+    const { job } = this.sim.actions;
+    const paused = job?.jobType !== 'craft' || job.stopped;
+    if (!(item.work && paused) || this.handOf(item) === undefined) {
+      return actions;
+    }
+    const name = defOf(this.inventory.registry, item.type).name.toLowerCase();
+    return [
+      ...actions,
+      {
+        id: 'continue-work',
+        label: coreLabel(this.inventory.registry, 'continueWork', { item: name }),
+        continuing: true,
+      },
+    ];
   }
 
   selectedItemAction(item: Item): ItemAction | undefined {

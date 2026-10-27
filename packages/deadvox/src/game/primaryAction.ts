@@ -20,6 +20,7 @@ type PrimaryItemAction =
   | 'unpack'
   | 'open-can'
   | 'sharpen'
+  | 'continue-work'
   | 'pin'
   | 'read'
   | 'use'
@@ -38,6 +39,7 @@ export type PrimaryActionSelection =
         | 'unpack'
         | 'open-can'
         | 'sharpen'
+        | 'continue-work'
         | 'pin'
         | 'read'
         | 'use'
@@ -112,6 +114,9 @@ const pairedAction = (
 ): PrimaryItemAction => {
   if (selectedAction === 'sharpen') {
     return 'sharpen';
+  }
+  if (selectedAction === 'continue-work') {
+    return 'continue-work';
   }
   return selectedAction === 'open-can' || (own === 'none' && openingTargetForHand(inventory, hand)) ? 'open-can' : own;
 };

@@ -4,11 +4,10 @@ import { repeat } from 'lit-html/directives/repeat.js';
 import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { activityProgress } from './activityProgress.ts';
 import { comboBox } from './comboBox.ts';
-import type { CraftRow, CraftStatus } from './craftReadout.ts';
+import type { CraftRow } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
-import { fillHint, keyCap } from './keyCap.ts';
+import { fillHint } from './keyCap.ts';
 
 type CraftingText = ScreenText['crafting'];
 
@@ -59,36 +58,6 @@ export const renderCrafting = (
     </article>`,
     )}
   `,
-    root,
-  );
-};
-export const renderCraftStatus = (
-  root: HTMLElement,
-  status: CraftStatus | undefined,
-  actions: { continue: () => void; stop: () => void },
-  text: CraftingText,
-): void => {
-  root.hidden = status === undefined;
-  render(
-    status
-      ? activityProgress({
-          label: status.name,
-          percent: status.percent,
-          progressText: status.progress,
-          detail: html`
-            ${status.stopped ? html`<span>${text.stopped}</span>` : nothing}
-            ${status.reason ? html`<span class="craft-gap">${status.reason}</span>` : nothing}
-          `,
-          controls: html`
-            ${
-              status.stopped
-                ? html`<button type="button" @click=${actions.continue}>${fillHint(text.continue, { key: keyCap('craft.continue') })}</button>`
-                : nothing
-            }
-            <button type="button" @click=${actions.stop}>${fillHint(text.stop, { key: keyCap('handling.stop') })}</button>
-          `,
-        })
-      : nothing,
     root,
   );
 };
