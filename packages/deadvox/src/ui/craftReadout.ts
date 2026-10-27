@@ -43,13 +43,8 @@ export const runningCraftPresentation = (
   if (!item?.work) {
     return undefined;
   }
-  return {
-    kind: 'craft',
-    label: workName(inventory.registry, item),
-    duration: item.work.duration,
-    elapsed: item.work.elapsed,
-    stopped: false,
-  };
+  // The work record already carries the elapsed and duration the presentation reads.
+  return { ...item.work, kind: 'craft', label: workName(inventory.registry, item), stopped: false };
 };
 export interface CraftRow {
   id: string;
