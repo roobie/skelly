@@ -52,6 +52,11 @@ export const craftStatus = (
   if (!itemWork) {
     return undefined;
   }
+  // A dropped paused work item may never be finished, so its status must not follow the player.
+  const stopped = job?.jobType !== 'craft' || job.stopped;
+  if (stopped && !Object.values(inventory.hands).includes(item)) {
+    return undefined;
+  }
   const { elapsed, duration } = itemWork;
   const work =
     itemWork.kind === 'craft'
@@ -70,7 +75,7 @@ export const craftStatus = (
             total: craftTime(work, text),
           }),
     percent: Math.round((elapsed / duration) * 100),
-    stopped: job?.jobType !== 'craft' || job.stopped,
+    stopped,
     reason: interruption.messagesVisible ? interruption.reason : undefined,
   };
 };

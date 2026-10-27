@@ -148,6 +148,17 @@ describe('crafting read-only presentation', () => {
     renderCraftStatus(root, undefined, { continue: resume, stop }, craftingText(registry));
     expect(root.hidden).toBe(true);
   });
+  it('shows no status for a paused work item that is no longer held', () => {
+    const inventory = new Inventory(registry);
+    const item = inventory.create('work_in_progress');
+    item.work = { kind: 'craft', recipe: 'torch', elapsed: 1, duration: 120, components: [] };
+    inventory.add(item, { kind: 'hand', side: 'right' });
+    const job = { jobType: 'craft' as const, workUid: item.uid, stopped: true, last: 0 };
+    const interruption = { reason: undefined, messagesVisible: true };
+    expect(craftStatus(inventory, item.uid, job, interruption)).toBeDefined();
+    expect(inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(craftStatus(inventory, item.uid, job, interruption)).toBeUndefined();
+  });
   it('hides held-work status while inventory is open and restores it when closed', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
