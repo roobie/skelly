@@ -11,6 +11,8 @@ import {
   SessionMetrics,
   snapshotTimerQuantumForUserAgent,
 } from '../src/game/playtestTools.ts';
+import type { Tutorial } from '../src/game/tutorial.ts';
+import { stageTopics } from '../src/ui/tutorial.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const contextWordSeparator = /[^a-z0-9-]+/;
@@ -437,5 +439,45 @@ describe('controls card', () => {
     expect(filterControlsCardRows(rows, 'play').map(({ id }) => id)).not.toContain('fixture.reload');
     expect(filterControlsCardRows(rows, 'relad').map(({ id }) => id)).not.toContain('fixture.reload');
     expect(filterControlsCardRows(rows, '   ')).toEqual(rows);
+  });
+  it('gives each action one controls card row', () => {
+    const ids = controlsCardRows(new BindingRegistry(INPUT_BINDINGS)).map(({ id }) => id);
+
+    expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
+  });
+  it('opens each tutorial stage on the binding it practises and no browser row', () => {
+    const practised: Record<Tutorial['stage'], string> = {
+      move: 'movement.forward',
+      door: 'world.interact',
+      loot: 'ui.inventory-toggle',
+      hands: 'inventory.hands',
+      open: 'hand.use-dominant',
+      eat: 'hand.use-dominant',
+      drink: 'hand.use-dominant',
+      light: 'hand.use-dominant',
+      escape: 'player.crouch-toggle',
+      pause: 'ui.main-menu-toggle',
+      finish: 'ui.main-menu-toggle',
+      'light-on': 'hand.use-dominant',
+      'light-swap': 'quickbar.use.1',
+      'light-relight': 'hand.use-dominant',
+      revolver: 'firearm.reload',
+      pump: 'firearm.reload',
+      melee: 'stance.ready',
+      complete: 'ui.main-menu-toggle',
+    };
+    const rows = controlsCardRows(new BindingRegistry(INPUT_BINDINGS));
+    const topicRows = Object.entries(practised).map(([stage, action]) => {
+      const topic = stageTopics[stage as Tutorial['stage']];
+      const ids = filterControlsCardRows(rows, topic).map(({ id }) => id);
+      return {
+        stage,
+        practised: ids.includes(action),
+        browser: ids.filter((id) => id.startsWith('browser.')),
+        unbound: topic.filter((id) => !ids.includes(id)),
+      };
+    });
+
+    expect(topicRows.filter((row) => !row.practised || row.browser.length > 0 || row.unbound.length > 0)).toEqual([]);
   });
 });

@@ -253,8 +253,6 @@ export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS
 export const POINTER_ACTIONS = [
   { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },
   { id: 'hand.off-instant', description: 'Instant off-hand use' },
-  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde' },
-  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready' },
   { id: 'pointer.look', description: 'Look' },
 ] as const;
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
@@ -329,9 +327,6 @@ const physicalCode = (code: string): boolean =>
 export const chordIssue = (chord: Chord): string | undefined => {
   if (!physicalCode(chord.code)) {
     return 'Unknown physical key';
-  }
-  if (chord.code === 'KeyQ' || chord.code === 'KeyE') {
-    return 'Reserved for lean';
   }
   const native = NATIVE_INPUTS.find(({ code }) => code === chord.code);
   if (native) {
