@@ -47,7 +47,7 @@ interface Prepared {
 }
 
 /** A slot in a composed model: its frame, and the fitted part's model inside it while one is fitted. */
-export interface ComposedSlot {
+interface ComposedSlot {
   readonly frame: Object3D;
   readonly model?: Object3D;
   readonly modelId?: string;
