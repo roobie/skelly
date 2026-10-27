@@ -62,7 +62,9 @@ describe('action cycle viewer', () => {
   it('turns the bolt before drawing it and returns both phases to the canonical pose', () => {
     const controls = stubControls();
     // The authored design names catalogue items, so only the loader expands it into an assembly.
-    const loaded = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', 'hunting-rifle.json'), 'utf8'));
+    const loaded = loadGunDesign(
+      readFileSync(join(import.meta.dirname, '..', 'designs', 'hunting-rifle.json'), 'utf8'),
+    );
     if (!loaded.ok) {
       throw new Error(loaded.error.message);
     }

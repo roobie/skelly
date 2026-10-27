@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { parseOverrides } from '@skelly/tool-ui/param-panel';
+import { describe, expect, it } from 'vitest';
 import { setModelQuery } from '../src/viewer/shareUrl.ts';
 
 describe('shareable model query', () => {

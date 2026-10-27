@@ -117,7 +117,6 @@ describe('rules', () => {
     expect(issues[0]?.parts).toEqual(expect.arrayContaining(['lower', 'magazine']));
   });
 
-
   it('solid-overlap: mount-specific zero allowance rejects a too-tight clamp', () => {
     const a = variant('archetype-battle-rifle', (x) => {
       x.parts.handguard = { family: 'handguard', params: { barrelBore: 'S', fit: 'too-tight' } };
@@ -131,7 +130,6 @@ describe('rules', () => {
     expect(rulesFailed(gripless)).toEqual(['firing-grip']);
     expect(rulesFailed(gripless, { ...gunDomain, rules: [] })).toEqual([]);
   });
-
 
   it('measures the pistol crown between the placed barrel and slide ends', () => {
     const { resolved } = validate(loadFixture('archetype-pistol'), gunDomain);

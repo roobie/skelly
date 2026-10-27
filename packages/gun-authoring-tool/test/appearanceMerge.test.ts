@@ -114,7 +114,13 @@ describe('merged display appearances', () => {
         if (!colour) {
           throw new Error(`missing palette material ${material}`);
         }
-        return colour.map((channel) => Math.round(channel * 255).toString(16).padStart(2, '0')).join('');
+        return colour
+          .map((channel) =>
+            Math.round(channel * 255)
+              .toString(16)
+              .padStart(2, '0'),
+          )
+          .join('');
       };
       expect(grouped.viewerPairs).toEqual([hex('rubber-black'), hex('polymer-fde')].sort());
     }

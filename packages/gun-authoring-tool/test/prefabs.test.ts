@@ -61,5 +61,4 @@ describe('gun prefab catalogue', () => {
       expect(result.ok && result.issues, name).toEqual([]);
     }
   });
-
 });

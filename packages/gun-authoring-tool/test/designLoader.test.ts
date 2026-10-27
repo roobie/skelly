@@ -83,7 +83,6 @@ it('keeps the declared status readable when the template is unknown', () => {
   expect(expectFatal(loadGunDesign(text)).declaredStatus).toBe('draft');
 });
 
-
 it.each([{ excludedAttachments: 'not-an-array' }, { excludedAttachments: ['unknown-fixture-attachment'] }])(
   'rejects malformed or unknown attachment exclusions: $excludedAttachments',
   ({ excludedAttachments }) => {
@@ -432,7 +431,6 @@ describe('loadDesign: change policy', () => {
       expect(after.design.assembly.parts.handguard?.params?.length).toBeUndefined();
     }
   });
-
 
   it('runs domain rules on placed parts when one part is disconnected', () => {
     const parts = {

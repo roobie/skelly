@@ -83,7 +83,9 @@ export const readGlb = (glb: Uint8Array): ReadGlb => {
         return a.componentType === 5125 ? data.getUint32(byteOffset, true) : data.getUint16(byteOffset, true);
       };
       return Array.from({ length: a.count * components }, (_, index) =>
-        valueAt(offset + index * componentBytes + Math.floor(index / components) * (stride - components * componentBytes)),
+        valueAt(
+          offset + index * componentBytes + Math.floor(index / components) * (stride - components * componentBytes),
+        ),
       );
     },
   };

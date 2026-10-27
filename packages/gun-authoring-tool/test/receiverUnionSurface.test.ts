@@ -6,8 +6,8 @@ import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
-import { expectWatertightMesh, loadFixture } from './helpers.ts';
 import { readGlb } from './glbReader.ts';
+import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const cases = [
