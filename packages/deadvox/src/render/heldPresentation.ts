@@ -77,6 +77,7 @@ export class HeldPresentation {
   readonly registry: Registry;
   readonly figure: FigureDef;
   readonly models: ModelLibrary | undefined;
+  stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -128,7 +129,11 @@ export class HeldPresentation {
   }
 
   firearmTransform(input: Omit<HeldFirearmTransformInput, 'holds'>): ReturnType<typeof heldFirearmTransform> {
-    return heldFirearmTransform({ ...input, holds: this.figure.holds });
+    return heldFirearmTransform({
+      ...input,
+      holds: this.figure.holds,
+      stockSeat: input.stockSeat ?? this.stockSeats?.[input.side],
+    });
   }
 
   handTransform(side: HandSide, pose: HandPose): ReturnType<typeof interpolateHandPose> | undefined {
@@ -368,13 +373,24 @@ export class HeldPresentation {
     const handFrame = gripFrame
       ? rotation.clone().invert().multiply(gripFrame.getWorldQuaternion(new Quaternion()))
       : undefined;
-    const solved = solveArmRig(rig, {
-      shoulder,
-      grip,
-      handFrame,
-      bendSide: new Vector3(side === 'right' ? 1 : -1, 0, 0),
-      up: new Vector3(0, 1, 0),
-    });
+    const inverse = rotation.clone().invert();
+    const right = new Vector3(1, 0, 0).applyQuaternion(rotation);
+    right.y = 0;
+    right.normalize().applyQuaternion(inverse);
+    const up = new Vector3(0, 1, 0).applyQuaternion(inverse);
+    const back = new Vector3().crossVectors(right, up);
+    const down = Math.max(0, up.z);
+    const pole = this.figure.armRig.elbowPole;
+    const [outward, vertical, backward] = pole.up.map(
+      (value, axis) => value + (pole.down[axis]! - value) * down,
+    ) as Vec3;
+    const bendSide = right
+      .multiplyScalar((side === 'right' ? 1 : -1) * outward)
+      .addScaledVector(up, vertical)
+      .addScaledVector(back, backward);
+    const minimum = this.figure.armRig.minimumBendDegrees;
+    const minimumBendDegrees = minimum.up + (minimum.down - minimum.up) * down;
+    const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up, minimumBendDegrees });
     const toArm = arm.getWorldQuaternion(new Quaternion()).invert().multiply(rotation);
     const place = (pivot: Object3D, at: Vector3, turn: Quaternion): void => {
       pivot.position.copy(arm.worldToLocal(this.frame.localToWorld(at.clone())));

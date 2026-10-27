@@ -10,6 +10,7 @@ import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { HeardSound } from './audio.ts';
+import type { DebugGunPoseMode } from './debugGunPose.ts';
 import type { Engine } from './engine.ts';
 import type { RealFrameObserver } from './frameDriver.ts';
 import type { Session } from './session.ts';
@@ -68,6 +69,7 @@ export interface DebugHooks {
     teleport: () => 'moved' | 'blocked' | undefined;
   };
   readonly thirdPerson: { enabled: () => boolean; toggle: () => void };
+  readonly gunPose: { mode: () => DebugGunPoseMode | 'live'; toggle: (mode: DebugGunPoseMode) => void };
   /** The debug mannequin, present only when the page asked for one (`src/render/avatarMannequin.ts`). */
   readonly mannequin?:
     | { step: (delta: number) => void; place: () => void; readonly pose: { readonly name: string } }

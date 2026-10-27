@@ -19,6 +19,7 @@ import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { FIGURE_PIVOT, type PlayerFigurePose, PlayerMeshes } from '../src/render/playerFigure.ts';
+import { PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -172,7 +173,9 @@ describe('shared worn presentation', () => {
     expect(meshes.group.getObjectByName('worn-head')).toBeUndefined();
     expect(meshes.group.getObjectByName('worn-eyes')).toBe(eyes);
     meshes.sync({ ...pose(inventory), thirdPerson: false });
-    expect(eyes.parent?.visible).toBe(false);
+    eyes.traverse((object) => {
+      expect(object.layers.isEnabled(PLAYER_SELF_MASK_LAYER)).toBe(true);
+    });
   });
 
   it('waits for the figure frame as well as the worn model', () => {

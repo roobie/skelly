@@ -669,6 +669,11 @@ describe('glb export: deadvox model entry', () => {
     expect(optic.modelEntry.gun.sight?.ocularDiameterMetres).toBeGreaterThan(0);
     expect(iron.modelEntry.gun.sight?.eyeReliefMetres).toBeGreaterThan(0);
     expect(iron.modelEntry.gun.sight?.ocularDiameterMetres).toBeUndefined();
+    const range = iron.modelEntry.gun.sight?.eyeDistanceRangeMetres;
+    expect(range).toBeDefined();
+    expect(range![0]).toBeGreaterThanOrEqual(0);
+    expect(range![1]).toBeGreaterThan(range![0]);
+    expect(optic.modelEntry.gun.sight?.eyeDistanceRangeMetres).toBeUndefined();
   });
 
   it('aims the pump shotgun front bead along a clear line above the barrel', () => {

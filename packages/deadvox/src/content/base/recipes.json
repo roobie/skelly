@@ -577,7 +577,6 @@
     {
       "combat": {
         "firearms": {
-          "adsApertureFill": 0.84999999999999998,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
           "breathHold": {

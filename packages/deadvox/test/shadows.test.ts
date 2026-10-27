@@ -31,7 +31,7 @@ const BUNDLED_CONTENT = startupContent();
 
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { FrameTimes } from '../src/render/frameTimes.ts';
-import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
+import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import {
   beamMapDue,
   IDLE_REFRESH_EVERY,
@@ -218,6 +218,8 @@ describe('Shadows', () => {
     const draws: { light: Light; seesFigure: boolean; chunkSide: Side | null }[] = [];
     const figure = new Object3D();
     figure.layers.set(PLAYER_FIGURE_LAYER);
+    const head = new Object3D();
+    head.layers.set(PLAYER_SELF_MASK_LAYER);
     // Stands in for three.js's own shadow map renderer, which `Shadows` takes over.
     const renderer = {
       shadowMap: {
@@ -230,7 +232,7 @@ describe('Shadows', () => {
             shadow.map ??= {} as never;
             draws.push({
               light,
-              seesFigure: figure.layers.test(view.layers),
+              seesFigure: figure.layers.test(view.layers) && head.layers.test(view.layers),
               chunkSide: meshes.material.shadowSide,
             });
           }

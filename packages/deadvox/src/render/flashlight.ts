@@ -10,9 +10,9 @@ import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { BeamSpill } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
 import { installFlashlightSpill, setFlashlightSpill, spillHalfAngle } from './flashlightCone.ts';
-import type { HeldItems } from './hands.ts';
 import { installNearFieldFalloff } from './lightFalloff.ts';
 import type { PileMeshes } from './piles.ts';
+import type { PlayerMeshes } from './playerFigure.ts';
 
 /** Sun plus ambient intensity at which the beam is at half strength. */
 export const HALF_BRIGHTNESS = 0.9;
@@ -107,31 +107,36 @@ export class Flashlight {
    */
   shadowsAllowed = false;
 
-  private aim(item: Item, wornMount: boolean, held: HeldItems, camera: PerspectiveCamera): void {
+  private aim(
+    item: Item,
+    wornMount: boolean,
+    held: Pick<PlayerMeshes, 'lensOf' | 'shoulderPosition' | 'aimDirection' | 'eyePosition'>,
+  ): void {
     if (wornMount) {
-      // Slung guns have no first-person model; use the body's shoulder, not the eye or held lens.
-      this.at.copy(held.viewShoulder('right')).applyQuaternion(camera.quaternion).add(camera.position);
+      // A slung beam uses the actor's shoulder even when its model has no lens anchor.
+      if (!held.lensOf(item, this.at)) {
+        held.shoulderPosition('right', this.at);
+      }
       this.ahead.set(0, -1, 0);
       return;
     }
     if (!held.lensOf(item, this.at)) {
-      this.at.copy(camera.position);
+      held.eyePosition(this.at);
     }
-    camera.getWorldDirection(this.ahead);
+    held.aimDirection(this.ahead);
   }
 
-  /** Points the beam of the light that's on, or turns it off. Call after `held.update`. */
+  /** Points the beam after the actor's held presentation has updated. */
   update({
     registry,
     lit,
     held,
-    camera,
     inventory,
     piles,
   }: {
     registry: Registry;
     lit: Item | undefined;
-    held: HeldItems;
+    held: Pick<PlayerMeshes, 'lensOf' | 'shoulderPosition' | 'aimDirection' | 'eyePosition'>;
     camera: PerspectiveCamera;
     inventory: Inventory;
     piles?: Pick<PileMeshes, 'beamPoseOf'>;
@@ -165,7 +170,7 @@ export class Flashlight {
       if (source.location.kind === 'pile') {
         piles!.beamPoseOf(source.item, this.at, this.ahead);
       } else {
-        this.aim(source.item, wornMount, held, camera);
+        this.aim(source.item, wornMount, held);
       }
       light.color.set(def.color);
       light.intensity = def.intensity * this.daylightScale * this.strength;

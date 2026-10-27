@@ -152,6 +152,7 @@ it('both views resolve registry item holds through one owner, including the mann
         const worldOwner = build.mock.contexts[0] as HeldPresentation;
         expect(worldOwner.holds, sample.name).toEqual(firstOwner.holds);
         expectSupportMirror(worldOwner, sample);
+        view.update(new PerspectiveCamera(), pose, 0, { ...handling, stockSeats: world.stockSeats });
         const firstModel = firstOwner.heldByHand.get(sample.side)!;
         const worldModel = worldOwner.heldByHand.get(sample.side)!;
         expect(worldModel.position.distanceTo(firstModel.position), sample.name).toBeLessThan(1e-8);

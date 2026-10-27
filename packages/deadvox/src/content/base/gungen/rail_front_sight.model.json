@@ -12,7 +12,8 @@
         "eye": [0, 0.020125, 0],
         "direction": [1, 0, 0],
         "up": [0, 1, 0],
-        "eyeReliefMetres": 0.046
+        "eyeReliefMetres": 0.046,
+        "eyeDistanceRangeMetres": [0.05, 0.8]
       },
       "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] }
     }

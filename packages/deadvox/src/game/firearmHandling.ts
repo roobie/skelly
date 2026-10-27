@@ -26,7 +26,6 @@ import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { countText } from '../core/numberText.ts';
-import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
@@ -200,6 +199,7 @@ export interface FirearmPoseInput {
   /** Feet and eye in simulation blocks. */
   readonly feet: Vec3;
   readonly eye: Vec3;
+  readonly stockSeat?: Vec3 | undefined;
   readonly yaw: number;
   readonly pitch: number;
   readonly blockSize: number;
@@ -659,6 +659,7 @@ export class FirearmMechanics {
       holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
       model: data.model,
       eye: input.eye,
+      stockSeat: input.stockSeat,
       yaw: input.yaw,
       pitch: input.pitch,
       blockSize: this.blockSize,
@@ -668,8 +669,6 @@ export class FirearmMechanics {
       aimFrame: input.aimFrame,
       aimingDownSights: input.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
-      adsApertureFill: tuning.adsApertureFill,
-      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
       isSolid: this.isSolid,
     });
     const { origin: shotOrigin, muzzle, direction, up } = bore;
@@ -1572,6 +1571,7 @@ export class FirearmMechanics {
       side,
       twoHanded,
       eye,
+      stockSeat: pose.stockSeat,
       yaw: pose.yaw,
       pitch: pose.pitch,
     });
@@ -1579,7 +1579,8 @@ export class FirearmMechanics {
     let origin = portOrigin;
     const originBlocks: Vec3 = origin.map((value) => value / this.blockSize) as Vec3;
     if (this.isSolid(...(originBlocks.map(Math.floor) as Vec3))) {
-      const eyeBlocks: Vec3 = [...pose.eye];
+      // Anatomical eyes can cross a wall before the collision body does.
+      const eyeBlocks: Vec3 = this.isSolid(...(pose.eye.map(Math.floor) as Vec3)) ? [...pose.feet] : [...pose.eye];
       const eyeCell: Vec3 = eyeBlocks.map(Math.floor) as Vec3;
       const towardPort = originBlocks.map((value, axis) => value - eyeBlocks[axis]!) as Vec3;
       const distance = Math.hypot(...towardPort);
@@ -1588,7 +1589,9 @@ export class FirearmMechanics {
         const hit = raycast(eyeBlocks, direction, distance, this.isSolid);
         if (hit) {
           const lastFreeDistance = Math.max(0, hit.distance - 1e-6);
-          origin = eye.map((value, axis) => value + direction[axis]! * lastFreeDistance * this.blockSize) as Vec3;
+          origin = eyeBlocks.map(
+            (value, axis) => (value + direction[axis]! * lastFreeDistance) * this.blockSize,
+          ) as Vec3;
         }
       }
     }

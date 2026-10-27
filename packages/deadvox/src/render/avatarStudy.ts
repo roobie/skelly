@@ -32,7 +32,7 @@ class AvatarStudy {
   constructor(blockSize: number, ids: readonly string[], models: ModelLibrary) {
     this.ids = ids;
     this.models = models;
-    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: true };
+    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize };
   }
 
   /** The figures stand on the player's two sides in turn, nearest first; the box figure stays in the middle. */

@@ -81,8 +81,9 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/lookDefaults.ts',
   // Render budgets select presentation work, not simulation or saved state.
   'src/core/graphicsTuning.ts',
-  // Optic lens projection is rendered presentation; it changes neither simulation nor save state.
+  // Camera field of view and optic lens projection affect rendered presentation, not simulation or saves.
   'src/core/opticView.ts',
+  'src/core/opticWindow.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
   'src/core/weather.ts',
   'src/core/mesher.ts',

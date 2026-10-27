@@ -26,6 +26,7 @@ const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
 const reloadInputModule = '/src/game/reloadInput.ts';
 const magazineModule = '/src/core/magazine.ts';
+const heldPoseModule = '/src/core/heldPose.ts';
 const optionsModule = '/src/core/options.ts';
 const itemLookModule = '/src/render/itemLook.ts';
 const pileLayoutModule = '/src/core/pileLayout.ts';
@@ -709,7 +710,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
             r.session.frame(1 / 20);
           }
         };
-        const gunType = 'rifle_assault';
+        const gunType = 'rifle_ak';
         const calibre = magazineWellCalibre(registry, gunType);
         const ids = [...registry.items.keys()].sort();
         const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
@@ -723,6 +724,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
           throw new Error('Could not pocket the loaded replay magazine');
         }
         const gun = r.inventory.create(gunType);
+        for (const [slot, child] of Object.entries(gun.slots ?? {})) {
+          const model = child && registry.models.get(registry.items.get(child.type).model);
+          if (model?.gun?.attachment?.sight?.kind === 'optic') {
+            r.inventory.fitSlot(gun, slot, undefined);
+          }
+        }
         r.setHand('left', gun);
         must(firearms.loadNext(gun.uid, sim.time));
         settle();
@@ -751,6 +758,68 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    const adsFrame = await page.evaluate(() => globalThis.primaryActionTest.frames);
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame + 1, adsFrame);
+    const irons = await page.evaluate(
+      async ({ uid, moduleUrl }) => {
+        const r = globalThis.primaryActionTest;
+        const { modelToView } = await import(moduleUrl);
+        const item = r.inventory.itemByUid(uid);
+        const model = r.inventory.registry.models.get(r.inventory.registry.items.get(item.type).model);
+        const { sight } = model.gun;
+        const held = r.view.playerMeshes.group.getObjectByName('held-item-left');
+        const V = r.engine.camera.position.constructor;
+        const ocular = modelToView(
+          model,
+          sight.eye.map((value, axis) => value - model.grip.at[axis]),
+        );
+        const worldOcular = held.localToWorld(new V(...ocular));
+        const direction = new V(...modelToView(model, sight.direction)).transformDirection(held.matrixWorld);
+        const cameraDelta = r.engine.camera.position.clone().sub(worldOcular);
+        const figure = r.inventory.registry.figures.get('player');
+        const bodyModel = r.inventory.registry.models.get(figure.body.model);
+        const eyeAnchors = figure.body.eyes.map((name) => bodyModel.anchors[name]);
+        const anatomicalEye = new V(...eyeAnchors[0])
+          .add(new V(...eyeAnchors[1]))
+          .multiplyScalar(0.5)
+          .sub(new V(...bodyModel.anchors[figure.body.head.pivot]));
+        r.view.playerMeshes.group.getObjectByName('figure-head').localToWorld(anatomicalEye);
+        const butt = held.localToWorld(
+          new V(
+            ...modelToView(
+              model,
+              model.hands.butt.map((value, axis) => value - model.grip.at[axis]),
+            ),
+          ),
+        );
+        const shoulder = new V();
+        r.view.playerMeshes.shoulderPosition('left', shoulder);
+        return {
+          kind: sight.kind,
+          lineError: cameraDelta.clone().cross(direction).length(),
+          eyeDistance: -cameraDelta.dot(direction),
+          eyeRange: sight.eyeDistanceRangeMetres,
+          cameraOffset: r.engine.camera.position.distanceTo(anatomicalEye),
+          cameraLimit: model.hands.ads?.cameraOffsetLimitMetres ?? figure.aimPose.ads.cameraOffsetLimitMetres,
+          shoulderLimit: model.hands.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
+          shoulderError: butt.distanceTo(shoulder),
+          roll: r.engine.camera.rotation.z,
+        };
+      },
+      { uid: firearm.uid, moduleUrl: heldPoseModule },
+    );
+    assert.equal(irons.kind, 'iron');
+    assert(irons.lineError < 1e-6, `unobstructed ADS camera lies on the physical sight line: ${irons.lineError} m`);
+    assert(
+      irons.eyeDistance >= irons.eyeRange[0] - 1e-6 && irons.eyeDistance <= irons.eyeRange[1] + 1e-6,
+      'ADS camera stays inside the exported iron eye range',
+    );
+    assert(
+      irons.cameraOffset <= irons.cameraLimit + 1e-6,
+      'ADS camera stays inside its authored body-eye offset bound',
+    );
+    assert(irons.shoulderError <= irons.shoulderLimit + 1e-6, `ADS retains shoulder contact: ${irons.shoulderError} m`);
+    assert(Math.abs(irons.roll) < 1e-6, 'head cant does not roll the camera');
     await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
     const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
     await waitForSimulation(
@@ -1027,6 +1096,8 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         throw new Error('Ground pickup fixture lacks an available worn pocket or small item');
       }
       const floor = r.feet();
+      // Pickup gestures need a visible floor target, not one behind the leaned anatomical eye.
+      floor[2] += 1;
       const first = r.inventory.create(itemDef.id);
       if (!r.inventory.add(first, { kind: 'pile', pos: floor })) {
         throw new Error('Could not place tap-pickup fixture');
@@ -1036,9 +1107,11 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     // A pile lays out a loaded model where its model sits, so aim only once that layout is final.
     await page.waitForFunction((model) => !model || globalThis.primaryActionTest.view.models.has(model), placed.model);
     const fixture = await page.evaluate(
-      async ({ pileLayoutModuleUrl, ground }) => {
+      async ({ pileLayoutModuleUrl, playerLookPoseModuleUrl, inputModuleUrl, ground }) => {
         const r = globalThis.primaryActionTest;
         const { pileItemPosition } = await import(pileLayoutModuleUrl);
+        const { playerEyePosition } = await import(playerLookPoseModuleUrl);
+        const { LOOK_PITCH_LIMIT } = await import(inputModuleUrl);
         const { itemUid } = ground;
         const pile = [...r.inventory.piles.values()].find(({ items }) =>
           items.some(({ item }) => item.uid === itemUid),
@@ -1047,16 +1120,38 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
           blockSize: r.scale.blockSize,
           hasModel: (id) => r.view.models.has(id),
         }).map((metres) => metres / r.scale.blockSize);
-        const eye = [
-          r.session.body.pos[0],
-          r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
-          r.session.body.pos[2],
-        ];
-        const dx = target[0] - eye[0];
-        const dy = target[1] - eye[1];
-        const dz = target[2] - eye[2];
-        r.input.yaw = Math.atan2(-dx, -dz);
-        r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+        const feetDx = target[0] - r.session.body.pos[0];
+        const feetDz = target[2] - r.session.body.pos[2];
+        r.input.yaw = Math.atan2(-feetDx, -feetDz);
+        // Pitch changes the eye position too, so solve the aim against the posed eye.
+        let low = -LOOK_PITCH_LIMIT;
+        let high = 0;
+        for (let step = 0; step < 32; step += 1) {
+          const pitch = (low + high) / 2;
+          const posedEye = playerEyePosition({
+            feet: r.session.body.pos,
+            blockSize: r.scale.blockSize,
+            yaw: r.input.yaw,
+            pitch,
+            stance: r.session.stance,
+            figure: r.inventory.registry.figures.get('player'),
+            models: r.inventory.registry.models,
+          });
+          const dx = target[0] - posedEye[0];
+          const dy = target[1] - posedEye[1];
+          const dz = target[2] - posedEye[2];
+          const forward = -dx * Math.sin(r.input.yaw) - dz * Math.cos(r.input.yaw);
+          if (pitch < Math.atan2(dy, forward)) {
+            low = pitch;
+          } else {
+            high = pitch;
+          }
+        }
+        r.input.pitch = (low + high) / 2;
+        const targeted = r.interactionTargetAt();
+        if (targeted?.kind !== 'item' || targeted.item.uid !== itemUid) {
+          throw new Error('Posed-eye aim does not target the ground pickup fixture');
+        }
         r.grabProgress = [];
         const updateHeld = r.view.updateHeld.bind(r.view);
         r.view.updateHeld = (dt, pose, light, handling) => {
@@ -1067,7 +1162,12 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         };
         return ground;
       },
-      { pileLayoutModuleUrl: pileLayoutModule, ground: placed },
+      {
+        pileLayoutModuleUrl: pileLayoutModule,
+        playerLookPoseModuleUrl: '/src/core/playerLookPose.ts',
+        inputModuleUrl: '/src/game/input.ts',
+        ground: placed,
+      },
     );
     await pressAction(page, 'world.interact');
     await page.waitForFunction(

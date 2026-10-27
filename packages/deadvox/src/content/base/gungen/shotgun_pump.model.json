@@ -64,7 +64,8 @@
       "eye": [0.4485, 0.028, 0],
       "direction": [1, 0, 9.269426048794883e-17],
       "up": [1.1351772940589751e-32, 1, -1.2246467991473532e-16],
-      "eyeReliefMetres": 0.520375
+      "eyeReliefMetres": 0.520375,
+      "eyeDistanceRangeMetres": [0.05, 1.114875]
     },
     "muzzleDirection": [1, 0, 1.2246467991473532e-16],
     "calibre": "12-gauge-00-buck",

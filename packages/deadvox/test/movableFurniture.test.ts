@@ -1,4 +1,14 @@
-import { Box3, Group, type Mesh, Quaternion, Vector3 } from 'three';
+import {
+  Box3,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  type Mesh,
+  PerspectiveCamera,
+  Quaternion,
+  Scene,
+  Vector3,
+} from 'three';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
@@ -18,6 +28,7 @@ import { reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
+import { HeldItems } from '../src/render/hands.ts';
 import {
   capture,
   contentLookup,
@@ -138,7 +149,7 @@ describe('movable furniture', () => {
     expect(inventory.plan(tool, { kind: 'hand', side: 'right' })).toEqual({ ok: false, reason: messages.handsFull });
   });
 
-  it('shows the carried piece in view from lift until it is set down', () => {
+  it('draws the carry pass only from lift until the piece is set down', () => {
     const inventory = new Inventory(registry);
     const furniture = mover(inventory);
     const piece = inventory.furnish(spec)!;
@@ -148,17 +159,45 @@ describe('movable furniture', () => {
       (entity, def) => meshes.pieceMesh(entity, def),
       reachTuning(registry).furnitureMove.carriedView,
     );
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
+    held.attach(view.group);
+    const camera = new PerspectiveCamera();
+    const sky = {
+      scene: new Scene(),
+      light: new DirectionalLight(),
+      ambient: new HemisphereLight(),
+      camera,
+      radiusM: 1,
+      farPlaneScale: 1,
+    };
+    const renderPasses = () => {
+      const passes: string[] = [];
+      const renderer = {
+        autoClear: true,
+        render: (_scene: Scene, renderedCamera: PerspectiveCamera) => {
+          passes.push(renderedCamera === camera ? 'carry' : 'optics');
+        },
+      } as unknown as Parameters<typeof held.render>[0];
+      held.update(camera);
+      held.render(renderer, camera, sky);
+      return passes;
+    };
+    expect(renderPasses(), 'empty attachment before its first update').toEqual(['optics']);
     const lookingNorth = new Quaternion();
     view.update(0, lookingNorth, formatWorldOptions.blockSize);
     expect(view.shown).toBe(false);
+    expect(renderPasses()).toEqual(['optics']);
 
     expect(liftFurniture(furniture, piece)).toBeUndefined();
     view.update(0, lookingNorth, formatWorldOptions.blockSize);
     expect(view.shown).toBe(true);
+    expect(renderPasses()).toEqual(['carry', 'optics']);
 
     expect(placeFurniture(furniture, moved)).toBeUndefined();
     view.update(0, lookingNorth, formatWorldOptions.blockSize);
     expect(view.shown).toBe(false);
+    expect(renderPasses()).toEqual(['optics']);
+    held.dispose();
   });
 
   it('rebuilds only the moved piece, and nothing standing when the carried piece turns', () => {

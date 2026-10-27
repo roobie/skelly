@@ -7,7 +7,7 @@ read_if:
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
-  - you change the player figure's look, its authored parts, its clothes or how it is posed
+  - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
   - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
@@ -1619,18 +1619,95 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-First-person and world-body handling share one animation implementation and
-held-item-and-arms mechanism, with each view supplying its own shoulder frame.
-This applies to all items, not just guns: the world body is what others and the
-mannequin see, so it must show the same holds and action feedback as first person.
-One animation source prevents those drifting, lets the mannequin judge them from
-outside, and gives later NPCs and other players the same source. Observer motion
-must not change the actor's physical pose. Hold, readiness and support tuning
-belongs to content so another figure need not inherit the player's proportions.
-See `src/render/actorAnimator.ts`, `ActorAnimator`;
-`src/render/heldPresentation.ts`, `HeldPresentation`;
-`src/render/playerFigure.ts`, `PlayerMeshes`; `src/render/hands.ts`, `HeldItems`; and
-`src/content/base/figures-player.jsonnet`, `holds`.
+First person observes the same posed body and held objects as external views,
+because the player must see their own physical presence rather than a
+camera-specific substitute that disagrees with what others see. Observer motion
+must not change the actor's placement, lean or handling. The owning camera masks
+the head and eyes-slot equipment because surfaces enclosing the eye would block
+its view; external cameras and normal shadows retain them. Body shoulders remain
+attached rather than moving to suit the observing camera. See
+`src/render/playerFigure.ts`, `PlayerMeshes` and `setPlayerFigurePosition`;
+`src/render/actorAnimator.ts`, `ActorAnimator`; and
+`src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
+
+Aim belongs to the anatomical torso, neck and head, because the arms alone
+cannot plausibly carry an extreme aim while the face stays level. The gameplay
+eye is the posed head's eye. Interaction rays and held-item simulation retain
+that origin so an observing camera cannot change the actor's reach or hold.
+The live drawing uses the gameplay stance without a separate visual blend that
+could detach the eye. See `src/core/playerLookPose.ts`, `playerLookPose` and
+`playerEyePosition`; and `src/render/playerFigure.ts`, `PlayerMeshes`.
+
+The shared actor must be indicative of physical truth for multiplayer, without
+requiring perfect world-perspective ADS or remodelling existing weapons to fit
+a head. Aim sets the firearm; the body poses toward it, never moving the gun to
+fit the head. Fixed anatomical neck and head limits still apply during ADS;
+neck length is a body dimension, not a reach handle. The pose uses simulation
+aim so rendering cannot invent another weld. See `src/core/playerLookPose.ts`,
+`adsLookPose`; and `src/core/playerAdsPose.ts`, `playerAdsPose`.
+
+Only the first-person ADS camera may cover the remaining gap. In clear space
+it takes the point on the physical sight line nearest the body eye, within the
+content-owned camera offset bound. Iron sights export an eye-distance range
+from the gun tool; optics retain their fixed eye point. Neither camera position
+nor FOV may relocate the shared firearm. The camera stays level rather than
+inheriting head cant. Per-gun camera and stock-contact limits override the figure
+defaults, because existing gun dimensions and sight heights differ. Content owns
+those limits, while anatomy remains independent of the gun. Checks enforce
+sight-line membership, viewing range, camera displacement, stock contact and
+anatomical bounds rather than an exact anatomical sight fit. See
+`src/core/adsView.ts`, `adsCameraEye` and `adsLimits`;
+`src/content/base/models-firearms.libsonnet`, `longGunHands`; and
+`test/firearmSight.test.ts`.
+
+Only the owning view may suppress camera-enclosing flesh during standing or
+crouching ADS. A stable proximal-body and attached-gear mask prevents walking bob
+and sway from intermittently exposing the torso's interior; local near clipping keeps the
+remaining limbs clear without moving the actor or gun. The firearm retains
+normal world depth, and external views and shadows retain the whole body. This
+exception is for an enclosing camera, not for hiding world obstructions. Content
+owns the masked body roles and clearance; see `src/content/base/figures-player.jsonnet`,
+`aimPose`; `src/render/playerFigure.ts`, `applySelfMask`; and
+`src/render/ownBodyClip.ts`, `OwnBodyClip`.
+
+Hand-fit corrections belong at the authored contact rather than in view-specific
+placement or gun-ID overrides, so hip aim, ADS and external observation cannot
+disagree. Sporting-stock palms must wrap the wrist rather than ride on its top;
+see `src/content/base/long-gun-hands.libsonnet`, `firingHold`.
+
+The camera wall check traces the segment from the body eye to the proposed
+camera and pulls back before a hit; collision safety takes priority over sight
+alignment. The shortened offset remains inside its displacement bound. Strict
+no-extra-view would require a body-eye depth mask, because a clear segment does
+not prevent corner parallax. That mask is deferred from #1373: small bounded
+parallax is accepted unless it becomes a multiplayer peeking problem. See
+`src/core/adsView.ts`, `guardAdsCamera`; and `src/render/playView.ts`,
+`updateCamera`.
+
+Prone ADS needs its own chest-raised, elbow-supported posture under #550 before
+prone tuning changes; the standing and crouching camera fit does not establish
+prone fit. Moving shot start to the muzzle along the barrel belongs to #1383;
+the viewing-camera offset must not change the existing shot origin.
+
+Steep look-down hip lean is part of the same pose: looking through the avatar's
+centreline is not realistic biomechanics. It must not move the collision body,
+and an already horizontal torso must not fold farther toward the ground. The
+torso's aim share includes the hip lean rather than adding a second fold; this
+keeps crouching from amplifying a downward aim. See `src/core/playerLookPose.ts`,
+`playerLookLean` and `playerLookPose`.
+
+The optical adapter must not become another visible arm or held-item owner.
+Authored head-slot interiors use a matching world-frame exclusion to avoid
+doubled colour. The visor/scope effect boundary does not authorize a
+camera-specific physical substitute; its optical source shares the actor's
+stock seat so the effect cannot imply a different sight line. See
+`src/render/hands.ts`, `HeldItems`.
+
+Hands and held objects use normal world depth, not a depth-clear redraw or a
+camera-specific pose. Visible wall intersections are accepted until
+[#1376](https://github.com/roobie/skelly/issues/1376) settles a common obstruction
+pose and action policy; hiding them per view would violate the shared actor.
+See `src/render/playView.ts`, `render`.
 
 Held presentation must sample the same frame's camera and body feedback before
 posing. Moving the camera afterward leaves hands, wielded items and their light
@@ -1640,9 +1717,15 @@ and optic anchors a frame behind the view used to draw them. See
 Shoulders are body attachments, not movable reach handles. When an authored grip
 cannot be reached at authored limb lengths, preserving shoulder and hand contact
 takes priority over exact segment length: a floating sleeve breaks the whole-body
-figure. Reach fitting must not move the item away from its shared simulation pose
-or add per-view hold offsets. The content's joints and grips determine the fit;
-changing to skinned bones would not remove this geometric constraint. See
+figure. Reach fitting must retain the authored minimum elbow bend: a fully
+straightened arm loses its bend plane and cannot keep a downward hold clear of
+the torso. It must not move the item away from its shared simulation pose or add
+per-view hold offsets. The content's joints and grips determine the fit;
+changing to skinned bones would not remove this geometric constraint. Elbow bend
+hints stay in the body's upright frame so looking down does not swing a folded arm
+sideways across the chest. Downward holds need their own forward bend and shoulder
+contact because the torso can otherwise hide the forearm. Hands and held objects must follow aim at the
+extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
 
@@ -1787,12 +1870,10 @@ Carry stays visible in first person for the same reason as the body. See
 `src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
-through. It belongs with the hands because the world camera cannot draw that close
-to the eye. It blurs under painkillers for the same reason the hands do: it is part
-of what the drugged player sees. Its strength is moddable content, not a player
-setting like the HUD's options: the frame belongs to the item worn, so a mod that
-changes the item changes how it looks from inside. See `src/render/hands.ts`,
-`HeldItems`.
+through. The visor/scope boundary work must distinguish that optical effect from
+a second physical item. Optical strength belongs to content rather than a HUD
+setting because it describes the worn item. See `src/render/hands.ts`, `HeldItems`,
+and [Character](#character).
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
@@ -1968,7 +2049,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
   separate from the optional crosshair. In ADS, recoil, sway, and handling
-  move the firearm pose and bore while the view stays fixed; only the intentional
+  move the firearm pose and bore while the view direction stays fixed; only the intentional
   over-limit pitch shift moves the view. See `heldFirearmTransform` in
   `src/core/heldPose.ts` and `applyAimViewPitchShift` in `src/game/session.ts`.
   `src/debug/index.ts` owns the development target-range readout, which should
@@ -2053,7 +2134,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 - **Rifles:** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, "Reload, rack, remove" and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `wirePayloadSchema`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
 - **Modular weapons:** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. The sling mount and the light mount, which gungen does not export, are the mounts deadvox owns (see [Shoulder and sling](#shoulder-and-sling) and [Light mount on a long gun](#light-mount-on-a-long-gun)). These boundaries keep rendering, saves and compatibility consistent. Firearm details must remain responsive as the inventory fills while the world continues; see `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.candidates`; `src/ui/inventoryScreen.ts`, `viewModel`; `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
 
-  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/render/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
+  A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
 
   An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
@@ -2719,52 +2800,33 @@ with the tools, which is accepted.
 The figure is a content row, so a mod or a second character ships its own row
 and part models without a code change. The row names the body and limb models
 and the anchors they join at, and holds every value that shapes the drawn
-figure: hip height, walking swing, the arm rig and where the view hangs the
-arms. One arm model serves both views: the world body swings it whole, and the
-first-person view bends it at its authored joints to reach the held grip, so
-the two views never diverge in look or proportion and the arm bends where a
-rigid model could not. The view's shoulder is a row value, not a renderer
-constant, because a figure with other proportions needs other shoulders. Every
-part is an authored model, with no box stand-in, so a row that names a missing
-model, anchor or rig part, or puts the right view shoulder left of or above the
-eye, fails validation instead of drawing a partial body. Hit regions keep a box layout,
-because the body simulation, not the drawn shape, decides where a hit lands, so
-gore stays put while parts change. See `src/core/schema.ts`, `FigureSchema`,
+figure. Shared authored joints and grips keep idle and active arms connected to
+the body rather than making first person another art obligation. Missing model,
+anchor or rig data must fail validation instead of silently drawing a partial
+body. Hit regions keep a box layout because the body simulation, not the drawn
+shape, decides where a hit lands. Gore placement must not change with the observer. See `src/core/schema.ts`, `FigureSchema`,
 `src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
-A long gun is held like a rifle, and the hold is authored on the gun's model,
-not in the renderer: the model says where its butt seats in the shoulder and
-where and how each hand takes it. The firing hand wraps the pistol grip when the
-gun has one, and otherwise the stock wrist, fingers under the wrist and thumb over
-it, because a pistol-grip pose on a pump gun or a hunting rifle closes on nothing
-and looks wrong. The gungen export marks the kind: a grip part means a pistol grip
-and a stock part without one means a stock wrist, and a long gun that exports
-neither fails to compile, because a guessed hold would close on nothing and hide
-the missing part. The support hand cups the forend from below at the exported
-support anchor, whose height gungen reads off the forend underside the file
-draws, so the contact follows the drawn forend instead of a stale hand-copied
-height: the bore running across the palm from its heel to the gap between
-thumb and index, the fingers curling up the gun's far side and the thumb lying
-along the near side, because a support hand on the side of the forend reads as
-resting on top of the barrel instead of carrying the gun from under it. The view keeps the butt in its seat and
-lowers and raises the gun by turning it about the butt, so the stock stays
-shouldered at every ready level and both arms reach the gun from the shoulder
-instead of the gun floating in front of the eye. A gun that turns about its
-butt swings its muzzle further than one that only drops, so the lowered pitch
-is set so the lowered gun stays inside the player's view. Both holds are
-authored for a right-handed hold and mirrored together across the gun for a
-left-handed one: the support hand is the other hand, but it keeps the gun's
-side, so a hold is authored once. The hold lives in content because a new gun,
-a mod gun or a retuned hold must not need a renderer change, which is the
-content pillar in `PILLARS.md`, "Content forward compatibility", and because
-one hold formula could not fit a pump gun and a pistol-grip rifle alike. A
-two-handed firearm without an authored hold, a seat left of the eye or a palm
-not square to its fingers fails validation rather than drawing a hand through
-the stock. A one-handed gun keeps the grip frame it had. See
-`src/content/base/long-gun-hands.libsonnet`, `firingHold`, `src/core/schema.ts`,
-`HandsModelSchema`, `src/core/heldPose.ts`, `heldHoldFrame`, and
-`src/core/content.ts`, `checkHeldHands`.
+A long gun stays shouldered at every ready level: lowering pivots about the
+butt rather than releasing the shoulder. Stock contact belongs to the posed
+anatomical shoulder, not an eye-relative offset that can lift the rifle above
+the head. The figure owns the contact and the model owns its butt and hand
+frames, because changing either anatomy or the gun must not require renderer
+tuning. Firing, crosshair prediction and the visible gun must use the same
+seated transform. See `src/core/playerLookPose.ts`, `playerLookPose`;
+`src/core/heldPose.ts`, `heldFirearmTransform`; and `src/game/firearmAim.ts`,
+`firearmBoreRay`.
+
+Grip style and contact stay authored because a pistol-grip pose on a stock
+wrist closes on nothing, and a support hand beside the forend reads as resting
+on the barrel rather than carrying it. Missing export geometry must fail
+instead of hiding the omission behind a guessed hold. Mirroring must retain
+the support hand's gun-side contact. Nominal eye-relative seating remains for
+isolated item presentation and optical effects, not the anatomical actor's
+physical hold. See `src/content/base/long-gun-hands.libsonnet`, `firingHold`;
+`src/core/schema.ts`, `HandsModelSchema`; `src/core/heldPose.ts`, `heldHoldFrame`;
+and `src/core/content.ts`, `checkHeldHands`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among
@@ -3099,6 +3161,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
+- **Carry and optics:** carried furniture is physical and depth-tests with world camera planes; the optical ring and visor are effects closer than the world camera's near plane, so they retain their own planes without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters
@@ -3112,10 +3175,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   doors and windows. Only diffuse sky light goes through the grid
   (`src/render/skylight.ts`, `Skylight`). The sun and the carried beam are lit
   on their own, and carried or dropped sources are the pool's shadowless point
-  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). First-person
-  hands share the room's sky visibility, so they do not glow in enclosed dark
-  spaces; see `src/render/playView.ts`, `prepareLighting`, and
-  `src/render/hands.ts`, `HeldItems.render`. Light from torches, lamps and hot
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). The actor's
+  hands receive world lighting rather than a camera-specific lighting copy, so
+  they must not glow in enclosed dark spaces; see `src/render/skylight.ts`,
+  `Skylight`, and `src/render/playerFigure.ts`, `PlayerMeshes`. Light from torches, lamps and hot
   zombies through the grid is planned for Slice 4a, with
   the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
@@ -3159,9 +3222,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   furniture cells as blocking rather than holding light, because held light would
   blend the light outside a closed door into the floor of a sealed room. See
   `src/core/skyTransport.ts`, `visitCell`.
-- First-person hands must not stay sunlit when a wall blocks the player's light,
-  but nearby lights still need to reach them. Their separate scene prevents wall
-  clipping; see `src/render/hands.ts`, its file header.
+- The owning camera uses world depth for the actor, so nearby surfaces can hide
+  hands and items rather than being painted over. The accepted contact limitation
+  and its replacement belong in [Character](#character); see
+  `src/render/playView.ts`, `render`.
 
 ## Audio
 

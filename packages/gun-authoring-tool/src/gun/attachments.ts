@@ -7,6 +7,7 @@ import type { Reticle } from '@skelly/thing-core/reticle';
 import appearanceContent from './appearance.json' with { type: 'json' };
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
 import { getOptic, LENS_SLOT, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
+import { ironEyeDistanceRangeMetres } from './sightView.ts';
 
 type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'muzzle-device' | 'flashlight-mount' | 'foregrip';
 
@@ -32,6 +33,7 @@ interface AttachmentSightMetadata {
   readonly direction: Vec3;
   readonly up: Vec3;
   readonly eyeReliefMetres: number;
+  readonly eyeDistanceRangeMetres?: readonly [number, number];
   readonly ocularDiameterMetres?: number;
 }
 
@@ -298,6 +300,7 @@ const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): Attachme
             direction: axis.dir,
             up: [0, 1, 0],
             eyeReliefMetres: axis.referenceDistanceU * metresPerUnit,
+            eyeDistanceRangeMetres: ironEyeDistanceRangeMetres(),
           },
         }),
   };

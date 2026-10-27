@@ -517,6 +517,7 @@ const panelTemplate = ({
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <div id="debug-look-readout" class="debug-aim-readout debug-look-readout"></div>
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:0.375rem;top:auto;bottom:0.375rem;transform:none"></div>
+    <div id="debug-gun-pose-readout" class="debug-aim-readout" style="left:0.375rem;top:auto;bottom:2rem;transform:none" aria-live="polite"></div>
     <section class="debug-panel" data-debug-controls ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (${labelForAction('debug.panel-toggle')})</button></header>
     <p>F4 toggles the performance overlay.</p>
@@ -608,6 +609,12 @@ interface ActionContext {
   chooseInputReplay: () => void;
   look: LookControls;
 }
+
+const GUN_POSES = [
+  { mode: 'relaxed', label: 'Relaxed' },
+  { mode: 'hip', label: 'Hip aim' },
+  { mode: 'ads', label: 'ADS' },
+] as const;
 
 /** The mannequin's controls fill their own panel group, which exists only when the page asked for a mannequin. */
 const mannequinActions = (mannequin: DebugHooks['mannequin']): Omit<Action, 'key'>[] =>
@@ -736,6 +743,13 @@ export const createDebugActions = ({
         state: hooks.thirdPerson.enabled,
         run: hooks.thirdPerson.toggle,
       },
+      ...GUN_POSES.map(({ mode, label }) => ({
+        id: `debug.gun-pose-${mode}`,
+        label: `Gun pose: ${label}`,
+        group: 'tools' as const,
+        state: () => hooks.gunPose.mode() === mode,
+        run: () => hooks.gunPose.toggle(mode),
+      })),
       ...mannequinActions(hooks.mannequin),
       {
         id: 'debug.perception-labels-toggle',
@@ -1680,6 +1694,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (mouseReadout) {
         render(aimReadoutTemplate(mouseText), mouseReadout);
       }
+    }
+    const gunPoseRoot = host.querySelector<HTMLElement>('#debug-gun-pose-readout');
+    if (gunPoseRoot) {
+      const pose = GUN_POSES.find(({ mode }) => mode === hooks.gunPose.mode());
+      render(aimReadoutTemplate(pose ? `Gun pose: ${pose.label}` : ''), gunPoseRoot);
     }
     const root = host.querySelector<HTMLElement>('#debug-readout');
     if (root) {

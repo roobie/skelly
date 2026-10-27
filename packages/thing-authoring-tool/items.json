@@ -6181,6 +6181,11 @@
           "fraction": [0.5, 0.5, 0.5],
           "part": "torso",
           "solid": "shoulder-right"
+        },
+        "spine": {
+          "fraction": [0.5, 0.1764705882352941, 0.5],
+          "part": "torso",
+          "solid": "waist"
         }
       },
       "connections": [

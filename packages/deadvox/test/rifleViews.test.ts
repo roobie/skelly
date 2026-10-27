@@ -23,6 +23,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { Rng } from '../src/core/random.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { firearmsCombatTuning } from '../src/core/skillTraining.ts';
 import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
@@ -31,8 +32,9 @@ import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { PLAYER } from './playerFixture.ts';
+import { createPlayerBody, PLAYER } from './playerFixture.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -156,12 +158,24 @@ const rig = async () => {
     throw new Error('The spare magazine does not fit the bag');
   }
   const hand = { kind: 'hand', side: dominantSide(inventory.character) } as const;
-  const held = new HeldItems(inventory, models, content.figures.get('player')!);
+  const held = new PlayerMeshes(BLOCK, content.figures.get('player')!, content.models, models);
+  const body = createPlayerBody(makeScale(BLOCK), 0, 1, 0);
   const piles = new PileMeshes(BLOCK, models);
-  const camera = new PerspectiveCamera();
   const pose = (): Object3D => {
-    held.update(camera, undefined, 0, { firearms: mechanics.frames() });
-    return held.warmUpTarget.scene;
+    held.sync({
+      body,
+      yaw: 0,
+      pitch: 0,
+      eye: standing().eye,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      stance: 'standing',
+      dt: 0,
+      inventory,
+    });
+    held.syncHeldView(undefined, { firearms: mechanics.frames() });
+    return held.group;
   };
   return {
     inventory,

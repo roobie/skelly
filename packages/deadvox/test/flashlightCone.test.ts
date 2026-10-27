@@ -10,6 +10,7 @@ import {
   ShaderChunk,
   ShaderLib,
   UniformsUtils,
+  type Vector3,
 } from 'three';
 import type { WebGLExtensions } from 'three/src/renderers/webgl/WebGLExtensions.js';
 import { WebGLLights } from 'three/src/renderers/webgl/WebGLLights.js';
@@ -20,8 +21,6 @@ import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { type BeamSpill, BeamSpillSchema, type ContentFile } from '../src/core/schema.ts';
-import { HeldItems } from '../src/render/hands.ts';
-import { baseRegistry } from './baseRegistry.ts';
 import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
 
 let Flashlight: typeof import('../src/render/flashlight.ts').Flashlight;
@@ -44,7 +43,19 @@ beforeEach(async () => {
 });
 afterEach(restoreShaders);
 
-const playerFigure = baseRegistry().figures.get('player')!;
+const beamAnchors = () => ({
+  lensOf: (_item: Item, _out: Vector3) => false,
+  shoulderPosition: (_side: string, out: Vector3) => {
+    out.set(0, 0, 0);
+  },
+  eyePosition: (out: Vector3) => {
+    out.set(0, 0, 0);
+  },
+  aimDirection: (out: Vector3) => {
+    out.set(0, 0, -1);
+  },
+  dispose: () => undefined,
+});
 const profile = { enabled: true, radiusRatio: 1.8, intensity: 0.2 };
 const beam = { angleDegrees: 50, penumbra: 0.5, decay: 1.3 };
 const source = (shape: object) => ({
@@ -128,7 +139,7 @@ describe('flashlight cone', () => {
         const lit = inventory.create('fixture_beam');
         expect(inventory.add(lit, { kind: 'worn' })).toBe(true);
         expect(toggleLight(registry, lit)).toBeUndefined();
-        const held = new HeldItems(inventory, undefined, playerFigure);
+        const held = beamAnchors();
         torch.update({ registry, inventory, lit, held, camera });
         expect(torch.light.intensity).toBe(2 * torch.strength);
         expect(torch.light.distance).toBe(10);
@@ -163,7 +174,7 @@ describe('flashlight cone', () => {
     const inventory = new Inventory(registry);
     const lamp = inventory.create('fixture_beam');
     expect(inventory.add(lamp, { kind: 'worn' })).toBe(true);
-    const held = new HeldItems(inventory, undefined, playerFigure);
+    const held = beamAnchors();
     const scene = new Scene();
     const torch = new Flashlight(scene, 2, CALIBRATED_NEAR_FIELD_M);
     torch.shadowsAllowed = true;
@@ -203,7 +214,7 @@ describe('flashlight cone', () => {
     expect(inventory.add(worn, { kind: 'worn' })).toBe(true);
     expect(toggleLight(registry, hand)).toBeUndefined();
     expect(toggleLight(registry, worn)).toBeUndefined();
-    const held = new HeldItems(inventory, undefined, playerFigure);
+    const held = beamAnchors();
     vi.spyOn(held, 'lensOf').mockImplementation((item, at) => {
       at.set(1, 2, 3);
       return item === hand;

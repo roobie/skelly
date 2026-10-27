@@ -1854,9 +1854,13 @@ const figurePartNames = (figure: FigureDef): FigurePartNames[] => {
           `.body.joints.${field}`,
           anchor,
         ]),
-        ['.body.head.pivot', figure.body.head.pivot],
+        ...(['spine', 'neck', 'head'] as const).map((joint): [string, string] => [
+          `.body.${joint}.pivot`,
+          figure.body[joint].pivot,
+        ]),
+        ...figure.body.eyes.map((eye, index): [string, string] => [`.body.eyes[${index}]`, eye]),
       ],
-      parts: [['.body.head.part', figure.body.head.part]],
+      parts: (['spine', 'neck', 'head'] as const).map((joint) => [`.body.${joint}.part`, figure.body[joint].part]),
     },
     ...FIGURE_LIMBS.map((limb): FigurePartNames => {
       const arm = FIGURE_LIMB_JOINTS[limb].endsWith('Shoulder');
@@ -1891,7 +1895,7 @@ const checkFigurePart = (registry: Registry, report: Report, figure: FigureDef, 
 
 const attachmentPivots = (figure: FigureDef, part: FigureDef['attachmentFrames'][string]['part']): string[] => {
   if (part === 'body') {
-    return [figure.body.head.pivot];
+    return [figure.body.spine.pivot, figure.body.neck.pivot, figure.body.head.pivot];
   }
   if (part.endsWith('Arm')) {
     return [figure.armRig.fore.pivot, figure.armRig.hand.pivot];

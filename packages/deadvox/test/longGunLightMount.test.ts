@@ -9,15 +9,18 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { chargeOf, inventoryLightSources, toggleLight } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { Survival } from '../src/game/survival.ts';
 import { Flashlight } from '../src/render/flashlight.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LENS, type ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { CALIBRATED_NEAR_FIELD_M } from './flashlightFixture.ts';
+import { createPlayerBody } from './playerFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const SITE_KIND = 'fixture-strap';
@@ -174,16 +177,37 @@ describe('a light mount on a long gun', () => {
     expect(mount.on).toBe(true);
     expect(chargeOf(registry, mount)).toBeLessThan(before);
     const camera = new PerspectiveCamera();
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
+    const held = new PlayerMeshes(1, registry.figures.get('player')!, registry.models, {
+      version: 0,
+      has: () => false,
+      heldLook: () => undefined,
+    } as unknown as ModelLibrary);
+    const body = createPlayerBody(makeScale(1), 0, 0, 0);
+    const sync = () =>
+      held.sync({
+        body,
+        yaw: 0,
+        pitch: 0,
+        dt: 0,
+        stance: 'standing',
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        inventory,
+      });
     const beam = new Flashlight(new Scene(), 1, CALIBRATED_NEAR_FIELD_M, false);
-    held.update(camera);
+    sync();
     beam.update({ registry, inventory, held, camera, lit: mount });
     expect(beam.light.intensity).toBeGreaterThan(0);
     const start = beam.light.position.clone();
-    camera.position.set(4, 2, 3);
-    held.update(camera);
+    camera.position.set(9, 8, 7);
+    camera.rotation.set(0.5, 1, 0);
     beam.update({ registry, inventory, held, camera, lit: mount });
-    expect(beam.light.position.clone().sub(start).toArray()).toEqual(camera.position.toArray());
+    expect(beam.light.position.distanceTo(start)).toBeLessThan(1e-8);
+    body.pos = [4, 2, 3];
+    sync();
+    beam.update({ registry, inventory, held, camera, lit: mount });
+    expect(beam.light.position.clone().sub(start).toArray()).toEqual(body.pos);
     expect(inventoryLightSources(inventory, [4, 2, 3], 1).some((source) => source.carried)).toBe(true);
     const bag = inventory.create('fixture_bag');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
@@ -222,7 +246,11 @@ describe('a light mount on a long gun', () => {
     const models = { version: 1, has: () => true, groundLook: () => ground } as unknown as ModelLibrary;
     const piles = new PileMeshes(1, models);
     piles.sync(inventory);
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
+    const held = new PlayerMeshes(1, registry.figures.get('player')!, registry.models, {
+      version: 0,
+      has: () => false,
+      heldLook: () => undefined,
+    } as unknown as ModelLibrary);
     const camera = new PerspectiveCamera();
     const beam = new Flashlight(new Scene(), 1, CALIBRATED_NEAR_FIELD_M, false);
     const update = () => beam.update({ registry, inventory, held, camera, lit: undefined, piles });

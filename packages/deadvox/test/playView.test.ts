@@ -73,6 +73,25 @@ const meshFixture = () => ({
   isRevealed: () => true,
 });
 
+const syncActor = (view: ReturnType<typeof createPlayView>, camera: PerspectiveCamera) => {
+  const eye = camera.position.toArray().map((axis) => axis / 0.5) as Vec3;
+  view.updateCamera(
+    {
+      dt: 0,
+      body: { pos: [eye[0], eye[1] - 3.24, eye[2]], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true },
+      paused: false,
+      noclip: false,
+      yaw: camera.rotation.y,
+      pitch: camera.rotation.x,
+      stridePhase: 0,
+      stance: 'standing',
+      eye,
+      sightImpaired: false,
+    },
+    { style: { opacity: '' } } as unknown as HTMLElement,
+  );
+};
+
 const fixture = (isSolid: Engine['isSolid'] = () => false) => {
   const inventory = new Inventory(withoutItemModels);
   const page = new EventTarget();
@@ -108,6 +127,7 @@ const fixture = (isSolid: Engine['isSolid'] = () => false) => {
     isSolid,
   } as unknown as Engine;
   const view = createPlayView(engine, inventory, vi.fn(), { page });
+  syncActor(view, engine.camera);
   return {
     engine,
     inventory,
@@ -225,6 +245,9 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
       post: false,
       restore: vi.fn(),
       render: vi.fn((draw: () => void) => draw()),
+      setPainDesaturation: vi.fn(),
+      setDrugVignette: vi.fn(),
+      setNightVision: vi.fn(),
       setNightVisionFlare: vi.fn(),
       setSky: vi.fn(),
     },
@@ -233,12 +256,13 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   const view = createPlayView(engine, inventory, vi.fn(), { page: new EventTarget(), poweredLights });
   const daylight = skyAt(12, BASE_DAY_CYCLE);
   const updateFrame = () => {
+    syncActor(view, camera);
     view.updateHeld(0, restingHands, flashlight);
     view.prepareLighting(daylight);
     view.updateHeld(0, restingHands, flashlight);
   };
   updateFrame();
-  if (!view.held.lensOf(flashlight, new Vector3()) || view.flashlight.light.intensity <= 0) {
+  if (!view.playerMeshes.lensOf(flashlight, new Vector3()) || view.flashlight.light.intensity <= 0) {
     throw new Error('test flashlight did not emit a held beam');
   }
   return {
@@ -557,8 +581,9 @@ describe('play presentation ownership', () => {
     expect(cases).toHaveBeenCalledTimes(1);
   });
 
-  it('passes the shared stride phase and the stance to the drawn body', () => {
-    const { view } = fixture();
+  it('passes stride, stance and ADS posture to the body without rolling the camera', () => {
+    const { view, engine } = fixture();
+    const ads = { side: 'right' as const, model: registry.models.get(registry.items.get('rifle_assault')!.model!)! };
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, -1], halfWidth: 0.6, height: 3.6, onGround: true };
     const sync = vi.spyOn(view.playerMeshes, 'sync');
     const damage = { style: { opacity: '' } } as unknown as HTMLElement;
@@ -572,12 +597,14 @@ describe('play presentation ownership', () => {
         pitch: 0,
         stridePhase: 0.25,
         stance: 'prone',
+        ads,
         eye: [2, 4.24, 6],
         sightImpaired: false,
       },
       damage,
     );
-    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2, stance: 'prone' }));
+    expect(sync).toHaveBeenCalledWith(expect.objectContaining({ gaitPhase: Math.PI / 2, stance: 'prone', ads }));
+    expect(engine.camera.rotation.z).toBeCloseTo(0);
     view.dispose();
   });
 

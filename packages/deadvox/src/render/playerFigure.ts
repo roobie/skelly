@@ -1,15 +1,15 @@
 // The player's world body: the figure row's authored models posed about their joints.
 
-import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type Vector3 } from 'three';
+import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, Quaternion, Vector3 } from 'three';
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
+import { type FigureStancePose, type PlayerLookPose, playerLookPose, playerPosePoint } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import {
   FIGURE_LIMB_JOINTS,
@@ -23,18 +23,15 @@ import {
 import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
-import type { ModelLibrary } from './models.ts';
-import { castsAndReceives, PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
+import { LENS, type ModelLibrary } from './models.ts';
+import { OwnBodyClip } from './ownBodyClip.ts';
+import { castsAndReceives, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { WornModels } from './wornModels.ts';
-
-/** Metres behind the eye; leaves the torso's front face 5 cm behind the eye. */
-export const PLAYER_BODY_REAR_OFFSET = 0.19;
 
 export interface PlayerFigurePlacement {
   bodyPosition: Vec3;
   yaw: number;
   blockSize: number;
-  thirdPerson: boolean;
 }
 
 /** Places a metre offset from the block-based body base exactly as the world figure is drawn. */
@@ -43,15 +40,14 @@ export const setPlayerFigurePosition = (
   placement: PlayerFigurePlacement,
   localPosition: readonly [number, number, number],
 ): void => {
-  const { bodyPosition, yaw, blockSize, thirdPerson } = placement;
+  const { bodyPosition, yaw, blockSize } = placement;
   const [localX, localY, localZ] = localPosition;
-  const rearOffset = thirdPerson ? 0 : PLAYER_BODY_REAR_OFFSET;
   const cos = Math.cos(yaw);
   const sin = Math.sin(yaw);
   target.set(
-    bodyPosition[0] * blockSize + sin * rearOffset + localX * cos + localZ * sin,
+    bodyPosition[0] * blockSize + localX * cos + localZ * sin,
     bodyPosition[1] * blockSize + localY,
-    bodyPosition[2] * blockSize + cos * rearOffset - localX * sin + localZ * cos,
+    bodyPosition[2] * blockSize - localX * sin + localZ * cos,
   );
 };
 
@@ -160,6 +156,8 @@ export interface PlayerFigurePose {
   emptyFists?: boolean;
   eye?: Vec3;
   pitch?: number;
+  stancePose?: FigureStancePose;
+  ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
@@ -289,18 +287,17 @@ const dress = (scene: Object3D, outfit: Outfit, dressed: DressedMaterials): void
   });
 };
 
-/**
- * The player's world body from its figure row, each part drawn once its model loads. The body, head included,
- * stays drawn in first person, where the head sits behind the eye; the arms show only in third person.
- */
+/** The actor's common body and held presentation, independent of the observing camera. */
 export class PlayerMeshes {
   readonly group = new Group();
   private readonly heldFrame = new Group();
   private readonly heldTorso = new Group();
   private animator: ActorAnimator | undefined;
   private readonly figure: FigureDef;
+  private readonly ownBodyClip: OwnBodyClip;
   private presentation: HeldPresentation | undefined;
   private lastPose: PlayerFigurePose | undefined;
+  private lookPose: PlayerLookPose | undefined;
   private handPose: MeleePoseFrame | undefined;
   private handling: HeldHandlingFrame = { firearms: [] };
   private recoil = 0;
@@ -317,6 +314,7 @@ export class PlayerMeshes {
   private readonly models: ModelLibrary;
   private layer = PLAYER_FIGURE_LAYER;
   private readonly dummy = new Object3D();
+  private readonly jointTurn = new Quaternion();
   private readonly placement: PlayerFigurePlacement;
   private readonly localPosition: Vec3 = [0, 0, 0];
   private readonly stancePoses: FigureDef['stancePoses'];
@@ -338,6 +336,7 @@ export class PlayerMeshes {
     models: ModelLibrary,
   ) {
     this.figure = figure;
+    this.ownBodyClip = new OwnBodyClip(figure.aimPose.ads.ownBodyClipMetres);
     this.worn = new WornModels(figure, models, this.attachmentFrames, this.baseParts);
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
@@ -346,7 +345,11 @@ export class PlayerMeshes {
     this.modelDefs = modelDefs;
     const { body, legRig, armRig } = figure;
     this.pivotedParts = {
-      body: [{ name: FIGURE_PIVOT.head, parts: [body.head.part], pivot: body.head.pivot }],
+      body: [
+        { name: 'figure-spine', parts: [body.spine.part], pivot: body.spine.pivot },
+        { name: 'figure-neck', parts: [body.neck.part], pivot: body.neck.pivot },
+        { name: FIGURE_PIVOT.head, parts: [body.head.part], pivot: body.head.pivot },
+      ],
       leg: LEG_SEGMENTS.map((segment) => ({
         name: FIGURE_PIVOT[segment],
         parts: [legRig[segment].part],
@@ -365,7 +368,7 @@ export class PlayerMeshes {
     this.stancePoses = figure.stancePoses;
     this.gait = figure.gait;
     this.models = models;
-    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize, thirdPerson: false };
+    this.placement = { bodyPosition: [0, 0, 0], yaw: 0, blockSize };
   }
 
   setLayer(layer: number): void {
@@ -391,22 +394,36 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
-    const { thirdPerson = false } = pose;
     if (!this.fixedPose) {
-      this.blendStance(pose.stance, pose.dt);
+      if (pose.stancePose) {
+        Object.assign(this.shownPose, pose.stancePose);
+      } else {
+        this.blendStance(pose.stance, pose.dt);
+      }
     }
+    this.lookPose = playerLookPose({
+      figure: this.figure,
+      models: this.modelDefs,
+      pitch: pose.pitch ?? 0,
+      stance: pose.stance,
+      stancePose: this.shownPose,
+      ads: pose.ads,
+    });
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
-    this.placement.thirdPerson = thirdPerson;
     this.syncModels();
     this.worn.sync(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
     this.syncHeld(pose);
+    this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined && pose.stance !== 'prone';
+    this.ownBodyClip.attach(this.drawn.values());
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
     const turns: Readonly<Record<PivotedKind, readonly number[]>> = {
-      body: [-headUpDegrees],
+      body: this.fixedPose
+        ? [0, 0, -headUpDegrees]
+        : [-this.lookPose.spineTurn / RADIANS, -this.lookPose.neckTurn / RADIANS, -this.lookPose.headTurn / RADIANS],
       leg: [kneeBendDegrees, -ankleDegrees],
       arm: [-elbowBendDegrees],
     };
@@ -414,19 +431,32 @@ export class PlayerMeshes {
       turns[pivotedKind(part.name)].forEach((degrees, index) => {
         pivots[index]!.rotation.x = degrees * RADIANS;
       });
+      if (part.name === 'body' && !this.fixedPose) {
+        const look = this.lookPose;
+        [look.spineRotation, look.neckRotation, look.headRotation].forEach((turn, index) => {
+          pivots[index]!.quaternion.set(-turn[0], turn[1], -turn[2], turn[3]);
+        });
+        const anchors = this.modelDefs.get(part.model)!.anchors!;
+        pivots[2]!.position
+          .set(...anchors[this.figure.body.head.pivot]!)
+          .sub(new Vector3(...anchors[this.figure.body.neck.pivot]!))
+          .multiplyScalar(look.neckScale);
+        pivots[1]!.getObjectByName('figure-neck-skin')!.scale.y = look.neckScale;
+      }
     }
     for (const [part, drawn] of this.drawn) {
-      // In first person the view draws both arms, gripping or as fists (`HeldItems`), so the body's arms would double them.
       const side = ARM_SIDE[part.name];
-      drawn.visible = !isArm(part.name) || (thirdPerson && !(side && this.presentation?.arms.has(side)));
-      this.posePoint(part.at, part.name, pose);
+      drawn.visible = !(side && this.presentation?.arms.has(side));
+      this.posePoint(part.at, part.name, pose, part.name === 'body');
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
     }
-    for (const [name, frame] of this.attachmentFrames) {
-      frame.visible = thirdPerson || !this.figure.attachmentFrames[name]!.insideView;
-    }
+    this.applySelfMask();
+  }
+
+  get stockSeats(): PlayerLookPose['stockSeats'] | undefined {
+    return this.lookPose?.stockSeats;
   }
 
   dispose(): void {
@@ -446,10 +476,10 @@ export class PlayerMeshes {
     }
   }
 
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and mounts resolve in one frame.
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and worn mounts resolve in one frame.
   private syncHeld(pose: PlayerFigurePose): void {
     const source = pose.heldItems ?? pose.inventory;
-    this.heldFrame.visible = pose.thirdPerson === true;
+    this.heldFrame.visible = true;
     if (!source) {
       this.animator?.dispose();
       this.animator = undefined;
@@ -457,7 +487,7 @@ export class PlayerMeshes {
       return;
     }
     const { registry, hands } = source;
-    this.positionHeldFrame(pose, registry);
+    this.positionHeldFrame(pose);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
       this.posePoint(joint, 'body', pose);
@@ -477,6 +507,7 @@ export class PlayerMeshes {
         shouldersFollowTorso: false,
       });
     }
+    this.presentation!.stockSeats = this.lookPose!.stockSeats;
     this.animator!.setSource(source);
     this.animator!.setShoulders(shoulderOf);
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
@@ -497,30 +528,39 @@ export class PlayerMeshes {
     );
     this.heldFrame.traverse((object) => object.layers.set(this.layer));
     castsAndReceives(this.heldFrame);
-    this.presentation?.syncWorn(pose.wornItems ?? pose.inventory);
+    this.presentation.syncWorn(pose.wornItems ?? pose.inventory);
+    this.ownBodyClip.attach(this.presentation.arms.values());
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
       if (side) {
-        drawn.visible = pose.thirdPerson === true && !this.presentation!.arms.has(side);
+        drawn.visible = !this.presentation!.arms.has(side);
       }
     }
   }
 
-  private positionHeldFrame(pose: PlayerFigurePose, registry: Registry): void {
-    const player = registry.player.get(CORE_CONTENT_IDS.player)!;
-    const lowered = pose.stance === 'crouching' ? player.crouch : player.prone;
-    const drop = pose.stance === 'standing' ? 0 : lowered.eyeDropMetres;
+  private positionHeldFrame(pose: PlayerFigurePose): void {
     if (pose.eye) {
       this.heldFrame.position.set(...(pose.eye.map((value) => value * this.placement.blockSize) as Vec3));
     } else {
-      this.heldFrame.position.set(
-        pose.body.pos[0] * this.placement.blockSize,
-        pose.body.pos[1] * this.placement.blockSize + player.eye - drop + pose.stepOffset,
-        pose.body.pos[2] * this.placement.blockSize,
-      );
+      setPlayerFigurePosition(this.heldFrame.position, this.placement, this.lookPose!.eye);
     }
+    this.heldFrame.position.y += pose.stepOffset;
     this.heldFrame.rotation.set(pose.pitch ?? 0, pose.yaw, 0, 'YXZ');
     this.heldFrame.updateMatrixWorld(true);
+  }
+
+  private addNeckSkin(part: FigurePart): void {
+    if (part.name !== 'body') {
+      return;
+    }
+    const neck = this.pivots.get(part)![1]!;
+    const skin = new Group();
+    skin.name = 'figure-neck-skin';
+    const nodes = neck.children.filter((node) => node.userData.part === this.figure.body.neck.part);
+    neck.add(skin);
+    for (const node of nodes) {
+      skin.attach(node);
+    }
   }
 
   /** Adds each part whose model has loaded since the last sync. */
@@ -537,6 +577,7 @@ export class PlayerMeshes {
       }
       const chain = this.pivotedParts[pivotedKind(part.name)];
       this.pivots.set(part, hangFromPivots(scene, this.modelDefs.get(part.model)?.anchors ?? {}, chain));
+      this.addNeckSkin(part);
       scene.traverse((node) => {
         if (typeof node.userData.part === 'string') {
           const key = `${part.name}/${node.userData.part}`;
@@ -579,6 +620,93 @@ export class PlayerMeshes {
     }
   }
 
+  private applySelfMask(): void {
+    if (this.layer !== PLAYER_FIGURE_LAYER) {
+      return;
+    }
+    const adsLayer = this.ownBodyClip.active ? PLAYER_SELF_MASK_LAYER : this.layer;
+    for (const role of this.figure.aimPose.ads.ownBodyHide) {
+      for (const node of this.baseParts.get(`body/${this.figure.body[role].part}`) ?? []) {
+        node.traverse((object) => object.layers.set(adsLayer));
+      }
+    }
+    for (const pivots of this.pivots.values()) {
+      const head = pivots.find((pivot) => pivot.name === FIGURE_PIVOT.head);
+      head?.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+    }
+    // Head-mounted gear stays on its own frame; only its optical interior remains transitional.
+    for (const [name, frame] of this.attachmentFrames) {
+      const entry = this.figure.attachmentFrames[name]!;
+      const layer = entry.insideView || this.adsMasksFrame(entry) ? PLAYER_SELF_MASK_LAYER : this.layer;
+      frame.traverse((object) => object.layers.set(layer));
+    }
+    for (const group of this.worn.groupsOf('eyes')) {
+      group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
+    }
+  }
+
+  private adsMasksFrame(frame: FigureDef['attachmentFrames'][string]): boolean {
+    return (
+      this.ownBodyClip.active &&
+      frame.part === 'body' &&
+      this.figure.aimPose.ads.ownBodyHide.some((role) => this.figure.body[role].pivot === frame.pivot)
+    );
+  }
+
+  aimDirection(out: Vector3): void {
+    this.heldFrame.getWorldDirection(out).negate();
+  }
+
+  eyePosition(out: Vector3): void {
+    this.heldFrame.getWorldPosition(out);
+  }
+
+  shoulderPosition(side: HandSide, out: Vector3): void {
+    if (!this.lastPose) {
+      return;
+    }
+    this.posePoint(this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'], 'body', this.lastPose);
+    out.copy(this.dummy.position);
+  }
+
+  private shownModelOf(item: Item): Object3D | undefined {
+    const direct = this.animator?.modelOf(item);
+    if (direct) {
+      return direct;
+    }
+    const source = this.lastPose?.heldItems ?? this.lastPose?.inventory;
+    const contains = (candidate: Item): boolean =>
+      candidate === item ||
+      Object.values(candidate.slots ?? {}).some((child) => child !== undefined && contains(child));
+    const root = Object.values(source?.hands ?? {}).find((entry) => entry && contains(entry));
+    if (root) {
+      return this.animator?.modelOf(root);
+    }
+    return this.worn.modelOf(item);
+  }
+
+  lensOf(item: Item, out: Vector3): boolean {
+    const lens = this.shownModelOf(item)?.getObjectByName(LENS);
+    if (!lens) {
+      return false;
+    }
+    this.group.updateMatrixWorld(true);
+    lens.getWorldPosition(out);
+    return true;
+  }
+
+  lightPositionOf(item: Item, out: Vector3): boolean {
+    const model = this.shownModelOf(item);
+    if (!model) {
+      return false;
+    }
+    this.group.updateMatrixWorld(true);
+    if (!this.lensOf(item, out)) {
+      model.getWorldPosition(out);
+    }
+    return true;
+  }
+
   /** A limb's walking swing about its joint, in radians: the legs swing opposite ways, each arm against its leg. */
   private gaitSwing(name: FigurePartName, gaitPhase: number): number {
     const swing = Math.sin(gaitPhase) * RADIANS;
@@ -599,7 +727,7 @@ export class PlayerMeshes {
   /**
    * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint, then all lean.
    */
-  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose): void {
+  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose, bodyRoot = false): void {
     const { yaw, stepOffset, gaitPhase, moving } = pose;
     const hip = this.layout.hipHeight;
     const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees, armsForwardDegrees } = this.shownPose;
@@ -613,16 +741,21 @@ export class PlayerMeshes {
     const localY = pivotY + (at[1] - pivotY) * Math.cos(stride) - (at[2] - pivotZ) * Math.sin(stride);
     const localZ = pivotZ + (at[1] - pivotY) * Math.sin(stride) + (at[2] - pivotZ) * Math.cos(stride);
     // The stance swings the legs and the upper body about the hip, then lowers the hip.
-    const swing = (isLeg(name) ? legsForwardDegrees : -torsoForwardDegrees) * RADIANS;
+    if (!(isLeg(name) || bodyRoot || this.fixedPose)) {
+      const point = playerPosePoint(this.lookPose!, [at[0], localY, localZ], 'torso');
+      point[1] += stepOffset;
+      setPlayerFigurePosition(this.dummy.position, this.placement, point);
+      this.dummy.rotation.set(this.lookPose!.hipTurn, yaw, 0, 'YXZ');
+      this.dummy.quaternion.multiply(this.jointTurn.fromArray(this.lookPose!.spineRotation));
+      this.dummy.rotateX(stride);
+      return;
+    }
+    const upperSwing = this.fixedPose ? -torsoForwardDegrees * RADIANS : this.lookPose!.hipTurn;
+    const swing = isLeg(name) ? legsForwardDegrees * RADIANS : upperSwing;
     const aboveHip = localY - hip;
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
     this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
-    if (!this.placement.thirdPerson) {
-      // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
-      const headAboveHip = FIGURE_BOXES.head.at[1] - hip;
-      this.localPosition[2] -= headAboveHip * Math.sin(-torsoForwardDegrees * RADIANS);
-    }
     setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
     this.dummy.rotation.set(stride + swing, yaw, 0);

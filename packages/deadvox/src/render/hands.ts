@@ -1,5 +1,4 @@
-// The transitional first-person scene clears depth after the world to keep held objects from wall clipping.
-// It shares world sun and ambient targets; LightPool supplies nearby light copies.
+// Transitional optical effects and carry adapter; physical actor colour belongs to PlayerMeshes.
 
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
@@ -20,13 +19,12 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { mountedOptic, type OpticLensFrame, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
-import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -43,7 +41,9 @@ export class HeldItems {
   private readonly scene = new Scene();
   private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
   private readonly view = new Group();
+  private readonly carried = new Group();
   private readonly torso = new Group();
+  private readonly physical = new Group();
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
   private skyVisibility = 1;
@@ -76,8 +76,11 @@ export class HeldItems {
     this.figure = figure;
     this.sunSource = sunSource;
     this.view.name = 'held-items-view';
+    this.physical.name = 'held-optical-source';
+    // The retained animator supplies optics only, never another visible arm/item owner.
+    this.physical.visible = false;
     const presentation = new HeldPresentation(inventory.registry, figure, models, {
-      frame: this.view,
+      frame: this.physical,
       torso: this.torso,
     });
     this.presentation = presentation;
@@ -88,12 +91,21 @@ export class HeldItems {
     }
     this.opticWindow.visible = false;
     this.opticWindow.renderOrder = 100;
-    this.view.add(this.torso, this.opticWindow);
-    this.scene.add(this.view, this.light, this.ambient, this.camera, presentation.warmUp(), modelMaterialWarmUp(false));
+    this.physical.add(this.torso);
+    this.view.add(this.opticWindow, this.carried);
+    this.scene.add(
+      this.view,
+      this.physical,
+      this.light,
+      this.ambient,
+      this.camera,
+      presentation.warmUp(),
+      modelMaterialWarmUp(false),
+    );
   }
 
   attach(object: Object3D): void {
-    this.view.add(object);
+    this.carried.add(object);
   }
 
   get warmUpTarget(): { scene: Scene; camera: PerspectiveCamera } {
@@ -113,15 +125,23 @@ export class HeldItems {
     }
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
-    this.animator.update(main, {
-      pose,
-      recoil,
-      handling,
-      viewPlacement: {
-        fov: main.fov,
-        poseItem: (frame) => this.poseOptic(frame, main),
+    this.presentation.stockSeats = handling.stockSeats;
+    this.view.position.copy(main.position);
+    if (handling.sourceEyeMetres) {
+      this.view.position.set(...handling.sourceEyeMetres);
+    }
+    this.view.quaternion.copy(main.quaternion);
+    this.animator.update(
+      { position: this.view.position, quaternion: main.quaternion, rotation: main.rotation },
+      {
+        pose,
+        recoil,
+        handling,
+        viewPlacement: {
+          poseItem: (frame) => this.poseOptic(frame, main),
+        },
       },
-    });
+    );
     this.presentation.syncWorn(this.inventory);
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
@@ -144,13 +164,11 @@ export class HeldItems {
       heldModel.visible = !active;
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
-    const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
     if (
       !(
         active &&
         settings &&
         diameter !== undefined &&
-        fill !== undefined &&
         firearmPose?.sightEyeOffset &&
         firearmPose.sightDirection &&
         firearmPose.sightUp
@@ -158,7 +176,7 @@ export class HeldItems {
     ) {
       return;
     }
-    const distance = opticWindowDistance(diameter, fill, main.fov);
+    const distance = modelDefinition!.gun!.sight!.eyeReliefMetres;
     const innerRadius = diameter / 2;
     const outerRadius = innerRadius * 1.12;
     const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
@@ -195,7 +213,7 @@ export class HeldItems {
       .add(eyeOffset)
       .addScaledVector(forward, distance);
     this.opticWindow.visible = true;
-    const center = this.opticWindow.position;
+    const center = main.worldToLocal(this.view.localToWorld(this.opticWindow.position.clone()));
     const aperture = projectLensAperture({
       center: [center.x, center.y, center.z],
       right: [right.x, right.y, right.z],
@@ -275,11 +293,24 @@ export class HeldItems {
       1,
     );
     const { autoClear } = renderer;
+    const opticVisible = this.opticWindow.visible;
+    const cameraVisible = this.camera.visible;
+    const carriedVisible = this.carried.visible;
     renderer.autoClear = false;
     try {
-      renderer.clearDepth();
+      if (carriedVisible && this.carried.children.some((child) => child.visible)) {
+        this.opticWindow.visible = false;
+        this.camera.visible = false;
+        renderer.render(this.scene, main);
+        this.opticWindow.visible = opticVisible;
+        this.camera.visible = cameraVisible;
+      }
+      this.carried.visible = false;
       renderer.render(this.scene, this.camera);
     } finally {
+      this.opticWindow.visible = opticVisible;
+      this.camera.visible = cameraVisible;
+      this.carried.visible = carriedVisible;
       renderer.autoClear = autoClear;
     }
   }
@@ -310,6 +341,7 @@ export class HeldItems {
         color: source.color,
         transparent: true,
         opacity: object.name === 'pane' ? entry.tint : entry.darkening,
+        depthTest: false,
         depthWrite: false,
         side: DoubleSide,
       });

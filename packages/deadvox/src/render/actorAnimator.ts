@@ -2,10 +2,10 @@ import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion
 import { type AimFrame, NEUTRAL_AIM } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
 import { firearmAimHandPose } from '../core/firearmAimPose.ts';
+import { sightedFirearmModel } from '../core/firearmSight.ts';
 import type { Job } from '../core/handling.ts';
 import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
 import { type HandSide, Inventory } from '../core/inventory.ts';
@@ -27,7 +27,6 @@ import {
   revolverOpenAmount,
   sampleActionPose,
 } from './firearmModel.ts';
-import { sightedFirearmModel } from './firearmSight.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import type { HeldPresentation, HeldPresentationFrame } from './heldPresentation.ts';
@@ -82,6 +81,8 @@ interface OffHandGrip {
 }
 
 export interface HeldHandlingFrame extends HeldPresentationFrame {
+  readonly sourceEyeMetres?: Vec3;
+  readonly stockSeats?: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
   readonly throwing?: { readonly chargeProgress: number };
@@ -114,7 +115,6 @@ export interface ActorEyeFrame {
 }
 
 export interface ActorViewPlacement {
-  readonly fov: number;
   readonly poseItem: (frame: ActorItemPose) => void;
 }
 
@@ -441,19 +441,17 @@ export class ActorAnimator {
     const { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition } = presentation;
     if (firearmPose) {
       transform.offset = [...firearmPose.rootOffset];
-      if (aimingDownSights) {
-        this.poseMatrix.makeBasis(
-          new Vector3(...firearmPose.rootRotation[0]),
-          new Vector3(...firearmPose.rootRotation[1]),
-          new Vector3(...firearmPose.rootRotation[2]),
-        );
-        this.poseRotation.setFromRotationMatrix(this.poseMatrix);
-      }
+      this.poseMatrix.makeBasis(
+        new Vector3(...firearmPose.rootRotation[0]),
+        new Vector3(...firearmPose.rootRotation[1]),
+        new Vector3(...firearmPose.rootRotation[2]),
+      );
+      this.poseRotation.setFromRotationMatrix(this.poseMatrix);
     }
     const [turnPitch, turnYaw, turnRoll] = handlingTurn;
     const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
-    if (!aimingDownSights) {
+    if (!firearmPose) {
       this.poseAim(item, readyAim);
       this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, turnRoll, 'YXZ'));
       this.poseRotation.multiply(this.rackRotation);
@@ -509,7 +507,7 @@ export class ActorAnimator {
       item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
     const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
     const aimingDownSights = Boolean(
-      this.viewPlacement && item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
+      item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
     );
     const poseInput =
       itemDefinition?.firearm && modelDefinition
@@ -523,9 +521,6 @@ export class ActorAnimator {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
-            adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
-              ?.adsApertureFill,
-            ...(this.viewPlacement ? { verticalFovDegrees: this.viewPlacement.fov } : {}),
           }
         : undefined;
     const basePose = poseInput ? this.presentation.firearmTransform(poseInput) : undefined;

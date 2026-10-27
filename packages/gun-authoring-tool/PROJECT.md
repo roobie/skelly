@@ -3,7 +3,7 @@ read_if:
   - you change Gungen's modeling boundary, firearm geometry or feasibility goal
   - you change cartridge-driven frame selection or design authoring
   - you use or update the golden AKM reference photo or its overlays
-  - you change attachment compatibility, sights or the Gungen-to-Deadvox export contract
+  - you change attachment compatibility, sights, eye-distance ranges or the Gungen-to-Deadvox export contract
   - you change a gun Deadvox ships, or anything its export reads
   - you change physical inputs or their ownership
   - you author or key a gun part's mass
@@ -54,6 +54,8 @@ Attachments are separate geometry and identity so a fitted choice can be replace
 A Gungen change to any export Deadvox consumes refreshes its GLB and model entry in the same PR: a stale copy can still validate and load, so drift otherwise stays silent. The authored consumption boundary is `exports/deadvox.jsonnet`; explicit companion choices keep a gun's refresh from silently selecting other items. See `src/cli/exportRecipe.ts`, `loadExportRecipe`, and `src/cli/refreshDeadvox.ts`.
 
 Exporter-written records stay separate from Deadvox's authored overlays so refreshes cannot flatten gameplay tuning. Synchronization compares those records rather than maintaining a second list of fields to omit. Platform floating-point roundoff is not authored content drift, so numeric comparison tolerates it; see `test/model-export-sync.mjs`, `exportDifference`. Asset credits import the recipe so provenance cannot omit or retain a different set of exports; see `packages/deadvox/src/content/base/assets/manifest.libsonnet`, `recipe`. Follow `docs/jsonnet.md`, "Source boundaries".
+
+Iron eye-distance ranges belong to the gun tool so consumers can fit a bounded viewing camera without inventing sight geometry or remodelling the weapon. The far endpoint accommodates the existing gun's rear rather than assuming every iron has a rear notch; optics retain a fixed eye point. See `src/gun/sightView.ts`, `ironGunEyeRange`; `src/gun/sightView.jsonnet`; and `src/gun/exportGlb.ts`, `sightMetadata`.
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 
