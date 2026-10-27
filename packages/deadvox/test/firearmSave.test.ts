@@ -480,6 +480,27 @@ it('a codec save keeps the fitted magazine and the chambered round, so the next 
   expect(restored.slots).toEqual(rifle.slots);
 });
 
+it('a codec save between two shots keeps the next shot an automatic follow-up', async () => {
+  const original = session([]);
+  const rifle = sessionRifle(original, 4);
+  const { roundsPerSimSecond } = firearmHandlingFor(rifle, registry);
+  if (roundsPerSimSecond === undefined) {
+    throw new Error('Follow-up save fixture needs an exported automatic cadence');
+  }
+  expect(original.firearms.fire(rifleShot(rifle))).toBe(true);
+  const next = 1 / roundsPerSimSecond;
+  original.firearms.advanceTo(next);
+  const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const resumed = session([], (await decodeSave(bytes, { version, contentLookup })).snapshot);
+  const uninterrupted = original.firearms.handlingShotKind(rifle.uid, next);
+  expect(uninterrupted).toBe('automaticFollowup');
+  expect(resumed.firearms.handlingShotKind(rifle.uid, next)).toBe(uninterrupted);
+});
+
 it('a codec save resumes firearm ready progress', async () => {
   const original = session([], undefined, undefined, { readyHeld: true });
   const rifle = original.inventory.create('rifle_assault');

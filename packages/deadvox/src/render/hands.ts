@@ -128,6 +128,7 @@ export class HeldItems {
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
     this.presentation.stockSeats = handling.stockSeats;
+    this.presentation.proneAds = handling.proneAds ?? false;
     this.presentation.adsEyes = handling.adsEyes;
     this.view.position.copy(main.position);
     if (handling.sourceEyeMetres) {

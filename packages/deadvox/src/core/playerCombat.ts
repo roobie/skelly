@@ -114,6 +114,8 @@ const contactTimeOf = (weapon: MeleeWeapon): number => {
   }
   return meleeContactTime(weapon.cooldown, weapon.contactFraction, weapon.windupCapSimSeconds);
 };
+// Restore accepts exactly the swings tick resolves, so a save inside the float tolerance loads.
+const contactReached = (elapsed: number, contactAt: number): boolean => elapsed + 1e-9 >= contactAt;
 const validMeleeCharge = (charge: MeleeCharge, impulse: number | undefined): boolean =>
   impulse !== undefined &&
   [charge.fullSimSeconds, charge.curveExponent, charge.damageMultiplier, charge.impulseMultiplier].every(
@@ -293,7 +295,7 @@ export class PlayerCombat {
       return;
     }
     const elapsed = Math.min(action.cooldown, action.elapsed + dt);
-    if (!action.hitResolved && elapsed + 1e-9 >= action.contactAt) {
+    if (!action.hitResolved && contactReached(elapsed, action.contactAt)) {
       this.resolveContact(action);
       action.hitResolved = true;
     }
@@ -356,7 +358,7 @@ export class PlayerCombat {
       action.elapsed < 0 ||
       action.elapsed >= action.cooldown ||
       typeof action.hitResolved !== 'boolean' ||
-      (action.hitResolved && action.elapsed < action.contactAt) ||
+      (action.hitResolved && !contactReached(action.elapsed, action.contactAt)) ||
       !vector3(action.origin) ||
       !vector3(action.direction) ||
       !validMeleeWeapon(action.weapon, action.cooldown) ||

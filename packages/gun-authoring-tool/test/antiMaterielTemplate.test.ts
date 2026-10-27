@@ -2,14 +2,30 @@ import { generate } from '@skelly/engine/assembly/generate.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
 import { antiMateriel } from '../src/gun/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 describe('anti-materiel template', () => {
-  // S legs exist for the ground-clearance fixture; they end above the 10-round magazine's floorplate.
-  it('offers only the bipod legs that clear the 10-round magazine', () => {
-    const legs = antiMateriel.slots.find(({ id }) => id === 'bipod')?.params?.legs;
-    expect(legs).toEqual(['M', 'L']);
+  it('offers bipod legs that clear the magazine and excludes those that do not', () => {
+    const offered = antiMateriel.slots.find(({ id }) => id === 'bipod')?.params?.legs;
+    const all = FAMILIES.bipod?.params.legs?.values;
+    if (!(Array.isArray(offered) && all)) {
+      throw new Error('anti-materiel bipod legs are missing');
+    }
+    const reportFor = (legs: string) => {
+      const template = {
+        ...antiMateriel,
+        slots: antiMateriel.slots.map((slot) =>
+          slot.id === 'bipod' ? { ...slot, params: { ...slot.params, legs } } : slot,
+        ),
+      };
+      return validate(generate(template, gunDomain, 0), gunDomain);
+    };
+    for (const legs of all) {
+      const clearanceIssues = reportFor(legs).issues.filter(({ rule }) => rule === 'bipod-ground-clearance');
+      expect(clearanceIssues.length > 0).toBe(!offered.includes(legs));
+    }
   });
 
   sweepGroup('generator', () => {

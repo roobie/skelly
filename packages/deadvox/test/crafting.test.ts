@@ -1,10 +1,18 @@
 import process from 'node:process';
+import { getDotPath, safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import type { RecipeDef, Registry } from '../src/core/content.ts';
-import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
+import {
+  admissionRefusal,
+  indexCraftReach,
+  planCraft,
+  requirementStatus,
+  type WorkPlan,
+} from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
+import { ContentFileSchema } from '../src/core/schema.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -71,6 +79,21 @@ const recipe = (components: RecipeDef['components'], qualities: RecipeDef['quali
 });
 const character = { skills: {}, knownRecipes: new Set(['fixture']) };
 const workFactorBonus = 0.37;
+const workstationContent = (bonus: number) => ({
+  furnitureMaterials: fixtureMaterials(),
+  sounds: fixtureSounds(),
+  furniture: [
+    {
+      id: 'fixture_bench',
+      name: 'Fixture bench',
+      size: [1, 3, 1],
+      color: '#ffffff',
+      workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus: bonus },
+      breach: fixtureBreach(),
+      material: FIXTURE_MATERIAL,
+    },
+  ],
+});
 let workstationRegistry: Registry | undefined;
 // Built once: a content build costs about a second and every workstation case reads it unchanged.
 const fixtureWorkstationRegistry = () => {
@@ -78,24 +101,7 @@ const fixtureWorkstationRegistry = () => {
     return workstationRegistry;
   }
   workstationRegistry = baseRegistryWith([
-    {
-      source: 'fixture-workstation.json',
-      data: {
-        furnitureMaterials: fixtureMaterials(),
-        sounds: fixtureSounds(),
-        furniture: [
-          {
-            id: 'fixture_bench',
-            name: 'Fixture bench',
-            size: [1, 3, 1],
-            color: '#ffffff',
-            workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus },
-            breach: fixtureBreach(),
-            material: FIXTURE_MATERIAL,
-          },
-        ],
-      },
-    },
+    { source: 'fixture-workstation.json', data: workstationContent(workFactorBonus) },
   ]);
   return workstationRegistry;
 };
@@ -167,6 +173,45 @@ describe('pure craft planner', () => {
     const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
     const result = planCraft(recipeWithStation, reach, character);
     expect('plan' in result && result.plan.work).toBe(recipeWithStation.timeGameMinutes * (1 - workFactorBonus));
+  });
+
+  it('refuses at content load a workstation bonus that removes all work time', () => {
+    expect(safeParse(ContentFileSchema, workstationContent(workFactorBonus)).success).toBe(true);
+    const whole = safeParse(ContentFileSchema, workstationContent(1));
+    expect(whole.success).toBe(false);
+    expect(whole.issues?.map((issue) => getDotPath(issue))).toContain('furniture.0.workstation.workFactorBonus');
+  });
+
+  it('refuses at begin a craft with no work time, as restore would', () => {
+    const definitions = baseRegistryWith([
+      {
+        source: 'fixture-instant.json',
+        data: {
+          recipes: [
+            {
+              id: 'fixture_instant',
+              result: { item: 'fixture_result', count: 1 },
+              timeGameMinutes: gameMinutes(1),
+              skills: {},
+              qualities: {},
+              components: [],
+            },
+          ],
+        },
+      },
+    ]);
+    const plan = (work: number): WorkPlan => ({
+      kind: 'craft',
+      recipe: 'fixture_instant',
+      components: [],
+      tools: [],
+      gather: 0,
+      work,
+    });
+    const refused = new Inventory(definitions);
+    expect(refused.beginWork(plan(0))).toBeUndefined();
+    expect(refused.hands.left ?? refused.hands.right).toBeUndefined();
+    expect(new Inventory(definitions).beginWork(plan(gameMinutes(1)))?.work?.kind).toBe('craft');
   });
 
   it('names the first understocked component group instead of reporting allocation competition', () => {

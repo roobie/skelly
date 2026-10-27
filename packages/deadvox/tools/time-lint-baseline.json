@@ -193,7 +193,7 @@
     "game/firearmHandling.ts": {
       "duration": 5,
       "elapsed": 6,
-      "simTime": 1,
+      "simTime": 2,
       "startedAt": 3
     },
     "game/inputBindings.ts": {
@@ -212,7 +212,6 @@
       "elapsed": 1,
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
-      "simTime": 1,
       "snapshotLastMs": 1,
       "snapshotP95Ms": 1,
       "time": 2
@@ -263,6 +262,9 @@
       "requestTimeoutMs": 1,
       "timeoutMs": 1,
       "timer": 1
+    },
+    "game/session.ts": {
+      "simTime": 1
     },
     "game/streamer.ts": {
       "genMs": 1,

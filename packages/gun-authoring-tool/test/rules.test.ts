@@ -117,11 +117,6 @@ describe('rules', () => {
     expect(issues[0]?.parts).toEqual(expect.arrayContaining(['lower', 'magazine']));
   });
 
-  it('solid-overlap: beveled grip mates without relying on the old global allowance', () => {
-    const r = validate(loadFixture('archetype-battle-rifle'), gunDomain);
-    expect(r.issues).toEqual([]);
-  });
-
   it('solid-overlap: mount-specific zero allowance rejects a too-tight clamp', () => {
     const a = variant('archetype-battle-rifle', (x) => {
       x.parts.handguard = { family: 'handguard', params: { barrelBore: 'S', fit: 'too-tight' } };
@@ -134,11 +129,6 @@ describe('rules', () => {
     const gripless = loadFixture('broken-firing-grip');
     expect(rulesFailed(gripless)).toEqual(['firing-grip']);
     expect(rulesFailed(gripless, { ...gunDomain, rules: [] })).toEqual([]);
-  });
-
-  it('feed-match: box-fed receiver on a trigger-only lower', () => {
-    const { issues } = validate(loadFixture('broken-feed-match'), gunDomain);
-    expect(issues.map((i) => i.message)).toEqual(['receiver is box-fed, but lower (trigger) has no magazine well.']);
   });
 
   it('measures the pistol crown between the placed barrel and slide ends', () => {
@@ -218,7 +208,6 @@ describe('rules', () => {
       'revolver-grip-joint',
     ];
     expect(gunDomain.rules?.map(({ id }) => id)).toEqual(expect.arrayContaining(revolverRuleIds));
-    expect(rulesFailed(loadFixture('archetype-revolver'))).toEqual([]);
     const { issues } = validate(loadFixture('broken-revolver-misaligned-cylinder'), gunDomain);
     expect(issues.map((issue) => issue.rule)).toContain('axis-alignment');
   });

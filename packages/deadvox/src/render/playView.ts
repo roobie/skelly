@@ -393,7 +393,7 @@ export const createPlayView = (
 
   const adsCameraTarget = (frame: PlayCameraFrame, target: Vec3, stepOffset: number): Vec3 => {
     const { ads, eye, yaw, pitch, stance } = frame;
-    if (!ads || frame.spectator || frame.thirdPerson || stance === 'prone') {
+    if (!ads || frame.spectator || frame.thirdPerson) {
       return target;
     }
     const pose = playerLookPose({ figure: playerFigure, models: registry.models, pitch, stance, ads });
@@ -553,7 +553,7 @@ export const createPlayView = (
         gaitPhase,
         moving,
         stance,
-        stancePose: figureStancePose(playerFigure, stance),
+        stancePose: figureStancePose(playerFigure, stance, frame.ads !== undefined),
         ads: frame.ads,
         dt,
         inventory,

@@ -198,6 +198,16 @@ prone's own content fields, because how lying down should affect noticing is
 still open (#550). The camera and the spit's chest target follow the eye height,
 so each stance moves them without stance-specific code.
 
+Lying prone, the drawn body rests on the ground: a floating body reads wrong,
+so hip drop puts the legs on it, and the lower eye and shot origin that follow
+are accepted. Both feet stay on the ground. Empty-handed, the arms reach in
+front of the shoulders, not fully extended, the way a body rests and stays ready
+to act; arms at the sides read as a standing neutral pose laid flat. Aiming
+prone, the torso twists the opposite way to a standing aim, as a shooter lying
+along the ground does, and the twist and the lean are bounded together by the
+camera offset budget. See
+`src/content/base/figures-player.jsonnet`, `stancePoses`.
+
 The drawn pose must fit its collision height, so a head never pokes through a
 ceiling the body fits under. Visual blending hides the change of shape, but must
 not delay the eye used by sight and collision. See
@@ -1671,10 +1681,11 @@ anatomical bounds rather than an exact anatomical sight fit. See
 `src/content/base/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
-Only the owning view may suppress camera-enclosing flesh during standing or
-crouching ADS. A stable proximal-body and attached-gear mask prevents walking bob
-and sway from intermittently exposing the torso's interior; local near clipping keeps the
-remaining limbs clear without moving the actor or gun. The firearm retains
+Only the owning view may suppress camera-enclosing flesh during ADS in any
+stance, prone included. A stable proximal-body and attached-gear mask prevents
+walking bob and sway from intermittently exposing the torso's interior; local
+near clipping keeps the remaining limbs and held arms clear without moving the
+actor or gun. The firearm retains
 normal world depth, and external views and shadows retain the whole body. This
 exception is for an enclosing camera, not for hiding world obstructions. Content
 owns the masked body roles and clearance; see `src/content/base/figures-player.jsonnet`,
@@ -1695,9 +1706,23 @@ parallax is accepted unless it becomes a multiplayer peeking problem. See
 `src/core/adsView.ts`, `guardAdsCamera`; and `src/render/playView.ts`,
 `updateCamera`.
 
-Prone ADS needs its own chest-raised, elbow-supported posture under #550 before
-prone tuning changes; the standing and crouching camera fit does not establish
-prone fit.
+Prone ADS has its own posture, chest raised and propped on the elbows. A flat
+prone torso cannot lift the eye to the sight line within the neck limits, so the
+fit is fixed in the posture, shared by first person and the world body in one
+solve, before any per-gun aim value is loosened for prone. The body rests on the
+ground: hip drop is set so the legs touch it, and the chest rises only as far as
+the camera offset budget allows. Elbows bend toward the ground through their own
+pole, so the trigger elbow rests under the chest. The support hand takes the gun
+nearer the body when prone, because arm length is anatomy shared by every pose
+and gun, so the hold moves and the arm does not. The prone hold moves the hand
+only, since the arm is built once with the support hold's orientation and finger
+pose, so content cannot author those for it. Even there the support elbow
+hangs below its shoulder rather than on the ground, and looking up lifts both
+elbows. Scoped and iron-sighted long guns share the fit. The live camera takes
+the same bounded sight-line correction and wall guard as the other stances. See
+`src/content/base/figures-player.jsonnet`, `proneAdsPose` and
+`proneAdsElbowPole`; `src/content/base/long-gun-hands.libsonnet`, `proneSupport`;
+and `src/core/playerLookPose.ts`, `figureStancePose`.
 
 Firearm shots start at the shared posed muzzle and follow the barrel, never the
 observing camera or a wall-dependent eye fallback: every observer must see the

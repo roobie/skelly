@@ -88,6 +88,18 @@ export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 
   };
 };
 
+/** Where the support hand takes the gun while prone and aiming, in the same frame as `heldHoldFrame`'s `at`. */
+export const heldProneSupportAt = (model: ModelDef, side: HandSide): Vec3 | undefined => {
+  if (!(model.hands && model.grip)) {
+    throw new Error(`Model ${model.id} needs hands and a grip`);
+  }
+  const { grip, hands } = model;
+  return (
+    hands.proneSupport &&
+    modelToView(model, mirrorModelZ(side, hands.proneSupport.at).map((value, index) => value - grip.at[index]!) as Vec3)
+  );
+};
+
 const rx = ([x, y, z]: Vec3, angle: number): Vec3 => [
   x,
   y * Math.cos(angle) - z * Math.sin(angle),

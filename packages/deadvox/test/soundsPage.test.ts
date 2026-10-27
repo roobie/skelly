@@ -1,5 +1,6 @@
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
@@ -27,6 +28,12 @@ class SuspendedAudioContext {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('listening sheet', () => {
+  it('loads the player sense tuning that its audio previews with', () => {
+    const { registry } = buildSoundsPageContent();
+
+    expect(registry.senses.get(CORE_CONTENT_IDS.player)).toBeDefined();
+  });
+
   it('previews a recorded variant from the bundled pack files', async () => {
     vi.stubGlobal('AudioContext', SuspendedAudioContext);
     const fetchBuffer = vi.fn(() =>

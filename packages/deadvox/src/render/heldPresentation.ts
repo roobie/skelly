@@ -19,6 +19,7 @@ import {
   heldFirearmTransform,
   heldGripOffset,
   heldHoldFrame,
+  heldProneSupportAt,
 } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -85,6 +86,9 @@ export class HeldPresentation {
   readonly figure: FigureDef;
   readonly models: ModelLibrary | undefined;
   stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
+  /** Lying prone and aiming down sights; the support hand then holds `proneSupport` and elbows take the ground. */
+  private proneAdsOn = false;
+  private readonly supportBases = new Map<HandSide, { readonly normal: Vec3; readonly prone: Vec3 }>();
   seatFrame: HeldSeatFrame | undefined;
   adsEyes: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly frame: Object3D;
@@ -104,6 +108,16 @@ export class HeldPresentation {
     this.torso = torso;
   }
 
+  set proneAds(on: boolean) {
+    this.proneAdsOn = on;
+    for (const [side, bases] of this.supportBases) {
+      const at = on ? bases.prone : bases.normal;
+      this.handBases.set(side, at);
+      // A support arm rides in the held group, so moving its mount point is moving the hand on the gun.
+      this.arms.get(side)?.position.set(...at);
+    }
+  }
+
   syncWorn(source?: WornPresentation): void {
     this.worn?.sync(source);
   }
@@ -121,6 +135,7 @@ export class HeldPresentation {
     this.arms.clear();
     this.armRigs.clear();
     this.handBases.clear();
+    this.supportBases.clear();
     this.gripAnchors.clear();
     this.holds.clear();
     this.heldByHand.clear();
@@ -304,6 +319,12 @@ export class HeldPresentation {
       mount: { held, origin: heldAt },
       ...(hold ? { hold: { ...hold, at: [0, 0, 0] } } : {}),
     });
+    const prone = model?.hands && heldProneSupportAt(model, side);
+    if (prone) {
+      // The arm sits at the hold's offset from the held grip, so a closer hold is another offset on the same arm.
+      this.supportBases.set(other, { normal: offset, prone });
+      this.proneAds = this.proneAdsOn;
+    }
   }
 
   private addArm(
@@ -419,7 +440,8 @@ export class HeldPresentation {
     const up = new Vector3(0, 1, 0).applyQuaternion(inverse);
     const back = new Vector3().crossVectors(right, up);
     const down = Math.max(0, up.z);
-    const pole = this.figure.armRig.elbowPole;
+    const pole = this.proneAdsOn ? this.figure.armRig.proneAdsElbowPole : this.figure.armRig.elbowPole;
+    // A gun's own authored bend side wins over the figure's pole in every stance.
     const authored = this.holds.get(side)?.elbowBendSide;
     const [outward, vertical, backward] =
       authored ?? (pole.up.map((value, axis) => value + (pole.down[axis]! - value) * down) as Vec3);
