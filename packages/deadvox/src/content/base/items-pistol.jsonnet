@@ -33,10 +33,12 @@ local pistol = import 'gungen/pistol_service.model.json';
     pistol + {
       hold: 'forward',
       hands: {
-        seat: [0.02, -0.3, -0.25],
+        seat: [0, -0.16, -0.22],
         loweredPitchRadians: 0.12,
-        firing: { at: [pistol.grip.at[0], pistol.grip.at[1], 0.016], palm: [0, 0, -1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolGrip' },
-        support: { at: [pistol.grip.at[0] + 0.012, pistol.grip.at[1] - 0.006, -0.032], palm: [0, 0, 1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolGrip' },
+        torsoForwardDegrees: 20,
+        adsEyeReliefMetres: 0.2,
+        firing: { at: [pistol.grip.at[0], pistol.grip.at[1] - 0.015, 0.016], palm: [0, 0, -1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolGrip' },
+        support: { at: [pistol.grip.at[0] + 0.006, pistol.grip.at[1] - 0.032, -0.032], palm: [0, 0, 1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolGrip' },
       },
     },
     import 'gungen/magazine_pistol_9.model.json',

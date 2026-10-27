@@ -21,6 +21,7 @@ import {
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { heldTorsoForwardDegrees } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
@@ -31,7 +32,7 @@ import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './act
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import { firstPersonShoulder } from './playerFigure.ts';
+import { firstPersonBodyShoulder, firstPersonShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
 export type { HeldFirearmPose, HeldHandlingFrame } from './actorAnimator.ts';
@@ -141,7 +142,7 @@ export class HeldItems {
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
     if (heldModel) {
-      heldModel.visible = !active;
+      heldModel.visible = !active || modelDefinition?.hands?.adsEyeReliefMetres !== undefined;
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
@@ -158,7 +159,10 @@ export class HeldItems {
     ) {
       return;
     }
-    const distance = opticWindowDistance(diameter, fill, main.fov);
+    const distance = Math.max(
+      modelDefinition?.hands?.adsEyeReliefMetres ?? 0,
+      opticWindowDistance(diameter, fill, main.fov),
+    );
     const innerRadius = diameter / 2;
     const outerRadius = innerRadius * 1.12;
     const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
@@ -214,7 +218,14 @@ export class HeldItems {
   }
 
   viewShoulder(side: HandSide): Vector3 {
-    return new Vector3(...firstPersonShoulder(this.figure, side));
+    const lean = heldTorsoForwardDegrees(this.inventory);
+    const shoulder = lean
+      ? firstPersonBodyShoulder(this.figure, this.inventory.registry.models, side, {
+          eyeMetres: this.inventory.registry.player.get(CORE_CONTENT_IDS.player)!.eye,
+          leanDegrees: lean,
+        })
+      : firstPersonShoulder(this.figure, side);
+    return new Vector3(...shoulder);
   }
 
   private shownModelOf(item: Item): Object3D | undefined {

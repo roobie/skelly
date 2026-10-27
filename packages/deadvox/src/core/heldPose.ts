@@ -3,7 +3,7 @@
 import { type AimFrame, aimBasis, NEUTRAL_AIM } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { HandSide } from './inventory.ts';
+import type { HandSide, Inventory } from './inventory.ts';
 import { type MeleeHand, type MeleePoseFrame, readyHandPair } from './meleePose.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from './opticWindow.ts';
 import type { HeldPosesDef } from './schema.ts';
@@ -167,10 +167,12 @@ const sightEyeBehind = (model: ModelDef, fill: number | undefined, fovDegrees: n
   if (!sight) {
     return undefined;
   }
-  const relief =
+  const relief = Math.max(
+    model.hands?.adsEyeReliefMetres ?? 0,
     sight.kind === 'optic' && sight.ocularDiameterMetres !== undefined && fill !== undefined
       ? opticWindowDistance(sight.ocularDiameterMetres, fill, fovDegrees)
-      : sight.eyeReliefMetres;
+      : sight.eyeReliefMetres,
+  );
   return [
     sight.eye[0] - sight.direction[0] * relief,
     sight.eye[1] - sight.direction[1] * relief,
@@ -216,7 +218,15 @@ export interface HeldFirearmTransform {
   readonly rootRotation: readonly [Vec3, Vec3, Vec3];
 }
 
-/** Shared simulation/render firearm pose. Anchors and directions use the model's grip frame. */
+export const heldTorsoForwardDegrees = ({ registry, hands }: Pick<Inventory, 'registry' | 'hands'>): number =>
+  Math.max(
+    0,
+    ...Object.values(hands).map((item) => {
+      const model = item && registry.items.get(item.type)?.model;
+      return model ? (registry.models.get(model)?.hands?.torsoForwardDegrees ?? 0) : 0;
+    }),
+  );
+
 export const heldLoweredPitch = (model: ModelDef | undefined, progress: number, loweredPitchRadians: number): number =>
   -(model?.hands?.loweredPitchRadians ?? loweredPitchRadians) * (1 - progress);
 

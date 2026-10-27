@@ -2098,6 +2098,8 @@ const HandsModelSchema = strictObject({
   seat: Point,
   butt: optional(Point),
   loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
+  torsoForwardDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
+  adsEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
 });

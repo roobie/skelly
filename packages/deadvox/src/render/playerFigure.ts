@@ -6,6 +6,7 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { heldTorsoForwardDegrees } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -135,6 +136,26 @@ const playerFigureLayout = (
 export const firstPersonShoulder = (figure: FigureDef, side: HandSide): Vec3 => {
   const [x, y, z] = figure.armRig.shoulderFromEye;
   return [side === 'right' ? x : -x, y, z];
+};
+
+export const firstPersonBodyShoulder = (
+  figure: FigureDef,
+  models: ReadonlyMap<string, ModelDef>,
+  side: HandSide,
+  { eyeMetres, leanDegrees }: { eyeMetres: number; leanDegrees: number },
+): Vec3 => {
+  const layout = playerFigureLayout(figure, models);
+  const [x, y, z] = layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
+  const lean = (leanDegrees * Math.PI) / 180;
+  const aboveHip = y - layout.hipHeight;
+  return [
+    x,
+    layout.hipHeight + aboveHip * Math.cos(lean) + z * Math.sin(lean) - eyeMetres,
+    PLAYER_BODY_REAR_OFFSET -
+      aboveHip * Math.sin(lean) +
+      z * Math.cos(lean) +
+      (FIGURE_BOXES.head.at[1] - layout.hipHeight) * Math.sin(lean),
+  ];
 };
 
 interface FigureHeldItems {
@@ -403,10 +424,11 @@ export class PlayerMeshes {
     this.lastPose = pose;
     this.syncHeld(pose);
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
+    const holdingLean = this.holdingLean(pose);
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
     const turns: Readonly<Record<PivotedKind, readonly number[]>> = {
-      body: [-headUpDegrees],
+      body: [-headUpDegrees - holdingLean],
       leg: [kneeBendDegrees, -ankleDegrees],
       arm: [-elbowBendDegrees],
     };
@@ -596,6 +618,11 @@ export class PlayerMeshes {
     }
   }
 
+  private holdingLean(pose: PlayerFigurePose): number {
+    const source = pose.heldItems ?? pose.inventory;
+    return pose.stance === 'standing' && source ? heldTorsoForwardDegrees(source) : 0;
+  }
+
   /**
    * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint, then all lean.
    */
@@ -613,7 +640,7 @@ export class PlayerMeshes {
     const localY = pivotY + (at[1] - pivotY) * Math.cos(stride) - (at[2] - pivotZ) * Math.sin(stride);
     const localZ = pivotZ + (at[1] - pivotY) * Math.sin(stride) + (at[2] - pivotZ) * Math.cos(stride);
     // The stance swings the legs and the upper body about the hip, then lowers the hip.
-    const swing = (isLeg(name) ? legsForwardDegrees : -torsoForwardDegrees) * RADIANS;
+    const swing = (isLeg(name) ? legsForwardDegrees : -torsoForwardDegrees - this.holdingLean(pose)) * RADIANS;
     const aboveHip = localY - hip;
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
@@ -621,7 +648,7 @@ export class PlayerMeshes {
     if (!this.placement.thirdPerson) {
       // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
       const headAboveHip = FIGURE_BOXES.head.at[1] - hip;
-      this.localPosition[2] -= headAboveHip * Math.sin(-torsoForwardDegrees * RADIANS);
+      this.localPosition[2] -= headAboveHip * Math.sin(-(torsoForwardDegrees + this.holdingLean(pose)) * RADIANS);
     }
     setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
     this.dummy.rotation.order = 'YXZ';
