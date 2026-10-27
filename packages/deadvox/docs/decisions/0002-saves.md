@@ -4,6 +4,7 @@ read_if:
   - you're changing the save envelope, required item history or deciding whether its schema number changes
   - you're changing how a save record is compressed or which size its caps bound
   - you're changing when the game autosaves
+  - you're changing what the title page offers when a save cannot be used
   - you're adding or removing a scheduler system, or replacing the known scheduler id list
   - you're deciding what happens to a save whose mod state no longer matches its mod
 tags: [deadvox, adr, saves, persistence, determinism]
@@ -32,6 +33,8 @@ Persist every future-affecting owner state with the change that introduces it. E
 A saved scheduler system id that no registered system has is a reference that does not resolve, so `decodeSave` refuses it as an incompatible save the controller leaves untouched, not later as a crash in `src/core/scheduler.ts`, `Scheduler.restoreState`. The ids it accepts are `src/core/schedulerIds.ts`, `KNOWN_SCHEDULER_IDS`, a typed list kept beside the registration sites. Systems register through `Scheduler.register` in four files, `src/core/sim.ts`, `Simulation`, `src/core/longAction.ts`, `LongActions`, `src/game/survival.ts`, `Survival`, and `src/game/session.ts`, and two of them, `src/game/session.ts` and `src/core/longAction.ts`, are held by open PRs #1106, #1097, #1095 and #1072, which is why the list is not yet derived from the sites. `test/saveSchedulerIds.test.ts` fails when a registered system is missing from the list, so a new system cannot be left out silently. When the last of those four PRs merges or closes, replace the list with one derived from the registration sites, so that each site declares its id once, and delete this paragraph's exception.
 
 Write snapshots through crash-safe A/B records. Disk work is asynchronous; a failed write leaves the previous valid record available. A back/forward-cache transition does not require another save: a frozen page can hold the origin lock, so the last committed generation remains the recovery point. These safeguards reduce corruption risk but are not backups.
+
+A save that cannot be used, whether its records are corrupt, it is incompatible or its restore was refused, is never overwritten silently, and it never leaves the player stuck. The title page offers to start fresh, with a box, checked by default, to download the old save and a line saying the file can be sent to the developer for bug hunting. The checked box downloads the old records before the new world starts, and the old records stay in storage until the new world's first checkpoint commits; only that commit may replace corrupt records and lift the tab's restore refusal. The player keeps the choice and the evidence; repair and migration stay out of scope (#1023). See `src/ui/saveController.ts`, `startFresh`, and `src/game/saveStorageProtocol.ts`, `commitSavePayload`.
 
 After death, do not offer a death-bearing world for Continue. Mark death before the asynchronous final write so an unfinished write cannot revive the survivor; clear that marker only after another world's snapshot completes. Whether a new character may enter the same world after death remains an open decision for BR.
 

@@ -114,6 +114,8 @@ export class SaveController {
   private storageUnavailable = false;
   private protectedCurrent = false;
   private corruptRecords = false;
+  private startingFresh = false;
+  private freshStart = false;
   private requestedContinue = false;
   private deadRecord = false;
   private entered = false;
@@ -523,7 +525,7 @@ export class SaveController {
 
   get titleNewWorldLabel(): string {
     if (this.protectedCurrent) {
-      return this.text.needsRecoveryLabel;
+      return this.text.startFresh;
     }
     return this.storageUnavailable ? this.text.playWithoutSaving : this.text.newWorld;
   }
@@ -620,14 +622,22 @@ export class SaveController {
     this.writing = true;
     this.queued = undefined;
     try {
-      const result = await this.storage.save(this.namespace, (generation) =>
-        this.storage.encodeSnapshot(task.snapshot, generation, {
-          worldOptions: this.worldOptions!,
-          version: this.identityValue!.components,
-          buildRevision: this.identityValue!.buildRevision,
-        }),
+      const result = await this.storage.save(
+        this.namespace,
+        (generation) =>
+          this.storage.encodeSnapshot(task.snapshot, generation, {
+            worldOptions: this.worldOptions!,
+            version: this.identityValue!.components,
+            buildRevision: this.identityValue!.buildRevision,
+          }),
+        { replaceCorrupt: this.freshStart },
       );
       this.savedGeneration = result.generation;
+      if (this.freshStart) {
+        // The refused record is no longer the newest, so the tab may offer Continue again.
+        this.freshStart = false;
+        sessionStorage.removeItem(`${RESTORE_REFUSAL_KEY}:${this.namespace}`);
+      }
       if (
         task.snapshot.world.id === this.worldId &&
         task.snapshot.character.id === this.characterId &&
@@ -665,8 +675,7 @@ export class SaveController {
     if (this.protectedCurrent) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      this.statusText = this.text.needsRecovery;
-      this.render();
+      this.startFresh().catch((error: unknown) => this.failNewWorld(error));
       return;
     }
     if (this.currentRecord && !this.deadRecord) {
@@ -678,6 +687,34 @@ export class SaveController {
     event.preventDefault();
     event.stopImmediatePropagation();
     this.confirmNewWorld();
+  }
+
+  /** Leaves an unusable save in storage, downloading it first when asked, until the new world's first commit. */
+  private async startFresh(): Promise<void> {
+    if (this.startingFresh) {
+      return;
+    }
+    this.startingFresh = true;
+    try {
+      if (($('save-fresh-download') as HTMLInputElement).checked) {
+        try {
+          await this.downloadRawRecords();
+        } catch (error) {
+          this.statusText = fillText(this.text.recordsExportFailed, { error: errorMessage(error) });
+          this.render();
+          return;
+        }
+      }
+      this.protectedCurrent = false;
+      this.freshStart = true;
+      this.candidate = undefined;
+      this.restoreWorldOptions = undefined;
+      this.restored = undefined;
+      this.failure = '';
+      await this.launchNewWorld();
+    } finally {
+      this.startingFresh = false;
+    }
   }
 
   private confirmNewWorld(): void {
@@ -815,23 +852,27 @@ export class SaveController {
     }
   }
 
+  private async downloadRawRecords(): Promise<void> {
+    const slots = await this.storage.readRawSlots(this.namespace);
+    for (const slot of ['a', 'b'] as const) {
+      const bytes = slots[slot];
+      if (!bytes) {
+        continue;
+      }
+      const url = URL.createObjectURL(
+        new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'application/octet-stream' }),
+      );
+      const link = $('save-download') as HTMLAnchorElement;
+      link.href = url;
+      link.download = `deadvox-${this.namespace}-${slot}.bin`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
   private async exportCurrentRecords(): Promise<void> {
     try {
-      const slots = await this.storage.readRawSlots(this.namespace);
-      for (const slot of ['a', 'b'] as const) {
-        const bytes = slots[slot];
-        if (!bytes) {
-          continue;
-        }
-        const url = URL.createObjectURL(
-          new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'application/octet-stream' }),
-        );
-        const link = $('save-download') as HTMLAnchorElement;
-        link.href = url;
-        link.download = `deadvox-${this.namespace}-${slot}.bin`;
-        link.click();
-        URL.revokeObjectURL(url);
-      }
+      await this.downloadRawRecords();
       this.statusText = this.text.recordsExported;
     } catch (error) {
       this.statusText = fillText(this.text.recordsExportFailed, { error: errorMessage(error) });
@@ -895,6 +936,13 @@ export class SaveController {
     if (exportButton) {
       exportButton.hidden = !(this.protectedCurrent || this.corruptRecords);
     }
+    $('save-fresh').hidden = this.entered || !this.protectedCurrent;
+    render(
+      html`<input id="save-fresh-download" type="checkbox" checked />
+        <label for="save-fresh-download">${this.text.downloadOldSave}</label>
+        <p>${this.text.downloadOldSaveNote}</p>`,
+      $('save-fresh'),
+    );
     $('save-recovery').hidden = !(this.entered && this.failure);
     render(html`${this.failure}`, $('save-recovery-message'));
   }
