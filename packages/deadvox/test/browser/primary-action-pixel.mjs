@@ -82,7 +82,11 @@ const heldCompassCardChange = (page) =>
     sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, noon));
     r.setHand(r.dominant, r.inventory.create('compass'));
     const { held } = r.view;
-    const { scene, camera } = held.warmUpTarget;
+    const { camera, scene } = r.engine;
+    const heldFrame = scene.getObjectByName('held-items-view');
+    if (!heldFrame) {
+      throw new Error('The world-posed owner-view instruments are not installed');
+    }
     const gl = r.engine.renderer.getContext();
     let window;
     const read = (dial) => {
@@ -131,7 +135,7 @@ const heldCompassCardChange = (page) =>
       held.render = (...args) => {
         render.apply(held, args);
         renders += 1;
-        const dial = scene.getObjectByName('compass-live-dial');
+        const dial = heldFrame.getObjectByName('compass-live-dial');
         if (renders > 30) {
           held.render = render;
           failed(new Error('The held compass card was not drawn within 30 held-layer frames'));
@@ -244,7 +248,8 @@ const heldItemChecks = async (chromium, port) => {
         'primary-action-pixel',
         // The pixel fixture needs a dark sky; 23:30 is deep night on the authored cycle. It starts on the path's
         // open ground facing east, away from the showroom deck and its props, so the floor sample sees bare ground.
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=23:30&at=-4,-0.5,-90&post=0&sunshadow=0&torchshadow=0`,
+        // This flow measures the camera-attached visor mask, not the alternative world geometry.
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=23:30&at=-4,-0.5,-90&post=0&sunshadow=0&torchshadow=0&optics=effect`,
       ),
     );
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

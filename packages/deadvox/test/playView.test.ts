@@ -737,30 +737,44 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
-  it('passes night vision to the mood for the player and none for a spectator', () => {
-    const { mood, view } = fixture();
-    const { nightVision } = registry.items.get('night_vision_goggles')!.light!;
-    expect(nightVision).toBeDefined();
-    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
-    const frame = {
-      dt: 0.1,
-      body: { pos: [2, 1, 6] as Vec3, vel: [0, 0, 0] as Vec3, halfWidth: 0.6, height: 3.6, onGround: true },
-      paused: false,
-      noclip: false,
-      yaw: 0,
-      pitch: 0,
-      stridePhase: 0,
-      stance: 'standing' as const,
-      eye: [2, 4.24, 6] as Vec3,
-      sightImpaired: false,
-      nightVision,
-    };
-    view.updateCamera(frame, damage);
-    expect(mood.setNightVision).toHaveBeenLastCalledWith(nightVision);
-    view.updateCamera({ ...frame, spectator: { position: [2, 4, 6], yaw: 0, pitch: 0 } }, damage);
-    expect(mood.setNightVision).toHaveBeenLastCalledWith(undefined);
-    view.dispose();
-  });
+  it.each([
+    { presentation: 'world default', search: '', world: true },
+    { presentation: 'effect override', search: '?optics=effect', world: false },
+  ])(
+    '$presentation preserves player night vision, selects its border, and excludes spectators',
+    ({ search, world }) => {
+      vi.stubGlobal('location', { search });
+      const { mood, view } = fixture();
+      const { nightVision } = registry.items.get('night_vision_goggles')!.light!;
+      expect(nightVision).toBeDefined();
+      const source = structuredClone(nightVision!);
+      const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+      const frame = {
+        dt: 0.1,
+        body: { pos: [2, 1, 6] as Vec3, vel: [0, 0, 0] as Vec3, halfWidth: 0.6, height: 3.6, onGround: true },
+        paused: false,
+        noclip: false,
+        yaw: 0,
+        pitch: 0,
+        stridePhase: 0,
+        stance: 'standing' as const,
+        eye: [2, 4.24, 6] as Vec3,
+        sightImpaired: false,
+        nightVision,
+      };
+      try {
+        view.updateCamera(frame, damage);
+        const expected = world ? { ...source, edge: { ...source.edge, darkening: 0 } } : source;
+        expect(mood.setNightVision).toHaveBeenLastCalledWith(expected);
+        expect(nightVision).toEqual(source);
+        view.updateCamera({ ...frame, spectator: { position: [2, 4, 6], yaw: 0, pitch: 0 } }, damage);
+        expect(mood.setNightVision).toHaveBeenLastCalledWith(undefined);
+      } finally {
+        view.dispose();
+        vi.unstubAllGlobals();
+      }
+    },
+  );
 
   it('launches the lever of a fuse lit before its pile has drawn the throwable', () => {
     const { inventory, view } = fixture();
