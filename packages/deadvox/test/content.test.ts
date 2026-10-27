@@ -375,7 +375,7 @@ describe('content', () => {
 
     const shambler = baseRegistry.zombies.get('shambler')!;
     const sharedShamblerData = Object.fromEntries(
-      Object.entries(shambler).filter(([key]) => !['id', 'name', 'loot'].includes(key)),
+      Object.entries(shambler).filter(([key]) => !['id', 'name', 'cause', 'loot'].includes(key)),
     );
     expect(soldier).toMatchObject({ ...sharedShamblerData, authoredOnly: true });
     expect(soldier.loot).not.toBe(shambler.loot);
@@ -2569,6 +2569,7 @@ describe('content references', () => {
           {
             id: 'clerk',
             name: 'Clerk',
+            cause: 'a clerk',
             model: 'shambler',
             figureSeeds: [1],
             spawnWeight: 1,

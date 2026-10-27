@@ -395,12 +395,17 @@ export class Inventory {
       : this.removeVehiclePart(vehicle, item, request);
   }
 
-  private replaceVehicle(vehicleId: number, build: VehicleInstance): string | undefined {
+  /** Engine validation text names internals, so a rejected build is refused with the operation's content line. */
+  private replaceVehicle(
+    vehicleId: number,
+    build: VehicleInstance,
+    refusal: 'partDoesNotFit' | 'partSupportsOthers',
+  ): string | undefined {
     try {
       this.vehicles.replace(this.registry, vehicleId, build);
       return undefined;
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Vehicle service refused';
+    } catch {
+      return coreMessage(this.registry, refusal);
     }
   }
 
@@ -426,6 +431,7 @@ export class Inventory {
     const refusal = this.replaceVehicle(
       vehicleId,
       this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(site), item }]),
+      'partDoesNotFit',
     );
     if (refusal) {
       return refusal;
@@ -455,6 +461,7 @@ export class Inventory {
         vehicle,
         vehicle.fittings.filter((entry) => entry !== fitted),
       ),
+      'partSupportsOthers',
     );
     if (refusal) {
       return refusal;

@@ -61,6 +61,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "canJumpObstacles": true,
+      "cause": "a shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -304,6 +305,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
+      "cause": "a soldier",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -547,6 +549,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
+      "cause": "a farmer",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -790,6 +793,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
+      "cause": "a site worker",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1033,6 +1037,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
+      "cause": "a medic",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1276,6 +1281,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
+      "cause": "a brute",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1514,6 +1520,7 @@
         "windupSimSeconds": 0.25
       },
       "canJumpObstacles": true,
+      "cause": "a runner",
       "chaseMotion": {
         "lurchSimSeconds": 0.69999999999999996,
         "speedMultiplier": {
@@ -1686,6 +1693,7 @@
         "windupSimSeconds": 0.40000000000000002
       },
       "canJumpObstacles": true,
+      "cause": "a crawler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -1872,6 +1880,7 @@
         "maxRadiusMetres": 0.75,
         "radiusMetresPerDamage": 0.0023
       },
+      "cause": "an amalgam",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {
@@ -2174,6 +2183,7 @@
       },
       "authoredOnly": true,
       "canJumpObstacles": true,
+      "cause": "an acid zombie",
       "chaseMotion": {
         "lurchSimSeconds": 1,
         "speedMultiplier": {

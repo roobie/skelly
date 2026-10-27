@@ -9,11 +9,12 @@ import { live } from 'lit-html/directives/live.js';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
 import { practiceForNextLevel } from '../core/character.ts';
+import type { ItemDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { coreLabel } from '../core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
-import { firearmSlotIds, LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
+import { firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
 import { GRID_CELL_REM as CELL_REM } from '../core/inventoryGridName.ts';
@@ -306,6 +307,34 @@ interface InventoryScreenViewModel {
 }
 
 type InventoryText = ScreenText['inventory'];
+
+/** Names a firearm's slots by mount kind, numbering exported slots in export order among those of the same kind. */
+const attachmentSlotLabels = (
+  registry: Registry,
+  def: ItemDef,
+  text: ScreenText['attachmentSlot'],
+): ((slotId: string) => string) => {
+  const model = def.model === undefined ? undefined : registry.models.get(def.model);
+  const counted = new Map<string, number>();
+  const exported = new Map(
+    (model?.gun?.attachmentSlots ?? []).map(({ id, mount }) => {
+      const number = (counted.get(mount) ?? 0) + 1;
+      counted.set(mount, number);
+      return [id, fillText(text[mount], { number: countText(number) })];
+    }),
+  );
+  const owned = new Map([
+    [SLING_SLOT, text.sling],
+    [LIGHT_MOUNT_SLOT, text['light-mount']],
+  ]);
+  return (slotId) => {
+    const label = exported.get(slotId) ?? owned.get(slotId);
+    if (label === undefined) {
+      throw new Error(`Firearm slot ${slotId} has no label`);
+    }
+    return label;
+  };
+};
 
 const secs = (text: InventoryText, s: number) => fillText(text.secs, { value: decimalText(s) });
 const kg = (text: InventoryText, g: number) => fillText(text.kg, { value: hundredthsText(g / 1000) });
@@ -1602,12 +1631,13 @@ export class InventoryScreen {
     }
     const def = defOf(this.inv.registry, item.type);
     const slotIds = def.firearm ? firearmSlotIds(this.inv.registry, def) : [];
+    const slotLabels = attachmentSlotLabels(this.inv.registry, def, this.screenText().attachmentSlot);
     const attachmentSlots = slotIds.map((slotId): AttachmentSlotViewModel => {
       const fitted = item.slots?.[slotId];
       const battery = fitted && this.batterySlot(fitted);
       return {
         id: slotId,
-        label: slotId === LIGHT_MOUNT_SLOT ? 'Light mount' : slotId,
+        label: slotLabels(slotId),
         ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
         ...(battery ? { battery } : {}),
         candidates: fitted
@@ -1757,8 +1787,12 @@ export class InventoryScreen {
     return lines;
   }
 
+  private screenText(): ScreenText {
+    return this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+  }
+
   private text(): InventoryText {
-    return this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.inventory;
+    return this.screenText().inventory;
   }
 
   private renderQueue(): void {

@@ -17,6 +17,14 @@
     removing: 'Removing {part}',
     installing: 'Fitting {part}',
   },
+  attachmentSlot: {
+    'rail-top': 'Top rail {number}',
+    'rail-side': 'Side rail {number}',
+    'rail-bottom': 'Bottom rail {number}',
+    muzzle: 'Muzzle',
+    sling: 'Sling mount',
+    'light-mount': 'Light mount',
+  },
   hudOptionLabels: {
     stats: 'Health, blood, bleeding, food, water, fatigue, pain, stamina and carrying weight',
     clock: 'Clock and time compression',

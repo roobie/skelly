@@ -414,6 +414,18 @@ const UiScreenTextSchema = strictObject({
     removing: ['part'],
     installing: ['part'],
   }),
+  /**
+   * Firearm slot names: one per exported mount kind, numbered in export order among slots of that kind, plus the
+   * sling and light mounts deadvox owns.
+   */
+  attachmentSlot: slottedTable({
+    'rail-top': ['number'],
+    'rail-side': ['number'],
+    'rail-bottom': ['number'],
+    muzzle: [],
+    sling: [],
+    'light-mount': [],
+  }),
   /** What the HUD options call each element they switch. */
   hudOptionLabels: strictObject({
     stats: Name,
@@ -3346,6 +3358,8 @@ const AcidBodySchema = pipe(
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
+  /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
+  cause: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */

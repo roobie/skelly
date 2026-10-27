@@ -44,7 +44,13 @@ export const ActionTextSchema = strictObject({
   /** Refusals many actions share. */
   common: strictObject({ tooFar: Line, busy: Line, gone: Line, notHeld: Line, notCarried: Line }),
   /** What the death screen names as the cause, for harm the game deals without a weapon of its own. */
-  causes: strictObject({ foodPoisoning: Line, grenade: Line, bearTrap: Line }),
+  causes: strictObject({
+    foodPoisoning: Line,
+    grenade: Line,
+    bearTrap: Line,
+    /** A zombie that is gone by the time its hit lands, so its type's own cause can't be read. */
+    zombie: Line,
+  }),
   /** Refusals and notices of the play loop: resting, dropping, throwing, quickbar and fuses. */
   play: strictObject({
     restRefused: Template('reason'),
