@@ -3,9 +3,9 @@ import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { scenarioSources } from './scenarioComposition.ts';
-import type { SiteLayoutDef } from './schema.ts';
+import type { ScenarioDef, SiteLayoutDef } from './schema.ts';
 import { HORDE_TYPE, ordinarySpawnWeights } from './settlementSpawns.ts';
-import { compileTemplate } from './templates.ts';
+import { type CompiledTemplate, compileMapPiece, compileTemplate, kitSlotChoices } from './templates.ts';
 
 interface RecipeDiagnostic {
   recipe: string;
@@ -157,9 +157,13 @@ const authoredFixedLootItems = (layouts: readonly SiteLayoutDef[]): Set<string> 
   return items;
 };
 
-const worldZombieTypes = (registry: Registry, layouts: readonly SiteLayoutDef[]): Set<string> => {
+const worldZombieTypes = (
+  registry: Registry,
+  layouts: readonly SiteLayoutDef[],
+  scenarios: Iterable<ScenarioDef>,
+): Set<string> => {
   const types = new Set(layouts.flatMap((layout) => layout.shamblers.map((spawn) => spawn.type)));
-  const populations = [...registry.scenarios.values()].map((scenario) => scenario.population);
+  const populations = [...scenarios].map((scenario) => scenario.population);
   if (layouts.some((layout) => layout.hordes?.length) || populations.some((population) => population.hordes > 0)) {
     types.add(HORDE_TYPE);
   }
@@ -173,21 +177,66 @@ const worldZombieTypes = (registry: Registry, layouts: readonly SiteLayoutDef[])
   return types;
 };
 
-const worldSources = (registry: Registry) => {
+export interface ReachabilityScope {
+  /** Site ids whose authored sources are included; absent means every playable site. */
+  readonly sites?: ReadonlySet<string>;
+}
+
+const compiledSource = (registry: Registry, id: string): CompiledTemplate | undefined => {
+  const template = registry.templates.get(id);
+  if (template) {
+    return compileTemplate(registry, template);
+  }
+  const piece = registry.mapPieces.get(id);
+  return piece ? compileMapPiece(registry, piece) : undefined;
+};
+
+const assemblySourceIds = (registry: Registry, id: string): string[] => {
+  const assembly = registry.mapAssemblies.get(id);
+  return assembly
+    ? assembly.slots.flatMap((slot) =>
+        kitSlotChoices(registry, slot)
+          .filter(({ weight }) => weight > 0)
+          .map(({ ref }) => ref.id),
+      )
+    : [];
+};
+
+const sourceTemplates = (registry: Registry, ids: Iterable<string>) => {
+  const templates: CompiledTemplate[] = [];
+  const visited = new Set<string>();
+  const visit = (id: string): void => {
+    if (visited.has(id)) {
+      return;
+    }
+    visited.add(id);
+    const source = compiledSource(registry, id);
+    if (source) {
+      templates.push(source);
+      return;
+    }
+    for (const child of assemblySourceIds(registry, id)) {
+      visit(child);
+    }
+  };
+  for (const id of ids) {
+    visit(id);
+  }
+  return templates;
+};
+
+const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   const roots = new Set<string>();
   const workstations = new Set<string>();
   const workstationQualities = new Map<string, number>();
-  const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo);
-  const zombieTypes = worldZombieTypes(registry, authoredLayouts);
+  const selected = (id: string) => scope.sites === undefined || scope.sites.has(id);
+  const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo && selected(layout.id));
+  const scenarios = [...registry.scenarios.values()].filter((scenario) => selected(scenario.id));
+  const zombieTypes = worldZombieTypes(registry, authoredLayouts, scenarios);
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
-  const scenario = scenarioSources(registry);
-  // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
-  for (const id of new Set([...authoredTemplates, ...scenario.templates])) {
-    const definition = registry.templates.get(id);
-    if (!definition) {
-      continue; // A rejected/missing template provides no sources.
-    }
-    const template = compileTemplate(registry, definition);
+  const scenarioContent = scenarioSources(registry, scenarios);
+  // Compilation follows every positive-weight kit alternative, not unused palette declarations.
+  for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
     for (const piece of template.pieces) {
       if (piece.loot !== undefined) {
         roots.add(piece.loot);
@@ -204,15 +253,14 @@ const worldSources = (registry: Registry) => {
       roots.add(loot);
     }
   }
-  const found = addLoot(registry, roots);
-  for (const item of authoredFixedLootItems(authoredLayouts)) {
-    found.add(item);
+  const rolled = addLoot(registry, roots);
+  const placed = authoredFixedLootItems(authoredLayouts);
+  for (const fixed of scenarioContent.fixedLoot.flatMap((source) => source.items)) {
+    placed.add(fixed.item);
   }
-  for (const fixed of scenario.fixedLoot.flatMap((source) => source.items)) {
-    found.add(fixed.item);
-  }
+  const found = new Set([...rolled, ...placed]);
   addItemOutputs(registry, found);
-  return { found, workstations, workstationQualities };
+  return { found, placed, rolled, workstations, workstationQualities };
 };
 
 interface RecipeDiagnosticContext {
@@ -386,8 +434,9 @@ const reachableSkills = ({
 export const checkReachability = (
   registry: Registry,
   known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
+  scope?: ReachabilityScope,
 ) => {
-  const { found, workstations, workstationQualities } = worldSources(registry);
+  const { found, placed, rolled, workstations, workstationQualities } = worldSources(registry, scope);
   const knowledge = knownRecipes(registry, found, known);
   const skills = reachableSkills({ registry, found, workstations, workstationQualities, knowledge });
   const components = closure({ registry, found, tools: false, knowledge, skills, workstationQualities });
@@ -404,6 +453,8 @@ export const checkReachability = (
   const eligible = [...registry.items.values()].filter((item) => !item.notLoot).map((item) => item.id);
   return {
     found,
+    placed,
+    rolled,
     components,
     toolReachable,
     workstations,
