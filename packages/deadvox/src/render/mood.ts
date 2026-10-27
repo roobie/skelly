@@ -405,6 +405,7 @@ export class Mood {
     try {
       if (opticFrame) {
         this.opticLens.prepare(this.renderer, this.scene, this.camera, opticFrame);
+        this.opticPass!.uniforms.uHousingActive!.value = this.opticLens.housingActive ? 1 : 0;
       }
       composer.render(0);
     } finally {
@@ -423,6 +424,7 @@ export class Mood {
     }
     const { uniforms } = opticPass;
     uniforms.uZoomTexture!.value = this.opticLens.texture;
+    uniforms.uHousingTexture!.value = this.opticLens.housingTexture;
     uniforms.uLensCenter!.value.set(...frame.center);
     uniforms.uLensRadius!.value.set(...frame.radius);
     setOpticLensUniforms(opticPass, frame);

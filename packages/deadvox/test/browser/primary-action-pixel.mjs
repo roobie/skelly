@@ -10,6 +10,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { opticHousingChecks } from './optic-housing.mjs';
 import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -256,6 +257,7 @@ const heldItemChecks = async (chromium, port) => {
     await page.locator('#dominant-hand').selectOption('left');
     await enterWorld(page);
   });
+  await timePhase('optic-housing-pixel-property', () => opticHousingChecks(page));
   const clip = await page.locator('#view canvas').boundingBox();
   assert(clip, 'the loaded scene has a canvas');
   // Page clipping avoids the locator screenshot's extra layout-stability frames.

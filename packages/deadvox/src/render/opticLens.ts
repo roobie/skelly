@@ -12,6 +12,7 @@ import {
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { OpticLensFrame } from '../core/opticView.ts';
 import { opticFieldOfView, opticRendersWorld } from '../core/opticView.ts';
+import { OpticHousingMask } from './opticHousingMask.ts';
 import { OPTIC_BODY_LAYER, OPTICS_SPIKE_LAYER } from './opticsSpike.ts';
 import { PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
@@ -21,6 +22,8 @@ const OPTIC_LENS_SHADER = {
     tDiffuse: { value: null },
     uZoomTexture: { value: null },
     uZoomActive: { value: 0 },
+    uHousingTexture: { value: null },
+    uHousingActive: { value: 0 },
     uBorder: { value: 1 },
     uLensCenter: { value: new Vector2(0.5, 0.5) },
     uReticleCenter: { value: new Vector2(0.5, 0.5) },
@@ -42,6 +45,8 @@ void main() {
 uniform sampler2D tDiffuse;
 uniform sampler2D uZoomTexture;
 uniform float uZoomActive;
+uniform sampler2D uHousingTexture;
+uniform float uHousingActive;
 uniform float uBorder;
 uniform vec2 uLensCenter;
 uniform vec2 uReticleCenter;
@@ -82,11 +87,12 @@ void main() {
   vec2 local = (vUv - uLensCenter) / uLensRadius;
   vec2 profile = abs(local) / vec2(uLensShape.x, 1.0);
   float radius = pow(pow(profile.x, uLensShape.y) + pow(profile.y, uLensShape.y), 1.0 / uLensShape.y);
-  float aperture = 1.0 - smoothstep(0.96, 1.0, radius);
+  float housing = texture2D(uHousingTexture, vUv).r * uHousingActive;
+  float aperture = (1.0 - smoothstep(0.96, 1.0, radius)) * (1.0 - housing);
   vec3 lens = mix(source.rgb, texture2D(uZoomTexture, vUv).rgb, uZoomActive);
   vec3 color = mix(source.rgb, lens, aperture);
   float frame = smoothstep(0.96, 0.99, radius) * (1.0 - smoothstep(1.09, 1.13, radius));
-  color = mix(color, vec3(0.035, 0.04, 0.045), frame * uBorder);
+  color = mix(color, vec3(0.035, 0.04, 0.045), frame * uBorder * (1.0 - housing));
   color = reticle((vUv - uReticleCenter) / uLensRadius, color, aperture);
   gl_FragColor = vec4(color, source.a);
 }`,
@@ -95,6 +101,16 @@ void main() {
 export class OpticLensRenderer {
   private readonly zoomCamera = new PerspectiveCamera();
   private readonly target = new WebGLRenderTarget(1, 1, { type: HalfFloatType });
+  private readonly housing = new OpticHousingMask();
+  private housingPrepared = false;
+
+  get housingTexture() {
+    return this.housing.texture;
+  }
+
+  get housingActive(): boolean {
+    return this.housingPrepared;
+  }
 
   get texture() {
     return this.target.texture;
@@ -105,8 +121,12 @@ export class OpticLensRenderer {
     if (this.target.width !== pass.x || this.target.height !== pass.y) {
       this.target.setSize(pass.x, pass.y);
     }
+    this.housingPrepared = false;
     if (!opticRendersWorld(frame)) {
       return;
+    }
+    if (frame.excludeSelf) {
+      this.housingPrepared = this.housing.prepare(renderer, scene, camera);
     }
     const previous = renderer.getRenderTarget();
     this.zoomCamera.copy(camera);
@@ -129,6 +149,7 @@ export class OpticLensRenderer {
 
   dispose(): void {
     this.target.dispose();
+    this.housing.dispose();
   }
 }
 

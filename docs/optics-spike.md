@@ -6,6 +6,7 @@ read_if:
   - you change scope disc presentation or investigate a tube-to-disc gap
   - you change ADS-only housing visibility or reticle projection
   - you change which owner geometry appears inside unity or magnified optic images
+  - you change how a world disc or reticle respects opaque optic housing
   - you investigate a gap where a voxel optic body meets transparent glass
   - you test night-vision or worn-visor effects against the world presentation
 ---
@@ -57,6 +58,16 @@ mounted optic, including its body and glass, must not copy itself into the image
 The separate physical-player view stays excluded to avoid drawing a second gun.
 The mounted slot identifies the optic without content-ID branches; see
 `packages/deadvox/src/render/hands.ts`, `HeldItems.syncOpticLayers`.
+
+A nominal aperture is not permission to paint over physical hardware. The disc
+and reticle must yield to the actual opaque housing silhouette, even where the
+nominal opening overlaps it. Keeping that silhouette separate from the world
+image preserves both the housing and the mounted-optic self-exclusion. Glass
+must not occlude the replacement image or the mask would disable the window.
+The silhouette needs its own scene so it cannot consume a world-shadow update
+under a different camera. See `packages/deadvox/src/render/shadows.ts`, `Shadows.drawMaps`.
+See `packages/deadvox/src/render/opticHousingMask.ts`, `OpticHousingMask.prepare`;
+and `packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
 
 Above unity, the image remains world-only. A real scope focuses far away and its
 front post blurs out; copying the sharp close-eye gun into a magnified disc would

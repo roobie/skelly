@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import {
   BoxGeometry,
+  type Color,
   Group,
   Mesh,
   MeshBasicMaterial,
@@ -444,6 +445,17 @@ it.each(unityOpticTypes())(
             drawn.add(object);
           }
         });
+        if (!camera.layers.isEnabled(0)) {
+          const opaqueOptic = [...opticPieces].filter((piece) =>
+            (Array.isArray(piece.material) ? piece.material : [piece.material]).some(
+              (surface) => surface.visible && !surface.transparent,
+            ),
+          );
+          expect(new Set([...drawn].map((piece) => piece.geometry))).toEqual(
+            new Set(opaqueOptic.map((piece) => piece.geometry)),
+          );
+          return;
+        }
         for (const piece of gunPieces) {
           expect(drawn.has(piece)).toBe(true);
         }
@@ -456,10 +468,13 @@ it.each(unityOpticTypes())(
         getDrawingBufferSize: (out: Vector2) => out.set(8, 8),
         getRenderTarget: () => null,
         setRenderTarget: () => undefined,
+        getClearColor: (out: Color) => out.set(0),
+        getClearAlpha: () => 1,
+        setClearColor: () => undefined,
         render,
       } as unknown as WebGLRenderer;
       lens.prepare(renderer, scene, f.camera, frame!);
-      expect(render).toHaveBeenCalledOnce();
+      expect(render).toHaveBeenCalledTimes(2);
       for (const piece of opticPieces) {
         expect(f.camera.layers.test(piece.layers)).toBe(true);
       }
