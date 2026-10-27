@@ -140,7 +140,7 @@ export interface HandlingPresentationSource {
 }
 
 export type TimedActionPresentation = HandlingPresentationSource['jobs'][number] & {
-  readonly kind: 'forceDoor' | 'reading' | 'treatment' | 'vehicleWork';
+  readonly kind: 'craft' | 'forceDoor' | 'reading' | 'treatment' | 'vehicleWork';
   readonly ownerUid?: number;
   readonly stopped: boolean;
 };

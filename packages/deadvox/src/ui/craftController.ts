@@ -2,12 +2,11 @@
 
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import type { Session } from '../game/session.ts';
-import { renderCrafting, renderCraftStatus } from './crafting.ts';
-import { craftingText, craftRows, craftStatus } from './craftReadout.ts';
+import { renderCrafting } from './crafting.ts';
+import { craftingText, craftRows } from './craftReadout.ts';
 
 export const mountCraftPanel = (
   panel: HTMLElement,
-  statusRoot: HTMLElement,
   session: Session,
   controls: {
     notice: (text: string) => void;
@@ -36,12 +35,8 @@ export const mountCraftPanel = (
       preferences[id] = next;
     },
   };
-  const statusActions = {
-    continue: () => dispatch({ kind: 'craft.continue' }),
-    stop: () => dispatch({ kind: 'craft.stop' }),
-  };
   return {
-    update: (open: boolean, messagesVisible: boolean) => {
+    update: (open: boolean) => {
       panel.hidden = !open;
       if (open) {
         renderCrafting(
@@ -57,18 +52,6 @@ export const mountCraftPanel = (
           craftingText(session.inventory.registry),
         );
       }
-      // The inventory has its own Continue action; keep this fixed status box off its controls.
-      renderCraftStatus(
-        statusRoot,
-        open
-          ? undefined
-          : craftStatus(session.inventory, session.crafting.currentUid, session.sim.actions.job, {
-              reason: session.sim.compression.interruption,
-              messagesVisible,
-            }),
-        statusActions,
-        craftingText(session.inventory.registry),
-      );
     },
   };
 };

@@ -10,6 +10,7 @@ import { decimalText } from '../core/numberText.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
+import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>
   registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.crafting;
@@ -30,49 +31,20 @@ export const workName = (registry: Registry, item: Item): string => {
   const { name } = registry.items.get(recipe.result.item)!;
   return fillText(recipe.kind === 'repair' ? text.repairing : text.inProgress, { item: name });
 };
-export interface CraftStatus {
-  uid: number;
-  name: string;
-  progress: string;
-  percent: number;
-  stopped: boolean;
-  reason: string | undefined;
-}
-export const craftStatus = (
+/** A running craft is progress in the handling HUD; a paused one has none, so a dropped work item shows nothing. */
+export const runningCraftPresentation = (
   inventory: Inventory,
-  uid: number | undefined,
   job: Readonly<LongJob> | undefined,
-  interruption: { reason: string | undefined; messagesVisible: boolean },
-): CraftStatus | undefined => {
-  const item = uid === undefined ? undefined : inventory.itemByUid(uid);
-  if (!item) {
+): TimedActionPresentation | undefined => {
+  if (job?.jobType !== 'craft' || job.stopped) {
     return undefined;
   }
-  const { work: itemWork } = item;
-  if (!itemWork) {
+  const item = inventory.itemByUid(job.workUid);
+  if (!item?.work) {
     return undefined;
   }
-  const { elapsed, duration } = itemWork;
-  const work =
-    itemWork.kind === 'craft'
-      ? inventory.registry.recipes.get(itemWork.recipe)!.timeGameMinutes
-      : duration - itemWork.gather;
-  const gather = itemWork.kind === 'craft' ? duration - work : itemWork.gather;
-  const text = craftingText(inventory.registry);
-  return {
-    uid: item.uid,
-    name: workName(inventory.registry, item),
-    progress:
-      elapsed < gather
-        ? fillText(text.gathering, { done: craftTime(elapsed, text), total: craftTime(gather, text) })
-        : fillText(text.work, {
-            done: craftTime(Math.max(0, elapsed - gather), text),
-            total: craftTime(work, text),
-          }),
-    percent: Math.round((elapsed / duration) * 100),
-    stopped: job?.jobType !== 'craft' || job.stopped,
-    reason: interruption.messagesVisible ? interruption.reason : undefined,
-  };
+  // The work record already carries the elapsed and duration the presentation reads.
+  return { ...item.work, kind: 'craft', label: workName(inventory.registry, item), stopped: false };
 };
 export interface CraftRow {
   id: string;

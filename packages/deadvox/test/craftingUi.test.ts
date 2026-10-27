@@ -4,12 +4,9 @@ import { Character } from '../src/core/character.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
-import type { Session } from '../src/game/session.ts';
-import { craftingText, craftRows, craftStatus } from '../src/ui/craftReadout.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/craftReadout.ts';
+import { baseRegistry, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 const dom = new Window();
@@ -25,9 +22,8 @@ for (const key of [
 ] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
-const { DEFAULT_HUD_OPTIONS, hudVisibility } = await import('../src/ui/hudOptions.ts');
-const { renderCrafting, renderCraftStatus } = await import('../src/ui/crafting.ts');
-const { mountCraftPanel } = await import('../src/ui/craftController.ts');
+const { renderCrafting } = await import('../src/ui/crafting.ts');
+const { handlingViewModel, timedActionHandlingPresentation } = await import('../src/ui/hud.ts');
 afterAll(() => dom.happyDOM.abort());
 describe('crafting read-only presentation', () => {
   it('shows raw material counts, best usable quality and skill gap without granting unknown recipes', () => {
@@ -82,100 +78,30 @@ describe('crafting read-only presentation', () => {
     expect(button!.disabled).toBe(torch.reason !== undefined);
     expect(inventory.snapshotState()).toEqual(before);
   });
-  it('renders a live interruption reason only when messages are visible', () => {
-    const inventory = new Inventory(registry);
-    const item = inventory.create('work_in_progress');
-    item.work = { kind: 'craft', recipe: 'torch', elapsed: 0, duration: 120, components: [] };
-    inventory.add(item, { kind: 'hand', side: 'right' });
-    const sim = new Simulation({ seed: 1 });
-    const reason = 'fixture interruption reason';
-    expect(sim.compress().ok).toBe(true);
-    sim.frame(1);
-    sim.emit({ kind: 'interrupt', reason });
-    sim.frame(1 / 60);
-    expect(sim.compression.active).toBe(false);
-    expect(sim.compression.interruption).toBe(reason);
+  describe('craft progress in the handling HUD', () => {
+    const workItem = (where: 'hand' | 'pile') => {
+      const inventory = new Inventory(registry);
+      const item = inventory.create('work_in_progress');
+      item.work = { kind: 'craft', recipe: 'torch', elapsed: 30, duration: 120, components: [] };
+      inventory.add(item, where === 'hand' ? { kind: 'hand', side: 'right' } : { kind: 'pile', pos: [0, 0, 0] });
+      return { inventory, job: { jobType: 'craft' as const, workUid: item.uid, last: 0 } };
+    };
 
-    const job = { jobType: 'craft' as const, workUid: item.uid, stopped: true, last: sim.time };
-    const hidden = craftStatus(inventory, item.uid, job, {
-      reason: sim.compression.interruption,
-      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: false }).messages,
-    })!;
-    const visible = craftStatus(inventory, item.uid, job, {
-      reason: sim.compression.interruption,
-      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true }).messages,
-    })!;
-    const root = document.createElement('section');
-    const actions = { continue: vi.fn(), stop: vi.fn() };
-    renderCraftStatus(root, hidden, actions, craftingText(registry));
-    expect(root.textContent).not.toContain(reason);
-    renderCraftStatus(root, visible, actions, craftingText(registry));
-    expect(root.textContent).toContain(reason);
-  });
-
-  it('renders the rebound continue label and command callbacks without advancing stopped work', () => {
-    const inventory = new Inventory(registry);
-    const item = inventory.create('work_in_progress');
-    const recipeSeconds = registry.recipes.get('torch')!.timeGameMinutes;
-    item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
-    inventory.add(item, { kind: 'hand', side: 'right' });
-    const status = craftStatus(
-      inventory,
-      item.uid,
-      { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 },
-      { reason: undefined, messagesVisible: true },
-    )!;
-    expect(status.percent).toBe(Math.round((item.work!.elapsed / item.work!.duration) * 100));
-    const root = document.createElement('section');
-    const resume = vi.fn();
-    const stop = vi.fn();
-    expect(inputBindings.rebind('craft.continue', [{ code: 'KeyJ' }])).toBeUndefined();
-    try {
-      renderCraftStatus(root, status, { continue: resume, stop }, craftingText(registry));
-      expect(root.querySelector('button')?.textContent).toContain(labelForAction('craft.continue'));
-      expect(root.querySelector('button')?.textContent).not.toContain('Continue (C)');
-      (root.querySelector('button') as HTMLButtonElement).click();
-      expect(resume).toHaveBeenCalledOnce();
-    } finally {
-      inputBindings.reset();
-    }
-    const buttons = root.querySelectorAll('button');
-    expect(buttons).toHaveLength(2);
-    (buttons[1] as HTMLButtonElement).click();
-    expect(stop).toHaveBeenCalledOnce();
-    expect(Number(root.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow'))).toBe(status.percent);
-    expect(item.work!.elapsed).toBe(recipeSeconds);
-    renderCraftStatus(root, undefined, { continue: resume, stop }, craftingText(registry));
-    expect(root.hidden).toBe(true);
-  });
-  it('hides held-work status while inventory is open and restores it when closed', () => {
-    const inventory = new Inventory(registry);
-    const item = inventory.create('work_in_progress');
-    const recipeSeconds = registry.recipes.get('torch')!.timeGameMinutes;
-    item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
-    inventory.add(item, { kind: 'hand', side: 'right' });
-    const character = new Character(registry);
-    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })();
-    const session = {
-      inventory,
-      character,
-      reach: () => reach,
-      crafting: { currentUid: item.uid, startReason: () => undefined },
-      sim: {
-        actions: { job: { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 } },
-        compression: { interruption: undefined },
-      },
-    } as unknown as Session;
-    const panel = document.createElement('section');
-    const status = document.createElement('section');
-    const controller = mountCraftPanel(panel, status, session, {
-      notice: vi.fn(),
-      dispatch: vi.fn(() => undefined),
+    it('drives handling progress from the work item while the craft runs', () => {
+      const { inventory, job } = workItem('hand');
+      const action = runningCraftPresentation(inventory, { ...job, stopped: false });
+      expect(action).toBeDefined();
+      const { handling } = baseScreenText();
+      const model = handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+      expect(model.visible).toBe(true);
+      expect(model.percent).toBe(25);
     });
 
-    controller.update(true, false);
-    expect(status.hidden).toBe(true);
-    controller.update(false, false);
-    expect(status.hidden).toBe(false);
+    it('shows no progress for a paused craft, held or dropped', () => {
+      for (const where of ['hand', 'pile'] as const) {
+        const { inventory, job } = workItem(where);
+        expect(runningCraftPresentation(inventory, { ...job, stopped: true })).toBeUndefined();
+      }
+    });
   });
 });

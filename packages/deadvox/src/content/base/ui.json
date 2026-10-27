@@ -430,11 +430,9 @@
         },
         "crafting": {
           "cheapestAvailable": "Cheapest available",
-          "continue": "Continue ({key})",
           "craft": "Craft {item}",
           "disassembly": "{item} disassembly",
           "found": "{item}: {found} found / {needed} needed",
-          "gathering": "Gathering · {done} / {total}",
           "group": "{recipe} material group {group}",
           "heading": "Crafting",
           "headingFact": "Starting a recipe requires both hands free.",
@@ -450,10 +448,7 @@
           "secs": "{value} s",
           "skill": "{skill}: level {level} / needs {required}",
           "station": "Station: {station}",
-          "stop": "Stop ({key})",
-          "stopped": "Stopped",
-          "use": "Use {choice}",
-          "work": "Work · {done} / {total}"
+          "use": "Use {choice}"
         },
         "credits": {
           "back": "Back",

@@ -154,6 +154,34 @@ const setup = (
   return { sim, inventory, queue, survival, notices, hold, reach, player };
 };
 
+describe('a paused craft in the held-item list', () => {
+  const heldWork = (t: ReturnType<typeof setup>, where: 'hand' | 'pile') => {
+    const item = t.inventory.create('work_in_progress');
+    item.work = { kind: 'craft', recipe: 'torch', elapsed: 1, duration: 120, components: [] };
+    t.inventory.add(item, where === 'hand' ? { kind: 'hand', side: 'right' } : { kind: 'pile', pos: [0, 0, 0] });
+    return item;
+  };
+
+  it('offers continue for a held paused work item', () => {
+    const t = setup();
+    const item = heldWork(t, 'hand');
+    expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(true);
+    expect(t.survival.wieldedItemActionHint()).toBeDefined();
+  });
+
+  it('offers nothing for a dropped paused work item', () => {
+    const t = setup();
+    const item = heldWork(t, 'pile');
+    expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(false);
+  });
+
+  it('offers no continue for a held item that is not work in progress', () => {
+    const t = setup();
+    const item = t.hold('rag');
+    expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(false);
+  });
+});
+
 describe('using what you hold', () => {
   it('describes a reservoir lamp by its switch state, not a second battery balance', () => {
     const t = setup();
