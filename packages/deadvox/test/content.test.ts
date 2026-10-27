@@ -674,16 +674,19 @@ describe('content', () => {
   });
 
   it('rejects ammunition spread or firearm choke scale that is not authored', () => {
+    // Both fields are required by the file schema, so parsing the two edited files finds them without a registry build.
     const files = structuredClone(base) as {
       source: string;
       data: { items?: { ammo?: Record<string, unknown>; firearm?: Record<string, unknown> }[] };
     }[];
-    const items = files.flatMap(({ data }) => data.items ?? []);
-    const ammunition = items.find((item) => item.ammo !== undefined)!;
-    const firearm = items.find((item) => item.firearm !== undefined)!;
-    Reflect.deleteProperty(ammunition.ammo!, 'spreadDegrees');
-    Reflect.deleteProperty(firearm.firearm!, 'pelletSpreadScale');
-    const { issues } = buildRegistry(files);
+    const ammunitionFile = files.find(({ data }) => data.items?.some((item) => item.ammo !== undefined))!;
+    const firearmFile = files.find(({ data }) => data.items?.some((item) => item.firearm !== undefined))!;
+    Reflect.deleteProperty(ammunitionFile.data.items!.find((item) => item.ammo !== undefined)!.ammo!, 'spreadDegrees');
+    Reflect.deleteProperty(
+      firearmFile.data.items!.find((item) => item.firearm !== undefined)!.firearm!,
+      'pelletSpreadScale',
+    );
+    const issues = [...new Set([ammunitionFile, firearmFile])].flatMap(validateContent);
     expect(issues.some(({ path }) => path.endsWith('.ammo.spreadDegrees'))).toBe(true);
     expect(issues.some(({ path }) => path.endsWith('.firearm.pelletSpreadScale'))).toBe(true);
   });
@@ -2879,7 +2882,7 @@ describe('templates', () => {
         ],
       },
     };
-    expect(buildRegistry([...base, doors, t]).issues).toEqual([]);
+    expect(buildRegistry([...templateBase, doors, t]).issues).toEqual([]);
   });
 
   it('validates optional windows on template spawn markers', () => {
