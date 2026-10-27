@@ -4074,6 +4074,8 @@ const SenseSchema = strictObject({
   id: Id,
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
+  /** Real seconds the crouch key is held before it lies down instead of toggling crouch. */
+  crouchProneHoldRealSeconds: Positive,
   crouch: LoweredStanceSchema,
   /** Below crouch: the player lies down and crawls. */
   prone: LoweredStanceSchema,

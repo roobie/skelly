@@ -6,6 +6,7 @@
         "hearingRangeScale": 0.5,
         "sightRangeScale": 0.5
       },
+      "crouchProneHoldRealSeconds": 0.5,
       "footsteps": {
         "hardLandingMetres": 2.5,
         "joggingStepMetres": 1.2,
