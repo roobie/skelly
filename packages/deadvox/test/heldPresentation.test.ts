@@ -54,8 +54,13 @@ it('both views resolve registry item holds through one owner, including the mann
   const sources = [
     candidates.find((item) => item.model && !item.twoHanded && !item.firearm && !item.heldDisplay),
     candidates.find((item) => item.model && item.twoHanded && !item.firearm),
-    candidates.find((item) => item.firearm && base.models.get(item.model!)?.hands),
-    candidates.find((item) => item.firearm && !item.twoHanded && item.model),
+    candidates.find((item) => item.firearm && base.models.get(item.model!)?.hands?.butt),
+    candidates.find(
+      (item) => item.firearm && base.models.get(item.model!)?.hands && !base.models.get(item.model!)?.hands?.butt,
+    ),
+    candidates.find(
+      (item) => item.firearm && !item.twoHanded && item.model && !base.models.get(item.model)?.gun?.attachments?.length,
+    ),
     candidates.find((item) => item.heldDisplay && base.models.get(item.model!)?.display),
     candidates.find((item) => !item.model),
   ];
@@ -73,7 +78,13 @@ it('both views resolve registry item holds through one owner, including the mann
   figure.holds.guardPrimary.offset[1] *= 0.7;
   figure.holds.supportUpright[0] += figure.holds.oneHand[0] * 0.2;
   figure.holds.supportForward[0] += figure.holds.oneHand[0] * 0.2;
-  const registry = { ...base, items, figures: new Map([[figure.id, figure]]) };
+  const modelDefinitions = new Map(
+    [...base.models].map(([id, model]) => [
+      id,
+      model.gun ? { ...model, gun: { ...model.gun, attachments: [] } } : model,
+    ]),
+  );
+  const registry = { ...base, items, models: modelDefinitions, figures: new Map([[figure.id, figure]]) };
   const models = {
     version: 0,
     ...(await loadFigureModels(registry)),

@@ -3,12 +3,21 @@ import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type HeldFirearmTransform, heldFirearmTransform } from './heldPose.ts';
 import type { PlayerAdsPose, PlayerLookPose } from './playerLookPose.ts';
+import type { PlayerStance } from './playerStance.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import { add, axisRotation, dot, rotateVector, scale, sub } from './spatial.ts';
 
 export const adsLimits = (figure: FigureDef, model: ModelDef) => ({
   cameraOffsetMetres: model.hands?.ads?.cameraOffsetLimitMetres ?? figure.aimPose.ads.cameraOffsetLimitMetres,
   stockShoulderMetres: model.hands?.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
+});
+
+/** A gun's own roll wins in every stance; otherwise lying prone takes the figure's prone roll. */
+export const adsRollDegrees = (figure: FigureDef, model: ModelDef, stance: PlayerStance = 'standing') => ({
+  torso:
+    model.hands?.ads?.torsoRollDegrees ??
+    (stance === 'prone' ? figure.aimPose.ads.proneTorsoRollDegrees : figure.aimPose.ads.torsoRollDegrees),
+  head: model.hands?.ads?.headRollDegrees ?? figure.aimPose.ads.headRollDegrees,
 });
 
 export const nearestSightEyeOffset = (gun: HeldFirearmTransform): Vec3 | undefined => {
@@ -44,8 +53,10 @@ export const adsCameraEye = ({
     progress: 1,
     aimingDownSights: true,
     aimFrame: ads.aimFrame ?? NEUTRAL_AIM,
+    lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: pose.stockSeats[ads.side],
+    adsEyes: pose.eyes,
   });
   const offset: Vec3 = nearestSightEyeOffset(gun) ?? [0, 0, 0];
   const distanceMetres = Math.hypot(...offset);

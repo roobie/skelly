@@ -15,6 +15,7 @@ import type { Vec3 } from '../core/coords.ts';
 import {
   type HeldFirearmTransformInput,
   type HeldHoldFrame,
+  type HeldSeatFrame,
   heldFirearmTransform,
   heldGripOffset,
   heldHoldFrame,
@@ -24,7 +25,7 @@ import type { HandSide } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type HandPose, interpolateHandPose } from '../core/meleePose.ts';
 import type { ArmRigDef } from '../core/schema.ts';
-import { type ArmRig, buildArmRig, solveArmRig } from './armRig.ts';
+import { type ArmRig, type ArmSolution, buildArmRig, solveArmRig } from './armRig.ts';
 import { presentHeldDisplay } from './heldDisplay.ts';
 import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
@@ -33,6 +34,11 @@ import type { WornPresentation } from './playerFigure.ts';
 import { WornModels } from './wornModels.ts';
 
 const HOLD_STATES = { lowered: false, ready: true } as const;
+
+interface SolvedArmPose {
+  readonly solution: ArmSolution;
+  readonly grip: Vector3;
+}
 
 export interface HeldPresentationFrame {
   readonly readiness?: { readonly uid: number; readonly progress: number; readonly aimingDownSights: boolean };
@@ -68,6 +74,7 @@ export class HeldPresentation {
   readonly holds = new Map<HandSide, HeldHoldFrame>();
   readonly heldByHand = new Map<HandSide, Object3D>();
   readonly displayPalms = new Map<HandSide, Object3D>();
+  private readonly solvedArms = new Map<HandSide, SolvedArmPose>();
   private readonly wornFrames = new Map<string, Group>();
   private readonly baseParts = new Map<string, Object3D[]>();
   private readonly worn: WornModels | undefined;
@@ -82,6 +89,8 @@ export class HeldPresentation {
   /** Lying prone and aiming down sights; the support hand then holds `proneSupport` and elbows take the ground. */
   private proneAdsOn = false;
   private readonly supportBases = new Map<HandSide, { readonly normal: Vec3; readonly prone: Vec3 }>();
+  seatFrame: HeldSeatFrame | undefined;
+  adsEyes: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -131,6 +140,7 @@ export class HeldPresentation {
     this.holds.clear();
     this.heldByHand.clear();
     this.displayPalms.clear();
+    this.solvedArms.clear();
   }
 
   model(item: Item): ReturnType<ModelLibrary['heldLook']> {
@@ -148,6 +158,8 @@ export class HeldPresentation {
       ...input,
       holds: this.figure.holds,
       stockSeat: input.stockSeat ?? this.stockSeats?.[input.side],
+      seatFrame: input.seatFrame ?? this.seatFrame,
+      adsEyes: input.adsEyes ?? this.adsEyes,
     });
   }
 
@@ -307,9 +319,10 @@ export class HeldPresentation {
       mount: { held, origin: heldAt },
       ...(hold ? { hold: { ...hold, at: [0, 0, 0] } } : {}),
     });
-    if (model?.hands) {
+    const prone = model?.hands && heldProneSupportAt(model, side);
+    if (prone) {
       // The arm sits at the hold's offset from the held grip, so a closer hold is another offset on the same arm.
-      this.supportBases.set(other, { normal: offset, prone: heldProneSupportAt(model, side) });
+      this.supportBases.set(other, { normal: offset, prone });
       this.proneAds = this.proneAdsOn;
     }
   }
@@ -381,6 +394,33 @@ export class HeldPresentation {
     (mount?.held ?? this.torso).add(arm);
   }
 
+  copyPose(source: HeldPresentation): void {
+    const copy = (target: Object3D, origin: Object3D): void => {
+      target.position.copy(origin.position);
+      target.quaternion.copy(origin.quaternion);
+      target.scale.copy(origin.scale);
+    };
+    copy(this.torso, source.torso);
+    for (const [targets, origins] of [
+      [this.arms, source.arms],
+      [this.heldByHand, source.heldByHand],
+      [this.gripAnchors, source.gripAnchors],
+      [this.displayPalms, source.displayPalms],
+    ] as const) {
+      for (const [side, origin] of origins) {
+        const target = targets.get(side);
+        if (target) {
+          copy(target, origin);
+        }
+      }
+    }
+    this.solvedArms.clear();
+    this.frame.updateWorldMatrix(true, true);
+    for (const [side, pose] of source.solvedArms) {
+      this.placeSolved(side, pose);
+    }
+  }
+
   solve(side: HandSide, shoulder: Vector3, gripFrame?: Object3D): void {
     const rig = this.armRigs.get(side);
     const arm = this.arms.get(side);
@@ -401,16 +441,28 @@ export class HeldPresentation {
     const back = new Vector3().crossVectors(right, up);
     const down = Math.max(0, up.z);
     const pole = this.proneAdsOn ? this.figure.armRig.proneAdsElbowPole : this.figure.armRig.elbowPole;
-    const [outward, vertical, backward] = pole.up.map(
-      (value, axis) => value + (pole.down[axis]! - value) * down,
-    ) as Vec3;
+    // A gun's own authored bend side wins over the figure's pole in every stance.
+    const authored = this.holds.get(side)?.elbowBendSide;
+    const [outward, vertical, backward] =
+      authored ?? (pole.up.map((value, axis) => value + (pole.down[axis]! - value) * down) as Vec3);
     const bendSide = right
-      .multiplyScalar((side === 'right' ? 1 : -1) * outward)
+      .multiplyScalar(authored ? outward : (side === 'right' ? 1 : -1) * outward)
       .addScaledVector(up, vertical)
       .addScaledVector(back, backward);
     const minimum = this.figure.armRig.minimumBendDegrees;
     const minimumBendDegrees = minimum.up + (minimum.down - minimum.up) * down;
     const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up, minimumBendDegrees });
+    this.placeSolved(side, { solution: solved, grip });
+  }
+
+  private placeSolved(side: HandSide, { solution: solved, grip }: SolvedArmPose): void {
+    const rig = this.armRigs.get(side);
+    const arm = this.arms.get(side);
+    if (!(rig && arm)) {
+      return;
+    }
+    this.solvedArms.set(side, { solution: solved, grip });
+    const rotation = this.frame.getWorldQuaternion(new Quaternion());
     const toArm = arm.getWorldQuaternion(new Quaternion()).invert().multiply(rotation);
     const place = (pivot: Object3D, at: Vector3, turn: Quaternion): void => {
       pivot.position.copy(arm.worldToLocal(this.frame.localToWorld(at.clone())));

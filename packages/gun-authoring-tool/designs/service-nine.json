@@ -1,0 +1,70 @@
+{
+  "assembly": {
+    "connections": [
+      {
+        "from": "frame.slide",
+        "to": "slide.frame"
+      },
+      {
+        "from": "slide.barrel",
+        "to": "barrel.rear"
+      },
+      {
+        "from": "frame.barrel",
+        "to": "barrel.frame"
+      },
+      {
+        "from": "frame.magazine",
+        "to": "magazine.top"
+      },
+      {
+        "from": "slide.rail",
+        "slot": 1,
+        "to": "sight.base"
+      }
+    ],
+    "description": "Polymer-frame striker-fired 9×19 mm service pistol.",
+    "name": "service-nine",
+    "parts": {
+      "barrel": {
+        "item": "barrel_pistol"
+      },
+      "frame": {
+        "item": "pistol_frame"
+      },
+      "magazine": {
+        "family": "magazine",
+        "params": {
+          "length": "S",
+          "profile": "pistol"
+        },
+        "prefab": {
+          "id": "pistol-9",
+          "version": 1
+        }
+      },
+      "sight": {
+        "family": "sight",
+        "params": {
+          "type": "mini-reflex"
+        }
+      },
+      "slide": {
+        "item": "pistol_slide"
+      }
+    },
+    "root": "frame"
+  },
+  "calibre": "9x19",
+  "finish": {
+    "furniture": "polymer-black",
+    "metal": "steel-blued"
+  },
+  "format": 1,
+  "locks": {
+    "optionalParts": [],
+    "params": {}
+  },
+  "status": "published",
+  "template": "pistol"
+}

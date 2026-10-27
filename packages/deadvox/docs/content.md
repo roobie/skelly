@@ -62,7 +62,7 @@ can override earlier definitions; disabled files are not admitted packs. Continu
 refuses missing, changed, additional or reordered packs rather than resuming a world
 under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
 `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
-This pack-list identity holds until d433 replaces it with identity from the evaluated
+The pack-list identity is the rule until #1395 moves identity to the evaluated
 content, as `docs/decisions/0008-deterministic-world.md`, "Decision" rules.
 Preserved-save notices name pack differences with the mod's own id, without its
 internal browser namespace. Raw decoder diagnostics do not belong in that notice:
@@ -147,6 +147,8 @@ it without touching the same lines. See `src/content/base/ui-core-text.libsonnet
   simulation takes the registry so its long actions can word theirs, and it words the
   death cause that the body and needs report as a key. See `src/core/body.ts`,
   `Body.actionRefusal` and `Body.advance`, and `src/core/sim.ts`, `SimOptions`.
+  A zombie type words its own cause, article included, because only the phrase knows
+  its article. See `src/core/schema.ts`, `ZombieSchema`.
 
 Internal invariant reasons that only a code defect can produce, such as a missing action
 owner, stay in code: no player meets them, and content would only hide the defect. So do

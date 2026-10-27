@@ -8,6 +8,7 @@ import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
+import { firearmSlotIds } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { swapBattery } from '../src/core/lights.ts';
@@ -41,6 +42,12 @@ import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
+
+/** Matches text filled from a content template, each placeholder replaced by its pattern. */
+const templatePattern = (template: string, placeholders: Readonly<Record<string, string>>): RegExp =>
+  new RegExp(
+    `^${template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\{(\w+)\\\}/g, (_, name: string) => placeholders[name] ?? '')}$`,
+  );
 
 const dom = new Window();
 for (const key of [
@@ -1059,6 +1066,38 @@ describe('inventory screen Lit rendering', () => {
       const occupiedRow = rows.find((row) => row!.dataset.occupied === 'true')!;
       occupiedRow.querySelector('button')!.click();
       expect(lastPayload()).toMatchObject({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid });
+    }
+  });
+
+  it('names every firearm slot from its mount kind in content, never by its raw id', () => {
+    const { screen, inv, root, beans } = setup();
+    inv.consume(beans);
+    const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+    const rowPattern = templatePattern(screenText.inventory.slot, { slot: '(.+)', item: '.*' });
+    const firearms = [...registry.items.values()].filter(
+      (def) => def.firearm && def.model && registry.models.get(def.model)?.gun?.attachmentSlots?.length,
+    );
+    expect(firearms.length).toBeGreaterThan(0);
+    for (const def of firearms) {
+      const firearm = inv.create(def.id);
+      if (!inv.add(firearm, { kind: 'pile', pos: [0, 0, 0] })) {
+        throw new Error(`Fixture could not place ${def.id}`);
+      }
+      screen.selected = firearm;
+      screen.update();
+      const mounts = new Map(registry.models.get(def.model!)!.gun!.attachmentSlots!.map((slot) => [slot.id, slot]));
+      const labels = firearmSlotIds(registry, def).map((id) => {
+        const row = root.querySelector(`[data-attachment-slot="${id}"] span`)?.textContent ?? '';
+        const label = rowPattern.exec(row)?.[1];
+        expect(label, `${def.id} ${id}`).toBeDefined();
+        expect(label, `${def.id} ${id}`).not.toContain(id);
+        const template = screenText.attachmentSlot?.[mounts.get(id)?.mount ?? (id as 'sling' | 'light-mount')];
+        expect(template, `${def.id} ${id}`).toBeDefined();
+        expect(label).toMatch(templatePattern(template!, { number: '\\d+' }));
+        return label;
+      });
+      expect(new Set(labels).size, def.id).toBe(labels.length);
+      inv.consume(firearm);
     }
   });
 

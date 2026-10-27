@@ -19,6 +19,8 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { heldAdsStandoffMetres, heldTorsoForwardDegrees } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
@@ -29,7 +31,7 @@ import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './act
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import { firstPersonShoulder } from './playerFigure.ts';
+import { firstPersonShoulder, heldBodyShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
 export type { HeldFirearmPose, HeldHandlingFrame } from './actorAnimator.ts';
@@ -116,7 +118,7 @@ export class HeldItems {
     main: PerspectiveCamera,
     pose?: MeleePoseFrame,
     recoil = 0,
-    handling: HeldHandlingFrame = { firearms: [] },
+    handling: HeldHandlingFrame & { poseSource?: HeldPresentation | undefined } = { firearms: [] },
   ): void {
     const version = `${this.inventory.version}:${this.models?.version ?? 0}`;
     if (version !== this.drawn) {
@@ -127,6 +129,7 @@ export class HeldItems {
     this.opticViewFrame = undefined;
     this.presentation.stockSeats = handling.stockSeats;
     this.presentation.proneAds = handling.proneAds ?? false;
+    this.presentation.adsEyes = handling.adsEyes;
     this.view.position.copy(main.position);
     if (handling.sourceEyeMetres) {
       this.view.position.set(...handling.sourceEyeMetres);
@@ -138,6 +141,7 @@ export class HeldItems {
         pose,
         recoil,
         handling,
+        poseSource: handling.poseSource,
         viewPlacement: {
           poseItem: (frame) => this.poseOptic(frame, main),
         },
@@ -162,7 +166,7 @@ export class HeldItems {
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
     if (heldModel) {
-      heldModel.visible = !active;
+      heldModel.visible = !active || modelDefinition?.hands?.adsStandoffByPitch !== undefined;
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     if (
@@ -177,7 +181,11 @@ export class HeldItems {
     ) {
       return;
     }
-    const distance = modelDefinition!.gun!.sight!.eyeReliefMetres;
+    const distance =
+      modelDefinition?.hands?.adsViewEyeReliefMetres ??
+      (modelDefinition?.hands?.adsStandoffByPitch
+        ? heldAdsStandoffMetres(modelDefinition, main.rotation.x)
+        : modelDefinition!.gun!.sight!.eyeReliefMetres);
     const innerRadius = diameter / 2;
     const outerRadius = innerRadius * 1.12;
     const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
@@ -233,7 +241,14 @@ export class HeldItems {
   }
 
   viewShoulder(side: HandSide): Vector3 {
-    return new Vector3(...firstPersonShoulder(this.figure, side));
+    const lean = heldTorsoForwardDegrees(this.inventory);
+    const shoulder = lean
+      ? heldBodyShoulder(this.figure, this.inventory.registry.models, side, {
+          eyeMetres: this.inventory.registry.player.get(CORE_CONTENT_IDS.player)!.eye,
+          leanDegrees: lean,
+        })
+      : firstPersonShoulder(this.figure, side);
+    return new Vector3(...shoulder);
   }
 
   private shownModelOf(item: Item): Object3D | undefined {

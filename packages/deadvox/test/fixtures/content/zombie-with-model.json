@@ -3,6 +3,7 @@
     {
       "id": "modelled_zombie",
       "name": "Modelled zombie",
+      "cause": "a modelled zombie",
       "spawnWeight": 1,
       "sounds": {
         "idle": "shambler_idle",

@@ -50,6 +50,7 @@
       "mobActors": {
         "maxCorpses": 16
       },
+      "modelLoadConcurrency": 8,
       "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {

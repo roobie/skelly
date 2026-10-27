@@ -7,7 +7,13 @@ import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOff
 import { firearmAimHandPose } from '../core/firearmAimPose.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
 import type { Job } from '../core/handling.ts';
-import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
+import {
+  heldAnchorOffset,
+  heldLoweredPitch,
+  modelToView,
+  readyFirearmPose,
+  throwStanceHandOffset,
+} from '../core/heldPose.ts';
 import { type HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -84,6 +90,7 @@ export interface HeldHandlingFrame extends HeldPresentationFrame {
   readonly sourceEyeMetres?: Vec3;
   readonly stockSeats?: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly proneAds?: boolean | undefined;
+  readonly adsEyes?: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
   readonly throwing?: { readonly chargeProgress: number };
@@ -112,7 +119,7 @@ export const createHeldAnimation = () => {
 export interface ActorEyeFrame {
   readonly position: Vector3;
   readonly quaternion: Quaternion;
-  readonly rotation: { readonly y: number };
+  readonly rotation: { readonly x?: number; readonly y: number };
 }
 
 export interface ActorViewPlacement {
@@ -236,12 +243,14 @@ export class ActorAnimator {
       handling = { firearms: [] },
       viewPlacement,
       emptyFists = this.emptyFists,
+      poseSource,
     }: {
       emptyFists?: boolean;
       pose?: MeleePoseFrame | undefined;
       recoil?: number;
       handling?: HeldHandlingFrame;
       viewPlacement?: ActorViewPlacement;
+      poseSource?: HeldPresentation | undefined;
     } = {},
   ): void {
     this.viewPlacement = viewPlacement;
@@ -303,13 +312,19 @@ export class ActorAnimator {
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
-    this.poseArms(firearmPoses);
+    if (poseSource) {
+      this.presentation.copyPose(poseSource);
+    }
+    this.poseArms(firearmPoses, poseSource);
     this.view.updateMatrixWorld(true);
   }
 
   /** Bends each arm to its grip point, with the hand frame its hold gives it, after every mover has placed the arm. */
-  private poseArms(firearmPoses: readonly HeldFirearmPose[]): void {
+  private poseArms(firearmPoses: readonly HeldFirearmPose[], poseSource?: HeldPresentation): void {
     for (const [side, arm] of this.arms) {
+      if (poseSource?.armRigs.has(side)) {
+        continue;
+      }
       const revolver = this.revolverGripFrame(side, firearmPoses);
       const displayPalm = revolver ? undefined : this.displayPalms.get(side);
       // A hand off its hold (working the action, loading) grips where its arm was moved to, not at the hold.
@@ -398,6 +413,7 @@ export class ActorAnimator {
     const itemDefinition = item && defOf(this.inventory.registry, item.type);
     this.poseHeldItem({
       side,
+      lookPitchRadians: main.rotation.x ?? 0,
       recoil,
       handling,
       leadingSide,
@@ -411,6 +427,7 @@ export class ActorAnimator {
 
   private poseHeldItem({
     side,
+    lookPitchRadians,
     recoil,
     handling,
     leadingSide,
@@ -421,6 +438,7 @@ export class ActorAnimator {
     itemDefinition,
   }: {
     side: HandSide;
+    lookPitchRadians: number;
     recoil: number;
     handling: HeldHandlingFrame;
     leadingSide: HandSide;
@@ -432,6 +450,7 @@ export class ActorAnimator {
   }): void {
     const presentation = this.heldFirearmPresentation({
       side,
+      lookPitchRadians,
       handling,
       leadingSide,
       readyAmount,
@@ -450,7 +469,9 @@ export class ActorAnimator {
       this.poseRotation.setFromRotationMatrix(this.poseMatrix);
     }
     const [turnPitch, turnYaw, turnRoll] = handlingTurn;
-    const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
+    const loweredPitch = itemDefinition?.firearm
+      ? heldLoweredPitch(modelDefinition, firearmReadiness, loweredPitchRadians)
+      : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
     if (!firearmPose) {
       this.poseAim(item, readyAim);
@@ -488,6 +509,7 @@ export class ActorAnimator {
 
   private heldFirearmPresentation({
     side,
+    lookPitchRadians,
     handling,
     leadingSide,
     readyAmount,
@@ -496,6 +518,7 @@ export class ActorAnimator {
     itemDefinition,
   }: {
     side: HandSide;
+    lookPitchRadians: number;
     handling: HeldHandlingFrame;
     leadingSide: HandSide;
     readyAmount: number;
@@ -521,6 +544,7 @@ export class ActorAnimator {
             progress: firearmReadiness,
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
+            lookPitchRadians,
             loweredPitchRadians,
           }
         : undefined;
@@ -755,6 +779,9 @@ export class ActorAnimator {
       return undefined;
     }
     held.updateMatrixWorld(true);
+    if (handle.handGrip) {
+      return { point: parent.localToWorld(handle.handGrip.clone().addScaledVector(handle.travel, stroke)), reach };
+    }
     const middle = new Box3().setFromObject(handle.node).getCenter(new Vector3());
     const now = parent.localToWorld(handle.node.position.clone());
     const gripped = parent.localToWorld(handle.rest.clone().addScaledVector(handle.travel, stroke));

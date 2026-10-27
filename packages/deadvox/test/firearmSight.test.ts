@@ -51,7 +51,7 @@ it('bounds ADS neck length and joint turns for every sighted long gun and legal 
 
 it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
   const figure = baseRegistry.figures.get('player')!;
-  const cases = adsCases();
+  const cases = adsCases().filter(({ model }) => model.hands?.butt);
   expect(cases.some(({ model }) => model.gun?.sight?.kind === 'iron')).toBe(true);
   expect(cases.some(({ model }) => model.gun?.sight?.kind === 'optic')).toBe(true);
   for (const { model, stance, pitch, side, aimFrame } of cases) {
@@ -65,6 +65,7 @@ it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
       progress: 1,
       aimingDownSights: true,
       aimFrame,
+      lookPitchRadians: pitch,
       loweredPitchRadians: 0,
       stockSeat: body.stockSeats[side],
     });
@@ -106,8 +107,10 @@ const cameraCase = ({ model, stance, pitch, side, aimFrame }: ReturnType<typeof 
     progress: 1,
     aimingDownSights: true,
     aimFrame,
+    lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: body.stockSeats[side],
+    adsEyes: body.eyes,
   });
   const offset = new Vector3(...camera.eye).sub(new Vector3(...body.eye)).applyAxisAngle(new Vector3(1, 0, 0), -pitch);
   return { camera, gun, offset, label: `${model.id} ${stance} ${pitch} ${side} aim ${aimFrame.yaw},${aimFrame.pitch}` };
@@ -171,7 +174,8 @@ it('fits ADS inside the authored camera-to-body-eye offset budget', () => {
 
 it('twists the prone ADS torso the opposite way to a standing one, as a shooter lying along the ground does', () => {
   const figure = baseRegistry.figures.get('player')!;
-  const { model } = adsCases()[0]!;
+  // A free-held gun overrides the roll with its own, so the figure's prone roll is read off a stocked long gun.
+  const { model } = adsCases().find(({ model: gun }) => gun.hands?.proneSupport)!;
   const yawOf = (stance: 'standing' | 'prone', side: 'right' | 'left') => {
     const { spineRotation } = playerLookPose({
       figure,

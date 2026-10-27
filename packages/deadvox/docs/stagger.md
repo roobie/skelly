@@ -30,4 +30,4 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 ## Which types stagger
 
-A type without `stagger` content never staggers. Types that inherit from the shambler stagger like it. The brute does not stagger: how it answers heavy hits belongs to the tier-2 brute (d590), which also owns its knockback.
+A type without `stagger` content never staggers. Types that inherit from the shambler stagger like it. The brute does not stagger: how it answers heavy hits belongs to the tier-2 brute, which also owns its knockback; see `packages/deadvox/EPIC.md`, "5. Holding ground".

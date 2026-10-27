@@ -1333,6 +1333,8 @@ try {
           (message) => {
             throw new Error(message);
           },
+          undefined,
+          ids.size,
         );
         screen.hooks.pictures = new ItemPictures(registry, models, 1);
       },

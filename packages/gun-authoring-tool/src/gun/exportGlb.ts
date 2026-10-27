@@ -14,7 +14,7 @@ import type {
 import { partNodeName, partVoxelGrain } from '@skelly/thing-export/glb.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
-import { resolveGunAction } from './actionDescription.ts';
+import { type ResolvedGunAction, resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
 import {
@@ -40,6 +40,7 @@ import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { BUILT_IN_FRONT_POST } from './parts.ts';
 import { gunModelParts, type PartItems, PartMassError } from './physical.ts';
+import pistolAction from './pistolAction.json' with { type: 'json' };
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { ironGunEyeRange } from './sightView.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -53,6 +54,7 @@ interface ActionPartMetadata {
   readonly axis: Vec3;
   /** Carrier stroke length in metres. */
   readonly strokeMetres: number;
+  readonly handGrip?: Vec3;
   /** Shared timelines this node follows; other modes leave it at home. */
   readonly modes: readonly CycleMode[];
   readonly turn?: { readonly pivot: Vec3; readonly axis: Vec3; readonly angleRadians: number };
@@ -77,6 +79,7 @@ interface GunActionMetadata {
   readonly ejectDirection: Vec3;
   readonly holdOpen: boolean;
   readonly roundsPerSimMinute?: number;
+  readonly triggerMode?: 'semi' | 'auto';
 }
 
 export interface DeadvoxModelEntry extends NeutralModel {
@@ -184,6 +187,11 @@ const cycleMetadata = (cycle: CycleTimeline): CycleMetadata => ({
   ...(cycle.lockSeconds === undefined ? {} : { lockSimSeconds: cycle.lockSeconds }),
 });
 
+const handGripMetadata = (part: ResolvedGunAction['carrier'], metresPerUnit: number): { handGrip?: Vec3 } => {
+  const grip = part.def.axes.find((axis) => axis.kind === 'rack-grip');
+  return grip ? { handGrip: modelPoint(applyPoint(part.placed, grip.origin), metresPerUnit) } : {};
+};
+
 const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
   const description = resolveGunAction(resolved);
   const cycle = description?.cycle;
@@ -198,6 +206,7 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
         axis: toFileAxes(part.axis),
         strokeMetres: round6(length(part.travel) * resolved.domain.units.metresPerUnit),
         modes: part.modes,
+        ...handGripMetadata(part, resolved.domain.units.metresPerUnit),
         // A turn without unlock and lock phases, such as the SMG handle's notch, is a held state, not a cycle step.
         ...(part.def.motion?.turn &&
         part.modes.every((mode) => cycle[mode]?.unlockSeconds !== undefined && cycle[mode]?.lockSeconds !== undefined)
@@ -219,6 +228,7 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
     ejection: description.ejection,
     action: {
       parts,
+      ...(description.kind === 'slide' ? { triggerMode: pistolAction.triggerMode as 'semi' } : {}),
       ...(cycle.fire ? { fire: cycleMetadata(cycle.fire) } : {}),
       hand: cycleMetadata(cycle.hand),
       ejectAt: cycle.ejectAt,
@@ -356,15 +366,20 @@ interface GlbSightJson {
 type Column = Readonly<Partial<Record<0 | 1 | 2, readonly [number, number]>>>;
 
 /**
- * The model-file triangles drawn by the part `partId`, or by every unrotated part without one, as a turned part draws no
+ * The model-file triangles drawn by the part `partId`, or by every unrotated part of a set, as a turned part draws no
  * faces square to the axes.
  */
-function* drawnTriangles(glb: Uint8Array, partId?: string): Generator<readonly [Vec3, Vec3, Vec3]> {
+function* drawnTriangles(
+  glb: Uint8Array,
+  partId: string | ReadonlySet<string>,
+): Generator<readonly [Vec3, Vec3, Vec3]> {
   const view = new DataView(glb.buffer, glb.byteOffset, glb.byteLength);
   const jsonLength = view.getUint32(12, true);
   const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + jsonLength))) as GlbSightJson;
-  const nodes = json.nodes.filter((node) =>
-    partId === undefined ? node.rotation === undefined : node.extras?.part === partId,
+  const nodes = json.nodes.filter(({ rotation, extras }) =>
+    typeof partId === 'string'
+      ? extras?.part === partId
+      : rotation === undefined && extras?.part !== undefined && partId.has(extras.part),
   );
   if (nodes.some(({ rotation }) => rotation !== undefined)) {
     throw new Error(`Sight part ${partId} needs an unrotated mesh to give its drawn top`);
@@ -394,7 +409,7 @@ function* drawnTriangles(glb: Uint8Array, partId?: string): Generator<readonly [
  * the guard ears beside it. A column range on `axis` itself bounds where the face may lie, which keeps a post's top
  * from being read off a hood ring over it.
  */
-const drawnFaceMetres = (glb: Uint8Array, axis: 0 | 1 | 2, column: Column = {}, partId?: string) => {
+const drawnFaceMetres = (glb: Uint8Array, axis: 0 | 1 | 2, column: Column, partId: string | ReadonlySet<string>) => {
   const [u, v] = (
     [
       [1, 2],
@@ -428,7 +443,7 @@ interface VoxelFile {
   readonly grains: VoxelGrains;
 }
 
-const drawnTopOrThrow = (file: VoxelFile, partId: string, column?: Column): number => {
+const drawnTopOrThrow = (file: VoxelFile, partId: string, column: Column = {}): number => {
   const top = drawnFaceMetres(file.glb, 1, column, partId);
   if (top === undefined) {
     throw new Error(`Sight part ${partId} draws no top to aim along`);
@@ -630,15 +645,16 @@ const MUZZLE_COLUMN_METRES = 0.012;
 
 /**
  * The muzzle on the front face the voxelized file draws around the bore axis, because the drawn barrel ends up to a
- * voxel off the smooth tip. Every gun file runs its barrel along +x.
+ * voxel off the smooth tip. Only host parts count: a fitted device comes off in play, so the shot leaves the barrel.
+ * Every gun file runs its barrel along +x.
  */
-const drawnMuzzle = (file: VoxelFile, muzzle: Vec3): Vec3 => {
+const drawnMuzzle = (file: VoxelFile, hostParts: ReadonlySet<string>, muzzle: Vec3): Vec3 => {
   const [, y, z] = muzzle;
   const column = {
     1: [y - MUZZLE_COLUMN_METRES, y + MUZZLE_COLUMN_METRES],
     2: [z - MUZZLE_COLUMN_METRES, z + MUZZLE_COLUMN_METRES],
   } as const;
-  const front = drawnFaceMetres(file.glb, 0, column);
+  const front = drawnFaceMetres(file.glb, 0, column, hostParts);
   if (front === undefined) {
     throw new Error('The voxelized gun draws no muzzle face around its bore axis');
   }
@@ -675,13 +691,13 @@ const voxelFileOf = (
 const drawnAnchors = (
   anchors: GunDeadvoxModelEntry['anchors'],
   file: VoxelFile | undefined,
-  supportPart: string | undefined,
+  { supportPart, hostParts }: { readonly supportPart: string | undefined; readonly hostParts: ReadonlySet<string> },
 ) =>
   file && anchors
     ? {
         anchors: {
           ...anchors,
-          ...(anchors.muzzle ? { muzzle: drawnMuzzle(file, anchors.muzzle) } : {}),
+          ...(anchors.muzzle ? { muzzle: drawnMuzzle(file, hostParts, anchors.muzzle) } : {}),
           ...(anchors.support && supportPart ? { support: drawnSupport(file, supportPart, anchors.support) } : {}),
         },
       }
@@ -800,13 +816,20 @@ const integralCapacity = (resolved: Resolved, cartridge: Cartridge | undefined):
 const boltMetadataIssue = (assembly: Assembly, cartridge: Cartridge | undefined): string | undefined =>
   cartridge && isBoltAssembly(assembly) ? boltCalibreIssue(cartridge.id) : undefined;
 
+/** The part ids the gun body keeps: every part but the fitted attachments and magazine, which come off in play. */
+const hostPartIds = (resolved: Resolved, replaceableNodes: ReadonlySet<string>): ReadonlySet<string> =>
+  new Set(
+    [...resolved.defs.keys()].filter((id) => {
+      const family = resolved.assembly.parts[id]?.family;
+      return family !== undefined && !replaceableNodes.has(partNodeName(id, family));
+    }),
+  );
+
 const bodyPhysicalData = (
   resolved: Resolved,
-  fitted: readonly { readonly node: string }[],
-  magazine: { readonly node: string } | undefined,
+  replaceableNodes: ReadonlySet<string>,
   { drawn, items }: { readonly drawn: DrawnGeometry; readonly items: PartItems },
 ) => {
-  const replaceableNodes = new Set([...fitted.map(({ node }) => node), ...(magazine ? [magazine.node] : [])]);
   try {
     return { ok: true as const, parts: gunModelParts(resolved, replaceableNodes, { items, drawn }) };
   } catch (error) {
@@ -881,7 +904,11 @@ export const exportGunGlb = (
   const fittedAttachments = attachmentData(resolved);
   const magazine = magazineSlotData(resolved);
   const drawn = drawnGeometry(resolved, voxelGrainsOf({ voxelGrain, voxelDetailGrain }));
-  const physical = bodyPhysicalData(resolved, fittedAttachments, magazine, { drawn, items });
+  const replaceableNodes = new Set([
+    ...fittedAttachments.map(({ node }) => node),
+    ...(magazine ? [magazine.node] : []),
+  ]);
+  const physical = bodyPhysicalData(resolved, replaceableNodes, { drawn, items });
   if (!physical.ok) {
     return physical;
   }
@@ -912,7 +939,10 @@ export const exportGunGlb = (
     ...result,
     modelEntry: {
       ...modelEntry,
-      ...drawnAnchors(modelEntry.anchors, voxelFile, anchors.supportPart),
+      ...drawnAnchors(modelEntry.anchors, voxelFile, {
+        supportPart: anchors.supportPart,
+        hostParts: hostPartIds(resolved, replaceableNodes),
+      }),
       gun: {
         ...modelEntry.gun,
         ...(revolver ? { revolver } : {}),

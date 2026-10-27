@@ -12,6 +12,7 @@
     foodPoisoning: 'food poisoning',
     grenade: 'a grenade',
     bearTrap: 'a bear trap',
+    zombie: 'a zombie',
   },
   play: {
     restRefused: "Can't rest: {reason}",

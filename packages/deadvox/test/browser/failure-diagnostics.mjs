@@ -205,9 +205,9 @@ export async function observeFailures(context, browser, child) {
               indexedDbDatabases: databases,
               saveNamespaces: namespaces,
               storageEstimate: estimate,
-              generationBeforeReload: sessionStorage.getItem('d144-generation-before-reload'),
-              d144Pagehide: sessionStorage.getItem('d144-pagehide'),
-              d144WriterTrigger: sessionStorage.getItem('d144-writer-trigger'),
+              generationBeforeReload: sessionStorage.getItem('lifecycle-generation-before-reload'),
+              lifecyclePagehide: sessionStorage.getItem('lifecycle-pagehide'),
+              lifecycleWriterTrigger: sessionStorage.getItem('lifecycle-writer-trigger'),
             };
           })
           .catch((failure) => ({ evaluationError: String(failure) })),

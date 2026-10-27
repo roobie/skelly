@@ -19,6 +19,7 @@ local content = {
       "id": "shambler",
       "strength": 5,
       "name": "Shambler",
+      "cause": "a shambler",
       "model": "shambler",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
@@ -148,6 +149,7 @@ local content = {
       "idleSound": $.zombies[0].idleSound,
       "strength": 5,
       "name": "Soldier",
+      "cause": "a soldier",
       "model": "shambler",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
@@ -272,24 +274,28 @@ local content = {
     $.zombies[0] + {
       "id": "farmer_shambler",
       "name": "Farmer",
+      "cause": "a farmer",
       "authoredOnly": true,
       "loot": "farmer_pockets"
     },
     $.zombies[0] + {
       "id": "worker_shambler",
       "name": "Site worker",
+      "cause": "a site worker",
       "authoredOnly": true,
       "loot": "worker_pockets"
     },
     $.zombies[0] + {
       "id": "medic_shambler",
       "name": "Medic",
+      "cause": "a medic",
       "authoredOnly": true,
       "loot": "medic_pockets"
     },
     $.zombies[0] + {
       "id": "brute_shambler",
       "name": "Brute",
+      "cause": "a brute",
       "model": "brute",
       "authoredOnly": true,
       // How the brute answers heavy hits belongs to the tier-2 brute (`docs/stagger.md`, "Which types stagger").
@@ -346,6 +352,7 @@ local content = {
       "idleSound": $.zombies[0].idleSound,
       "strength": 4,
       "name": "Runner",
+      "cause": "a runner",
       "model": "runner",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
@@ -454,6 +461,7 @@ local content = {
       "idleSound": $.zombies[0].idleSound,
       "strength": 3,
       "name": "Crawler",
+      "cause": "a crawler",
       "model": "shambler",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
@@ -545,6 +553,7 @@ local content = {
       "idleSound": $.zombies[0].idleSound,
       "strength": 0,
       "name": "Amalgam",
+      "cause": "an amalgam",
       "model": "amalgam",
       "canJumpObstacles": false,
       "locomotion": "omnidirectional",
@@ -652,6 +661,7 @@ local content = {
     $.zombies[0] + {
       "id": "acid_zombie",
       "name": "Acid zombie",
+      "cause": "an acid zombie",
       "model": "acid",
       "authoredOnly": true,
       "acidBody": {

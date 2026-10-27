@@ -118,6 +118,8 @@ export const observationPlugin = {
     thirdPerson,
     engine,
     view,
+    debugGunPose,
+    opticZoom,
     caseEffects,
     itemThrows,
     audio,

@@ -8,6 +8,8 @@ local crouch = {
     {
       id: 'player',
       chestEyeFraction: 0.62,
+      // Holding the crouch key this long lies down instead of toggling crouch.
+      crouchProneHoldRealSeconds: 0.5,
       crouch: crouch,
       // Hearing and sight copy crouch's until BR rules on lying down (#550).
       prone: {

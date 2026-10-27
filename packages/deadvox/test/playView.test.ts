@@ -58,7 +58,7 @@ vi.mock('../src/render/models.ts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../src/render/models.ts')>();
   class EmptyPackLibrary extends actual.ModelLibrary {
     constructor(...[content, report]: ConstructorParameters<typeof actual.ModelLibrary>) {
-      super(content, report, {});
+      super(content, report, {}, 1);
     }
   }
   // biome-ignore lint/style/useNamingConvention: the mock replaces the class export by its name.

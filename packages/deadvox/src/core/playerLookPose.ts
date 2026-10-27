@@ -1,8 +1,8 @@
-import { nearestSightEyeOffset } from './adsView.ts';
+import { adsRollDegrees, nearestSightEyeOffset } from './adsView.ts';
 import { type AimFrame, NEUTRAL_AIM } from './aim.ts';
 import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import { heldFirearmTransform } from './heldPose.ts';
+import { type HeldSeatFrame, heldAdsEye, heldFirearmTransform } from './heldPose.ts';
 import type { HandSide } from './inventory.ts';
 import type { PlayerStance } from './playerStance.ts';
 import {
@@ -75,6 +75,8 @@ export interface PlayerLookPose {
   readonly neckScale: number;
   readonly eyeFromHead: Vec3;
   readonly eye: Vec3;
+  /** Each eye from `eye`, in the look's frame with the ADS head roll applied. */
+  readonly eyes: Readonly<Record<HandSide, Vec3>>;
   readonly shoulders: Readonly<Record<HandSide, Vec3>>;
   readonly stockSeats: Readonly<Record<HandSide, Vec3>>;
   /** Lying prone and aiming down sights: elbows take the ground and the support hand holds closer. */
@@ -97,12 +99,27 @@ export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso'
   return [at[0], at[1] - pose.hipDrop, at[2]];
 };
 
+export const playerHeldSeatFrame = (pose: PlayerLookPose, pitch: number): HeldSeatFrame => {
+  const torso = multiplyRotation(turnX(-pitch), multiplyRotation(turnX(pose.hipTurn), pose.spineRotation));
+  const restEye = add(pose.head, pose.eyeFromHead);
+  return {
+    origin: rotate(sub(playerPosePoint(pose, restEye, 'torso'), pose.eye), -pitch),
+    right: rotateVector(torso, [1, 0, 0]),
+    up: rotateVector(torso, [0, 1, 0]),
+    back: rotateVector(torso, [0, 0, 1]),
+  };
+};
+
 const boundedJointRotation = (rotation: Quaternion, limits: readonly [number, number]): Quaternion => {
   const q: Quaternion = rotation[3] < 0 ? [-rotation[0], -rotation[1], -rotation[2], -rotation[3]] : rotation;
   const angle = 2 * Math.atan2(Math.hypot(q[0], q[1], q[2]), q[3]);
   const limit = limits[q[0] < 0 ? 0 : 1] * RADIANS;
   return angle <= limit ? q : axisRotation([q[0], q[1], q[2]], limit);
 };
+
+const adsSign = (ads: PlayerAdsPose): number => (ads.side === 'right' ? 1 : -1);
+const adsHeadRoll = (figure: FigureDef, ads: PlayerAdsPose | undefined): Quaternion =>
+  turnZ(ads ? -adsRollDegrees(figure, ads.model).head * RADIANS * adsSign(ads) : 0);
 
 const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef, pitch: number): PlayerLookPose => {
   const gun = heldFirearmTransform({
@@ -114,19 +131,19 @@ const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef
     progress: 1,
     aimingDownSights: true,
     aimFrame: ads.aimFrame ?? NEUTRAL_AIM,
+    lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: pose.stockSeats[ads.side],
+    adsEyes: pose.eyes,
   });
   const sightEye = nearestSightEyeOffset(gun);
   if (!sightEye) {
     return pose;
   }
-  const delta = rotate(sightEye, pitch);
+  // The head carries its aiming eye, not the midpoint between its eyes, to the sight.
+  const delta = rotate(sub(sightEye, heldAdsEye(ads.model, ads.side, pose.eyes)), pitch);
   const targetEye = add(pose.eye, delta);
-  const headWorld = multiplyRotation(
-    turnX(pitch),
-    turnZ(-figure.aimPose.ads.headRollDegrees * RADIANS * (ads.side === 'right' ? 1 : -1)),
-  );
+  const headWorld = multiplyRotation(turnX(pitch), adsHeadRoll(figure, ads));
   const headEye = rotateVector(headWorld, pose.eyeFromHead);
   const neckWorld = playerPosePoint(pose, pose.neck, 'torso');
   const torso = multiplyRotation(turnX(pose.hipTurn), pose.spineRotation);
@@ -189,6 +206,12 @@ export const playerLookPose = ({
   const headTurn = limit(needed - spineTurn - neckTurn, headLimitDegrees);
   const eyes = figure.body.eyes.map(point);
   const eyeAnchor = eyes[0]!.map((value, axis) => (value + eyes[1]![axis]!) / 2) as Vec3;
+  const [leftEye, rightEye] = eyes[0]![0] < eyes[1]![0] ? eyes : [eyes[1]!, eyes[0]!];
+  const headRoll = adsHeadRoll(figure, ads);
+  const eyeOffsets: Record<HandSide, Vec3> = {
+    left: rotateVector(headRoll, sub(leftEye!, eyeAnchor)),
+    right: rotateVector(headRoll, sub(rightEye!, eyeAnchor)),
+  };
   let pose: PlayerLookPose = {
     hip: [0, figure.hipHeightMetres, 0],
     spine: point(figure.body.spine.pivot),
@@ -201,19 +224,14 @@ export const playerLookPose = ({
     hipDrop: stancePose.hipDropMetres,
     spineRotation: multiplyRotation(
       turnX(spineTurn),
-      turnZ(
-        ads
-          ? (stance === 'prone' ? figure.aimPose.ads.proneTorsoRollDegrees : figure.aimPose.ads.torsoRollDegrees) *
-              RADIANS *
-              (ads.side === 'right' ? 1 : -1)
-          : 0,
-      ),
+      turnZ(ads ? adsRollDegrees(figure, ads.model, stance).torso * RADIANS * adsSign(ads) : 0),
     ),
     neckRotation: turnX(neckTurn),
     headRotation: turnX(headTurn),
     neckScale: 1,
     eyeFromHead: eyeAnchor.map((value, axis) => value - point(figure.body.head.pivot)[axis]!) as Vec3,
     eye: [0, 0, 0],
+    eyes: eyeOffsets,
     shoulders: { right: [0, 0, 0], left: [0, 0, 0] },
     stockSeats: { right: [0, 0, 0], left: [0, 0, 0] },
     proneAds: stance === 'prone' && ads !== undefined,

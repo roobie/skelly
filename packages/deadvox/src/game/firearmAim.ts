@@ -2,7 +2,7 @@ import { type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
 import type { ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type CrosshairTarget, crosshairAimPoint } from '../core/crosshairTarget.ts';
-import { heldFirearmTransform } from '../core/heldPose.ts';
+import { type HeldFirearmTransformInput, type HeldSeatFrame, heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import type { HeldPosesDef } from '../core/schema.ts';
 import type { MeleeWeapon, ZombieAim, ZombieSystem } from '../core/zombies.ts';
@@ -21,6 +21,8 @@ export interface FirearmBoreRayInput {
   readonly aimFrame: AimFrame;
   readonly handlingTurn?: Vec3;
   readonly stockSeat?: Vec3 | undefined;
+  readonly seatFrame?: HeldSeatFrame | undefined;
+  readonly adsEyes?: HeldFirearmTransformInput['adsEyes'];
   readonly aimingDownSights?: boolean;
   readonly loweredPitchRadians: number;
 }
@@ -46,6 +48,8 @@ export const firearmBoreRay = ({
   aimFrame,
   handlingTurn,
   stockSeat,
+  seatFrame,
+  adsEyes,
   aimingDownSights = false,
   loweredPitchRadians,
 }: FirearmBoreRayInput): FirearmBoreRay => {
@@ -58,7 +62,10 @@ export const firearmBoreRay = ({
     progress,
     aimingDownSights,
     aimFrame,
+    lookPitchRadians: pitch,
     stockSeat,
+    seatFrame,
+    adsEyes,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
     loweredPitchRadians,
   });

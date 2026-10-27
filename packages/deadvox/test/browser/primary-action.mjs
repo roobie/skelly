@@ -21,6 +21,8 @@ const groups = ['flow', 'replays'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const debugLoadoutModule = '/src/debug/debugLoadout.ts';
+const firearmActionModule = '/src/core/firearmAction.ts';
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
@@ -758,6 +760,9 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    await page.waitForFunction(() =>
+      globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('held-item-left'),
+    );
     const adsFrame = await page.evaluate(() => globalThis.primaryActionTest.frames);
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame + 1, adsFrame);
     const irons = await page.evaluate(
@@ -2130,7 +2135,15 @@ try {
             def.ammo
           ),
       );
-      const gun = defs.find((def) => def.firearm && magazineWellCalibre(r.inventory.registry, def.id));
+      const gun = defs.find(
+        (def) =>
+          def.firearm &&
+          magazineWellCalibre(r.inventory.registry, def.id) &&
+          r.inventory.registry.models.get(def.model)?.gun?.attachments?.some((mounted) => {
+            const range = mounted.properties.magnification;
+            return range && range.min < range.max;
+          }),
+      );
       if (!(light && tool && inert && gun)) {
         throw new Error('Missing hand-action fixture capabilities');
       }
@@ -3191,6 +3204,80 @@ try {
     assert.equal(emission.shot?.distanceMetres, 0);
     assert.equal(emission.shot?.lowpassHz, null);
     await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
+    await page.mouse.up({ button: 'right' });
+    const pistol = await page.evaluate(
+      async ({ loadoutModule, actionModule }) => {
+        const r = globalThis.primaryActionTest;
+        const { equipDebugLoadout } = await import(loadoutModule);
+        const { actionCycleSeconds } = await import(actionModule);
+        r.clearHand(r.dominant);
+        r.clearHand(r.off);
+        if (!equipDebugLoadout(r.inventory, true, true, '?loadout=pistol')) {
+          throw new Error('Pistol debug loadout was refused');
+        }
+        const gun = r.inventory.hands[r.dominant];
+        const definition = r.inventory.registry.items.get(gun.type);
+        const model = r.inventory.registry.models.get(definition.model);
+        if (!(definition.twoHanded && model.hands?.support) || model.hands.butt) {
+          throw new Error('Pistol needs a free two-palm hold, not a shoulder seat');
+        }
+        const refusal = r.session.firearms.cock(gun.uid, r.session.sim.time);
+        if (refusal) {
+          throw new Error(refusal);
+        }
+        const { hand } = model.gun.action;
+        r.session.frame(hand.unlockSimSeconds + hand.rearwardSimSeconds);
+        await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+        const { animator } = r.view.held;
+        const part = animator.firearmParts.get(gun.uid)?.parts.find((candidate) => candidate.handGrip);
+        if (!part) {
+          throw new Error('Pistol rack needs an authored slide contact');
+        }
+        const target = part.node.parent.localToWorld(part.handGrip.clone().add(part.travel));
+        const palm = animator.presentation.armRigs.get(r.off).hand.getWorldPosition(target.clone());
+        if (
+          palm.distanceTo(target) > 1e-6 ||
+          part.node.position.distanceTo(part.rest.clone().add(part.travel)) > 1e-6
+        ) {
+          throw new Error('Support palm must carry the slide through its full authored travel');
+        }
+        for (let step = 0; r.session.queue.busy; step += 1) {
+          if (step > 400) {
+            throw new Error('Pistol slide handling did not finish');
+          }
+          r.session.frame(1 / 20);
+        }
+        return {
+          uid: gun.uid,
+          rounds: gun.slots.magazine.cartridges.length,
+          cycle: actionCycleSeconds(model.gun.action, 'fire'),
+        };
+      },
+      { loadoutModule: debugLoadoutModule, actionModule: firearmActionModule },
+    );
+    await page.mouse.down({ button: 'right' });
+    await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), pistol.uid);
+    await page.mouse.down();
+    await page.waitForFunction(({ uid, rounds }) => {
+      const gun = globalThis.primaryActionTest.inventory.itemByUid(uid);
+      return gun.slots.magazine.cartridges.length < rounds;
+    }, pistol);
+    await page.evaluate((cycle) => globalThis.primaryActionTest.session.frame(cycle * 3), pistol.cycle);
+    assert.equal(
+      await page.evaluate(
+        (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid).slots.magazine.cartridges.length,
+        pistol.uid,
+      ),
+      pistol.rounds - 1,
+      'holding the pistol trigger commits only one shot',
+    );
+    await page.mouse.up();
+    await page.mouse.click(640, 450);
+    await page.waitForFunction(
+      ({ uid, rounds }) =>
+        globalThis.primaryActionTest.inventory.itemByUid(uid).slots.magazine.cartridges.length === rounds - 2,
+      pistol,
+    );
     await page.mouse.up({ button: 'right' });
     const food = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;

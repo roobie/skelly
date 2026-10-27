@@ -21,7 +21,7 @@ export type InputContext = keyof typeof INPUT_CONTEXTS;
 export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set(
   (Object.keys(INPUT_CONTEXTS) as InputContext[]).filter((context) => INPUT_CONTEXTS[context]),
 );
-type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
+type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold' | 'tap-or-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
   readonly code: string;
@@ -102,8 +102,18 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('movement.right', 'Move right', movingWhileReading, 'held-state'),
   row('movement.sprint', 'Sprint; hold breath while aiming down sights', moving, 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving),
-  row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build']),
-  row('player.prone-toggle', 'Lie down or rise to a crouch', ['play', 'carrying', 'build']),
+  row(
+    'player.crouch-toggle',
+    'Tap to toggle crouch; hold to lie down or rise to a crouch',
+    ['play', 'carrying', 'build'],
+    'tap-or-hold',
+    {
+      commands: [
+        { id: 'player.crouch-toggle', kind: 'tap-or-hold' },
+        { id: 'player.prone-toggle', kind: 'hold' },
+      ],
+    },
+  ),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play']),
   row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
   row('carry.tip', 'Tip the carried piece over', ['carrying']),
@@ -243,8 +253,6 @@ export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS
 export const POINTER_ACTIONS = [
   { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },
   { id: 'hand.off-instant', description: 'Instant off-hand use' },
-  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde' },
-  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready' },
   { id: 'pointer.look', description: 'Look' },
 ] as const;
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
@@ -319,9 +327,6 @@ const physicalCode = (code: string): boolean =>
 export const chordIssue = (chord: Chord): string | undefined => {
   if (!physicalCode(chord.code)) {
     return 'Unknown physical key';
-  }
-  if (chord.code === 'KeyQ' || chord.code === 'KeyE') {
-    return 'Reserved for lean';
   }
   const native = NATIVE_INPUTS.find(({ code }) => code === chord.code);
   if (native) {

@@ -198,6 +198,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'senses.vocalNoiseLifetimeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.light.throwChargeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.light.throwMinimumHoldSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'senses.crouchProneHoldRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.light.throwStanceDropHoldRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.light.wornLightToggleHoldRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   {

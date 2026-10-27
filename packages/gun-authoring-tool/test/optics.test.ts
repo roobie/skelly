@@ -276,7 +276,7 @@ describe('generic rail mount fit', () => {
     expect(mountCanAccept({ ...rail, slots: { count: 7, pitch: 1.5 } }, highMag, 3)).toBe(false);
   });
 
-  it('keeps #114’s threaded muzzle interface and supports the high-mag optic on its receiver rail', () => {
+  it('keeps the threaded muzzle interface and supports the high-mag optic on its receiver rail', () => {
     const muzzle = FAMILIES.barrel!.build({ length: 'L', bore: 'L' }).ports.find(({ id }) => id === 'muzzle')!;
     const heavyRail = FAMILIES['heavy-receiver']!.build({ action: 'auto', feed: 'box', bore: 'L' }).ports.find(
       ({ id }) => id === 'rail',

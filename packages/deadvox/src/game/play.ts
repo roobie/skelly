@@ -31,7 +31,7 @@ import type { LongJob, RestKind } from '../core/longAction.ts';
 import { countText } from '../core/numberText.ts';
 import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
-import { playerEyePosition, playerLookPose } from '../core/playerLookPose.ts';
+import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -106,6 +106,7 @@ import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { continueActionResumesJob } from './continueAction.ts';
+import { CrouchProneInput, dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
@@ -291,6 +292,8 @@ const PIN_LINES: Readonly<Record<PinState, string>> = {
 const pinDescription = (state: PinState | undefined): string[] => (state ? [PIN_LINES[state]] : []);
 const isGestureAction = (action: string): boolean =>
   action === 'firearm.reload' ||
+  action === 'player.crouch-toggle' ||
+  action === 'player.prone-toggle' ||
   action === 'player.throw' ||
   action === 'light.worn-toggle' ||
   action === 'world.interact' ||
@@ -2085,6 +2088,18 @@ export const startPlay = (
     runQuickbarAction(slot, true);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  const requestStanceAction = (action: StanceReplayAction): void => {
+    withUnlockedInput(() => {
+      if (!replayPlayer) {
+        inputRecorder?.queueAction(action, 'down', inputContext());
+      }
+      input.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
+    });
+  };
+  const crouchProneInput = new CrouchProneInput({
+    holdRealMs: () => playerSenseTuning.crouchProneHoldRealSeconds * 1000,
+    action: requestStanceAction,
+  });
   const throwStanceInput = new PressHoldInput<string>({
     holdRealMs: () => throwStanceDropHoldRealSeconds * 1000,
     tap: () => toggleThrowingStance(),
@@ -2114,6 +2129,7 @@ export const startPlay = (
   });
   globalThis.addEventListener('blur', () => {
     quickbarInput.cancel();
+    crouchProneInput.cancel();
     throwStanceInput.cancel();
     interactInput.cancel();
     wornLightInput.cancel();
@@ -2212,6 +2228,7 @@ export const startPlay = (
     cancelBackquoteGesture(backquoteGesture);
     cancelItemThrow();
     throwStanceInput.cancel();
+    crouchProneInput.cancel();
     quickbarInput.cancel();
   };
   keyboardInput.escape = () => {
@@ -2292,10 +2309,7 @@ export const startPlay = (
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;
       case 'player.crouch-toggle':
-        withUnlockedInput(() => input.requestStanceToggle('crouch'));
-        break;
-      case 'player.prone-toggle':
-        withUnlockedInput(() => input.requestStanceToggle('prone'));
+        withUnlockedInput(() => crouchProneInput.keyDown(action, at));
         break;
       case 'player.throw':
         withUnlockedInput(() => throwStanceInput.keyDown(action, at));
@@ -2354,6 +2368,9 @@ export const startPlay = (
       interactInput.keyUp(action, at);
       interactionPressTarget = undefined;
     }
+    if (action === 'player.crouch-toggle') {
+      crouchProneInput.keyUp(action, at);
+    }
     if (action === 'player.throw') {
       throwStanceInput.keyUp(action, at);
     }
@@ -2385,6 +2402,7 @@ export const startPlay = (
     });
   const cancelHeldInput = (): void => {
     input.reload.cancel();
+    crouchProneInput.cancel();
     throwStanceInput.cancel();
     cancelItemThrow();
     quickbarInput.cancel();
@@ -2473,6 +2491,9 @@ export const startPlay = (
     return true;
   };
   const dispatchReplayGesture = (action: ReplayAction): boolean => {
+    if (dispatchReplayStanceAction(action.action, requestStanceAction)) {
+      return true;
+    }
     switch (action.action) {
       case 'firearm.load':
         reloadBinding()?.load();
@@ -2560,14 +2581,23 @@ export const startPlay = (
       ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
     });
 
-  const stockSeat = (side: HandSide): Vec3 =>
+  const heldBodyPose = () =>
     playerLookPose({
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
       ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
-    }).stockSeats[side];
+    });
+  /** The body's seats and eyes a held firearm is placed from, so the shot leaves the drawn gun. */
+  const heldBodyInput = (side: HandSide) => {
+    const pose = heldBodyPose();
+    return {
+      stockSeat: pose.stockSeats[side],
+      seatFrame: playerHeldSeatFrame(pose, input.pitch),
+      adsEyes: pose.eyes,
+    };
+  };
 
   /** Part boxes for picking: the same projection vehicle reach measures to. */
   const currentVehicleParts = () => session.vehicleParts.all();
@@ -3126,7 +3156,7 @@ export const startPlay = (
       aimingDownSights: isAimingDownSights(),
       sprinting: session.sprinting,
       item,
-      stockSeat: stockSeat(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
+      ...heldBodyInput(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
       feet: feet(),
       eye: eye(),
       yaw: input.yaw,
@@ -3153,8 +3183,10 @@ export const startPlay = (
       }
       return;
     }
-    const { roundsPerSimSecond } = firearmHandlingFor(weapon, registry);
-    return roundsPerSimSecond === undefined ? undefined : { uid: weapon.uid, roundsPerSimSecond };
+    const { roundsPerSimSecond, action } = firearmHandlingFor(weapon, registry);
+    return roundsPerSimSecond === undefined
+      ? undefined
+      : { uid: weapon.uid, roundsPerSimSecond, triggerMode: action.triggerMode };
   };
 
   const refusalReason = (reason: string | undefined): void => {
@@ -3689,8 +3721,9 @@ export const startPlay = (
       twoHanded,
       progress,
       aimingDownSights,
-      stockSeat: stockSeat(side),
+      ...heldBodyInput(side),
       aimFrame: aim.frame,
+      lookPitchRadians: input.pitch,
       loweredPitchRadians: tuning.loweredPitchRadians,
     };
     const basePose = heldFirearmTransform(poseInput);
@@ -3924,6 +3957,7 @@ export const startPlay = (
       interactInput.update(now);
       wornLightInput.update(now);
     }
+    crouchProneInput.update(now, actionRefusal);
     throwStanceInput.update(now);
     updateBackquoteGesture(backquoteGesture, now);
   };

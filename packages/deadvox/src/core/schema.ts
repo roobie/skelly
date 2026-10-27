@@ -414,6 +414,18 @@ const UiScreenTextSchema = strictObject({
     removing: ['part'],
     installing: ['part'],
   }),
+  /**
+   * Firearm slot names: one per exported mount kind, numbered in export order among slots of that kind, plus the
+   * sling and light mounts deadvox owns.
+   */
+  attachmentSlot: slottedTable({
+    'rail-top': ['number'],
+    'rail-side': ['number'],
+    'rail-bottom': ['number'],
+    muzzle: [],
+    sling: [],
+    'light-mount': [],
+  }),
   /** What the HUD options call each element they switch. */
   hudOptionLabels: strictObject({
     stats: Name,
@@ -1726,6 +1738,7 @@ const ActionPartSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   axis: UnitVector,
   strokeMetres: Positive,
+  handGrip: optional(Point),
   turn: optional(
     strictObject({
       pivot: Point,
@@ -1758,6 +1771,7 @@ const ActionSchema = pipe(
     holdOpen: vBoolean(),
     /** Cyclic rate in rounds per Sim minute. */
     roundsPerSimMinute: optional(SimPerMinute),
+    triggerMode: optional(picklist(['semi', 'auto'])),
   }),
   check(
     (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
@@ -1777,6 +1791,10 @@ const ActionSchema = pipe(
   check(
     (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),
     'only an automatic fire timeline has a cyclic rpm',
+  ),
+  check(
+    (action) => action.triggerMode === undefined || action.fire !== undefined,
+    'trigger mode needs a fire timeline',
   ),
 );
 
@@ -2094,7 +2112,16 @@ export type CompassDial = InferOutput<typeof CompassDialSchema>;
  * How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, a firing hand on a pistol
  * grip or on a stock wrist, or a support hand on a forend.
  */
-const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'forend'] as const;
+const HAND_POSES = [
+  'fist',
+  'holding',
+  'open',
+  'pistolGrip',
+  'pistolWrap',
+  'pistolCup',
+  'stockWrist',
+  'forend',
+] as const;
 
 /**
  * One hand's hold on a held model, in the model's frame as authored for a right-handed hold: where the palm's face
@@ -2103,27 +2130,41 @@ const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'fore
  */
 const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: UnitVector, pose: picklist(HAND_POSES) });
 
-/**
- * A long gun's hold (`DESIGN.md`, "Models"): the butt sits at `seat` in the eye's frame (x right, y up, z back) for
- * a right-handed hold, the left mirrors x; lowering the gun turns it about `butt`, a model point, so the stock stays
- * in the shoulder; the firing hand takes the pistol grip or the stock wrist and the support hand the forend.
- */
+/** Authored palm contacts avoid inferring a shoulder seat for free-held firearms. */
 const HandsModelSchema = strictObject({
   ads: optional(
     strictObject({
       cameraOffsetLimitMetres: optional(NonNegative),
       stockShoulderLimitMetres: optional(NonNegative),
+      // A free-held gun has no stock to lift the dominant shoulder under, so it overrides the figure's ADS rolls.
+      torsoRollDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
+      headRollDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
     }),
   ),
   seat: Point,
-  butt: Point,
+  butt: optional(Point),
+  loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
+  torsoForwardDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
+  elbowBendSide: optional(Point),
+  adsStandoffByPitch: optional(
+    pipe(
+      array(strictObject({ pitchDegrees: pipe(number(), minValue(-90), maxValue(90)), metres: Positive })),
+      minLength(2),
+      check(
+        (points) => points.every((point, index) => index === 0 || point.pitchDegrees > points[index - 1]!.pitchDegrees),
+        'standoff pitch points must be strictly increasing',
+      ),
+    ),
+  ),
+  adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
   /**
    * Where the support hand takes the gun while lying prone and aiming, nearer the body so the elbow hangs lower. It
    * moves the hand only: the palm, fingers and pose stay the support hold's, because the arm is built once with them.
+   * A gun without one keeps its support hold prone.
    */
-  proneSupport: strictObject({ at: Point }),
+  proneSupport: optional(strictObject({ at: Point })),
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
@@ -3351,6 +3392,8 @@ const AcidBodySchema = pipe(
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
+  /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
+  cause: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: ZOMBIE_MODEL,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
@@ -3628,6 +3671,8 @@ const ArmRigSchema = strictObject({
     holding: HandPoseSchema,
     open: HandPoseSchema,
     pistolGrip: HandPoseSchema,
+    pistolWrap: HandPoseSchema,
+    pistolCup: HandPoseSchema,
     stockWrist: HandPoseSchema,
     forend: HandPoseSchema,
   }),
@@ -4055,6 +4100,8 @@ const SenseSchema = strictObject({
   id: Id,
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
+  /** Real seconds the crouch key is held before it lies down instead of toggling crouch. */
+  crouchProneHoldRealSeconds: Positive,
   crouch: LoweredStanceSchema,
   /** Below crouch: the player lies down and crawls. */
   prone: LoweredStanceSchema,
@@ -4473,6 +4520,7 @@ const GraphicsTuningSchema = strictObject({
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */

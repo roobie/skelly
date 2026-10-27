@@ -18,22 +18,26 @@ describe('browser stage rendering mode', () => {
 
   it('keeps pixel stages on SwiftShader and removes a render-free URL override', () => {
     expect(browserStageMode('primary-action-pixel')).toBe('pixel');
-    expect(browserStageArgs('primary-action-pixel')).toContain('--use-gl=swiftshader');
+    expect(browserStageArgs('primary-action-pixel')).toContain('--use-gl=angle');
+    expect(browserStageArgs('primary-action-pixel')).toContain('--use-angle=swiftshader');
     expect(browserStageUrl('primary-action-pixel', 'http://localhost/?seed=1&render=0')).toBe(
       'http://localhost/?seed=1',
     );
     expect(browserStageMode('stairs-camo')).toBe('pixel');
     expect(browserStageMode('save-storage-opfs-continue')).toBe('pixel');
-    expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-gl=swiftshader');
+    expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-gl=angle');
+    expect(browserStageArgs('save-storage-opfs-continue')).toContain('--use-angle=swiftshader');
     expect(browserStageMode('save-storage-indexeddb-continue')).toBe('pixel');
-    expect(browserStageArgs('save-storage-indexeddb-continue')).toContain('--use-gl=swiftshader');
+    expect(browserStageArgs('save-storage-indexeddb-continue')).toContain('--use-gl=angle');
+    expect(browserStageArgs('save-storage-indexeddb-continue')).toContain('--use-angle=swiftshader');
     expect(browserStageUrl('save-storage-opfs-continue', 'http://localhost/?seed=1&render=0')).toBe(
       'http://localhost/?seed=1',
     );
     expect(browserStageUrl('save-storage-indexeddb-continue', 'http://localhost/?seed=1&render=0')).toBe(
       'http://localhost/?seed=1',
     );
-    expect(browserStageArgs('stairs-camo')).toContain('--use-gl=swiftshader');
+    expect(browserStageArgs('stairs-camo')).toContain('--use-gl=angle');
+    expect(browserStageArgs('stairs-camo')).toContain('--use-angle=swiftshader');
     for (const stage of [
       'stairs-lighting-cellar',
       'stairs-lighting-residents',
@@ -41,7 +45,8 @@ describe('browser stage rendering mode', () => {
       'stairs-lighting-atlas',
     ]) {
       expect(browserStageMode(stage)).toBe('pixel');
-      expect(browserStageArgs(stage)).toContain('--use-gl=swiftshader');
+      expect(browserStageArgs(stage)).toContain('--use-gl=angle');
+      expect(browserStageArgs(stage)).toContain('--use-angle=swiftshader');
       expect(browserStageArgs(stage)).toContain('--enable-unsafe-swiftshader');
       expect(browserStageUrl(stage, 'http://localhost/?seed=1&render=0')).toBe('http://localhost/?seed=1');
     }

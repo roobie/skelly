@@ -17,7 +17,8 @@
         "causes": {
           "bearTrap": "a bear trap",
           "foodPoisoning": "food poisoning",
-          "grenade": "a grenade"
+          "grenade": "a grenade",
+          "zombie": "a zombie"
         },
         "common": {
           "busy": "My hands are busy",
@@ -411,6 +412,14 @@
         "sleep": "Sleeping"
       },
       "screenText": {
+        "attachmentSlot": {
+          "light-mount": "Light mount",
+          "muzzle": "Muzzle",
+          "rail-bottom": "Bottom rail {number}",
+          "rail-side": "Side rail {number}",
+          "rail-top": "Top rail {number}",
+          "sling": "Sling mount"
+        },
         "audioVolumeLabels": {
           "body": "Body",
           "master": "Master",

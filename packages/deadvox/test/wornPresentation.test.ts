@@ -178,6 +178,26 @@ describe('shared worn presentation', () => {
     });
   });
 
+  it('puts a mesh added late under the held frame or a body frame on its parent layer, not the world layer', () => {
+    const { models } = library();
+    const meshes = new PlayerMeshes(0.5, fixtureFigure, registry.models, models);
+    meshes.sync(pose());
+    const late = (parentName: string) => {
+      const parent = meshes.group.getObjectByName(parentName)!;
+      const group = new Group();
+      const mesh = new Mesh();
+      group.add(mesh);
+      parent.add(group);
+      return { parent, mesh };
+    };
+    for (const name of ['world-held-items', 'wear-frame-shin']) {
+      const { parent, mesh } = late(name);
+      expect(parent, name).toBeDefined();
+      expect(mesh.layers.mask, name).toBe(parent.layers.mask);
+      expect(mesh.layers.isEnabled(0), name).toBe(false);
+    }
+  });
+
   it('waits for the figure frame as well as the worn model', () => {
     const inventory = new Inventory(registry);
     expect(inventory.add(inventory.create('baseball_cap'), { kind: 'worn' })).toBe(true);

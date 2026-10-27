@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { toChunk } from '../src/core/coords.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -254,6 +255,41 @@ describe('production vehicle ownership', () => {
       inventory.vehicleTransfer({ kind: 'install', vehicleId: id, fittingId: fitting.id, itemUid: fitting.item.uid }),
     ).toBeUndefined();
     expect(inventory.locate(fitting.item)).toMatchObject({ kind: 'vehicle', vehicleId: id, fittingId: fitting.id });
+  });
+
+  it('refuses a build the engine rejects with a content line, never the engine text', () => {
+    const { inventory } = fixture();
+    const id = inventory.registerVehicle({
+      placementKey: 'fixture.engine-refused-hatchback',
+      blueprint: 'hatchback',
+      origin: [0, 0, 0],
+      facing: 'n',
+    });
+    const fitting = inventory.vehicles.get(id)!.fittings.find(({ id: fittingId }) => fittingId === 'front_wheel_near')!;
+    const engineText = 'fixture engine rejection';
+    const replace = vi.spyOn(inventory.vehicles, 'replace').mockImplementation(() => {
+      throw new Error(engineText);
+    });
+    const request = { vehicleId: id, fittingId: fitting.id, itemUid: fitting.item.uid };
+    const removal = inventory.vehicleTransfer({
+      ...request,
+      kind: 'remove',
+      output: { kind: 'pile', pos: [0, 0, 0] },
+    });
+    expect(removal).toBe(coreMessage(inventory.registry, 'partSupportsOthers'));
+    expect(inventory.locate(fitting.item)).toMatchObject({ kind: 'vehicle', vehicleId: id });
+
+    replace.mockRestore();
+    expect(inventory.vehicleTransfer({ ...request, kind: 'remove', output: { kind: 'pile', pos: [0, 0, 0] } })).toBe(
+      undefined,
+    );
+    vi.spyOn(inventory.vehicles, 'replace').mockImplementation(() => {
+      throw new Error(engineText);
+    });
+    expect(inventory.vehicleTransfer({ ...request, kind: 'install' })).toBe(
+      coreMessage(inventory.registry, 'partDoesNotFit'),
+    );
+    expect(inventory.locate(fitting.item)).toMatchObject({ kind: 'pile' });
   });
 
   it('refuses an unavailable removal destination without detaching the fitted UID', () => {

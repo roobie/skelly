@@ -60,6 +60,8 @@ import { MAGAZINE_PROFILES, magazineProfileContent } from './magazineProfiles.ts
 import type { MuzzleBore } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import physical from './physical.json' with { type: 'json' };
+import pistolAction from './pistolAction.json' with { type: 'json' };
+import pistolDimensions from './pistolDimensions.json' with { type: 'json' };
 import { gunPort } from './portData.ts';
 import {
   PUMP_ACTION_TRAVEL_U,
@@ -559,11 +561,15 @@ const PISTOL_GRIP_HALF_X = PISTOL_WELL_DEPTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_GRIP_HALF_Z = PISTOL_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_WELL_HEIGHT = 6;
 const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
-const PISTOL_BARREL_LENGTH: Record<SizeClass, number> = { S: 12, M: 16, L: 20 };
+const PISTOL_BARREL_LENGTH: Record<SizeClass, number> = {
+  S: Math.round(mmToU(pistolDimensions.barrelLengthMm) / GRID) * GRID,
+  M: 16,
+  L: 20,
+};
 export const PISTOL_CROWN_LENGTH_U = 1;
 const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
-const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
+const PISTOL_SLIDE_WALL_THICKNESS = 0.25;
 const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
 /** Profile points at the grip's upper mount; the first is the front vertex touching a lower's guard. */
 export const GRIP_MOUNT_PROFILE = [
@@ -641,7 +647,9 @@ const pistolSlideChannelHalfWidth = (bore: SizeClass): number =>
   PISTOL_BARREL_RADIUS[bore] + PISTOL_SLIDE_CHANNEL_CLEARANCE;
 const pistolSlideHalfWidth = (bore: SizeClass): number =>
   pistolSlideChannelHalfWidth(bore) + PISTOL_SLIDE_WALL_THICKNESS;
-const PISTOL_SLIDE_REAR = -8;
+const PISTOL_SLIDE_REAR =
+  Math.round(mmToU(pistolDimensions.barrelLengthMm - pistolDimensions.slideLengthMm) / GRID) * GRID -
+  PISTOL_CROWN_LENGTH_U;
 const PISTOL_GRIP_X = -6;
 const AK_CHARGING_SLOT_MUZZLE_SHIFT_U = 0.25;
 interface ARCarrierEnvelope {
@@ -1119,7 +1127,7 @@ const receiverShellSolids = ({
         .map((piece) => ({ ...piece, display: { ...piece.display, mergeGroup: 'receiver-ar' } })),
     );
   }
-  const wall = PISTOL_SLIDE_WALL_THICKNESS;
+  const wall = 0.5;
   const innerX: readonly [number, number] = [xMin + wall, xMax - wall];
   const lowerY = receiverBottom + wall;
   const upperY = receiverTop - wall;
@@ -1948,7 +1956,7 @@ const receiver: PartFamily = {
 
 /**
  * The AKM's rear-sight block: on the receiver's front roof and on ahead of it over the handguard, where the
- * gas cylinder starts. The leaf seats on its top without a post (BR, 2026-10-06 18:36).
+ * gas cylinder starts. The leaf seats on its top without a post.
  */
 const akSightBaseSolids = (): Solid[] => {
   const { rearX, frontX, bottomU, topU, halfWidthU } = AK_PROPORTIONS.sightBase;
@@ -4696,10 +4704,10 @@ const pistolFrame: PartFamily = {
         extrudedPolygon(
           'beavertail-grip-safety',
           [
-            [-9, -0.5],
-            [-7, 0],
+            [snapGrid(mmToU(pistolDimensions.barrelLengthMm - pistolDimensions.overallLengthMm)), -0.5],
+            [-6, 0],
+            [-6, 1.5],
             [-7, 1.5],
-            [-8.25, 1.5],
           ],
           [-0.75, 0.75],
         ),
@@ -4780,8 +4788,20 @@ const pistolSlide: PartFamily = {
           slots: { count: 3, pitch: 2 },
         },
       ],
-      keepOuts: [],
-      axes: [],
+      keepOuts: [keepOut('ejection', [-3, 1, channelHalfWidth], [-1, 2, slideHalfWidth + 4], 'frame')],
+      axes: [
+        {
+          kind: 'rack-grip',
+          origin: [PISTOL_SLIDE_REAR + pistolAction.rackGripFromRearU, pistolAction.rackGripHeightU, -slideHalfWidth],
+          dir: X,
+        },
+      ],
+      motion: {
+        kind: 'linear',
+        axis: NEG_X,
+        start: [0, 0, 0],
+        end: [-Math.ceil(mmToU(pistolAction.strokeMm) / GRID) * GRID, 0, 0],
+      },
     };
   },
 };

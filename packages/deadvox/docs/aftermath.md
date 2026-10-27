@@ -64,8 +64,8 @@ because it obeys the same limits they would.
 
 How long ago the chaos happened belongs in per-scenario content, never in a code constant,
 because one scenario can sit years after the chaos and another only days. No scenario value
-carries it yet, and nothing reads one. d342, "Per-scenario time since the chaos", adds it and
-must put it in content; the Gauntlet's value there is months.
+carries it yet, and nothing reads one. A value added for it must live in content; the Gauntlet's value
+there is months.
 
 ## Door variants
 

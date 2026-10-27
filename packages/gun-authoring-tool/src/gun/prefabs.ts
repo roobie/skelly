@@ -17,6 +17,7 @@ export type PrefabCatalogue = readonly PrefabCatalogueEntry[];
 
 /** Curated, versioned part variants available to designs. */
 export const GUN_PREFABS: PrefabCatalogue = [
+  { id: 'pistol-9', version: 1, family: 'magazine', fixedParams: { length: 'S', profile: 'pistol' } },
   // The 20-round body is straight with a slanted floorplate; the 30-round body remains curved.
   { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-straight' } },
   { id: 'stanag-30', version: 1, family: 'magazine', fixedParams: { length: 'L', profile: 'stanag-curved' } },
