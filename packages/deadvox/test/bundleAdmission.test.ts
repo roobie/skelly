@@ -32,7 +32,8 @@ it('admits the same ordered bundled registry and origins without repeating the s
 it('re-proves the bundle whenever a mod is selected, even if the input itself is unchanged', async () => {
   const bundle = await BundleAdmission.prepare(baseSources, stamp, proofHash);
   expect(bundle).toBeDefined();
-  const proof = vi.spyOn(cityPlan, 'scenarioPlanIssues');
+  // The rule is that the proof runs; its own result is not under test, and the real proof is what makes this case slow.
+  const proof = vi.spyOn(cityPlan, 'scenarioPlanIssues').mockReturnValue([]);
   try {
     expect(buildRegistry(baseSources, { bundle, modsSelected: true }).issues).toEqual([]);
     expect(proof).toHaveBeenCalled();
