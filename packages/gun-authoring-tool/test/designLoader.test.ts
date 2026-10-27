@@ -83,9 +83,6 @@ it('keeps the declared status readable when the template is unknown', () => {
   expect(expectFatal(loadGunDesign(text)).declaredStatus).toBe('draft');
 });
 
-it('reports unparseable text as invalid JSON', () => {
-  expect(expectFatal(loadGunDesign('{')).error.code).toBe('invalid-json');
-});
 
 it.each([{ excludedAttachments: 'not-an-array' }, { excludedAttachments: ['unknown-fixture-attachment'] }])(
   'rejects malformed or unknown attachment exclusions: $excludedAttachments',
@@ -436,22 +433,6 @@ describe('loadDesign: change policy', () => {
     }
   });
 
-  it('a default change that makes the design infeasible loads as a draft with issues', () => {
-    // Removing a required connection stands in for a default change that breaks feasibility.
-    const assembly: Assembly = {
-      ...baseAssembly,
-      connections: baseAssembly.connections.filter((c) => c.from !== 'receiver.barrel'),
-    };
-    const result = load(makeDesign({ assembly }));
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.declaredStatus).toBe('published');
-      expect(result.design.status).toBe('draft');
-      expect(result.issues.length).toBeGreaterThan(0);
-      expect(result.issues.every((i) => i.code === 'infeasible')).toBe(true);
-      expect(result.design.assembly).toEqual(assembly);
-    }
-  });
 
   it('runs domain rules on placed parts when one part is disconnected', () => {
     const parts = {

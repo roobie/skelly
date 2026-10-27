@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { motionTransform } from '@skelly/engine/assembly/motion.ts';
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
@@ -61,7 +62,7 @@ describe('action cycle viewer', () => {
   it('turns the bolt before drawing it and returns both phases to the canonical pose', () => {
     const controls = stubControls();
     // The authored design names catalogue items, so only the loader expands it into an assembly.
-    const loaded = loadGunDesign(readFileSync('designs/hunting-rifle.json', 'utf8'));
+    const loaded = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', 'hunting-rifle.json'), 'utf8'));
     if (!loaded.ok) {
       throw new Error(loaded.error.message);
     }
@@ -154,7 +155,11 @@ describe('action cycle viewer', () => {
       expect(handle.matrix.toArray()).toEqual(home);
       controls['cycle-mode']!.value = 'fire';
       controls['cycle-mode']!.dispatchEvent(new Event('change'));
-      controls['cycle-scrub']!.value = '20';
+      const fire = action.cycle?.fire;
+      if (!fire) {
+        throw new Error('AR action has no fire cycle');
+      }
+      controls['cycle-scrub']!.value = String(fire.durationSeconds * 500);
       controls['cycle-scrub']!.dispatchEvent(new Event('input'));
       expect(handle.matrix.toArray()).toEqual(home);
       expect(carrier.matrix.toArray()).not.toEqual(carrierHome);
@@ -167,7 +172,7 @@ describe('action cycle viewer', () => {
 
   it('shows the SMG handle held in its notch while held and home after release', () => {
     const controls = stubControls();
-    const loaded = loadGunDesign(readFileSync('designs/compact-smg.json', 'utf8'));
+    const loaded = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', 'compact-smg.json'), 'utf8'));
     if (!loaded.ok) {
       throw new Error(loaded.error.message);
     }
@@ -240,7 +245,12 @@ describe('action cycle viewer', () => {
       const restPose = carrier.matrix.toArray();
       const view = createCycleView();
       view.bind(layers.solids, resolved, resolveGunAction(resolved));
-      controls['cycle-scrub']!.value = '20';
+      const action = resolveGunAction(resolved)!;
+      const fire = action.cycle?.fire;
+      if (!fire) {
+        throw new Error('AR action has no fire cycle');
+      }
+      controls['cycle-scrub']!.value = String(fire.durationSeconds * 500);
       controls['cycle-scrub']!.dispatchEvent(new Event('input'));
       expect(carrier.matrix.toArray()).not.toEqual(restPose);
       for (const mode of ['hand', 'fire', 'hand', 'fire']) {

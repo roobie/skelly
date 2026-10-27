@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseOverrides } from '@skelly/tool-ui/param-panel';
 import { setModelQuery } from '../src/viewer/shareUrl.ts';
 
 describe('shareable model query', () => {
@@ -14,6 +15,6 @@ describe('shareable model query', () => {
     });
 
     expect(params.get('design')).toBe('archetype-ar');
-    expect(params.has('set')).toBe(true);
+    expect(parseOverrides(params.get('set')!)).toEqual({ params: { barrel: { length: 'extended' } }, presence: {} });
   });
 });

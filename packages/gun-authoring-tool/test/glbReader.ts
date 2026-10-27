@@ -19,10 +19,11 @@ export interface GltfJson {
     componentType: number;
     count: number;
     type: string;
+    byteOffset?: number;
     min?: number[];
     max?: number[];
   }[];
-  bufferViews: { buffer: number; byteOffset: number; byteLength: number }[];
+  bufferViews: { buffer: number; byteOffset: number; byteLength: number; byteStride?: number }[];
   buffers?: { byteLength: number }[];
   extras?: Record<string, unknown>;
 }
@@ -39,6 +40,7 @@ export interface ReadGlb {
   readonly json: GltfJson;
   readonly bin: Uint8Array;
   readonly floats: (accessor: number) => Float32Array;
+  readonly values: (accessor: number) => number[];
 }
 
 export const readGlb = (glb: Uint8Array): ReadGlb => {
@@ -65,6 +67,24 @@ export const readGlb = (glb: Uint8Array): ReadGlb => {
       const comps = a.type === 'VEC3' ? 3 : 1;
       const copy = bin.slice(bv.byteOffset, bv.byteOffset + a.count * comps * 4);
       return new Float32Array(copy.buffer);
+    },
+    values: (accessor) => {
+      const a = json.accessors[accessor]!;
+      const bv = json.bufferViews[a.bufferView]!;
+      const components = a.type === 'VEC3' ? 3 : 1;
+      const componentBytes = a.componentType === 5126 || a.componentType === 5125 ? 4 : 2;
+      const stride = bv.byteStride ?? components * componentBytes;
+      const offset = bv.byteOffset + (a.byteOffset ?? 0);
+      const data = new DataView(bin.buffer, bin.byteOffset, bin.byteLength);
+      const valueAt = (byteOffset: number) => {
+        if (a.componentType === 5126) {
+          return data.getFloat32(byteOffset, true);
+        }
+        return a.componentType === 5125 ? data.getUint32(byteOffset, true) : data.getUint16(byteOffset, true);
+      };
+      return Array.from({ length: a.count * components }, (_, index) =>
+        valueAt(offset + index * componentBytes + Math.floor(index / components) * (stride - components * componentBytes)),
+      );
     },
   };
 };
