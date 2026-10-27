@@ -20,12 +20,12 @@ export interface OpticZoomFrame {
 export const mountedOptic = (
   registry: Pick<Registry, 'items' | 'models'>,
   firearm: Item,
-): { uid: number; item: ItemDef; model: ModelDef } | undefined => {
-  for (const child of Object.values(firearm.slots ?? {})) {
+): { uid: number; slot: string; item: ItemDef; model: ModelDef } | undefined => {
+  for (const [slot, child] of Object.entries(firearm.slots ?? {})) {
     const item = registry.items.get(child.type);
     const model = item?.model === undefined ? undefined : registry.models.get(item.model);
     if (item && model?.gun?.attachment?.kind === 'optic') {
-      return { uid: child.uid, item, model };
+      return { uid: child.uid, slot, item, model };
     }
   }
   return undefined;

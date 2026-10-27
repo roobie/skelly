@@ -1,5 +1,16 @@
 import { readFileSync } from 'node:fs';
-import { Group, Mesh, type Object3D, PerspectiveCamera, Scene, type Vector2, Vector3, type WebGLRenderer } from 'three';
+import {
+  BoxGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  type Object3D,
+  PerspectiveCamera,
+  Scene,
+  type Vector2,
+  Vector3,
+  type WebGLRenderer,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { aimBasis } from '../src/core/aim.ts';
@@ -24,7 +35,7 @@ import { createPlayerBody } from './playerFixture.ts';
 
 vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
 
-const fixture = async (firearm = true, preview?: string) => {
+const fixture = async (firearm = true, preview?: string, heldLook?: ModelLibrary['heldLook']) => {
   const base = baseRegistry();
   const gun = [...base.items.values()].find(
     (def) =>
@@ -69,7 +80,8 @@ const fixture = async (firearm = true, preview?: string) => {
   const models = {
     version: 0,
     ...(await loadFigureModels(registry)),
-    heldLook: () => ({ root: new Group().add(new Group().add(new Group())), parts: [], slots: {} }),
+    partBounds: () => undefined,
+    heldLook: heldLook ?? (() => ({ root: new Group().add(new Group().add(new Group())), parts: [], slots: {} })),
   } as unknown as ModelLibrary;
   const scale = makeScale(0.5);
   const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
@@ -317,33 +329,121 @@ it.each([
 });
 
 it.each([
-  { loadout: 'ar', opticType: 'optic_holographic', search: '', mode: 'world', disc: false },
-  { loadout: 'ar', opticType: 'optic_lpvo_1_6x', search: '', mode: 'world', disc: true },
-  { loadout: 'hunting', opticType: 'optic_hunting_3_9x', search: '', mode: 'world', disc: true },
-  { loadout: 'ar', opticType: 'optic_lpvo_1_6x', search: '?optics=effect', mode: 'effect', disc: false },
+  { loadout: 'ar', opticType: 'optic_holographic', search: '', mode: 'world', disc: true },
+  { loadout: 'ar', opticType: 'optic_holographic', search: '?tube=none', mode: 'world', disc: false },
+  { loadout: 'ar', opticType: 'optic_holographic', search: '?optics=effect', mode: 'effect', disc: false },
 ] as const)(
-  '$opticType with $search selects the default tube from the authored power range',
+  '$opticType with $search selects the requested disc presentation',
   async ({ loadout, opticType, search, mode, disc }) => {
     const f = await fixture(true, `?loadout=${loadout}&optic=${opticType}`);
     vi.stubGlobal('location', { search });
     try {
       expect(configureOpticsSpike(f.view, new Scene(), f.camera)).toBe(mode);
-      const optic = mountedOptic(f.registry, f.item)!;
-      const range = optic.model.gun!.attachment!.properties.magnification;
-      for (const magnification of new Set([range?.min ?? 1, range?.max ?? 1])) {
-        f.view.update(f.camera, f.pose, 0, {
-          firearms: [],
-          readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
-          ...(range ? { opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification } } : {}),
-        });
-        expect(f.view.opticLensFrame!.worldAtUnity).toBe(disc);
-      }
+      f.view.update(f.camera, f.pose, 0, {
+        firearms: [],
+        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+      });
+      expect(f.view.opticLensFrame!.worldAtUnity).toBe(disc);
     } finally {
       vi.unstubAllGlobals();
       f.dispose();
     }
   },
 );
+
+it('the unity disc draws every non-optic gun piece but not its own mounted optic', async () => {
+  const geometry = new BoxGeometry();
+  const material = new MeshBasicMaterial();
+  const compositions = new Map<Object3D, ReturnType<ModelLibrary['heldLook']>>();
+  const f = await fixture(true, '?loadout=ar&optic=optic_lpvo_1_6x', (look) => {
+    const root = new Group().add(new Group().add(new Group()));
+    const parts = new Group().add(
+      new Mesh(geometry, material),
+      new Mesh(geometry, material),
+      new Mesh(geometry, material),
+    );
+    root.children[0]!.children[0]!.add(parts);
+    const slots = Object.fromEntries(
+      look.slots.map(({ slot, model }) => {
+        const frame = new Group();
+        parts.add(frame);
+        if (model === undefined) {
+          return [slot, { frame }];
+        }
+        const fitted = new Group().add(new Mesh(geometry, material), new Mesh(geometry, material));
+        frame.add(fitted);
+        return [slot, { frame, model: fitted, modelId: model }];
+      }),
+    );
+    const composed = { root, parts: [], slots };
+    compositions.set(root, composed);
+    return composed;
+  });
+  const scene = new Scene();
+  vi.stubGlobal('location', { search: '?tube=disc' });
+  configureOpticsSpike(f.view, scene, f.camera);
+  const lens = new OpticLensRenderer();
+  const foreignOptic = new Mesh(geometry, material);
+  scene.add(foreignOptic);
+  try {
+    f.view.update(f.camera, f.pose, 0, {
+      firearms: [],
+      readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+    });
+    const frame = { ...f.view.opticLensFrame!, magnification: 1 };
+    const owner = scene.getObjectByName('held-item-right')!;
+    const optic = mountedOptic(f.registry, f.item)!;
+    const [slot] = Object.entries(f.item.slots!).find(([, child]) => child?.uid === optic.uid)!;
+    const composed = [...compositions].find(([root]) => owner.getObjectById(root.id))![1]!;
+    const mounted = composed.slots[slot]!.model!;
+    const opticPieces = new Set<Mesh>();
+    mounted.traverse((object) => {
+      if (object instanceof Mesh) {
+        opticPieces.add(object);
+      }
+    });
+    const gunPieces: Mesh[] = [];
+    owner.traverse((object) => {
+      if (object instanceof Mesh && !opticPieces.has(object)) {
+        gunPieces.push(object);
+      }
+    });
+    expect(opticPieces.size).toBeGreaterThan(0);
+    expect(gunPieces.length).toBeGreaterThan(0);
+    const render = vi.fn((world: Scene, camera: PerspectiveCamera) => {
+      const drawn = new Set<Mesh>();
+      world.traverseVisible((object) => {
+        if (object instanceof Mesh && camera.layers.test(object.layers)) {
+          drawn.add(object);
+        }
+      });
+      for (const piece of gunPieces) {
+        expect(drawn.has(piece)).toBe(true);
+      }
+      for (const piece of opticPieces) {
+        expect(drawn.has(piece)).toBe(false);
+      }
+      expect(drawn.has(foreignOptic)).toBe(true);
+    });
+    const renderer = {
+      getDrawingBufferSize: (out: Vector2) => out.set(8, 8),
+      getRenderTarget: () => null,
+      setRenderTarget: () => undefined,
+      render,
+    } as unknown as WebGLRenderer;
+    lens.prepare(renderer, scene, f.camera, frame);
+    expect(render).toHaveBeenCalledOnce();
+    for (const piece of opticPieces) {
+      expect(f.camera.layers.test(piece.layers)).toBe(true);
+    }
+  } finally {
+    lens.dispose();
+    f.dispose();
+    geometry.dispose();
+    material.dispose();
+    vi.unstubAllGlobals();
+  }
+});
 
 it('holographic relief changes the physical eye distance and its projected window together', async () => {
   const f = await fixture(true, '?loadout=ar&optic=optic_holographic');

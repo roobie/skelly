@@ -39,6 +39,7 @@ import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import {
   defaultOpticsTube,
+  OPTIC_BODY_LAYER,
   OPTICS_SPIKE_LAYER,
   type OpticsEye,
   type OpticsSpike,
@@ -82,6 +83,7 @@ export class HeldItems {
   );
   private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
+  private opticBody: Object3D | undefined;
 
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
@@ -147,6 +149,7 @@ export class HeldItems {
     }
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
+    this.opticBody = undefined;
     this.animator.update(main, {
       pose,
       recoil,
@@ -159,10 +162,15 @@ export class HeldItems {
     });
     this.presentation.syncWorn(this.inventory);
     if (this.opticsSpike) {
-      this.view.traverse((object) => object.layers.set(OPTICS_SPIKE_LAYER));
+      this.syncOpticLayers();
     }
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
+  }
+
+  private syncOpticLayers(): void {
+    this.view.traverse((object) => object.layers.set(OPTICS_SPIKE_LAYER));
+    this.opticBody?.traverse((object) => object.layers.set(OPTIC_BODY_LAYER));
   }
 
   private poseOptic(
@@ -178,9 +186,10 @@ export class HeldItems {
         : base;
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
-    const tube =
-      this.opticsTube ??
-      defaultOpticsTube(this.opticsSpike, optic?.model.gun?.attachment?.properties.magnification?.max);
+    const tube = this.opticsTube ?? defaultOpticsTube(this.opticsSpike);
+    if (active && optic) {
+      this.opticBody = this.animator.slotModelOf(item, optic.slot);
+    }
     if (heldModel) {
       heldModel.visible = this.opticsSpike !== undefined || !active;
       this.syncOpticPieces(heldModel, active);

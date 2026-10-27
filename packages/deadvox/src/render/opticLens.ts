@@ -12,7 +12,7 @@ import {
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { OpticLensFrame } from '../core/opticView.ts';
 import { opticFieldOfView, opticRendersWorld } from '../core/opticView.ts';
-import { OPTICS_SPIKE_LAYER } from './opticsSpike.ts';
+import { OPTIC_BODY_LAYER, OPTICS_SPIKE_LAYER } from './opticsSpike.ts';
 import { PLAYER_FIGURE_LAYER } from './shadowFlags.ts';
 
 const OPTIC_LENS_SHADER = {
@@ -111,7 +111,10 @@ export class OpticLensRenderer {
     const previous = renderer.getRenderTarget();
     this.zoomCamera.copy(camera);
     if (frame.excludeSelf) {
-      this.zoomCamera.layers.disable(OPTICS_SPIKE_LAYER);
+      this.zoomCamera.layers.disable(OPTIC_BODY_LAYER);
+      if (frame.magnification > 1) {
+        this.zoomCamera.layers.disable(OPTICS_SPIKE_LAYER);
+      }
       this.zoomCamera.layers.disable(PLAYER_FIGURE_LAYER);
     }
     this.zoomCamera.fov = opticFieldOfView(camera.fov, frame.magnification);

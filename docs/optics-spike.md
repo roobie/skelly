@@ -4,6 +4,7 @@ read_if:
   - you compare authored eye relief with aperture-fill-derived ADS placement
   - you change scope disc presentation or investigate a tube-to-disc gap
   - you change ADS-only housing visibility or reticle projection
+  - you change which owner geometry appears inside unity or magnified optic images
   - you investigate a gap where a voxel optic body meets transparent glass
   - you test night-vision or worn-visor effects against the world presentation
 ---
@@ -34,16 +35,26 @@ must describe the same frame: a screen-space aperture cannot stay aligned with
 world geometry posed from an earlier camera sample. See
 `packages/deadvox/src/game/play.ts`, `updateFrame`.
 
-The world disc is the scope default, including at unity power; the unmagnified
-holographic window needs no world replacement. The eyecup comparison is not
-retained: the disc was chosen, and cups only add geometry outside the scope body
-without replacing rays through the tube with world imagery. The hybrid comparison
-also has no purpose without cups. The authored power range distinguishes these
-instruments without dispatching on content identity. See
+The world disc is the default for every optic: the holographic window takes the
+same presentation as a scope at unity power because that image was chosen in the
+visual comparison. The eyecup comparison is not retained: the disc was chosen,
+and cups only add geometry outside the scope body without replacing rays through
+the tube with world imagery. The hybrid comparison also has no purpose without
+cups. See
 `packages/deadvox/src/render/opticsSpike.ts`, `defaultOpticsTube`; and
 `packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
-Both image paths exclude the player's close-eye geometry so neither magnifies
-nor copies the instrument back into its own window.
+At unity, the image must retain the rifle's own sights, barrel and rail: the disc
+replaces the window, not the objects visible through it. Only the active owner's
+mounted optic, including its body and glass, must not copy itself into the image.
+The separate physical-player view stays excluded to avoid drawing a second gun.
+The mounted slot identifies the optic without content-ID branches; see
+`packages/deadvox/src/render/hands.ts`, `HeldItems.syncOpticLayers`.
+
+Above unity, the image remains world-only. A real scope focuses far away and its
+front post blurs out; copying the sharp close-eye gun into a magnified disc would
+misrepresent that view. Blur handling needs a separate visual judgement, not an
+implicit change to the magnified image. See
+`packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
 
 Disc diameter and eye relief are independent authored choices: reducing the
 disc at relief placement exposes more of the physical rim without moving it.

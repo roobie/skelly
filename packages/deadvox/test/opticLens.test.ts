@@ -2,7 +2,7 @@ import { PerspectiveCamera, Scene, type WebGLRenderer, WebGLRenderTarget } from 
 import { expect, it, vi } from 'vitest';
 import type { OpticLensFrame } from '../src/core/opticView.ts';
 import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
-import { OPTICS_SPIKE_LAYER } from '../src/render/opticsSpike.ts';
+import { OPTIC_BODY_LAYER, OPTICS_SPIKE_LAYER } from '../src/render/opticsSpike.ts';
 import { PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
 
 it.each([
@@ -25,7 +25,8 @@ it.each([
   const previous = new WebGLRenderTarget(2, 2);
   let target: WebGLRenderTarget | null = previous;
   const render = vi.fn((_scene: Scene, zoom: PerspectiveCamera) => {
-    expect(zoom.layers.isEnabled(OPTICS_SPIKE_LAYER)).toBe(false);
+    expect(zoom.layers.isEnabled(OPTICS_SPIKE_LAYER)).toBe(magnification === 1);
+    expect(zoom.layers.isEnabled(OPTIC_BODY_LAYER)).toBe(false);
     expect(zoom.layers.isEnabled(PLAYER_FIGURE_LAYER)).toBe(false);
     expect(zoom.layers.isEnabled(0)).toBe(true);
     expect(zoom.layers.isEnabled(5)).toBe(true);
@@ -40,6 +41,7 @@ it.each([
   } as unknown as WebGLRenderer;
   const camera = new PerspectiveCamera();
   camera.layers.enable(OPTICS_SPIKE_LAYER);
+  camera.layers.enable(OPTIC_BODY_LAYER);
   camera.layers.enable(PLAYER_FIGURE_LAYER);
   camera.layers.enable(5);
   try {
@@ -49,6 +51,7 @@ it.each([
     expect(render).toHaveBeenCalledTimes(renderWorld ? 1 : 0);
     expect(target).toBe(previous);
     expect(camera.layers.isEnabled(OPTICS_SPIKE_LAYER)).toBe(true);
+    expect(camera.layers.isEnabled(OPTIC_BODY_LAYER)).toBe(true);
     expect(camera.layers.isEnabled(PLAYER_FIGURE_LAYER)).toBe(true);
   } finally {
     lens.dispose();

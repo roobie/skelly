@@ -7,10 +7,7 @@ export type OpticsSpike = 'effect' | 'world';
 export type OpticsEye = 'fill' | 'relief';
 export type OpticsTube = 'disc' | 'none';
 
-export const defaultOpticsTube = (
-  mode: OpticsSpike | undefined,
-  maximumMagnification: number | undefined,
-): OpticsTube => (mode === 'world' && (maximumMagnification ?? 1) > 1 ? 'disc' : 'none');
+export const defaultOpticsTube = (mode: OpticsSpike | undefined): OpticsTube => (mode === 'world' ? 'disc' : 'none');
 
 const opticsSpikeFromSearch = (search: string): OpticsSpike => {
   const choice = new URLSearchParams(search).get('optics');
@@ -26,6 +23,7 @@ export const configureOpticsSpike = (held: HeldItems, scene: Scene, camera: Pers
     mode === 'world' && (requested === 'disc' || requested === 'none') ? requested : undefined;
   held.configureOpticsSpike(scene, mode, eye, tube);
   camera.layers.enable(OPTICS_SPIKE_LAYER);
+  camera.layers.enable(OPTIC_BODY_LAYER);
   camera.near = 0.01;
   camera.updateProjectionMatrix();
   return mode;
@@ -47,3 +45,5 @@ export const opticsEyeDistance = (
 
 // The magnified scene must not magnify the close-eye gun or worn gear a second time.
 export const OPTICS_SPIKE_LAYER = 2;
+// Unity images retain the gun but must not copy the active optic back into its own window.
+export const OPTIC_BODY_LAYER = 3;
