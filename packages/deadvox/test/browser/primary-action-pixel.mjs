@@ -527,10 +527,18 @@ const heldItemChecks = async (chromium, port) => {
       r.input.pitch = -0.55;
     }, uid);
   });
-  await timePhase('optic-zoom-diagnostic', async () => {
+  await timePhase('optic-zoom-world-only', async () => {
     const record = await page.evaluate(opticZoomRecord, 3);
     await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
-    process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record, null, 1)}\n`);
+    process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
+    assert.equal(record.magnification, 3, 'the scope runs its magnified branch at the stepped power');
+    assert.equal(record.uniforms.uZoomActive, 1, 'the lens pass shows the zoom target');
+    assert.equal(record.zoomCameraLayers & 0b110, 0, 'the zoom camera sees neither the figure nor the self-mask layer');
+    assert.deepEqual(record.drawnObjects, [], 'the zoom camera draws no held, worn or own-body geometry');
+    assert.ok(
+      record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
+      `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
+    );
   });
   await timePhase('held-compass-pixel-assertion', async () => {
     // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
