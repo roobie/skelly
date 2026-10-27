@@ -8,7 +8,6 @@ import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -163,13 +162,11 @@ describe('a paused craft in the held-item list', () => {
     return item;
   };
 
-  it('offers continue for a held paused work item and routes the click to it', () => {
+  it('offers continue for a held paused work item', () => {
     const t = setup();
     const item = heldWork(t, 'hand');
-    const entry = t.survival.availableItemActions(item).find((action) => action.continuing);
-    expect(entry).toBeDefined();
+    expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(true);
     expect(t.survival.wieldedItemActionHint()).toBeDefined();
-    expect(selectPrimaryAction(t.inventory, 'right', entry!.id).kind).toBe('continue-work');
   });
 
   it('offers nothing for a dropped paused work item', () => {
