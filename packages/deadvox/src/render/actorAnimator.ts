@@ -120,7 +120,6 @@ export interface ActorEyeFrame {
 }
 
 export interface ActorViewPlacement {
-  readonly fov: number;
   readonly poseItem: (frame: ActorItemPose) => void;
 }
 
@@ -241,12 +240,14 @@ export class ActorAnimator {
       handling = { firearms: [] },
       viewPlacement,
       emptyFists = this.emptyFists,
+      poseSource,
     }: {
       emptyFists?: boolean;
       pose?: MeleePoseFrame | undefined;
       recoil?: number;
       handling?: HeldHandlingFrame;
       viewPlacement?: ActorViewPlacement;
+      poseSource?: HeldPresentation | undefined;
     } = {},
   ): void {
     this.viewPlacement = viewPlacement;
@@ -308,13 +309,19 @@ export class ActorAnimator {
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }
-    this.poseArms(firearmPoses);
+    if (poseSource) {
+      this.presentation.copyPose(poseSource);
+    }
+    this.poseArms(firearmPoses, poseSource);
     this.view.updateMatrixWorld(true);
   }
 
   /** Bends each arm to its grip point, with the hand frame its hold gives it, after every mover has placed the arm. */
-  private poseArms(firearmPoses: readonly HeldFirearmPose[]): void {
+  private poseArms(firearmPoses: readonly HeldFirearmPose[], poseSource?: HeldPresentation): void {
     for (const [side, arm] of this.arms) {
+      if (poseSource?.armRigs.has(side)) {
+        continue;
+      }
       const revolver = this.revolverGripFrame(side, firearmPoses);
       const displayPalm = revolver ? undefined : this.displayPalms.get(side);
       // A hand off its hold (working the action, loading) grips where its arm was moved to, not at the hold.
@@ -517,7 +524,7 @@ export class ActorAnimator {
       item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
     const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
     const aimingDownSights = Boolean(
-      this.viewPlacement && item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
+      item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
     );
     const poseInput =
       itemDefinition?.firearm && modelDefinition
@@ -533,7 +540,6 @@ export class ActorAnimator {
             loweredPitchRadians,
             adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
               ?.adsApertureFill,
-            ...(this.viewPlacement ? { verticalFovDegrees: this.viewPlacement.fov } : {}),
           }
         : undefined;
     const basePose = poseInput ? this.presentation.firearmTransform(poseInput) : undefined;

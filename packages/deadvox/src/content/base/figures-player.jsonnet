@@ -55,6 +55,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           holding: handPose(80, 50, 30),
           open: handPose(10, 10, 0),
           pistolGrip: handPose(85, 70, 35),
+          pistolWrap: handPose(95, 45, 20),
+          pistolCup: handPose(95, 20, 10),
           stockWrist: handPose(90, 65, 35),
           forend: handPose(90, 55, 30),
         },

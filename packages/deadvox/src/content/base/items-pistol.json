@@ -239,22 +239,24 @@
         }
       },
       "hands": {
-        "adsEyeReliefMetres": 0.20000000000000001,
+        "adsEyeReliefMetres": 0.65000000000000002,
+        "adsViewEyeReliefMetres": 0.20000000000000001,
         "firing": {
-          "at": [-0.069142999999999996, -0.028199999999999999, 0.016],
+          "at": [-0.099142999999999995, -0.053199999999999997, 0.016],
           "fingers": [0.8660254037844386, 0.5, 0],
           "palm": [0, 0, -1],
-          "pose": "pistolGrip"
+          "pose": "pistolWrap"
         },
-        "loweredPitchRadians": 0.12,
-        "seat": [0, -0.16, -0.22],
+        "loweredPitchRadians": 0,
+        "seat": [0, -0.38, -0.28000000000000003],
         "support": {
-          "at": [-0.063142999999999991, -0.045200000000000004, -0.032000000000000001],
+          "at": [-0.095142999999999991, -0.068199999999999997, -0.040000000000000001],
           "fingers": [0.8660254037844386, 0.5, 0],
           "palm": [0, 0, 1],
-          "pose": "pistolGrip"
+          "pose": "pistolCup"
         },
-        "torsoForwardDegrees": 20
+        "torsoForwardDegrees": 20,
+        "viewOffset": [0, 0.22, 0.059999999999999998]
       },
       "hold": "forward",
       "id": "pistol_service",

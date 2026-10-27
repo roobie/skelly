@@ -4,6 +4,7 @@ read_if:
   - you're changing mechanical firearm state or its presentation boundary
   - you're evaluating firearm attachment effects
   - you're changing firearm hold poses or their anatomical reach
+  - you're changing first-person/world pose ownership
 tags: [deadvox, gungen, adr, firearms, export, feel]
 ---
 
@@ -23,7 +24,11 @@ Mechanical state—cycle, ammunition and magazine contents—belongs to the simu
 
 Trigger selection is content, independent of the mechanical cycle: a self-loading action does not imply held-trigger fire. Semi-automatic pulls use input edges, while the simulation's cycle still prevents overlapping shots; absent selection retains automatic cadence for existing cycling guns. See `src/core/schema.ts`, `ActionSchema`, `src/game/firearmTrigger.ts`, `FirearmTrigger`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
 
-A pistol needs two palm contacts without a shoulder seat: treating its grip as a long-gun stock turns the muzzle away from aim. Authored free-held contacts preserve an upright grip across both views without changing anatomy. Hand contacts must remain within fixed anatomical reach; a more extended presentation needs a reach-feasible stance, not stretched arms. Compressed holds use the posed body's shoulder anchors instead of the deliberately low view-only roots, so presentation offsets cannot masquerade as anatomical reach limits. Authored eye standoff keeps palms out of camera and optic space; see `src/render/playerFigure.ts`, `firstPersonBodyShoulder`. Slide-racking uses the shared support-hand path with an authored contact and an approach before slide movement, so the slide cannot leave before the hand reaches it. See `src/core/heldPose.ts`, `heldFirearmTransform`, and `src/render/actorAnimator.ts`, `ActorAnimator`.
+A pistol needs two palm contacts without a shoulder seat: treating its grip as a long-gun stock turns the muzzle away from aim. Hip follows a compressed ready technique, with elbows down, forearms forward and a level muzzle; ADS extends the arms toward the eye-aligned sights. Contacts sit on the grip rather than beside the slide, so closed fingers wrap the front strap and the support hand cups the firing hand. Both holds must fit fixed anatomy, not stretched arms or wider joint limits. See `src/core/heldPose.ts`, `heldFirearmTransform`.
+
+The world actor owns the final solve. Both projections consume its item placements and articulated joints: an observer or a view-only shoulder offset must not invent a second pose. Physical shoulders exclude first-person body-clearance offsets: camera framing must not move an anatomical joint. Content separates physical standoff from first-person framing; the ADS view moves along the sight line without shortening the world arms. See `src/render/heldViews.ts`, `createHeldViews`, `src/render/heldPresentation.ts`, `HeldPresentation.copyPose`, and `src/render/playerFigure.ts`, `heldBodyShoulder`.
+
+Slide-racking uses the shared support-hand path with an authored contact and an approach before slide movement, so the slide cannot leave before the hand reaches it. See `src/render/actorAnimator.ts`, `ActorAnimator`.
 
 Spent cases are saved as a calibre-specific count on the block where they land. Deterministic scatter makes them recoverable without saving a physics body per shot. See `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
 

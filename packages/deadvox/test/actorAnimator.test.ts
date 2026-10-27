@@ -6,6 +6,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { mountedOptic } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
@@ -14,23 +15,28 @@ import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
+vi.mock('../src/render/armRig.ts', { spy: true });
 
-const fixture = async (firearm = true) => {
+const fixture = async (firearm = true, itemType?: string) => {
   const base = baseRegistry();
-  const gun = [...base.items.values()].find(
-    (def) =>
-      def.firearm &&
-      base.models
-        .get(def.model!)
-        ?.gun?.attachments?.some((attachment) =>
-          [...base.models.values()].some(
-            (model) => model.gun?.attachment?.id === attachment.id && model.gun.attachment.kind === 'optic',
-          ),
-        ),
-  );
+  const gun = itemType
+    ? base.items.get(itemType)
+    : [...base.items.values()].find(
+        (def) =>
+          def.firearm &&
+          !base.models.get(def.model!)?.hands?.adsEyeReliefMetres &&
+          base.models
+            .get(def.model!)
+            ?.gun?.attachments?.some((attachment) =>
+              [...base.models.values()].some(
+                (model) => model.gun?.attachment?.id === attachment.id && model.gun.attachment.kind === 'optic',
+              ),
+            ),
+      );
   if (!gun) {
     throw new Error('Need an optic-equipped firearm source');
   }
@@ -92,6 +98,49 @@ const fixture = async (firearm = true) => {
   return { registry, inventory, item, world, actor, view, update, camera, pose, physical, transforms, dispose };
 };
 
+it('world and first-person pistol joints consume one actor-space solve per frame', async () => {
+  const jointsOf = (owner: HeldPresentation): Map<string, Vector3> =>
+    new Map(
+      [...owner.armRigs].flatMap(([side, rig]) =>
+        (['shoulder', 'elbow', 'hand'] as const).map((joint) => {
+          expect(rig[joint].scale.y).toBeLessThanOrEqual(1 + 1e-6);
+          return [`${side}-${joint}`, owner.frame.worldToLocal(rig[joint].getWorldPosition(new Vector3()))] as const;
+        }),
+      ),
+    );
+  const f = await fixture(true, 'pistol_service');
+  const solve = vi.mocked(solveArmRig);
+  try {
+    for (const aimingDownSights of [false, true]) {
+      const actorJoints = new Map<string, Vector3>();
+      for (const thirdPerson of [true, false]) {
+        f.world.sync({ ...f.actor, thirdPerson });
+        solve.mockClear();
+        f.update(f.camera, f.pose, 0, {
+          firearms: [],
+          readiness: { uid: f.item.uid, progress: aimingDownSights ? 1 : 0, aimingDownSights },
+        });
+        expect(solve).toHaveBeenCalledTimes(2);
+        const physical = (f.world as unknown as { presentation: HeldPresentation }).presentation;
+        const overlay = (heldState(f.view) as { presentation: HeldPresentation }).presentation;
+        expect(physical.armRigs.size).toBe(2);
+        const shown = jointsOf(overlay);
+        for (const [key, at] of jointsOf(physical)) {
+          expect(shown.get(key)!.distanceTo(at), `${key} ADS=${aimingDownSights}`).toBeLessThan(1e-6);
+          if (thirdPerson) {
+            actorJoints.set(key, at);
+          } else {
+            expect(at.distanceTo(actorJoints.get(key)!)).toBeLessThan(1e-6);
+          }
+        }
+      }
+    }
+  } finally {
+    solve.mockClear();
+    f.dispose();
+  }
+});
+
 it('orbit and spectator orientation cannot change world handling transforms for the same actor input', async () => {
   const f = await fixture();
   const handling = {
@@ -135,9 +184,10 @@ it('the play frame poses overlay and world held views from this frame rather tha
   const worldSample = new PerspectiveCamera();
   const syncHeldView = f.world.syncHeldView.bind(f.world);
   const world = vi.spyOn(f.world, 'syncHeldView').mockImplementation((...args) => {
-    syncHeldView(...args);
+    const physicalPose = syncHeldView(...args);
     worldSample.position.copy(f.physical().position);
     worldSample.quaternion.copy(f.physical().quaternion);
+    return physicalPose;
   });
   const steps: Record<string, () => void> = {
     updateVisualFeedback: () => {
@@ -191,7 +241,7 @@ it('both adapters consume one animation advance per actor tick', async () => {
   try {
     f.update(f.camera, f.pose, 0, { firearms: [], dt: 1 / 60 });
     expect(advance).toHaveBeenCalledTimes(1);
-    expect(view.mock.calls[0]![3]).toBe(world.mock.calls[0]![1]);
+    expect(view.mock.calls[0]![3]!.magazineRaise).toBe(world.mock.calls[0]![1].magazineRaise);
     f.update(f.camera, f.pose, 0, { firearms: [], dt: 1 / 60 });
     expect(advance).toHaveBeenCalledTimes(2);
   } finally {
@@ -202,7 +252,7 @@ it('both adapters consume one animation advance per actor tick', async () => {
   }
 });
 
-it('final arm solving samples the rummage mover output in world and overlay, and cancellation restores grips', async () => {
+it('the final actor solve samples rummage output before projection and cancellation restores grips', async () => {
   const f = await fixture(false);
   f.world.sync({ ...f.actor, heldItems: { registry: f.registry, hands: f.inventory.hands } });
   const queue = new HandlingQueue(f.inventory);
@@ -230,8 +280,8 @@ it('final arm solving samples the rummage mover output in world and overlay, and
     queue.tick(queue.remaining / 2);
     f.update(f.camera, f.pose, 0, { firearms: [], job: queue.jobs[0] });
     expect(f.transforms()).not.toEqual(rest);
-    expect(solved.some(({ owner }) => owner.frame.name === 'world-held-items')).toBe(true);
-    expect(solved.some(({ owner }) => owner.frame.name === 'held-items-view')).toBe(true);
+    expect(solved).toHaveLength(2);
+    expect(solved.every(({ owner }) => owner.frame.name === 'world-held-items')).toBe(true);
     for (const { anchor, point, hand } of solved) {
       expect(anchor.getWorldPosition(new Vector3()).distanceTo(point)).toBeLessThan(1e-8);
       expect(hand.getWorldPosition(new Vector3()).distanceTo(point)).toBeLessThan(1e-8);

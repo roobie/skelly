@@ -5,7 +5,7 @@ import { expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import type { ArmRig } from '../src/render/armRig.ts';
+import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import {
   actionPartPaths,
   cloneHeldModel,
@@ -14,7 +14,7 @@ import {
   sampleActionStroke,
 } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
-import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { heldState } from './heldState.ts';
@@ -80,11 +80,24 @@ it('keeps pistol palms attached to their held and moving slide contacts without 
         firearms: [],
         readiness: { uid: gun.uid, progress, aimingDownSights },
       });
-      const state = heldState(view) as { armRigs: Map<string, ArmRig>; gripAnchors: Map<string, Object3D> };
+      const state = heldState(view) as {
+        armRigs: Map<string, ArmRig>;
+        gripAnchors: Map<string, Object3D>;
+        heldByHand: Map<string, Object3D>;
+      };
+      const gunFrame = heldModelFrame(state.heldByHand.get('right')!.children[0]!);
       expect(state.armRigs.size).toBe(2);
       for (const side of ['right', 'left']) {
         const rig = state.armRigs.get(side)!;
         const anchor = state.gripAnchors.get(side)!;
+        const fingers = rig.hand.getObjectByName(ARM_NODE.knuckles)!;
+        const knuckles = gunFrame.worldToLocal(fingers.getWorldPosition(new Vector3()));
+        const curled = new Vector3(0, -1, 0).transformDirection(fingers.matrixWorld);
+        const straight = new Vector3(0, 1, 0).transformDirection(rig.hand.matrixWorld);
+        const palm = new Vector3(0, 0, 1).transformDirection(rig.hand.matrixWorld);
+        expect(curled.dot(straight), `${side} fingers curl past the front strap`).toBeLessThanOrEqual(0);
+        expect(curled.dot(palm), `${side} fingers turn toward the grip`).toBeGreaterThan(0);
+        expect(knuckles.y, `${side} knuckles wrap the grip below the trigger guard`).toBeLessThan(model.grip!.at[1]);
         expect(
           rig.hand.getWorldPosition(new Vector3()).distanceTo(anchor.getWorldPosition(new Vector3())),
         ).toBeLessThan(1e-6);

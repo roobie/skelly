@@ -36,10 +36,20 @@
             "thumbAcrossDegrees": 10,
             "thumbInDegrees": 0
           },
+          "pistolCup": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 20,
+            "thumbInDegrees": 10
+          },
           "pistolGrip": {
             "fingersDegrees": 85,
             "thumbAcrossDegrees": 70,
             "thumbInDegrees": 35
+          },
+          "pistolWrap": {
+            "fingersDegrees": 95,
+            "thumbAcrossDegrees": 45,
+            "thumbInDegrees": 20
           },
           "stockWrist": {
             "fingersDegrees": 90,

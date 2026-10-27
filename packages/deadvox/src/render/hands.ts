@@ -32,7 +32,7 @@ import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './act
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
-import { firstPersonBodyShoulder, firstPersonShoulder } from './playerFigure.ts';
+import { firstPersonShoulder, heldBodyShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
 export type { HeldFirearmPose, HeldHandlingFrame } from './actorAnimator.ts';
@@ -65,6 +65,7 @@ export class HeldItems {
   );
   private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
+  private readonly eyeOffset = new Vector3();
 
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
@@ -105,7 +106,7 @@ export class HeldItems {
     main: PerspectiveCamera,
     pose?: MeleePoseFrame,
     recoil = 0,
-    handling: HeldHandlingFrame = { firearms: [] },
+    handling: HeldHandlingFrame & { poseSource?: HeldPresentation | undefined } = { firearms: [] },
   ): void {
     const version = `${this.inventory.version}:${this.models?.version ?? 0}`;
     if (version !== this.drawn) {
@@ -114,18 +115,31 @@ export class HeldItems {
     }
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
+    const item = Object.values(this.inventory.hands).find(
+      (held) => held && defOf(this.inventory.registry, held.type).firearm,
+    );
+    const modelId = item && defOf(this.inventory.registry, item.type).model;
+    const hands = modelId ? this.inventory.registry.models.get(modelId)?.hands : undefined;
+    const ads = item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights;
+    this.eyeOffset.set(0, 0, 0);
+    if (ads && hands?.adsViewEyeReliefMetres !== undefined) {
+      this.eyeOffset.z = (hands.adsEyeReliefMetres ?? 0) - hands.adsViewEyeReliefMetres;
+    } else if (hands?.viewOffset) {
+      this.eyeOffset.set(...hands.viewOffset);
+    }
     this.animator.update(main, {
       pose,
       recoil,
       handling,
+      poseSource: handling.poseSource,
       viewPlacement: {
-        fov: main.fov,
         poseItem: (frame) => this.poseOptic(frame, main),
       },
     });
     this.presentation.syncWorn(this.inventory);
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
+    this.camera.position.sub(this.eyeOffset.clone().applyQuaternion(main.quaternion));
   }
 
   private poseOptic(
@@ -199,7 +213,7 @@ export class HeldItems {
       .add(eyeOffset)
       .addScaledVector(forward, distance);
     this.opticWindow.visible = true;
-    const center = this.opticWindow.position;
+    const center = this.opticWindow.position.clone().add(this.eyeOffset);
     const aperture = projectLensAperture({
       center: [center.x, center.y, center.z],
       right: [right.x, right.y, right.z],
@@ -220,7 +234,7 @@ export class HeldItems {
   viewShoulder(side: HandSide): Vector3 {
     const lean = heldTorsoForwardDegrees(this.inventory);
     const shoulder = lean
-      ? firstPersonBodyShoulder(this.figure, this.inventory.registry.models, side, {
+      ? heldBodyShoulder(this.figure, this.inventory.registry.models, side, {
           eyeMetres: this.inventory.registry.player.get(CORE_CONTENT_IDS.player)!.eye,
           leanDegrees: lean,
         })

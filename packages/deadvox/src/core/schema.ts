@@ -2084,7 +2084,16 @@ export type CompassDial = InferOutput<typeof CompassDialSchema>;
  * How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, a firing hand on a pistol
  * grip or on a stock wrist, or a support hand on a forend.
  */
-const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'forend'] as const;
+const HAND_POSES = [
+  'fist',
+  'holding',
+  'open',
+  'pistolGrip',
+  'pistolWrap',
+  'pistolCup',
+  'stockWrist',
+  'forend',
+] as const;
 
 /**
  * One hand's hold on a held model, in the model's frame as authored for a right-handed hold: where the palm's face
@@ -2100,6 +2109,8 @@ const HandsModelSchema = strictObject({
   loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
   torsoForwardDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
   adsEyeReliefMetres: optional(Positive),
+  viewOffset: optional(Point),
+  adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
 });
@@ -3598,6 +3609,8 @@ const ArmRigSchema = strictObject({
     holding: HandPoseSchema,
     open: HandPoseSchema,
     pistolGrip: HandPoseSchema,
+    pistolWrap: HandPoseSchema,
+    pistolCup: HandPoseSchema,
     stockWrist: HandPoseSchema,
     forend: HandPoseSchema,
   }),

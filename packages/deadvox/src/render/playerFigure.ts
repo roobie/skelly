@@ -138,7 +138,7 @@ export const firstPersonShoulder = (figure: FigureDef, side: HandSide): Vec3 => 
   return [side === 'right' ? x : -x, y, z];
 };
 
-export const firstPersonBodyShoulder = (
+export const heldBodyShoulder = (
   figure: FigureDef,
   models: ReadonlyMap<string, ModelDef>,
   side: HandSide,
@@ -151,10 +151,7 @@ export const firstPersonBodyShoulder = (
   return [
     x,
     layout.hipHeight + aboveHip * Math.cos(lean) + z * Math.sin(lean) - eyeMetres,
-    PLAYER_BODY_REAR_OFFSET -
-      aboveHip * Math.sin(lean) +
-      z * Math.cos(lean) +
-      (FIGURE_BOXES.head.at[1] - layout.hipHeight) * Math.sin(lean),
+    -aboveHip * Math.sin(lean) + z * Math.cos(lean),
   ];
 };
 
@@ -459,13 +456,18 @@ export class PlayerMeshes {
   }
 
   /** Actor action input is independent of the observing camera. */
-  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldHandlingFrame, recoil = 0): void {
+  syncHeldView(
+    handPose: MeleePoseFrame | undefined,
+    handling: HeldHandlingFrame,
+    recoil = 0,
+  ): HeldPresentation | undefined {
     this.handPose = handPose;
     this.handling = handling;
     this.recoil = recoil;
     if (this.lastPose) {
       this.syncHeld(this.lastPose);
     }
+    return this.presentation;
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and mounts resolve in one frame.
@@ -482,7 +484,7 @@ export class PlayerMeshes {
     this.positionHeldFrame(pose, registry);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
-      this.posePoint(joint, 'body', pose);
+      this.posePoint(joint, 'body', pose, true);
       return this.heldFrame.worldToLocal(this.dummy.position.clone());
     };
     const holdingSide = hands.left ? 'left' : 'right';
@@ -626,7 +628,7 @@ export class PlayerMeshes {
   /**
    * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint, then all lean.
    */
-  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose): void {
+  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose, physical = false): void {
     const { yaw, stepOffset, gaitPhase, moving } = pose;
     const hip = this.layout.hipHeight;
     const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees, armsForwardDegrees } = this.shownPose;
@@ -645,12 +647,16 @@ export class PlayerMeshes {
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
     this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
-    if (!this.placement.thirdPerson) {
+    if (!(this.placement.thirdPerson || physical)) {
       // The eye stays over the standing column, so the lean must not carry the head, and the body behind it, ahead of the eye.
       const headAboveHip = FIGURE_BOXES.head.at[1] - hip;
       this.localPosition[2] -= headAboveHip * Math.sin(-(torsoForwardDegrees + this.holdingLean(pose)) * RADIANS);
     }
-    setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
+    setPlayerFigurePosition(
+      this.dummy.position,
+      physical ? { ...this.placement, thirdPerson: true } : this.placement,
+      this.localPosition,
+    );
     this.dummy.rotation.order = 'YXZ';
     this.dummy.rotation.set(stride + swing, yaw, 0);
   }
