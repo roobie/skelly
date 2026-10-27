@@ -143,6 +143,12 @@ describe('loot economy descriptions', () => {
     expect(rolledInCarriedTier, 'some table rolls something in a tier items carry').toBeGreaterThan(0);
   });
 
+  it('gives every placed-only item no economy usage, so none spawns as random loot', () => {
+    const placedOnly = [...baseRegistry().items.values()].filter((item) => item.notLoot);
+    expect(placedOnly.length, 'some item is authored placed-only').toBeGreaterThan(0);
+    expect(placedOnly.filter((item) => item.economy === undefined || item.economy.usage.length > 0)).toEqual([]);
+  });
+
   it('admits no Military-only item under Police and no Police-only item under Hunting, in the loaded content', () => {
     const items = [...baseRegistry().items.values()].filter((item) => item.economy !== undefined);
     const admits = (usage: LootContext['usage'][number], tier: LootContext['tier']): string[] =>
