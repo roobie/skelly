@@ -299,7 +299,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     opticalAxisY: 1.5,
     ocularX: -2.25,
     ocularOpeningDiameterU: 2.5,
-    eyeReliefU: 2.5,
+    eyeReliefU: opticPresentation.nonMagnifying.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 2.25,
     solids: [
@@ -373,7 +373,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     opticalAxisY: 2,
     ocularX: -3,
     ocularOpeningDiameterU: 2.5,
-    eyeReliefU: 3,
+    eyeReliefU: opticPresentation.nonMagnifying.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 3,
     solids: [
@@ -401,7 +401,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     opticalAxisY: 2.875,
     ocularX: -3.75,
     ocularOpeningDiameterU: 2.75,
-    eyeReliefU: opticPresentation.holographic.eyeReliefU,
+    eyeReliefU: opticPresentation.nonMagnifying.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 4,
     solids: [

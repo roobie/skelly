@@ -657,7 +657,7 @@
           "sight": {
             "direction": [1, 0, 0],
             "eye": [-0.025874999999999999, 0.017250000000000001, 0],
-            "eyeReliefMetres": 0.028749999999999998,
+            "eyeReliefMetres": 0.161,
             "kind": "optic",
             "ocularDiameterMetres": 0.028749999999999998,
             "up": [0, 1, 0]
@@ -702,7 +702,7 @@
           "sight": {
             "direction": [1, 0, 0],
             "eye": [-0.034500000000000003, 0.023, 0],
-            "eyeReliefMetres": 0.034500000000000003,
+            "eyeReliefMetres": 0.161,
             "kind": "optic",
             "ocularDiameterMetres": 0.028749999999999998,
             "up": [0, 1, 0]

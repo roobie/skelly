@@ -687,11 +687,12 @@ export const opticEyeRelief: Rule = {
     for (const [sight] of placedOptics(r)) {
       const params = r.params.get(sight);
       const optic = getOptic(params?.type?.value, params?.mountSection?.value);
-      if (optic.eyeReliefU === undefined) {
+      // The spike must show stockless non-magnifying sights before deciding their final fit policy.
+      if (optic.eyeReliefU === undefined || (optic.magnification?.max ?? 1) <= 1) {
         continue;
       }
       const stocks = placedParts(r, 'stock');
-      // Compact optics can serve stockless designs; long-eye-relief optics need a cheek datum.
+      // Short-eye-relief magnifying optics can serve stockless designs.
       if (stocks.length === 0) {
         if (optic.eyeReliefU > 4) {
           issues.push({

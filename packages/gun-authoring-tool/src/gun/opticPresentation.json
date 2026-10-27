@@ -2,10 +2,12 @@
   "holographic": {
     "batteryRearX": -3,
     "batteryTopY": 1,
-    "eyeReliefU": 14,
     "hoodFrontX": 0.25,
     "nearFrameDepthU": 0.25,
     "nearFrameThicknessU": 0.25
+  },
+  "nonMagnifying": {
+    "eyeReliefU": 14
   },
   "scopes": {
     "hunting-3-9x": {

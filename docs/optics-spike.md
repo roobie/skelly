@@ -2,6 +2,7 @@
 read_if:
   - you evaluate camera-only optical borders against authored world geometry
   - you compare authored eye relief with aperture-fill-derived ADS placement
+  - you change the spike's non-magnifying stock-cheek fit exemption
   - you change scope disc presentation or investigate a tube-to-disc gap
   - you change ADS-only housing visibility or reticle projection
   - you change which owner geometry appears inside unity or magnified optic images
@@ -34,6 +35,13 @@ pose or a change to the gameplay camera trajectory. The camera and instrument
 must describe the same frame: a screen-space aperture cannot stay aligned with
 world geometry posed from an earlier camera sample. See
 `packages/deadvox/src/game/play.ts`, `updateFrame`.
+
+Fixed-power unmagnified sights share authored relief so their eye placement can
+be compared consistently. Their stock-cheek constraint is suspended for the look
+comparison, not rejected as a final authoring rule: the pistol view must be judged
+before deciding that constraint. See
+`packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and
+`packages/gun-authoring-tool/src/gun/rules.ts`, `opticEyeRelief`.
 
 Every unmagnified optic shares one presentation: the world disc.
 The holographic window follows the scope-at-unity presentation because that
