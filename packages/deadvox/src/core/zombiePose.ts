@@ -102,13 +102,14 @@ export interface PosedShambler {
   readonly blockSize: number;
 }
 
-const actorForFigure = (
-  figure: ShamblerFigure,
-): {
-  actor: WalkActor;
-  bones: readonly Bone[];
-  idleBases: Readonly<Record<IdleStance, Pose>>;
-} => {
+interface SeededActor {
+  readonly actor: WalkActor;
+  readonly bones: readonly Bone[];
+  /** Built on first use: the idle stances stand on legs, which a crawler's amputated body lacks. */
+  idleBases?: Readonly<Record<IdleStance, Pose>>;
+}
+
+const actorForFigure = (figure: ShamblerFigure): SeededActor => {
   const {
     realized: {
       body: { bones },
@@ -122,15 +123,19 @@ const actorForFigure = (
     params: genome.params as HumanoidParams,
     seed: figure.seed,
   };
-  return {
-    actor,
-    bones,
-    idleBases: { slack: idleBasePose(actor, 'slack'), aggravated: idleBasePose(actor, 'aggravated') },
-  };
+  return { actor, bones };
 };
 
-const actorCache = new Map<string, ReturnType<typeof actorForFigure>>();
-const actorForSeed = (model: string, seed: number): ReturnType<typeof actorForFigure> => {
+const idleBasesOf = (seeded: SeededActor): Readonly<Record<IdleStance, Pose>> => {
+  seeded.idleBases ??= {
+    slack: idleBasePose(seeded.actor, 'slack'),
+    aggravated: idleBasePose(seeded.actor, 'aggravated'),
+  };
+  return seeded.idleBases;
+};
+
+const actorCache = new Map<string, SeededActor>();
+const actorForSeed = (model: string, seed: number): SeededActor => {
   const key = `${model}:${seed}`;
   let actor = actorCache.get(key);
   if (!actor) {
@@ -138,6 +143,21 @@ const actorForSeed = (model: string, seed: number): ReturnType<typeof actorForFi
     actorCache.set(key, actor);
   }
   return actor;
+};
+
+/** A legged body's walk over its stance-blended idle. */
+const humanoidWalkPose = (seeded: SeededActor, input: ShamblerPoseInput, stanceWeight: number): Pose => {
+  const idleBases = idleBasesOf(seeded);
+  const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
+  const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
+  const stance: IdleStance = stanceWeight >= 0.5 ? 'aggravated' : 'slack';
+  const idle = applyIdleMotion(
+    blendPose(idleBases.slack, idleBases.aggravated, stanceWeight),
+    stance,
+    input.idleTime ?? 0,
+    input.id ?? input.seed,
+  );
+  return walkPose(seeded.actor, clock, input.speed, { idle });
 };
 
 /** Stable per-entity hit-flinch side; shared by render and simulation pose generation. */
@@ -340,22 +360,13 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   if (model === 'acid') {
     return posedAcid(input, figure);
   }
-  const { actor, bones, idleBases } = actorForSeed(model, input.seed);
-  const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
-  const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
+  const seeded = actorForSeed(model, input.seed);
+  const { actor, bones } = seeded;
   const attackTime = attackTimeFor(input);
-  const stanceWeight = input.stanceWeight ?? targetStanceWeight(input);
-  const stance: IdleStance = stanceWeight >= 0.5 ? 'aggravated' : 'slack';
-  const idle = applyIdleMotion(
-    blendPose(idleBases.slack, idleBases.aggravated, stanceWeight),
-    stance,
-    input.idleTime ?? 0,
-    input.id ?? input.seed,
-  );
   const walk =
     model === 'crawler'
       ? crawlerGaitPose(figure.realized, input.gaitPhase, input.speed)
-      : walkPose(actor, clock, input.speed, { idle });
+      : humanoidWalkPose(seeded, input, input.stanceWeight ?? targetStanceWeight(input));
   const context = { model, figure, actor };
   const basePose = withAttackPose(context, walk, attackTime);
   const headPose: Pose =

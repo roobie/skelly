@@ -11,7 +11,6 @@ import { type Body, stepBody } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
-import { figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, ZombieSystem } from '../core/zombies.ts';
 import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
@@ -183,7 +182,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     zombieMeshes =
       run.actors === 'detailed'
         ? new MobActorMeshes(s, count, {
-            figureSeeds: figureSeedPool(engine.registry.zombies),
+            zombies: engine.registry.zombies,
             look: lookDefaultsOf(engine.registry).mobActors,
             maxCorpses: graphics.mobActors.maxCorpses,
           })

@@ -1,4 +1,8 @@
 local figureSeeds = std.range(1, 8);
+// A seed must realize a valid body for its type's model by itself (mobgen's `zombieFigure` refuses one that
+// does not), so a model whose template rejects some shared seeds authors its own.
+local crawlerFigureSeeds = [1, 2, 3, 5, 6, 7, 11];
+local acidFigureSeeds = [1, 2, 3, 4, 6, 8];
 local severedItems = {
   head: 'shambler_head',
   torso: 'shambler_torso',
@@ -462,8 +466,8 @@ local content = {
       "strength": 3,
       "name": "Crawler",
       "cause": "a crawler",
-      "model": "shambler",
-      "figureSeeds": figureSeeds,
+      "model": "crawler",
+      "figureSeeds": crawlerFigureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 0.08,
       "sounds": {
@@ -663,6 +667,7 @@ local content = {
       "name": "Acid zombie",
       "cause": "an acid zombie",
       "model": "acid",
+      "figureSeeds": acidFigureSeeds,
       "authoredOnly": true,
       "acidBody": {
         "color": "#9ad21e",

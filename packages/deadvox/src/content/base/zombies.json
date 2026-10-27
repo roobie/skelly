@@ -1730,7 +1730,7 @@
       },
       "earHeightMetres": 1.3,
       "eyeHeightMetres": 1.3,
-      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "figureSeeds": [1, 2, 3, 5, 6, 7, 11],
       "hearing": 1,
       "hearingModel": {
         "alertCooldownSimSeconds": 60,
@@ -1777,7 +1777,7 @@
         }
       },
       "loot": "shambler_pockets",
-      "model": "shambler",
+      "model": "crawler",
       "name": "Crawler",
       "nightSight": 7,
       "regions": {
@@ -2220,7 +2220,7 @@
       },
       "earHeightMetres": 1.3,
       "eyeHeightMetres": 1.3,
-      "figureSeeds": [1, 2, 3, 4, 5, 6, 7, 8],
+      "figureSeeds": [1, 2, 3, 4, 6, 8],
       "footstepSound": "shambler",
       "hearing": 1,
       "hearingModel": {

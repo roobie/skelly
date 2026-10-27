@@ -3781,7 +3781,7 @@ describe('dismemberment', () => {
       const id = system.add(type, [4, 1, 4], [0, 0, -1]);
       const zombie = system.store.get(id)!;
       renderer = new MobActorMeshes(BLOCK_SIZE, 64, {
-        figureSeeds: figureSeedPool(registry.zombies),
+        zombies: registry.zombies,
         poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
       });
       renderer.setWorld((_x, y, _z) => {

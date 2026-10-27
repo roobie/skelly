@@ -2710,6 +2710,16 @@ low profile that limits its bite to the player's legs. Its posture determines
 posed hit regions, so gait and flinches follow those regions. Keep other short or
 hunched forms as distinct future types, not crawler variants.
 
+A type's body is a content choice: its `model` names a mobgen figure the renderer
+can build, and the renderer draws each type with the model and figure seeds its
+content selects, so a model left out of that list cannot be selected. A figure
+seed must realize a valid body by itself. One that fell through to the next valid
+seed would draw two seeds as one body and quietly shrink the variety content
+authored, so it is refused, and a model whose template rejects some shared seeds
+authors its own. See `src/core/zombieModels.ts`, `ZOMBIE_MODELS`;
+`src/render/mobActors.ts`, `figureSeedsByModel`; and
+`packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+
 All mobs look toward the player only when they perceive the player. Hearing and
 noticed lights can also draw gaze; hearing direction uses deterministic jitter,
 and a noticed light uses the same near-perception presentation as noise. Gaze,
