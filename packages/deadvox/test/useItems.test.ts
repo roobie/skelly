@@ -8,6 +8,7 @@ import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { slotsReason } from '../src/core/magazine.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival, type SurvivalHooks } from '../src/game/survival.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -153,6 +154,36 @@ const setup = (
   };
   return { sim, inventory, queue, survival, notices, hold, reach, player };
 };
+
+describe('a paused craft in the held-item list', () => {
+  const heldWork = (t: ReturnType<typeof setup>, where: 'hand' | 'pile') => {
+    const item = t.inventory.create('work_in_progress');
+    item.work = { kind: 'craft', recipe: 'torch', elapsed: 1, duration: 120, components: [] };
+    t.inventory.add(item, where === 'hand' ? { kind: 'hand', side: 'right' } : { kind: 'pile', pos: [0, 0, 0] });
+    return item;
+  };
+
+  it('offers continue for a held paused work item and routes the click to it', () => {
+    const t = setup();
+    const item = heldWork(t, 'hand');
+    const entry = t.survival.availableItemActions(item).find((action) => action.continuing);
+    expect(entry).toBeDefined();
+    expect(t.survival.wieldedItemActionHint()).toBeDefined();
+    expect(selectPrimaryAction(t.inventory, 'right', entry!.id).kind).toBe('continue-work');
+  });
+
+  it('offers nothing for a dropped paused work item', () => {
+    const t = setup();
+    const item = heldWork(t, 'pile');
+    expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(false);
+  });
+
+  it('offers no continue for a held item that is not work in progress', () => {
+    const t = setup();
+    const item = t.hold('rag');
+    expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(false);
+  });
+});
 
 describe('using what you hold', () => {
   it('describes a reservoir lamp by its switch state, not a second battery balance', () => {

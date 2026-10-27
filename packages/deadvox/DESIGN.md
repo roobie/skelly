@@ -1476,7 +1476,7 @@ silent default would hide a mod that left one out. See `src/core/inventory.ts`,
 
 ### Inventory screen
 
-Timed actions, crafting and play included, share one circular progress indicator at screen centre, so progress reads the same everywhere and stays visible over dark scenes and across HUD scales. Simulation-owned progress and the existing stop or resume controls stay authoritative. The ring shows no centre percentage: the arc already shows progress, and a number in the centre of the screen is noise. See `src/ui/activityProgress.ts`, `activityProgress`, `src/ui/hud.ts`, `renderHandling`, and `src/ui/crafting.ts`, `renderCraftStatus`.
+Timed actions, crafting and play included, share one circular progress indicator at screen centre, so progress reads the same everywhere and stays visible over dark scenes and across HUD scales. Simulation-owned progress and the existing stop or resume controls stay authoritative. The ring shows no centre percentage: the arc already shows progress, and a number in the centre of the screen is noise. See `src/ui/activityProgress.ts`, `activityProgress`, and `src/ui/hud.ts`, `renderHandling`.
 
 The inventory is a keyboard-first HTML overlay with **you** and **around**
 panes. Hands and worn storage appear beside reachable piles and furniture.
