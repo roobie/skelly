@@ -24,7 +24,7 @@ Mechanical state—cycle, ammunition and magazine contents—belongs to the simu
 
 Trigger selection is content, independent of the mechanical cycle: a self-loading action does not imply held-trigger fire. Semi-automatic pulls use input edges, while the simulation's cycle still prevents overlapping shots; absent selection retains automatic cadence for existing cycling guns. See `src/core/schema.ts`, `ActionSchema`, `src/game/firearmTrigger.ts`, `FirearmTrigger`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
 
-A pistol needs two palm contacts without a shoulder seat: treating its grip as a long-gun stock turns the muzzle away from aim. Hip follows a compressed ready technique, with elbows down, forearms forward and a level muzzle; ADS extends the arms toward the eye-aligned sights. Contacts sit on the grip rather than beside the slide, so closed fingers wrap the front strap and the support hand cups the firing hand. Both holds must fit fixed anatomy, not stretched arms or wider joint limits. See `src/core/heldPose.ts`, `heldFirearmTransform`.
+A pistol needs two palm contacts without a shoulder seat: treating its grip as a long-gun stock turns the muzzle away from aim. Hip follows a compressed ready technique, with elbows down, forearms forward and a level muzzle; ADS extends the arms toward the eye-aligned sights. Contacts sit on the grip rather than beside the slide, so closed fingers wrap the front strap and the support hand cups the firing hand. Both holds must fit fixed anatomy, not stretched arms or wider joint limits. An authored elbow bend hint uses the existing solver's bend-side input: an outward-only hint can fold a compressed forearm back toward the chest rather than forward from the elbow. See `src/core/heldPose.ts`, `heldFirearmTransform`, and `src/render/heldPresentation.ts`, `HeldPresentation.solve`.
 
 The world actor owns the final solve. Both projections consume its item placements and articulated joints: an observer or a view-only shoulder offset must not invent a second pose. Physical shoulders exclude first-person body-clearance offsets: camera framing must not move an anatomical joint. Content separates physical standoff from first-person framing; the ADS view moves along the sight line without shortening the world arms. See `src/render/heldViews.ts`, `createHeldViews`, `src/render/heldPresentation.ts`, `HeldPresentation.copyPose`, and `src/render/playerFigure.ts`, `heldBodyShoulder`.
 
@@ -38,6 +38,7 @@ The model contract is defined by Gungen's `packages/gun-authoring-tool/src/gun/e
 
 ## Open questions
 
+- How should an extended pistol hold follow upward aim? A level hold can fit while an upward grip leaves fixed arm reach; preserve the anatomical limit rather than treating arm scale or camera framing as a reach fix.
 - Future independently coloured instances need instance-owned appearance data that survives saves under #502. Which items get variants and whether loot rolls colours or placement authors them remain open; the current per-item-type model lookup does not implement this direction.
 - Whether physical recoil affects more than presentation remains open.
 - Whether piles keep steel-cased and brass cases separate remains open.

@@ -60,6 +60,7 @@ export interface HeldHoldFrame {
   readonly fingers: Vec3;
   /** The hand frame's +x: on the right hand the thumb's side, on the left the little finger's. */
   readonly thumbSide: Vec3;
+  readonly elbowBendSide?: Vec3;
 }
 
 /**
@@ -75,7 +76,17 @@ export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 
   const at = modelToView(model, mirrorModelZ(side, authored.at).map((value, index) => value - grip.at[index]!) as Vec3);
   const palm = normalize(modelToView(model, mirrorModelZ(side, authored.palm)));
   const fingers = normalize(modelToView(model, mirrorModelZ(side, authored.fingers)));
-  return { at, palm, fingers, thumbSide: cross(fingers, palm) };
+  let palmSide = side;
+  if (hold === 'support') {
+    palmSide = side === 'right' ? 'left' : 'right';
+  }
+  return {
+    at,
+    palm,
+    fingers,
+    thumbSide: cross(fingers, palm),
+    ...(hands.elbowBendSide ? { elbowBendSide: mirrorViewX(palmSide, hands.elbowBendSide) } : {}),
+  };
 };
 
 const rx = ([x, y, z]: Vec3, angle: number): Vec3 => [

@@ -402,11 +402,12 @@ export class HeldPresentation {
     const handFrame = gripFrame
       ? rotation.clone().invert().multiply(gripFrame.getWorldQuaternion(new Quaternion()))
       : undefined;
+    const elbowBendSide = this.holds.get(side)?.elbowBendSide;
     const solved = solveArmRig(rig, {
       shoulder,
       grip,
       handFrame,
-      bendSide: new Vector3(side === 'right' ? 1 : -1, 0, 0),
+      bendSide: elbowBendSide ? new Vector3(...elbowBendSide) : new Vector3(side === 'right' ? 1 : -1, 0, 0),
       up: new Vector3(0, 1, 0),
     });
     this.placeSolved(side, { solution: solved, grip });

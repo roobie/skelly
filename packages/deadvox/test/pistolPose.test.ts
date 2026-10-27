@@ -90,6 +90,14 @@ it('keeps pistol palms attached to their held and moving slide contacts without 
       for (const side of ['right', 'left']) {
         const rig = state.armRigs.get(side)!;
         const anchor = state.gripAnchors.get(side)!;
+        if (progress === 0) {
+          const elbow = rig.elbow.getWorldPosition(new Vector3());
+          const wrist = rig.elbow.localToWorld(new Vector3(0, -rig.foreLength, 0));
+          expect(elbow.y, `${side} hip elbow stays below the shoulder`).toBeLessThan(
+            rig.shoulder.getWorldPosition(new Vector3()).y,
+          );
+          expect(wrist.z, `${side} hip forearm points forward`).toBeLessThan(elbow.z);
+        }
         const fingers = rig.hand.getObjectByName(ARM_NODE.knuckles)!;
         const knuckles = gunFrame.worldToLocal(fingers.getWorldPosition(new Vector3()));
         const curled = new Vector3(0, -1, 0).transformDirection(fingers.matrixWorld);
