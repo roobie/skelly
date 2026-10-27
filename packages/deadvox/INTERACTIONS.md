@@ -79,8 +79,9 @@ not at the end of an absence. See `src/core/power.ts`, `PowerWork`, and
 
 Authored appliance identity must survive streaming and reload rather than depend
 on whichever mesh is visible. See `src/core/sitePower.ts`, `SitePower`, and
-`src/game/session.ts`, `createSessionPower`. Settlement at the snapshot barrier
-prevents a save from keeping power at one time and cell energy at another; see
+`src/game/session.ts`, `createSessionPower`. Power and cell energy move only
+together on scheduled power ticks, so a snapshot copies both as they stand and
+never advances the network: advancing it would make saving change the run. See
 `src/core/saveState.ts`, `snapshotSession`.
 
 Loading and collecting use ordinary handling so the same reach and ownership

@@ -28,11 +28,32 @@ describe('placed charger session', () => {
   it('saves power and the active cell at the same boundary between scheduled power ticks', () => {
     const runtime = createChargerSession(base);
     const cell = load(runtime);
-    runtime.advance(0.1);
+    runtime.advance(1.5);
     const saved = runtime.snapshot();
     expect(batteryEnergy(runtime.registry, cell)).toBeGreaterThan(0);
     expect(runtime.entity!.charging!.atGameMilliseconds).toBe(saved.world.power!.atGameMilliseconds);
     expect(() => createChargerSession(base, saved)).not.toThrow();
+  });
+  it('takes a snapshot between power ticks without moving the network, and a restore continues as the uninterrupted run', () => {
+    const uninterrupted = createChargerSession(base);
+    const saving = createChargerSession(base);
+    for (const runtime of [uninterrupted, saving]) {
+      load(runtime);
+      runtime.advance(0.5);
+    }
+    const { network } = saving.session.power!;
+    const before = network.snapshot();
+    const first = saving.snapshot();
+    expect(network.snapshot()).toEqual(before);
+    expect(first.world.power).toEqual(before);
+    expect(saving.snapshot()).toEqual(first);
+    const restored = createChargerSession(base, first);
+    for (const runtime of [uninterrupted, saving, restored]) {
+      runtime.advance(2);
+    }
+    const expected = uninterrupted.snapshot();
+    expect(saving.snapshot()).toEqual(expected);
+    expect(restored.snapshot()).toEqual(expected);
   });
   it('keeps charging while hands and movement work, saves a blackout, resumes and collects the same cell once', () => {
     const runtime = createChargerSession(base);
