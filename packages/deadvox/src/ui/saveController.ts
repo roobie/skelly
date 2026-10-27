@@ -938,9 +938,13 @@ export class SaveController {
     }
     $('save-fresh').hidden = this.entered || !this.protectedCurrent;
     render(
-      html`<input id="save-fresh-download" type="checkbox" checked />
-        <label for="save-fresh-download">${this.text.downloadOldSave}</label>
-        <p>${this.text.downloadOldSaveNote}</p>`,
+      html`<span class="fact-detail"
+        ><input id="save-fresh-download" type="checkbox" checked aria-describedby="save-fresh-download-detail" />
+        <label for="save-fresh-download">${this.text.downloadOldSave}</label
+        ><span id="save-fresh-download-detail" class="fact-detail-copy" role="tooltip"
+          >${this.text.downloadOldSaveNote}</span
+        ></span
+      >`,
       $('save-fresh'),
     );
     $('save-recovery').hidden = !(this.entered && this.failure);
