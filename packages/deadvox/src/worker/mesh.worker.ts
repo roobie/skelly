@@ -2,7 +2,7 @@
 
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
-import { buildMesh } from '../core/mesher.ts';
+import { buildMesh, type MeshData } from '../core/mesher.ts';
 import { buildSkyResult } from '../core/skyTransport.ts';
 import type { WireMeshes } from '../core/wireMesh.ts';
 import { buildShape, shapeBuffers } from '../render/vehicleShape.ts';
@@ -41,7 +41,19 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   const { key, version, padded, wide } = msg;
   const start = performance.now();
   const origin = key.split(',').map((coordinate) => Number(coordinate) * CHUNK) as Vec3;
-  const mesh = buildMesh(padded, colors, { patterns, wide, weatherable, wireMeshes, liquids, fencePosts, origin });
+  let mesh: MeshData;
+  try {
+    mesh = buildMesh(padded, colors, { patterns, wide, weatherable, wireMeshes, liquids, fencePosts, origin });
+  } catch (error) {
+    // An uncaught throw reaches the owner without the key, which would then wait on it forever.
+    const failed: FromMesher = {
+      type: 'meshFailed',
+      key,
+      message: error instanceof Error ? error.message : String(error),
+    };
+    postMessage(failed);
+    return;
+  }
   const reply: FromMesher = { type: 'mesh', key, version, mesh, ms: performance.now() - start };
   postMessage(reply, {
     transfer: [
