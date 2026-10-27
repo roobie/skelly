@@ -37,6 +37,7 @@ import {
   saveRecord,
 } from './plan.ts';
 import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
+import { syncClock } from './renderClock.ts';
 import { environment } from './run.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
@@ -133,9 +134,9 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   let playerBody!: Body;
   let zombies!: ZombieSystem;
   let zombieMeshes!: ZombieRenderer;
-  let lastZombieTickAt = performance.now();
-  let lastBackgroundTickAt = lastZombieTickAt;
   let simTime = 0;
+  let lastZombieStepTime = 0;
+  let lastBackgroundStepTime = 0;
   const prepare = (): void => {
     playerBody = findShamblerBenchPlayer(engine);
     const simulation = new Simulation({
@@ -289,7 +290,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       if (physicsFrame % ACTIVE_FRAMES_PER_TICK === 0) {
         const tickStart = performance.now();
         zombies.tickActive(1 / ZOMBIE_RATE, simTime);
-        lastZombieTickAt = tickStart;
+        lastZombieStepTime = simTime;
         if (measuring) {
           zombieTick.push(performance.now() - tickStart);
         }
@@ -302,7 +303,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
           (physicsFrame / BACKGROUND_FRAMES_PER_SLICE) % BACKGROUND_ZOMBIE_SLICE_COUNT,
           BACKGROUND_ZOMBIE_SLICE_COUNT,
         );
-        lastBackgroundTickAt = tickStart;
+        lastBackgroundStepTime = simTime;
         if (measuring) {
           backgroundTick.push(performance.now() - tickStart);
         }
@@ -364,15 +365,14 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     ].join('\n');
   };
 
-  const draw = (elapsed: number, dt: number, now: number): void => {
+  const draw = (elapsed: number, dt: number): void => {
     const measuring = phase === 'measure';
     updateCamera(elapsed, measuring);
     if (playerBody) {
-      const alpha = Math.max(0, Math.min(1, ((now - lastZombieTickAt) / 1000) * 20));
-      const backgroundAlpha = Math.max(0, Math.min(1, ((now - lastBackgroundTickAt) / 1000) * BACKGROUND_ZOMBIE_RATE));
+      const clock = syncClock(simTime + accumulator, lastZombieStepTime, lastBackgroundStepTime);
       zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
       const syncStart = performance.now();
-      zombieMeshes.sync(zombies.store, dt, alpha, false, backgroundAlpha);
+      zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simulationTime);
       if (measuring) {
         actorSync.push(performance.now() - syncStart);
         holes.push(streamer.unmeshedColumns(playerBody.pos[0], playerBody.pos[2], within));
@@ -405,7 +405,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     if (elapsed === undefined) {
       return;
     }
-    draw(elapsed, dt, now);
+    draw(elapsed, dt);
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

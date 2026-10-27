@@ -47,6 +47,7 @@ import {
   saveRecord,
 } from './plan.ts';
 import { applyBenchWeathering, benchDraw, benchNightVisionFromUrl, benchPostFromUrl, postUrlPart } from './post.ts';
+import { syncClock } from './renderClock.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, mean, sampleStats } from './stats.ts';
@@ -373,6 +374,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   let zombieAccumulator = 0;
   let backgroundAccumulator = 0;
   let backgroundSlice = 0;
+  let backgroundStepTime = 0;
   const advanceShamblers = (dt: number): void => {
     if (!(zombies && zombieMeshes)) {
       return;
@@ -384,12 +386,20 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       zombieAccumulator -= 1 / ZOMBIE_RATE;
     }
     while (backgroundAccumulator >= 1 / BACKGROUND_ZOMBIE_SLICE_RATE) {
-      zombies.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, 0, backgroundSlice, BACKGROUND_ZOMBIE_SLICE_COUNT);
+      backgroundStepTime += 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
+      zombies.tickBackground(
+        1 / BACKGROUND_ZOMBIE_RATE,
+        backgroundStepTime,
+        backgroundSlice,
+        BACKGROUND_ZOMBIE_SLICE_COUNT,
+      );
       backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
       backgroundAccumulator -= 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
     }
     zombieMeshes.setCamera?.(camera);
-    zombieMeshes.sync(zombies.store, dt, Math.min(1, zombieAccumulator * ZOMBIE_RATE));
+    const renderTime = backgroundStepTime + backgroundAccumulator;
+    const clock = syncClock(renderTime, renderTime - zombieAccumulator, backgroundStepTime);
+    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simulationTime);
   };
 
   let phase: Phase = 'load';
