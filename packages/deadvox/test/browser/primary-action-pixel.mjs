@@ -14,9 +14,10 @@ import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-// Two groups, so each fits its step's bound: held, worn and dropped items at the test house, and the lake surface.
+// Three groups, so each fits its step's bound: held, worn and dropped items at the test house, the scope's zoom
+// pass at the test house, and the lake surface.
 const [, , group] = process.argv;
-assert.ok(group === 'held' || group === 'lake', 'choose the held or lake group');
+assert.ok(group === 'held' || group === 'optic' || group === 'lake', 'choose the held, optic or lake group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
   const screenshot = await capture();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');
@@ -147,6 +148,168 @@ const heldCompassCardChange = (page) =>
     });
   }, 12 * 3600);
 
+// Puts the hunting rifle's 3-9x scope in ADS at `power` and records one frame: the lens frame, the lens pass
+// uniforms, the zoom target's centre and every object the zoom camera submitted, with layers and parents.
+const opticZoomRecord = (power) => {
+  const r = globalThis.primaryActionTest;
+  const { inventory, engine } = r;
+  r.input.pitch = 0;
+  const { sim } = r.session;
+  sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
+  for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
+    inventory.add(inventory.create(wear), { kind: 'worn' });
+  }
+  const rifle = inventory.create('rifle_hunting');
+  const scope = inventory.create('optic_hunting_3_9x');
+  const definition = inventory.registry.items.get('rifle_hunting');
+  const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
+  let fitted = false;
+  for (const slot of stations) {
+    try {
+      inventory.fitSlot(rifle, slot, scope);
+      fitted = true;
+      break;
+    } catch {
+      // another station may fit
+    }
+  }
+  if (!fitted) {
+    throw new Error('Could not fit the 3-9x scope');
+  }
+  r.setHand(r.dominant, rifle);
+  r.debugGunPose.toggle('ads');
+  const half = (bits) => {
+    const exponent = (bits >> 10) & 0x1f;
+    const fraction = bits & 0x3_ff;
+    const sign = bits & 0x80_00 ? -1 : 1;
+    if (exponent === 0) {
+      return sign * 2 ** -14 * (fraction / 1024);
+    }
+    return exponent === 31 ? sign * Number.POSITIVE_INFINITY : sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
+  };
+  return new Promise((done, failed) => {
+    const lens = engine.mood.opticLens;
+    const camera = lens.zoomCamera;
+    const { renderer, scene } = engine;
+    const { render } = renderer;
+    let drawn;
+    let frames = 0;
+    const isUnder = (object, root) => {
+      for (let node = object; node; node = node.parent) {
+        if (node === root) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const topLevelKey = (object) => {
+      let top = object;
+      while (top.parent && top.parent !== scene) {
+        top = top.parent;
+      }
+      return `${top.name || top.type}[L${top.layers.mask}]`;
+    };
+    const pathOf = (object) => {
+      const names = [];
+      for (let node = object; node; node = node.parent) {
+        names.unshift(`${node.name || node.type}[L${node.layers.mask}]`);
+      }
+      return names.join(' > ');
+    };
+    // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
+    // is what the zoom pass draws, whatever the layer or visibility rules were.
+    const submit = (drawnScene) => {
+      const objects = [];
+      const others = {};
+      const restore = [];
+      drawnScene.traverse((object) => {
+        if (!(object.isMesh || object.isLine || object.isPoints)) {
+          return;
+        }
+        const prior = object.onBeforeRender;
+        restore.push(() => {
+          object.onBeforeRender = prior;
+        });
+        object.onBeforeRender = function (...args) {
+          if (args[2] === camera) {
+            if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
+              objects.push(pathOf(object));
+            } else {
+              const key = topLevelKey(object);
+              others[key] = (others[key] ?? 0) + 1;
+            }
+          }
+          return prior.apply(this, args);
+        };
+      });
+      return {
+        objects,
+        others,
+        restore: () => {
+          for (const undo of restore) {
+            undo();
+          }
+        },
+      };
+    };
+    renderer.render = function (drawnScene, drawnCamera) {
+      if (drawnCamera !== camera || drawnScene !== scene) {
+        render.call(this, drawnScene, drawnCamera);
+        return;
+      }
+      const { objects, others, restore } = submit(drawnScene);
+      try {
+        render.call(this, drawnScene, drawnCamera);
+      } finally {
+        restore();
+      }
+      const size = Math.min(lens.target.width, lens.target.height);
+      const centre = new Uint16Array(4);
+      renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
+      const { uniforms } = engine.mood.opticPass;
+      drawn = {
+        power,
+        frames,
+        magnification: r.view.held.opticLensFrame?.magnification,
+        zoomCameraFov: camera.fov,
+        mainFov: engine.camera.fov,
+        zoomCameraLayers: camera.layers.mask,
+        mainCameraLayers: engine.camera.layers.mask,
+        uniforms: {
+          uZoomActive: uniforms.uZoomActive.value,
+          uLensCenter: uniforms.uLensCenter.value.toArray(),
+          uLensRadius: uniforms.uLensRadius.value.toArray(),
+        },
+        targetSize: [lens.target.width, lens.target.height, size],
+        targetCentreRgba: [...centre].map(half),
+        drawnObjects: objects,
+        worldLayerDrawnByTopLevel: others,
+      };
+    };
+    const { held } = r.view;
+    const after = held.render;
+    held.render = (...args) => {
+      after.apply(held, args);
+      frames += 1;
+      if (drawn) {
+        held.render = after;
+        renderer.render = render;
+        done(drawn);
+      } else if (frames > 40) {
+        held.render = after;
+        renderer.render = render;
+        failed(new Error('The zoom camera did not draw within 40 frames'));
+      }
+    };
+    // The wheel steps the scope's power one step at a time from its authored 6x.
+    let guard = 0;
+    while (r.opticZoom.appliedPower(rifle, true) > power && guard < 20) {
+      r.opticZoom.wheel(rifle, true, 1);
+      guard += 1;
+    }
+  });
+};
+
 const visorRatio = (page, shot) =>
   page.evaluate(async (base64) => {
     const image = new Image();
@@ -234,7 +397,7 @@ const enterWorld = async (page) => {
   );
 };
 
-const heldItemChecks = async (chromium, port) => {
+const enterTestHouse = async (chromium, port) => {
   const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -256,6 +419,11 @@ const heldItemChecks = async (chromium, port) => {
   assert(clip, 'the loaded scene has a canvas');
   // Page clipping avoids the locator screenshot's extra layout-stability frames.
   const capture = () => page.screenshot({ clip });
+  return { page, capture, pageErrors };
+};
+
+const heldItemChecks = async (chromium, port) => {
+  const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
   const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -408,6 +576,24 @@ const heldItemChecks = async (chromium, port) => {
   });
 };
 
+const opticZoomCheck = async (chromium, port) => {
+  const { page, capture } = await enterTestHouse(chromium, port);
+  await timePhase('optic-zoom-world-only', async () => {
+    const record = await page.evaluate(opticZoomRecord, 3);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
+    process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
+    assert.equal(record.magnification, 3, 'the scope runs its magnified branch at the stepped power');
+    assert.equal(record.uniforms.uZoomActive, 1, 'the lens pass shows the zoom target');
+    assert.equal(record.zoomCameraLayers & 0b110, 0, 'the zoom camera sees neither the figure nor the self-mask layer');
+    assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the zoom camera submits world objects');
+    assert.deepEqual(record.drawnObjects, [], 'the zoom camera is submitted no held, worn or own-body geometry');
+    assert.ok(
+      record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
+      `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
+    );
+  });
+};
+
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
 // a pixel magenta, so a camera under the water looking straight up sees magenta exactly when the
 // surface's underside is missing or wound away from it. Looking down or level would pass on the bed.
@@ -523,7 +709,8 @@ try {
       renderMode: 'pixel',
     }),
   );
-  await (group === 'lake' ? lakeSurfaceCheck(browser, address.port) : heldItemChecks(browser, address.port));
+  const checks = { held: heldItemChecks, optic: opticZoomCheck, lake: lakeSurfaceCheck };
+  await checks[group](browser, address.port);
 } finally {
   if (browser) {
     await timePhase('browser-close', () => browser.close());
