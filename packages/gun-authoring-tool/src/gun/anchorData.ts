@@ -185,4 +185,5 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
     },
   },
   'ak-receiver': { anchors: ejectionAnchor },
+  slide: { anchors: ejectionAnchor },
 };

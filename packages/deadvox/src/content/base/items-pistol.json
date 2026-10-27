@@ -1,0 +1,334 @@
+{
+  "items": [
+    {
+      "category": "weapon",
+      "description": "Polymer-frame 9×19 mm semi-automatic pistol.",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "firearm": {
+        "dispersionRadians": 0.01,
+        "dryFireSound": "firearm_dry_click",
+        "handling": {
+          "magazine": {
+            "insertSimSeconds": 2,
+            "removeSimSeconds": 2
+          }
+        },
+        "pelletSpreadScale": 1,
+        "recoilKickRadians": 0.017999999999999999,
+        "shotSound": "revolver_shot",
+        "skillZeroHandling": {
+          "automaticFollowup": {
+            "recoilKickScale": 5,
+            "recoilRecoveryScale": 0.5,
+            "variance": 20
+          },
+          "singleShot": {
+            "recoilKickScale": 5,
+            "recoilRecoveryScale": 0.5,
+            "variance": 20
+          }
+        }
+      },
+      "id": "pistol_service",
+      "model": "pistol_service",
+      "name": "Service Nine",
+      "notLoot": true,
+      "size": [2, 3],
+      "twoHanded": false,
+      "workInProgress": false
+    },
+    {
+      "category": "ammo",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "magazine_pistol_9",
+      "model": "magazine_pistol_9",
+      "name": "9×19 mm pistol magazine",
+      "notLoot": true,
+      "size": [1, 2],
+      "weight": 80,
+      "workInProgress": false
+    },
+    {
+      "ammo": {
+        "calibre": "9x19",
+        "damage": 40,
+        "diameterMm": 9.0299999999999994,
+        "impulse": 2.6800000000000002,
+        "loadSimSeconds": 0.59999999999999998,
+        "pellets": 1,
+        "rangeMetres": 100,
+        "spreadDegrees": 0,
+        "stripSimSeconds": 0.5
+      },
+      "category": "ammo",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "cartridge_9x19",
+      "model": "round_9x19",
+      "name": "9×19 mm round",
+      "notLoot": true,
+      "size": [1, 1],
+      "stack": 50,
+      "weight": 12,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "spent_case_9x19",
+      "model": "case_9x19",
+      "name": "9×19 mm case",
+      "notLoot": true,
+      "pileDisplay": "scatter",
+      "size": [1, 1],
+      "stack": 10000,
+      "weight": 4,
+      "workInProgress": false
+    }
+  ],
+  "models": [
+    {
+      "anchors": {
+        "ejection": [-0.024, 0, 0.0093329999999999993],
+        "muzzle": [0.11600000000000001, 0, 0]
+      },
+      "file": "assets/models/pistol_service.glb",
+      "grip": {
+        "at": [-0.069142999999999996, -0.0132, 0],
+        "turn": [0, 0, 0]
+      },
+      "gun": {
+        "action": {
+          "ejectAt": 0.69999999999999996,
+          "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.96308682468615348],
+          "fire": {
+            "durationSimSeconds": 0.13333333333333333,
+            "dwellSimSeconds": 0.0060000000000000001,
+            "forwardSimSeconds": 0.033876476606997462,
+            "rearwardSimSeconds": 0.010733333333333334
+          },
+          "hand": {
+            "durationSimSeconds": 1.6838764766069974,
+            "dwellSimSeconds": 0.29999999999999999,
+            "forwardSimSeconds": 0.033876476606997462,
+            "rearwardSimSeconds": 0.65000000000000002
+          },
+          "holdOpen": true,
+          "parts": {
+            "carrier": {
+              "axis": [-1, 0, 0],
+              "modes": ["fire", "hand"],
+              "node": "slide:slide",
+              "strokeMetres": 0.040250000000000001
+            }
+          },
+          "roundsPerSimMinute": 450,
+          "triggerMode": "semi"
+        },
+        "attachmentSlots": [
+          {
+            "direction": [0, 1, -1.2246467991473532e-16],
+            "id": "slide.rail.0",
+            "mount": "rail-top",
+            "notchIndex": 0,
+            "position": [-0.069000000000000006, 0.017250000000000001, 0],
+            "railId": "slide.rail",
+            "up": [1, 0, 0]
+          },
+          {
+            "direction": [0, 1, -1.2246467991473532e-16],
+            "id": "slide.rail.1",
+            "mount": "rail-top",
+            "notchIndex": 1,
+            "position": [-0.045999999999999999, 0.017250000000000001, 0],
+            "railId": "slide.rail",
+            "up": [1, 0, 0]
+          },
+          {
+            "direction": [0, 1, -1.2246467991473532e-16],
+            "id": "slide.rail.2",
+            "mount": "rail-top",
+            "notchIndex": 2,
+            "position": [-0.023, 0.017250000000000001, 0],
+            "railId": "slide.rail",
+            "up": [1, 0, 0]
+          }
+        ],
+        "attachments": [
+          {
+            "id": "optic-mini-reflex",
+            "kind": "optic",
+            "mount": "rail-top",
+            "mountFrame": {
+              "normal": [0, -1, 0],
+              "up": [1, 0, 0]
+            },
+            "mountedAt": "slide.rail.1",
+            "node": "sight:sight",
+            "properties": {
+              "aperture": {
+                "aspectRatio": 1.2,
+                "exponent": 6
+              },
+              "railSpanNotches": {
+                "maxOffset": 1,
+                "minOffset": -1
+              },
+              "reticle": {
+                "focalPlane": "second",
+                "primitives": [
+                  {
+                    "center": [0, 0],
+                    "color": [0.94999999999999996, 0.074999999999999997, 0.035000000000000003],
+                    "kind": "dot",
+                    "radius": 0.025999999999999999
+                  }
+                ],
+                "referenceMagnification": 1
+              }
+            },
+            "sight": {
+              "direction": [1, 0, 0],
+              "eye": [-0.025874999999999999, 0.017250000000000001, 0],
+              "eyeReliefMetres": 0.028749999999999998,
+              "kind": "optic",
+              "ocularDiameterMetres": 0.028749999999999998,
+              "up": [0, 1, 0]
+            }
+          }
+        ],
+        "calibre": "9x19",
+        "compatibility": {
+          "slide.rail.0": ["rail-front-sight"],
+          "slide.rail.1": ["optic-mini-reflex", "optic-tube-dot", "rail-front-sight"],
+          "slide.rail.2": ["rail-front-sight"]
+        },
+        "compatibilityPairs": [
+          [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-front-sight"]],
+          [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]],
+          [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]]
+        ],
+        "muzzleDirection": [1, 1.4997597826618576e-32, 1.2246467991473532e-16],
+        "sight": {
+          "direction": [1, 0, 0],
+          "eye": [-0.071874999999999994, 0.034500000000000003, 0],
+          "eyeReliefMetres": 0.028750000000000001,
+          "kind": "optic",
+          "ocularDiameterMetres": 0.028750000000000001,
+          "up": [0, 1, -2.4492935982947064e-16]
+        },
+        "slots": {
+          "magazine": {
+            "at": [-0.10062500000000001, -0.091999999999999998, 0],
+            "node": "magazine:magazine",
+            "turn": [0, 0, -18]
+          }
+        }
+      },
+      "id": "pistol_service",
+      "parts": {
+        "barrel": {
+          "centreOfMass": [0.057513043478260875, 1.1212660583809553e-33, 7.0433164604874739e-18],
+          "item": "barrel_pistol",
+          "massKg": 0.12,
+          "node": "barrel:barrel"
+        },
+        "frame": {
+          "centreOfMass": [-0.034677296886864092, -0.027588458618071385, 0],
+          "item": "pistol_frame",
+          "massKg": 0.28000000000000003,
+          "node": "frame:frame"
+        },
+        "slide": {
+          "centreOfMass": [0.010489208633093529, 0.0047338129496402948, -0.00014388489208633166],
+          "item": "pistol_slide",
+          "massKg": 0.27000000000000002,
+          "node": "slide:slide"
+        }
+      }
+    },
+    {
+      "file": "assets/models/magazine_pistol_9.glb",
+      "gun": {
+        "calibre": "9x19",
+        "capacity": 12,
+        "rounds": [
+          {
+            "at": [0, 0.066433000000000006, 0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.061211000000000002, -0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.055988000000000003, 0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.050764999999999998, -0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.045543, 0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.040320000000000002, -0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.035097999999999997, 0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.029874999999999999, -0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.024652, 0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.019429999999999999, -0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.014206999999999999, 0.0052769999999999996],
+            "tilt": 0
+          },
+          {
+            "at": [0, 0.0089849999999999999, -0.0052769999999999996],
+            "tilt": 0
+          }
+        ]
+      },
+      "id": "magazine_pistol_9"
+    },
+    {
+      "file": "assets/models/round_9x19.glb",
+      "gun": {
+        "calibre": "9x19"
+      },
+      "id": "round_9x19"
+    },
+    {
+      "file": "assets/models/case_9x19.glb",
+      "gun": {
+        "calibre": "9x19"
+      },
+      "id": "case_9x19"
+    }
+  ]
+}

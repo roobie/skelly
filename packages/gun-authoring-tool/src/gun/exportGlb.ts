@@ -40,6 +40,7 @@ import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { BUILT_IN_FRONT_POST } from './parts.ts';
 import { gunModelParts, type PartItems, PartMassError } from './physical.ts';
+import pistolAction from './pistolAction.json' with { type: 'json' };
 import { type RevolverMetadata, revolverMetadata } from './revolverExport.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
@@ -76,6 +77,7 @@ interface GunActionMetadata {
   readonly ejectDirection: Vec3;
   readonly holdOpen: boolean;
   readonly roundsPerSimMinute?: number;
+  readonly triggerMode?: 'semi' | 'auto';
 }
 
 export interface DeadvoxModelEntry extends NeutralModel {
@@ -217,6 +219,7 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
     ejection: description.ejection,
     action: {
       parts,
+      ...(description.kind === 'slide' ? { triggerMode: pistolAction.triggerMode as 'semi' } : {}),
       ...(cycle.fire ? { fire: cycleMetadata(cycle.fire) } : {}),
       hand: cycleMetadata(cycle.hand),
       ejectAt: cycle.ejectAt,

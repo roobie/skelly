@@ -58,6 +58,19 @@
         "tiers": [],
         "usage": []
       },
+      "id": "barrel_pistol",
+      "model": "barrel_pistol",
+      "name": "Pistol barrel",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "barrel_pump_medium",
       "model": "barrel_pump_medium",
       "name": "Pump shotgun barrel",
@@ -464,6 +477,32 @@
       "id": "lower_sporter",
       "model": "lower_sporter",
       "name": "Sporter trigger housing",
+      "notLoot": false,
+      "size": [1, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pistol_frame",
+      "model": "pistol_frame",
+      "name": "Pistol frame",
+      "notLoot": false,
+      "size": [2, 2],
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "pistol_slide",
+      "model": "pistol_slide",
+      "name": "Pistol slide",
       "notLoot": false,
       "size": [1, 2],
       "workInProgress": false

@@ -1,0 +1,12 @@
+{
+  "dwellSeconds": 0.0060000000000000001,
+  "ejectAt": 0.69999999999999996,
+  "ejectDirection": [0.12, 0.23999999999999999, 0.95999999999999996],
+  "feedClearanceMm": 10.5,
+  "holdOpenOnEmpty": true,
+  "rearwardSpeedMetresPerSecond": 3.75,
+  "rpm": 450,
+  "strokeBasis": "derived from cartridge overall length",
+  "strokeMm": 40.189999999999998,
+  "triggerMode": "semi"
+}

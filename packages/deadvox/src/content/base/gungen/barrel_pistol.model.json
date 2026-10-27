@@ -1,0 +1,13 @@
+{
+  "id": "barrel_pistol",
+  "file": "assets/models/barrel_pistol.glb",
+  "gun": {},
+  "parts": {
+    "barrel_pistol": {
+      "item": "barrel_pistol",
+      "node": "barrel_pistol:barrel",
+      "massKg": 0.12,
+      "centreOfMass": [0.057513043478260875, 0, 0]
+    }
+  }
+}

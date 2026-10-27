@@ -117,6 +117,10 @@
       "output": "packages/deadvox/src/content/base/items-other.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/items-pistol.jsonnet",
+      "output": "packages/deadvox/src/content/base/items-pistol.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/items-playtest.jsonnet",
       "output": "packages/deadvox/src/content/base/items-playtest.json"
     },
@@ -373,6 +377,10 @@
       "output": "packages/gun-authoring-tool/cartridges/7.62x39.json"
     },
     {
+      "source": "packages/gun-authoring-tool/cartridges/9x19.jsonnet",
+      "output": "packages/gun-authoring-tool/cartridges/9x19.json"
+    },
+    {
       "source": "packages/gun-authoring-tool/cartridges/catalogue/bolt.jsonnet",
       "output": "packages/gun-authoring-tool/cartridges/catalogue/bolt.json"
     },
@@ -395,6 +403,10 @@
     {
       "source": "packages/gun-authoring-tool/designs/hunting-rifle.jsonnet",
       "output": "packages/gun-authoring-tool/designs/hunting-rifle.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/designs/service-nine.jsonnet",
+      "output": "packages/gun-authoring-tool/designs/service-nine.json"
     },
     {
       "source": "packages/gun-authoring-tool/exports/deadvox.jsonnet",
@@ -431,6 +443,14 @@
     {
       "source": "packages/gun-authoring-tool/src/gun/physical.jsonnet",
       "output": "packages/gun-authoring-tool/src/gun/physical.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/pistolAction.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/pistolAction.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/pistolDimensions.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/pistolDimensions.json"
     },
     {
       "source": "packages/gun-authoring-tool/src/gun/reticles.jsonnet",

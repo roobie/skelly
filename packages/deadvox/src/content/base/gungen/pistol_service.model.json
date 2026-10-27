@@ -1,0 +1,127 @@
+{
+  "id": "pistol_service",
+  "file": "assets/models/pistol_service.glb",
+  "parts": {
+    "barrel": {
+      "item": "barrel_pistol",
+      "node": "barrel:barrel",
+      "massKg": 0.12,
+      "centreOfMass": [0.057513043478260875, 1.1212660583809553e-33, 7.043316460487474e-18]
+    },
+    "frame": {
+      "item": "pistol_frame",
+      "node": "frame:frame",
+      "massKg": 0.28,
+      "centreOfMass": [-0.03467729688686409, -0.027588458618071385, 0]
+    },
+    "slide": {
+      "item": "pistol_slide",
+      "node": "slide:slide",
+      "massKg": 0.27,
+      "centreOfMass": [0.010489208633093529, 0.004733812949640295, -0.00014388489208633166]
+    }
+  },
+  "grip": { "at": [-0.069143, -0.0132, 0], "turn": [0, 0, 0] },
+  "anchors": { "muzzle": [0.116, 0, 0], "ejection": [-0.024, 0, 0.009333] },
+  "gun": {
+    "sight": {
+      "kind": "optic",
+      "eye": [-0.071875, 0.0345, 0],
+      "direction": [1, 0, 0],
+      "up": [0, 1, -2.4492935982947064e-16],
+      "eyeReliefMetres": 0.02875,
+      "ocularDiameterMetres": 0.02875
+    },
+    "muzzleDirection": [1, 1.4997597826618576e-32, 1.2246467991473532e-16],
+    "calibre": "9x19",
+    "action": {
+      "parts": {
+        "carrier": { "node": "slide:slide", "axis": [-1, 0, 0], "strokeMetres": 0.04025, "modes": ["fire", "hand"] }
+      },
+      "triggerMode": "semi",
+      "fire": {
+        "durationSimSeconds": 0.13333333333333333,
+        "rearwardSimSeconds": 0.010733333333333334,
+        "dwellSimSeconds": 0.006,
+        "forwardSimSeconds": 0.03387647660699746
+      },
+      "hand": {
+        "durationSimSeconds": 1.6838764766069974,
+        "rearwardSimSeconds": 0.65,
+        "dwellSimSeconds": 0.3,
+        "forwardSimSeconds": 0.03387647660699746
+      },
+      "ejectAt": 0.7,
+      "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],
+      "holdOpen": true,
+      "roundsPerSimMinute": 450
+    },
+    "attachments": [
+      {
+        "id": "optic-mini-reflex",
+        "kind": "optic",
+        "mount": "rail-top",
+        "properties": {
+          "aperture": { "aspectRatio": 1.2, "exponent": 6 },
+          "reticle": {
+            "focalPlane": "second",
+            "referenceMagnification": 1,
+            "primitives": [{ "kind": "dot", "center": [0, 0], "radius": 0.026, "color": [0.95, 0.075, 0.035] }]
+          },
+          "railSpanNotches": { "minOffset": -1, "maxOffset": 1 }
+        },
+        "sight": {
+          "kind": "optic",
+          "eye": [-0.025875, 0.01725, 0],
+          "direction": [1, 0, 0],
+          "up": [0, 1, 0],
+          "eyeReliefMetres": 0.028749999999999998,
+          "ocularDiameterMetres": 0.028749999999999998
+        },
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
+        "node": "sight:sight",
+        "mountedAt": "slide.rail.1"
+      }
+    ],
+    "attachmentSlots": [
+      {
+        "id": "slide.rail.0",
+        "mount": "rail-top",
+        "railId": "slide.rail",
+        "notchIndex": 0,
+        "position": [-0.069, 0.01725, 0],
+        "direction": [0, 1, -1.2246467991473532e-16],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "slide.rail.1",
+        "mount": "rail-top",
+        "railId": "slide.rail",
+        "notchIndex": 1,
+        "position": [-0.046, 0.01725, 0],
+        "direction": [0, 1, -1.2246467991473532e-16],
+        "up": [1, 0, 0]
+      },
+      {
+        "id": "slide.rail.2",
+        "mount": "rail-top",
+        "railId": "slide.rail",
+        "notchIndex": 2,
+        "position": [-0.023, 0.01725, 0],
+        "direction": [0, 1, -1.2246467991473532e-16],
+        "up": [1, 0, 0]
+      }
+    ],
+    "compatibility": {
+      "slide.rail.0": ["rail-front-sight"],
+      "slide.rail.1": ["optic-mini-reflex", "optic-tube-dot", "rail-front-sight"],
+      "slide.rail.2": ["rail-front-sight"]
+    },
+    "compatibilityPairs": [
+      [["slide.rail.0", "rail-front-sight"], ["slide.rail.1", "rail-front-sight"]],
+      [["slide.rail.0", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]],
+      [["slide.rail.1", "rail-front-sight"], ["slide.rail.2", "rail-front-sight"]]
+    ],
+    "slots": { "magazine": { "node": "magazine:magazine", "at": [-0.100625, -0.092, 0], "turn": [0, 0, -18] } }
+  }
+}

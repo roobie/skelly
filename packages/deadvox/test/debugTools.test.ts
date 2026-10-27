@@ -4,6 +4,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { magazineSpec } from '../src/core/magazine.ts';
 import { mountedOptic, opticViewSettings } from '../src/core/opticView.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -227,6 +228,26 @@ describe('debug starting equipment', () => {
     expect(inventory.hands[dominantSide(inventory.character)]?.type).toBe('frag_grenade');
     const packed = inventory.worn.back?.pockets?.flat().filter(({ item }) => item.type === 'frag_grenade') ?? [];
     expect(packed.length).toBeGreaterThan(1);
+  });
+
+  it('loadout=pistol equips a filled compatible magazine and spare ammunition', () => {
+    const inventory = new Inventory(registry);
+    expect(equipDebugLoadout(inventory, true, true, '?loadout=pistol')).toBe(true);
+    const gun = inventory.hands[dominantSide(inventory.character)]!;
+    const definition = registry.items.get(gun.type)!;
+    const model = registry.models.get(definition.model!)!;
+    expect(definition.twoHanded).toBe(false);
+    expect(model.gun?.action?.triggerMode).toBe('semi');
+    const magazine = gun.slots!.magazine!;
+    expect(magazine.cartridges!.length).toBeGreaterThan(0);
+    expect(magazine.cartridges!.length).toBe(magazineSpec(registry, magazine.type)!.capacity);
+    for (const round of magazine.cartridges!) {
+      expect(registry.items.get(round)?.ammo?.calibre).toBe(model.gun!.calibre);
+    }
+    const packed = inventory.worn.back!.pockets!.flat();
+    expect(
+      packed.some(({ item }) => item.count > 0 && registry.items.get(item.type)?.ammo?.calibre === model.gun!.calibre),
+    ).toBe(true);
   });
 
   it('previews every supported optic through certified loadout fitting with a usable reticle', () => {

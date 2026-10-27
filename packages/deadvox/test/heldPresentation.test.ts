@@ -55,7 +55,9 @@ it('both views resolve registry item holds through one owner, including the mann
     candidates.find((item) => item.model && !item.twoHanded && !item.firearm && !item.heldDisplay),
     candidates.find((item) => item.model && item.twoHanded && !item.firearm),
     candidates.find((item) => item.firearm && base.models.get(item.model!)?.hands),
-    candidates.find((item) => item.firearm && !item.twoHanded && item.model),
+    candidates.find(
+      (item) => item.firearm && !item.twoHanded && item.model && !base.models.get(item.model)?.gun?.attachments?.length,
+    ),
     candidates.find((item) => item.heldDisplay && base.models.get(item.model!)?.display),
     candidates.find((item) => !item.model),
   ];

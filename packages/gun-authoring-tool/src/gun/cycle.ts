@@ -11,7 +11,9 @@ import {
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { AR_CYCLIC_RPM, SMALL_AR_FRAME } from './arFrames.ts';
 
-export type GunAction = 'ak' | 'ar' | 'smg';
+import pistolAction from './pistolAction.json' with { type: 'json' };
+
+export type GunAction = 'ak' | 'ar' | 'smg' | 'slide';
 export type CycleMode = 'fire' | 'hand';
 
 export interface ActionCycleProfile {
@@ -31,6 +33,7 @@ const unit = (v: Vec3): Vec3 => scale(v, 1 / length(v));
  * SMG cyclic rate: about 800 rpm (HK MP5 specification); its bolt does not hold open on an empty magazine.
  */
 export const ACTION_CYCLE_PROFILES: Readonly<Record<GunAction, ActionCycleProfile>> = {
+  slide: { ...pistolAction, ejectDirection: unit(pistolAction.ejectDirection as unknown as Vec3) },
   ak: {
     rpm: 600,
     holdOpenOnEmpty: false,

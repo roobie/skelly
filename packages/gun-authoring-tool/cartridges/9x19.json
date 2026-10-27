@@ -1,0 +1,209 @@
+{
+  "aliases": [
+    {
+      "cite": {
+        "locator": "printed p. 24, cartridge drawing, drawing title",
+        "source": "saami",
+        "verbatim": "9mm LUGER"
+      },
+      "name": "9mm Luger"
+    }
+  ],
+  "case": {
+    "body": {
+      "diameterAtHead": {
+        "cite": {
+          "locator": "printed p. 24, cartridge drawing, diameter at body datum",
+          "source": "saami",
+          "verbatim": ".3910 (9.931)"
+        },
+        "tolerance": {
+          "minus": 0.17999999999999999
+        },
+        "value": 9.9309999999999992
+      },
+      "diameterAtMouth": {
+        "cite": {
+          "locator": "printed p. 24, cartridge drawing, mouth diameter",
+          "source": "saami",
+          "verbatim": ".3800 (9.653)"
+        },
+        "tolerance": {
+          "minus": 0.17999999999999999
+        },
+        "value": 9.6530000000000005
+      },
+      "type": "straight"
+    },
+    "bodyStart": {
+      "basic": true,
+      "cite": {
+        "locator": "printed p. 24, cartridge drawing, body diameter datum",
+        "source": "saami",
+        "verbatim": ".200 B (5.08)"
+      },
+      "value": 5.0800000000000001
+    },
+    "head": {
+      "extractorGroove": {
+        "diameter": {
+          "cite": {
+            "locator": "printed p. 24, cartridge drawing, extractor groove diameter",
+            "source": "saami",
+            "verbatim": ".347 - .020 (8.81 - 0.51)"
+          },
+          "tolerance": {
+            "minus": 0.51000000000000001
+          },
+          "value": 8.8100000000000005
+        },
+        "width": {
+          "cite": {
+            "locator": "printed p. 24, cartridge drawing, extractor groove width",
+            "source": "saami",
+            "verbatim": ".035 + .010 (0.89 + 0.25)"
+          },
+          "tolerance": {
+            "plus": 0.25
+          },
+          "value": 0.89000000000000001
+        }
+      },
+      "type": "rimless"
+    },
+    "length": {
+      "cite": {
+        "locator": "printed p. 24, cartridge drawing, head face to mouth",
+        "source": "saami",
+        "verbatim": ".754 - .010 (19.15 - 0.25)"
+      },
+      "tolerance": {
+        "minus": 0.25
+      },
+      "value": 19.149999999999999
+    },
+    "materials": [],
+    "primer": {
+      "designation": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing.",
+        "value": null
+      },
+      "diameter": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing.",
+        "value": null
+      },
+      "options": []
+    },
+    "rim": {
+      "diameter": {
+        "cite": {
+          "locator": "printed p. 24, cartridge drawing, rim diameter",
+          "source": "saami",
+          "verbatim": ".394 - .010 (10.01 - 0.25)"
+        },
+        "tolerance": {
+          "minus": 0.25
+        },
+        "value": 10.01
+      },
+      "thickness": {
+        "cite": {
+          "locator": "printed p. 24, cartridge drawing, rim thickness",
+          "source": "saami",
+          "verbatim": ".050 - .010 (1.27 - 0.25)"
+        },
+        "tolerance": {
+          "minus": 0.25
+        },
+        "value": 1.27
+      }
+    }
+  },
+  "designation": "9×19 mm Parabellum",
+  "format": 1,
+  "id": "9x19",
+  "kind": "metallic",
+  "notes": [],
+  "overallLength": {
+    "max": {
+      "cite": {
+        "locator": "printed p. 24, cartridge drawing, overall length limits",
+        "source": "saami",
+        "verbatim": "1.000 (25.40) MIN – 1.169 (29.69) MAX"
+      },
+      "value": 29.690000000000001
+    },
+    "typical": {
+      "cite": null,
+      "note": "Not specified by the governing cartridge drawing.",
+      "value": null
+    }
+  },
+  "payload": {
+    "diameter": {
+      "cite": {
+        "locator": "printed p. 24, cartridge drawing, bullet diameter",
+        "source": "saami",
+        "verbatim": ".3555 - .0030 (9.030 - 0.076)"
+      },
+      "tolerance": {
+        "minus": 0.075999999999999998
+      },
+      "value": 9.0299999999999994
+    },
+    "length": {
+      "max": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing.",
+        "value": null
+      },
+      "min": {
+        "cite": null,
+        "note": "Not specified by the governing cartridge drawing.",
+        "value": null
+      }
+    },
+    "type": "bullet",
+    "variants": [
+      {
+        "cite": {
+          "locator": "infobox ballistics, Federal FMJ",
+          "source": "load",
+          "verbatim": "7.45 g (115 gr) Federal FMJ; 1,180 ft/s (360 m/s)"
+        },
+        "kind": "fmj",
+        "massGrains": {
+          "cite": {
+            "locator": "infobox ballistics, Federal FMJ",
+            "source": "load",
+            "verbatim": "115 gr"
+          },
+          "value": 115
+        }
+      }
+    ]
+  },
+  "primarySource": "saami",
+  "relatedTo": [],
+  "sources": {
+    "load": {
+      "body": "Wikipedia",
+      "reliability": "secondary",
+      "retrieved": "2026-10-27",
+      "title": "9×19mm Parabellum",
+      "url": "https://en.wikipedia.org/wiki/9%C3%9719mm_Parabellum"
+    },
+    "saami": {
+      "body": "SAAMI",
+      "reliability": "standard",
+      "retrieved": "2026-10-27",
+      "revision": "Drawing revised 06/23/2021",
+      "sha256": "e2dad5c77ab57636dcdaa3379150703f4b72420e523f455dba0ff1f8e5d0ca34",
+      "title": "ANSI/SAAMI Z299.3-2022, Centerfire Pistol and Revolver: 9mm Luger cartridge drawing",
+      "url": "https://saami.org/wp-content/uploads/2025/05/SAAMI-Z299.3-2022-Centerfire-Pistol-Revolver-Approved-12-13-2022.pdf"
+    }
+  },
+  "voxelGrain": 0.002
+}

@@ -143,13 +143,12 @@ describe('design editor: save and reopen', () => {
 describe('design editor: prefab and template choices', () => {
   it('offers only prefabs for the part registry family and refuses a different family', () => {
     const state = createEditorState(ar, seedAssembly);
-    expect(availablePrefabs(state, 'magazine', GUN_PREFABS).map((prefab) => prefab.id)).toEqual([
-      'stanag-20',
-      'stanag-30',
-      'ak74-30',
-      'akm-30',
-    ]);
-    expect(availablePrefabs(state, 'grip', GUN_PREFABS)).toEqual([]);
+    const prefabs = [
+      { ...stanag20, id: 'fixture-magazine' },
+      { ...stanag20, id: 'fixture-grip', family: 'grip' },
+    ];
+    expect(availablePrefabs(state, 'magazine', prefabs)).toEqual([prefabs[0]]);
+    expect(availablePrefabs(state, 'grip', prefabs)).toEqual([prefabs[1]]);
     expect(setPartFamily(state, 'barrel', 'grip')).toMatchObject({ ok: false, reason: 'family-not-allowed' });
   });
 

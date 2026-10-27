@@ -581,6 +581,23 @@ describe('rifle firearm handling', () => {
     expect(regular.advance(3, weapon, false, false)).toEqual([]);
   });
 
+  it('the one-handed pistol chambers through its hand action and refuses a second shot until the slide returns', () => {
+    const pistol = [...registry.items.values()].find(
+      (item) => item.model && registry.models.get(item.model)?.gun?.action?.triggerMode === 'semi',
+    );
+    if (!pistol) {
+      throw new Error('No authored semi-auto pistol');
+    }
+    expect(pistol.twoHanded).toBe(false);
+    const { mechanics, rifle: gun } = armed({}, { type: pistol.id });
+    const data = firearmHandlingFor(gun, registry);
+    const duration = actionCycleSeconds(data.action, 'fire');
+    expect(mechanics.fire(shotInput(gun, 1))).toBe(true);
+    expect(mechanics.fire(shotInput(gun, 1 + duration / 2))).toBe(false);
+    mechanics.advanceTo(1 + duration);
+    expect(mechanics.fire(shotInput(gun, 1 + duration))).toBe(true);
+  });
+
   it('semi-auto requires another pull even when held beyond the cycling cadence', () => {
     const trigger = new FirearmTrigger();
     const weapon = { uid: 1, roundsPerSimSecond: 10, triggerMode: 'semi' as const };
