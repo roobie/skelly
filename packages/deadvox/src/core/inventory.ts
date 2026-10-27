@@ -1267,13 +1267,9 @@ export class Inventory {
     for (const item of outputs) {
       let found = false;
       for (const pos of landings) {
-        const key = pileKey(pos);
-        const placed = grids.get(key) ?? this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
-        grids.set(key, placed);
-        const spot = findSpot(this.registry, { size: PILE_GRID, placed }, item);
+        const placed = this.pilePlacements(pos).filter(({ item: existing }) => existing !== work);
+        const spot = this.reserveSpot(grids, pileKey(pos), { size: PILE_GRID, placed }, item);
         if (spot) {
-          // Shadow occupancy reserves every output before transferring any of them.
-          placed.push({ item, ...spot });
           drops.push({ item, pos, spot });
           found = true;
           break;
@@ -1284,6 +1280,60 @@ export class Inventory {
       }
     }
     return drops;
+  }
+
+  // Shadow occupancy reserves every placement of a batch before transferring any of them.
+  private reserveSpot(shadow: Map<string, Placed[]>, key: string, grid: GridState, item: Item): Spot | undefined {
+    const placed = shadow.get(key) ?? [...grid.placed];
+    shadow.set(key, placed);
+    const spot = findSpot(this.registry, { size: grid.size, placed }, item);
+    if (spot) {
+      placed.push({ item, ...spot });
+    }
+    return spot;
+  }
+
+  /**
+   * Plans moving each item into the first of its targets that still has room once the earlier items are in.
+   * Each planned target pins the spot it reserved, so queued moves land where the batch planned them.
+   */
+  planBatch(moves: readonly { item: Item; targets: readonly Target[] }[]): { item: Item; target: Target }[] {
+    const shadow = new Map<string, Placed[]>();
+    const joined = new Map<Item, number>();
+    return moves.flatMap(({ item, targets }) => {
+      for (const target of targets) {
+        const pinned = this.reserveBatchTarget(shadow, joined, item, target);
+        if (pinned) {
+          return [{ item, target: pinned }];
+        }
+      }
+      return [];
+    });
+  }
+
+  /** The target pinned to a stack with room left by the batch so far, else to a free spot it reserves. */
+  private reserveBatchTarget(
+    shadow: Map<string, Placed[]>,
+    joined: Map<Item, number>,
+    item: Item,
+    target: Target,
+  ): Target | undefined {
+    if (target.kind === 'hand' || target.kind === 'worn' || !this.plan(item, target).ok) {
+      return undefined;
+    }
+    const { at: _pinned, ...where } = target;
+    const key = JSON.stringify(this.targetState(where));
+    const grid = this.gridOf(target);
+    const placed = shadow.get(key) ?? [...grid.placed];
+    shadow.set(key, placed);
+    const stack = placed.find(
+      (p) => stackRoom(this.registry, p.item, item, this.sameFood) - (joined.get(p.item) ?? 0) >= item.count,
+    );
+    if (stack) {
+      joined.set(stack.item, (joined.get(stack.item) ?? 0) + item.count);
+    }
+    const at = stack ? { x: stack.x, y: stack.y, rotated: stack.rotated } : this.reserveSpot(shadow, key, grid, item);
+    return at ? { ...target, at } : undefined;
   }
 
   private workOutputs(payload: NonNullable<Item['work']>, finish: boolean, calendar: number): Item[] {
