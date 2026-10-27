@@ -1948,7 +1948,7 @@ const receiver: PartFamily = {
 
 /**
  * The AKM's rear-sight block: on the receiver's front roof and on ahead of it over the handguard, where the
- * gas cylinder starts. The leaf seats on its top without a post (BR, 2026-10-06 18:36).
+ * gas cylinder starts. The leaf seats on its top without a post.
  */
 const akSightBaseSolids = (): Solid[] => {
   const { rearX, frontX, bottomU, topU, halfWidthU } = AK_PROPORTIONS.sightBase;

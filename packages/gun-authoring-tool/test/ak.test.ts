@@ -260,7 +260,7 @@ describe('AK-pattern archetype', () => {
     ]);
   });
 
-  // BR 22:47: both magazine types must work with the v2 AK.
+  // Both magazine types must work with the v2 AK.
   it('seats every AK magazine variant in the v2 magwell, its top inside the well, with a magwell anchor', () => {
     const variants = FAMILIES.magazine!.params.variant!.values;
     expect(variants.length).toBeGreaterThan(1);
@@ -288,7 +288,7 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  // The AKM row moved to the golden-photo overlay in g41-4; see docs/deferred-assertions.md.
+  // The AKM row moved to the golden-photo overlay; see docs/deferred-assertions.md.
   it('fits the AK-74 magazine silhouette ratios to its measured reference image', () => {
     const references = {
       '3': { bend: 33.5, straight: 0.23, lengthDepth: 3.01, offsetDepth: 0.84 },

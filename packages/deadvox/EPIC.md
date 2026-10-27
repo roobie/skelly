@@ -220,7 +220,8 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 The scope, open decision gates and reviewable build order are in [SLICE-5.md](SLICE-5.md).
 
 - Construction: walls, floors, doors, barricades and furniture, by crafting.
-- Doors and locks, and zombies bashing doors (brutes arrive here).
+- Doors and locks, and zombies bashing doors (brutes arrive here, with their
+  heavy-hit response and player knockback).
 - Electricity: generators, batteries, solar panels, wires, lights and
   appliances, with catch-up while away.
 - Fire: burning, spreading, smoke and light. Molotovs. Lanterns and fixed
