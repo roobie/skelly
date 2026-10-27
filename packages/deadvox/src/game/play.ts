@@ -2085,6 +2085,11 @@ export const startPlay = (
     runQuickbarAction(slot, true);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  const crouchProneInput = new PressHoldInput<string>({
+    holdRealMs: () => playerSenseTuning.crouchProneHoldRealSeconds * 1000,
+    tap: () => withUnlockedInput(() => input.requestStanceToggle('crouch')),
+    hold: () => withUnlockedInput(() => input.requestStanceToggle('prone')),
+  });
   const throwStanceInput = new PressHoldInput<string>({
     holdRealMs: () => throwStanceDropHoldRealSeconds * 1000,
     tap: () => toggleThrowingStance(),
@@ -2114,6 +2119,7 @@ export const startPlay = (
   });
   globalThis.addEventListener('blur', () => {
     quickbarInput.cancel();
+    crouchProneInput.cancel();
     throwStanceInput.cancel();
     interactInput.cancel();
     wornLightInput.cancel();
@@ -2212,6 +2218,7 @@ export const startPlay = (
     cancelBackquoteGesture(backquoteGesture);
     cancelItemThrow();
     throwStanceInput.cancel();
+    crouchProneInput.cancel();
     quickbarInput.cancel();
   };
   keyboardInput.escape = () => {
@@ -2292,10 +2299,7 @@ export const startPlay = (
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;
       case 'player.crouch-toggle':
-        withUnlockedInput(() => input.requestStanceToggle('crouch'));
-        break;
-      case 'player.prone-toggle':
-        withUnlockedInput(() => input.requestStanceToggle('prone'));
+        withUnlockedInput(() => crouchProneInput.keyDown(action, at));
         break;
       case 'player.throw':
         withUnlockedInput(() => throwStanceInput.keyDown(action, at));
@@ -2354,6 +2358,9 @@ export const startPlay = (
       interactInput.keyUp(action, at);
       interactionPressTarget = undefined;
     }
+    if (action === 'player.crouch-toggle') {
+      crouchProneInput.keyUp(action, at);
+    }
     if (action === 'player.throw') {
       throwStanceInput.keyUp(action, at);
     }
@@ -2385,6 +2392,7 @@ export const startPlay = (
     });
   const cancelHeldInput = (): void => {
     input.reload.cancel();
+    crouchProneInput.cancel();
     throwStanceInput.cancel();
     cancelItemThrow();
     quickbarInput.cancel();
@@ -3925,6 +3933,7 @@ export const startPlay = (
       interactInput.update(now);
       wornLightInput.update(now);
     }
+    crouchProneInput.update(now);
     throwStanceInput.update(now);
     updateBackquoteGesture(backquoteGesture, now);
   };

@@ -9,6 +9,7 @@ const base = startupContent().registry;
 const senseTuning = {
   id: 'fixture_player',
   chestEyeFraction: 0.62,
+  crouchProneHoldRealSeconds: 0.5,
   crouch: {
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,

@@ -21,7 +21,7 @@ export type InputContext = keyof typeof INPUT_CONTEXTS;
 export const DEBUG_ONLY_CONTEXTS: ReadonlySet<InputContext> = new Set(
   (Object.keys(INPUT_CONTEXTS) as InputContext[]).filter((context) => INPUT_CONTEXTS[context]),
 );
-type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
+type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold' | 'tap-or-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
   readonly code: string;
@@ -102,8 +102,18 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('movement.right', 'Move right', movingWhileReading, 'held-state'),
   row('movement.sprint', 'Sprint; hold breath while aiming down sights', moving, 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving),
-  row('player.crouch-toggle', 'Toggle crouch', ['play', 'carrying', 'build']),
-  row('player.prone-toggle', 'Lie down or rise to a crouch', ['play', 'carrying', 'build']),
+  row(
+    'player.crouch-toggle',
+    'Tap to toggle crouch; hold to lie down or rise to a crouch',
+    ['play', 'carrying', 'build'],
+    'tap-or-hold',
+    {
+      commands: [
+        { id: 'player.crouch-toggle', kind: 'tap-or-hold' },
+        { id: 'player.prone-toggle', kind: 'hold' },
+      ],
+    },
+  ),
   row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play']),
   row('movement.jump', 'Jump', ['play', 'carrying', 'build'], 'held-state'),
   row('carry.tip', 'Tip the carried piece over', ['carrying']),
