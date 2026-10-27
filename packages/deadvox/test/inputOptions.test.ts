@@ -35,6 +35,7 @@ for (const key of ['addEventListener', 'removeEventListener'] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key].bind(dom) });
 }
 const { mountInputOptions } = await import('../src/ui/inputOptions.ts');
+const { mountMenuPointer } = await import('../src/ui/menuPointer.ts');
 const inputOptionsText = baseScreenText().inputOptions;
 
 afterAll(() => dom.happyDOM.abort());
@@ -134,7 +135,37 @@ describe('input options context visibility', () => {
     ).toBe(true);
   });
 
-  it('leaves the binding unchanged when capture is cancelled with a mouse press, and binds a press elsewhere', () => {
+  it.each([
+    ['a free pointer', () => ({ press: pointerPress, unmount: () => undefined })],
+    [
+      'the locked menu pointer',
+      () => {
+        // The native press lands on the locked canvas; the menu pointer forwards the click to the element under its cursor.
+        const canvas = document.createElement('canvas');
+        const cursor = document.createElement('div');
+        cursor.id = 'game-cursor';
+        document.body.append(canvas, cursor);
+        const input = { locked: true, menuPointer: true, cursorX: 0, cursorY: 0, moveMenuCursor: () => undefined };
+        let underCursor: Element | null = null;
+        Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: () => underCursor });
+        const menuPointer = mountMenuPointer({ input, canvas, cursor });
+        const nativeTarget = keyboardInput.pointerTarget;
+        keyboardInput.pointerTarget = (event) => menuPointer.target(event.target);
+        return {
+          press: (target: Element, button = 0) => {
+            underCursor = target;
+            pointerPress(canvas, button);
+          },
+          unmount: () => {
+            input.locked = false;
+            keyboardInput.pointerTarget = nativeTarget;
+            Reflect.deleteProperty(document, 'elementFromPoint');
+          },
+        };
+      },
+    ],
+  ])('leaves the binding unchanged when capture is cancelled by %s, and binds a press elsewhere', (_name, pointer) => {
+    const { press, unmount } = pointer();
     const binding = INPUT_BINDINGS.find((candidate) => !bindingIsDebugOnly(candidate) && candidate.defaults[0]);
     const free = [0, 1, 2, 3, 4].find(
       (button) =>
@@ -152,17 +183,18 @@ describe('input options context visibility', () => {
     const cancelButton = () =>
       [...root.querySelectorAll('button')].find((button) => button.textContent?.trim() === inputOptionsText.cancel);
     try {
-      pointerPress(slot());
+      press(slot());
       expect(keyboardInput.capture).toBeDefined();
-      pointerPress(cancelButton()!);
+      press(cancelButton()!);
       expect(keyboardInput.capture).toBeUndefined();
       expect(inputBindings.chords(binding!.id)[0]).toEqual(binding!.defaults[0]);
 
-      pointerPress(slot());
-      pointerPress(root.querySelector('.input-binding-status')!, free);
+      press(slot());
+      press(root.querySelector('.input-binding-status')!, free);
       expect(keyboardInput.capture).toBeUndefined();
       expect(inputBindings.chords(binding!.id)[0]).toEqual({ code: `Mouse${free}` });
     } finally {
+      unmount();
       remove();
       keyboardInput.capture = undefined;
       inputBindings.reset();

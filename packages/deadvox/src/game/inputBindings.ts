@@ -817,6 +817,8 @@ export class KeyboardInput {
   cancelled: (preservePointer?: boolean, reason?: InputCancellationReason) => void = () => undefined;
   escape: () => void = () => undefined;
   capture: ((chord: Chord | string | undefined) => void) | undefined;
+  /** What a mouse press lands on; a locked menu pointer replaces the canvas with the element under its cursor. */
+  pointerTarget: (event: MouseEvent) => EventTarget | null = (event) => event.target;
   readonly registry: BindingRegistry;
   constructor(registry: BindingRegistry) {
     this.registry = registry;
@@ -1148,7 +1150,7 @@ export class KeyboardInput {
     const keyUp = (event: KeyboardEvent) => this.release(event);
     // A press on a control (Cancel, Reset, another binding) operates that control rather than being captured.
     const pointerCapture = (event: MouseEvent) => {
-      if (this.capture && !pageControl(event.target)) {
+      if (this.capture && !pageControl(this.pointerTarget(event))) {
         this.pressPointer(event.button, event);
         event.preventDefault();
         event.stopPropagation();
