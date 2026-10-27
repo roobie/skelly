@@ -44,7 +44,6 @@ import {
   type OpticsSpike,
   type OpticsTube,
   opticsEyeDistance,
-  opticsTubePresentation,
 } from './opticsSpike.ts';
 import { firstPersonShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
@@ -179,14 +178,12 @@ export class HeldItems {
         : base;
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
-    const tube = opticsTubePresentation(
+    const tube =
       this.opticsTube ??
-        defaultOpticsTube(this.opticsSpike, optic?.model.gun?.attachment?.properties.magnification?.max),
-      settings?.magnification ?? 1,
-    );
+      defaultOpticsTube(this.opticsSpike, optic?.model.gun?.attachment?.properties.magnification?.max);
     if (heldModel) {
       heldModel.visible = this.opticsSpike !== undefined || !active;
-      this.syncOpticPieces(heldModel, active, tube.cups);
+      this.syncOpticPieces(heldModel, active);
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
@@ -245,7 +242,7 @@ export class HeldItems {
         ...aperture,
         reticleCenter,
         ...(this.opticsSpike
-          ? { border: this.opticsSpike === 'effect', excludeSelf: true, worldAtUnity: tube.worldAtUnity }
+          ? { border: this.opticsSpike === 'effect', excludeSelf: true, worldAtUnity: tube === 'disc' }
           : {}),
       };
     }
@@ -272,20 +269,10 @@ export class HeldItems {
     this.opticWindowShape = shape;
   }
 
-  private syncOpticPieces(model: Object3D, active: boolean, cups: boolean): void {
+  private syncOpticPieces(model: Object3D, active: boolean): void {
     model.traverse((object) => {
-      if (!(object instanceof Mesh)) {
-        return;
-      }
-      switch (object.geometry.userData.piece) {
-        case 'optic-eyecup':
-          object.visible = cups;
-          break;
-        case 'optic-ads-housing':
-          object.visible = !active;
-          break;
-        default:
-          break;
+      if (object instanceof Mesh && object.geometry.userData.piece === 'optic-ads-housing') {
+        object.visible = !active;
       }
     });
   }

@@ -176,31 +176,6 @@ describe('optic catalog', () => {
     }
   });
 
-  it.each(['lpvo-1-6x', 'hunting-3-9x'] as const)(
-    '%s cup keeps the relief ocular cone open and covers its rim',
-    (id) => {
-      const optic = getOptic(id);
-      const cup = optic.solids.find((solid) => solid.display?.piece === 'optic-eyecup')!;
-      expect(cup).toBeDefined();
-      const mesh = meshForSolid(cup, 0);
-      const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0);
-      const crosses = (fraction: number) => {
-        const target = new Vector3(
-          optic.ocularX,
-          optic.opticalAxisY + (optic.ocularOpeningDiameterU / 2) * fraction,
-          0,
-        );
-        const ray = new Ray(eye, target.sub(eye).normalize());
-        const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
-        return Array.from({ length: mesh.indices.length / 3 }, (_, triangle) => triangle * 3).some((index) =>
-          ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, new Vector3()),
-        );
-      };
-      expect(crosses(0.9)).toBe(false);
-      expect(crosses(1.15)).toBe(true);
-    },
-  );
-
   it('holographic ADS relief rays clear the unmasked geometry through the central window', () => {
     const optic = getOptic('holographic');
     const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0);

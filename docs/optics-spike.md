@@ -2,9 +2,10 @@
 read_if:
   - you evaluate camera-only optical borders against authored world geometry
   - you compare authored eye relief with aperture-fill-derived ADS placement
-  - you compare an ocular world disc with relief-sized eyecup geometry
+  - you change scope disc presentation or investigate a tube-to-disc gap
   - you change ADS-only housing visibility or reticle projection
   - you investigate a gap where a voxel optic body meets transparent glass
+  - you test night-vision or worn-visor effects against the world presentation
 ---
 
 # Optical border comparison
@@ -33,12 +34,13 @@ must describe the same frame: a screen-space aperture cannot stay aligned with
 world geometry posed from an earlier camera sample. See
 `packages/deadvox/src/game/play.ts`, `updateFrame`.
 
-A hollow eyecup can cover the rim but cannot replace rays through the tube with
-world imagery. The world disc is the scope default, including at unity power;
-the unmagnified holographic window needs no world replacement. Other tube modes
-remain available for comparison. The authored power range distinguishes these
+The world disc is the scope default, including at unity power; the unmagnified
+holographic window needs no world replacement. The eyecup comparison is not
+retained: the disc was chosen, and cups only add geometry outside the scope body
+without replacing rays through the tube with world imagery. The hybrid comparison
+also has no purpose without cups. The authored power range distinguishes these
 instruments without dispatching on content identity. See
-`packages/deadvox/src/render/opticsSpike.ts`, `opticsTubePresentation`; and
+`packages/deadvox/src/render/opticsSpike.ts`, `defaultOpticsTube`; and
 `packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
 Both image paths exclude the player's close-eye geometry so neither magnifies
 nor copies the instrument back into its own window.
@@ -51,11 +53,11 @@ interface opens a false gap through the instrument in every view. Neither a larg
 disc nor a different eye placement repairs the exported surface. See
 `packages/thing-export/src/glb.ts`, `voxelPrimitivesFor`; and
 `packages/gun-authoring-tool/test/opticTubeExport.test.ts`.
+The whole disc-to-lip annulus must remain opaque, not only a narrow band next to
+the disc. Adjacent opaque comparison geometry can suppress exported tube faces
+that become holes when that geometry is hidden. Removing the unused cups before
+export avoids that hidden-neighbour dependency without changing the scope body.
 
-Eyecups are authored content sized to the relief placement, not a general fix for
-every eye distance or field of view. See
-`packages/gun-authoring-tool/src/gun/optics.ts`, `eyecup`; and
-`packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`.
 An ADS-only mask must not change the instrument seen outside ADS or erase the
 near rim that locates the aperture. The near frame remains visible while the
 lengthwise housing uses temporary visibility in
@@ -73,6 +75,13 @@ Relief and housing dimensions remain content choices rather than optic-specific
 rendering rules. A sight datum and its clearance corridor may bisect aperture-edge
 grid stations: centring the sight must not move the opening to satisfy a grid
 check. See `packages/gun-authoring-tool/test/partSweepChecks.ts`, `definePartChecks`.
+
+Effect-mask tests must select that presentation explicitly rather than inherit
+the world default. The world presentation uses physical worn geometry instead of
+the camera-attached visor and NVG border masks; it must still preserve the player's
+night-vision gain and colour without applying them to a spectator. See
+`packages/deadvox/src/render/playView.ts`, `setViewEffects`; and
+`packages/deadvox/test/browser/primary-action-pixel.mjs`, `heldItemChecks`.
 
 The aperture clips a finite glass opening, but the reticle represents the sight's
 aim direction on the world image. Attaching both to the glass centre introduces

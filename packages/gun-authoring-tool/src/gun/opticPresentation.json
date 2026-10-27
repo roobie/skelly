@@ -1,16 +1,4 @@
 {
-  "cups": {
-    "hunting-3-9x": {
-      "envelopeLengthU": 30.25,
-      "profile": [[-17, 0.8125], [-13, 1.5]],
-      "wall": 0.125
-    },
-    "lpvo-1-6x": {
-      "envelopeLengthU": 25.25,
-      "profile": [[-13, 0.94999999999999996], [-10, 1.5]],
-      "wall": 0.125
-    }
-  },
   "holographic": {
     "batteryRearX": -3,
     "batteryTopY": 1,
@@ -21,10 +9,12 @@
   },
   "scopes": {
     "hunting-3-9x": {
+      "envelopeLengthU": 26.25,
       "eyeReliefU": 8,
       "ocularOpeningDiameterU": 2.75
     },
     "lpvo-1-6x": {
+      "envelopeLengthU": 22.25,
       "eyeReliefU": 7.5,
       "ocularOpeningDiameterU": 2.625
     }

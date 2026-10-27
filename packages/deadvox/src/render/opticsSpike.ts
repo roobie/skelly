@@ -5,17 +5,12 @@ import type { HeldItems } from './hands.ts';
 
 export type OpticsSpike = 'effect' | 'world';
 export type OpticsEye = 'fill' | 'relief';
-export type OpticsTube = 'disc' | 'cups' | 'split' | 'none';
+export type OpticsTube = 'disc' | 'none';
 
 export const defaultOpticsTube = (
   mode: OpticsSpike | undefined,
   maximumMagnification: number | undefined,
 ): OpticsTube => (mode === 'world' && (maximumMagnification ?? 1) > 1 ? 'disc' : 'none');
-
-export const opticsTubePresentation = (tube: OpticsTube, magnification: number) => ({
-  worldAtUnity: tube === 'disc' || (tube === 'split' && magnification === 1),
-  cups: tube === 'cups' || (tube === 'split' && magnification > 1),
-});
 
 const opticsSpikeFromSearch = (search: string): OpticsSpike => {
   const choice = new URLSearchParams(search).get('optics');
@@ -28,9 +23,7 @@ export const configureOpticsSpike = (held: HeldItems, scene: Scene, camera: Pers
   const eye: OpticsEye = mode === 'world' && search.get('eye') !== 'fill' ? 'relief' : 'fill';
   const requested = search.get('tube');
   const tube: OpticsTube | undefined =
-    mode === 'world' && (requested === 'disc' || requested === 'cups' || requested === 'split' || requested === 'none')
-      ? requested
-      : undefined;
+    mode === 'world' && (requested === 'disc' || requested === 'none') ? requested : undefined;
   held.configureOpticsSpike(scene, mode, eye, tube);
   camera.layers.enable(OPTICS_SPIKE_LAYER);
   camera.near = 0.01;

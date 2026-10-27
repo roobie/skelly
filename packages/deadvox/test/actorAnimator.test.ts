@@ -1,16 +1,5 @@
 import { readFileSync } from 'node:fs';
-import {
-  BufferGeometry,
-  Group,
-  Mesh,
-  MeshBasicMaterial,
-  type Object3D,
-  PerspectiveCamera,
-  Scene,
-  type Vector2,
-  Vector3,
-  type WebGLRenderer,
-} from 'three';
+import { Group, Mesh, type Object3D, PerspectiveCamera, Scene, type Vector2, Vector3, type WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { aimBasis } from '../src/core/aim.ts';
@@ -494,38 +483,28 @@ it('exported near frame stays visible while only the length housing hides in ADS
   }
 });
 
-it.each(['disc', 'cups', 'split', 'none'] as const)(
-  'tube=%s switches the authored cup piece at the selected power',
-  async (tube) => {
-    const f = await fixture();
-    const cup = new Mesh(new BufferGeometry(), new MeshBasicMaterial());
-    cup.geometry.userData.piece = 'optic-eyecup';
-    vi.stubGlobal('location', { search: `?optics=world&eye=relief&tube=${tube}` });
-    try {
-      const scene = new Scene();
-      configureOpticsSpike(f.view, scene, f.camera);
-      const optic = mountedOptic(f.registry, f.item)!;
-      const handling = { firearms: [], readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true } };
-      f.view.update(f.camera, f.pose, 0, handling);
-      // The fixture model has no authored geometry; install the export's existing piece marker.
-      const heldRoot = scene.getObjectByName('held-item-right')!;
-      heldRoot.add(cup);
-      for (const magnification of [1, 4]) {
-        f.view.update(f.camera, f.pose, 0, {
-          ...handling,
-          opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification },
-        });
-        expect(cup.visible).toBe(tube === 'cups' || (tube === 'split' && magnification > 1));
-        expect(f.view.opticLensFrame!.worldAtUnity).toBe(tube === 'disc' || (tube === 'split' && magnification === 1));
-      }
-    } finally {
-      vi.unstubAllGlobals();
-      f.dispose();
-      cup.geometry.dispose();
-      (cup.material as MeshBasicMaterial).dispose();
+it.each(['disc', 'none'] as const)('tube=%s selects unity world replacement independently of power', async (tube) => {
+  const f = await fixture(true, '?loadout=ar&optic=optic_lpvo_1_6x');
+  vi.stubGlobal('location', { search: `?optics=world&eye=relief&tube=${tube}` });
+  try {
+    const scene = new Scene();
+    configureOpticsSpike(f.view, scene, f.camera);
+    const optic = mountedOptic(f.registry, f.item)!;
+    const range = optic.model.gun!.attachment!.properties.magnification!;
+    const handling = { firearms: [], readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true } };
+    f.view.update(f.camera, f.pose, 0, handling);
+    for (const magnification of [range.min, range.max]) {
+      f.view.update(f.camera, f.pose, 0, {
+        ...handling,
+        opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification },
+      });
+      expect(f.view.opticLensFrame!.worldAtUnity).toBe(tube === 'disc');
     }
-  },
-);
+  } finally {
+    vi.unstubAllGlobals();
+    f.dispose();
+  }
+});
 
 it('optic ADS hides the owner-view gun and supplies its window without hiding the world gun', async () => {
   const f = await fixture();

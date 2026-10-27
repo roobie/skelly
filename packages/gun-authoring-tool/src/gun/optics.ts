@@ -139,11 +139,6 @@ const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall =
   sides: OPTIC_BODY_SIDES,
 });
 
-const eyecup = (centerY: number, cup: (typeof opticPresentation.cups)['lpvo-1-6x']): Solid => ({
-  ...scopeBody('ocular-eyecup', centerY, parse(array(tuple([number(), number()])), cup.profile), cup.wall),
-  display: { piece: 'optic-eyecup' },
-});
-
 const adsHousing = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-ads-housing' } });
 const nearFrame = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-near-frame' } });
 
@@ -513,7 +508,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reference: 'Vortex Razor HD Gen II-E 1–6×24, approximately 257 mm long',
     source: 'https://vortexoptics.com/razor-hd-gen-ii-e-1-6x24.html',
     envelopeMm: [257, 80, 65],
-    envelopeU: [opticPresentation.cups['lpvo-1-6x'].envelopeLengthU, 4.75, 4.5],
+    envelopeU: [opticPresentation.scopes['lpvo-1-6x'].envelopeLengthU, 4.75, 4.5],
     mount: railMount({
       contactLengthU: 12,
       contactWidthU: 1.75,
@@ -531,7 +526,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 11.25,
     solids: [
       ...pairedFeet(1),
-      eyecup(2, opticPresentation.cups['lpvo-1-6x']),
       ...lensedScope('tube-with-flared-bells', 2, [
         [-10, 1.5],
         [-7.5, 1.5],
@@ -553,7 +547,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reference: 'Vortex Crossfire II 3–9×40: L1 11.86 in, H1 1.89 in; turret envelope estimated',
     source: 'https://vortexoptics.com/vortex-crossfire-ii-3-9x40-riflescope.html',
     envelopeMm: [301.244, 48.006, 48.006],
-    envelopeU: [opticPresentation.cups['hunting-3-9x'].envelopeLengthU, 4.75, 4.75],
+    envelopeU: [opticPresentation.scopes['hunting-3-9x'].envelopeLengthU, 4.75, 4.75],
     mount: railMount({
       contactLengthU: 12,
       contactWidthU: 1.75,
@@ -572,7 +566,6 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     solids: [
       ...pairedFeet(1.25),
       ...scopeLenses(2.25, [-13, 1.75], [13.25, 2.25]),
-      eyecup(2.25, opticPresentation.cups['hunting-3-9x']),
       // Separate convex proxies preserve the narrow tube clearance instead of bridging the two bells.
       scopeBody('hunting-ocular', 2.25, [
         [-13, 1.75],
