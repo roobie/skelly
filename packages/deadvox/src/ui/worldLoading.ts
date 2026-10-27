@@ -2,6 +2,7 @@ import { html, render } from 'lit-html';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import type { WorldLoading } from '../game/worldLoading.ts';
+import { isOwnError } from './ownError.ts';
 
 export function mountWorldLoading(loading: WorldLoading, text: ScreenText['worldLoading']): () => void {
   const mask = document.getElementById('world-loading')!;
@@ -30,8 +31,24 @@ export function mountWorldLoading(loading: WorldLoading, text: ScreenText['world
     }
     draw();
   };
-  globalThis.addEventListener('error', (event) => fail(event.error ?? event.message), { signal: errors.signal });
-  globalThis.addEventListener('unhandledrejection', (event) => fail(event.reason), { signal: errors.signal });
+  globalThis.addEventListener(
+    'error',
+    (event) => {
+      if (isOwnError(event, location.origin)) {
+        fail(event.error ?? event.message);
+      }
+    },
+    { signal: errors.signal },
+  );
+  globalThis.addEventListener(
+    'unhandledrejection',
+    (event) => {
+      if (isOwnError(event, location.origin)) {
+        fail(event.reason);
+      }
+    },
+    { signal: errors.signal },
+  );
   draw();
   return draw;
 }
