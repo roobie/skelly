@@ -1109,7 +1109,7 @@ export class Inventory {
     repair?: { targetUid: number; amount: number },
   ): boolean {
     const recipe = this.registry.recipes.get(plan.recipe);
-    if (!recipe || (recipe.kind === 'repair') !== (repair !== undefined)) {
+    if (!recipe) {
       return false;
     }
     if (repair) {
@@ -1118,10 +1118,7 @@ export class Inventory {
         !target ||
         plan.components.some(({ item }) => item.uid === target.uid) ||
         target.type !== recipe.result.item ||
-        target.count !== 1 ||
-        !Number.isFinite(repair.amount) ||
-        repair.amount <= 0 ||
-        repair.amount > 1
+        target.count !== 1
       ) {
         return false;
       }
@@ -1151,33 +1148,65 @@ export class Inventory {
   }
 
   private validDisassemblyPlan(plan: Extract<WorkPlan, { kind: 'disassembly' }>): boolean {
-    const sourceDef = this.registry.items.get(plan.source.type);
     const location = this.locate(plan.source);
-    if (
-      this.itemByUid(plan.source.uid) !== plan.source ||
-      !location ||
-      location.kind === 'vehicle' ||
-      chargingBattery(location) ||
-      !sourceDef ||
-      !(sourceDef.disassembly || sourceDef.salvage) ||
-      !validDisassemblyToolLevels(sourceDef, plan.toolLevels) ||
-      plan.source.work ||
-      !isEmpty(plan.source) ||
-      !Number.isSafeInteger(plan.skillLevel) ||
-      plan.skillLevel < SKILL_LEVEL_MIN ||
-      plan.skillLevel > SKILL_LEVEL_LEGENDARY ||
-      !Number.isFinite(plan.gather) ||
-      plan.gather < 0 ||
-      !Number.isFinite(plan.duration) ||
-      plan.duration <= 0 ||
-      plan.outputs.some(
-        ({ item, count }) => !(this.registry.items.has(item) && Number.isSafeInteger(count)) || count < 1,
-      )
-    ) {
+    return (
+      this.itemByUid(plan.source.uid) === plan.source &&
+      location !== undefined &&
+      location.kind !== 'vehicle' &&
+      !chargingBattery(location) &&
+      !plan.source.work &&
+      isEmpty(plan.source)
+    );
+  }
+
+  /** The payload `beginWork` stores; restore checks the same shape with `validateWorkItem`. */
+  private workPayload(
+    plan: WorkPlan,
+    components: Item[],
+    repair?: { targetUid: number; amount: number },
+  ): NonNullable<Item['work']> {
+    if (plan.kind === 'disassembly') {
+      return {
+        kind: 'disassembly',
+        source: plan.source.type,
+        skillLevel: plan.skillLevel,
+        toolLevels: { ...plan.toolLevels },
+        gather: plan.gather,
+        outputs: plan.outputs.map((output) => ({ ...output })),
+        elapsed: 0,
+        duration: plan.duration,
+        components,
+      };
+    }
+    return {
+      kind: 'craft',
+      recipe: plan.recipe,
+      elapsed: 0,
+      duration: plan.gather + plan.work,
+      components,
+      ...(repair ? { repairTargetUid: repair.targetUid, repairAmount: repair.amount } : {}),
+    };
+  }
+
+  /** Whether restore would accept the work item this plan makes, judged before any input moves. */
+  private restorableWork(plan: WorkPlan, repair?: { targetUid: number; amount: number }): boolean {
+    const components =
+      plan.kind === 'craft'
+        ? plan.components.map(({ item, count }) => ({ ...item, count }))
+        : [{ ...plan.source, count: 1 }];
+    const work = this.workPayload(plan, components, repair);
+    try {
+      validateWorkItem(this.registry, {
+        uid: 0,
+        type: workInProgressItem(this.registry).id,
+        count: 1,
+        condition: 1,
+        work,
+      });
+      return true;
+    } catch {
       return false;
     }
-    const expected = disassemblyOutputs(sourceDef, plan.skillLevel, (quality) => plan.toolLevels[quality] ?? 0);
-    return sameDisassemblyOutputs(expected, plan.outputs);
   }
 
   private escrowCraft(
@@ -1199,14 +1228,7 @@ export class Inventory {
       }
       return component;
     });
-    work.work = {
-      kind: 'craft',
-      recipe: plan.recipe,
-      elapsed: 0,
-      duration: plan.gather + plan.work,
-      components,
-      ...(repair ? { repairTargetUid: repair.targetUid, repairAmount: repair.amount } : {}),
-    };
+    work.work = this.workPayload(plan, components, repair);
   }
 
   private escrowDisassembly(plan: Extract<WorkPlan, { kind: 'disassembly' }>, work: Item): void {
@@ -1218,17 +1240,7 @@ export class Inventory {
     if (from.kind === 'furniture') {
       this.countLooted(input);
     }
-    work.work = {
-      kind: 'disassembly',
-      source: plan.source.type,
-      skillLevel: plan.skillLevel,
-      toolLevels: { ...plan.toolLevels },
-      gather: plan.gather,
-      outputs: plan.outputs.map((output) => ({ ...output })),
-      elapsed: 0,
-      duration: plan.duration,
-      components: [input],
-    };
+    work.work = this.workPayload(plan, [input]);
   }
 
   /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
@@ -1241,6 +1253,9 @@ export class Inventory {
         return undefined;
       }
     } else if (repair || !this.validDisassemblyPlan(plan)) {
+      return undefined;
+    }
+    if (!this.restorableWork(plan, repair)) {
       return undefined;
     }
     const work = this.create(workInProgressItem(this.registry).id);

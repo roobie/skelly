@@ -15,6 +15,7 @@ import {
   type InferOutput,
   integer,
   literal,
+  ltValue,
   maxLength,
   maxValue,
   minLength,
@@ -2378,12 +2379,15 @@ const FurnitureSchema = pipe(
     ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
-    /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
+    /**
+     * A station available to matching recipes within reach; bonus is the fraction removed from work time.
+     * Below 1, because a whole bonus leaves a recipe with its inputs at hand no work time, and restore refuses that.
+     */
     workstation: optional(
       strictObject({
         id: Id,
         qualities: record(Id, QualityLevel),
-        workFactorBonus: Fraction,
+        workFactorBonus: pipe(number(), minValue(0, 'must be 0 or more'), ltValue(1, 'must be less than 1')),
       }),
     ),
   }),
@@ -4485,7 +4489,10 @@ const RecipeSchema = strictObject({
   result: RecipeItemSchema,
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
   kind: optional(picklist(['craft', 'repair'])),
-  repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
+  /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
+  repair: optional(
+    strictObject({ skill: Id, amount: pipe(Positive, maxValue(1, 'must be at most 1')), perSkill: Fraction }),
+  ),
   activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
