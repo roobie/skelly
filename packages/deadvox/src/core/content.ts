@@ -1946,7 +1946,7 @@ const checkHeldHands = (registry: Registry, report: Report): void => {
 };
 
 const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void => {
-  if (hands.seat[0] <= 0) {
+  if (hands.butt && hands.seat[0] <= 0) {
     report('models', modelId, '.hands.seat', 'the seat is the right shoulder: it must sit right of the eye');
   }
   for (const hold of ['firing', 'support'] as const) {

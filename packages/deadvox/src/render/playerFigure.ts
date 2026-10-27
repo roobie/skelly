@@ -9,7 +9,13 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
-import { type FigureStancePose, type PlayerLookPose, playerLookPose, playerPosePoint } from '../core/playerLookPose.ts';
+import {
+  type FigureStancePose,
+  type PlayerLookPose,
+  playerHeldSeatFrame,
+  playerLookPose,
+  playerPosePoint,
+} from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import {
   FIGURE_LIMB_JOINTS,
@@ -131,6 +137,23 @@ const playerFigureLayout = (
 export const firstPersonShoulder = (figure: FigureDef, side: HandSide): Vec3 => {
   const [x, y, z] = figure.armRig.shoulderFromEye;
   return [side === 'right' ? x : -x, y, z];
+};
+
+export const heldBodyShoulder = (
+  figure: FigureDef,
+  models: ReadonlyMap<string, ModelDef>,
+  side: HandSide,
+  { eyeMetres, leanDegrees }: { eyeMetres: number; leanDegrees: number },
+): Vec3 => {
+  const layout = playerFigureLayout(figure, models);
+  const [x, y, z] = layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
+  const lean = (leanDegrees * Math.PI) / 180;
+  const aboveHip = y - layout.hipHeight;
+  return [
+    x,
+    layout.hipHeight + aboveHip * Math.cos(lean) + z * Math.sin(lean) - eyeMetres,
+    -aboveHip * Math.sin(lean) + z * Math.cos(lean),
+  ];
 };
 
 interface FigureHeldItems {
@@ -462,6 +485,10 @@ export class PlayerMeshes {
     return this.lookPose?.stockSeats;
   }
 
+  get adsEyes(): PlayerLookPose['eyes'] | undefined {
+    return this.lookPose?.eyes;
+  }
+
   dispose(): void {
     this.animator?.dispose();
     this.animator = undefined;
@@ -470,13 +497,18 @@ export class PlayerMeshes {
   }
 
   /** Actor action input is independent of the observing camera. */
-  syncHeldView(handPose: MeleePoseFrame | undefined, handling: HeldHandlingFrame, recoil = 0): void {
+  syncHeldView(
+    handPose: MeleePoseFrame | undefined,
+    handling: HeldHandlingFrame,
+    recoil = 0,
+  ): HeldPresentation | undefined {
     this.handPose = handPose;
     this.handling = handling;
     this.recoil = recoil;
     if (this.lastPose) {
       this.syncHeld(this.lastPose);
     }
+    return this.presentation;
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shared presentation roles and worn mounts resolve in one frame.
@@ -511,6 +543,8 @@ export class PlayerMeshes {
       });
     }
     this.presentation!.stockSeats = this.lookPose!.stockSeats;
+    this.presentation!.seatFrame = playerHeldSeatFrame(this.lookPose!, pose.pitch ?? 0);
+    this.presentation!.adsEyes = this.lookPose!.eyes;
     this.animator!.setSource(source);
     this.animator!.setShoulders(shoulderOf);
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
@@ -520,7 +554,7 @@ export class PlayerMeshes {
       {
         position: this.heldFrame.position.clone(),
         quaternion: this.heldFrame.quaternion.clone(),
-        rotation: { y: pose.yaw },
+        rotation: { x: pose.pitch ?? 0, y: pose.yaw },
       },
       {
         pose: handPose,

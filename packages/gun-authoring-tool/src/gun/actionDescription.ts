@@ -40,7 +40,7 @@ export interface ResolvedGunAction {
   readonly parts: Readonly<Record<string, ActionPart>>;
   readonly receiverId: string;
   readonly ejection?: Vec3;
-  /** Pump has a hand timeline only; automatic actions additionally have a fire timeline. */
+  /** Self-loading actions additionally have a fire timeline. */
   readonly cycle: CycleMotion;
 }
 
@@ -91,6 +91,7 @@ const coupledParts = (
     smg: ['handle', 'smg-handle'],
     pump: ['forend', 'forend'],
     bolt: undefined,
+    slide: undefined,
   }[kind];
   if (pairing) {
     const entry = [...resolved.defs].find(([, def]) => def.family === pairing[1]);
@@ -108,18 +109,21 @@ const frameCyclicRpm = (resolved: Resolved, kind: GunAction, receiverId: string)
   return frameId === undefined ? undefined : AR_CYCLIC_RPM[frameId];
 };
 
+const isActionKind = (kind: unknown): kind is ResolvedGunAction['kind'] =>
+  kind === 'ar' || kind === 'ak' || kind === 'smg' || kind === 'pump' || kind === 'bolt' || kind === 'slide';
+
 export const resolveGunAction = (resolved: Resolved): ResolvedGunAction | undefined => {
-  const entry = [...resolved.defs].find(([, def]) => def.family === 'bolt-carrier');
+  const entry = [...resolved.defs].find(([, def]) => ['bolt-carrier', 'slide'].includes(def.family));
   if (!entry) {
     return undefined;
   }
   const [id] = entry;
-  const kind = resolved.params.get(id)?.pattern?.value;
-  if (kind !== 'ar' && kind !== 'ak' && kind !== 'smg' && kind !== 'pump' && kind !== 'bolt') {
+  const kind = entry[1].family === 'slide' ? 'slide' : resolved.params.get(id)?.pattern?.value;
+  if (!isActionKind(kind)) {
     return undefined;
   }
-  const carrier = actionPart(resolved, id, kind === 'pump' || kind === 'bolt' ? ['hand'] : ['fire', 'hand']);
-  const receiverId = carrierReceiver(resolved, id);
+  const carrier = actionPart(resolved, id, ['pump', 'bolt'].includes(kind) ? ['hand'] : ['fire', 'hand']);
+  const receiverId = kind === 'slide' ? id : carrierReceiver(resolved, id);
   const receiver = receiverId && resolved.defs.get(receiverId);
   const placed = receiverId && resolved.placed.get(receiverId);
   if (!(carrier && receiverId && receiver && placed)) {
