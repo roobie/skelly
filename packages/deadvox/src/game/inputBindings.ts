@@ -86,6 +86,11 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting' },
   { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions' },
 ] as const;
+const INVENTORY_FIND_BINDINGS: ReadonlySet<string> = new Set([
+  'inventory.previous',
+  'inventory.next',
+  'inventory.hands',
+]);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
   ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
@@ -789,6 +794,15 @@ const pageControl = (target: EventTarget | null): boolean =>
   Boolean(
     target.closest('button,a[href],input,select,textarea,summary,label,[role="button"],[contenteditable="true"]'),
   );
+const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | undefined => {
+  if (!(event.target instanceof HTMLElement) || typesCharacter(event)) {
+    return undefined;
+  }
+  if (event.target.matches('[data-inventory-find]')) {
+    return INVENTORY_FIND_BINDINGS;
+  }
+  return event.target.matches('[role="combobox"]') ? INVENTORY_COMBO_BOX_BINDINGS : undefined;
+};
 const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
@@ -1135,15 +1149,8 @@ export class KeyboardInput {
         return;
       }
       const text = editable(event.target);
-      // A focused combo box keeps the inventory closable and its tabs reachable, but a key that types
-      // a character stays in its filter field.
-      const comboBoxGameKey =
-        text &&
-        this.context().context === 'inventory' &&
-        event.target instanceof HTMLElement &&
-        event.target.matches('[role="combobox"]') &&
-        !typesCharacter(event);
-      if (this.press(event, text, comboBoxGameKey ? INVENTORY_COMBO_BOX_BINDINGS : undefined)) {
+      const allowed = this.context().context === 'inventory' ? focusedInventoryBindings(event) : undefined;
+      if (this.press(event, text, allowed)) {
         event.preventDefault();
       }
     };

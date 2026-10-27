@@ -167,6 +167,7 @@ function setup(contentRegistry = registry) {
     notice: (text: string) => notices.push(text),
     refusal: (text: string) => refusals.push(text),
     describe: (_item: typeof beans) => ['test description'],
+    inspected: vi.fn(),
     workOptions: (_uid: number): WorkOption[] => [],
     character: () => character,
     body: () => body,
@@ -598,6 +599,67 @@ describe('inventory screen Lit rendering', () => {
     expect(screen.activeTab).toBe('skills');
     expect(root.querySelector<HTMLElement>('[data-tab-panel="skills"]')?.hidden).toBe(false);
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
+  });
+
+  it('routes Down and Enter from find without losing the query', () => {
+    const { screen, root, lastPayload } = setup();
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        screen.onAction(action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      screen.onAction('inventory.find');
+      const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+      const query = 'fixture query';
+      field.value = query;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      for (const action of ['inventory.next', 'inventory.next', 'inventory.hands']) {
+        const previous = screen.selected;
+        const chord = inputBindings.chords(action)[0]!;
+        field.dispatchEvent(new KeyboardEvent('keydown', { ...chord, bubbles: true, cancelable: true }));
+        if (action === 'inventory.next') {
+          expect(screen.selected).toBeDefined();
+          expect(screen.selected).not.toBe(previous);
+        }
+        field.dispatchEvent(new KeyboardEvent('keyup', { ...chord, bubbles: true }));
+        screen.update();
+      }
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: screen.selected!.uid });
+      expect(field.value).toBe(query);
+      expect(document.activeElement).toBe(field);
+    } finally {
+      remove();
+      screen.close();
+    }
+  });
+
+  it('keys body redraws by displayed values, not live recovery state', () => {
+    const { screen, hooks, body, beans } = setup();
+    body.impact(0.1, 'torso', { kind: 'blunt' });
+    screen.selected = beans;
+    const description = vi.spyOn(hooks, 'describe');
+    screen.update();
+    description.mockClear();
+    body.advance(0.000_01);
+    screen.update();
+    expect(description).not.toHaveBeenCalled();
+  });
+
+  it('reports inspection only when the displayed selection changes, not on repaint', () => {
+    const { screen, hooks, beans, inv } = setup();
+    screen.selected = beans;
+    screen.update();
+    expect(hooks.inspected).toHaveBeenCalledExactlyOnceWith(beans);
+    hooks.inspected.mockClear();
+    screen.selectTab('items');
+    expect(hooks.inspected).not.toHaveBeenCalled();
+    screen.selected = inv.worn.torso;
+    screen.update();
+    expect(hooks.inspected).toHaveBeenCalledExactlyOnceWith(inv.worn.torso);
   });
 
   it('dims the listed items a typed query misses, and Escape in the field clears it', () => {
