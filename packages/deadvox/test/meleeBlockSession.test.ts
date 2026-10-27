@@ -102,6 +102,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
   }
   return {
     hits: hit.mock.calls.map(([damage, , region, effects]) => ({ damage, region, effects })),
+    causes: hit.mock.calls.map(([, cause]) => cause),
     blockSounds: sounds.filter((event) => event.startsWith('player_block_')),
     blocks,
     stamina: session.sim.needs.stamina,
@@ -114,6 +115,7 @@ describe('melee blocking in a session', () => {
     const open = strike({ content: withFullBlockChance(0), blocking: false });
     const guarded = strike({ content: withFullBlockChance(0) });
     expect(open.hits).toEqual([{ damage: move.damage, region: 'leftArm', effects: { kind: 'blunt' } }]);
+    expect(open.causes).toEqual([attacker.cause]);
     expect(guarded.hits).toHaveLength(1);
     expect(guarded.hits[0]!.damage).toBeGreaterThan(0);
     expect(guarded.hits[0]!.damage).toBeLessThan(move.damage);

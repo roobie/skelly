@@ -220,6 +220,20 @@ describe('acid glob', () => {
     expect(h.session.sim.body.pain.felt).toBeGreaterThan(0);
   });
 
+  it('names the spitter by its content cause on a glob hit and in a puddle', () => {
+    const hit = runtime(undefined, 71, true);
+    hit.release();
+    hit.land();
+    expect(hit.hits.mock.calls.map((call) => call[1])).toEqual([spitter.cause]);
+
+    const h = missedSpit();
+    const contacts = vi.spyOn(h.session.sim, 'expose');
+    h.walkTo(h.session.zombies.acidPuddles[0]!.pos);
+    h.frames(6);
+    expect(contacts).toHaveBeenCalled();
+    expect(new Set(contacts.mock.calls.map(([contact]) => contact.cause))).toEqual(new Set([spitter.cause]));
+  });
+
   it('lets the player leave the released aim and emits a ground-impact seam instead', () => {
     const h = runtime();
     h.release();

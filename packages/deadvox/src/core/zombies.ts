@@ -929,7 +929,7 @@ export interface ZombiePlayerHit {
   kind: DamageKind;
   hitRegions: readonly ZombieHitRegionChoice[];
   regionRoll: number;
-  sourceName: string;
+  cause: string;
 }
 
 export interface AcidGroundImpact {
@@ -3600,7 +3600,7 @@ export class ZombieSystem {
           this.options.onPlayerExposure?.({
             id,
             rate: puddle.damagePerSimSecond / 2,
-            cause: `a ${type.name.toLowerCase()}`,
+            cause: type.cause,
             region,
             kind: 'acid',
             touch: 'ground',
@@ -3670,7 +3670,7 @@ export class ZombieSystem {
         kind: move.damageKind,
         hitRegions: move.hitRegions,
         regionRoll: state.regionRoll,
-        sourceName: type.name,
+        cause: type.cause,
       });
     } else if (contact.kind === 'zombie') {
       const { id, zombie, region, cell } = contact.hit;

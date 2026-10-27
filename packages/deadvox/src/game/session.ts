@@ -1375,7 +1375,7 @@ export const createSession = (options: SessionOptions) => {
       playerCombat.cancelCharge();
       applyZombiePlayerHit(sim, {
         damage,
-        sourceName: source?.type.name ?? 'zombie',
+        cause: source?.type.cause ?? text.causes.zombie,
         regionRoll: sim.rng(`player-hit-region:${attacker}:${sim.time}`).next(),
         hitRegions,
         kind,
