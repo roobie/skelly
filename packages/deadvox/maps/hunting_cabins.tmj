@@ -27,21 +27,21 @@
       ]
     },
     {
-      "id": 2, "name": "Clearing lots — d41 templates pending", "type": "objectgroup", "color": "#ba845c",
+      "id": 2, "name": "Clearing lots", "type": "objectgroup", "color": "#ba845c",
       "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
       "objects": [
         {
-          "id": 3, "name": "Cabin stand-in (small_house; replace with d41 cabin)", "type": "building",
+          "id": 3, "name": "Cabin stand-in (small_house)", "type": "building",
           "x": 45, "y": 87, "width": 10, "height": 7, "rotation": 0, "visible": true,
           "properties": [{"name": "template", "type": "string", "propertytype": "template_id", "value": "small_house"}]
         },
         {
-          "id": 4, "name": "Dad's cabin stand-in (small_house; d41 hunter cabin, d38 lock, d39 cellar pending)", "type": "building",
+          "id": 4, "name": "Dad's cabin stand-in (small_house)", "type": "building",
           "x": 87, "y": 94, "width": 10, "height": 7, "rotation": 180, "visible": true,
           "properties": [{"name": "template", "type": "string", "propertytype": "template_id", "value": "small_house"}]
         },
         {
-          "id": 5, "name": "Woodshed stand-in (shed; replace with d41 woodshed)", "type": "building",
+          "id": 5, "name": "Woodshed stand-in (shed)", "type": "building",
           "x": 63, "y": 97, "width": 4, "height": 3, "rotation": 90, "visible": true,
           "properties": [{"name": "template", "type": "string", "propertytype": "template_id", "value": "shed"}]
         }

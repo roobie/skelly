@@ -2,6 +2,7 @@ import { html, render } from 'lit-html';
 import { dominantSide } from '../core/character.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ScreenText } from '../core/schema.ts';
+import { showControlsTopic } from '../game/controls.ts';
 import type { Tutorial } from '../game/tutorial.ts';
 import { keyCap } from './keyCap.ts';
 
@@ -11,26 +12,47 @@ export interface TutorialPresentation {
   readonly lightOn: boolean;
 }
 
-// Search terms matched against the controls card's binding descriptions, which code owns, so they stay with it.
-const stageTopics: Record<Tutorial['stage'], string> = {
-  move: 'move',
-  door: 'interact',
-  loot: 'inventory',
-  hands: 'wield',
-  open: 'hand',
-  eat: 'hand',
-  drink: 'hand',
-  light: 'hand',
-  escape: 'crouch',
-  pause: 'main menu',
-  finish: 'main menu',
-  'light-on': 'hand',
-  'light-swap': 'quickbar',
-  'light-relight': 'hand',
-  revolver: 'reload',
-  pump: 'reload',
-  melee: 'ready',
-  complete: 'main menu',
+// The actions each stage's hint names: ids, not search words, so a topic cannot match an unrelated row by wording.
+const wieldTopic = ['ui.inventory-toggle', 'inventory.hands'];
+const handTopic = [...wieldTopic, 'hand.use-dominant', 'hand.use-off'];
+const menuTopic = ['ui.main-menu-toggle'];
+const gunTopic = [
+  ...handTopic,
+  'inventory.best-pocket',
+  'inventory.wear',
+  'firearm.reload',
+  'stance.ready',
+  'aim.ads-toggle',
+];
+export const stageTopics: Record<Tutorial['stage'], readonly string[]> = {
+  move: ['movement.forward', 'movement.back', 'movement.left', 'movement.right', 'pointer.look'],
+  door: ['world.interact'],
+  loot: [
+    'ui.inventory-toggle',
+    'inventory.previous',
+    'inventory.next',
+    'inventory.best-pocket',
+    'inventory.hands',
+    'inventory.wear',
+    'inventory.search',
+    'inventory.quick-action-gate',
+    'hand.use-dominant',
+  ],
+  hands: wieldTopic,
+  open: handTopic,
+  eat: handTopic,
+  drink: handTopic,
+  light: handTopic,
+  escape: ['player.crouch-toggle'],
+  pause: menuTopic,
+  finish: menuTopic,
+  'light-on': handTopic,
+  'light-swap': [...wieldTopic, 'quickbar.assign.1', 'quickbar.use.1'],
+  'light-relight': handTopic,
+  revolver: gunTopic,
+  pump: gunTopic,
+  melee: ['ui.inventory-toggle', 'inventory.drop', 'inventory.best-pocket', 'stance.ready', 'hand.use-dominant'],
+  complete: menuTopic,
 };
 
 const stageHint = (
@@ -137,8 +159,7 @@ export const mountTutorial = (
   box.hidden = false;
   const openControls = () => {
     const search = document.getElementById('controls-search') as HTMLInputElement;
-    search.value = stageTopics[tutorial.stage];
-    search.dispatchEvent(new Event('input', { bubbles: true }));
+    showControlsTopic(search, stageTopics[tutorial.stage]);
     search.focus();
     search.scrollIntoView({ block: 'center' });
   };

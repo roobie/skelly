@@ -62,7 +62,7 @@ describe('magazine length bands', () => {
       }
     }
     // Curved bodies follow their band: the vertical envelope grows from S to M to L for every curved profile and
-    // AK variant. g41-4 dropped the pinned envelopes, which drift whenever a curve is refitted to a reference.
+    // AK variant. The envelopes are not pinned, because they drift whenever a curve is refitted to a reference.
     const curved = [
       ...FAMILIES.magazine!.params.variant!.values.map((akVariant) => ({ profile: 'ak-curved', variant: akVariant })),
       { profile: 'stanag-curved' },

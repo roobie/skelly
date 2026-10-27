@@ -62,7 +62,7 @@ can override earlier definitions; disabled files are not admitted packs. Continu
 refuses missing, changed, additional or reordered packs rather than resuming a world
 under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
 `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
-This pack-list identity holds until d433 replaces it with identity from the evaluated
+The pack-list identity is the rule until #1395 moves identity to the evaluated
 content, as `docs/decisions/0008-deterministic-world.md`, "Decision" rules.
 Preserved-save notices name pack differences with the mod's own id, without its
 internal browser namespace. Raw decoder diagnostics do not belong in that notice:
