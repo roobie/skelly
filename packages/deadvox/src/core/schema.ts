@@ -3611,6 +3611,8 @@ const ArmRigSchema = strictObject({
   grip: Id,
   /** A body-relative pole keeps the elbow bend independent of where the eye looks. */
   elbowPole: strictObject({ up: UnitVector, down: UnitVector }),
+  /** The same pole while prone and aiming down sights: elbows point at the ground and carry the raised chest. */
+  proneAdsElbowPole: strictObject({ up: UnitVector, down: UnitVector }),
   minimumBendDegrees: strictObject({
     up: pipe(number(), minValue(0), maxValue(90)),
     down: pipe(number(), minValue(0), maxValue(90)),

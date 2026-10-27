@@ -78,6 +78,7 @@ export class HeldPresentation {
   readonly figure: FigureDef;
   readonly models: ModelLibrary | undefined;
   stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
+  elbowPole: FigureDef['armRig']['elbowPole'] | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -380,7 +381,7 @@ export class HeldPresentation {
     const up = new Vector3(0, 1, 0).applyQuaternion(inverse);
     const back = new Vector3().crossVectors(right, up);
     const down = Math.max(0, up.z);
-    const pole = this.figure.armRig.elbowPole;
+    const pole = this.elbowPole ?? this.figure.armRig.elbowPole;
     const [outward, vertical, backward] = pole.up.map(
       (value, axis) => value + (pole.down[axis]! - value) * down,
     ) as Vec3;

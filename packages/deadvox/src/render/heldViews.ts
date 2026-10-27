@@ -9,11 +9,15 @@ import type { PlayerMeshes } from './playerFigure.ts';
 export const createHeldViews = (
   inventory: Inventory,
   view: Pick<HeldItems, 'update'>,
-  world: Pick<PlayerMeshes, 'syncHeldView' | 'stockSeats'>,
+  world: Pick<PlayerMeshes, 'syncHeldView' | 'stockSeats' | 'elbowPole'>,
 ) => {
   const animation = createHeldAnimation();
   return (observer: PerspectiveCamera, pose: MeleePoseFrame, recoil: number, handling: HeldHandlingFrame): void => {
-    const frame = { ...animation.advance(inventory, handling), stockSeats: world.stockSeats };
+    const frame = {
+      ...animation.advance(inventory, handling),
+      stockSeats: world.stockSeats,
+      elbowPole: world.elbowPole,
+    };
     view.update(observer, pose, recoil, frame);
     world.syncHeldView(pose, frame, recoil);
   };

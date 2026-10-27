@@ -673,6 +673,51 @@ describe('player figure', () => {
     meshes.dispose();
   });
 
+  it('rests the prone ADS body on the ground with the trigger elbow propped under the raised chest', () => {
+    const inventory = new Inventory(registry);
+    expect(inventory.add(inventory.create('rifle_assault'), { kind: 'hand', side: 'right' })).toBe(true);
+    const meshes = playerMeshes();
+    const body = createPlayerBody(scale, 4, 1, 4);
+    meshes.sync({
+      body,
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      stance: 'prone',
+      dt: 10,
+      thirdPerson: true,
+      inventory,
+      holdReady: true,
+      ads: playerAdsPose(inventory, true, NEUTRAL_AIM),
+    });
+    meshes.group.updateMatrixWorld(true);
+    const ground = body.pos[1] * scale.blockSize;
+    // Flesh may sink or hover by a hand's breadth at most; a decimetre or two of air under the legs is the defect.
+    const restMetres = 0.12;
+    const parts = (['body', 'leftLeg', 'rightLeg'] as const).map((name) =>
+      new Box3().setFromObject(drawnPart(meshes, name), true),
+    );
+    const lowest = Math.min(...parts.map((box) => box.min.y)) - ground;
+    expect(lowest).toBeGreaterThanOrEqual(-restMetres);
+    expect(lowest).toBeLessThanOrEqual(restMetres);
+    for (const leg of parts.slice(1)) {
+      expect(leg.min.y - ground).toBeLessThanOrEqual(restMetres);
+    }
+    const elbows: number[] = [];
+    meshes.group.traverse((node) => {
+      if (node.name === ARM_NODE.elbow) {
+        elbows.push(node.getWorldPosition(new Vector3()).y - ground);
+      }
+    });
+    const chestTop = parts[0]!.max.y - ground;
+    expect(elbows).toHaveLength(2);
+    expect(Math.min(...elbows)).toBeLessThanOrEqual(restMetres * 1.5);
+    for (const elbow of elbows) {
+      expect(elbow).toBeLessThan(chestTop);
+    }
+  });
+
   it('fits the worn riot helmet over the drawn head: it covers the crown and sides and nothing of it lies inside', () => {
     const meshes = wearOnFigure('riot_helmet');
     const head = drawnHead(meshes);

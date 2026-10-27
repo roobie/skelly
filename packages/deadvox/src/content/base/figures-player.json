@@ -80,6 +80,10 @@
           "down": 45,
           "up": 0
         },
+        "proneAdsElbowPole": {
+          "down": [0.29999999999999999, -0.95393920141694566, 0],
+          "up": [0.29999999999999999, -0.95393920141694566, 0]
+        },
         "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
         "thumb": {
           "part": "thumb",
@@ -401,10 +405,10 @@
         "armsForwardDegrees": 0,
         "elbowBendDegrees": 0,
         "headUpDegrees": 0,
-        "hipDropMetres": 0.47999999999999998,
+        "hipDropMetres": 0.62,
         "kneeBendDegrees": 0,
         "legsForwardDegrees": -90,
-        "torsoForwardDegrees": 55
+        "torsoForwardDegrees": 70
       },
       "stancePoses": {
         "blendRealSeconds": 0.20000000000000001,

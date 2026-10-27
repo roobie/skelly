@@ -59,6 +59,10 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           up: [std.sqrt(0.5), -std.sqrt(0.5), 0],
           down: [0.5, -0.5, -std.sqrt(0.5)],
         },
+        proneAdsElbowPole: {
+          up: [0.3, -std.sqrt(1 - 0.09), 0],
+          down: [0.3, -std.sqrt(1 - 0.09), 0],
+        },
         minimumBendDegrees: { up: 0, down: 45 },
         handPoses: {
           fist: handPose(95, 60, 45),
@@ -156,8 +160,8 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         blendRealSeconds: 0.2,
       },
       proneAdsPose: {
-        hipDropMetres: 0.48,
-        torsoForwardDegrees: 55,
+        hipDropMetres: 0.62,
+        torsoForwardDegrees: 70,
         legsForwardDegrees: -90,
         kneeBendDegrees: 0,
         ankleDegrees: 0,

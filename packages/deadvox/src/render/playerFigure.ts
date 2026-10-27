@@ -466,6 +466,10 @@ export class PlayerMeshes {
     return this.lookPose?.stockSeats;
   }
 
+  get elbowPole(): PlayerLookPose['elbowPole'] | undefined {
+    return this.lookPose?.elbowPole;
+  }
+
   dispose(): void {
     this.animator?.dispose();
     this.animator = undefined;
@@ -515,6 +519,7 @@ export class PlayerMeshes {
       });
     }
     this.presentation!.stockSeats = this.lookPose!.stockSeats;
+    this.presentation!.elbowPole = this.lookPose!.elbowPole;
     this.animator!.setSource(source);
     this.animator!.setShoulders(shoulderOf);
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);

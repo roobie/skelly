@@ -83,6 +83,7 @@ interface OffHandGrip {
 export interface HeldHandlingFrame extends HeldPresentationFrame {
   readonly sourceEyeMetres?: Vec3;
   readonly stockSeats?: Readonly<Record<HandSide, Vec3>> | undefined;
+  readonly elbowPole?: FigureDef['armRig']['elbowPole'] | undefined;
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
   readonly throwing?: { readonly chargeProgress: number };

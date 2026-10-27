@@ -77,6 +77,8 @@ export interface PlayerLookPose {
   readonly eye: Vec3;
   readonly shoulders: Readonly<Record<HandSide, Vec3>>;
   readonly stockSeats: Readonly<Record<HandSide, Vec3>>;
+  /** Which way an elbow bends; the stance can ask for the ground. */
+  readonly elbowPole: FigureDef['armRig']['elbowPole'];
 }
 
 export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso' | 'neck' | 'head'): Vec3 => {
@@ -208,6 +210,7 @@ export const playerLookPose = ({
     eye: [0, 0, 0],
     shoulders: { right: [0, 0, 0], left: [0, 0, 0] },
     stockSeats: { right: [0, 0, 0], left: [0, 0, 0] },
+    elbowPole: stance === 'prone' && ads ? figure.armRig.proneAdsElbowPole : figure.armRig.elbowPole,
   };
   const eye = playerPosePoint(pose, eyeAnchor, 'head');
   const shoulders = Object.fromEntries(
