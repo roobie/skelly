@@ -44,6 +44,22 @@ const addLoot = (registry: Registry, roots: ReadonlySet<string>): Set<string> =>
 const inputsReady = (recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
   recipe.components.every((group) => group.some((component) => items.has(component.item)));
 
+const CALIBRE_SLUG_CHARACTERS = new Map([
+  ['.', '_d_'],
+  ['-', '_h_'],
+  ['_', '_u_'],
+]);
+const spentCaseId = (calibre: string): string =>
+  `spent_case_${[...calibre].map((character) => CALIBRE_SLUG_CHARACTERS.get(character) ?? character).join('')}`;
+
+const addFirearmOutput = (registry: Registry, item: string | undefined, items: Set<string>): void => {
+  const definition = registry.items.get(item ?? '');
+  const gun = registry.models.get(definition?.model ?? '')?.gun;
+  if (definition?.firearm && gun?.calibre) {
+    items.add(spentCaseId(gun.calibre));
+  }
+};
+
 const addItemOutputs = (registry: Registry, items: Set<string>): void => {
   for (const id of items) {
     const item = registry.items.get(id);
@@ -53,7 +69,9 @@ const addItemOutputs = (registry: Registry, items: Set<string>): void => {
       }
     }
     // A default attachment arrives fitted to its host and comes off it as its own item.
-    for (const fitted of registry.models.get(item?.model ?? '')?.gun?.attachments ?? []) {
+    const gun = registry.models.get(item?.model ?? '')?.gun;
+    addFirearmOutput(registry, id, items);
+    for (const fitted of gun?.attachments ?? []) {
       const child = [...registry.items.values()].find(
         (candidate) => registry.models.get(candidate.model ?? '')?.gun?.attachment?.id === fitted.id,
       );
@@ -225,36 +243,84 @@ const sourceTemplates = (registry: Registry, ids: Iterable<string>) => {
   return templates;
 };
 
+interface WorldSourceAccumulator {
+  roots: Set<string>;
+  placed: Set<string>;
+  workstations: Set<string>;
+  workstationQualities: Map<string, number>;
+  zombieTypes: Set<string>;
+}
+
+const addPieceSources = (registry: Registry, template: CompiledTemplate, sources: WorldSourceAccumulator): void => {
+  for (const piece of template.pieces) {
+    if (piece.loot !== undefined) {
+      sources.roots.add(piece.loot);
+    }
+    for (const item of piece.items ?? []) {
+      sources.placed.add(item.item);
+    }
+    addWorkstationSource(
+      registry.furniture.get(piece.furniture)?.workstation,
+      sources.workstations,
+      sources.workstationQualities,
+    );
+  }
+};
+
+const addGroundLootSources = (template: CompiledTemplate, sources: WorldSourceAccumulator): void => {
+  for (const point of template.groundLoot ?? []) {
+    if (point.supply.kind === 'table') {
+      sources.roots.add(point.supply.table);
+    } else if (point.supply.kind === 'fixed') {
+      for (const item of point.supply.items) {
+        sources.placed.add(item.item);
+      }
+      if (point.supply.table !== undefined) {
+        sources.roots.add(point.supply.table);
+      }
+    }
+  }
+};
+
+const addTemplateSources = (registry: Registry, template: CompiledTemplate, sources: WorldSourceAccumulator): void => {
+  addPieceSources(registry, template, sources);
+  addGroundLootSources(template, sources);
+  for (const marker of template.spawns.filter((spawn) => spawn.chance > 0)) {
+    sources.zombieTypes.add(marker.zombie);
+  }
+};
+
 const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   const roots = new Set<string>();
+  const placed = new Set<string>();
   const workstations = new Set<string>();
   const workstationQualities = new Map<string, number>();
   const selected = (id: string) => scope.sites === undefined || scope.sites.has(id);
   const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo && selected(layout.id));
   const scenarios = [...registry.scenarios.values()].filter((scenario) => selected(scenario.id));
-  const zombieTypes = worldZombieTypes(registry, authoredLayouts, scenarios);
+  const sources: WorldSourceAccumulator = {
+    roots,
+    placed,
+    workstations,
+    workstationQualities,
+    zombieTypes: worldZombieTypes(registry, authoredLayouts, scenarios),
+  };
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenarioContent = scenarioSources(registry, scenarios);
   // Compilation follows every positive-weight kit alternative, not unused palette declarations.
   for (const template of sourceTemplates(registry, new Set([...authoredTemplates, ...scenarioContent.templates]))) {
-    for (const piece of template.pieces) {
-      if (piece.loot !== undefined) {
-        roots.add(piece.loot);
-      }
-      addWorkstationSource(registry.furniture.get(piece.furniture)?.workstation, workstations, workstationQualities);
-    }
-    for (const marker of template.spawns.filter((spawn) => spawn.chance > 0)) {
-      zombieTypes.add(marker.zombie);
-    }
+    addTemplateSources(registry, template, sources);
   }
-  for (const id of zombieTypes) {
+  for (const id of sources.zombieTypes) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);
     }
   }
   const rolled = addLoot(registry, roots);
-  const placed = authoredFixedLootItems(authoredLayouts);
+  for (const item of authoredFixedLootItems(authoredLayouts)) {
+    placed.add(item);
+  }
   for (const fixed of scenarioContent.fixedLoot.flatMap((source) => source.items)) {
     placed.add(fixed.item);
   }
