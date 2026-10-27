@@ -1,4 +1,4 @@
-import { Matrix4, Vector3 } from 'three';
+import { Matrix4, Quaternion, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { sightedFirearmModel } from '../src/core/firearmSight.ts';
@@ -13,20 +13,47 @@ import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 
 const baseRegistry = loadBaseRegistry();
 
-it('seats iron sights at the anatomical ADS eye without releasing either shoulder', () => {
+const adsCases = () =>
+  [...baseRegistry.models.values()]
+    .filter((model) => model.hands && model.gun?.sight)
+    .flatMap((model) =>
+      (['standing', 'crouching', 'prone'] as const).flatMap((stance) =>
+        [-LOOK_PITCH_LIMIT, -LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT].flatMap((pitch) =>
+          (['right', 'left'] as const).flatMap((side) =>
+            [NEUTRAL_AIM, { yaw: 0.02, pitch: -0.03 }].map((aimFrame) => ({ model, stance, pitch, side, aimFrame })),
+          ),
+        ),
+      ),
+    );
+
+it('bounds ADS neck length and joint turns for every sighted long gun and legal stance', () => {
   const figure = baseRegistry.figures.get('player')!;
-  const model = baseRegistry.models.get(baseRegistry.items.get('rifle_ak')!.model!)!;
-  expect(model.gun?.sight?.kind).toBe('iron');
-  const cases = [
-    ['right', 'standing', 0],
-    ['left', 'crouching', 0],
-    ['right', 'crouching', -LOOK_PITCH_LIMIT],
-    ['left', 'standing', -LOOK_PITCH_LIMIT],
-    ['right', 'standing', LOOK_PITCH_LIMIT],
-    ['left', 'crouching', LOOK_PITCH_LIMIT],
-  ] as const;
-  for (const [side, stance, pitch] of cases) {
-    const aimFrame = stance === 'crouching' ? { yaw: 0.02, pitch: -0.03 } : NEUTRAL_AIM;
+  const tolerance = figure.aimPose.ads.neckLengthToleranceFraction;
+  const cases = adsCases();
+  expect(cases.length).toBeGreaterThan(0);
+  for (const { model, stance, pitch, side, aimFrame } of cases) {
+    const body = playerLookPose({ figure, models: baseRegistry.models, pitch, stance, ads: { model, side, aimFrame } });
+    const label = `${model.id} ${stance} ${pitch} ${side}`;
+    expect(body.neckScale, `${label}: neck length`).toBeGreaterThanOrEqual(1 - tolerance - 1e-12);
+    expect(body.neckScale, `${label}: neck length`).toBeLessThanOrEqual(1 + tolerance + 1e-12);
+    for (const [rotation, limits, joint] of [
+      [body.neckRotation, figure.aimPose.neckLimitDegrees, 'neck'],
+      [body.headRotation, figure.aimPose.headLimitDegrees, 'head'],
+    ] as const) {
+      const angle = new Quaternion(...rotation).angleTo(new Quaternion());
+      expect(angle, `${label}: ${joint} turn`).toBeLessThanOrEqual(
+        (limits[rotation[0] < 0 ? 0 : 1] * Math.PI) / 180 + 1e-12,
+      );
+    }
+  }
+});
+
+it('seats ADS sights at the anatomical eye without releasing either shoulder', () => {
+  const figure = baseRegistry.figures.get('player')!;
+  const cases = adsCases();
+  expect(cases.some(({ model }) => model.gun?.sight?.kind === 'iron')).toBe(true);
+  expect(cases.some(({ model }) => model.gun?.sight?.kind === 'optic')).toBe(true);
+  for (const { model, stance, pitch, side, aimFrame } of cases) {
     const body = playerLookPose({ figure, models: baseRegistry.models, pitch, stance, ads: { model, side, aimFrame } });
     const pose = heldFirearmTransform({
       holds: figure.holds,

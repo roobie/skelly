@@ -3691,6 +3691,10 @@ const FigureSchema = strictObject({
     ads: strictObject({
       torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      neckLengthToleranceFraction: pipe(
+        Fraction,
+        check((value) => value < 1, 'neck length must remain positive'),
+      ),
       stockShoulderOffset: Point,
     }),
   }),

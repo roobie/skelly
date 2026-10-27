@@ -93,6 +93,13 @@ export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso'
   return [at[0], at[1] - pose.hipDrop, at[2]];
 };
 
+const boundedJointRotation = (rotation: Quaternion, limits: readonly [number, number]): Quaternion => {
+  const q: Quaternion = rotation[3] < 0 ? [-rotation[0], -rotation[1], -rotation[2], -rotation[3]] : rotation;
+  const angle = 2 * Math.atan2(Math.hypot(q[0], q[1], q[2]), q[3]);
+  const limit = limits[q[0] < 0 ? 0 : 1] * RADIANS;
+  return angle <= limit ? q : axisRotation([q[0], q[1], q[2]], limit);
+};
+
 const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef, pitch: number): PlayerLookPose => {
   const gun = heldFirearmTransform({
     holds: figure.holds,
@@ -121,9 +128,13 @@ const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef
   const torso = multiplyRotation(turnX(pose.hipTurn), pose.spineRotation);
   const neckToHead = rotateVector(inverseRotation(torso), sub(sub(targetEye, headEye), neckWorld));
   const rest = sub(pose.head, pose.neck);
-  const neckScale = Math.hypot(...neckToHead) / Math.hypot(...rest);
-  const neckRotation = rotationBetween(rest, neckToHead);
-  const headRotation = multiplyRotation(inverseRotation(multiplyRotation(torso, neckRotation)), headWorld);
+  const tolerance = figure.aimPose.ads.neckLengthToleranceFraction;
+  const neckScale = Math.max(1 - tolerance, Math.min(1 + tolerance, Math.hypot(...neckToHead) / Math.hypot(...rest)));
+  const neckRotation = boundedJointRotation(rotationBetween(rest, neckToHead), figure.aimPose.neckLimitDegrees);
+  const headRotation = boundedJointRotation(
+    multiplyRotation(inverseRotation(multiplyRotation(torso, neckRotation)), headWorld),
+    figure.aimPose.headLimitDegrees,
+  );
   return { ...pose, neckScale, neckRotation, headRotation };
 };
 

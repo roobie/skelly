@@ -7,7 +7,7 @@ read_if:
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
-  - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, ADS posture or common placement
+  - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, ADS posture, anatomical bounds or common placement
   - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
   - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
@@ -1645,11 +1645,13 @@ ADS is a posture of that same body: the head cants toward the stock and the
 upper torso brings the shoulder into the sight line. Camera, gameplay rays and
 every observer follow its anatomical eye; a private irons eye would disagree
 with the visible actor's reach and firearm. The camera stays level rather than
-inheriting the head's cant, preserving a stable horizon while the physical head
-meets the stock. Content owns the posture and stock contact, and the neck stays
-connected while the shared solve meets the sight eye. The pose follows the
-simulation's current firearm aim, so sway and recoil cannot slide the sight
-away from the cheek weld or unseat the butt. See
+inheriting the head's cant, preserving a stable horizon independently of body
+articulation. Content owns posture, stock contact, neck-length tolerance and
+joint limits. Neck length is a body dimension, not a reach handle: sight fit
+must not stretch it beyond that tolerance or exceed the neck and head turn
+limits. A remaining sight gap requires an authored shoulder or torso posture,
+not a displaced private eye or permission to deform the neck. The shared pose
+uses simulation aim so rendering cannot invent a different weld. See
 `src/core/playerLookPose.ts`, `adsLookPose`; and `src/core/playerAdsPose.ts`,
 `playerAdsPose`.
 

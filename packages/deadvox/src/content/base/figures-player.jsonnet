@@ -121,6 +121,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         ads: {
           torsoRollDegrees: 25,
           headRollDegrees: 45,
+          neckLengthToleranceFraction: 0.05,
           stockShoulderOffset: [-0.06, 0.03, 0.01],
         },
       },
