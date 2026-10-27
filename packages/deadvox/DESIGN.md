@@ -24,6 +24,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you're changing the rules for time, survival, light or zombies
+  - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
   - you're implementing the authored gauntlet arrangement, scenario admission, composed route certificates, shared city planning, portal proofs, underground lab depth, the sewer route or its visual approval gate
   - you author lab equipment bays, curated storeys or supported descent lids
@@ -2596,10 +2597,12 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 
 ### Types are data
 
-Each zombie type is data: base stats (health, speed, perception, armour),
-**ability components**, a model and a loot table. Abilities are general systems,
-reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
-`heatAura`, `lightEmitter`, `armoured`, `regenerate`, `burrow`.
+Zombie types should compose shared mechanisms rather than require type-specific
+code. The planned ability components are `grab`, `leap`, `scream`, `explode`,
+`acidSpit`, `heatAura`, `lightEmitter`, `armoured`, `regenerate` and `burrow`;
+this is design intent, not an inventory of implemented systems. The picklist in
+`src/core/schema.ts`, `ZOMBIE_ABILITIES`, admits an ability only once its runtime
+mechanism lands, because a content value no system reads is a silent no-op.
 
 | Tier | Type | Gist |
 | --- | --- | --- |
