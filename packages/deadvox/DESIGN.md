@@ -2148,7 +2148,9 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   wall receive its visible impact mark. The session traces each round against
   the same physical world its hits resolve in, parked vehicles included, and the
   view only draws those segments: a view that traced its own world could show a
-  shot passing through a body that stopped it. The shot trace's reach is shared
+  shot passing through a body that stopped it. A pellet a body stops ends its
+  segment at that body, so the wall behind it gets no mark; see
+  `src/core/zombies.ts`, `PelletHits`. The shot trace's reach is shared
   firearms tuning in content, so the crosshair, bore target and impact marks
   agree on one range and a mod changes it once
   (`PILLARS.md`, "Content forward compatibility"). See `src/game/session.ts`,
