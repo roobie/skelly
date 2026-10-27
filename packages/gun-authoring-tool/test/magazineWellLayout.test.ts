@@ -21,7 +21,8 @@ describe('tilted magazine well layout support', () => {
   it('refuses the SMG magazine in the slanted conventional well clearly, not as a contact gap', () => {
     const assembly = tiltedMagazine('archetype-battle-rifle', 'smg');
     const report = validate(assembly, gunDomain);
-    expect(report.ok || wellLayoutIssues(assembly).length > 0).toBe(true);
+    expect(report.ok).toBe(false);
+    expect(wellLayoutIssues(assembly)).not.toEqual([]);
     expect(magazineGapIssues(assembly)).toEqual([]);
   });
 });
