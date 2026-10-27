@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
+import { adsCameraEye, nearestSightEyeOffset } from '../src/core/adsView.ts';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -57,6 +58,42 @@ it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () 
       for (const hold of ['firing', 'support'] as const) {
         expect(Math.hypot(...heldHoldFrame(model, side, hold).at)).toBeLessThan(holds.reachLeadMetres);
       }
+    }
+  }
+});
+
+it('brings the aimed pistol sight to the dominant eye on the dominant side of the body, for either hand', () => {
+  const registry = baseRegistry();
+  const figure = registry.figures.get('player')!;
+  for (const handedness of ['right', 'left'] as const) {
+    const inventory = new Inventory(registry, undefined, undefined, { handedness });
+    if (!inventory.add(inventory.create('pistol_service'), { kind: 'hand', side: handedness })) {
+      throw new Error('Could not equip the pistol');
+    }
+    const ads = playerAdsPose(inventory, true)!;
+    const outward = handedness === 'right' ? 1 : -1;
+    const off = handedness === 'right' ? 'left' : 'right';
+    for (const pitch of [-LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2]) {
+      const pose = playerLookPose({ figure, models: registry.models, pitch, stance: 'standing', ads });
+      const gun = heldFirearmTransform({
+        holds: figure.holds,
+        model: ads.model,
+        side: ads.side,
+        leadingSide: ads.side,
+        twoHanded: true,
+        progress: 1,
+        aimingDownSights: true,
+        aimFrame: NEUTRAL_AIM,
+        lookPitchRadians: pitch,
+        loweredPitchRadians: 0,
+        adsEyes: pose.eyes,
+      });
+      // Offsets share the look's frame, so lateral x compares without the look's pitch.
+      const sight = nearestSightEyeOffset(gun)!;
+      const fromEye = (side: 'right' | 'left') => Math.hypot(...sight.map((v, axis) => v - pose.eyes[side][axis]!));
+      expect(fromEye(handedness)).toBeLessThan(fromEye(off));
+      expect((pose.eye[0] + sight[0]) * outward).toBeGreaterThan(0);
+      expect(adsCameraEye({ figure, pose, ads, pitch }).eye[0] * outward).toBeGreaterThan(0);
     }
   }
 });
@@ -255,6 +292,7 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
             loweredPitchRadians: 0,
             stockSeat: bodyPose.stockSeats.right,
             seatFrame: playerHeldSeatFrame(bodyPose, pitch),
+            adsEyes: bodyPose.eyes,
           });
           const gltfScene = source.heldByHand.get('right')!.children[0]!.children[0]!.children[0]!;
           const muzzle = gltfScene.localToWorld(new Vector3(...model.anchors!.muzzle!));

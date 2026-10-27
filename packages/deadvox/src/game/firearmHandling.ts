@@ -20,7 +20,13 @@ import {
   skillZeroHandlingForFirearm,
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
-import { type HeldSeatFrame, heldEjectionPose, heldGripOffset, modelToView } from '../core/heldPose.ts';
+import {
+  type HeldFirearmTransformInput,
+  type HeldSeatFrame,
+  heldEjectionPose,
+  heldGripOffset,
+  modelToView,
+} from '../core/heldPose.ts';
 import { dropSpots, type Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
@@ -201,6 +207,7 @@ export interface FirearmPoseInput {
   readonly eye: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
+  readonly adsEyes?: HeldFirearmTransformInput['adsEyes'];
   readonly yaw: number;
   readonly pitch: number;
   readonly blockSize: number;
@@ -662,6 +669,7 @@ export class FirearmMechanics {
       eye: input.eye,
       stockSeat: input.stockSeat,
       seatFrame: input.seatFrame,
+      adsEyes: input.adsEyes,
       yaw: input.yaw,
       pitch: input.pitch,
       blockSize: this.blockSize,

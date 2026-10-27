@@ -46,7 +46,8 @@ local pistol = import 'gungen/pistol_service.model.json';
           { pitchDegrees: 45, metres: 0.2 },
           { pitchDegrees: 90, metres: 0.15 },
         ],
-        ads: { cameraOffsetLimitMetres: 0.3 },
+        // Held at arm's length, the pistol comes up to the firing eye with the shoulders and head level.
+        ads: { cameraOffsetLimitMetres: 0.3, torsoRollDegrees: 0, headRollDegrees: 0 },
         adsViewEyeReliefMetres: 0.2,
         firing: { at: [pistol.grip.at[0] - 0.03, pistol.grip.at[1] - 0.04, 0.016], palm: [0, 0, -1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolWrap' },
         support: { at: [pistol.grip.at[0] - 0.026, pistol.grip.at[1] - 0.051, -0.04], palm: [0, 0, 1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolCup' },

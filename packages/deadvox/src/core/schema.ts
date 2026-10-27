@@ -2124,6 +2124,9 @@ const HandsModelSchema = strictObject({
     strictObject({
       cameraOffsetLimitMetres: optional(NonNegative),
       stockShoulderLimitMetres: optional(NonNegative),
+      // A free-held gun has no stock to lift the dominant shoulder under, so it overrides the figure's ADS rolls.
+      torsoRollDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
+      headRollDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
     }),
   ),
   seat: Point,

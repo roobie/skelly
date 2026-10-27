@@ -207,6 +207,16 @@ export const heldAdsStandoffMetres = (model: ModelDef | undefined, pitch: number
   return before.metres + (after.metres - before.metres) * blend;
 };
 
+/**
+ * The eye a sight seats on, from the view's eye: a free-held gun comes up to its firing hand's eye. A long gun keeps
+ * the view's eye, where its stock seat and the ADS rolls already bring the cheek.
+ */
+export const heldAdsEye = (
+  model: ModelDef,
+  side: HandSide,
+  eyes: Readonly<Record<HandSide, Vec3>> | undefined,
+): Vec3 => (model.hands && !model.hands.butt && eyes ? eyes[side] : [0, 0, 0]);
+
 const subGrip = (model: ModelDef, point: Vec3): Vec3 => point.map((v, i) => v - model.grip!.at[i]!) as Vec3;
 
 const sightEyeBehind = (model: ModelDef, distance?: number): Vec3 | undefined => {
@@ -256,6 +266,8 @@ export interface HeldFirearmTransformInput {
   readonly handlingTurn?: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
+  /** Each eye from the view's eye; see `heldAdsEye`. */
+  readonly adsEyes?: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly loweredPitchRadians: number;
 }
 
@@ -328,6 +340,7 @@ export const heldFirearmTransform = ({
   handlingTurn = [0, 0, 0],
   stockSeat,
   seatFrame,
+  adsEyes,
   loweredPitchRadians,
 }: HeldFirearmTransformInput): HeldFirearmTransform => {
   if (
@@ -365,12 +378,13 @@ export const heldFirearmTransform = ({
     seatFrame,
   );
   // Seat the undeviated sight eye at the view; aim and handling turns then pivot the firearm off that baseline.
+  const adsEye = heldAdsEye(model, side, adsEyes);
   const opticalRoot =
     aimingDownSights && sightEye
       ? (applyAlignedRoot(
           modelToView(model, sightEye.map((value, index) => value - model.grip!.at[index]!) as Vec3),
           [0, 0, 0],
-        ).map((value) => -value) as Vec3)
+        ).map((value, axis) => adsEye[axis]! - value) as Vec3)
       : normalRoot;
   const rootOffset = seatedFirearmRoot(model, stockSeat, applyRootRotation) ?? opticalRoot;
   const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));

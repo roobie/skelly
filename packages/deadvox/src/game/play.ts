@@ -2568,7 +2568,15 @@ export const startPlay = (
       stance: session.stance,
       ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
     });
-  const stockSeat = (side: HandSide): Vec3 => heldBodyPose().stockSeats[side];
+  /** The body's seats and eyes a held firearm is placed from, so the shot leaves the drawn gun. */
+  const heldBodyInput = (side: HandSide) => {
+    const pose = heldBodyPose();
+    return {
+      stockSeat: pose.stockSeats[side],
+      seatFrame: playerHeldSeatFrame(pose, input.pitch),
+      adsEyes: pose.eyes,
+    };
+  };
 
   /** Part boxes for picking: the same projection vehicle reach measures to. */
   const currentVehicleParts = () => session.vehicleParts.all();
@@ -3127,8 +3135,7 @@ export const startPlay = (
       aimingDownSights: isAimingDownSights(),
       sprinting: session.sprinting,
       item,
-      stockSeat: stockSeat(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
-      seatFrame: playerHeldSeatFrame(heldBodyPose(), input.pitch),
+      ...heldBodyInput(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
       feet: feet(),
       eye: eye(),
       yaw: input.yaw,
@@ -3693,8 +3700,7 @@ export const startPlay = (
       twoHanded,
       progress,
       aimingDownSights,
-      stockSeat: stockSeat(side),
-      seatFrame: playerHeldSeatFrame(heldBodyPose(), input.pitch),
+      ...heldBodyInput(side),
       aimFrame: aim.frame,
       lookPitchRadians: input.pitch,
       loweredPitchRadians: tuning.loweredPitchRadians,

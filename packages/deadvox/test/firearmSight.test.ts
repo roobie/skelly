@@ -110,6 +110,7 @@ const cameraCase = ({ model, stance, pitch, side, aimFrame }: ReturnType<typeof 
     lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: body.stockSeats[side],
+    adsEyes: body.eyes,
   });
   const offset = new Vector3(...camera.eye).sub(new Vector3(...body.eye)).applyAxisAngle(new Vector3(1, 0, 0), -pitch);
   return { camera, gun, offset, label: `${model.id} ${stance} ${pitch} ${side} aim ${aimFrame.yaw},${aimFrame.pitch}` };

@@ -86,6 +86,7 @@ export class HeldPresentation {
   readonly models: ModelLibrary | undefined;
   stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
   seatFrame: HeldSeatFrame | undefined;
+  adsEyes: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -143,6 +144,7 @@ export class HeldPresentation {
       holds: this.figure.holds,
       stockSeat: input.stockSeat ?? this.stockSeats?.[input.side],
       seatFrame: input.seatFrame ?? this.seatFrame,
+      adsEyes: input.adsEyes ?? this.adsEyes,
     });
   }
 

@@ -240,7 +240,9 @@
       },
       "hands": {
         "ads": {
-          "cameraOffsetLimitMetres": 0.29999999999999999
+          "cameraOffsetLimitMetres": 0.29999999999999999,
+          "headRollDegrees": 0,
+          "torsoRollDegrees": 0
         },
         "adsStandoffByPitch": [
           {

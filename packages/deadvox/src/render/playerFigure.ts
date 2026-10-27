@@ -537,6 +537,7 @@ export class PlayerMeshes {
     }
     this.presentation!.stockSeats = this.lookPose!.stockSeats;
     this.presentation!.seatFrame = playerHeldSeatFrame(this.lookPose!, pose.pitch ?? 0);
+    this.presentation!.adsEyes = this.lookPose!.eyes;
     this.animator!.setSource(source);
     this.animator!.setShoulders(shoulderOf);
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
