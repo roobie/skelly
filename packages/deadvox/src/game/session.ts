@@ -139,7 +139,9 @@ import {
 import {
   FirearmMechanics,
   type FirearmOutcome,
+  type FirearmPoseInput,
   type FirearmShotEffect,
+  type FirearmShotInput,
   type FirearmTrajectory,
   isFirearmTrainingAction,
 } from './firearmHandling.ts';
@@ -332,6 +334,8 @@ export interface SessionControls {
   heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
   /** Right mouse requests firearm readiness; input gates this while a menu or lock owns the pointer. */
   readyHeld?: () => boolean;
+  /** Whether this firearm may fire now: raised, and input reaches the world. Absent, a raised gun is ready. */
+  firearmReady?: (uid: number) => boolean;
   /** True only while the player is in the melee en-garde stance. */
   blocking?: () => boolean;
   /** Sights are toggled on; the session still requires a ready firearm. */
@@ -1025,27 +1029,8 @@ export const createSession = (options: SessionOptions) => {
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
     isSolid: physicalSolid,
-    pose: (uid) => {
-      if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
-        return;
-      }
-      const look = playerLookPose({
-        figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
-        models: registry.models,
-        pitch: sampledInput().pitch,
-        stance: playerStance,
-        ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
-      });
-      return {
-        feet: feet(),
-        eye: playerEye(),
-        stockSeat: look.stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
-        seatFrame: playerHeldSeatFrame(look, sampledInput().pitch),
-        yaw: sampledInput().yaw,
-        pitch: sampledInput().pitch,
-        blockSize: s,
-      };
-    },
+    pose: (uid) => firearmPose(uid),
+    shotInput: (uid, simTime) => firearmShotInput(uid, simTime),
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
     onTrajectory: (trajectory, time) =>
@@ -1310,6 +1295,47 @@ export const createSession = (options: SessionOptions) => {
     [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
       (item) => item && registry.items.get(item.type)?.firearm,
     );
+  /** The one body pose a held firearm's shot, strike and ejection are placed from, read at the player tick. */
+  const firearmPose = (uid: number): FirearmPoseInput | undefined => {
+    if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
+      return;
+    }
+    const { yaw, pitch } = sampledInput();
+    const look = playerLookPose({
+      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      models: registry.models,
+      pitch,
+      stance: playerStance,
+      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+    });
+    return {
+      feet: feet(),
+      eye: playerEye(),
+      stockSeat: look.stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
+      seatFrame: playerHeldSeatFrame(look, pitch),
+      adsEyes: look.eyes,
+      yaw,
+      pitch,
+      blockSize: s,
+    };
+  };
+  const firearmShotInput = (uid: number, simTime: number): FirearmShotInput | undefined => {
+    const item = inventory.itemByUid(uid);
+    const pose = firearmPose(uid);
+    if (!(item && pose)) {
+      return;
+    }
+    return {
+      ...pose,
+      aimFrame: aim.frame,
+      aimingDownSights: Boolean(controls.aimingDownSights?.()),
+      ready: controls.firearmReady ? controls.firearmReady(uid) : firearms.isReady(uid),
+      sprinting,
+      item,
+      seed,
+      simTime,
+    };
+  };
   const meleeBlocker = worldMeleeBlocker(world, registry, {
     entities: inventory.entities,
     physical: physicalSolid,
@@ -2000,7 +2026,7 @@ export const createSession = (options: SessionOptions) => {
         staminaRegenDelaySimSeconds: bodyTuning.staminaRegenDelaySimSeconds,
       });
     }
-    const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
+    const readyFirearm = firearmInHands();
     const readyMovementFactor =
       readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
@@ -2364,6 +2390,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    firearmShotInput,
     firearmAttachments,
     magazines,
     /** Explosives' pins and burning fuses; a pin is pulled here, and the fuse lights once the item leaves the hand. */

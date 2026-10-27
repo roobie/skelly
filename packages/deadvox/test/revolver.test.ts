@@ -63,9 +63,12 @@ const fixture = () => {
   const queue = new HandlingQueue(inventory);
   const shots: unknown[] = [];
   const sounds: string[] = [];
+  // The body as it stands now; a test turns or lowers it between a press and its strike.
+  let live = { ...pose };
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: pose.blockSize,
-    pose: () => pose,
+    pose: () => live,
+    shotInput: (uid, simTime) => ({ ...live, item: inventory.itemByUid(uid)!, simTime, seed: 7 }),
     isSolid: (_x, y) => y < pose.feet[1],
     onEjection: () => undefined,
     onShot: (shot) => shots.push(shot),
@@ -97,9 +100,12 @@ const fixture = () => {
       finish();
     }
   };
-  const fire = () => {
+  const press = () => {
     time += defOf(registry, gun.type).firearm!.revolver!.recoverySimSeconds;
-    const fired = mechanics.fire({ ...pose, item: gun, simTime: time, seed: 7 });
+    return mechanics.fire({ ...live, item: gun, simTime: time, seed: 7 });
+  };
+  const fire = () => {
+    const fired = press();
     if (queue.busy) {
       finish();
     }
@@ -126,7 +132,11 @@ const fixture = () => {
     finish,
     load,
     release,
+    press,
     fire,
+    hold: (next: Partial<typeof pose>) => {
+      live = { ...live, ...next };
+    },
     cylinder,
     rounds,
     startLoaded,
@@ -398,48 +408,59 @@ describe('revolver cylinder handling', () => {
     expect(f.gun.firearm!.cylinder!.open).toBe(true);
   });
 
+  it('a double-action strike fires along the body held when the hammer falls, not at the press', () => {
+    const turned = { yaw: Math.PI / 2 };
+    const pressed = fixture();
+    const steady = fixture();
+    const turning = fixture();
+    for (const f of [pressed, steady, turning]) {
+      f.startLoaded(1);
+    }
+    pressed.fire();
+    steady.hold(turned);
+    steady.fire();
+    expect(turning.press()).toBe(true);
+    turning.hold(turned);
+    turning.finish();
+    expect(turning.shots).toHaveLength(1);
+    expect(turning.shots).toEqual(steady.shots);
+    expect(turning.shots).not.toEqual(pressed.shots);
+  });
+
+  it('lowering the revolver during a double-action pull lets no shot go', () => {
+    const f = fixture();
+    f.startLoaded(1);
+    expect(f.press()).toBe(true);
+    f.hold({ ready: false });
+    f.finish();
+    expect(f.shots).toHaveLength(0);
+    expect(f.rounds()).toBe(1);
+  });
+
+  it('a save between two shots keeps the revolver recovery gate', async () => {
+    const recovery = defOf(fixtureRegistry(), 'fixture_revolver').firearm!.revolver!.recoverySimSeconds;
+    expect(recovery).toBeGreaterThan(0);
+    const f = fixture();
+    f.startLoaded(2);
+    f.fire();
+    const restored = await codecInventory(f);
+    const resumed = new FirearmMechanics(restored, new HandlingQueue(restored), {
+      blockSize: pose.blockSize,
+      pose: () => pose,
+      onEjection: () => undefined,
+    });
+    const early = { ...pose, simTime: f.time() + recovery / 2, seed: 7 };
+    const uninterrupted = f.mechanics.fire({ ...early, item: f.gun });
+    expect(uninterrupted).toBe(false);
+    expect(resumed.fire({ ...early, item: restored.hands.right! })).toBe(uninterrupted);
+  });
+
   it('a mid-reload save round-trip restores the open mixed cylinder with independent ownership', async () => {
     const f = fixture();
     f.startLoaded(3);
     f.fire();
     f.load();
-    const session = createSession({
-      registry: f.registry,
-      world: new World(),
-      isSolid: () => false,
-      isOpaque: () => false,
-      scale: makeScale(0.5),
-      seed: 7,
-      start: 0,
-      spawn: [0, 0, 0],
-      ready: () => false,
-      controls: {
-        active: () => false,
-        intent: () => IDLE,
-        yaw: () => 0,
-        pitch: () => 0,
-        walking: () => false,
-        descending: () => false,
-      },
-      audio: { play: () => undefined },
-      notice: () => undefined,
-      onRead: () => undefined,
-    });
-    const snapshot = session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
-    const saved = { ...snapshot, character: { ...snapshot.character, inventory: f.inventory.snapshotState() } };
-    const version: SaveVersionComponents = {
-      simulationHash: 'a'.repeat(64),
-      schemaVersion: SAVE_SCHEMA_VERSION,
-      generators: {},
-      contentPacks: [],
-    };
-    const bytes = await encodeSave(saved, {
-      version,
-      generation: 1,
-      worldOptions: { blockSize: 0.5, site: 'fixture', storeys: 1, density: null },
-    });
-    const decoded = await decodeSave(bytes, { version, contentLookup: () => true });
-    const restored = Inventory.restoreState(f.registry, decoded.snapshot.character.inventory);
+    const restored = await codecInventory(f);
     expect(restored.hands.right!.firearm).toEqual(f.gun.firearm);
     expect(restored.hands.right!.firearm!.cylinder).not.toBe(f.cylinder());
     expect(f.cylinder().open).toBe(true);
@@ -447,3 +468,44 @@ describe('revolver cylinder handling', () => {
     expect(() => assertFirearmState({ ...snapshotFirearm(f.gun.firearm!), chamber: 'empty' })).toThrow();
   });
 });
+
+/** The fixture's inventory through the save codec and back. */
+const codecInventory = async (f: ReturnType<typeof fixture>): Promise<Inventory> => {
+  const session = createSession({
+    registry: f.registry,
+    world: new World(),
+    isSolid: () => false,
+    isOpaque: () => false,
+    scale: makeScale(0.5),
+    seed: 7,
+    start: 0,
+    spawn: [0, 0, 0],
+    ready: () => false,
+    controls: {
+      active: () => false,
+      intent: () => IDLE,
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => undefined,
+  });
+  const snapshot = session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
+  const saved = { ...snapshot, character: { ...snapshot.character, inventory: f.inventory.snapshotState() } };
+  const version: SaveVersionComponents = {
+    simulationHash: 'a'.repeat(64),
+    schemaVersion: SAVE_SCHEMA_VERSION,
+    generators: {},
+    contentPacks: [],
+  };
+  const bytes = await encodeSave(saved, {
+    version,
+    generation: 1,
+    worldOptions: { blockSize: 0.5, site: 'fixture', storeys: 1, density: null },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup: () => true });
+  return Inventory.restoreState(f.registry, decoded.snapshot.character.inventory);
+};

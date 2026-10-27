@@ -60,6 +60,8 @@ export interface FirearmState {
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
   readying?: FirearmRaiseState | undefined;
+  /** Simulation time of the last committed shot or pull; it gates revolver recovery and names a follow-up shot. */
+  lastShotAt?: number | undefined;
 }
 
 /** No live state is advanced or cancelled by a snapshot. */
@@ -76,6 +78,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
     pendingCase,
     cycle,
     readying,
+    lastShotAt,
   } = state;
   return {
     ...(chamber === undefined ? {} : { chamber }),
@@ -89,6 +92,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
     ...(readying === undefined ? {} : { readying: { ...readying } }),
+    ...(lastShotAt === undefined ? {} : { lastShotAt }),
   };
 };
 
@@ -219,6 +223,9 @@ export const assertFirearmState = (state: FirearmState): void => {
       readying.elapsed > readying.duration)
   ) {
     throw new Error('Invalid firearm ready progress');
+  }
+  if (state.lastShotAt !== undefined && !(Number.isFinite(state.lastShotAt) && state.lastShotAt >= 0)) {
+    throw new Error('Invalid firearm last shot time');
   }
   const pending = state.pendingCase;
   if (

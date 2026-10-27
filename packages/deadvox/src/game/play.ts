@@ -884,6 +884,7 @@ export const startPlay = (
         intent: (): MoveIntent => input.intent(),
         sampleAtPlayerTick: samplePlayerInput,
         readyHeld: () => input.rightMouseHeld,
+        firearmReady: (uid) => isFirearmReady(uid),
         aimingDownSights: () => debugGunPose.aimingDownSights(input.aimingDownSights) && isAimingDownSights(),
         blocking: () => shouldPlayerBlock(),
         consumeDominantUse: () => input.consumeDominantUse(),
@@ -3150,25 +3151,8 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
-    const fired = firearms.fire({
-      aimFrame: aim.frame,
-      ready: isFirearmReady(item.uid),
-      aimingDownSights: isAimingDownSights(),
-      sprinting: session.sprinting,
-      item,
-      ...heldBodyInput(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
-      feet: feet(),
-      eye: eye(),
-      yaw: input.yaw,
-      pitch: input.pitch,
-      seed: config.seed,
-      simTime: time,
-      blockSize: s,
-    });
-    if (!fired) {
-      return false;
-    }
-    return true;
+    const shot = session.firearmShotInput(item.uid, time);
+    return shot !== undefined && firearms.fire(shot);
   };
 
   const triggerWeapon = (weapon: Item | undefined, pressed: boolean) => {
