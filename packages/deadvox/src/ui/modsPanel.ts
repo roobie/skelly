@@ -3,7 +3,7 @@ import { countText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES, type ModEvaluation } from '../game/browserMods.ts';
-import { ModStorage } from '../game/modStorage.ts';
+import { isInvalidModSelection, ModStorage } from '../game/modStorage.ts';
 import { factDetail } from './factDetail.ts';
 
 const httpUrl = /^https?:\/\//i;
@@ -84,13 +84,17 @@ export const chooseMods = async (
 ): Promise<ModEvaluation> => {
   let initial: BrowserMod[] = [];
   let storageFailed = false;
+  let invalidSelection = false;
   try {
     initial = await storage.load();
-  } catch {
+  } catch (error) {
     storageFailed = true;
+    invalidSelection = isInvalidModSelection(error);
   }
   return new Promise((resolve) => {
     const mods: BrowserMod[] = initial;
+    const copy = () => mods.map((mod) => ({ ...mod }));
+    let saved = copy();
     let draft = '';
     let sequence = mods.reduce((max, mod) => Math.max(max, Number(sourceSequence.exec(mod.source)?.[1]) || 0), 0);
     let busy = false;
@@ -104,9 +108,23 @@ export const chooseMods = async (
       draw();
       try {
         await storage.save(mods);
+        saved = copy();
       } catch {
-        mods.splice(0);
-        storageFailed = true;
+        mods.splice(0, mods.length, ...saved.map((mod) => ({ ...mod })));
+        uploadError += `${text.saveFailed}\n`;
+      }
+      busy = false;
+      draw();
+    };
+    const discard = async () => {
+      busy = true;
+      draw();
+      try {
+        await storage.discard();
+        storageFailed = false;
+        invalidSelection = false;
+      } catch {
+        uploadError = `${text.saveFailed}\n`;
       }
       busy = false;
       draw();
@@ -155,18 +173,20 @@ export const chooseMods = async (
     };
     const draw = () => {
       const result = evaluateMods(mods);
+      const storageIssue = invalidSelection ? text.invalidSelection : text.storageFailed;
       render(
         html`
       <section class="mods-card" aria-label=${text.heading}>
         <h1>${text.heading}</h1>
         <p>${factDetail(text.jsonLabel, fillText(text.jsonFact, { maxBytes: countText(MAX_MOD_BYTES) }))}</p>
-        <pre role="alert">${storageFailed ? text.storageFailed : ''}</pre>
+        <pre role="alert">${storageFailed ? storageIssue : ''}</pre>
+        ${invalidSelection ? html`<button type="button" id="mods-discard" ?disabled=${busy} @click=${discard}>${text.discard}</button>` : ''}
         <label>${text.input}<textarea aria-label=${text.inputLabel} ?disabled=${busy || storageFailed} .value=${draft} @input=${(
           event: Event,
         ) => {
           draft = (event.currentTarget as HTMLTextAreaElement).value;
         }}></textarea></label>
-        <button type="button" ?disabled=${busy || storageFailed} @click=${paste}>${text.add}</button>
+        <button type="button" id="mods-add" ?disabled=${busy || storageFailed} @click=${paste}>${text.add}</button>
         <label>${text.upload}<input type="file" accept=".json,application/json" multiple ?disabled=${busy || storageFailed} @change=${upload}></label>
         <pre role="alert">${uploadError}</pre>
         <pre role="alert">${[...result.issues]
