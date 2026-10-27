@@ -20,6 +20,8 @@ Gungen owns firearm model and action data; Deadvox validates and consumes that e
 
 Mechanical state—cycle, ammunition and magazine contents—belongs to the simulation and must not depend on renderer timing. Animation, sound, muzzle flash, recoil display and flying cases are presentation. Cycle differences that change weapon behavior remain firearm data. Timelines and ballistic figures are gameplay estimates, not measured firearm specifications.
 
+Trigger selection is content, independent of the mechanical cycle: a self-loading action does not imply held-trigger fire. Semi-automatic pulls use input edges, while the simulation's cycle still prevents overlapping shots; absent selection retains automatic cadence for existing cycling guns. See `src/core/schema.ts`, `ActionSchema`, `src/game/firearmTrigger.ts`, `FirearmTrigger`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
+
 Spent cases are saved as a calibre-specific count on the block where they land. Deterministic scatter makes them recoverable without saving a physics body per shot. See `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
 
 Fitted attachments remain separate item instances. Their exported appearance and authored geometry must not inherit the host firearm's finish; see `src/render/itemLook.ts`, `itemLook`, and `src/render/models.ts`, `ModelLibrary.part`. Gungen derives suppressor mass from geometry and material. Effects are authored by type; the shared muzzle rule accounts for weight and distance from the hands. Heat, smoke, accuracy loss and fouling remain deferred until their supporting systems exist.

@@ -1758,6 +1758,7 @@ const ActionSchema = pipe(
     holdOpen: vBoolean(),
     /** Cyclic rate in rounds per Sim minute. */
     roundsPerSimMinute: optional(SimPerMinute),
+    triggerMode: optional(picklist(['semi', 'auto'])),
   }),
   check(
     (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
@@ -1777,6 +1778,10 @@ const ActionSchema = pipe(
   check(
     (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),
     'only an automatic fire timeline has a cyclic rpm',
+  ),
+  check(
+    (action) => action.triggerMode === undefined || action.fire !== undefined,
+    'trigger mode needs a fire timeline',
   ),
 );
 

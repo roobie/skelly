@@ -581,6 +581,16 @@ describe('rifle firearm handling', () => {
     expect(regular.advance(3, weapon, false, false)).toEqual([]);
   });
 
+  it('semi-auto requires another pull even when held beyond the cycling cadence', () => {
+    const trigger = new FirearmTrigger();
+    const weapon = { uid: 1, roundsPerSimSecond: 10, triggerMode: 'semi' as const };
+    expect(trigger.advance(0, weapon, true, true)).toEqual([0]);
+    expect(trigger.advance(1, weapon, false, true)).toEqual([]);
+    expect(trigger.advance(1.1, weapon, false, false)).toEqual([]);
+    expect(trigger.advance(1.2, weapon, true, true)).toEqual([1.2]);
+    expect(trigger.advance(2, weapon, false, true)).toEqual([]);
+  });
+
   it('unlatches release and quick clicks, and resets cadence on a weapon change', () => {
     const trigger = new FirearmTrigger();
     const weapon = { uid: 1, roundsPerSimSecond: 800 / 60 };

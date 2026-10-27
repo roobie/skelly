@@ -3126,8 +3126,10 @@ export const startPlay = (
       }
       return;
     }
-    const { roundsPerSimSecond } = firearmHandlingFor(weapon, registry);
-    return roundsPerSimSecond === undefined ? undefined : { uid: weapon.uid, roundsPerSimSecond };
+    const { roundsPerSimSecond, action } = firearmHandlingFor(weapon, registry);
+    return roundsPerSimSecond === undefined
+      ? undefined
+      : { uid: weapon.uid, roundsPerSimSecond, triggerMode: action.triggerMode };
   };
 
   const refusalReason = (reason: string | undefined): void => {
