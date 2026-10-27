@@ -625,6 +625,45 @@
       }
     },
     {
+      "file": "assets/models/pistol_frame.glb",
+      "gun": {},
+      "id": "pistol_frame",
+      "parts": {
+        "pistol_frame": {
+          "centreOfMass": [-0.034677296886864092, -0.027588458618071385, 0],
+          "item": "pistol_frame",
+          "massKg": 0.28000000000000003,
+          "node": "pistol_frame:frame"
+        }
+      }
+    },
+    {
+      "file": "assets/models/pistol_slide.glb",
+      "gun": {},
+      "id": "pistol_slide",
+      "parts": {
+        "pistol_slide": {
+          "centreOfMass": [0.010551351351351351, 0.024097297297297295, -0.00016216216216216218],
+          "item": "pistol_slide",
+          "massKg": 0.27000000000000002,
+          "node": "pistol_slide:slide"
+        }
+      }
+    },
+    {
+      "file": "assets/models/barrel_pistol.glb",
+      "gun": {},
+      "id": "barrel_pistol",
+      "parts": {
+        "barrel_pistol": {
+          "centreOfMass": [0.057513043478260875, 0, 0],
+          "item": "barrel_pistol",
+          "massKg": 0.12,
+          "node": "barrel_pistol:barrel"
+        }
+      }
+    },
+    {
       "file": "assets/models/revolver_grip.glb",
       "gun": {},
       "id": "revolver_grip",

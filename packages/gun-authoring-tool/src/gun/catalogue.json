@@ -825,11 +825,28 @@
     },
     {
       "family": "barrel",
-      "id": "barrel-pistol",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "steel-blued"
+      },
+      "id": "barrel_pistol",
       "massKg": 0.12,
       "match": {
         "profile": "pistol",
         "section": "standard"
+      },
+      "params": {
+        "actionFrame": "small",
+        "bore": "S",
+        "frontSightStyle": "ar",
+        "handguardLayout": "standard",
+        "handguardLength": "M",
+        "length": "S",
+        "muzzle": "plain",
+        "profile": "pistol",
+        "section": "standard",
+        "tubeLengthPercent": "75"
       }
     },
     {
@@ -1699,15 +1716,35 @@
     },
     {
       "family": "frame",
-      "id": "pistol-frame",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "steel-blued"
+      },
+      "id": "pistol_frame",
       "massKg": 0.28000000000000003,
-      "match": {}
+      "match": {},
+      "params": {
+        "bore": "S",
+        "gripLength": "M",
+        "slideLength": "S",
+        "triggerGuard": "present"
+      }
     },
     {
       "family": "slide",
-      "id": "pistol-slide",
+      "finish": {
+        "accent": "rubber-black",
+        "furniture": "polymer-black",
+        "metal": "steel-blued"
+      },
+      "id": "pistol_slide",
       "massKg": 0.27000000000000002,
-      "match": {}
+      "match": {},
+      "params": {
+        "bore": "S",
+        "length": "S"
+      }
     },
     {
       "family": "revolver-frame",

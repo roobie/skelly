@@ -1,0 +1,13 @@
+{
+  "id": "pistol_frame",
+  "file": "assets/models/pistol_frame.glb",
+  "gun": {},
+  "parts": {
+    "pistol_frame": {
+      "item": "pistol_frame",
+      "node": "pistol_frame:frame",
+      "massKg": 0.28,
+      "centreOfMass": [-0.03467729688686409, -0.027588458618071385, 0]
+    }
+  }
+}

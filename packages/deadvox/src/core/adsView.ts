@@ -11,6 +11,11 @@ export const adsLimits = (figure: FigureDef, model: ModelDef) => ({
   stockShoulderMetres: model.hands?.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
 });
 
+export const adsRollDegrees = (figure: FigureDef, model: ModelDef) => ({
+  torso: model.hands?.ads?.torsoRollDegrees ?? figure.aimPose.ads.torsoRollDegrees,
+  head: model.hands?.ads?.headRollDegrees ?? figure.aimPose.ads.headRollDegrees,
+});
+
 export const nearestSightEyeOffset = (gun: HeldFirearmTransform): Vec3 | undefined => {
   if (!gun.sightEyeOffset) {
     return undefined;
@@ -44,8 +49,10 @@ export const adsCameraEye = ({
     progress: 1,
     aimingDownSights: true,
     aimFrame: ads.aimFrame ?? NEUTRAL_AIM,
+    lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: pose.stockSeats[ads.side],
+    adsEyes: pose.eyes,
   });
   const offset: Vec3 = nearestSightEyeOffset(gun) ?? [0, 0, 0];
   const distanceMetres = Math.hypot(...offset);

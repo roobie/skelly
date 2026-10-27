@@ -582,6 +582,33 @@ describe('rifle firearm handling', () => {
     expect(regular.advance(3, weapon, false, false)).toEqual([]);
   });
 
+  it('the pistol chambers through its hand action and refuses a second shot until the slide returns', () => {
+    const pistol = [...registry.items.values()].find(
+      (item) => item.model && registry.models.get(item.model)?.gun?.action?.triggerMode === 'semi',
+    );
+    if (!pistol) {
+      throw new Error('No authored semi-auto pistol');
+    }
+    expect(pistol.twoHanded).toBe(true);
+    const { mechanics, rifle: gun } = armed({}, { type: pistol.id });
+    const data = firearmHandlingFor(gun, registry);
+    const duration = actionCycleSeconds(data.action, 'fire');
+    expect(mechanics.fire(shotInput(gun, 1))).toBe(true);
+    expect(mechanics.fire(shotInput(gun, 1 + duration / 2))).toBe(false);
+    mechanics.advanceTo(1 + duration);
+    expect(mechanics.fire(shotInput(gun, 1 + duration))).toBe(true);
+  });
+
+  it('semi-auto requires another pull even when held beyond the cycling cadence', () => {
+    const trigger = new FirearmTrigger();
+    const weapon = { uid: 1, roundsPerSimSecond: 10, triggerMode: 'semi' as const };
+    expect(trigger.advance(0, weapon, true, true)).toEqual([0]);
+    expect(trigger.advance(1, weapon, false, true)).toEqual([]);
+    expect(trigger.advance(1.1, weapon, false, false)).toEqual([]);
+    expect(trigger.advance(1.2, weapon, true, true)).toEqual([1.2]);
+    expect(trigger.advance(2, weapon, false, true)).toEqual([]);
+  });
+
   it('unlatches release and quick clicks, and resets cadence on a weapon change', () => {
     const trigger = new FirearmTrigger();
     const weapon = { uid: 1, roundsPerSimSecond: 800 / 60 };

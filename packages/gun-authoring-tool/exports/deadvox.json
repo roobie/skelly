@@ -45,6 +45,15 @@
     }
   },
   {
+    "id": "pistol_service",
+    "kind": "design",
+    "source": "packages/gun-authoring-tool/designs/service-nine.json",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "round_5_d_56x45",
     "kind": "cartridge",
     "options": {
@@ -159,6 +168,30 @@
       "component": "case"
     },
     "source": "packages/gun-authoring-tool/cartridges/357-magnum.json",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
+    "id": "round_9x19",
+    "kind": "cartridge",
+    "options": {
+      "component": "round"
+    },
+    "source": "packages/gun-authoring-tool/cartridges/9x19.json",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
+    "id": "case_9x19",
+    "kind": "cartridge",
+    "options": {
+      "component": "case"
+    },
+    "source": "packages/gun-authoring-tool/cartridges/9x19.json",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.002
@@ -324,6 +357,19 @@
       "cartridge": "packages/gun-authoring-tool/cartridges/7.62x39.json"
     },
     "source": "akm-30",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "magazine_pistol_9",
+    "kind": "magazine",
+    "options": {
+      "appearanceProfile": "pistol",
+      "cartridge": "packages/gun-authoring-tool/cartridges/9x19.json"
+    },
+    "source": "pistol-9",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
@@ -555,6 +601,15 @@
     }
   },
   {
+    "id": "barrel_pistol",
+    "kind": "part",
+    "source": "barrel_pistol",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
     "id": "handguard_ak",
     "kind": "part",
     "source": "handguard_ak",
@@ -765,6 +820,24 @@
     "id": "integral_magazine",
     "kind": "part",
     "source": "integral_magazine",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "pistol_frame",
+    "kind": "part",
+    "source": "pistol_frame",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.0040000000000000001
+    }
+  },
+  {
+    "id": "pistol_slide",
+    "kind": "part",
+    "source": "pistol_slide",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.0040000000000000001
