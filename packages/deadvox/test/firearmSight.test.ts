@@ -33,7 +33,7 @@ it('bounds ADS neck length and joint turns for every sighted long gun and legal 
   expect(cases.length).toBeGreaterThan(0);
   for (const { model, stance, pitch, side, aimFrame } of cases) {
     const body = playerLookPose({ figure, models: baseRegistry.models, pitch, stance, ads: { model, side, aimFrame } });
-    const label = `${model.id} ${stance} ${pitch} ${side}`;
+    const label = `${model.id} ${stance} ${pitch} ${side} aim ${aimFrame.yaw},${aimFrame.pitch}`;
     expect(body.neckScale, `${label}: neck length`).toBeGreaterThanOrEqual(1 - tolerance - 1e-12);
     expect(body.neckScale, `${label}: neck length`).toBeLessThanOrEqual(1 + tolerance + 1e-12);
     for (const [rotation, limits, joint] of [
@@ -67,7 +67,7 @@ it('seats ADS sights at the anatomical eye without releasing either shoulder', (
       loweredPitchRadians: 0,
       stockSeat: body.stockSeats[side],
     });
-    const label = `${side} ${stance} ${pitch}`;
+    const label = `${model.id} ${side} ${stance} ${pitch} aim ${aimFrame.yaw},${aimFrame.pitch}`;
     expect(
       new Vector3(...pose.rootOffset).add(new Vector3(...pose.sightEyeOffset!)).length(),
       `${label}: sight eye`,
