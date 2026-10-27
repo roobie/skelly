@@ -2623,7 +2623,7 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 ### Types are data
 
 Zombie types should compose shared mechanisms rather than require type-specific
-code. The planned ability components are `grab`, `leap`, `scream`, `explode`,
+code. The planned ability components are `leap`, `scream`, `explode`,
 `acidSpit`, `heatAura`, `lightEmitter`, `armoured`, `regenerate` and `burrow`;
 this is design intent, not an inventory of implemented systems. The picklist in
 `src/core/schema.ts`, `ZOMBIE_ABILITIES`, admits an ability only once its runtime
