@@ -80,6 +80,7 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_closing_note",
+      "notLoot": true,
       "name": "Playtest closing note",
       "category": "note",
       "model": "folded_note",

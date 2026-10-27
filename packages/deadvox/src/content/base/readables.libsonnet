@@ -2,6 +2,7 @@
   "items": [
     {
       "id": "sample_note",
+      "notLoot": true,
       "name": "Placeholder note",
       "category": "note",
       "model": "paper_sheet",
@@ -39,6 +40,5 @@
         "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION"
       }
     }
-  ],
-  "loot": [{ "id": "sample_note_loot", "rolls": [1, 1], "entries": [{ "weight": 1, "item": "sample_note" }] }]
+  ]
 }
