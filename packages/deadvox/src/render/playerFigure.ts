@@ -24,6 +24,7 @@ import { FIGURE_BOXES, type FigureBox } from '../core/zombieRegions.ts';
 import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';
+import { OwnBodyClip } from './ownBodyClip.ts';
 import { castsAndReceives, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { WornModels } from './wornModels.ts';
 
@@ -293,6 +294,7 @@ export class PlayerMeshes {
   private readonly heldTorso = new Group();
   private animator: ActorAnimator | undefined;
   private readonly figure: FigureDef;
+  private readonly ownBodyClip: OwnBodyClip;
   private presentation: HeldPresentation | undefined;
   private lastPose: PlayerFigurePose | undefined;
   private lookPose: PlayerLookPose | undefined;
@@ -334,6 +336,7 @@ export class PlayerMeshes {
     models: ModelLibrary,
   ) {
     this.figure = figure;
+    this.ownBodyClip = new OwnBodyClip(figure.aimPose.ads.ownBodyClipMetres);
     this.worn = new WornModels(figure, models, this.attachmentFrames, this.baseParts);
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
@@ -412,6 +415,8 @@ export class PlayerMeshes {
     this.worn.sync(pose.wornItems ?? pose.inventory);
     this.lastPose = pose;
     this.syncHeld(pose);
+    this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined && pose.stance !== 'prone';
+    this.ownBodyClip.attach(this.drawn.values());
     const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
@@ -524,6 +529,7 @@ export class PlayerMeshes {
     this.heldFrame.traverse((object) => object.layers.set(this.layer));
     castsAndReceives(this.heldFrame);
     this.presentation.syncWorn(pose.wornItems ?? pose.inventory);
+    this.ownBodyClip.attach(this.presentation.arms.values());
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
       if (side) {
@@ -618,18 +624,33 @@ export class PlayerMeshes {
     if (this.layer !== PLAYER_FIGURE_LAYER) {
       return;
     }
+    const adsLayer = this.ownBodyClip.active ? PLAYER_SELF_MASK_LAYER : this.layer;
+    for (const role of this.figure.aimPose.ads.ownBodyHide) {
+      for (const node of this.baseParts.get(`body/${this.figure.body[role].part}`) ?? []) {
+        node.traverse((object) => object.layers.set(adsLayer));
+      }
+    }
     for (const pivots of this.pivots.values()) {
       const head = pivots.find((pivot) => pivot.name === FIGURE_PIVOT.head);
       head?.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
     }
     // Head-mounted gear stays on its own frame; only its optical interior remains transitional.
     for (const [name, frame] of this.attachmentFrames) {
-      const layer = this.figure.attachmentFrames[name]!.insideView ? PLAYER_SELF_MASK_LAYER : this.layer;
+      const entry = this.figure.attachmentFrames[name]!;
+      const layer = entry.insideView || this.adsMasksFrame(entry) ? PLAYER_SELF_MASK_LAYER : this.layer;
       frame.traverse((object) => object.layers.set(layer));
     }
     for (const group of this.worn.groupsOf('eyes')) {
       group.traverse((object) => object.layers.set(PLAYER_SELF_MASK_LAYER));
     }
+  }
+
+  private adsMasksFrame(frame: FigureDef['attachmentFrames'][string]): boolean {
+    return (
+      this.ownBodyClip.active &&
+      frame.part === 'body' &&
+      this.figure.aimPose.ads.ownBodyHide.some((role) => this.figure.body[role].pivot === frame.pivot)
+    );
   }
 
   aimDirection(out: Vector3): void {

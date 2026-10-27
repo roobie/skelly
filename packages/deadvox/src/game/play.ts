@@ -106,6 +106,7 @@ import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { continueActionResumesJob } from './continueAction.ts';
+import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
   DebugModule,
@@ -844,6 +845,7 @@ export const startPlay = (
     }
   };
   const spectator = new SpectatorCamera();
+  const debugGunPose = new DebugGunPose(config.debug);
   let thirdPersonViewEnabled = false;
   const thirdPersonOrbit = new ThirdPersonOrbit();
   let backquoteGesture: BackquoteOrbitGesture | undefined;
@@ -873,85 +875,87 @@ export const startPlay = (
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
-    controls: spectator.guard({
-      active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
-      intent: (): MoveIntent => input.intent(),
-      sampleAtPlayerTick: samplePlayerInput,
-      readyHeld: () => input.rightMouseHeld,
-      aimingDownSights: () => input.aimingDownSights && isAimingDownSights(),
-      blocking: () => shouldPlayerBlock(),
-      consumeDominantUse: () => input.consumeDominantUse(),
-      consumeOffUse: () => input.consumeOffUse(),
-      consumeStanceToggle: () => input.consumeStanceToggle(),
-      useDominant: () =>
-        routeDominantUse(throwingStance, beginItemThrow, () => {
-          // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
+    controls: debugGunPose.guard(
+      spectator.guard({
+        active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
+        intent: (): MoveIntent => input.intent(),
+        sampleAtPlayerTick: samplePlayerInput,
+        readyHeld: () => input.rightMouseHeld,
+        aimingDownSights: () => debugGunPose.aimingDownSights(input.aimingDownSights) && isAimingDownSights(),
+        blocking: () => shouldPlayerBlock(),
+        consumeDominantUse: () => input.consumeDominantUse(),
+        consumeOffUse: () => input.consumeOffUse(),
+        consumeStanceToggle: () => input.consumeStanceToggle(),
+        useDominant: () =>
+          routeDominantUse(throwingStance, beginItemThrow, () => {
+            // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
+            const action = selectPrimaryAction(inventory);
+            if (
+              !(
+                debugTools?.buildOn ||
+                (action.kind === 'firearm' &&
+                  !action.item.firearm?.cylinder &&
+                  firearmHandlingFor(action.item, registry).action.fire !== undefined)
+              )
+            ) {
+              performHandUse(dominantSide(inventory.character));
+            }
+          }),
+        heldDominantUse: (time, pressed, triggerHeld) => {
+          if (throwingStance) {
+            magazines.advanceHeldStrip(undefined, time, false);
+            if (!triggerHeld) {
+              releaseItemThrow();
+            }
+            return;
+          }
+          if (sim.body.actionRefusal) {
+            magazines.advanceHeldStrip(undefined, time, false);
+            firearmTrigger.advance(time, undefined, pressed, triggerHeld);
+            if (pressed) {
+              showRefusal(sim.body.actionRefusal, sim.time);
+            }
+            return;
+          }
+          handleHeldDominantUse(time, pressed, triggerHeld);
           const action = selectPrimaryAction(inventory);
-          if (
-            !(
-              debugTools?.buildOn ||
-              (action.kind === 'firearm' &&
-                !action.item.firearm?.cylinder &&
-                firearmHandlingFor(action.item, registry).action.fire !== undefined)
-            )
-          ) {
-            performHandUse(dominantSide(inventory.character));
+          const stripUid =
+            action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
+              ? action.item.uid
+              : undefined;
+          refusalReason(magazines.advanceHeldStrip(stripUid, time, triggerHeld));
+        },
+        automaticFireHeld: () => {
+          const weapon = automaticFireWeapon();
+          return Boolean(
+            (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld) &&
+              !sim.body.actionRefusal &&
+              weapon &&
+              automaticFireUid === weapon.uid &&
+              isFirearmReady(weapon.uid) &&
+              !session.sprinting,
+          );
+        },
+        adjustPitch: (delta) => {
+          if (!replaySample) {
+            return input.adjustPitch(delta);
           }
-        }),
-      heldDominantUse: (time, pressed, triggerHeld) => {
-        if (throwingStance) {
-          magazines.advanceHeldStrip(undefined, time, false);
-          if (!triggerHeld) {
-            releaseItemThrow();
+          const adjusted = adjustLookPitch(replaySample.pitch, delta);
+          replaySample = { ...replaySample, pitch: adjusted.pitch };
+          applyReplayLook(input, replaySample);
+          return adjusted.applied;
+        },
+        useOff: () => {
+          if (!debugTools?.buildOn) {
+            performHandUse(offSide(inventory.character));
           }
-          return;
-        }
-        if (sim.body.actionRefusal) {
-          magazines.advanceHeldStrip(undefined, time, false);
-          firearmTrigger.advance(time, undefined, pressed, triggerHeld);
-          if (pressed) {
-            showRefusal(sim.body.actionRefusal, sim.time);
-          }
-          return;
-        }
-        handleHeldDominantUse(time, pressed, triggerHeld);
-        const action = selectPrimaryAction(inventory);
-        const stripUid =
-          action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
-            ? action.item.uid
-            : undefined;
-        refusalReason(magazines.advanceHeldStrip(stripUid, time, triggerHeld));
-      },
-      automaticFireHeld: () => {
-        const weapon = automaticFireWeapon();
-        return Boolean(
-          (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld) &&
-            !sim.body.actionRefusal &&
-            weapon &&
-            automaticFireUid === weapon.uid &&
-            isFirearmReady(weapon.uid) &&
-            !session.sprinting,
-        );
-      },
-      adjustPitch: (delta) => {
-        if (!replaySample) {
-          return input.adjustPitch(delta);
-        }
-        const adjusted = adjustLookPitch(replaySample.pitch, delta);
-        replaySample = { ...replaySample, pitch: adjusted.pitch };
-        applyReplayLook(input, replaySample);
-        return adjusted.applied;
-      },
-      useOff: () => {
-        if (!debugTools?.buildOn) {
-          performHandUse(offSide(inventory.character));
-        }
-      },
-      yaw: () => input.yaw,
-      pitch: () => input.pitch,
-      walking: () => input.walking,
-      descending: () => keyboardInput.held('noclip.descend'),
-    }),
+        },
+        yaw: () => input.yaw,
+        pitch: () => input.pitch,
+        walking: () => input.walking,
+        descending: () => keyboardInput.held('noclip.descend'),
+      }),
+    ),
     // The session works in blocks; playback is in metres.
     audio: {
       play: playSessionSound,
@@ -1076,14 +1080,18 @@ export const startPlay = (
   };
   const hasActiveFirearmInput = (): boolean =>
     replayPlayer ? replaySample?.active === true && !replaySample.inputLocked : input.locked && !input.menuPointer;
+  const hasGunPoseInput = (): boolean => debugGunPose.active || hasActiveFirearmInput();
   const isFirearmReady = (uid: number): boolean =>
-    input.rightMouseActionHeld && hasActiveFirearmInput() && !compression.locksInput && firearms.isReady(uid);
+    debugGunPose.readyHeld(input.rightMouseActionHeld) &&
+    hasGunPoseInput() &&
+    !compression.locksInput &&
+    firearms.isReady(uid);
   const isAimingDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
     return (
-      input.aimingDownSights &&
-      input.rightMouseActionHeld &&
-      hasActiveFirearmInput() &&
+      debugGunPose.aimingDownSights(input.aimingDownSights) &&
+      debugGunPose.readyHeld(input.rightMouseActionHeld) &&
+      hasGunPoseInput() &&
       action.kind === 'firearm' &&
       isFirearmReady(action.item.uid) &&
       !session.sprinting
@@ -1661,6 +1669,7 @@ export const startPlay = (
       teleport: () => spectator.teleport(body, session.playerEyeHeightMetres / s, engine.isSolid),
     },
     thirdPerson,
+    gunPose: { mode: () => debugGunPose.mode, toggle: (mode) => debugGunPose.toggle(mode) },
     mannequin: view.avatarMannequin,
     perceptionLabels: {
       enabled: () => perceptionLabelsEnabled,
@@ -3599,7 +3608,7 @@ export const startPlay = (
 
   const firearmReadiness = () => {
     const selected = selectPrimaryAction(inventory);
-    if (selected.kind !== 'firearm' || !input.rightMouseActionHeld || !input.locked || input.menuPointer) {
+    if (selected.kind !== 'firearm' || !debugGunPose.readyHeld(input.rightMouseActionHeld) || !hasGunPoseInput()) {
       return;
     }
     return {

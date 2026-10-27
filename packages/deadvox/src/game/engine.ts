@@ -69,6 +69,7 @@ export function createEngine(
   const renderer = render ? new WebGLRenderer({ antialias: true }) : undefined;
   renderer?.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
   if (renderer) {
+    renderer.localClippingEnabled = true;
     view.appendChild(renderer.domElement);
   }
 

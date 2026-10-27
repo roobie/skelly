@@ -1660,6 +1660,21 @@ anatomical bounds rather than an exact anatomical sight fit. See
 `src/content/base/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
+Only the owning view may suppress camera-enclosing flesh during standing or
+crouching ADS. A stable proximal-body and attached-gear mask prevents walking bob
+and sway from intermittently exposing the torso's interior; local near clipping keeps the
+remaining limbs clear without moving the actor or gun. The firearm retains
+normal world depth, and external views and shadows retain the whole body. This
+exception is for an enclosing camera, not for hiding world obstructions. Content
+owns the masked body roles and clearance; see `src/content/base/figures-player.jsonnet`,
+`aimPose`; `src/render/playerFigure.ts`, `applySelfMask`; and
+`src/render/ownBodyClip.ts`, `OwnBodyClip`.
+
+Hand-fit corrections belong at the authored contact rather than in view-specific
+placement or gun-ID overrides, so hip aim, ADS and external observation cannot
+disagree. Sporting-stock palms must wrap the wrist rather than ride on its top;
+see `src/content/base/long-gun-hands.libsonnet`, `firingHold`.
+
 The camera wall check traces the segment from the body eye to the proposed
 camera and pulls back before a hit; collision safety takes priority over sight
 alignment. The shortened offset remains inside its displacement bound. Strict

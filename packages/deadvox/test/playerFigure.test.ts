@@ -20,12 +20,13 @@ import {
   Vector3,
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
+import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { playerLookLean } from '../src/core/playerLookPose.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -54,7 +55,13 @@ const STANDING = { stance: 'standing', dt: 0 } as const;
 
 const figureModels = {
   version: 1,
-  ...(await loadFigureModels(registry, 'player', ['riot_helmet', 'baseball_cap', 'night_vision_goggles', 'headlamp'])),
+  ...(await loadFigureModels(registry, 'player', [
+    'riot_helmet',
+    'baseball_cap',
+    'night_vision_goggles',
+    'headlamp',
+    ...registry.items.get('hiking_backpack')!.figureModels!.map((entry) => entry.model),
+  ])),
 } as unknown as ModelLibrary;
 /** The figure's models and no item model, so held items keep their stand-in shapes. */
 const figureOnlyModels = {
@@ -611,6 +618,59 @@ describe('player figure', () => {
       });
       expect(count).toBeGreaterThan(0);
     }
+  });
+
+  it('masks authored ADS body roles and their worn gear only for the owner, and restores them on release', () => {
+    const figure = {
+      ...playerFigure,
+      aimPose: { ...playerFigure.aimPose, ads: { ...playerFigure.aimPose.ads, ownBodyHide: ['spine' as const] } },
+    };
+    const inventory = new Inventory(registry);
+    expect(inventory.add(inventory.create('hiking_backpack'), { kind: 'worn' })).toBe(true);
+    expect(inventory.add(inventory.create('rifle_hunting'), { kind: 'hand', side: 'right' })).toBe(true);
+    const meshes = new PlayerMeshes(scale.blockSize, figure, registry.models, figureModels);
+    const own = new PerspectiveCamera();
+    own.layers.enable(PLAYER_FIGURE_LAYER);
+    const external = new PerspectiveCamera();
+    external.layers.enable(PLAYER_FIGURE_LAYER);
+    external.layers.enable(PLAYER_SELF_MASK_LAYER);
+    for (const aiming of [false, true, false]) {
+      meshes.sync({
+        body: createPlayerBody(scale, 0, 0, 0),
+        yaw: 0,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        ...STANDING,
+        inventory,
+        holdReady: aiming,
+        ads: playerAdsPose(inventory, aiming, NEUTRAL_AIM),
+      });
+      let torso: Object3D | undefined;
+      drawnPart(meshes, 'body').traverse((node) => {
+        if (node.userData.part === figure.body.spine.part) {
+          torso = node;
+        }
+      });
+      const pack = meshes.group.getObjectByName('worn-back');
+      expect(torso).toBeDefined();
+      expect(pack).toBeDefined();
+      for (const root of [torso!, pack!]) {
+        let surfaces = 0;
+        root.traverse((object) => {
+          if (!(object instanceof Mesh)) {
+            return;
+          }
+          surfaces += 1;
+          expect(object.visible).toBe(true);
+          expect(own.layers.test(object.layers)).toBe(!aiming);
+          expect(external.layers.test(object.layers)).toBe(true);
+          expect(object.castShadow).toBe(true);
+        });
+        expect(surfaces).toBeGreaterThan(0);
+      }
+    }
+    meshes.dispose();
   });
 
   it('fits the worn riot helmet over the drawn head: it covers the crown and sides and nothing of it lies inside', () => {

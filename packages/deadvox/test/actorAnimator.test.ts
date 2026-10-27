@@ -1,14 +1,28 @@
 import { readFileSync } from 'node:fs';
-import { Box3, Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
+import {
+  Box3,
+  Group,
+  type Intersection,
+  type Material,
+  Mesh,
+  type Object3D,
+  PerspectiveCamera,
+  Raycaster,
+  Scene,
+  Vector2,
+  Vector3,
+  type WebGLRenderer,
+} from 'three';
 import { expect, it, vi } from 'vitest';
-import { adsLimits } from '../src/core/adsView.ts';
+import { adsCameraEye, adsLimits } from '../src/core/adsView.ts';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { mountedOptic } from '../src/core/opticView.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerEyePosition } from '../src/core/playerLookPose.ts';
+import { figureStancePose, playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
@@ -18,6 +32,7 @@ import { createHeldViews } from '../src/render/heldViews.ts';
 import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
+import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
@@ -99,6 +114,148 @@ const fixture = async (firearm = true, firearmType?: string) => {
   };
   return { registry, inventory, item, world, actor, view, update, camera, pose, physical, transforms, dispose };
 };
+
+const isDrawn = (object: Object3D): boolean => {
+  for (let node: Object3D | null = object; node; node = node.parent) {
+    if (!node.visible) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const bodySurfaceSample = (hit: Intersection, camera: PerspectiveCamera) => {
+  if (!(hit.object instanceof Mesh && isDrawn(hit.object))) {
+    return;
+  }
+  const mesh = hit.object;
+  const material: Material = Array.isArray(mesh.material) ? mesh.material[hit.face!.materialIndex] : mesh.material;
+  const originalPlanes = material.clippingPlanes;
+  const renderer = { localClippingEnabled: true } as WebGLRenderer;
+  const scene = new Scene();
+  const group = new Group();
+  mesh.onBeforeRender(renderer, scene, camera, mesh.geometry, material, group);
+  const externalUnchanged =
+    !camera.layers.isEnabled(PLAYER_SELF_MASK_LAYER) || material.clippingPlanes === originalPlanes;
+  const clipped = material.clippingPlanes !== originalPlanes;
+  const visible =
+    material.colorWrite && (material.clippingPlanes?.every((plane) => plane.distanceToPoint(hit.point) >= 0) ?? true);
+  mesh.onAfterRender(renderer, scene, camera, mesh.geometry, material, group);
+  return {
+    clipped,
+    restored: material.clippingPlanes === originalPlanes,
+    externalUnchanged,
+    depths: visible ? [-camera.worldToLocal(hit.point.clone()).z] : [],
+  };
+};
+
+const bodySamples = (world: Group, camera: PerspectiveCamera) => {
+  const ray = new Raycaster();
+  ray.layers.mask = camera.layers.mask;
+  const samples: NonNullable<ReturnType<typeof bodySurfaceSample>>[] = [];
+  for (const x of [-1, -0.5, 0, 0.5, 1]) {
+    for (const y of [-1, -0.5, 0, 0.5, 1]) {
+      ray.setFromCamera(new Vector2(x, y), camera);
+      for (const hit of ray.intersectObject(world, true)) {
+        const sample = bodySurfaceSample(hit, camera);
+        if (sample) {
+          samples.push(sample);
+        }
+      }
+    }
+  }
+  return samples;
+};
+
+it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak'])(
+  'keeps visible own-body surfaces outside the ADS near plane throughout the authored walking sway envelope for %s',
+  async (type) => {
+    const f = await fixture(true, type);
+    const figure = f.registry.figures.get('player')!;
+    const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
+    const amplitude = f.registry.skills.get('firearms_combat')!.combat!.firearms!.wobbleLimitRadians;
+    // Walking's vertical arch, look sway and noise share one vector cap, not independently additive maxima.
+    const envelope = [
+      NEUTRAL_AIM,
+      ...Array.from({ length: 8 }, (_, octant) => ({
+        yaw: amplitude * Math.cos((octant * Math.PI) / 4),
+        pitch: amplitude * Math.sin((octant * Math.PI) / 4),
+      })),
+    ];
+    const camera = new PerspectiveCamera(75, 4 / 3, 0.05);
+    camera.layers.enable(PLAYER_FIGURE_LAYER);
+    let visibleSurfaces = 0;
+    try {
+      for (const stance of ['standing', 'crouching'] as const) {
+        for (const [phase, aimFrame] of envelope.entries()) {
+          const ads = { model, side: 'right' as const, aimFrame };
+          const body = playerLookPose({ figure, models: f.registry.models, pitch: 0, stance, ads });
+          const cameraPose = adsCameraEye({ figure, pose: body, ads, pitch: 0 });
+          f.world.sync({
+            ...f.actor,
+            yaw: 0,
+            pitch: 0,
+            stance,
+            stancePose: figureStancePose(figure, stance),
+            ads,
+            moving: true,
+            gaitPhase: (phase * Math.PI) / 4,
+          });
+          camera.position.set(...cameraPose.eye);
+          camera.updateMatrixWorld(true);
+          f.update(camera, f.pose, 0, {
+            firearms: [],
+            readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+            aim: aimFrame,
+          });
+          f.world.group.updateWorldMatrix(true, true);
+          const samples = bodySamples(f.world.group, camera);
+          expect(samples.every((sample) => sample.restored && sample.externalUnchanged)).toBe(true);
+          const depths = samples.flatMap((sample) => sample.depths);
+          visibleSurfaces += depths.length;
+          expect(Math.min(...depths), `${type} ${stance} envelope ${phase}`).toBeGreaterThanOrEqual(
+            Math.max(camera.near, figure.aimPose.ads.ownBodyClipMetres) - 1e-9,
+          );
+        }
+      }
+      expect(visibleSurfaces).toBeGreaterThan(0);
+      camera.layers.enable(PLAYER_SELF_MASK_LAYER);
+      const bounds = new Box3().setFromObject(f.world.group);
+      const centre = bounds.getCenter(new Vector3());
+      const distance = bounds.getSize(new Vector3()).length();
+      camera.position.copy(centre).addScalar(distance);
+      camera.lookAt(centre);
+      camera.updateMatrixWorld(true);
+      const external = bodySamples(f.world.group, camera);
+      expect(external.length).toBeGreaterThan(0);
+      expect(external.every((sample) => sample.restored && sample.externalUnchanged)).toBe(true);
+    } finally {
+      f.dispose();
+    }
+  },
+);
+
+it('does not apply the owner camera clip to a different world figure', async () => {
+  const f = await fixture();
+  try {
+    f.world.setLayer(0);
+    f.world.sync({ ...f.actor, ads: playerAdsPose(f.inventory, true, NEUTRAL_AIM) });
+    f.update(f.camera, f.pose, 0, {
+      firearms: [],
+      readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+    });
+    const bounds = new Box3().setFromObject(f.world.group);
+    const centre = bounds.getCenter(new Vector3());
+    f.camera.position.copy(centre).addScalar(bounds.getSize(new Vector3()).length());
+    f.camera.lookAt(centre);
+    f.camera.updateMatrixWorld(true);
+    const samples = bodySamples(f.world.group, f.camera);
+    expect(samples.length).toBeGreaterThan(0);
+    expect(samples.every((sample) => !sample.clipped && sample.restored)).toBe(true);
+  } finally {
+    f.dispose();
+  }
+});
 
 it('orbit and spectator orientation cannot change world handling transforms for the same actor input', async () => {
   const f = await fixture();

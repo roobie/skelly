@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Box3, Group, type Object3D, Quaternion, Vector3 } from 'three';
+import { Box3, Group, type Object3D, Quaternion, Raycaster, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { parse } from 'valibot';
 import { describe, expect, it } from 'vitest';
@@ -36,6 +36,42 @@ const load = (model: ModelDef = ar) => {
 };
 
 describe('exported firearm presentation', () => {
+  it.each(['pump_shotgun', 'rifle_hunting'])(
+    'wraps the %s sporting-stock palm around the lower wrist instead of lifting it onto the top',
+    async (type) => {
+      const registry = baseRegistry();
+      const model = registry.models.get(registry.items.get(type)!.model!)!;
+      const gltf = await load(model);
+      gltf.scene.updateMatrixWorld(true);
+      let stock: Object3D | undefined;
+      gltf.scene.traverse((node) => {
+        if (node.userData.family === 'stock') {
+          stock = node;
+        }
+      });
+      expect(stock, type).toBeDefined();
+      const bounds = new Box3().setFromObject(stock!);
+      const [x, , z] = model.grip!.at;
+      const height = bounds.max.y - bounds.min.y;
+      const topHits = new Raycaster(new Vector3(x, bounds.max.y + height, z), new Vector3(0, -1, 0)).intersectObject(
+        stock!,
+        true,
+      );
+      const bottomHits = new Raycaster(new Vector3(x, bounds.min.y - height, z), new Vector3(0, 1, 0)).intersectObject(
+        stock!,
+        true,
+      );
+      expect(topHits.length, type).toBeGreaterThan(0);
+      expect(bottomHits.length, type).toBeGreaterThan(0);
+      const top = topHits[0]!.point.y;
+      const bottom = bottomHits[0]!.point.y;
+      const palm = model.hands!.firing.at;
+      expect(palm[0], type).toBeCloseTo(x);
+      expect(palm[1], type).toBeGreaterThanOrEqual(bottom);
+      expect(palm[1], type).toBeLessThanOrEqual(bottom + (top - bottom) / 3);
+    },
+  );
+
   it('turns the exported bolt knob before drawing it by the exported stroke and resets from rest', async () => {
     const bolt = parse(
       ModelSchema,

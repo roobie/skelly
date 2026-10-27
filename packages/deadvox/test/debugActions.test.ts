@@ -7,6 +7,7 @@ import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts'
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
+import { DebugGunPose } from '../src/game/debugGunPose.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { inputBindings } from '../src/game/inputBindings.ts';
 import { TONE_MODES } from '../src/render/look.ts';
@@ -222,6 +223,7 @@ const makeActions = (
   let spectatorCamera = false;
   let thirdPerson = false;
   let perceptionLabels = false;
+  const gunPose = new DebugGunPose(true);
   const hooks = {
     sim,
     reviewMap: {
@@ -242,6 +244,10 @@ const makeActions = (
       toggle: () => {
         thirdPerson = !thirdPerson;
       },
+    },
+    gunPose: {
+      mode: () => gunPose.mode,
+      toggle: (mode: Parameters<DebugGunPose['toggle']>[0]) => gunPose.toggle(mode),
     },
     mannequin,
     perceptionLabels: {

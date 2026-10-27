@@ -7,6 +7,8 @@
           "cameraWallMarginMetres": 0.01,
           "headRollDegrees": 45,
           "neckLengthToleranceFraction": 0.050000000000000003,
+          "ownBodyClipMetres": 0.080000000000000002,
+          "ownBodyHide": ["spine", "neck"],
           "stockShoulderLimitMetres": 0.10000000000000001,
           "stockShoulderOffset": [-0.059999999999999998, 0.029999999999999999, 0.01],
           "torsoRollDegrees": 25

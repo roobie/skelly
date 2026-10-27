@@ -3708,6 +3708,8 @@ const FigureSchema = strictObject({
     ads: strictObject({
       cameraOffsetLimitMetres: NonNegative,
       cameraWallMarginMetres: NonNegative,
+      ownBodyClipMetres: NonNegative,
+      ownBodyHide: array(picklist(['spine', 'neck', 'head'])),
       stockShoulderLimitMetres: NonNegative,
       torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
