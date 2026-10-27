@@ -489,8 +489,17 @@ try {
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.queue.jobs.length === 0, null, { timeout: 5000 });
     await pressAction(page, 'ui.inventory-toggle');
   };
-  const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item[title^="Bandage,"]');
-  const pocketTarget = page.locator('#inventory .inv-grid[data-target="pocket:1:0"]');
+  const itemText = await page.evaluate(() => {
+    const { registry } = globalThis.firefoxUiTest;
+    return { bandage: registry.items.get('bandage').name, beans: registry.items.get('canned_beans').name };
+  });
+  const pocketTargets = await page.locator('#inventory .inv-grid[data-target^="pocket:"]').evaluateAll((grids) =>
+    grids.map((grid) => grid.dataset.target),
+  );
+  assert.ok(pocketTargets.length >= 2, 'the character content supplies two pockets for the drag fixture');
+  const [firstPocket, secondPocket] = pocketTargets;
+  const floorItem = page.locator(`#inventory .inv-grid[data-target^="pile:"] .inv-item[title^="${itemText.bandage},"]`);
+  const pocketTarget = page.locator(`#inventory .inv-grid[data-target="${firstPocket}"]`);
   assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
   const youPane = page.locator('#inventory [data-pane="you"]');
   const initialYouBox = await youPane.boundingBox();
@@ -524,22 +533,22 @@ try {
   await drag(floorItem, pocketTarget);
   await finishMove();
   await page.waitForFunction(
-    () =>
+    ({ name, target }) =>
       [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) => item.title.startsWith('Bandage,') && item.closest('.inv-grid')?.dataset.target === 'pocket:1:0',
+        (item) => item.title.startsWith(`${name},`) && item.closest('.inv-grid')?.dataset.target === target,
       ),
-    null,
+    { name: itemText.bandage, target: firstPocket },
     { timeout: 5000 },
   );
-  const beans = page.locator('#inventory .inv-item').filter({ hasText: 'Can of beans' }).first();
-  await drag(beans, page.locator('#inventory .inv-grid[data-target="pocket:1:1"]'));
+  const beans = page.locator('#inventory .inv-item').filter({ hasText: itemText.beans }).first();
+  await drag(beans, page.locator(`#inventory .inv-grid[data-target="${secondPocket}"]`));
   await finishMove();
   await page.waitForFunction(
-    () =>
+    ({ name, target }) =>
       [...document.querySelectorAll('#inventory .inv-item')].some(
-        (item) => item.title.startsWith('Can of beans,') && item.closest('.inv-grid')?.dataset.target === 'pocket:1:1',
+        (item) => item.title.startsWith(`${name},`) && item.closest('.inv-grid')?.dataset.target === target,
       ),
-    null,
+    { name: itemText.beans, target: secondPocket },
     { timeout: 5000 },
   );
   assert.deepEqual(pageErrors, []);

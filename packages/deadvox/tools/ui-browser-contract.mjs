@@ -117,6 +117,12 @@ try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   page = await context.newPage();
   await page.addInitScript(() => {
+    globalThis.__uiContractFrames = 0;
+    const countFrame = () => {
+      globalThis.__uiContractFrames += 1;
+      requestAnimationFrame(countFrame);
+    };
+    requestAnimationFrame(countFrame);
     globalThis.__webglContextRequests = [];
     const nativeGetContext = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (type, ...args) {
@@ -153,10 +159,13 @@ try {
     }
     return result.result.value;
   };
+  const nextFrame = async (before, label) =>
+    waitFor(() => evaluate(`window.__uiContractFrames > ${before}`), `${label} reaches the next animation frame`);
   const press = async (code, key, virtualKey) => {
+    const before = await evaluate('window.__uiContractFrames');
     await send('Input.dispatchKeyEvent', { type: 'keyDown', code, key, windowsVirtualKeyCode: virtualKey });
     await send('Input.dispatchKeyEvent', { type: 'keyUp', code, key, windowsVirtualKeyCode: virtualKey });
-    await delay(80);
+    await nextFrame(before, `${code} input`);
   };
   const typeText = async (text) => send('Input.insertText', { text });
   const lastKeyEvent = async (code) =>
@@ -177,8 +186,9 @@ try {
     await press(key.code, key.key, key.windowsVirtualKeyCode);
   };
   const action = async (actionId) => {
+    const before = await evaluate('window.__uiContractFrames');
     await pressCdpAction(evaluate, send, actionId);
-    await delay(80);
+    await nextFrame(before, `${actionId} input`);
   };
 
   const assertSaveNote = async (screen) =>
@@ -514,7 +524,7 @@ try {
       }),
     );
     cursor = position;
-    await delay(120);
+    await nextFrame(await evaluate('window.__uiContractFrames'), 'cursor move');
   };
   const dispatchPointerAt = async (type, button, buttons, position) =>
     evaluate(`window.__inputSurface.dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
@@ -545,8 +555,9 @@ try {
         rootBlend: getComputedStyle(document.querySelector('#game-cursor-root')).mixBlendMode,
       };
     })(); undefined`);
+    const before = await evaluate('window.__uiContractFrames');
     await evaluate(dispatchMenuPointerClickExpression());
-    await delay(120);
+    await nextFrame(before, `${selector} click`);
   };
 
   // Each menu route is exercised with real browser key events; none may recapture/release pointer lock.

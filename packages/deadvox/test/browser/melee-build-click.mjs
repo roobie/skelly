@@ -68,8 +68,9 @@ try {
   });
   await pressAction(page, 'debug.build-toggle');
   assert.equal(await page.evaluate(() => globalThis.d7Review.debugTools.buildOn), true);
+  const buildInputFrame = await page.evaluate(() => globalThis.d7Review.session.sim.time);
   await page.mouse.click(640, 360);
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, buildInputFrame);
   const build = await page.evaluate(() => ({
     locked: globalThis.d7Review.input.locked,
     menu: globalThis.d7Review.input.menuPointer,
@@ -125,9 +126,10 @@ try {
     await page.evaluate(() => globalThis.d7Review.input.menuPointer && !document.querySelector('#inventory').hidden),
     true,
   );
+  const menuInputFrame = await page.evaluate(() => globalThis.d7Review.session.sim.time);
   await page.mouse.click(640, 360);
   await pressAction(page, 'ui.inventory-toggle');
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, menuInputFrame);
   const menu = await page.evaluate(() => ({
     locked: globalThis.d7Review.input.locked,
     menu: globalThis.d7Review.input.menuPointer,
