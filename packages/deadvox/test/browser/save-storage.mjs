@@ -122,12 +122,12 @@ try {
   await observeFailures(context, browser, firefoxServer?.process());
   if (navigationOnly || busyLockOnly) {
     await context.addInitScript(() => {
-      globalThis.__d144LockWarnings = [];
+      globalThis.__lifecycleLockWarnings = [];
       // biome-ignore lint/suspicious/noConsole: browser test captures the required product diagnostics.
       const originalWarn = console.warn.bind(console);
       console.warn = (...args) => {
         if (String(args[0]).startsWith('Deadvox save')) {
-          globalThis.__d144LockWarnings.push(args);
+          globalThis.__lifecycleLockWarnings.push(args);
         }
         originalWarn(...args);
       };
@@ -156,30 +156,30 @@ try {
       document.addEventListener('visibilitychange', lifecycle);
       globalThis.addEventListener('pagehide', lifecycle);
       globalThis.addEventListener('pageshow', lifecycle);
-      globalThis.__d144LifecycleEvent = 'none';
+      globalThis.__lifecycleEvent = 'none';
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
-          globalThis.__d144LifecycleEvent = 'visibilitychange';
+          globalThis.__lifecycleEvent = 'visibilitychange';
         }
       });
       globalThis.addEventListener('pagehide', () => {
-        globalThis.__d144LifecycleEvent = 'pagehide';
+        globalThis.__lifecycleEvent = 'pagehide';
       });
       const request = navigator.locks.request.bind(navigator.locks);
       navigator.locks.request = (name, options, callback) => {
         if (
           name === 'deadvox-save-storage' &&
           options?.mode === 'exclusive' &&
-          globalThis.__d144HoldNextSave === true
+          globalThis.__lifecycleHoldNextSave === true
         ) {
-          globalThis.__d144HoldNextSave = false;
-          sessionStorage.setItem('d144-writer-requested', 'true');
-          sessionStorage.setItem('d144-writer-trigger', globalThis.__d144LifecycleEvent);
+          globalThis.__lifecycleHoldNextSave = false;
+          sessionStorage.setItem('lifecycle-writer-requested', 'true');
+          sessionStorage.setItem('lifecycle-writer-trigger', globalThis.__lifecycleEvent);
           return request(name, options, async (lock) => {
-            sessionStorage.setItem('d144-held-writer', 'true');
+            sessionStorage.setItem('lifecycle-held-writer', 'true');
             await new Promise((resolve) => {
-              globalThis.__d144ReleaseWriter = resolve;
-              if (globalThis.__d144ReleaseOnAcquire) {
+              globalThis.__lifecycleReleaseWriter = resolve;
+              if (globalThis.__lifecycleReleaseOnAcquire) {
                 resolve();
               }
             });
@@ -189,14 +189,14 @@ try {
         return request(name, options, callback);
       };
       globalThis.addEventListener('pagehide', (event) => {
-        sessionStorage.setItem('d144-pagehide', JSON.stringify({ persisted: event.persisted }));
+        sessionStorage.setItem('lifecycle-pagehide', JSON.stringify({ persisted: event.persisted }));
       });
       globalThis.addEventListener('pageshow', (event) => {
-        sessionStorage.setItem('d144-pageshow', String(event.persisted));
+        sessionStorage.setItem('lifecycle-pageshow', String(event.persisted));
         if (event.persisted) {
-          globalThis.__d144HoldNextSave = false;
-          globalThis.__d144ReleaseOnAcquire = true;
-          globalThis.__d144ReleaseWriter?.();
+          globalThis.__lifecycleHoldNextSave = false;
+          globalThis.__lifecycleReleaseOnAcquire = true;
+          globalThis.__lifecycleReleaseWriter?.();
         }
       });
       globalThis.addEventListener('DOMContentLoaded', () => {
@@ -205,7 +205,7 @@ try {
         }
         let frames = 0;
         const captureError = (error) => {
-          sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ error: String(error) }));
+          sessionStorage.setItem('lifecycle-lock-snapshot', JSON.stringify({ error: String(error) }));
         };
         const captureLocks = async () => {
           const locks = await navigator.locks.query();
@@ -214,7 +214,7 @@ try {
           const ready = globalThis.deadvoxSaveTest?.controller.ready === true;
           const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
           if (writerWaiting || ready || frames >= 120) {
-            sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ held, pending, ready, writerWaiting }));
+            sessionStorage.setItem('lifecycle-lock-snapshot', JSON.stringify({ held, pending, ready, writerWaiting }));
             return;
           }
           frames += 1;
@@ -685,9 +685,9 @@ try {
             listedNamespaces: await attempt(() => test.storage.listNamespaces()),
             storedGeneration: await attempt(async () => (await test.storage.load(test.namespace))?.generation ?? null),
             estimate: await attempt(() => navigator.storage.estimate()),
-            sessionKeys: await attempt(() => Object.keys(sessionStorage).filter((key) => key.startsWith('d144-'))),
-            pagehide: await attempt(() => sessionStorage.getItem('d144-pagehide')),
-            writerTrigger: await attempt(() => sessionStorage.getItem('d144-writer-trigger')),
+            sessionKeys: await attempt(() => Object.keys(sessionStorage).filter((key) => key.startsWith('lifecycle-'))),
+            pagehide: await attempt(() => sessionStorage.getItem('lifecycle-pagehide')),
+            writerTrigger: await attempt(() => sessionStorage.getItem('lifecycle-writer-trigger')),
           };
         })
         .catch((error) => ({ error: String(error) }));
@@ -988,7 +988,7 @@ try {
         const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
         const record = await storage.load(namespace);
         if (record) {
-          sessionStorage.setItem('d144-generation-before-reload', String(record.generation));
+          sessionStorage.setItem('lifecycle-generation-before-reload', String(record.generation));
         }
         return !controller.writing && controller.queued === undefined && Boolean(record);
       });
@@ -1036,31 +1036,31 @@ try {
       const { controller, storage } = globalThis.deadvoxSaveTest;
       const captures = controller.capture.bind(controller);
       controller.capture = (reason) => {
-        const events = JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]');
+        const events = JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]');
         events.push({ reason, pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
-        sessionStorage.setItem('d144-captures', JSON.stringify(events));
+        sessionStorage.setItem('lifecycle-captures', JSON.stringify(events));
         return captures(reason);
       };
       const save = storage.save.bind(storage);
       storage.save = (...args) => {
-        const events = JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]');
+        const events = JSON.parse(sessionStorage.getItem('lifecycle-writes') ?? '[]');
         events.push({ pageIsLeaving: controller.pageIsLeaving, visibilityState: document.visibilityState });
-        sessionStorage.setItem('d144-writes', JSON.stringify(events));
+        sessionStorage.setItem('lifecycle-writes', JSON.stringify(events));
         return save(...args);
       };
-      sessionStorage.removeItem('d144-captures');
-      sessionStorage.removeItem('d144-writes');
-      sessionStorage.removeItem('d144-held-writer');
-      sessionStorage.removeItem('d144-writer-requested');
-      sessionStorage.removeItem('d144-writer-trigger');
-      sessionStorage.removeItem('d144-generation-before-reload');
-      sessionStorage.removeItem('d144-lock-snapshot');
-      sessionStorage.removeItem('d144-pagehide');
-      sessionStorage.removeItem('d144-pageshow');
+      sessionStorage.removeItem('lifecycle-captures');
+      sessionStorage.removeItem('lifecycle-writes');
+      sessionStorage.removeItem('lifecycle-held-writer');
+      sessionStorage.removeItem('lifecycle-writer-requested');
+      sessionStorage.removeItem('lifecycle-writer-trigger');
+      sessionStorage.removeItem('lifecycle-generation-before-reload');
+      sessionStorage.removeItem('lifecycle-lock-snapshot');
+      sessionStorage.removeItem('lifecycle-pagehide');
+      sessionStorage.removeItem('lifecycle-pageshow');
     });
     if (browserName === 'chromium') {
       await page.evaluate(() => {
-        globalThis.__d144HoldNextSave = true;
+        globalThis.__lifecycleHoldNextSave = true;
       });
     }
     const pumpUrl = new URL(appUrl);
@@ -1069,7 +1069,7 @@ try {
       await navigatePage('navigation-only goto pump loadout', () =>
         page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
       );
-      await page.waitForFunction(() => sessionStorage.getItem('d144-lock-snapshot') !== null, undefined, {
+      await page.waitForFunction(() => sessionStorage.getItem('lifecycle-lock-snapshot') !== null, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
     });
@@ -1078,18 +1078,18 @@ try {
         const locks = await navigator.locks.query();
         const controller = globalThis.deadvoxSaveTest?.controller;
         return {
-          pagehide: JSON.parse(sessionStorage.getItem('d144-pagehide') ?? 'null'),
-          writerRequested: sessionStorage.getItem('d144-writer-requested'),
-          writerTrigger: sessionStorage.getItem('d144-writer-trigger'),
-          lockSnapshot: JSON.parse(sessionStorage.getItem('d144-lock-snapshot') ?? 'null'),
-          heldWriter: sessionStorage.getItem('d144-held-writer'),
+          pagehide: JSON.parse(sessionStorage.getItem('lifecycle-pagehide') ?? 'null'),
+          writerRequested: sessionStorage.getItem('lifecycle-writer-requested'),
+          writerTrigger: sessionStorage.getItem('lifecycle-writer-trigger'),
+          lockSnapshot: JSON.parse(sessionStorage.getItem('lifecycle-lock-snapshot') ?? 'null'),
+          heldWriter: sessionStorage.getItem('lifecycle-held-writer'),
           ready: controller?.ready ?? null,
           hasSavedWorld: controller ? controller.restored !== undefined : null,
           storageUnavailable: controller?.storageUnavailable ?? null,
           continueDisabled: document.querySelector('#continue')?.disabled,
           held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
           pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
-          warnings: globalThis.__d144LockWarnings ?? [],
+          warnings: globalThis.__lifecycleLockWarnings ?? [],
           namespace: controller?.namespace,
           generation: controller?.currentRecord?.generation,
           savedGeneration: controller?.savedGeneration,
@@ -1104,16 +1104,16 @@ try {
     let restored;
     if (browserName === 'chromium' && result.pagehide?.persisted === true) {
       // The destination page's own pageshow also writes the marker, so clear it to make the wait mean Back's.
-      await page.evaluate(() => sessionStorage.removeItem('d144-pageshow'));
+      await page.evaluate(() => sessionStorage.removeItem('lifecycle-pageshow'));
       await navigationPhase('Back pageshow and quiescence', async () => {
         await navigatePage('navigation-only browser Back', () =>
           page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS }),
         );
-        await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
+        await page.waitForFunction(() => sessionStorage.getItem('lifecycle-pageshow') !== null, undefined, {
           timeout: STAGE_TIMEOUT_MS,
         });
         const backPageshow = await page.evaluate(() => ({
-          persisted: sessionStorage.getItem('d144-pageshow') === 'true',
+          persisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
           notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
         }));
         assert.equal(
@@ -1126,7 +1126,7 @@ try {
       restored = await navigationPhase('Back committed record read', () =>
         page.evaluate(async () => ({
           locks: await navigator.locks.query(),
-          pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
+          pageshowPersisted: sessionStorage.getItem('lifecycle-pageshow') === 'true',
           saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
           notRestoredReasons: performance.getEntriesByType('navigation')[0]?.notRestoredReasons?.toJSON() ?? null,
           controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
@@ -1174,8 +1174,8 @@ try {
             pageIsLeaving: controller.pageIsLeaving,
             statusText: controller.statusText,
             saveTimings: JSON.parse(sessionStorage.getItem('save-navigation-timings') ?? '[]'),
-            captures: JSON.parse(sessionStorage.getItem('d144-captures') ?? '[]'),
-            writes: JSON.parse(sessionStorage.getItem('d144-writes') ?? '[]'),
+            captures: JSON.parse(sessionStorage.getItem('lifecycle-captures') ?? '[]'),
+            writes: JSON.parse(sessionStorage.getItem('lifecycle-writes') ?? '[]'),
             generation: record?.generation,
           };
         }),
@@ -1311,7 +1311,7 @@ try {
         retryVisible: document.querySelector('#save-rescan').checkVisibility(),
         continueDisabled: document.querySelector('#continue').disabled,
         locks: await navigator.locks.query(),
-        warnings: globalThis.__d144LockWarnings,
+        warnings: globalThis.__lifecycleLockWarnings,
       }));
       assert.ok(busy.failure.trim(), 'the owner reports a save discovery failure');
       assert.ok(busy.status.includes(busy.failure), 'startup renders the owner’s failure');

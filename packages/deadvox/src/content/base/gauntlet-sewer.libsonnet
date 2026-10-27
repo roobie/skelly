@@ -15,7 +15,7 @@ local clearing = { x0: rim.x0, x1: rim.x1 + 1, z0: rim.z0, z1: rim.z1, height: 4
 local markers = [[12, 1, 3], [8, 1, 30], [9, 1, 46]];
 local within = function(v, lo, hi) v >= lo && v <= hi;
 local inBox = function(x, z, box) within(x, box.x0, box.x1) && within(z, box.z0, box.z1);
-// The east bay between the crates stays bare so the d483 key's container can stand there without a rebuild.
+// The east bay between the crates stays bare so the key's container can stand there without a rebuild.
 local thing = function(x, y, z)
   if within(x, 1, 2) && within(z, 4, 6) && within(y, 1, 5) then 'W'
   else if within(x, 14, 15) && (within(z, 2, 3) || within(z, 10, 11)) && within(y, 1, 2) then 'C'
