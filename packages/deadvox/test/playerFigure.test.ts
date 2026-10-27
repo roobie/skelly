@@ -673,9 +673,13 @@ describe('player figure', () => {
     meshes.dispose();
   });
 
-  it('rests the prone ADS body on the ground with the trigger elbow propped under the raised chest', () => {
+  // Flesh may sink or hover by a hand's breadth at most; a decimetre or two of air under the legs is the defect.
+  const restMetres = 0.12;
+  const proneScene = (item: string | undefined, ads: boolean) => {
     const inventory = new Inventory(registry);
-    expect(inventory.add(inventory.create('rifle_assault'), { kind: 'hand', side: 'right' })).toBe(true);
+    if (item) {
+      expect(inventory.add(inventory.create(item), { kind: 'hand', side: 'right' })).toBe(true);
+    }
     const meshes = playerMeshes();
     const body = createPlayerBody(scale, 4, 1, 4);
     meshes.sync({
@@ -688,34 +692,73 @@ describe('player figure', () => {
       dt: 10,
       thirdPerson: true,
       inventory,
-      holdReady: true,
-      ads: playerAdsPose(inventory, true, NEUTRAL_AIM),
+      holdReady: ads,
+      ads: playerAdsPose(inventory, ads, NEUTRAL_AIM),
     });
     meshes.group.updateMatrixWorld(true);
-    const ground = body.pos[1] * scale.blockSize;
-    // Flesh may sink or hover by a hand's breadth at most; a decimetre or two of air under the legs is the defect.
-    const restMetres = 0.12;
+    return { meshes, ground: body.pos[1] * scale.blockSize };
+  };
+
+  it.each([
+    ['empty hands', undefined, false],
+    ['a one-hand gun', 'revolver_357', false],
+    ['a long gun at the hip', 'rifle_assault', false],
+    ['a long gun aimed down sights', 'rifle_assault', true],
+  ] as const)('rests the prone body on the ground with %s', (_label, item, ads) => {
+    const { meshes, ground } = proneScene(item, ads);
     const parts = (['body', 'leftLeg', 'rightLeg'] as const).map((name) =>
       new Box3().setFromObject(drawnPart(meshes, name), true),
     );
+    // The torso's pivot sits above its underside, so it rests a hand's breadth up; the legs touch.
+    const [torso, ...legs] = parts;
+    expect(torso!.min.y - ground).toBeLessThanOrEqual(restMetres);
+    expect(Math.min(...legs.map((box) => box.min.y)) - ground).toBeLessThanOrEqual(restMetres / 2);
     const lowest = Math.min(...parts.map((box) => box.min.y)) - ground;
     expect(lowest).toBeGreaterThanOrEqual(-restMetres);
-    expect(lowest).toBeLessThanOrEqual(restMetres);
-    for (const leg of parts.slice(1)) {
-      expect(leg.min.y - ground).toBeLessThanOrEqual(restMetres);
-    }
-    const elbows: number[] = [];
-    meshes.group.traverse((node) => {
-      if (node.name === ARM_NODE.elbow) {
-        elbows.push(node.getWorldPosition(new Vector3()).y - ground);
+    meshes.dispose();
+  });
+
+  it('props the prone ADS trigger elbow on the ground and the support elbow below its shoulder', () => {
+    const { meshes, ground } = proneScene('rifle_assault', true);
+    const chestTop = new Box3().setFromObject(drawnPart(meshes, 'body'), true).max.y - ground;
+    // The gun is in the right hand: the right arm is the trigger arm, the left the support arm.
+    for (const [side, role] of [
+      ['right', 'trigger'],
+      ['left', 'support'],
+    ] as const) {
+      const arm = meshes.group.getObjectByName(`first-person-arm-${side}`)!;
+      const elbow = arm.getObjectByName(ARM_NODE.elbow)!.getWorldPosition(new Vector3()).y - ground;
+      const shoulder = arm.getObjectByName(ARM_NODE.shoulder)!.getWorldPosition(new Vector3()).y - ground;
+      expect(elbow, `${role} elbow`).toBeGreaterThanOrEqual(-restMetres);
+      expect(elbow, `${role} elbow`).toBeLessThan(chestTop);
+      // An elbow that carries the chest hangs below its shoulder; a stretched arm lies level with it.
+      expect(elbow, `${role} elbow below shoulder`).toBeLessThan(shoulder);
+      if (role === 'trigger') {
+        expect(elbow, 'trigger elbow rests').toBeLessThanOrEqual(restMetres * 1.5);
       }
-    });
-    const chestTop = parts[0]!.max.y - ground;
-    expect(elbows).toHaveLength(2);
-    expect(Math.min(...elbows)).toBeLessThanOrEqual(restMetres * 1.5);
-    for (const elbow of elbows) {
-      expect(elbow).toBeLessThan(chestTop);
     }
+    meshes.dispose();
+  });
+
+  it('reaches the arms and hands forward of the shoulders when prone and empty handed', () => {
+    const { meshes } = proneScene(undefined, false);
+    for (const limb of ['rightArm', 'leftArm'] as const) {
+      const { model, joint } = playerFigure.limbs[limb];
+      const shoulder = anchorAt(meshes, limb, model, joint);
+      const arm = new Box3().setFromObject(drawnPart(meshes, limb), true);
+      // Yaw 0 faces -z, so ahead is lower z.
+      const ahead = shoulder.z - arm.min.z;
+      const behind = arm.max.z - shoulder.z;
+      expect(ahead, limb).toBeGreaterThan(behind);
+    }
+    meshes.dispose();
+  });
+
+  it('rests the empty-handed prone body with one knee drawn up, not both', () => {
+    const { meshes } = proneScene(undefined, false);
+    const top = (leg: 'leftLeg' | 'rightLeg') => new Box3().setFromObject(drawnPart(meshes, leg), true).max.y;
+    expect(top('leftLeg')).toBeGreaterThan(top('rightLeg'));
+    meshes.dispose();
   });
 
   it('fits the worn riot helmet over the drawn head: it covers the crown and sides and nothing of it lies inside', () => {

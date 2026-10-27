@@ -62,7 +62,11 @@ export interface HeldHoldFrame {
  * Both holds are authored for a right-handed hold, so `side` is the hand holding the gun, not the hand on this hold:
  * a left-held gun mirrors the firing and the support hold together across the model's z.
  */
-export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 'support'): HeldHoldFrame => {
+export const heldHoldFrame = (
+  model: ModelDef,
+  side: HandSide,
+  hold: 'firing' | 'support' | 'proneSupport',
+): HeldHoldFrame => {
   if (!(model.hands && model.grip)) {
     throw new Error(`Model ${model.id} needs hands and a grip`);
   }

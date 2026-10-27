@@ -1949,7 +1949,7 @@ const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void
   if (hands.seat[0] <= 0) {
     report('models', modelId, '.hands.seat', 'the seat is the right shoulder: it must sit right of the eye');
   }
-  for (const hold of ['firing', 'support'] as const) {
+  for (const hold of ['firing', 'support', 'proneSupport'] as const) {
     const { palm, fingers } = hands[hold];
     if (Math.abs(palm[0] * fingers[0] + palm[1] * fingers[1] + palm[2] * fingers[2]) > 1e-6) {
       report('models', modelId, `.hands.${hold}`, 'the palm and the fingers must be perpendicular');

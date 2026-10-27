@@ -211,6 +211,7 @@
         "elbowBendDegrees": 12,
         "headUpDegrees": 10,
         "kneeBendDegrees": 8,
+        "leftKneeExtraBendDegrees": 0,
         "legsForwardDegrees": 90,
         "torsoForwardDegrees": -90
       },
@@ -407,6 +408,7 @@
         "headUpDegrees": 0,
         "hipDropMetres": 0.62,
         "kneeBendDegrees": 0,
+        "leftKneeExtraBendDegrees": 40,
         "legsForwardDegrees": -90,
         "torsoForwardDegrees": 70
       },
@@ -419,16 +421,18 @@
           "headUpDegrees": 45,
           "hipDropMetres": 0.374,
           "kneeBendDegrees": 120,
+          "leftKneeExtraBendDegrees": 0,
           "legsForwardDegrees": 65,
           "torsoForwardDegrees": 50
         },
         "prone": {
           "ankleDegrees": 0,
-          "armsForwardDegrees": 0,
-          "elbowBendDegrees": 0,
+          "armsForwardDegrees": 150,
+          "elbowBendDegrees": 60,
           "headUpDegrees": 0,
-          "hipDropMetres": 0.47999999999999998,
+          "hipDropMetres": 0.62,
           "kneeBendDegrees": 0,
+          "leftKneeExtraBendDegrees": 40,
           "legsForwardDegrees": -90,
           "torsoForwardDegrees": 90
         }

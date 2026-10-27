@@ -2119,6 +2119,8 @@ const HandsModelSchema = strictObject({
   butt: Point,
   firing: HandHoldSchema,
   support: HandHoldSchema,
+  /** The support hold while lying prone and aiming: nearer the body so the elbow can reach the ground. */
+  proneSupport: HandHoldSchema,
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
@@ -3567,6 +3569,8 @@ const StancePoseSchema = strictObject({
   legsForwardDegrees: Degrees,
   /** Each shin and foot swing back about the knee. */
   kneeBendDegrees: Degrees,
+  /** The left shin bends this much more than the right, so a body can rest with one knee drawn up. */
+  leftKneeExtraBendDegrees: Degrees,
   /** Each foot turns toe up about the ankle. */
   ankleDegrees: Degrees,
   /** Each arm swings forward about its shoulder, from hanging along the torso. */

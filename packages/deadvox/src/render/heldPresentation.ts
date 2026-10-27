@@ -78,7 +78,9 @@ export class HeldPresentation {
   readonly figure: FigureDef;
   readonly models: ModelLibrary | undefined;
   stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
-  elbowPole: FigureDef['armRig']['elbowPole'] | undefined;
+  /** Lying prone and aiming down sights; the support hand then holds `proneSupport` and elbows take the ground. */
+  private proneAdsOn = false;
+  private readonly supportBases = new Map<HandSide, { readonly normal: Vec3; readonly prone: Vec3 }>();
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -94,6 +96,16 @@ export class HeldPresentation {
     this.worn = models && new WornModels(figure, models, this.wornFrames, this.baseParts);
     this.frame = frame;
     this.torso = torso;
+  }
+
+  set proneAds(on: boolean) {
+    this.proneAdsOn = on;
+    for (const [side, bases] of this.supportBases) {
+      const at = on ? bases.prone : bases.normal;
+      this.handBases.set(side, at);
+      // A support arm rides in the held group, so moving its mount point is moving the hand on the gun.
+      this.arms.get(side)?.position.set(...at);
+    }
   }
 
   syncWorn(source?: WornPresentation): void {
@@ -113,6 +125,7 @@ export class HeldPresentation {
     this.arms.clear();
     this.armRigs.clear();
     this.handBases.clear();
+    this.supportBases.clear();
     this.gripAnchors.clear();
     this.holds.clear();
     this.heldByHand.clear();
@@ -293,6 +306,11 @@ export class HeldPresentation {
       mount: { held, origin: heldAt },
       ...(hold ? { hold: { ...hold, at: [0, 0, 0] } } : {}),
     });
+    if (model?.hands) {
+      // The arm sits at the hold's offset from the held grip, so a closer hold is another offset on the same arm.
+      this.supportBases.set(other, { normal: offset, prone: heldHoldFrame(model, side, 'proneSupport').at });
+      this.proneAds = this.proneAdsOn;
+    }
   }
 
   private addArm(
@@ -381,7 +399,7 @@ export class HeldPresentation {
     const up = new Vector3(0, 1, 0).applyQuaternion(inverse);
     const back = new Vector3().crossVectors(right, up);
     const down = Math.max(0, up.z);
-    const pole = this.elbowPole ?? this.figure.armRig.elbowPole;
+    const pole = this.proneAdsOn ? this.figure.armRig.proneAdsElbowPole : this.figure.armRig.elbowPole;
     const [outward, vertical, backward] = pole.up.map(
       (value, axis) => value + (pole.down[axis]! - value) * down,
     ) as Vec3;

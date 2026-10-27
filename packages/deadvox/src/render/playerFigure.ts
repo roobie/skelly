@@ -172,6 +172,7 @@ const STANDING_POSE: StancePose = {
   torsoForwardDegrees: 0,
   legsForwardDegrees: 0,
   kneeBendDegrees: 0,
+  leftKneeExtraBendDegrees: 0,
   ankleDegrees: 0,
   armsForwardDegrees: 0,
   elbowBendDegrees: 0,
@@ -424,7 +425,7 @@ export class PlayerMeshes {
     this.syncHeld(pose);
     this.ownBodyClip.active = this.layer === PLAYER_FIGURE_LAYER && pose.ads !== undefined;
     this.ownBodyClip.attach(this.drawn.values());
-    const { kneeBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
+    const { kneeBendDegrees, leftKneeExtraBendDegrees, ankleDegrees, headUpDegrees, elbowBendDegrees } = this.shownPose;
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
     const turns: Readonly<Record<PivotedKind, readonly number[]>> = {
@@ -436,7 +437,8 @@ export class PlayerMeshes {
     };
     for (const [part, pivots] of this.pivots) {
       turns[pivotedKind(part.name)].forEach((degrees, index) => {
-        pivots[index]!.rotation.x = degrees * RADIANS;
+        const extra = part.name === 'leftLeg' && index === 0 ? leftKneeExtraBendDegrees : 0;
+        pivots[index]!.rotation.x = (degrees + extra) * RADIANS;
       });
       if (part.name === 'body' && !this.fixedPose) {
         const look = this.lookPose;
@@ -466,8 +468,8 @@ export class PlayerMeshes {
     return this.lookPose?.stockSeats;
   }
 
-  get elbowPole(): PlayerLookPose['elbowPole'] | undefined {
-    return this.lookPose?.elbowPole;
+  get proneAds(): boolean {
+    return this.lookPose?.proneAds ?? false;
   }
 
   dispose(): void {
@@ -519,7 +521,7 @@ export class PlayerMeshes {
       });
     }
     this.presentation!.stockSeats = this.lookPose!.stockSeats;
-    this.presentation!.elbowPole = this.lookPose!.elbowPole;
+    this.presentation!.proneAds = this.lookPose!.proneAds;
     this.animator!.setSource(source);
     this.animator!.setShoulders(shoulderOf);
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);

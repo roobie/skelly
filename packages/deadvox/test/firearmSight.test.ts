@@ -169,6 +169,22 @@ it('fits ADS inside the authored camera-to-body-eye offset budget', () => {
   }
 });
 
+it('puts the eye on a scoped long gun sight line in every stance within the camera budget', () => {
+  const { registry } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');
+  const scoped = sightedFirearmModel(registry, new Inventory(registry).create('rifle_hunting'))!;
+  expect(scoped.gun?.sight?.kind).toBe('optic');
+  const figure = registry.figures.get('player')!;
+  const stances = ['standing', 'crouching', 'prone'] as const;
+  for (const stance of stances) {
+    for (const pitch of [-LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT]) {
+      const ads = { model: scoped, side: 'right' as const, aimFrame: NEUTRAL_AIM };
+      const pose = playerLookPose({ figure, models: registry.models, pitch, stance, ads });
+      const camera = adsCameraEye({ figure, pose, ads, pitch });
+      expect(camera.fits, `scoped ${stance} ${pitch}`).toBe(true);
+    }
+  }
+});
+
 it('aligns ADS through the fitted optic frame and restores irons when removed', () => {
   const { registry, fitted } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');
   const inventory = new Inventory(registry);
