@@ -859,6 +859,21 @@ describe('glb export: deadvox model entry', () => {
     );
   });
 
+  // A fitted device comes off in play, so the shot leaves from the host barrel's drawn front, not the device's.
+  it('anchors the voxel muzzle on the host barrel, not on a fitted muzzle device', () => {
+    const grains = { voxelGrain: gunVoxel.grain, voxelDetailGrain: gunVoxel.detailGrain };
+    const result = exportGunGlb(design('archetype-ak-akm'), ASSET, { appearanceProfile: 'ar' }, grains);
+    if (!result.ok) {
+      throw new Error(`export failed: ${JSON.stringify(result.error)}`);
+    }
+    const { anchors, gun } = result.modelEntry;
+    const device = gun.attachments?.find(({ mount }) => mount === 'muzzle');
+    expect(device, 'the AKM design fits a muzzle device').toBeDefined();
+    const slot = gun.attachmentSlots!.find(({ id }) => id === device!.mountedAt)!;
+    const along = (point: Vec3) => point.reduce((sum, value, axis) => sum + value * slot.direction[axis]!, 0);
+    expect(Math.abs(along(anchors!.muzzle!) - along(slot.position))).toBeLessThanOrEqual(grains.voxelGrain);
+  });
+
   it('retains action metadata when the carrier instance is consistently renamed', () => {
     const assembly = design('archetype-ar');
     expect(exported(assembly).modelEntry.gun.action).toBeDefined();
