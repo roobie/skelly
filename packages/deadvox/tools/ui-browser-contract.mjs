@@ -190,6 +190,7 @@ try {
     await pressCdpAction(evaluate, send, actionId);
     await nextFrame(before, `${actionId} input`);
   };
+  let inputFrame;
 
   const assertSaveNote = async (screen) =>
     assert.equal(
@@ -260,6 +261,10 @@ try {
     let locked = false;
     window.__inputSurface = inputSurface;
     window.__pointerCalls = { request: 0, exit: 0 };
+    window.__pointerLockErrors = 0;
+    document.addEventListener('pointerlockerror', () => {
+      window.__pointerLockErrors += 1;
+    });
     window.__rejectNextPointerLock = false;
     Object.defineProperty(document, 'pointerLockElement', {
       configurable: true,
@@ -400,6 +405,7 @@ try {
     true,
     'performance overlay renders the owner snapshot statistics',
   );
+  await waitFor(() => evaluate('window.__f4Prevented'), 'F4 prevention');
   assert.equal(await evaluate('window.__f4Prevented'), true, 'F4 prevents the browser default');
   await action('debug.performance-toggle');
   await waitFor(
@@ -871,7 +877,7 @@ try {
   );
   const positionBeforeSearchKey = await evaluate('window.uiContractRuntime.eye()');
   await press('KeyW', 'w', 87);
-  await delay(150);
+  await nextFrame(await evaluate('window.__uiContractFrames'), 'search-key negative check');
   assert.deepEqual(
     await evaluate('window.uiContractRuntime.eye()'),
     positionBeforeSearchKey,
@@ -1161,9 +1167,10 @@ try {
   await moveCursorTo(transferDestination);
   await dispatchPointerAt('pointermove', -1, 1, transferDestination);
   assert(await dragGhost(), 'drag displays the item ghost before drop');
+  inputFrame = await evaluate('window.__uiContractFrames');
   await dispatchPointerAt('pointerup', -1, 0, transferDestination);
+  await nextFrame(inputFrame, 'container transfer drop');
   assert.equal(await dragGhost(), null, 'drop removes the drag ghost');
-  await delay(100);
   assert.ok(await moveQueued(), 'container transfer remains in the handling queue');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives queueing the container move');
@@ -1301,8 +1308,9 @@ try {
     'cursor click focuses search field',
   );
 
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate('window.__setPointerLocked(false)');
-  await delay(100);
+  await nextFrame(inputFrame, 'pointer unlock');
   assert.equal(
     await evaluate("!document.querySelector('#overlay').hidden"),
     true,
@@ -1315,8 +1323,9 @@ try {
     'unlock event does not call lock APIs',
   );
 
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
-  await delay(100);
+  await nextFrame(inputFrame, 'input-surface resume click');
   if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
     await clickAt('#go');
   }
@@ -1327,11 +1336,13 @@ try {
   );
 
   await press('Tab', 'Tab', 9);
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate('window.__setPointerLocked(false)');
-  await delay(100);
+  await nextFrame(inputFrame, 'inventory pointer unlock');
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'unlock closes an open inventory');
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
-  await delay(100);
+  await nextFrame(inputFrame, 'inventory input-surface resume click');
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
@@ -1339,15 +1350,17 @@ try {
   );
 
   await action('debug.panel-toggle');
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate('window.__setPointerLocked(false)');
-  await delay(100);
+  await nextFrame(inputFrame, 'debug-panel pointer unlock');
   assert.equal(
     await evaluate("document.querySelector('.debug-panel').hidden"),
     true,
     'unlock closes an open debug panel',
   );
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
-  await delay(100);
+  await nextFrame(inputFrame, 'debug-panel input-surface resume click');
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
@@ -1362,16 +1375,21 @@ try {
     'locked cursor click on continue resumes play',
   );
 
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate('window.__setPointerLocked(false)');
-  await delay(100);
+  await nextFrame(inputFrame, 'refused-lock setup unlock');
+  const pointerErrorsBefore = await evaluate('window.__pointerLockErrors');
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate(`(() => {
     window.__rejectNextPointerLock = true;
     document.querySelector('#go').click();
   })()`);
-  await delay(100);
+  await waitFor(() => evaluate(`window.__pointerLockErrors > ${pointerErrorsBefore}`), 'refused pointer-lock error');
+  await nextFrame(inputFrame, 'refused pointer-lock input');
   assert.equal(await evaluate("document.querySelector('#overlay').hidden"), false, 'refused lock leaves the menu open');
+  inputFrame = await evaluate('window.__uiContractFrames');
   await evaluate('window.__setPointerLocked(true)');
-  await delay(100);
+  await nextFrame(inputFrame, 'unrelated pointer lock');
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     false,

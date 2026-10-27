@@ -493,9 +493,9 @@ try {
     const { registry } = globalThis.firefoxUiTest;
     return { bandage: registry.items.get('bandage').name, beans: registry.items.get('canned_beans').name };
   });
-  const pocketTargets = await page.locator('#inventory .inv-grid[data-target^="pocket:"]').evaluateAll((grids) =>
-    grids.map((grid) => grid.dataset.target),
-  );
+  const pocketTargets = await page
+    .locator('#inventory .inv-grid[data-target^="pocket:"]')
+    .evaluateAll((grids) => grids.map((grid) => grid.dataset.target));
   assert.ok(pocketTargets.length >= 2, 'the character content supplies two pockets for the drag fixture');
   const [firstPocket, secondPocket] = pocketTargets;
   const floorItem = page.locator(`#inventory .inv-grid[data-target^="pile:"] .inv-item[title^="${itemText.bandage},"]`);

@@ -1062,14 +1062,18 @@ try {
       for (let attempt = 0; controller.writing && attempt < 200; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 5));
       }
-      if (controller.writing) throw new Error('The refused save did not settle');
+      if (controller.writing) {
+        throw new Error('The refused save did not settle');
+      }
       health = 60;
       time = 1;
       controller.beforeSleep();
       for (let attempt = 0; calls < 2 && attempt < 200; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 5));
       }
-      if (calls < 2) throw new Error('The retry save did not begin');
+      if (calls < 2) {
+        throw new Error('The retry save did not begin');
+      }
       health = 30;
       time = 2;
       controller.beforeSleep();
@@ -1134,7 +1138,9 @@ try {
         for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 5));
         }
-        if (controller.writing || controller.queued) throw new Error('The checkpoint did not settle');
+        if (controller.writing || controller.queued) {
+          throw new Error('The checkpoint did not settle');
+        }
         return { namespaces: await storage.listNamespaces(), canSave: controller.canSaveCurrentGame };
       });
     };
