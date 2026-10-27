@@ -2347,6 +2347,26 @@ try {
       'ring marks the authored minimum release point',
     );
     assert.ok(meterMidpoint.minimumLabel?.trim(), 'minimum marker has a non-empty label');
+    const promptClear = await page.evaluate(() => {
+      // A clone keeps the prompt's id styling without disturbing the hud's own render of the real node.
+      const prompt = document.querySelector('#prompt').cloneNode(false);
+      prompt.hidden = false;
+      prompt.textContent = 'Interact\nSecond line\nThird line';
+      document.body.append(prompt);
+      const promptBox = prompt.getBoundingClientRect();
+      prompt.remove();
+      const overlaps = ['.activity-progress-gauge', '.activity-progress-copy'].map((selector) => {
+        const box = document.querySelector(`#handling ${selector}`).getBoundingClientRect();
+        return (
+          promptBox.left < box.right &&
+          box.left < promptBox.right &&
+          promptBox.top < box.bottom &&
+          box.top < promptBox.bottom
+        );
+      });
+      return overlaps;
+    });
+    assert.deepEqual(promptClear, [false, false], 'the interaction prompt does not overlap the handling HUD');
     await page.evaluate(() => {
       globalThis.primaryActionTest.hudOptions.handling = false;
     });

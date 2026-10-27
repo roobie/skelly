@@ -288,6 +288,28 @@ describe('live craft commands', () => {
     expect(item.work!.components).toEqual(inputs);
     expect([...r.inventory.items()].filter((entry) => entry.item.work)).toHaveLength(2);
   });
+  it('Continue resumes the held work item, not the last stopped job of a dropped one', () => {
+    const r = make();
+    expect(r.commands.start(CRAFT)).toBeUndefined();
+    r.sim.actions.stop();
+    const first = r.inventory.hands.right!;
+    expect(r.inventory.move(first, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    for (const [type, count] of stockFor(SECOND_CRAFT)) {
+      expect(r.inventory.add(r.inventory.create(type, count), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    expect(r.commands.start(SECOND_CRAFT)).toBeUndefined();
+    r.sim.actions.stop();
+    const second = r.inventory.hands.right!;
+    expect(second).not.toBe(first);
+    expect(r.inventory.move(second, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(r.inventory.move(first, { kind: 'hand', side: 'right' }).ok).toBe(true);
+
+    // The same resolution the continue command uses to pick its target.
+    const target = r.commands.currentUid;
+    expect(target).toBe(first.uid);
+    expect(r.commands.act(target!, 'continue')).toBeUndefined();
+    expect(r.sim.actions.job).toMatchObject({ jobType: 'craft', workUid: first.uid, stopped: false });
+  });
   it('Continue checks the held root again rather than trusting an earlier enabled option', () => {
     const r = make();
     r.commands.start(CRAFT);

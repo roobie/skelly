@@ -55,6 +55,7 @@ import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { chargerPanel } from '../ui/chargerPanel.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
+import { runningCraftPresentation } from '../ui/craftReadout.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
@@ -575,6 +576,10 @@ const handlingPresentationFor = ({
     ...queue,
     cancelLabel: queue.cancelLabel ?? fillHint(cancel, { key: keyCap('handling.stop') }),
   };
+  const craft = runningCraftPresentation(inventory, job);
+  if (craft) {
+    return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling);
+  }
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
@@ -1378,7 +1383,7 @@ export const startPlay = (
   };
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
-  const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
+  const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: dispatchScreenCommand,
   });
@@ -3239,6 +3244,9 @@ export const startPlay = (
       case 'open-can':
         openHeldCan(hand);
         return;
+      case 'continue-work':
+        dispatchScreenCommand({ kind: 'craft.continue' });
+        return;
       case 'unpack':
         refusalReason(unpacking.activate(action.item));
         return;
@@ -4156,7 +4164,7 @@ export const startPlay = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
+    craftPanel.update(screen.isOpen && !sim.dead);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);

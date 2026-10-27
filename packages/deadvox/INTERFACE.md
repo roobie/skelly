@@ -53,6 +53,10 @@ The interactible outline is an optional spatial HUD aid, separate from interacti
 
 The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/game/play.ts`, `promptText`.
 
+Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft is a "Continue" entry in the held-item action list, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
+
+The handling HUD gauge and caption own the space below the crosshair, so the interaction prompt moves above the gauge while handling is shown. Both stay readable, the prompt grows upward when it wraps, and neither is hidden. The rule lives in the stylesheet for the shared panel, so every timed action gets it. See `src/ui/style.css`, "#prompt".
+
 The optional stats readout is a tuning surface for viewing felt pain and its components during play. It is a development-style meta readout, not a bodily cue; this exception keeps the scale available for tuning without putting an unbounded number in player-facing cues.
 
 ## Combat and feedback
