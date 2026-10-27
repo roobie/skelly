@@ -3,13 +3,17 @@ export class FirearmTrigger {
   private burst: { uid: number; roundsPerSimSecond: number; start: number; next: number } | undefined;
   advance(
     time: number,
-    weapon: { uid: number; roundsPerSimSecond: number } | undefined,
+    weapon: { uid: number; roundsPerSimSecond: number; triggerMode?: 'semi' | 'auto' | undefined } | undefined,
     pressed: boolean,
     held: boolean,
   ): number[] {
     if (!(weapon && (pressed || held))) {
       this.burst = undefined;
       return [];
+    }
+    if (weapon.triggerMode === 'semi') {
+      this.burst = undefined;
+      return pressed ? [time] : [];
     }
     if (!held) {
       this.burst = undefined;

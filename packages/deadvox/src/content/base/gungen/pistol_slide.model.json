@@ -1,0 +1,13 @@
+{
+  "id": "pistol_slide",
+  "file": "assets/models/pistol_slide.glb",
+  "gun": {},
+  "parts": {
+    "pistol_slide": {
+      "item": "pistol_slide",
+      "node": "pistol_slide:slide",
+      "massKg": 0.27,
+      "centreOfMass": [0.010551351351351351, 0.024097297297297295, -0.00016216216216216218]
+    }
+  }
+}

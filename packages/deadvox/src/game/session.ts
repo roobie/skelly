@@ -73,7 +73,7 @@ import { freshDropTarget } from '../core/options.ts';
 import { type Body, bodyOverlapsTerrain, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
-import { playerEyePosition, playerLookPose } from '../core/playerLookPose.ts';
+import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import { pryPlan } from '../core/prying.ts';
 import { Rng } from '../core/random.ts';
@@ -1025,23 +1025,27 @@ export const createSession = (options: SessionOptions) => {
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
     isSolid: physicalSolid,
-    pose: (uid) =>
-      inventory.hands.right?.uid === uid || inventory.hands.left?.uid === uid
-        ? {
-            feet: feet(),
-            eye: playerEye(),
-            stockSeat: playerLookPose({
-              figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
-              models: registry.models,
-              pitch: sampledInput().pitch,
-              stance: playerStance,
-              ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
-            }).stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
-            yaw: sampledInput().yaw,
-            pitch: sampledInput().pitch,
-            blockSize: s,
-          }
-        : undefined,
+    pose: (uid) => {
+      if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
+        return;
+      }
+      const look = playerLookPose({
+        figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+        models: registry.models,
+        pitch: sampledInput().pitch,
+        stance: playerStance,
+        ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+      });
+      return {
+        feet: feet(),
+        eye: playerEye(),
+        stockSeat: look.stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
+        seatFrame: playerHeldSeatFrame(look, sampledInput().pitch),
+        yaw: sampledInput().yaw,
+        pitch: sampledInput().pitch,
+        blockSize: s,
+      };
+    },
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
     onTrajectory: (trajectory, time) =>

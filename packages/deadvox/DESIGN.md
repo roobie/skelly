@@ -1155,6 +1155,11 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
+An item's usages and tiers alone make it eligible for loot; no item gets a special
+admission rule. Ordinary loot admission needs no per-item exception, so the hunting
+rifle and its .308 ammunition carry the same usages and tiers as the revolver and its
+cartridges. See `src/content/base/economy.libsonnet`, `commonItems`.
+
 Furniture has no loot table of its own; only a placed container has one, named by the place it stands in, and later by its loot unit's plan. What a container holds follows from where it stands, not from what it is, so a bunker's wardrobe and a bedroom's can hold different things, and no container rolls a table its author never chose.
 
 Police is its own usage, apart from Hunting, because a police armoury holds police
@@ -1744,6 +1749,16 @@ contact because the torso can otherwise hide the forearm. Hands and held objects
 extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
+
+A free-held firearm's hip seat stays in the posed torso's frame while its barrel
+follows aim. Orbiting that seat with the view pitch, or attaching it to a head
+that moves independently of the torso, sends a down-aim grip beyond fixed arm
+reach. ADS standoff belongs to a content curve: the pistol comes closer along the
+sight line as aim rises, letting the elbows bend rather than lengthening arms or
+changing stance. The curve also compresses down-aim holds. Camera framing must
+not supply anatomical reach. See `src/core/heldPose.ts`, `heldFirearmTransform` and
+`heldAdsStandoffMetres`; `src/core/playerLookPose.ts`, `playerHeldSeatFrame`; and
+`src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
 mannequin is an inert drawing of the same world body, not another simulated actor.

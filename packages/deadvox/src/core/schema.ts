@@ -1738,6 +1738,7 @@ const ActionPartSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   axis: UnitVector,
   strokeMetres: Positive,
+  handGrip: optional(Point),
   turn: optional(
     strictObject({
       pivot: Point,
@@ -1770,6 +1771,7 @@ const ActionSchema = pipe(
     holdOpen: vBoolean(),
     /** Cyclic rate in rounds per Sim minute. */
     roundsPerSimMinute: optional(SimPerMinute),
+    triggerMode: optional(picklist(['semi', 'auto'])),
   }),
   check(
     (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
@@ -1789,6 +1791,10 @@ const ActionSchema = pipe(
   check(
     (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),
     'only an automatic fire timeline has a cyclic rpm',
+  ),
+  check(
+    (action) => action.triggerMode === undefined || action.fire !== undefined,
+    'trigger mode needs a fire timeline',
   ),
 );
 
@@ -2106,7 +2112,16 @@ export type CompassDial = InferOutput<typeof CompassDialSchema>;
  * How a hand closes, by name: the empty fist, a hand around a plain grip, flat on a screen, a firing hand on a pistol
  * grip or on a stock wrist, or a support hand on a forend.
  */
-const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'forend'] as const;
+const HAND_POSES = [
+  'fist',
+  'holding',
+  'open',
+  'pistolGrip',
+  'pistolWrap',
+  'pistolCup',
+  'stockWrist',
+  'forend',
+] as const;
 
 /**
  * One hand's hold on a held model, in the model's frame as authored for a right-handed hold: where the palm's face
@@ -2115,20 +2130,33 @@ const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'fore
  */
 const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: UnitVector, pose: picklist(HAND_POSES) });
 
-/**
- * A long gun's hold (`DESIGN.md`, "Models"): the butt sits at `seat` in the eye's frame (x right, y up, z back) for
- * a right-handed hold, the left mirrors x; lowering the gun turns it about `butt`, a model point, so the stock stays
- * in the shoulder; the firing hand takes the pistol grip or the stock wrist and the support hand the forend.
- */
+/** Authored palm contacts avoid inferring a shoulder seat for free-held firearms. */
 const HandsModelSchema = strictObject({
   ads: optional(
     strictObject({
       cameraOffsetLimitMetres: optional(NonNegative),
       stockShoulderLimitMetres: optional(NonNegative),
+      // A free-held gun has no stock to lift the dominant shoulder under, so it overrides the figure's ADS rolls.
+      torsoRollDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
+      headRollDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
     }),
   ),
   seat: Point,
-  butt: Point,
+  butt: optional(Point),
+  loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
+  torsoForwardDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
+  elbowBendSide: optional(Point),
+  adsStandoffByPitch: optional(
+    pipe(
+      array(strictObject({ pitchDegrees: pipe(number(), minValue(-90), maxValue(90)), metres: Positive })),
+      minLength(2),
+      check(
+        (points) => points.every((point, index) => index === 0 || point.pitchDegrees > points[index - 1]!.pitchDegrees),
+        'standoff pitch points must be strictly increasing',
+      ),
+    ),
+  ),
+  adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
 });
@@ -3635,6 +3663,8 @@ const ArmRigSchema = strictObject({
     holding: HandPoseSchema,
     open: HandPoseSchema,
     pistolGrip: HandPoseSchema,
+    pistolWrap: HandPoseSchema,
+    pistolCup: HandPoseSchema,
     stockWrist: HandPoseSchema,
     forend: HandPoseSchema,
   }),

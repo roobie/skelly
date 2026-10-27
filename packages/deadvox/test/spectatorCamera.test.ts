@@ -98,65 +98,68 @@ const eyeOf = (session: ReturnType<typeof runtime>['session']): Vec3 => [
 ];
 
 describe('spectator camera', () => {
-  it('keeps latched ADS on the ordinary shared pose while detached flight still silences avatar actions', () => {
-    const latch = new DebugGunPose(true);
-    latch.toggle('ads');
-    let adsAllowed = false;
-    const held = runtime({ ...idleControls(), readyHeld: () => true, aimingDownSights: () => adsAllowed });
-    const spectator = new SpectatorCamera();
-    const hostile = hostileControls();
-    const detached = runtime(
-      latch.guard(
-        spectator.guard({
-          ...hostile.controls,
-          aimingDownSights: () => latch.aimingDownSights(false) && adsAllowed,
-        }),
-      ),
-    );
-    for (const { session } of [held, detached]) {
-      const gun = session.inventory.create('rifle_hunting');
-      expect(session.inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
-    }
-    spectator.toggle(detached.session.body, eyeOf(detached.session), 0.4, 0.1);
-    const gun = held.session.inventory.hands.right!;
-    const duration = held.session.firearms.stanceEffectsFor(gun.uid).raiseDurationSimSeconds;
-    for (let frame = 0; frame <= Math.ceil(duration / FRAME); frame++) {
+  it.each(['rifle_hunting', 'pistol_service'])(
+    'keeps latched ADS on the shared %s pose while detached flight silences avatar actions',
+    (type) => {
+      const latch = new DebugGunPose(true);
+      latch.toggle('ads');
+      let adsAllowed = false;
+      const held = runtime({ ...idleControls(), readyHeld: () => true, aimingDownSights: () => adsAllowed });
+      const spectator = new SpectatorCamera();
+      const hostile = hostileControls();
+      const detached = runtime(
+        latch.guard(
+          spectator.guard({
+            ...hostile.controls,
+            aimingDownSights: () => latch.aimingDownSights(false) && adsAllowed,
+          }),
+        ),
+      );
+      for (const { session } of [held, detached]) {
+        const gun = session.inventory.create(type);
+        expect(session.inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
+      }
+      spectator.toggle(detached.session.body, eyeOf(detached.session), 0.4, 0.1);
+      const gun = held.session.inventory.hands.right!;
+      const duration = held.session.firearms.stanceEffectsFor(gun.uid).raiseDurationSimSeconds;
+      for (let frame = 0; frame <= Math.ceil(duration / FRAME); frame++) {
+        held.session.frame(FRAME);
+        detached.session.frame(FRAME);
+      }
+      for (const { session } of [held, detached]) {
+        expect(session.firearms.isReady(session.inventory.hands.right!.uid)).toBe(true);
+      }
+      adsAllowed = true;
       held.session.frame(FRAME);
       detached.session.frame(FRAME);
-    }
-    for (const { session } of [held, detached]) {
-      expect(session.firearms.isReady(session.inventory.hands.right!.uid)).toBe(true);
-    }
-    adsAllowed = true;
-    held.session.frame(FRAME);
-    detached.session.frame(FRAME);
-    const pose = ({ session }: typeof held) =>
-      playerLookPose({
-        figure: registry.figures.get('player')!,
-        models: registry.models,
-        pitch: 0.1,
-        stance: session.stance,
-        ads: playerAdsPose(session.inventory, true, session.aim.frame),
-      });
-    expect(pose(detached)).toEqual(pose(held));
-    expect(observed(detached.session)).toEqual(observed(held.session));
-    expect(hostile.useDominant).not.toHaveBeenCalled();
-    expect(hostile.useOff).not.toHaveBeenCalled();
-    latch.toggle('ads');
-    expect(latch.mode).toBe('live');
-    expect(latch.readyHeld(false)).toBe(false);
-    latch.toggle('hip');
-    expect(latch.readyHeld(false)).toBe(true);
-    expect(latch.aimingDownSights(true)).toBe(false);
-    latch.toggle('relaxed');
-    expect(latch.readyHeld(true)).toBe(false);
-    expect(latch.aimingDownSights(true)).toBe(false);
-    const disabled = new DebugGunPose(false);
-    disabled.toggle('ads');
-    expect(disabled.mode).toBe('live');
-    expect(disabled.readyHeld(false)).toBe(false);
-    expect(disabled.aimingDownSights(false)).toBe(false);
-  });
+      const pose = ({ session }: typeof held) =>
+        playerLookPose({
+          figure: registry.figures.get('player')!,
+          models: registry.models,
+          pitch: 0.1,
+          stance: session.stance,
+          ads: playerAdsPose(session.inventory, true, session.aim.frame),
+        });
+      expect(pose(detached)).toEqual(pose(held));
+      expect(observed(detached.session)).toEqual(observed(held.session));
+      expect(hostile.useDominant).not.toHaveBeenCalled();
+      expect(hostile.useOff).not.toHaveBeenCalled();
+      latch.toggle('ads');
+      expect(latch.mode).toBe('live');
+      expect(latch.readyHeld(false)).toBe(false);
+      latch.toggle('hip');
+      expect(latch.readyHeld(false)).toBe(true);
+      expect(latch.aimingDownSights(true)).toBe(false);
+      latch.toggle('relaxed');
+      expect(latch.readyHeld(true)).toBe(false);
+      expect(latch.aimingDownSights(true)).toBe(false);
+      const disabled = new DebugGunPose(false);
+      disabled.toggle('ads');
+      expect(disabled.mode).toBe('live');
+      expect(disabled.readyHeld(false)).toBe(false);
+      expect(disabled.aimingDownSights(false)).toBe(false);
+    },
+  );
 
   it('leaves the avatar and the world tick as they would be without it, whatever input arrives while detached', () => {
     const reference = runtime(idleControls());

@@ -13,7 +13,7 @@ The hunting rifle must exist as a fitted Gungen assembly before Deadvox adds pla
 
 ## Civilian identity and equipment
 
-The rifle uses a separate civilian cartridge identity rather than silently sharing military ammunition. Deadvox's playable rifle content must keep its ammunition supply store-only. The shared standards drawing establishes dimensions, not cross-loading permission; unsupported measurements remain unknown. Rendering may use the sourced maximum loaded length when typical length is unknown without filling that unknown in the cartridge record. See `cartridges/308-winchester.jsonnet`, `cartridges/README.md`, and `src/ammo/roundProfile.ts`, `roundProfiles`.
+The rifle uses a separate civilian cartridge identity rather than silently sharing military ammunition. The shared standards drawing establishes dimensions, not cross-loading permission; unsupported measurements remain unknown. Rendering may use the sourced maximum loaded length when typical length is unknown without filling that unknown in the cartridge record. See `cartridges/308-winchester.jsonnet`, `cartridges/README.md`, and `src/ammo/roundProfile.ts`, `roundProfiles`.
 
 An integral magazine loaded singly through the open bolt distinguishes this sporter from detachable-box rifles and from the pump's closed-action loading. Fixed irons keep fitting the separately exported hunting scope a player choice. The scope's geometry, magnification and reticle belong to Gungen content, not a special Deadvox optic path. See `src/gun/optics.ts`, `OPTIC_TYPE_IDS`, and `src/gun/internalMagazine.ts`, `internalMagazineCapacity`.
 

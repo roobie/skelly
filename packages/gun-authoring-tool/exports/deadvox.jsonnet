@@ -47,16 +47,19 @@ local magazine(id, source, calibre, appearanceProfile) = {
   design('shotgun_pump', 'archetype-pump-shotgun'),
   design('rifle_hunting', 'hunting-rifle'),
   design('revolver', 'archetype-revolver'),
+  design('pistol_service', 'service-nine'),
 ]
 + cartridge('5_d_56x45', '5.56x45', import 'packages/gun-authoring-tool/cartridges/5.56x45.jsonnet')
 + cartridge('7_d_62x39', '7.62x39', import 'packages/gun-authoring-tool/cartridges/7.62x39.jsonnet')
 + cartridge('12_h_gauge_h_00_h_buck', '12-gauge-00-buck', import 'packages/gun-authoring-tool/cartridges/12-gauge-00-buck.jsonnet')
 + cartridge('308_h_winchester', '308-winchester', import 'packages/gun-authoring-tool/cartridges/308-winchester.jsonnet')
 + cartridge('357_h_magnum', '357-magnum', import 'packages/gun-authoring-tool/cartridges/357-magnum.jsonnet')
++ cartridge('9x19', '9x19', import 'packages/gun-authoring-tool/cartridges/9x19.jsonnet')
 + [attachment(source) for source in attachmentSources]
 + [
   magazine('magazine_stanag_20', 'stanag-20', '5.56x45', 'ar'),
   magazine('magazine_stanag_30', 'stanag-30', '5.56x45', 'ar'),
   magazine('magazine_akm_30', 'akm-30', '7.62x39', 'ak'),
+  magazine('magazine_pistol_9', 'pistol-9', '9x19', 'pistol'),
 ]
 + [part(item) for item in partItems]

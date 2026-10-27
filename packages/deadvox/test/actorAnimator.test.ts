@@ -25,7 +25,7 @@ import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { figureStancePose, playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
-import { ARM_NODE } from '../src/render/armRig.ts';
+import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
@@ -35,9 +35,11 @@ import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
+vi.mock('../src/render/armRig.ts', { spy: true });
 
 const fixture = async (firearm = true, firearmType?: string) => {
   const base = baseRegistry();
@@ -46,6 +48,7 @@ const fixture = async (firearm = true, firearmType?: string) => {
     : [...base.items.values()].find(
         (def) =>
           def.firearm &&
+          base.models.get(def.model!)?.hands?.butt &&
           base.models
             .get(def.model!)
             ?.gun?.attachments?.some((attachment) =>
@@ -115,6 +118,49 @@ const fixture = async (firearm = true, firearmType?: string) => {
   return { registry, inventory, item, world, actor, view, update, camera, pose, physical, transforms, dispose };
 };
 
+it('world and first-person pistol joints consume one actor-space solve per frame', async () => {
+  const jointsOf = (owner: HeldPresentation): Map<string, Vector3> =>
+    new Map(
+      [...owner.armRigs].flatMap(([side, rig]) =>
+        (['shoulder', 'elbow', 'hand'] as const).map((joint) => {
+          expect(rig[joint].scale.y).toBeLessThanOrEqual(1 + 1e-6);
+          return [`${side}-${joint}`, owner.frame.worldToLocal(rig[joint].getWorldPosition(new Vector3()))] as const;
+        }),
+      ),
+    );
+  const f = await fixture(true, 'pistol_service');
+  const solve = vi.mocked(solveArmRig);
+  try {
+    for (const aimingDownSights of [false, true]) {
+      const actorJoints = new Map<string, Vector3>();
+      for (const thirdPerson of [true, false]) {
+        f.world.sync({ ...f.actor, thirdPerson, ads: playerAdsPose(f.inventory, aimingDownSights) });
+        solve.mockClear();
+        f.update(f.camera, f.pose, 0, {
+          firearms: [],
+          readiness: { uid: f.item.uid, progress: aimingDownSights ? 1 : 0, aimingDownSights },
+        });
+        expect(solve).toHaveBeenCalledTimes(2);
+        const physical = (f.world as unknown as { presentation: HeldPresentation }).presentation;
+        const overlay = (heldState(f.view) as { presentation: HeldPresentation }).presentation;
+        expect(physical.armRigs.size).toBe(2);
+        const shown = jointsOf(overlay);
+        for (const [key, at] of jointsOf(physical)) {
+          expect(shown.get(key)!.distanceTo(at), `${key} ADS=${aimingDownSights}`).toBeLessThan(1e-6);
+          if (thirdPerson) {
+            actorJoints.set(key, at);
+          } else {
+            expect(at.distanceTo(actorJoints.get(key)!)).toBeLessThan(1e-6);
+          }
+        }
+      }
+    }
+  } finally {
+    solve.mockClear();
+    f.dispose();
+  }
+});
+
 const isDrawn = (object: Object3D): boolean => {
   for (let node: Object3D | null = object; node; node = node.parent) {
     if (!node.visible) {
@@ -167,7 +213,7 @@ const bodySamples = (world: Group, camera: PerspectiveCamera) => {
   return samples;
 };
 
-it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak'])(
+it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_service'])(
   'keeps visible own-body surfaces outside the ADS near plane throughout the authored walking sway envelope for %s',
   async (type) => {
     const f = await fixture(true, type);
@@ -300,9 +346,10 @@ it('the play frame poses overlay and world held views from this frame rather tha
   const worldSample = new PerspectiveCamera();
   const syncHeldView = f.world.syncHeldView.bind(f.world);
   const world = vi.spyOn(f.world, 'syncHeldView').mockImplementation((...args) => {
-    syncHeldView(...args);
+    const physicalPose = syncHeldView(...args);
     worldSample.position.copy(f.physical().position);
     worldSample.quaternion.copy(f.physical().quaternion);
+    return physicalPose;
   });
   const steps: Record<string, () => void> = {
     updateVisualFeedback: () => {
@@ -388,7 +435,7 @@ it('shares an anatomical eye, shouldered stock and connected arms throughout aim
       const held = f.physical().getObjectByName('held-item-right')!;
       const buttOffset = modelToView(
         model,
-        model.hands!.butt.map((v, i) => v - model.grip!.at[i]!) as [number, number, number],
+        model.hands!.butt!.map((v, i) => v - model.grip!.at[i]!) as [number, number, number],
       );
       const butt = held.localToWorld(new Vector3(...buttOffset));
       const shoulder = new Vector3();
@@ -453,7 +500,7 @@ it('both adapters consume one animation advance per actor tick', async () => {
   try {
     f.update(f.camera, f.pose, 0, { firearms: [], dt: 1 / 60 });
     expect(advance).toHaveBeenCalledTimes(1);
-    expect(view.mock.calls[0]![3]).toBe(world.mock.calls[0]![1]);
+    expect(view.mock.calls[0]![3]!.magazineRaise).toBe(world.mock.calls[0]![1].magazineRaise);
     f.update(f.camera, f.pose, 0, { firearms: [], dt: 1 / 60 });
     expect(advance).toHaveBeenCalledTimes(2);
   } finally {
@@ -464,7 +511,7 @@ it('both adapters consume one animation advance per actor tick', async () => {
   }
 });
 
-it('final arm solving samples the rummage mover output in world and overlay, and cancellation restores grips', async () => {
+it('the final actor solve samples rummage output before projection and cancellation restores grips', async () => {
   const f = await fixture(false);
   f.world.sync({ ...f.actor, heldItems: { registry: f.registry, hands: f.inventory.hands } });
   const queue = new HandlingQueue(f.inventory);
@@ -492,8 +539,8 @@ it('final arm solving samples the rummage mover output in world and overlay, and
     queue.tick(queue.remaining / 2);
     f.update(f.camera, f.pose, 0, { firearms: [], job: queue.jobs[0] });
     expect(f.transforms()).not.toEqual(rest);
-    expect(solved.some(({ owner }) => owner.frame.name === 'world-held-items')).toBe(true);
-    expect(solved.some(({ owner }) => owner.frame.name === 'held-optical-source')).toBe(true);
+    expect(solved).toHaveLength(2);
+    expect(solved.every(({ owner }) => owner.frame.name === 'world-held-items')).toBe(true);
     for (const { anchor, point, hand } of solved) {
       expect(anchor.getWorldPosition(new Vector3()).distanceTo(point)).toBeLessThan(1e-8);
       expect(hand.getWorldPosition(new Vector3()).distanceTo(point)).toBeLessThan(1e-8);
