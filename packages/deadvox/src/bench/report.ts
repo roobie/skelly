@@ -1,4 +1,3 @@
-import type { ActorRenderer } from '../game/config.ts';
 import type { BenchRecord, RunResult, ShamblerRunResult } from './plan.ts';
 
 const MIB = 1024 * 1024;
@@ -37,20 +36,17 @@ export const HEADERS = [
   'Render ms p50 / p95',
 ] as const;
 
-/** Records from before `actors` existed only ever drew ZombieMeshes' boxes. */
-const actorsOf = (r: ShamblerRunResult): ActorRenderer => r.actors ?? 'boxes';
-
 export const shamblerResultRow = (r: ShamblerRunResult): string[] => [
   String(r.n),
   r.active === undefined || r.background === undefined ? '–' : `${r.active} / ${r.background}`,
   String(r.seed),
-  actorsOf(r),
+  r.actors,
   `${f(r.frame.msMedian)} / ${f(r.frame.msP95)} / ${pct(r.frame.slowFraction)}`,
   `${f(r.zombieTick.median)} / ${f(r.zombieTick.p95)}`,
   r.backgroundTick ? `${f(r.backgroundTick.median)} / ${f(r.backgroundTick.p95)}` : '–',
-  r.actorSync ? `${f(r.actorSync.median)} / ${f(r.actorSync.p95)}` : '–',
+  `${f(r.actorSync.median)} / ${f(r.actorSync.p95)}`,
   `${f(r.renderSubmit.median)} / ${f(r.renderSubmit.p95)}`,
-  r.draws === undefined || r.triangles === undefined ? '–' : `${f(r.draws, 0)} / ${f(r.triangles / 1000, 0)}`,
+  `${f(r.draws, 0)} / ${f(r.triangles / 1000, 0)}`,
   `${r.holesMax} / ${pct(r.holeFraction)}`,
   r.interrupted ? 'yes' : 'no',
 ];
@@ -59,7 +55,7 @@ export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
   runs
     .map(
       (r) =>
-        `N=${r.n} active/background=${r.active ?? '–'}/${r.background ?? '–'} seed=${r.seed} actors=${actorsOf(r)}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; active tick ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; background tick ${r.backgroundTick ? `${f(r.backgroundTick.median)}/${f(r.backgroundTick.p95)}` : '–'} ms p50/p95; actor sync ${r.actorSync ? `${f(r.actorSync.median)}/${f(r.actorSync.p95)}` : '–'} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
+        `N=${r.n} active/background=${r.active ?? '–'}/${r.background ?? '–'} seed=${r.seed} actors=${r.actors}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; active tick ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; background tick ${r.backgroundTick ? `${f(r.backgroundTick.median)}/${f(r.backgroundTick.p95)}` : '–'} ms p50/p95; actor sync ${f(r.actorSync.median)}/${f(r.actorSync.p95)} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
     )
     .join(' | ');
 
@@ -76,7 +72,7 @@ export const resultRow = (r: RunResult): string[] => [
   `${f(r.jog.msP95)} / ${pct(r.jog.slowFraction)} / ${r.jog.holesMax}`,
   `${f(r.sprint.msP95)} / ${pct(r.sprint.slowFraction)} / ${r.sprint.holesMax}${r.interrupted ? ' ⚠' : ''}`,
   `${f(r.look.work.p95)} / ${f(r.jog.work.p95)} / ${f(r.sprint.work.p95)}`,
-  r.render ? `${f(r.render.median)} / ${f(r.render.p95)}` : '–',
+  `${f(r.render.median)} / ${f(r.render.p95)}`,
 ];
 
 export const markdownTable = (record: BenchRecord): string => {
@@ -87,7 +83,7 @@ export const markdownTable = (record: BenchRecord): string => {
 const environmentLines = (record: BenchRecord): string[] => {
   const { env } = record;
   const workload = [
-    `Site: ${record.site ?? 'test house'}`,
+    `Site: ${record.site}`,
     ...(record.forest ? [`Forest workload: ${JSON.stringify(record.forest)}`] : []),
     ...(record.lightWorkload ? [`Light workload: ${JSON.stringify(record.lightWorkload)}`] : []),
   ];
@@ -102,7 +98,7 @@ const environmentLines = (record: BenchRecord): string[] => {
     `Browser: ${env.userAgent}`,
     `Run: ${record.startedAt}${record.quick ? ' (quick mode: not valid results)' : ''}`,
     ...workload,
-    `Time: ${record.time ?? '12:00'}`,
+    `Time: ${record.time}`,
   ];
 };
 

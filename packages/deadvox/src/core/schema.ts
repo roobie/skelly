@@ -15,6 +15,7 @@ import {
   type InferOutput,
   integer,
   literal,
+  ltValue,
   maxLength,
   maxValue,
   minLength,
@@ -2159,6 +2160,13 @@ const HandsModelSchema = strictObject({
   adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,
   support: HandHoldSchema,
+  /**
+   * Where the support hand takes the gun while lying prone and aiming, nearer the body so the elbow hangs lower. It
+   * moves the hand only: the palm, fingers and pose stay the support hold's, because the arm is built once with them.
+   * A stocked gun (one that authors `butt`) must have it, which `checkHands` enforces; a free-held gun without one
+   * keeps its support hold prone.
+   */
+  proneSupport: optional(strictObject({ at: Point })),
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
@@ -2378,12 +2386,15 @@ const FurnitureSchema = pipe(
     ),
     /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
     rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
-    /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
+    /**
+     * A station available to matching recipes within reach; bonus is the fraction removed from work time.
+     * Below 1, because a whole bonus leaves a recipe with its inputs at hand no work time, and restore refuses that.
+     */
     workstation: optional(
       strictObject({
         id: Id,
         qualities: record(Id, QualityLevel),
-        workFactorBonus: Fraction,
+        workFactorBonus: pipe(number(), minValue(0, 'must be 0 or more'), ltValue(1, 'must be less than 1')),
       }),
     ),
   }),
@@ -3653,6 +3664,8 @@ const ArmRigSchema = strictObject({
   grip: Id,
   /** A body-relative pole keeps the elbow bend independent of where the eye looks. */
   elbowPole: strictObject({ up: UnitVector, down: UnitVector }),
+  /** The same pole while prone and aiming down sights: elbows point at the ground and carry the raised chest. */
+  proneAdsElbowPole: strictObject({ up: UnitVector, down: UnitVector }),
   minimumBendDegrees: strictObject({
     up: pipe(number(), minValue(0), maxValue(90)),
     down: pipe(number(), minValue(0), maxValue(90)),
@@ -3756,6 +3769,8 @@ const FigureSchema = strictObject({
       ownBodyHide: array(picklist(['spine', 'neck', 'head'])),
       stockShoulderLimitMetres: NonNegative,
       torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      /** The same roll lying prone, where it swings the shoulders along the ground; negative turns the other way. */
+      proneTorsoRollDegrees: pipe(number(), minValue(-90), maxValue(90)),
       headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       neckLengthToleranceFraction: pipe(
         Fraction,
@@ -3779,6 +3794,8 @@ const FigureSchema = strictObject({
     /** How long the drawn body takes to settle into a new stance. */
     blendRealSeconds: PositiveRealSeconds,
   }),
+  /** The prone body while aiming down sights: chest raised and propped on the elbows (`DESIGN.md`, "Character"). */
+  proneAdsPose: StancePoseSchema,
   /**
    * Temporary corpse role tint by outfit id, with a colour per model part's material slot. Omitted slots keep the
    * model colour. This is not clothing; delete with #1366 (`DESIGN.md`, "Dead humans").
@@ -4485,7 +4502,10 @@ const RecipeSchema = strictObject({
   result: RecipeItemSchema,
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
   kind: optional(picklist(['craft', 'repair'])),
-  repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
+  /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
+  repair: optional(
+    strictObject({ skill: Id, amount: pipe(Positive, maxValue(1, 'must be at most 1')), perSkill: Fraction }),
+  ),
   activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,

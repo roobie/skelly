@@ -77,6 +77,7 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'throw.stance.toggle',
   'item.drop',
   'inventory.inspect',
+  'hand.use-forward',
   'inventory.move',
   'inventory.to-hands',
   'item.pickup',

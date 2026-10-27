@@ -6,63 +6,17 @@ import { describe, expect, it } from 'vitest';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { readGlb } from './glbReader.ts';
 import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
 const ROOT = join(import.meta.dirname, '..');
 const cases = [
   { key: 'designs/archetype-ak.json', folder: 'designs', file: 'archetype-ak.json' },
   { key: 'fixtures/ak-standard-handguard.json', folder: 'fixtures', file: 'ak-standard-handguard.json' },
-  { key: 'fixtures/archetype-ak.json', folder: 'fixtures', file: 'archetype-ak.json' },
   { key: 'fixtures/broken-ak-gas-block.json', folder: 'fixtures', file: 'broken-ak-gas-block.json' },
   { key: 'fixtures/broken-ak-gas-cylinder.json', folder: 'fixtures', file: 'broken-ak-gas-cylinder.json' },
   { key: 'fixtures/broken-connection-contact.json', folder: 'fixtures', file: 'broken-connection-contact.json' },
 ] as const;
-
-interface GlbJson {
-  readonly nodes: readonly { readonly name?: string; readonly mesh?: number }[];
-  readonly meshes: readonly {
-    readonly primitives: readonly { readonly attributes: { readonly POSITION: number }; readonly indices: number }[];
-  }[];
-  readonly accessors: readonly {
-    readonly bufferView: number;
-    readonly byteOffset?: number;
-    readonly count: number;
-    readonly componentType: number;
-    readonly type: string;
-    readonly min?: number[];
-    readonly max?: number[];
-  }[];
-  readonly bufferViews: readonly { readonly byteOffset?: number; readonly byteStride?: number }[];
-}
-
-const parseGlb = (bytes: Uint8Array): { json: GlbJson; binary: DataView } => {
-  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  const jsonLength = view.getUint32(12, true);
-  const json = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + jsonLength))) as GlbJson;
-  const binStart = 28 + jsonLength;
-  return { json, binary: new DataView(bytes.buffer, bytes.byteOffset + binStart, bytes.byteLength - binStart) };
-};
-
-const accessorValues = (glb: { json: GlbJson; binary: DataView }, index: number): number[] => {
-  const accessor = glb.json.accessors[index]!;
-  const view = glb.json.bufferViews[accessor.bufferView]!;
-  const components = accessor.type === 'VEC3' ? 3 : 1;
-  const componentBytes = accessor.componentType === 5126 || accessor.componentType === 5125 ? 4 : 2;
-  const stride = view.byteStride ?? components * componentBytes;
-  const offset = (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
-  const readValue = (byteOffset: number): number => {
-    if (accessor.componentType === 5126) {
-      return glb.binary.getFloat32(byteOffset, true);
-    }
-    if (accessor.componentType === 5125) {
-      return glb.binary.getUint32(byteOffset, true);
-    }
-    return glb.binary.getUint16(byteOffset, true);
-  };
-  return Array.from({ length: accessor.count * components }, (_, i) =>
-    readValue(offset + i * componentBytes + Math.floor(i / components) * (stride - components * componentBytes)),
-  );
-};
 
 const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross = (a: Vec3, b: Vec3): Vec3 => [
@@ -75,14 +29,14 @@ const magnitude = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
 const vertices = (positions: readonly number[]): Vec3[] =>
   Array.from(
     { length: positions.length / 3 },
-    (_, i) => [positions[i * 3]!, positions[i * 3 + 1]!, positions[i * 3 + 2]!] as Vec3,
+    (_, index) => [positions[index * 3]!, positions[index * 3 + 1]!, positions[index * 3 + 2]!] as Vec3,
   );
 
 const surfaceTriangles = (positions: readonly number[], indices: readonly number[]): [Vec3, Vec3, Vec3][] => {
   const points = vertices(positions);
   return Array.from(
     { length: indices.length / 3 },
-    (_, i) => [0, 1, 2].map((corner) => points[indices[i * 3 + corner]!]!) as [Vec3, Vec3, Vec3],
+    (_, index) => [0, 1, 2].map((corner) => points[indices[index * 3 + corner]!]!) as [Vec3, Vec3, Vec3],
   );
 };
 
@@ -105,12 +59,12 @@ describe('AK receiver export topology', () => {
     if (!result.ok) {
       throw new Error(`${key}: ${result.error.code}`);
     }
-    const glb = parseGlb(result.glb);
+    const glb = readGlb(result.glb);
     const meshIndex = glb.json.nodes.find(({ name }) => name === 'receiver:ak-receiver')?.mesh;
     expect(meshIndex, `${key}: merged receiver mesh`).toBeDefined();
     const primitive = glb.json.meshes[meshIndex!]!.primitives[0]!;
-    const currentPositions = accessorValues(glb, primitive.attributes.POSITION);
-    const currentIndices = accessorValues(glb, primitive.indices);
+    const currentPositions = glb.values(primitive.attributes.POSITION);
+    const currentIndices = glb.values(primitive.indices);
 
     const mesh: TriangleMesh = {
       positions: Float32Array.from(currentPositions.map((position) => position / METRES_PER_UNIT)),

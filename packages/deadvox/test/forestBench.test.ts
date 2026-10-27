@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { type BenchRecord, loadRecord, saveRecord } from '../src/bench/plan.ts';
 import { markdownReport } from '../src/bench/report.ts';
-import { benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
+import { benchGameConfig, benchRunFromUrl, benchSiteLabel, forestWorkload, nextUrl } from '../src/bench/run.ts';
 import { siteGenerationOf } from '../src/core/sitePalette.ts';
 import { configFromUrl, content, siteFromUrl } from './fixtures/startupContent.ts';
 
@@ -50,6 +50,34 @@ describe('forest benchmark workload identity', () => {
     });
   });
 
+  it('builds the forest config for the first run of a forest plan that names no site', () => {
+    const params = new URLSearchParams('plan=1:64,1:96');
+    const run = benchRunFromUrl(params, content.registry);
+    expect(run.site).toBe('forest');
+    expect(benchGameConfig(run, params, content)).toMatchObject({
+      site: run.site,
+      storeys: run.storeys,
+      density: run.density,
+    });
+  });
+
+  it('refuses a stored record of an unknown shape instead of resuming it', () => {
+    const previous = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: { getItem: () => JSON.stringify({ runs: 'old', startedAt: 3 }), setItem: () => undefined },
+    });
+    try {
+      expect(loadRecord()).toBeUndefined();
+    } finally {
+      if (previous) {
+        Object.defineProperty(globalThis, 'localStorage', previous);
+      } else {
+        Reflect.deleteProperty(globalThis, 'localStorage');
+      }
+    }
+  });
+
   it('retains the seeded field, shape mix, extent, opacity and full camera routes in both result export formats', () => {
     const run = benchRunFromUrl(new URLSearchParams('site=forest&post=1'), {
       layouts: new Map(),
@@ -59,6 +87,7 @@ describe('forest benchmark workload identity', () => {
       startedAt: 'first-look',
       quick: false,
       site: benchSiteLabel(run),
+      time: run.time ?? '12:00',
       forest: forestWorkload(content.registry, 1, run.density),
       runs: [],
     };

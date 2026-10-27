@@ -21,6 +21,7 @@ export type ToMesher =
 
 export type FromMesher =
   | Meshed
+  | { type: 'meshFailed'; key: string; message: string }
   | { type: 'sky'; result: SkyResult; workerRealMs: number }
   | { type: 'vehicle'; key: string; shape: ShapeData };
 

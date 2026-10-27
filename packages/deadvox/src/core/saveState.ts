@@ -17,7 +17,6 @@ import type { ScenarioRunState } from './scenarioRun.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
-import { simTimestamp } from './time.ts';
 import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn, World } from './world.ts';
 import type { ZombieSpawner } from './zombieSpawns.ts';
@@ -87,7 +86,10 @@ export interface SnapshotSessionInput {
   audio: { snapshotState: () => Readonly<SoundPickerState> };
 }
 
-/** Takes isolated component copies synchronously; pending handling jobs are omitted only in this copy. */
+/**
+ * Takes isolated component copies synchronously without advancing any owner, so saving never changes the run;
+ * pending handling jobs are omitted only in this copy.
+ */
 export const snapshotSession = ({
   worldId,
   power,
@@ -114,7 +116,6 @@ export const snapshotSession = ({
   rustleClock,
   audio,
 }: SnapshotSessionInput): Readonly<SaveSnapshot> => {
-  power?.advance(simTimestamp(simulation.time));
   const foodTimestamp = foodMillisecondsAt(simulation.calendar);
   for (const { item } of inventory.items()) {
     assertFoodExposure(inventory.registry, item);

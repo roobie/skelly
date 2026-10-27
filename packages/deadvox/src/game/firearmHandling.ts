@@ -286,7 +286,7 @@ export class FirearmMechanics {
   private readonly handlingSlowdown: () => number;
   private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
-  private readonly previousShotAt = new Map<number, number>();
+  private readonly shotInput: ((uid: number, atSimSeconds: number) => FirearmShotInput | undefined) | undefined;
   private readonly revolvers: RevolverHandling;
   private readonly text: ActionText;
   private committingPull = false;
@@ -308,10 +308,16 @@ export class FirearmMechanics {
       firearmsSkillLevel = () => 0,
       firearmsSkillZeroHandling,
       handlingSlowdown = () => 1,
+      shotInput,
     }: {
       blockSize: number;
       isSolid?: SolidAt;
       pose: (uid: number) => FirearmPoseInput | undefined;
+      /**
+       * The trigger input as the body holds it now. A double-action strike reads it when the hammer falls, so a
+       * turn or a lowered gun during the pull counts; without it the strike repeats the press (fixed-pose harnesses).
+       */
+      shotInput?: (uid: number, atSimSeconds: number) => FirearmShotInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
       onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
       onShot?: (shot: PelletShot, time: number, firearm: Item, sighted: boolean) => void;
@@ -345,6 +351,7 @@ export class FirearmMechanics {
     this.onCommittedShot = onCommittedShot;
     this.firearmsSkillLevel = firearmsSkillLevel;
     this.handlingSlowdown = handlingSlowdown;
+    this.shotInput = shotInput;
     this.firearmsCombatTuning = inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
     this.firearmsSkillZeroHandling =
       firearmsSkillZeroHandling ??
@@ -395,7 +402,7 @@ export class FirearmMechanics {
       if (!ammo) {
         return this.text.loading.roundsNotCarried;
       }
-      const reason = this.loadReason(ammo, true);
+      const reason = this.loadReason(ammo, true, gun);
       if (reason) {
         return reason;
       }
@@ -609,7 +616,7 @@ export class FirearmMechanics {
       return 'singleShot';
     }
     const { roundsPerSimSecond } = firearmHandlingFor(item, this.inventory.registry);
-    const previous = this.previousShotAt.get(uid);
+    const previous = item.firearm?.lastShotAtSimSeconds;
     return roundsPerSimSecond !== undefined &&
       previous !== undefined &&
       time >= previous &&
@@ -716,7 +723,7 @@ export class FirearmMechanics {
 
   private deferRevolverPull(input: FirearmShotInput, item: Item): boolean | undefined {
     const tuning = defOf(this.inventory.registry, item.type).firearm!.revolver!;
-    const previous = this.previousShotAt.get(item.uid);
+    const previous = item.firearm!.lastShotAtSimSeconds;
     if (previous !== undefined && input.simTime < previous + tuning.recoverySimSeconds) {
       return false;
     }
@@ -725,11 +732,13 @@ export class FirearmMechanics {
     }
     const strikeAt = input.simTime + tuning.doubleActionPullSimSeconds * this.handlingFactor('reloadDuration');
     this.revolvers.pull(item, input.simTime, () => {
+      const strike = this.shotInput ? this.shotInput(item.uid, strikeAt) : { ...input, simTime: strikeAt };
+      if (!strike) {
+        return;
+      }
       this.committingPull = true;
       try {
-        const strikeInput = { ...input };
-        strikeInput.simTime = strikeAt;
-        this.fire(strikeInput);
+        this.fire(strike);
       } finally {
         this.committingPull = false;
       }
@@ -744,7 +753,7 @@ export class FirearmMechanics {
       cylinder.aligned = (cylinder.aligned + 1) % cylinder.chambers.length;
     }
     cylinder.cocked = false;
-    this.previousShotAt.set(item.uid, input.simTime);
+    item.firearm!.lastShotAtSimSeconds = input.simTime;
     const chamber = cylinder.chambers[cylinder.aligned]!;
     if (chamber.state !== 'round') {
       this.dropHammer(item, input.simTime);
@@ -759,6 +768,7 @@ export class FirearmMechanics {
     this.onShot(projectileShot(ammo, shotOrigin, [direction]), input.simTime, item, Boolean(input.aimingDownSights));
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, 'singleShot', item.uid);
+    wearFirearmAttachments(this.inventory, item);
     return true;
   }
 
@@ -803,7 +813,7 @@ export class FirearmMechanics {
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     wearFirearmAttachments(this.inventory, item);
-    this.previousShotAt.set(item.uid, input.simTime);
+    state.lastShotAtSimSeconds = input.simTime;
     return true;
   }
 
@@ -828,6 +838,7 @@ export class FirearmMechanics {
       chamber: 'case',
       ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
       ...(item.firearm?.landings === undefined ? {} : { landings: item.firearm.landings }),
+      lastShotAtSimSeconds: input.simTime,
       pendingCase: { ...emission, seed },
       cycle: {
         mode: 'fire',
@@ -847,7 +858,6 @@ export class FirearmMechanics {
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     wearFirearmAttachments(this.inventory, item);
-    this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
 
@@ -1008,10 +1018,10 @@ export class FirearmMechanics {
     }
   }
 
-  loadReason(ammo: Item, completing = false): string | undefined {
+  /** A completing job names its own gun; a new load takes the integral-magazine gun in hand. */
+  loadReason(ammo: Item, completing = false, gun = this.heldPump()): string | undefined {
     const { common, loading } = this.text;
-    const gun = this.heldPump();
-    if (!gun) {
+    if (!(gun && this.held(gun.uid) && this.isIntegral(gun))) {
       return common.notHeld;
     }
     if (!(this.inventory.itemByUid(ammo.uid) === ammo && this.carried(ammo))) {

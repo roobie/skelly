@@ -19,6 +19,7 @@ import {
   siteMapWorldToRaster,
   topSolidAtOrBelow,
 } from './render/siteMap.ts';
+import { debugGameHref } from './siteMapGameLink.ts';
 
 const CELL_SIZE = BLOCK_SIZE;
 const OUTSIDE_MARGIN_METRES = 24;
@@ -703,12 +704,11 @@ const selectAt = (clientX: number, clientY: number) => {
     pointPanel.replaceChildren(position);
   } else {
     const link = document.createElement('a');
-    const game = new URL('/', globalThis.location.origin);
-    game.searchParams.set('site', config.site);
-    game.searchParams.set('seed', String(seed));
-    game.searchParams.set('debug', '1');
-    game.searchParams.set('at', `${x},${z}`);
-    link.href = game.href;
+    link.href = debugGameHref(
+      globalThis.location.href,
+      { site: config.site, seed, storeys: config.storeys, density: config.density },
+      { x, z },
+    );
     link.textContent = 'Open a fresh debug game here';
     link.target = '_blank';
     link.rel = 'noopener';
