@@ -1553,6 +1553,12 @@ fitted part keeps its own model. This makes the displayed item agree with the
 item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
 `heldLook` / `groundLook` in `src/render/models.ts`.
 
+Model loading is bounded by content so an asset-heavy pack does not exhaust the
+browser's request capacity. A view that needs an unloaded model moves it ahead
+of background preload, so an equipped, visible or spawned item does not wait
+behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
+`graphics`; `src/render/models.ts`, `ModelLibrary`; and `PILLARS.md`, "Content forward compatibility".
+
 ### Assets and credits
 
 - **Licences.** Asset files (models, sounds, textures) are made for the game,

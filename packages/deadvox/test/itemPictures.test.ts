@@ -155,7 +155,7 @@ it('reports a declared model load failure rather than treating it as absent auth
   });
   try {
     const report = vi.fn();
-    const models = new ModelLibrary(registry, report, { 'assets/models/pictured.glb': '/fixture.glb' });
+    const models = new ModelLibrary(registry, report, { 'assets/models/pictured.glb': '/fixture.glb' }, 1);
     expect(new ItemPictures(registry, models, 2).picture(inv.create('pictured'))).toBeUndefined();
     expect(report).toHaveBeenCalledWith(expect.stringContaining('fixture load failure'));
   } finally {

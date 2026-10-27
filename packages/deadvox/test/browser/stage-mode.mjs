@@ -48,7 +48,7 @@ export const browserStageArgs = (stage, extra, override) => {
     '--disable-dev-shm-usage',
     ...(mode === 'render-free'
       ? ['--disable-gpu']
-      : [...(explicitGl ? [] : ['--use-gl=swiftshader']), '--enable-unsafe-swiftshader']),
+      : [...(explicitGl ? [] : ['--use-gl=angle', '--use-angle=swiftshader']), '--enable-unsafe-swiftshader']),
     ...additionalArgs,
   ];
 };

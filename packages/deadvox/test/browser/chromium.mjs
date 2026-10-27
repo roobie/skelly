@@ -2,7 +2,7 @@
 import { execFileSync } from 'node:child_process';
 import process from 'node:process';
 import { bufferPlaywrightDebugOutput } from './playwrightDebugBuffer.mjs';
-import { browserStageArgs } from './stage-mode.mjs';
+import { browserStageArgs, browserStageMode } from './stage-mode.mjs';
 
 const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
 debugChannels.add('pw:browser');
@@ -52,6 +52,7 @@ export async function launchChromium(stage, options = {}) {
   try {
     return await chromium.launch({
       ...launchOptions,
+      ...(browserStageMode(stage, renderMode) === 'pixel' ? { channel: 'chromium' } : {}),
       args: browserStageArgs(stage, args, renderMode),
     });
   } catch (error) {
