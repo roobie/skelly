@@ -25,7 +25,7 @@ import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { OwnBodyClip } from './ownBodyClip.ts';
-import { castsAndReceives, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
+import { castsAndReceives, inheritLayersOnAdd, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { WornModels } from './wornModels.ts';
 
 export interface PlayerFigurePlacement {
@@ -338,6 +338,8 @@ export class PlayerMeshes {
     this.figure = figure;
     this.ownBodyClip = new OwnBodyClip(figure.aimPose.ads.ownBodyClipMetres);
     this.worn = new WornModels(figure, models, this.attachmentFrames, this.baseParts);
+    this.group.layers.set(this.layer);
+    inheritLayersOnAdd(this.group);
     this.heldFrame.name = 'world-held-items';
     this.group.add(this.heldFrame);
     this.heldFrame.add(this.heldTorso);
@@ -385,6 +387,7 @@ export class PlayerMeshes {
   dress({ outfit, layer }: FigureDress): void {
     this.outfit = outfit;
     this.layer = layer;
+    this.group.layers.set(layer);
   }
 
   /** Draws `pose` from now on, at once and whatever stance later syncs name, as a body that no longer moves. */
