@@ -4,6 +4,7 @@ import {
   BindingRegistry,
   bindingConflict,
   bindingIsDebugOnly,
+  chordIssue,
   DEBUG_ONLY_CONTEXTS,
   INPUT_BINDINGS,
   type InputContext,
@@ -29,6 +30,10 @@ for (const key of [
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
 Object.defineProperty(globalThis, 'window', { configurable: true, value: dom });
+// `KeyboardInput.install` listens on the global object, which is the DOM window in a browser.
+for (const key of ['addEventListener', 'removeEventListener'] as const) {
+  Object.defineProperty(globalThis, key, { configurable: true, value: dom[key].bind(dom) });
+}
 const { mountInputOptions } = await import('../src/ui/inputOptions.ts');
 const inputOptionsText = baseScreenText().inputOptions;
 
@@ -36,6 +41,13 @@ afterAll(() => dom.happyDOM.abort());
 
 const rowFor = (root: HTMLElement, id: string): HTMLElement | undefined =>
   [...root.querySelectorAll<HTMLElement>('.input-binding-row')].find((row) => row.dataset.bindingId === id);
+/** A pointer press as a browser delivers it: mousedown, then click for the primary button or auxclick for others. */
+const pointerPress = (target: Element, button = 0) => {
+  target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, button }));
+  target.dispatchEvent(
+    new MouseEvent(button === 0 ? 'click' : 'auxclick', { bubbles: true, cancelable: true, button }),
+  );
+};
 const contextLabels = (row: HTMLElement): string[] =>
   (row.querySelector('small')?.textContent ?? '').split(',').map((label) => label.trim());
 const memoryStorage = () => {
@@ -120,6 +132,41 @@ describe('input options context visibility', () => {
         return row && binding.contexts.every((context) => contextLabels(row).includes(context));
       }),
     ).toBe(true);
+  });
+
+  it('leaves the binding unchanged when capture is cancelled with a mouse press, and binds a press elsewhere', () => {
+    const binding = INPUT_BINDINGS.find((candidate) => !bindingIsDebugOnly(candidate) && candidate.defaults[0]);
+    const free = [0, 1, 2, 3, 4].find(
+      (button) =>
+        chordIssue({ code: `Mouse${button}` }) === undefined &&
+        !INPUT_BINDINGS.some((candidate) => candidate.defaults.some(({ code }) => code === `Mouse${button}`)),
+    );
+    expect(binding).toBeDefined();
+    expect(free).toBeDefined();
+    const root = document.createElement('div');
+    document.body.append(root);
+    mountInputOptions(root, inputOptionsText);
+    const remove = keyboardInput.install();
+    const slot = () =>
+      rowFor(root, binding!.id)!.querySelector<HTMLButtonElement>('button[data-binding-alternative="0"]')!;
+    const cancelButton = () =>
+      [...root.querySelectorAll('button')].find((button) => button.textContent?.trim() === inputOptionsText.cancel);
+    try {
+      pointerPress(slot());
+      expect(keyboardInput.capture).toBeDefined();
+      pointerPress(cancelButton()!);
+      expect(keyboardInput.capture).toBeUndefined();
+      expect(inputBindings.chords(binding!.id)[0]).toEqual(binding!.defaults[0]);
+
+      pointerPress(slot());
+      pointerPress(root.querySelector('.input-binding-status')!, free);
+      expect(keyboardInput.capture).toBeUndefined();
+      expect(inputBindings.chords(binding!.id)[0]).toEqual({ code: `Mouse${free}` });
+    } finally {
+      remove();
+      keyboardInput.capture = undefined;
+      inputBindings.reset();
+    }
   });
 
   it('does not name debug-only contexts in an ordinary-run rebind conflict', () => {

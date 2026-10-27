@@ -784,6 +784,11 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
 export const clearsFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
+const pageControl = (target: EventTarget | null): boolean =>
+  target instanceof Element &&
+  Boolean(
+    target.closest('button,a[href],input,select,textarea,summary,label,[role="button"],[contenteditable="true"]'),
+  );
 const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
@@ -802,6 +807,8 @@ export class KeyboardInput {
   private readonly down = new Set<string>();
   private readonly blocked = new Set<string>();
   private readonly active = new Map<string, string>();
+  /** A modifier pressed during binding capture: it may start a chord, so it is captured alone only on its release. */
+  private captureModifier: KeyEvent | undefined;
   private state: KeyboardState = { context: 'title', debug: false };
   private removeListeners: (() => void) | undefined;
   trace: ((entry: KeyTraceEntry) => void) | undefined;
@@ -924,6 +931,7 @@ export class KeyboardInput {
     }
   }
   cancel(keepGate = false, preservePointer = false, reason: InputCancellationReason = 'manual'): void {
+    this.captureModifier = undefined;
     for (const code of this.down) {
       if ((keepGate && this.active.get(code) === 'debug.gate') || (preservePointer && code.startsWith('Mouse'))) {
         continue;
@@ -941,6 +949,11 @@ export class KeyboardInput {
     this.release(new KeyboardEvent('keyup', event));
   }
   release(event: KeyEvent): void {
+    if (this.captureModifier?.code === event.code) {
+      const modifier = this.captureModifier;
+      this.captureModifier = undefined;
+      this.capture?.(capturedChord(modifier));
+    }
     this.down.delete(event.code);
     this.blocked.delete(event.code);
     const action = this.active.get(event.code);
@@ -966,8 +979,12 @@ export class KeyboardInput {
       this.capture?.(undefined);
       return false;
     }
-    if (!event.repeat) {
-      this.capture?.(capturedChord(event));
+    const lone = capturedChord(event);
+    if (!event.repeat && typeof lone !== 'string' && modifierCodes[event.code]) {
+      this.captureModifier = event;
+    } else if (!event.repeat) {
+      this.captureModifier = undefined;
+      this.capture?.(lone);
     }
     return !REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier);
   }
@@ -1072,15 +1089,24 @@ export class KeyboardInput {
       !this.capture
     );
   }
-  /** The window lost focus: held keys may be released where this document cannot see it. */
+  /**
+   * Focus left the document, so a held key's release may go elsewhere. Held state is forgotten rather than
+   * blocked: a block lasts until a release this document may never see, refusing the key's next press.
+   */
+  private focusLost(reason: InputCancellationReason): void {
+    this.cancel(false, false, reason);
+    this.down.clear();
+    this.blocked.clear();
+    this.active.clear();
+  }
   windowBlurred(): void {
     this.recordTrace('blur');
-    this.cancel(false, false, 'window-blur');
+    this.focusLost('window-blur');
   }
   visibilityChanged(): void {
     this.recordTrace('visibility');
     if (document.hidden) {
-      this.cancel(false, false, 'document-hidden');
+      this.focusLost('document-hidden');
     }
   }
   install(): () => void {
@@ -1120,8 +1146,9 @@ export class KeyboardInput {
       }
     };
     const keyUp = (event: KeyboardEvent) => this.release(event);
+    // A press on a control (Cancel, Reset, another binding) operates that control rather than being captured.
     const pointerCapture = (event: MouseEvent) => {
-      if (this.capture) {
+      if (this.capture && !pageControl(event.target)) {
         this.pressPointer(event.button, event);
         event.preventDefault();
         event.stopPropagation();
