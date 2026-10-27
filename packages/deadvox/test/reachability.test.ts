@@ -27,6 +27,11 @@ const fresh = () => ({
 });
 
 describe('static reachability', () => {
+  it('keeps whole-game reachability when its scope names every site', () => {
+    const sites = new Set([...baseline.layouts.keys(), ...baseline.scenarios.keys()]);
+    expect(checkReachability(baseline, undefined, { sites })).toEqual(checkReachability(baseline));
+  });
+
   it('excludes an authored non-loot type without excluding an ordinary unreachable type', () => {
     const registry = fresh();
     const fixture = { ...registry.items.values().next().value!, id: 'fixture_not_loot', notLoot: true };
