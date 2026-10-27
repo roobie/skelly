@@ -14,7 +14,7 @@ import type {
 import { partNodeName, partVoxelGrain } from '@skelly/thing-export/glb.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
-import { resolveGunAction } from './actionDescription.ts';
+import { type ResolvedGunAction, resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
 import {
@@ -53,6 +53,7 @@ interface ActionPartMetadata {
   readonly axis: Vec3;
   /** Carrier stroke length in metres. */
   readonly strokeMetres: number;
+  readonly handGrip?: Vec3;
   /** Shared timelines this node follows; other modes leave it at home. */
   readonly modes: readonly CycleMode[];
   readonly turn?: { readonly pivot: Vec3; readonly axis: Vec3; readonly angleRadians: number };
@@ -184,6 +185,11 @@ const cycleMetadata = (cycle: CycleTimeline): CycleMetadata => ({
   ...(cycle.lockSeconds === undefined ? {} : { lockSimSeconds: cycle.lockSeconds }),
 });
 
+const handGripMetadata = (part: ResolvedGunAction['carrier'], metresPerUnit: number): { handGrip?: Vec3 } => {
+  const grip = part.def.axes.find((axis) => axis.kind === 'rack-grip');
+  return grip ? { handGrip: modelPoint(applyPoint(part.placed, grip.origin), metresPerUnit) } : {};
+};
+
 const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
   const description = resolveGunAction(resolved);
   const cycle = description?.cycle;
@@ -198,6 +204,7 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
         axis: toFileAxes(part.axis),
         strokeMetres: round6(length(part.travel) * resolved.domain.units.metresPerUnit),
         modes: part.modes,
+        ...handGripMetadata(part, resolved.domain.units.metresPerUnit),
         // A turn without unlock and lock phases, such as the SMG handle's notch, is a held state, not a cycle step.
         ...(part.def.motion?.turn &&
         part.modes.every((mode) => cycle[mode]?.unlockSeconds !== undefined && cycle[mode]?.lockSeconds !== undefined)

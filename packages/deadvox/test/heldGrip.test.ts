@@ -145,7 +145,7 @@ describe('actual-slot held placement', () => {
 
   it('seats the support contact on the exported support anchor, not a hand-copied height', () => {
     const fixture = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
-    const models = [fixture, ...[...registry.models.values()].filter((model) => model.hands?.support)];
+    const models = [fixture, ...[...registry.models.values()].filter((model) => model.hands?.butt)];
     for (const model of models) {
       expect(model.hands!.support!.at.slice(0, 2), `${model.id} support contact comes from the export`).toEqual(
         model.anchors!.support!.slice(0, 2),
@@ -155,7 +155,7 @@ describe('actual-slot held placement', () => {
 
   it('keeps a long gun’s butt in its shoulder seat while lowering and raising it, mirrored for the left slot', () => {
     const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
-    const longGuns = [...registry.models.values()].filter((model) => model.hands);
+    const longGuns = [...registry.models.values()].filter((model) => model.hands?.butt);
     expect(longGuns.length).toBeGreaterThan(0);
     for (const model of longGuns) {
       for (const side of ['right', 'left'] as const) {
@@ -177,7 +177,7 @@ describe('actual-slot held placement', () => {
         const buttOf = (pose: ReturnType<typeof poseAt>): number[] => {
           const local = modelToView(
             model,
-            model.hands!.butt.map((value, axis) => value - model.grip!.at[axis]!) as Vec3,
+            model.hands!.butt!.map((value, axis) => value - model.grip!.at[axis]!) as Vec3,
           );
           return pose.rootOffset.map(
             (root, axis) =>

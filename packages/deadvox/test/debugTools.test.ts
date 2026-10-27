@@ -236,7 +236,7 @@ describe('debug starting equipment', () => {
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const definition = registry.items.get(gun.type)!;
     const model = registry.models.get(definition.model!)!;
-    expect(definition.twoHanded).toBe(false);
+    expect(definition.twoHanded).toBe(true);
     expect(model.gun?.action?.triggerMode).toBe('semi');
     const magazine = gun.slots!.magazine!;
     expect(magazine.cartridges!.length).toBeGreaterThan(0);

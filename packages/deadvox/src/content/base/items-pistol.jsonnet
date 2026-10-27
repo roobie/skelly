@@ -1,9 +1,10 @@
+local pistol = import 'gungen/pistol_service.model.json';
 (import 'economy.libsonnet').pack({
   items: [
     {
       id: 'pistol_service', name: 'Service Nine', category: 'weapon',
       description: 'Polymer-frame 9×19 mm semi-automatic pistol.',
-      model: 'pistol_service', size: [2, 3], twoHanded: false, notLoot: true,
+      model: 'pistol_service', size: [2, 3], twoHanded: true, notLoot: true,
       firearm: {
         handling: { magazine: { removeSimSeconds: 2, insertSimSeconds: 2 } },
         recoilKickRadians: 0.018, dispersionRadians: 0.01, pelletSpreadScale: 1,
@@ -29,7 +30,15 @@
     },
   ],
   models: [
-    import 'gungen/pistol_service.model.json',
+    pistol + {
+      hold: 'forward',
+      hands: {
+        seat: [0.02, -0.3, -0.25],
+        loweredPitchRadians: 0.12,
+        firing: { at: [pistol.grip.at[0], pistol.grip.at[1], 0.016], palm: [0, 0, -1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolGrip' },
+        support: { at: [pistol.grip.at[0] + 0.012, pistol.grip.at[1] - 0.006, -0.032], palm: [0, 0, 1], fingers: [0.8660254037844386, 0.5, 0], pose: 'pistolGrip' },
+      },
+    },
     import 'gungen/magazine_pistol_9.model.json',
     import 'gungen/round_9x19.model.json',
     import 'gungen/case_9x19.model.json',

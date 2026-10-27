@@ -7,7 +7,13 @@ import type { Vec3 } from '../core/coords.ts';
 import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
 import { firearmAimHandPose } from '../core/firearmAimPose.ts';
 import type { Job } from '../core/handling.ts';
-import { heldAnchorOffset, modelToView, readyFirearmPose, throwStanceHandOffset } from '../core/heldPose.ts';
+import {
+  heldAnchorOffset,
+  heldLoweredPitch,
+  modelToView,
+  readyFirearmPose,
+  throwStanceHandOffset,
+} from '../core/heldPose.ts';
 import { type HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -451,7 +457,9 @@ export class ActorAnimator {
       }
     }
     const [turnPitch, turnYaw, turnRoll] = handlingTurn;
-    const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
+    const loweredPitch = itemDefinition?.firearm
+      ? heldLoweredPitch(modelDefinition, firearmReadiness, loweredPitchRadians)
+      : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
     if (!aimingDownSights) {
       this.poseAim(item, readyAim);
@@ -759,6 +767,9 @@ export class ActorAnimator {
       return undefined;
     }
     held.updateMatrixWorld(true);
+    if (handle.handGrip) {
+      return { point: parent.localToWorld(handle.handGrip.clone().addScaledVector(handle.travel, stroke)), reach };
+    }
     const middle = new Box3().setFromObject(handle.node).getCenter(new Vector3());
     const now = parent.localToWorld(handle.node.position.clone());
     const gripped = parent.localToWorld(handle.rest.clone().addScaledVector(handle.travel, stroke));

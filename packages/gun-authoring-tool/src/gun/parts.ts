@@ -4789,7 +4789,13 @@ const pistolSlide: PartFamily = {
         },
       ],
       keepOuts: [keepOut('ejection', [-3, 1, channelHalfWidth], [-1, 2, slideHalfWidth + 4], 'frame')],
-      axes: [],
+      axes: [
+        {
+          kind: 'rack-grip',
+          origin: [PISTOL_SLIDE_REAR + pistolAction.rackGripFromRearU, pistolAction.rackGripHeightU, -slideHalfWidth],
+          dir: X,
+        },
+      ],
       motion: {
         kind: 'linear',
         axis: NEG_X,

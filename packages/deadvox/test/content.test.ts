@@ -3249,7 +3249,7 @@ describe('content', () => {
 
   it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {
     const longGuns = [...baseRegistry.models.values()]
-      .filter((model) => model.hands)
+      .filter((model) => model.hands?.butt)
       .map((model) => ({
         id: model.id,
         pose: model.hands!.firing.pose,

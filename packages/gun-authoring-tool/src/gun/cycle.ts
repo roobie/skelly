@@ -24,6 +24,12 @@ export interface ActionCycleProfile {
   readonly ejectDirection: Vec3;
   readonly rearwardSpeedMetresPerSecond: number;
   readonly dwellSeconds: number;
+  readonly hand?: {
+    readonly reachSeconds: number;
+    readonly pullSeconds: number;
+    readonly dwellSeconds: number;
+    readonly returnHandSeconds: number;
+  };
 }
 
 const unit = (v: Vec3): Vec3 => scale(v, 1 / length(v));
@@ -196,11 +202,14 @@ const buildCycleTimeline = (
   { strokeMetres, notchTurnSeconds }: { readonly strokeMetres: number; readonly notchTurnSeconds?: number | undefined },
 ): CycleTimeline => {
   const spring = springReturn(strokeMetres);
-  const rearwardSeconds = mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : 0.65;
-  const dwellSeconds = mode === 'fire' ? profile.dwellSeconds : 0.3;
+  const reachSeconds = mode === 'hand' ? (profile.hand?.reachSeconds ?? 0) : 0;
+  const rearwardSeconds =
+    mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : (profile.hand?.pullSeconds ?? 0.65);
+  const dwellSeconds = mode === 'fire' ? profile.dwellSeconds : (profile.hand?.dwellSeconds ?? 0.3);
   const forwardSeconds = spring.durationSeconds;
   const mechanicalSeconds = rearwardSeconds + dwellSeconds + forwardSeconds;
-  const durationSeconds = mode === 'fire' ? 60 / profile.rpm : mechanicalSeconds + 0.7;
+  const durationSeconds =
+    mode === 'fire' ? 60 / profile.rpm : reachSeconds + mechanicalSeconds + (profile.hand?.returnHandSeconds ?? 0.7);
   if (mechanicalSeconds > durationSeconds + 1e-9) {
     throw new RangeError(`${action} ${mode} cycle exceeds its declared duration`);
   }
@@ -211,6 +220,7 @@ const buildCycleTimeline = (
       : undefined;
   return {
     ...(notch ? { holdSeconds: notch.holdSeconds, turnAt: (seconds: number) => notch.turnAt(wrap(seconds)) } : {}),
+    ...(reachSeconds > 0 ? { unlockSeconds: reachSeconds } : {}),
     mode,
     durationSeconds,
     rearwardSeconds,
@@ -224,7 +234,7 @@ const buildCycleTimeline = (
         mode === 'hand' || !(empty && profile.holdOpenOnEmpty)
           ? wrap(seconds)
           : Math.max(0, Math.min(seconds, durationSeconds));
-      const phase = { time, rearwardSeconds, dwellSeconds, mechanicalSeconds, spring };
+      const phase = { time: time - reachSeconds, rearwardSeconds, dwellSeconds, mechanicalSeconds, spring };
       return mode === 'fire' ? firePosition({ ...phase, empty, profile }) : handPosition(phase);
     },
   };

@@ -1726,6 +1726,7 @@ const ActionPartSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   axis: UnitVector,
   strokeMetres: Positive,
+  handGrip: optional(Point),
   turn: optional(
     strictObject({
       pivot: Point,
@@ -2092,14 +2093,11 @@ const HAND_POSES = ['fist', 'holding', 'open', 'pistolGrip', 'stockWrist', 'fore
  */
 const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: UnitVector, pose: picklist(HAND_POSES) });
 
-/**
- * A long gun's hold (`DESIGN.md`, "Models"): the butt sits at `seat` in the eye's frame (x right, y up, z back) for
- * a right-handed hold, the left mirrors x; lowering the gun turns it about `butt`, a model point, so the stock stays
- * in the shoulder; the firing hand takes the pistol grip or the stock wrist and the support hand the forend.
- */
+/** Authored palm contacts avoid inferring a shoulder seat for free-held firearms. */
 const HandsModelSchema = strictObject({
   seat: Point,
-  butt: Point,
+  butt: optional(Point),
+  loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
   firing: HandHoldSchema,
   support: HandHoldSchema,
 });

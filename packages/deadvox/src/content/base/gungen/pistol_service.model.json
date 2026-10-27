@@ -36,7 +36,13 @@
     "calibre": "9x19",
     "action": {
       "parts": {
-        "carrier": { "node": "slide:slide", "axis": [-1, 0, 0], "strokeMetres": 0.04025, "modes": ["fire", "hand"] }
+        "carrier": {
+          "node": "slide:slide",
+          "axis": [-1, 0, 0],
+          "strokeMetres": 0.04025,
+          "modes": ["fire", "hand"],
+          "handGrip": [-0.07475, 0.00575, -0.012938]
+        }
       },
       "triggerMode": "semi",
       "fire": {
@@ -46,10 +52,11 @@
         "forwardSimSeconds": 0.03387647660699746
       },
       "hand": {
-        "durationSimSeconds": 1.6838764766069974,
+        "durationSimSeconds": 1.6338764766069973,
         "rearwardSimSeconds": 0.65,
         "dwellSimSeconds": 0.3,
-        "forwardSimSeconds": 0.03387647660699746
+        "forwardSimSeconds": 0.03387647660699746,
+        "unlockSimSeconds": 0.25
       },
       "ejectAt": 0.7,
       "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],

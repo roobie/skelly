@@ -21,6 +21,8 @@ it('exports a cycling semi-auto slide with the calibre and anchors Deadvox admit
   expect(model.anchors?.muzzle).toBeDefined();
   expect(action.triggerMode).toBe('semi');
   expect(action.hand.durationSimSeconds).toBeGreaterThan(0);
+  expect(action.hand.unlockSimSeconds).toBeGreaterThan(0);
+  expect(Object.values(action.parts).some(({ handGrip }) => handGrip?.every(Number.isFinite))).toBe(true);
   expect(action.fire!.durationSimSeconds).toBeGreaterThan(0);
   expect(action.roundsPerSimMinute).toBeGreaterThan(0);
   const glb = readGlb(exported.glb);

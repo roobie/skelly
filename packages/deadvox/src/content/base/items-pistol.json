@@ -37,7 +37,7 @@
       "name": "Service Nine",
       "notLoot": true,
       "size": [2, 3],
-      "twoHanded": false,
+      "twoHanded": true,
       "workInProgress": false
     },
     {
@@ -119,15 +119,17 @@
             "rearwardSimSeconds": 0.010733333333333334
           },
           "hand": {
-            "durationSimSeconds": 1.6838764766069974,
+            "durationSimSeconds": 1.6338764766069973,
             "dwellSimSeconds": 0.29999999999999999,
             "forwardSimSeconds": 0.033876476606997462,
-            "rearwardSimSeconds": 0.65000000000000002
+            "rearwardSimSeconds": 0.65000000000000002,
+            "unlockSimSeconds": 0.25
           },
           "holdOpen": true,
           "parts": {
             "carrier": {
               "axis": [-1, 0, 0],
+              "handGrip": [-0.074749999999999997, 0.0057499999999999999, -0.012938],
               "modes": ["fire", "hand"],
               "node": "slide:slide",
               "strokeMetres": 0.040250000000000001
@@ -236,6 +238,23 @@
           }
         }
       },
+      "hands": {
+        "firing": {
+          "at": [-0.069142999999999996, -0.0132, 0.016],
+          "fingers": [0.8660254037844386, 0.5, 0],
+          "palm": [0, 0, -1],
+          "pose": "pistolGrip"
+        },
+        "loweredPitchRadians": 0.12,
+        "seat": [0.02, -0.29999999999999999, -0.25],
+        "support": {
+          "at": [-0.057142999999999999, -0.019200000000000002, -0.032000000000000001],
+          "fingers": [0.8660254037844386, 0.5, 0],
+          "palm": [0, 0, 1],
+          "pose": "pistolGrip"
+        }
+      },
+      "hold": "forward",
       "id": "pistol_service",
       "parts": {
         "barrel": {

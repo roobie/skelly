@@ -3113,10 +3113,30 @@ try {
           throw new Error('Pistol debug loadout was refused');
         }
         const gun = r.inventory.hands[r.dominant];
-        const model = r.inventory.registry.models.get(r.inventory.registry.items.get(gun.type).model);
+        const definition = r.inventory.registry.items.get(gun.type);
+        const model = r.inventory.registry.models.get(definition.model);
+        if (!(definition.twoHanded && model.hands?.support) || model.hands.butt) {
+          throw new Error('Pistol needs a free two-palm hold, not a shoulder seat');
+        }
         const refusal = r.session.firearms.cock(gun.uid, r.session.sim.time);
         if (refusal) {
           throw new Error(refusal);
+        }
+        const { hand } = model.gun.action;
+        r.session.frame(hand.unlockSimSeconds + hand.rearwardSimSeconds);
+        await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+        const { animator } = r.view.held;
+        const part = animator.firearmParts.get(gun.uid)?.parts.find((candidate) => candidate.handGrip);
+        if (!part) {
+          throw new Error('Pistol rack needs an authored slide contact');
+        }
+        const target = part.node.parent.localToWorld(part.handGrip.clone().add(part.travel));
+        const palm = animator.presentation.armRigs.get(r.off).hand.getWorldPosition(target.clone());
+        if (
+          palm.distanceTo(target) > 1e-6 ||
+          part.node.position.distanceTo(part.rest.clone().add(part.travel)) > 1e-6
+        ) {
+          throw new Error('Support palm must carry the slide through its full authored travel');
         }
         for (let step = 0; r.session.queue.busy; step += 1) {
           if (step > 400) {
