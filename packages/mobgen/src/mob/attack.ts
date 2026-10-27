@@ -353,6 +353,39 @@ const avgLegLen = (actor: WalkActor): number => {
  */
 export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, walkBase: Pose): Pose => {
   const t = clamp(time, 0, clip.duration);
+  const { rotations, clipAngles, armWalkWeight } = attackRotations(actor, clip, time, walkBase);
+  const drop = samplePelvisDrop(compileClip(clip), t) * avgLegLen(actor);
+  // Keep this second ground pass even for clips that only touch the upper body: walkBase may itself be
+  // an idle/walk blend, whose root Y is blended alongside its foot rotations. Recomputing from those
+  // blended rotations is not guaranteed to equal the blended root, so skipping on touched-bone IDs alone
+  // could change results. Same smoothing as walkPose's own pass — otherwise this can disagree with
+  // walkBase.root[1] at a near-tie between feet, breaking exact endpoint equivalence.
+  const root: Vec3 = [
+    walkBase.root[0],
+    groundOffset(actor.bones, actor.extents, rotations, GROUND_SMOOTHING) - drop,
+    walkBase.root[2],
+  ];
+  return walkBase.angles && clipAngles
+    ? { root, rotations, angles: walkBase.angles, clipAngles, armWalkWeight }
+    : { root, rotations };
+};
+
+/**
+ * The bone rotations `attackPose` layers onto `walkBase`, without its root: that root stands the body on its
+ * feet and drops the pelvis by leg length, so a body without legs (the prone crawler) takes these rotations
+ * and grounds them on its own support bones instead.
+ */
+export const attackRotations = (
+  actor: WalkActor,
+  clip: AttackClip,
+  time: number,
+  walkBase: Pose,
+): {
+  readonly rotations: Record<string, Mat3>;
+  readonly clipAngles: Record<string, EulerDeg> | undefined;
+  readonly armWalkWeight: number;
+} => {
+  const t = clamp(time, 0, clip.duration);
   const compiled = compileClip(clip);
   const { boneIds } = compiled;
 
@@ -376,19 +409,5 @@ export const attackPose = (actor: WalkActor, clip: AttackClip, time: number, wal
     const blendedBase = ARM_BONES.has(boneId) ? blendArmBase(baseR, weight) : baseR;
     rotations[boneId] = mulMM(blendedBase, clipR);
   }
-
-  const drop = samplePelvisDrop(compiled, t) * avgLegLen(actor);
-  // Keep this second ground pass even for clips that only touch the upper body: walkBase may itself be
-  // an idle/walk blend, whose root Y is blended alongside its foot rotations. Recomputing from those
-  // blended rotations is not guaranteed to equal the blended root, so skipping on touched-bone IDs alone
-  // could change results. Same smoothing as walkPose's own pass — otherwise this can disagree with
-  // walkBase.root[1] at a near-tie between feet, breaking exact endpoint equivalence.
-  const root: Vec3 = [
-    walkBase.root[0],
-    groundOffset(actor.bones, actor.extents, rotations, GROUND_SMOOTHING) - drop,
-    walkBase.root[2],
-  ];
-  return walkBase.angles && clipAngles
-    ? { root, rotations, angles: walkBase.angles, clipAngles, armWalkWeight: weight }
-    : { root, rotations };
+  return { rotations, clipAngles, armWalkWeight: weight };
 };

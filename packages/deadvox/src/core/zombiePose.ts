@@ -4,7 +4,7 @@ import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } fro
 import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
+import { attackPose, attackRotations, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
@@ -213,8 +213,11 @@ const withAttackPose = (context: ModelPoseContext, base: Pose, attackTime: numbe
   if (attackTime === undefined || attackTime > LUNGE_GRAB.duration) {
     return base;
   }
-  const attacked = attackPose(context.actor, LUNGE_GRAB, attackTime, base);
-  return context.model === 'crawler' ? groundCrawlerPose(context.figure.realized, attacked) : attacked;
+  if (context.model === 'crawler') {
+    const { rotations } = attackRotations(context.actor, LUNGE_GRAB, attackTime, base);
+    return groundCrawlerPose(context.figure.realized, { ...base, rotations });
+  }
+  return attackPose(context.actor, LUNGE_GRAB, attackTime, base);
 };
 
 const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side: number): Pose => {

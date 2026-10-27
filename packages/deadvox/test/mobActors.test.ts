@@ -31,7 +31,7 @@ import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
-import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { flinchSideForId, HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
@@ -1011,6 +1011,36 @@ describe('MobActorMeshes', () => {
         expect(matrix, type.id).toHaveLength(12);
         if (isAmalgam) {
           expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
+        }
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('poses every registry zombie type through its attack wind-up while chasing and flinching', () => {
+    const renderer = new MobActorMeshes(0.5, registry.zombies.size, { zombies: registry.zombies, poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const entries = [...registry.zombies.values()].map((type, index) => {
+        const figureSeed = type.figureSeeds?.[0] ?? AMALGAM_FIGURE_SEED;
+        const zombie = makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type, figureSeed });
+        setOneHitParityPose(zombie, {
+          name: 'attacking',
+          chase: true,
+          speed: 1,
+          phase: 1,
+          windup: type.attack.windupSimSeconds / 2,
+          hitFlinchTime: HIT_FLINCH_DURATION / 4,
+        });
+        return { type, realized: zombieFigure(type, figureSeed).realized, id: store.add(zombie) };
+      });
+      renderer.sync(store, 1 / 60, 1);
+      for (const { type, realized, id } of entries) {
+        for (const bone of realized.body.bones) {
+          const matrix = renderer.boneMatrix(id, bone.id);
+          expect(matrix, `${type.id} ${bone.id}`).toHaveLength(12);
+          expect(matrix!.every(Number.isFinite), `${type.id} ${bone.id}`).toBe(true);
         }
       }
     } finally {
