@@ -1492,6 +1492,11 @@ body.resting #handling {
 #handling[hidden] {
   display: none;
 }
+/* The handling gauge and its caption fill the space below the crosshair, so the prompt moves above the gauge. */
+body:has(#handling:not([hidden])) #prompt {
+  top: auto;
+  bottom: calc(50% + 3.5rem);
+}
 #errors {
   position: fixed;
   left: 0.75rem;
