@@ -351,99 +351,127 @@ it.each([
   },
 );
 
-it('the unity disc draws every non-optic gun piece but not its own mounted optic', async () => {
-  const geometry = new BoxGeometry();
-  const material = new MeshBasicMaterial();
-  const compositions = new Map<Object3D, ReturnType<ModelLibrary['heldLook']>>();
-  const f = await fixture(true, '?loadout=ar&optic=optic_lpvo_1_6x', (look) => {
-    const root = new Group().add(new Group().add(new Group()));
-    const parts = new Group().add(
-      new Mesh(geometry, material),
-      new Mesh(geometry, material),
-      new Mesh(geometry, material),
-    );
-    root.children[0]!.children[0]!.add(parts);
-    const slots = Object.fromEntries(
-      look.slots.map(({ slot, model }) => {
-        const frame = new Group();
-        parts.add(frame);
-        if (model === undefined) {
-          return [slot, { frame }];
-        }
-        const fitted = new Group().add(new Mesh(geometry, material), new Mesh(geometry, material));
-        frame.add(fitted);
-        return [slot, { frame, model: fitted, modelId: model }];
-      }),
-    );
-    const composed = { root, parts: [], slots };
-    compositions.set(root, composed);
-    return composed;
-  });
-  const scene = new Scene();
-  vi.stubGlobal('location', { search: '?tube=disc' });
-  configureOpticsSpike(f.view, scene, f.camera);
-  const lens = new OpticLensRenderer();
-  const foreignOptic = new Mesh(geometry, material);
-  scene.add(foreignOptic);
-  try {
-    f.view.update(f.camera, f.pose, 0, {
-      firearms: [],
-      readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
-    });
-    const frame = { ...f.view.opticLensFrame!, magnification: 1 };
-    const owner = scene.getObjectByName('held-item-right')!;
-    const optic = mountedOptic(f.registry, f.item)!;
-    const [slot] = Object.entries(f.item.slots!).find(([, child]) => child?.uid === optic.uid)!;
-    const composed = [...compositions].find(([root]) => owner.getObjectById(root.id))![1]!;
-    const mounted = composed.slots[slot]!.model!;
-    const opticPieces = new Set<Mesh>();
-    mounted.traverse((object) => {
-      if (object instanceof Mesh) {
-        opticPieces.add(object);
+const unityOpticTypes = (): string[] => {
+  const registry = baseRegistry();
+  const types = [...registry.items.values()]
+    .filter((item) => {
+      const attachment = item.model ? registry.models.get(item.model)?.gun?.attachment : undefined;
+      if (attachment?.kind !== 'optic') {
+        return false;
       }
+      const range = attachment.properties.magnification;
+      return range ? range.min <= 1 && range.max >= 1 : (item.opticMagnification ?? 1) === 1;
+    })
+    .map(({ id }) => id);
+  if (types.length === 0) {
+    throw new Error('Need an authored unity optic to exercise disc rendering');
+  }
+  return types;
+};
+
+it.each(unityOpticTypes())(
+  '%s defaults to a unity disc retaining gun pieces but excluding its own optic',
+  async (opticType) => {
+    const geometry = new BoxGeometry();
+    const material = new MeshBasicMaterial();
+    const compositions = new Map<Object3D, ReturnType<ModelLibrary['heldLook']>>();
+    const f = await fixture(true, `?loadout=ar&optic=${opticType}`, (look) => {
+      const root = new Group().add(new Group().add(new Group()));
+      const parts = new Group().add(
+        new Mesh(geometry, material),
+        new Mesh(geometry, material),
+        new Mesh(geometry, material),
+      );
+      root.children[0]!.children[0]!.add(parts);
+      const slots = Object.fromEntries(
+        look.slots.map(({ slot, model }) => {
+          const frame = new Group();
+          parts.add(frame);
+          if (model === undefined) {
+            return [slot, { frame }];
+          }
+          const fitted = new Group().add(new Mesh(geometry, material), new Mesh(geometry, material));
+          frame.add(fitted);
+          return [slot, { frame, model: fitted, modelId: model }];
+        }),
+      );
+      const composed = { root, parts: [], slots };
+      compositions.set(root, composed);
+      return composed;
     });
-    const gunPieces: Mesh[] = [];
-    owner.traverse((object) => {
-      if (object instanceof Mesh && !opticPieces.has(object)) {
-        gunPieces.push(object);
-      }
-    });
-    expect(opticPieces.size).toBeGreaterThan(0);
-    expect(gunPieces.length).toBeGreaterThan(0);
-    const render = vi.fn((world: Scene, camera: PerspectiveCamera) => {
-      const drawn = new Set<Mesh>();
-      world.traverseVisible((object) => {
-        if (object instanceof Mesh && camera.layers.test(object.layers)) {
-          drawn.add(object);
+    const scene = new Scene();
+    vi.stubGlobal('location', { search: '' });
+    configureOpticsSpike(f.view, scene, f.camera);
+    const lens = new OpticLensRenderer();
+    const foreignOptic = new Mesh(geometry, material);
+    scene.add(foreignOptic);
+    try {
+      const optic = mountedOptic(f.registry, f.item)!;
+      const range = optic.model.gun!.attachment!.properties.magnification;
+      f.view.update(f.camera, f.pose, 0, {
+        firearms: [],
+        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+        ...(range && range.min < range.max
+          ? { opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification: 1 } }
+          : {}),
+      });
+      const frame = f.view.opticLensFrame;
+      expect(frame).toBeDefined();
+      expect(frame!.magnification).toBe(1);
+      expect(frame!.worldAtUnity).toBe(true);
+      const owner = scene.getObjectByName('held-item-right')!;
+      const [slot] = Object.entries(f.item.slots!).find(([, child]) => child?.uid === optic.uid)!;
+      const composed = [...compositions].find(([root]) => owner.getObjectById(root.id))![1]!;
+      const mounted = composed.slots[slot]!.model!;
+      const opticPieces = new Set<Mesh>();
+      mounted.traverse((object) => {
+        if (object instanceof Mesh) {
+          opticPieces.add(object);
         }
       });
-      for (const piece of gunPieces) {
-        expect(drawn.has(piece)).toBe(true);
-      }
+      const gunPieces: Mesh[] = [];
+      owner.traverse((object) => {
+        if (object instanceof Mesh && !opticPieces.has(object)) {
+          gunPieces.push(object);
+        }
+      });
+      expect(opticPieces.size).toBeGreaterThan(0);
+      expect(gunPieces.length).toBeGreaterThan(0);
+      const render = vi.fn((world: Scene, camera: PerspectiveCamera) => {
+        const drawn = new Set<Mesh>();
+        world.traverseVisible((object) => {
+          if (object instanceof Mesh && camera.layers.test(object.layers)) {
+            drawn.add(object);
+          }
+        });
+        for (const piece of gunPieces) {
+          expect(drawn.has(piece)).toBe(true);
+        }
+        for (const piece of opticPieces) {
+          expect(drawn.has(piece)).toBe(false);
+        }
+        expect(drawn.has(foreignOptic)).toBe(true);
+      });
+      const renderer = {
+        getDrawingBufferSize: (out: Vector2) => out.set(8, 8),
+        getRenderTarget: () => null,
+        setRenderTarget: () => undefined,
+        render,
+      } as unknown as WebGLRenderer;
+      lens.prepare(renderer, scene, f.camera, frame!);
+      expect(render).toHaveBeenCalledOnce();
       for (const piece of opticPieces) {
-        expect(drawn.has(piece)).toBe(false);
+        expect(f.camera.layers.test(piece.layers)).toBe(true);
       }
-      expect(drawn.has(foreignOptic)).toBe(true);
-    });
-    const renderer = {
-      getDrawingBufferSize: (out: Vector2) => out.set(8, 8),
-      getRenderTarget: () => null,
-      setRenderTarget: () => undefined,
-      render,
-    } as unknown as WebGLRenderer;
-    lens.prepare(renderer, scene, f.camera, frame);
-    expect(render).toHaveBeenCalledOnce();
-    for (const piece of opticPieces) {
-      expect(f.camera.layers.test(piece.layers)).toBe(true);
+    } finally {
+      lens.dispose();
+      f.dispose();
+      geometry.dispose();
+      material.dispose();
+      vi.unstubAllGlobals();
     }
-  } finally {
-    lens.dispose();
-    f.dispose();
-    geometry.dispose();
-    material.dispose();
-    vi.unstubAllGlobals();
-  }
-});
+  },
+);
 
 it('holographic relief changes the physical eye distance and its projected window together', async () => {
   const f = await fixture(true, '?loadout=ar&optic=optic_holographic');

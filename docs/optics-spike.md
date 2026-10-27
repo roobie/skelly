@@ -35,9 +35,9 @@ must describe the same frame: a screen-space aperture cannot stay aligned with
 world geometry posed from an earlier camera sample. See
 `packages/deadvox/src/game/play.ts`, `updateFrame`.
 
-The world disc is the default for every optic: the holographic window takes the
-same presentation as a scope at unity power because that image was chosen in the
-visual comparison. The eyecup comparison is not retained: the disc was chosen,
+Every unmagnified optic shares one presentation: the world disc.
+The holographic window follows the scope-at-unity presentation because that
+image was chosen in the visual comparison. The eyecup comparison is not retained: the disc was chosen,
 and cups only add geometry outside the scope body without replacing rays through
 the tube with world imagery. The hybrid comparison also has no purpose without
 cups. See
