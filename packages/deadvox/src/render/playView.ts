@@ -210,7 +210,7 @@ export const createPlayView = (
   const look = lookDefaultsOf(registry);
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
-  const models = new ModelLibrary(registry, report);
+  const models = new ModelLibrary(registry, report, undefined, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {

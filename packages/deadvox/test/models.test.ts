@@ -434,6 +434,33 @@ it('prepares integral-magazine manual exports and binds movers by glTF node inde
   );
 });
 
+it('bounds concurrent model fetches', () => {
+  const template = registry.models.get('lamp')!;
+  const defs = ['first', 'second', 'third'].map((id) => ({ ...template, id, file: `assets/models/${id}.glb` }));
+  const finishes: (() => void)[] = [];
+  const started: string[] = [];
+  const spy = vi.spyOn(GLTFLoader.prototype, 'load').mockImplementation((url, _onLoad, _onProgress, onError) => {
+    started.push(url);
+    finishes.push(() => onError!(new Error('fixture failure')));
+    return {} as GLTFLoader;
+  });
+  const reports: string[] = [];
+  const models = new ModelLibrary(
+    { ...registry, models: new Map(defs.map((def) => [def.id, def])) },
+    (message) => reports.push(message),
+    Object.fromEntries(defs.map((def) => [def.file, def.file])),
+    2,
+  );
+  expect(started).toHaveLength(2);
+  finishes.shift()!();
+  expect(started).toHaveLength(3);
+  finishes.shift()!();
+  finishes.shift()!();
+  expect(reports).toHaveLength(3);
+  expect(models.version).toBe(0);
+  spy.mockRestore();
+});
+
 it("draws a grenade without the pin and lever it has shed, by the exported glb's piece names", async () => {
   const model = registry.items.get('frag_grenade')!.model!;
   const def = registry.models.get(model)!;

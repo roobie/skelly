@@ -238,14 +238,26 @@ export class ModelLibrary {
     registry: Registry,
     report: (message: string) => void,
     files: Readonly<Record<string, string>> = PACK_FILES,
+    loadConcurrency = 8,
   ) {
     const loader = new GLTFLoader();
-    for (const def of registry.models.values()) {
+    const pending = [...registry.models.values()].flatMap((def) => {
       const url = files[def.file];
       if (url === undefined) {
         queueMicrotask(() => report(`model "${def.id}": no file "${def.file}" in the pack`));
-        continue;
+        return [];
       }
+      return [[def, url] as const];
+    });
+    let next = 0;
+    const load = (): void => {
+      const entry = pending[next];
+      next += 1;
+      if (entry === undefined) {
+        return;
+      }
+      const [def, url] = entry;
+      const finish = () => load();
       loader.load(
         url,
         (gltf) => {
@@ -268,11 +280,19 @@ export class ModelLibrary {
             this.version += 1;
           } catch (error) {
             report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`);
+          } finally {
+            finish();
           }
         },
         undefined,
-        (error) => report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`),
+        (error) => {
+          report(`model "${def.id}" didn't load: ${error instanceof Error ? error.message : String(error)}`);
+          finish();
+        },
       );
+    };
+    for (let slot = 0; slot < loadConcurrency; slot += 1) {
+      load();
     }
   }
 
