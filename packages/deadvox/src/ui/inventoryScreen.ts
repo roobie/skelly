@@ -110,7 +110,6 @@ export interface ScreenHooks {
   refusal?: (text: string) => void;
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
-  inspected?: (item: Item) => void;
   workOptions: (uid: number) => readonly WorkOption[];
   character: () => {
     readonly skills: Readonly<Record<string, number>>;
@@ -1637,7 +1636,7 @@ export class InventoryScreen {
       this.inspectedUid = item?.uid;
       // Inspection belongs to selection, not passive repaints of the same details.
       if (item) {
-        this.hooks.inspected?.(item);
+        this.hooks.dispatch({ kind: 'inventory.inspect', itemUid: item.uid });
       }
     }
     if (!item) {

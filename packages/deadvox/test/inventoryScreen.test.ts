@@ -29,6 +29,7 @@ import { PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import {
   applyReplayActionPayload,
+  isReplayActionPayload,
   type ReplayActionPayload,
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
@@ -167,7 +168,6 @@ function setup(contentRegistry = registry) {
     notice: (text: string) => notices.push(text),
     refusal: (text: string) => refusals.push(text),
     describe: (_item: typeof beans) => ['test description'],
-    inspected: vi.fn(),
     workOptions: (_uid: number): WorkOption[] => [],
     character: () => character,
     body: () => body,
@@ -601,7 +601,7 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
-  it('routes Down and Enter from find without losing the query', () => {
+  it('routes real Down/Up and Enter to selection and best-pocket while find retains text editing', () => {
     const { screen, root, lastPayload } = setup();
     const keyboard = new KeyboardInput(inputBindings);
     keyboard.context = () => ({ context: 'inventory', debug: false });
@@ -617,18 +617,32 @@ describe('inventory screen Lit rendering', () => {
       const query = 'fixture query';
       field.value = query;
       field.dispatchEvent(new Event('input', { bubbles: true }));
-      for (const action of ['inventory.next', 'inventory.next', 'inventory.hands']) {
-        const previous = screen.selected;
-        const chord = inputBindings.chords(action)[0]!;
-        field.dispatchEvent(new KeyboardEvent('keydown', { ...chord, bubbles: true, cancelable: true }));
-        if (action === 'inventory.next') {
-          expect(screen.selected).toBeDefined();
-          expect(screen.selected).not.toBe(previous);
-        }
-        field.dispatchEvent(new KeyboardEvent('keyup', { ...chord, bubbles: true }));
-        screen.update();
+      const press = (code: string, key = code) => {
+        const event = new KeyboardEvent('keydown', { code, key, bubbles: true, cancelable: true });
+        field.dispatchEvent(event);
+        field.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
+        return event;
+      };
+      expect(press('ArrowDown').defaultPrevented).toBe(true);
+      const first = screen.selected;
+      expect(first).toBeDefined();
+      expect(press('ArrowDown').defaultPrevented).toBe(true);
+      expect(screen.selected).not.toBe(first);
+      expect(press('ArrowUp').defaultPrevented).toBe(true);
+      expect(screen.selected).toBe(first);
+      for (const [code, key] of [
+        ['ArrowLeft', 'ArrowLeft'],
+        ['ArrowRight', 'ArrowRight'],
+        ['Home', 'Home'],
+        ['End', 'End'],
+        ['KeyW', 'w'],
+      ]) {
+        expect(press(code!, key!).defaultPrevented).toBe(false);
+        expect(screen.selected).toBe(first);
       }
-      expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: screen.selected!.uid });
+      expect(press('Enter').defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: first!.uid });
+      screen.update();
       expect(field.value).toBe(query);
       expect(document.activeElement).toBe(field);
     } finally {
@@ -649,17 +663,40 @@ describe('inventory screen Lit rendering', () => {
     expect(description).not.toHaveBeenCalled();
   });
 
-  it('reports inspection only when the displayed selection changes, not on repaint', () => {
-    const { screen, hooks, beans, inv } = setup();
+  it('records selection inspection for the next tick but never records a passive repaint', () => {
+    const { screen, hooks, beans, inv, commandOwners } = setup();
+    const pendingPlayerTickActions = new PlayerTickActions();
+    const recorder = { queueAction: vi.fn() };
+    const inspect = vi.fn();
+    const owners = { ...commandOwners, inspect };
+    hooks.dispatch = createScreenCommandDispatcher({
+      isReplaying: () => false,
+      inputRecorder: () => recorder,
+      inputContext: () => 'inventory',
+      pendingPlayerTickActions,
+      apply: (command) => applyReplayActionPayload(command, owners),
+      inventory: inv,
+      notice: hooks.notice,
+      refusal: hooks.refusal,
+    });
     screen.selected = beans;
     screen.update();
-    expect(hooks.inspected).toHaveBeenCalledExactlyOnceWith(beans);
-    hooks.inspected.mockClear();
+    const payload = { kind: 'inventory.inspect', itemUid: beans.uid };
+    expect(isReplayActionPayload(payload)).toBe(true);
+    expect(recorder.queueAction).toHaveBeenCalledExactlyOnceWith('inventory.inspect', 'down', 'inventory', { payload });
+    expect(inspect).not.toHaveBeenCalled();
+    pendingPlayerTickActions.applyAtNextTick();
+    expect(inspect).toHaveBeenCalledExactlyOnceWith(beans.uid);
+    recorder.queueAction.mockClear();
+    inspect.mockClear();
     screen.selectTab('items');
-    expect(hooks.inspected).not.toHaveBeenCalled();
+    pendingPlayerTickActions.applyAtNextTick();
+    expect(recorder.queueAction).not.toHaveBeenCalled();
+    expect(inspect).not.toHaveBeenCalled();
     screen.selected = inv.worn.torso;
     screen.update();
-    expect(hooks.inspected).toHaveBeenCalledExactlyOnceWith(inv.worn.torso);
+    pendingPlayerTickActions.applyAtNextTick();
+    expect(inspect).toHaveBeenCalledExactlyOnceWith(inv.worn.torso!.uid);
   });
 
   it('dims the listed items a typed query misses, and Escape in the field clears it', () => {

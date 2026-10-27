@@ -1374,7 +1374,6 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    inspected: (item) => tutorial?.weapons.inspected(item, registry),
     describe: (item) => [
       ...survival.describe(item),
       ...firearms.describe(item),
@@ -1942,6 +1941,12 @@ export const startPlay = (
       }
       playtestObserver?.beginSearch(entity, nameOf(entity));
       return search(entity);
+    },
+    inspect: (uid) => {
+      const item = inventory.itemByUid(uid);
+      if (item) {
+        tutorial?.weapons.inspected(item, registry);
+      }
     },
     work: actOnWork,
     vehicleWork: session.beginVehicleWork,

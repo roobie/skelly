@@ -86,10 +86,11 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting' },
   { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions' },
 ] as const;
-const INVENTORY_FIND_BINDINGS: ReadonlySet<string> = new Set([
+const INVENTORY_FIND_BINDINGS: ReadonlySet<string> = new Set(['inventory.best-pocket']);
+const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set([
+  ...INVENTORY_FIND_BINDINGS,
   'inventory.previous',
   'inventory.next',
-  'inventory.hands',
 ]);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
@@ -799,7 +800,10 @@ const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | u
     return undefined;
   }
   if (event.target.matches('[data-inventory-find]')) {
-    return INVENTORY_FIND_BINDINGS;
+    // Vertical arrows can select an item; horizontal arrows still belong to native caret editing.
+    return event.code === 'ArrowUp' || event.code === 'ArrowDown'
+      ? INVENTORY_FIND_ARROW_BINDINGS
+      : INVENTORY_FIND_BINDINGS;
   }
   return event.target.matches('[role="combobox"]') ? INVENTORY_COMBO_BOX_BINDINGS : undefined;
 };

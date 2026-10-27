@@ -10,6 +10,7 @@ export type ReplayActionPayload =
   | { kind: 'liquid.pour'; sourceUid: number; receiverUid: number }
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
+  | { kind: 'inventory.inspect'; itemUid: number }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
   | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
@@ -141,6 +142,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'inventory.to-hands':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'inventory.inspect':
+      return isUid(payload.itemUid);
     case 'power.set':
       return isPowerPayload(payload);
     case 'charger.start':
@@ -208,6 +211,7 @@ export interface ReplayCommandOwners {
   queue: Pick<HandlingQueue, 'enqueue' | 'cancel'>;
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
+  inspect?: (itemUid: number) => void;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
@@ -263,6 +267,9 @@ export const applyReplayActionPayload = (
     }
     case 'inventory.to-hands':
       return owners.toHands(payload.itemUid, payload.feet);
+    case 'inventory.inspect':
+      owners.inspect?.(payload.itemUid);
+      return undefined;
     case 'item.pickup':
       return owners.pickup(payload.itemUid, payload.mode, payload.feet);
     case 'furniture.interact':
