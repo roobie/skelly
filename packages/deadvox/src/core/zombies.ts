@@ -293,6 +293,14 @@ export interface MeleeResult {
   readonly part?: string | undefined;
 }
 
+/** A shot's outcome: how many pellets struck a body, and per direction the distance in blocks at which a body
+ * stopped that pellet, undefined when it struck none. The session clips its shot trace there (`DESIGN.md`,
+ * "Shot impacts"). */
+export interface PelletHits {
+  readonly hits: number;
+  readonly stops: readonly (number | undefined)[];
+}
+
 /** A blast and the fragments flying from its centre, the fragments' origin. */
 export interface Detonation {
   readonly blast: ExplosiveSpec['blast'];
@@ -3885,8 +3893,9 @@ export class ZombieSystem {
 
   /** Hitscan pellets use the same posed regions, solid occlusion, HP/death and dismemberment path as melee.
    * They do not consume melee stamina, advance its cooldown or emit fist/swing sounds. */
-  firePellets(shot: Omit<PelletShot, 'diameterMm'>): number {
+  firePellets(shot: Omit<PelletShot, 'diameterMm'>): PelletHits {
     let hits = 0;
+    const stops: (number | undefined)[] = [];
     const poseCache = new Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>();
     const weapon: HitWeapon = {
       ...projectileWeapon(shot.damage, shot.rangeMetres, shot.impulse),
@@ -3906,8 +3915,10 @@ export class ZombieSystem {
       });
       const zombie = aim && aim.distanceMetres <= shot.rangeMetres ? this.store.get(aim.id) : undefined;
       if (!(aim && zombie)) {
+        stops.push(undefined);
         continue;
       }
+      stops.push(aim.distanceMetres / this.options.blockSize);
       const strike = this.applyMeleeHit({
         id: aim.id,
         zombie,
@@ -3931,7 +3942,7 @@ export class ZombieSystem {
     for (const [id, entry] of strikes) {
       this.carve(id, entry.zombie, entry.strikes);
     }
-    return hits;
+    return { hits, stops };
   }
 
   /**

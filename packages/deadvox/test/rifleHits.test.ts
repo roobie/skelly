@@ -38,11 +38,14 @@ const shotInput = (item: Item): FirearmShotInput => ({
   aimingDownSights: true,
 });
 
-const runtime = (onTrajectory?: (trajectory: ResolvedFirearmTrajectory) => void) =>
+const runtime = (
+  onTrajectory?: (trajectory: ResolvedFirearmTrajectory) => void,
+  isSolid: (x: number, y: number, z: number) => boolean = (_x, y) => y < 0,
+) =>
   createSession({
     registry,
     world: new World(),
-    isSolid: (_x, y) => y < 0,
+    isSolid,
     isOpaque: () => false,
     scale: makeScale(BLOCK),
     seed: 71,
@@ -142,7 +145,7 @@ describe('rifle hits', () => {
         cooldown: 0,
       })?.region as ZombieRegion | undefined;
       const before = { ...zombie.regions };
-      expect(session.zombies.firePellets(projectileShot(ammo, origin, [direction]))).toBe(region ? 1 : 0);
+      expect(session.zombies.firePellets(projectileShot(ammo, origin, [direction])).hits).toBe(region ? 1 : 0);
       expect(changedRegions(before, zombie.regions)).toEqual(region ? [region] : []);
       if (region) {
         expect(before[region]! - zombie.regions[region]!).toBeCloseTo(expectedLoss(ammo, region, before));
@@ -227,5 +230,34 @@ describe('rifle hits', () => {
     const body = new VehicleOccupancy(registry, session.inventory.vehicles, BLOCK);
     expect(traces).toHaveLength(1);
     expect(traces[0]!.hit && body.isSolid(...traces[0]!.hit.block)).toBe(true);
+  });
+
+  it('a session shot stopped by a body marks no wall behind it, and a miss marks that wall', () => {
+    // A wall across the line of fire, beyond where the shambler stands.
+    const wallZ = -12;
+    const fireAtWall = (withShambler: boolean) => {
+      const traces: ResolvedFirearmTrajectory['traces'][number][] = [];
+      const session = runtime(
+        ({ traces: shot }) => traces.push(...shot),
+        (_x, y, z) => y < 0 || z < wallZ,
+      );
+      const zombie = withShambler
+        ? session.zombieStore.get(session.zombies.add(registry.zombies.get('shambler')!, [0, 0, -6]))!
+        : undefined;
+      const before = zombie && { ...zombie.regions };
+      const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {
+        rounds: 1,
+        magazines: session.magazines,
+      });
+      expect(session.firearms.fire(shotInput(rifle))).toBe(true);
+      expect(traces).toHaveLength(1);
+      return { trace: traces[0]!, struck: zombie && before ? changedRegions(before, zombie.regions).length : 0 };
+    };
+    const stopped = fireAtWall(true);
+    expect(stopped.struck).toBe(1);
+    expect(stopped.trace.hit).toBeUndefined();
+    expect(stopped.trace.endpoint[2]).toBeGreaterThan(wallZ);
+    const missed = fireAtWall(false);
+    expect(missed.trace.hit?.block[2]).toBeLessThan(wallZ);
   });
 });

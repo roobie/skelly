@@ -1165,6 +1165,11 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
+An item's usages and tiers alone make it eligible for loot; no item gets a special
+admission rule. Ordinary loot admission needs no per-item exception, so the hunting
+rifle and its .308 ammunition carry the same usages and tiers as the revolver and its
+cartridges. See `src/content/base/economy.libsonnet`, `commonItems`.
+
 Furniture has no loot table of its own; only a placed container has one, named by the place it stands in, and later by its loot unit's plan. What a container holds follows from where it stands, not from what it is, so a bunker's wardrobe and a bedroom's can hold different things, and no container rolls a table its author never chose.
 
 Police is its own usage, apart from Hunting, because a police armoury holds police
@@ -2173,7 +2178,9 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   wall receive its visible impact mark. The session traces each round against
   the same physical world its hits resolve in, parked vehicles included, and the
   view only draws those segments: a view that traced its own world could show a
-  shot passing through a body that stopped it. The shot trace's reach is shared
+  shot passing through a body that stopped it. A pellet a body stops ends its
+  segment at that body, so the wall behind it gets no mark; see
+  `src/core/zombies.ts`, `PelletHits`. The shot trace's reach is shared
   firearms tuning in content, so the crosshair, bore target and impact marks
   agree on one range and a mod changes it once
   (`PILLARS.md`, "Content forward compatibility"). See `src/game/session.ts`,
