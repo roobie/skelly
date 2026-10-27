@@ -2,16 +2,17 @@ import type { Bone } from '@mobgen/core/body.ts';
 import { clampJointAngles, jointAngles, jointRotation } from '@mobgen/core/joints.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, mulMV, rotX, rotY, rotZ } from '@mobgen/core/math.ts';
 import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
+import { type Template, templateByName } from '@mobgen/core/template.ts';
 import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { attackPose, attackRotations, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
+import { type AttackClip, attackClipFor, attackPose, attackRotations } from '@mobgen/mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
-import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
@@ -185,58 +186,63 @@ const amalgamHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
   };
 };
 
-const attackTimeFor = ({
-  attackWait,
-  attackCooldown,
-  attackWindup,
-  attackWindupSeconds,
-}: ShamblerPoseInput): number | undefined => {
+const attackTimeFor = (
+  { attackWait, attackCooldown, attackWindup, attackWindupSeconds }: ShamblerPoseInput,
+  clip: AttackClip,
+): number | undefined => {
   if (attackWait !== undefined && attackCooldown !== undefined) {
     if (attackWait <= 0) {
       return undefined;
     }
     const elapsed = Math.max(0, attackCooldown - attackWait);
-    return Math.max(0, LUNGE_GRAB.hitTime - attackWindupSeconds) + elapsed;
+    return Math.max(0, clip.hitTime - attackWindupSeconds) + elapsed;
   }
   return attackWindup > 0
-    ? Math.max(0, LUNGE_GRAB.hitTime - attackWindupSeconds) + attackWindupSeconds - attackWindup
+    ? Math.max(0, clip.hitTime - attackWindupSeconds) + attackWindupSeconds - attackWindup
     : undefined;
 };
 
 interface ModelPoseContext {
-  readonly model: string;
+  readonly template: Template;
   readonly figure: ShamblerFigure;
   readonly actor: WalkActor;
 }
 
 const withAttackPose = (context: ModelPoseContext, base: Pose, attackTime: number | undefined): Pose => {
-  if (attackTime === undefined || attackTime > LUNGE_GRAB.duration) {
+  const clip = attackClipFor(context.template);
+  if (attackTime === undefined || attackTime > clip.duration) {
     return base;
   }
-  if (context.model === 'crawler') {
-    const { rotations } = attackRotations(context.actor, LUNGE_GRAB, attackTime, base);
+  if (context.template.bodyPlan === 'crawler') {
+    const { rotations } = attackRotations(context.actor, clip, attackTime, base);
     return groundCrawlerPose(context.figure.realized, { ...base, rotations });
   }
-  return attackPose(context.actor, LUNGE_GRAB, attackTime, base);
+  return attackPose(context.actor, clip, attackTime, base);
 };
 
 const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side: number): Pose => {
-  if (context.model === 'crawler') {
+  if (context.template.bodyPlan === 'crawler') {
     return crawlerHitPose(context.figure.realized, base, time, side);
   }
-  if (context.model === 'runner') {
-    return flinchPoseWithClip(context.actor, time, base, { clip: RUNNER_HIT_FLINCH, side });
-  }
-  return flinchPose(context.actor, time, base, { side });
+  return flinchPoseWithClip(context.actor, time, base, { clip: flinchClipFor(context.template), side });
 };
 
 const STANCE_CROSSFADE_SECONDS = 0.5;
 
 export const targetStanceWeight = (input: ShamblerPoseInput): number => {
-  const attackTime = attackTimeFor(input);
-  return input.chasing || input.attackWindup > 0 || (attackTime !== undefined && attackTime <= LUNGE_GRAB.duration)
-    ? 1
-    : 0;
+  if (input.chasing || input.attackWindup > 0) {
+    return 1;
+  }
+  const model = input.model ?? 'shambler';
+  if (model === 'acid') {
+    return acidAttackTimeFor(input) === undefined ? 0 : 1;
+  }
+  if (model === 'amalgam') {
+    return 0;
+  }
+  const clip = attackClipFor(templateByName(model));
+  const attackTime = attackTimeFor(input, clip);
+  return attackTime !== undefined && attackTime <= clip.duration ? 1 : 0;
 };
 
 export const advanceStanceWeight = (current: number, target: number, dt: number): number => {
@@ -365,12 +371,13 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   }
   const seeded = actorForSeed(model, input.seed);
   const { actor, bones } = seeded;
-  const attackTime = attackTimeFor(input);
+  const template = templateByName(model);
+  const attackTime = attackTimeFor(input, attackClipFor(template));
   const walk =
     model === 'crawler'
       ? crawlerGaitPose(figure.realized, input.gaitPhase, input.speed)
       : humanoidWalkPose(seeded, input, input.stanceWeight ?? targetStanceWeight(input));
-  const context = { model, figure, actor };
+  const context = { template, figure, actor };
   const basePose = withAttackPose(context, walk, attackTime);
   const headPose: Pose =
     input.headYaw === 0
@@ -398,3 +405,14 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
 };
 
 export const HIT_FLINCH_DURATION = HIT_FLINCH.duration;
+
+export const zombieHitFlinchDuration = (model: string): number => {
+  if (model === 'amalgam') {
+    return HIT_FLINCH_DURATION;
+  }
+  if (model === 'acid') {
+    return acidTemplate.animation.hitDuration;
+  }
+  const template = templateByName(model);
+  return template.bodyPlan === 'crawler' ? HIT_FLINCH_DURATION : flinchClipFor(template).duration;
+};

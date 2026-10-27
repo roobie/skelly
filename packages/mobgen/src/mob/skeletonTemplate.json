@@ -21,6 +21,7 @@
     }
   },
   "description": "Bare voxel bones on the humanoid rig: separate ribs, open jaw and glowing eye sockets.",
+  "flinchClip": "hit-flinch",
   "gaze": {
     "head": {
       "pitchDeg": 25,

@@ -40,16 +40,11 @@ const withoutCharge = (weapon: MeleeWeapon): MeleeWeapon => {
 };
 
 /** The strike a released charge carries: its damage and impulse scaled by the level, with nothing left to charge. */
-const chargedMeleeStrike = (weapon: MeleeWeapon, charge: MeleeCharge, level: number): MeleeWeapon => {
-  if (weapon.impulse === undefined) {
-    throw new Error('A charged melee weapon needs an impulse');
-  }
-  return {
-    ...withoutCharge(weapon),
-    damage: weapon.damage * (1 + (charge.damageMultiplier - 1) * level),
-    impulse: weapon.impulse * (1 + (charge.impulseMultiplier - 1) * level),
-  };
-};
+const chargedMeleeStrike = (weapon: MeleeWeapon, charge: MeleeCharge, level: number): MeleeWeapon => ({
+  ...withoutCharge(weapon),
+  damage: weapon.damage * (1 + (charge.damageMultiplier - 1) * level),
+  impulse: weapon.impulse * (1 + (charge.impulseMultiplier - 1) * level),
+});
 
 export interface BeginMeleeSwing {
   origin: Vec3;
@@ -69,10 +64,10 @@ export const copyMeleeWeapon = (weapon: MeleeWeapon): MeleeWeapon => ({
   damage: weapon.damage,
   reach: weapon.reach,
   cooldown: weapon.cooldown,
-  ...(weapon.contactFraction === undefined ? {} : { contactFraction: weapon.contactFraction }),
-  ...(weapon.windupCapSimSeconds === undefined ? {} : { windupCapSimSeconds: weapon.windupCapSimSeconds }),
-  ...(weapon.stamina === undefined ? {} : { stamina: weapon.stamina }),
-  ...(weapon.impulse === undefined ? {} : { impulse: weapon.impulse }),
+  contactFraction: weapon.contactFraction,
+  windupCapSimSeconds: weapon.windupCapSimSeconds,
+  stamina: weapon.stamina,
+  impulse: weapon.impulse,
   ...(weapon.damageVariance === undefined ? {} : { damageVariance: weapon.damageVariance }),
   ...(weapon.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: weapon.headDamageMultiplier }),
   ...(weapon.limbDamageMultiplier === undefined ? {} : { limbDamageMultiplier: weapon.limbDamageMultiplier }),
@@ -108,16 +103,11 @@ const unit = (v: Vec3): Vec3 => {
   return n > 0 ? [v[0] / n, v[1] / n, v[2] / n] : [0, 0, 0];
 };
 const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
-const contactTimeOf = (weapon: MeleeWeapon): number => {
-  if (weapon.contactFraction === undefined || weapon.windupCapSimSeconds === undefined) {
-    throw new Error('A player melee weapon needs its windup timing');
-  }
-  return meleeContactTime(weapon.cooldown, weapon.contactFraction, weapon.windupCapSimSeconds);
-};
+const contactTimeOf = (weapon: MeleeWeapon): number =>
+  meleeContactTime(weapon.cooldown, weapon.contactFraction, weapon.windupCapSimSeconds);
 // Restore accepts exactly the swings tick resolves, so a save inside the float tolerance loads.
 const contactReached = (elapsed: number, contactAt: number): boolean => elapsed + 1e-9 >= contactAt;
-const validMeleeCharge = (charge: MeleeCharge, impulse: number | undefined): boolean =>
-  impulse !== undefined &&
+const validMeleeCharge = (charge: MeleeCharge): boolean =>
   [charge.fullSimSeconds, charge.curveExponent, charge.damageMultiplier, charge.impulseMultiplier].every(
     (value) => Number.isFinite(value) && value > 0,
   ) &&
@@ -130,8 +120,10 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
   Number.isFinite(weapon.reach) &&
   weapon.reach > 0 &&
   weapon.cooldown === actionCooldown &&
-  (weapon.stamina === undefined || (Number.isFinite(weapon.stamina) && weapon.stamina >= 0)) &&
-  (weapon.impulse === undefined || (Number.isFinite(weapon.impulse) && weapon.impulse >= 0)) &&
+  Number.isFinite(weapon.stamina) &&
+  weapon.stamina >= 0 &&
+  Number.isFinite(weapon.impulse) &&
+  weapon.impulse >= 0 &&
   (weapon.damageVariance === undefined ||
     (Number.isFinite(weapon.damageVariance) && weapon.damageVariance >= 0 && weapon.damageVariance <= 1)) &&
   (weapon.headDamageMultiplier === undefined ||
@@ -143,7 +135,7 @@ const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean 
     (sound) => sound === undefined || sound.length > 0,
   ) &&
   (weapon.type === undefined || MELEE_DAMAGE_KINDS.includes(weapon.type)) &&
-  (weapon.charge === undefined || validMeleeCharge(weapon.charge, weapon.impulse));
+  (weapon.charge === undefined || validMeleeCharge(weapon.charge));
 
 export class PlayerCombat {
   private playerAttackWait = 0;

@@ -48,6 +48,7 @@ import {
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
@@ -346,7 +347,7 @@ const incapacitate = (zombie: Zombie) => {
   const origin: Vec3 = [center[0] - zombie.facing[0] * 2, center[1], center[2] - zombie.facing[2] * 2];
   const direction: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];
   const hit = system.swing(origin, direction, {
-    motion: 'swing',
+    ...FISTS_MELEE,
     damage: Number.MAX_SAFE_INTEGER,
     reach: 3,
     cooldown: 0,

@@ -350,6 +350,7 @@ describe('rendered and hit shambler poses', () => {
           damage: 8,
           reach: 0.1,
           cooldown: 0.8,
+          impulse: 0,
         },
       );
       expect(aim?.region).toBe('head');

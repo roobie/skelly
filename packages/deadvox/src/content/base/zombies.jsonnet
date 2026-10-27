@@ -549,7 +549,7 @@ local content = {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
       },
-      "abilities": ["grab"],
+      "abilities": [],
       "loot": "shambler_pockets"
     },
     {

@@ -445,7 +445,7 @@ describe('melee hit sounds', () => {
   });
 
   it('emits exactly one weapon impact and no fist impact for a weapon hit', () => {
-    const result = emittedFor({ motion: 'swing', damage: 12, reach: 0.7, cooldown: 1, impulse: 5, type: 'blunt' });
+    const result = emittedFor({ ...FISTS_MELEE, damage: 12, reach: 0.7, cooldown: 1, impulse: 5, type: 'blunt' });
     expect(result.hit).toBe(true);
     expect(result.events).toEqual(['melee_hit']);
   });
@@ -1647,7 +1647,7 @@ describe('shambler scenarios', () => {
       blockSize: BLOCK_SIZE,
     }).head.find((box) => box.bone === 'head')!;
     const direction = normalized([head.center[0] - origin[0], head.center[1] - origin[1], head.center[2] - origin[2]]);
-    expect(system.swing(origin, direction, { motion: 'swing', damage: 1, reach: 2, cooldown: 0 })).toBe(id);
+    expect(system.swing(origin, direction, { ...FISTS_MELEE, damage: 1, reach: 2, cooldown: 0 })).toBe(id);
   });
 
   it('reports the actual damage and final head/torso outcomes from each melee swing', () => {

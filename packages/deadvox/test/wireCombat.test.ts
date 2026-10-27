@@ -88,6 +88,7 @@ it('allows a player thrust through wire but rejects swing and wrestle regardless
   for (const motion of ['thrust', 'swing', 'wrestle'] as const) {
     const { system, origin, direction, id } = fixture();
     const weapon: MeleeWeapon = {
+      ...FISTS_MELEE,
       motion,
       reach: 3,
       damage: 1,
@@ -107,7 +108,7 @@ it("a player's punch does not pass wire", () => {
 
 it('keeps shots and their aim display blocked by wire even when thrusting melee can pass', () => {
   const { system, origin, direction, wire } = fixture();
-  const weapon: MeleeWeapon = { motion: 'thrust', reach: 10, damage: 1, cooldown: 0, type: 'pierce' };
+  const weapon: MeleeWeapon = { ...FISTS_MELEE, motion: 'thrust', reach: 10, damage: 1, cooldown: 0, type: 'pierce' };
   const shot = { origin, directions: [direction], damage: 1, rangeMetres: 10, impulse: 0 };
   expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
   expect(system.firePellets(shot).hits).toBe(0);
