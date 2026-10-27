@@ -1,5 +1,4 @@
 local authored = [
-    (import 'things/player_bust.model.json') + { anchors+: { spine: [0, 0.2, 0] } },
     std.objectRemoveKey(import 'things/canned_beans.model.json', 'parts'),
     std.objectRemoveKey(import 'things/canned_soup.model.json', 'parts'),
     import 'things/opened_beans.model.json',

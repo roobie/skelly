@@ -12,7 +12,7 @@ local frame(part, pivot=null) = {
   part: part, at: [0, 0, 0], turn: [0, 0, 0], insideView: false,
 } + if pivot == null then {} else { pivot: pivot };
 local bust = [model for model in (import 'models-items.jsonnet').models if model.id == 'player_bust'][0];
-local torsoFrame = frame('body', 'spine') + { at: [-value for value in bust.anchors.spine] };
+local torsoFrame = frame('body', 'spine') + { at: [0 - value for value in bust.anchors.spine] };
 local handPose(fingers, thumbAcross, thumbIn) = {
   fingersDegrees: fingers,
   thumbAcrossDegrees: thumbAcross,
@@ -55,7 +55,11 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         fingers: segment('fingers', 'knuckles'),
         thumb: segment('thumb', 'thumb_root'),
         grip: 'grip',
-        elbowPole: [std.sqrt(0.5), -std.sqrt(0.5), 0],
+        elbowPole: {
+          up: [std.sqrt(0.5), -std.sqrt(0.5), 0],
+          down: [0.5, -0.5, -std.sqrt(0.5)],
+        },
+        minimumBendDegrees: { up: 0, down: 45 },
         handPoses: {
           fist: handPose(95, 60, 45),
           holding: handPose(80, 50, 30),
@@ -113,7 +117,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         torsoLimitDegrees: [45, 80],
         neckLimitDegrees: [35, 35],
         headLimitDegrees: [60, 60],
-        stockShoulderOffset: [-0.03, 0.025, 0.02],
+        stockShoulderOffset: { up: [-0.03, 0.025, 0.02], down: [-0.03, 0.025, -0.06] },
       },
       lookDownLean: { startPitchDegrees: 60, torsoForwardDegrees: 15 },
       mannequinPlacement: { aheadMetres: 1.2, asideMetres: 1.2 },

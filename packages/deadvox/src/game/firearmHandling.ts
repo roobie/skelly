@@ -1582,7 +1582,8 @@ export class FirearmMechanics {
     let origin = portOrigin;
     const originBlocks: Vec3 = origin.map((value) => value / this.blockSize) as Vec3;
     if (this.isSolid(...(originBlocks.map(Math.floor) as Vec3))) {
-      const eyeBlocks: Vec3 = [...pose.eye];
+      // Anatomical eyes can cross a wall before the collision body does.
+      const eyeBlocks: Vec3 = this.isSolid(...(pose.eye.map(Math.floor) as Vec3)) ? [...pose.feet] : [...pose.eye];
       const eyeCell: Vec3 = eyeBlocks.map(Math.floor) as Vec3;
       const towardPort = originBlocks.map((value, axis) => value - eyeBlocks[axis]!) as Vec3;
       const distance = Math.hypot(...towardPort);
@@ -1591,7 +1592,9 @@ export class FirearmMechanics {
         const hit = raycast(eyeBlocks, direction, distance, this.isSolid);
         if (hit) {
           const lastFreeDistance = Math.max(0, hit.distance - 1e-6);
-          origin = eye.map((value, axis) => value + direction[axis]! * lastFreeDistance * this.blockSize) as Vec3;
+          origin = eyeBlocks.map(
+            (value, axis) => (value + direction[axis]! * lastFreeDistance) * this.blockSize,
+          ) as Vec3;
         }
       }
     }

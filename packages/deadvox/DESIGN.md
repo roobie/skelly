@@ -1643,8 +1643,10 @@ tuning, not a reason to fork the eye origin. See `src/core/playerLookPose.ts`,
 
 Steep look-down hip lean is part of the same pose: looking through the avatar's
 centreline is not realistic biomechanics. It must not move the collision body,
-and an already horizontal torso must not fold farther toward the ground. See
-`src/core/playerLookPose.ts`, `playerLookLean`.
+and an already horizontal torso must not fold farther toward the ground. The
+torso's aim share includes the hip lean rather than adding a second fold; this
+keeps crouching from amplifying a downward aim. See `src/core/playerLookPose.ts`,
+`playerLookLean` and `playerLookPose`.
 
 The optical adapter must not become another visible arm or held-item owner.
 Authored head-slot interiors use a matching world-frame exclusion to avoid
@@ -1666,11 +1668,14 @@ and optic anchors a frame behind the view used to draw them. See
 Shoulders are body attachments, not movable reach handles. When an authored grip
 cannot be reached at authored limb lengths, preserving shoulder and hand contact
 takes priority over exact segment length: a floating sleeve breaks the whole-body
-figure. Reach fitting must not move the item away from its shared simulation pose
-or add per-view hold offsets. The content's joints and grips determine the fit;
+figure. Reach fitting must retain the authored minimum elbow bend: a fully
+straightened arm loses its bend plane and cannot keep a downward hold clear of
+the torso. It must not move the item away from its shared simulation pose or add
+per-view hold offsets. The content's joints and grips determine the fit;
 changing to skinned bones would not remove this geometric constraint. Elbow bend
 hints stay in the body's upright frame so looking down does not swing a folded arm
-sideways across the chest. Hands and held objects must follow aim at the
+sideways across the chest. Downward holds need their own forward bend and shoulder
+contact because the torso can otherwise hide the forearm. Hands and held objects must follow aim at the
 extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.

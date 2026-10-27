@@ -5,7 +5,10 @@
         "headLimitDegrees": [60, 60],
         "neckLimitDegrees": [35, 35],
         "neckShare": 0.5,
-        "stockShoulderOffset": [-0.029999999999999999, 0.025000000000000001, 0.02],
+        "stockShoulderOffset": {
+          "down": [-0.029999999999999999, 0.025000000000000001, -0.059999999999999998],
+          "up": [-0.029999999999999999, 0.025000000000000001, 0.02]
+        },
         "torsoLimitDegrees": [45, 80],
         "torsoShare": {
           "down": 0.10000000000000001,
@@ -13,7 +16,10 @@
         }
       },
       "armRig": {
-        "elbowPole": [0.70710678118654757, -0.70710678118654757, 0],
+        "elbowPole": {
+          "down": [0.5, -0.5, -0.70710678118654757],
+          "up": [0.70710678118654757, -0.70710678118654757, 0]
+        },
         "fingers": {
           "part": "fingers",
           "pivot": "knuckles"
@@ -59,6 +65,10 @@
             "thumbInDegrees": 35
           }
         },
+        "minimumBendDegrees": {
+          "down": 45,
+          "up": 0
+        },
         "shoulderFromEye": [0.29999999999999999, -0.55000000000000004, 0.050000000000000003],
         "thumb": {
           "part": "thumb",
@@ -71,7 +81,7 @@
       },
       "attachmentFrames": {
         "clothing_body": {
-          "at": [-0, -0.20000000000000001, -0],
+          "at": [0, -0.20000000000000001, 0.0050000000000000044],
           "insideView": false,
           "part": "body",
           "pivot": "spine",
@@ -151,7 +161,7 @@
           "turn": [0, 0, 0]
         },
         "torso": {
-          "at": [-0, -0.20000000000000001, -0],
+          "at": [0, -0.20000000000000001, 0.0050000000000000044],
           "insideView": false,
           "part": "body",
           "pivot": "spine",

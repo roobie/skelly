@@ -11,16 +11,14 @@ import { heldItemPoses } from '../src/render/heldPresentation.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 const shoulderError = (group: Object3D, registry: Registry, figure: FigureDef, side: HandSide): number => {
   group.updateMatrixWorld(true);
-  const body = group.getObjectByName('figure-body')!;
   const joint = figure.body.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
-  const expected = new Vector3(...registry.models.get(figure.body.model)!.anchors![joint]!).applyMatrix4(
-    body.matrixWorld,
-  );
+  const expected = figureAnchorAt({ group, registry, figure, name: 'body', model: figure.body.model, anchor: joint });
   const arm = group.getObjectByName(`first-person-arm-${side}`)!;
   const actual = arm.getObjectByName(ARM_NODE.shoulder)!.getWorldPosition(new Vector3());
   return actual.distanceTo(expected);

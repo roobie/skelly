@@ -379,12 +379,18 @@ export class HeldPresentation {
     right.normalize().applyQuaternion(inverse);
     const up = new Vector3(0, 1, 0).applyQuaternion(inverse);
     const back = new Vector3().crossVectors(right, up);
-    const [outward, vertical, backward] = this.figure.armRig.elbowPole;
+    const down = Math.max(0, up.z);
+    const pole = this.figure.armRig.elbowPole;
+    const [outward, vertical, backward] = pole.up.map(
+      (value, axis) => value + (pole.down[axis]! - value) * down,
+    ) as Vec3;
     const bendSide = right
       .multiplyScalar((side === 'right' ? 1 : -1) * outward)
       .addScaledVector(up, vertical)
       .addScaledVector(back, backward);
-    const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up });
+    const minimum = this.figure.armRig.minimumBendDegrees;
+    const minimumBendDegrees = minimum.up + (minimum.down - minimum.up) * down;
+    const solved = solveArmRig(rig, { shoulder, grip, handFrame, bendSide, up, minimumBendDegrees });
     const toArm = arm.getWorldQuaternion(new Quaternion()).invert().multiply(rotation);
     const place = (pivot: Object3D, at: Vector3, turn: Quaternion): void => {
       pivot.position.copy(arm.worldToLocal(this.frame.localToWorld(at.clone())));

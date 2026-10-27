@@ -3593,7 +3593,11 @@ const ArmRigSchema = strictObject({
   /** The anchor on the palm's midline a held item's grip sits against, moved out to the palm's face. */
   grip: Id,
   /** A body-relative pole keeps the elbow bend independent of where the eye looks. */
-  elbowPole: UnitVector,
+  elbowPole: strictObject({ up: UnitVector, down: UnitVector }),
+  minimumBendDegrees: strictObject({
+    up: pipe(number(), minValue(0), maxValue(90)),
+    down: pipe(number(), minValue(0), maxValue(90)),
+  }),
   /** One closing per `HAND_POSES` name; a held model's hold names the one its hand takes. */
   handPoses: strictObject({
     fist: HandPoseSchema,
@@ -3683,7 +3687,7 @@ const FigureSchema = strictObject({
     torsoLimitDegrees: tuple([Positive, Positive]),
     neckLimitDegrees: tuple([Positive, Positive]),
     headLimitDegrees: tuple([Positive, Positive]),
-    stockShoulderOffset: Point,
+    stockShoulderOffset: strictObject({ up: Point, down: Point }),
   }),
   lookDownLean: strictObject({
     startPitchDegrees: pipe(

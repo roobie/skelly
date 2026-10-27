@@ -37,6 +37,7 @@ import type { ModelLibrary } from '../src/render/models.ts';
 import { FIGURE_PIVOT, firstPersonShoulder, PlayerMeshes } from '../src/render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { figureAnchorAt } from './figureAnchors.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
@@ -159,28 +160,8 @@ const drawnVertices = (meshes: PlayerMeshes): { part: string; at: Vector3 }[] =>
       return vertices;
     });
 };
-const anchorAt = (meshes: PlayerMeshes, name: 'body' | FigureLimb, model: string, anchor: string): Vector3 => {
-  meshes.group.updateMatrixWorld(true);
-  const anchors = registry.models.get(model)!.anchors!;
-  const point = new Vector3(...anchors[anchor]!);
-  if (name === 'body') {
-    const pivots = [
-      [playerFigure.body.spine.pivot, 'figure-spine'],
-      [playerFigure.body.neck.pivot, 'figure-neck'],
-      [playerFigure.body.head.pivot, FIGURE_PIVOT.head],
-    ];
-    const pivot = pivots.find(([joint]) => joint === anchor);
-    if (pivot) {
-      return drawnPart(meshes, name).getObjectByName(pivot[1]!)!.getWorldPosition(point);
-    }
-    if ([playerFigure.body.joints.leftShoulder, playerFigure.body.joints.rightShoulder].includes(anchor)) {
-      return drawnPart(meshes, name)
-        .getObjectByName('figure-spine')!
-        .localToWorld(point.sub(new Vector3(...anchors[playerFigure.body.spine.pivot]!)));
-    }
-  }
-  return point.applyMatrix4(drawnPart(meshes, name).matrixWorld);
-};
+const anchorAt = (meshes: PlayerMeshes, name: 'body' | FigureLimb, model: string, anchor: string): Vector3 =>
+  figureAnchorAt({ group: meshes.group, registry, figure: playerFigure, name, model, anchor });
 
 /**
  * A crouched leg bends at the knee with its foot flat on the ground behind the knee; returns the hip. Yaw 0 faces -z,

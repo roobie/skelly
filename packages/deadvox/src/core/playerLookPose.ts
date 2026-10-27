@@ -98,13 +98,15 @@ export const playerLookPose = ({
     const at = anchor(name);
     return [origin[0] - at[0], origin[1] + at[1], origin[2] - at[2]];
   };
-  const hipTurn = -stancePose.torsoForwardDegrees * RADIANS - playerLookLean(figure, pitch, stance);
+  const hipAimTurn = -playerLookLean(figure, pitch, stance);
+  const hipTurn = -stancePose.torsoForwardDegrees * RADIANS + hipAimTurn;
   const { torsoShare, neckShare, torsoLimitDegrees, neckLimitDegrees, headLimitDegrees, stockShoulderOffset } =
     figure.aimPose;
   const limit = (angle: number, bounds: readonly [number, number]): number =>
     Math.max(-bounds[0] * RADIANS, Math.min(bounds[1] * RADIANS, angle));
   const needed = pitch - hipTurn;
-  const spineTurn = limit(pitch * (pitch < 0 ? torsoShare.down : torsoShare.up), torsoLimitDegrees);
+  // The torso share is the total aim bend, not a second fold added to the hip lean.
+  const spineTurn = limit(pitch * (pitch < 0 ? torsoShare.down : torsoShare.up) - hipAimTurn, torsoLimitDegrees);
   const neckTurn = limit((needed - spineTurn) * neckShare, neckLimitDegrees);
   const headTurn = limit(needed - spineTurn - neckTurn, headLimitDegrees);
   const pose: PlayerLookPose = {
@@ -131,11 +133,11 @@ export const playerLookPose = ({
   ) as Record<HandSide, Vec3>;
   const stockSeats = Object.fromEntries(
     (['right', 'left'] as const).map((side) => {
-      const offset: Vec3 = [
-        stockShoulderOffset[0] * (side === 'right' ? 1 : -1),
-        stockShoulderOffset[1],
-        stockShoulderOffset[2],
-      ];
+      const down = Math.max(0, -Math.sin(pitch));
+      const seat = stockShoulderOffset.up.map(
+        (value, axis) => value + (stockShoulderOffset.down[axis]! - value) * down,
+      ) as Vec3;
+      const offset: Vec3 = [seat[0] * (side === 'right' ? 1 : -1), seat[1], seat[2]];
       const turned = rotate(offset, hipTurn + spineTurn);
       return [side, rotate(shoulders[side].map((v, i) => v + turned[i]! - eye[i]!) as Vec3, -pitch)];
     }),

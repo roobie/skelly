@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
+import { Box3, Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
@@ -22,19 +22,21 @@ import { createPlayerBody } from './playerFixture.ts';
 
 vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
 
-const fixture = async (firearm = true) => {
+const fixture = async (firearm = true, firearmType?: string) => {
   const base = baseRegistry();
-  const gun = [...base.items.values()].find(
-    (def) =>
-      def.firearm &&
-      base.models
-        .get(def.model!)
-        ?.gun?.attachments?.some((attachment) =>
-          [...base.models.values()].some(
-            (model) => model.gun?.attachment?.id === attachment.id && model.gun.attachment.kind === 'optic',
-          ),
-        ),
-  );
+  const gun = firearmType
+    ? base.items.get(firearmType)
+    : [...base.items.values()].find(
+        (def) =>
+          def.firearm &&
+          base.models
+            .get(def.model!)
+            ?.gun?.attachments?.some((attachment) =>
+              [...base.models.values()].some(
+                (model) => model.gun?.attachment?.id === attachment.id && model.gun.attachment.kind === 'optic',
+              ),
+            ),
+      );
   if (!gun) {
     throw new Error('Need an optic-equipped firearm source');
   }
@@ -186,8 +188,8 @@ it('the play frame poses overlay and world held views from this frame rather tha
   }
 });
 
-it('shares an anatomical eye, shouldered stock and gun grips at both aim limits and ready levels', async () => {
-  const f = await fixture();
+it('shares an anatomical eye, shouldered stock and connected arms throughout aim and ready levels', async () => {
+  const f = await fixture(true, 'rifle_assault');
   const figure = f.registry.figures.get('player')!;
   const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
   const bodyModel = f.registry.models.get(figure.body.model)!;
@@ -195,7 +197,9 @@ it('shares an anatomical eye, shouldered stock and gun grips at both aim limits 
   expect(model.hands).toBeDefined();
   try {
     const cases = (['standing', 'crouching'] as const).flatMap((stance) =>
-      [-LOOK_PITCH_LIMIT, LOOK_PITCH_LIMIT].flatMap((pitch) => [0, 1].map((progress) => ({ stance, pitch, progress }))),
+      [-LOOK_PITCH_LIMIT, -LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT].flatMap((pitch) =>
+        [0, 1].map((progress) => ({ stance, pitch, progress })),
+      ),
     );
     for (const { stance, pitch, progress } of cases) {
       const label = `${stance} pitch ${pitch} ready ${progress}`;
@@ -247,6 +251,27 @@ it('shares an anatomical eye, shouldered stock and gun grips at both aim limits 
           new Vector3(...heldHoldFrame(model, 'right', side === 'right' ? 'firing' : 'support').at),
         );
         expect(hand.distanceTo(grip), `${label} ${side}: hand on gun`).toBeLessThan(1e-6);
+        const armModel = f.registry.models.get(figure.limbs[side === 'right' ? 'rightArm' : 'leftArm'].model)!;
+        const foreEnd = arm
+          .getObjectByName(ARM_NODE.elbow)!
+          .localToWorld(
+            new Vector3(...armModel.anchors![figure.armRig.hand.pivot]!).sub(
+              new Vector3(...armModel.anchors![figure.armRig.fore.pivot]!),
+            ),
+          );
+        const handWrist = arm.getObjectByName('hand-model')!.getWorldPosition(new Vector3());
+        expect(foreEnd.distanceTo(handWrist), `${label} ${side}: wrist continues forearm`).toBeLessThan(1e-6);
+        const foreBounds = new Box3().setFromObject(arm.getObjectByName(ARM_NODE.elbow)!);
+        expect(foreBounds.distanceToPoint(handWrist), `${label} ${side}: skin reaches wrist`).toBeLessThan(0.002);
+        const elbow = arm.getObjectByName(ARM_NODE.elbow)!.getWorldPosition(new Vector3());
+        if (pitch === -LOOK_PITCH_LIMIT && side === 'left') {
+          const armShoulder = arm.getObjectByName(ARM_NODE.shoulder)!.getWorldPosition(new Vector3());
+          const forward = new Vector3(-Math.sin(f.actor.yaw), 0, -Math.cos(f.actor.yaw));
+          expect(
+            elbow.sub(armShoulder).dot(forward),
+            `${label}: support elbow stays ahead of shoulder`,
+          ).toBeGreaterThan(0);
+        }
       }
     }
     expect(f.actor.body).toEqual(bodyBefore);
