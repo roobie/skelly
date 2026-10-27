@@ -769,11 +769,21 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         const { sight } = model.gun;
         const held = r.view.playerMeshes.group.getObjectByName('held-item-left');
         const V = r.engine.camera.position.constructor;
-        const eye = modelToView(
+        const ocular = modelToView(
           model,
-          sight.eye.map((value, axis) => value - sight.direction[axis] * sight.eyeReliefMetres - model.grip.at[axis]),
+          sight.eye.map((value, axis) => value - model.grip.at[axis]),
         );
-        const worldEye = held.localToWorld(new V(...eye));
+        const worldOcular = held.localToWorld(new V(...ocular));
+        const direction = new V(...modelToView(model, sight.direction)).transformDirection(held.matrixWorld);
+        const cameraDelta = r.engine.camera.position.clone().sub(worldOcular);
+        const figure = r.inventory.registry.figures.get('player');
+        const bodyModel = r.inventory.registry.models.get(figure.body.model);
+        const eyeAnchors = figure.body.eyes.map((name) => bodyModel.anchors[name]);
+        const anatomicalEye = new V(...eyeAnchors[0])
+          .add(new V(...eyeAnchors[1]))
+          .multiplyScalar(0.5)
+          .sub(new V(...bodyModel.anchors[figure.body.head.pivot]));
+        r.view.playerMeshes.group.getObjectByName('figure-head').localToWorld(anatomicalEye);
         const butt = held.localToWorld(
           new V(
             ...modelToView(
@@ -786,7 +796,12 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         r.view.playerMeshes.shoulderPosition('left', shoulder);
         return {
           kind: sight.kind,
-          eyeError: worldEye.distanceTo(r.engine.camera.position),
+          lineError: cameraDelta.clone().cross(direction).length(),
+          eyeDistance: -cameraDelta.dot(direction),
+          eyeRange: sight.eyeDistanceRangeMetres,
+          cameraOffset: r.engine.camera.position.distanceTo(anatomicalEye),
+          cameraLimit: model.hands.ads?.cameraOffsetLimitMetres ?? figure.aimPose.ads.cameraOffsetLimitMetres,
+          shoulderLimit: model.hands.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
           shoulderError: butt.distanceTo(shoulder),
           roll: r.engine.camera.rotation.z,
         };
@@ -794,8 +809,16 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       { uid: firearm.uid, moduleUrl: heldPoseModule },
     );
     assert.equal(irons.kind, 'iron');
-    assert(irons.eyeError < 0.01, `physical irons meet the anatomical eye: ${irons.eyeError} m`);
-    assert(irons.shoulderError < 0.1, `ADS retains shoulder contact: ${irons.shoulderError} m`);
+    assert(irons.lineError < 1e-6, `unobstructed ADS camera lies on the physical sight line: ${irons.lineError} m`);
+    assert(
+      irons.eyeDistance >= irons.eyeRange[0] - 1e-6 && irons.eyeDistance <= irons.eyeRange[1] + 1e-6,
+      'ADS camera stays inside the exported iron eye range',
+    );
+    assert(
+      irons.cameraOffset <= irons.cameraLimit + 1e-6,
+      'ADS camera stays inside its authored body-eye offset bound',
+    );
+    assert(irons.shoulderError <= irons.shoulderLimit + 1e-6, `ADS retains shoulder contact: ${irons.shoulderError} m`);
     assert(Math.abs(irons.roll) < 1e-6, 'head cant does not roll the camera');
     await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
     const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);

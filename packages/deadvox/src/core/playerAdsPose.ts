@@ -1,6 +1,5 @@
 import type { AimFrame } from './aim.ts';
 import { dominantSide } from './character.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { sightedFirearmModel } from './firearmSight.ts';
 import type { Inventory } from './inventory.ts';
 import type { PlayerAdsPose } from './playerLookPose.ts';
@@ -22,8 +21,6 @@ export const playerAdsPose = (
         side,
         model,
         aimFrame,
-        adsApertureFill: inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
-          ?.adsApertureFill,
       };
     }
   }

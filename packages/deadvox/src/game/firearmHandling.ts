@@ -26,7 +26,6 @@ import { defOf, type Item } from '../core/items.ts';
 import { settleOnWorld } from '../core/itemThrow.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { countText } from '../core/numberText.ts';
-import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { type dropTarget, playerPockets, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
@@ -670,8 +669,6 @@ export class FirearmMechanics {
       aimFrame: input.aimFrame,
       aimingDownSights: input.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
-      adsApertureFill: tuning.adsApertureFill,
-      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
       isSolid: this.isSolid,
     });
     const { origin: shotOrigin, muzzle, direction, up } = bore;

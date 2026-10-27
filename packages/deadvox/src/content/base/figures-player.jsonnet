@@ -119,6 +119,9 @@ local handPose(fingers, thumbAcross, thumbIn) = {
         headLimitDegrees: [60, 60],
         stockShoulderOffset: { up: [-0.03, 0.025, 0.02], down: [-0.03, 0.025, -0.06] },
         ads: {
+          cameraOffsetLimitMetres: 0.2,
+          cameraWallMarginMetres: 0.01,
+          stockShoulderLimitMetres: 0.1,
           torsoRollDegrees: 25,
           headRollDegrees: 45,
           neckLengthToleranceFraction: 0.05,

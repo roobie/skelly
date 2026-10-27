@@ -3683,8 +3683,6 @@ export const startPlay = (
       stockSeat: stockSeat(side),
       aimFrame: aim.frame,
       loweredPitchRadians: tuning.loweredPitchRadians,
-      adsApertureFill: tuning.adsApertureFill,
-      verticalFovDegrees: camera.fov,
     };
     const basePose = heldFirearmTransform(poseInput);
     const heldFirearmFrame = firearms.frames().find((entry) => entry.uid === item.uid);

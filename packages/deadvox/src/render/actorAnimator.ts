@@ -2,7 +2,6 @@ import { Box3, Euler, Group, MathUtils, Matrix4, type Mesh, Object3D, Quaternion
 import { type AimFrame, NEUTRAL_AIM } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { type FirearmAimOffHand, firearmAimOffHand } from '../core/firearmAimOffHand.ts';
 import { firearmAimHandPose } from '../core/firearmAimPose.ts';
@@ -82,6 +81,7 @@ interface OffHandGrip {
 }
 
 export interface HeldHandlingFrame extends HeldPresentationFrame {
+  readonly sourceEyeMetres?: Vec3;
   readonly stockSeats?: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly firearms: readonly HeldFirearmPose[];
   readonly opticZoom?: OpticZoomFrame | undefined;
@@ -115,7 +115,6 @@ export interface ActorEyeFrame {
 }
 
 export interface ActorViewPlacement {
-  readonly fov: number;
   readonly poseItem: (frame: ActorItemPose) => void;
 }
 
@@ -522,9 +521,6 @@ export class ActorAnimator {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
-            adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
-              ?.adsApertureFill,
-            ...(this.viewPlacement ? { verticalFovDegrees: this.viewPlacement.fov } : {}),
           }
         : undefined;
     const basePose = poseInput ? this.presentation.firearmTransform(poseInput) : undefined;

@@ -7,7 +7,7 @@ read_if:
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
-  - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, per-gun ADS welds, anatomical bounds or common placement
+  - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
   - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
@@ -1632,35 +1632,47 @@ attached rather than moving to suit the observing camera. See
 
 Aim belongs to the anatomical torso, neck and head, because the arms alone
 cannot plausibly carry an extreme aim while the face stays level. The gameplay
-eye is the posed head's eye, not a fixed camera target that the drawn body must
-chase. Camera, interaction rays and held-item simulation share that origin so
-an observer cannot change the actor's reach or hold. The live drawing uses the
-gameplay stance without a separate visual blend that could detach the eye.
-Content owns the articulation and its limits. Reach at extreme aim is content
-tuning, not a reason to fork the eye origin. See `src/core/playerLookPose.ts`,
-`playerLookPose` and `playerEyePosition`; and `src/render/playerFigure.ts`,
-`PlayerMeshes`.
+eye is the posed head's eye. Interaction rays and held-item simulation retain
+that origin so an observing camera cannot change the actor's reach or hold.
+The live drawing uses the gameplay stance without a separate visual blend that
+could detach the eye. See `src/core/playerLookPose.ts`, `playerLookPose` and
+`playerEyePosition`; and `src/render/playerFigure.ts`, `PlayerMeshes`.
 
-ADS is a posture of that same body: the head cants toward the stock and the
-upper torso brings the shoulder into the sight line. Camera, gameplay rays and
-every observer follow its anatomical eye; a private irons eye would disagree
-with the visible actor's reach and firearm. The camera stays level rather than
-inheriting the head's cant, preserving a stable horizon independently of body
-articulation. A sighted long gun must own its cheek-weld posture beside its
-handling content. The eye sits well above the shoulder and sight heights differ
-between guns, so one figure-owned posture cannot fit every gun while keeping
-an anatomical neck. A gun without a weld may use the figure default only if it
-passes the same physical-fit checks; missing authoring must name the gun rather
-than silently deform the body. See `src/content/base/models-firearms.libsonnet`,
-`longGunHands`; and `test/firearmSight.test.ts`.
+The shared actor must be indicative of physical truth for multiplayer, without
+requiring perfect world-perspective ADS or remodelling existing weapons to fit
+a head. Aim sets the firearm; the body poses toward it, never moving the gun to
+fit the head. Fixed anatomical neck and head limits still apply during ADS;
+neck length is a body dimension, not a reach handle. The pose uses simulation
+aim so rendering cannot invent another weld. See `src/core/playerLookPose.ts`,
+`adsLookPose`; and `src/core/playerAdsPose.ts`, `playerAdsPose`.
 
-Content owns stock contact, neck-length tolerance and joint limits. Neck length
-is a body dimension, not a reach handle: sight fit must not stretch it beyond
-that tolerance or exceed neck and head turn limits. A remaining sight gap is
-an authoring-boundary defect, not permission to displace the eye or deform the
-neck. The shared pose uses simulation aim so rendering cannot invent
-a different weld. See `src/core/playerLookPose.ts`, `adsLookPose`; and
-`src/core/playerAdsPose.ts`, `playerAdsPose`.
+Only the first-person ADS camera may cover the remaining gap. In clear space
+it takes the point on the physical sight line nearest the body eye, within the
+content-owned camera offset bound. Iron sights export an eye-distance range
+from the gun tool; optics retain their fixed eye point. Neither camera position
+nor FOV may relocate the shared firearm. The camera stays level rather than
+inheriting head cant. Per-gun camera and stock-contact limits override the figure
+defaults, because existing gun dimensions and sight heights differ. Content owns
+those limits, while anatomy remains independent of the gun. Checks enforce
+sight-line membership, viewing range, camera displacement, stock contact and
+anatomical bounds rather than an exact anatomical sight fit. See
+`src/core/adsView.ts`, `adsCameraEye` and `adsLimits`;
+`src/content/base/models-firearms.libsonnet`, `longGunHands`; and
+`test/firearmSight.test.ts`.
+
+The camera wall check traces the segment from the body eye to the proposed
+camera and pulls back before a hit; collision safety takes priority over sight
+alignment. The shortened offset remains inside its displacement bound. Strict
+no-extra-view would require a body-eye depth mask, because a clear segment does
+not prevent corner parallax. That mask is deferred from #1373: small bounded
+parallax is accepted unless it becomes a multiplayer peeking problem. See
+`src/core/adsView.ts`, `guardAdsCamera`; and `src/render/playView.ts`,
+`updateCamera`.
+
+Prone ADS needs its own chest-raised, elbow-supported posture under #550 before
+prone tuning changes; the standing and crouching camera fit does not establish
+prone fit. Moving shot start to the muzzle along the barrel belongs to #1383;
+the viewing-camera offset must not change the existing shot origin.
 
 Steep look-down hip lean is part of the same pose: looking through the avatar's
 centreline is not realistic biomechanics. It must not move the collision body,

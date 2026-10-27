@@ -19,13 +19,12 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { mountedOptic, type OpticLensFrame, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
-import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -127,18 +126,23 @@ export class HeldItems {
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
     this.presentation.stockSeats = handling.stockSeats;
-    this.animator.update(main, {
-      pose,
-      recoil,
-      handling,
-      viewPlacement: {
-        fov: main.fov,
-        poseItem: (frame) => this.poseOptic(frame, main),
-      },
-    });
-    this.presentation.syncWorn(this.inventory);
     this.view.position.copy(main.position);
+    if (handling.sourceEyeMetres) {
+      this.view.position.set(...handling.sourceEyeMetres);
+    }
     this.view.quaternion.copy(main.quaternion);
+    this.animator.update(
+      { position: this.view.position, quaternion: main.quaternion, rotation: main.rotation },
+      {
+        pose,
+        recoil,
+        handling,
+        viewPlacement: {
+          poseItem: (frame) => this.poseOptic(frame, main),
+        },
+      },
+    );
+    this.presentation.syncWorn(this.inventory);
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
   }
@@ -160,13 +164,11 @@ export class HeldItems {
       heldModel.visible = !active;
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
-    const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
     if (
       !(
         active &&
         settings &&
         diameter !== undefined &&
-        fill !== undefined &&
         firearmPose?.sightEyeOffset &&
         firearmPose.sightDirection &&
         firearmPose.sightUp
@@ -174,7 +176,7 @@ export class HeldItems {
     ) {
       return;
     }
-    const distance = opticWindowDistance(diameter, fill, main.fov);
+    const distance = modelDefinition!.gun!.sight!.eyeReliefMetres;
     const innerRadius = diameter / 2;
     const outerRadius = innerRadius * 1.12;
     const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
@@ -211,7 +213,7 @@ export class HeldItems {
       .add(eyeOffset)
       .addScaledVector(forward, distance);
     this.opticWindow.visible = true;
-    const center = this.opticWindow.position;
+    const center = main.worldToLocal(this.view.localToWorld(this.opticWindow.position.clone()));
     const aperture = projectLensAperture({
       center: [center.x, center.y, center.z],
       right: [right.x, right.y, right.z],

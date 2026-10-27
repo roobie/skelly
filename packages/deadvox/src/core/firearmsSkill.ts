@@ -45,7 +45,6 @@ export interface FirearmsCombatTuning {
   readonly readyMovementRange: number;
   readonly readyMovementHalfLifeLevels: number;
   readonly loweredPitchRadians: number;
-  readonly adsApertureFill: number;
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
   readonly wobbleSkillTenVariance: number;
   readonly wobbleLimitRadians: number;

@@ -2,6 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
+import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
@@ -16,7 +17,7 @@ import type { BlockJolt } from '../core/meleeCombat.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
-import { figureStancePose } from '../core/playerLookPose.ts';
+import { figureStancePose, type PlayerAdsPose, playerLookPose } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -74,7 +75,7 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly stridePhase: number;
-  readonly ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
+  readonly ads?: PlayerAdsPose | undefined;
   readonly stance: PlayerStance;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
@@ -343,6 +344,7 @@ export const createPlayView = (
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
   let cameraRoll = 0;
+  let sourceEyeMetres: Vec3 | undefined;
   let thirdPerson = false;
   /** The spectator camera leaves the player's own view (arms, held item, vignettes) with the avatar. */
   let detached = false;
@@ -391,6 +393,30 @@ export const createPlayView = (
   }): void => {
     camera.position.set(target[0] * s, target[1] * s + (spectator ? 0 : stepOffset), target[2] * s);
     camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
+  };
+
+  const adsCameraTarget = (frame: PlayCameraFrame, target: Vec3, stepOffset: number): Vec3 => {
+    const { ads, eye, yaw, pitch, stance } = frame;
+    if (!ads || frame.spectator || frame.thirdPerson || stance === 'prone') {
+      return target;
+    }
+    const pose = playerLookPose({ figure: playerFigure, models: registry.models, pitch, stance, ads });
+    const placed = adsCameraEye({ figure: playerFigure, pose, ads, pitch });
+    const delta = placed.eye.map((value, axis) => value - pose.eye[axis]!) as Vec3;
+    const bodyEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
+    const cameraEye: Vec3 = [
+      bodyEye[0] + (delta[0] * Math.cos(yaw) + delta[2] * Math.sin(yaw)) / s,
+      bodyEye[1] + delta[1] / s,
+      bodyEye[2] + (-delta[0] * Math.sin(yaw) + delta[2] * Math.cos(yaw)) / s,
+    ];
+    const guarded = guardAdsCamera({
+      bodyEye,
+      cameraEye,
+      blockSize: s,
+      marginMetres: playerFigure.aimPose.ads.cameraWallMarginMetres,
+      isSolid: physicalSolid,
+    });
+    return [guarded[0], guarded[1] - stepOffset / s, guarded[2]];
   };
 
   let nightVision: NightVision | undefined;
@@ -542,9 +568,10 @@ export const createPlayView = (
       avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
       avatarMannequin?.sync(body.pos, yaw, dt);
       const [ex, ey, ez] = spectator?.position ?? eye;
+      sourceEyeMetres = [eye[0] * s, eye[1] * s + offset, eye[2] * s];
       const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
-      cameraRoll = spectator || thirdPerson ? 0 : feedback.roll;
-      const target: Vec3 = [ex, ey, ez];
+      cameraRoll = spectator || thirdPerson || frame.ads ? 0 : feedback.roll;
+      const target = adsCameraTarget(frame, [ex, ey, ez], offset);
       if (thirdPerson) {
         updateThirdPersonCamera({
           eye,
@@ -577,7 +604,7 @@ export const createPlayView = (
           : 0;
       const carried = inventory.entities.carrying();
       carriedPiece.update(dt, camera.quaternion, s, carried?.floorLocked ? handling.floorPlacement : undefined);
-      updateHeldViews(camera, pose, recoil, { ...handling, dt, lift });
+      updateHeldViews(camera, pose, recoil, { ...handling, dt, lift, ...(sourceEyeMetres ? { sourceEyeMetres } : {}) });
       flashlight.update({ registry, lit: light, held: playerMeshes, camera, inventory, piles });
       lightPool.update(inventory, {
         held: playerMeshes,

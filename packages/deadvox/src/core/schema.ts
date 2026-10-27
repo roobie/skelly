@@ -1863,14 +1863,25 @@ const AttachmentPropertiesSchema = strictObject({
     ),
   ),
 });
-const AttachmentSightSchema = strictObject({
-  kind: picklist(['optic', 'iron']),
-  eye: Point,
-  direction: UnitVector,
-  up: UnitVector,
-  eyeReliefMetres: Positive,
-  ocularDiameterMetres: optional(Positive),
-});
+const SightEyeRangeSchema = pipe(
+  tuple([NonNegative, Positive]),
+  check(([near, far]) => near < far, 'iron eye range must have near < far'),
+);
+const AttachmentSightSchema = pipe(
+  strictObject({
+    kind: picklist(['optic', 'iron']),
+    eye: Point,
+    direction: UnitVector,
+    up: UnitVector,
+    eyeReliefMetres: Positive,
+    eyeDistanceRangeMetres: optional(SightEyeRangeSchema),
+    ocularDiameterMetres: optional(Positive),
+  }),
+  check(
+    ({ kind, eyeDistanceRangeMetres }) => (kind === 'iron') === (eyeDistanceRangeMetres !== undefined),
+    'only iron sights require an eye distance range',
+  ),
+);
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip', 'muzzle-device']),
@@ -1991,6 +2002,7 @@ const GunModelSchema = pipe(
         kind: picklist(['iron', 'optic']),
         eye: Point,
         eyeReliefMetres: NonNegative,
+        eyeDistanceRangeMetres: optional(SightEyeRangeSchema),
         ocularDiameterMetres: optional(Positive),
         direction: UnitVector,
         up: UnitVector,
@@ -2028,6 +2040,10 @@ const GunModelSchema = pipe(
   check(
     ({ sight }) => sight?.kind !== 'optic' || sight.ocularDiameterMetres !== undefined,
     'optic sight metadata needs an ocular opening diameter',
+  ),
+  check(
+    ({ sight }) => sight === undefined || (sight.kind === 'iron') === (sight.eyeDistanceRangeMetres !== undefined),
+    'only iron sights require an eye distance range',
   ),
   check(
     ({ internalMagazine, calibre, capacity, rounds }) =>
@@ -2093,6 +2109,12 @@ const HandHoldSchema = strictObject({ at: Point, palm: UnitVector, fingers: Unit
  * in the shoulder; the firing hand takes the pistol grip or the stock wrist and the support hand the forend.
  */
 const HandsModelSchema = strictObject({
+  ads: optional(
+    strictObject({
+      cameraOffsetLimitMetres: optional(NonNegative),
+      stockShoulderLimitMetres: optional(NonNegative),
+    }),
+  ),
   seat: Point,
   butt: Point,
   firing: HandHoldSchema,
@@ -3684,6 +3706,9 @@ const FigureSchema = strictObject({
     headLimitDegrees: tuple([Positive, Positive]),
     stockShoulderOffset: strictObject({ up: Point, down: Point }),
     ads: strictObject({
+      cameraOffsetLimitMetres: NonNegative,
+      cameraWallMarginMetres: NonNegative,
+      stockShoulderLimitMetres: NonNegative,
       torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       neckLengthToleranceFraction: pipe(
@@ -3776,7 +3801,6 @@ const SkillSchema = pipe(
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
-            adsApertureFill: pipe(Positive, maxValue(0.95)),
             skillZeroHandling: FirearmsSkillZeroHandlingSchema,
             wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
             wobbleLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),

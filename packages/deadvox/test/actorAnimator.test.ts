@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { Box3, Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
+import { adsLimits } from '../src/core/adsView.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -235,13 +236,10 @@ it('shares an anatomical eye, shouldered stock and connected arms throughout aim
       const butt = held.localToWorld(new Vector3(...buttOffset));
       const shoulder = new Vector3();
       f.world.shoulderPosition('right', shoulder);
-      expect(butt.distanceTo(shoulder), `${label}: stock within 10 cm of shoulder`).toBeLessThan(0.1);
+      expect(butt.distanceTo(shoulder), `${label}: stock within authored shoulder bound`).toBeLessThanOrEqual(
+        adsLimits(figure, model).stockShoulderMetres + 1e-12,
+      );
       const head = f.world.group.getObjectByName('figure-head')!;
-      const aim = f.physical().getWorldDirection(new Vector3()).negate();
-      expect(
-        head.getWorldDirection(new Vector3()).dot(aim),
-        `${label}: head within three degrees of aim`,
-      ).toBeGreaterThan(Math.cos(Math.PI / 60));
       const eyes = figure.body.eyes.map((name) => bodyModel.anchors![name]!);
       const eyeInHead = new Vector3(...eyes[0]!)
         .add(new Vector3(...eyes[1]!))

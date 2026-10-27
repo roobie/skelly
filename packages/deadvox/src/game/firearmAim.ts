@@ -24,8 +24,6 @@ export interface FirearmBoreRayInput {
   readonly stockSeat?: Vec3 | undefined;
   readonly aimingDownSights?: boolean;
   readonly loweredPitchRadians: number;
-  readonly adsApertureFill?: number | undefined;
-  readonly verticalFovDegrees?: number;
   readonly isSolid?: SolidAt;
 }
 
@@ -52,8 +50,6 @@ export const firearmBoreRay = ({
   stockSeat,
   aimingDownSights = false,
   loweredPitchRadians,
-  adsApertureFill,
-  verticalFovDegrees,
   isSolid = () => false,
 }: FirearmBoreRayInput): FirearmBoreRay => {
   const pose = heldFirearmTransform({
@@ -68,8 +64,6 @@ export const firearmBoreRay = ({
     stockSeat,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
     loweredPitchRadians,
-    adsApertureFill,
-    ...(verticalFovDegrees === undefined ? {} : { verticalFovDegrees }),
   });
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
   const worldVector = (vector: Vec3): Vec3 => [

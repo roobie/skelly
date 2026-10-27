@@ -1,3 +1,4 @@
+import { nearestSightEyeOffset } from './adsView.ts';
 import { type AimFrame, NEUTRAL_AIM } from './aim.ts';
 import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -54,7 +55,6 @@ export interface PlayerAdsPose {
   readonly model: ModelDef;
   readonly side: HandSide;
   readonly aimFrame?: AimFrame | undefined;
-  readonly adsApertureFill?: number | undefined;
 }
 
 export interface PlayerLookPose {
@@ -112,12 +112,12 @@ const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef
     aimFrame: ads.aimFrame ?? NEUTRAL_AIM,
     loweredPitchRadians: 0,
     stockSeat: pose.stockSeats[ads.side],
-    adsApertureFill: ads.adsApertureFill,
   });
-  if (!gun.sightEyeOffset) {
+  const sightEye = nearestSightEyeOffset(gun);
+  if (!sightEye) {
     return pose;
   }
-  const delta = rotate(gun.rootOffset.map((value, axis) => value + gun.sightEyeOffset![axis]!) as Vec3, pitch);
+  const delta = rotate(sightEye, pitch);
   const targetEye = add(pose.eye, delta);
   const headWorld = multiplyRotation(
     turnX(pitch),

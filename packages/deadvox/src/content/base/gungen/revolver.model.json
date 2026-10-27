@@ -59,7 +59,8 @@
       "eye": [-0.069, 0.02, 0],
       "direction": [1, 0, 0],
       "up": [0, 1, 0],
-      "eyeReliefMetres": 0.046
+      "eyeReliefMetres": 0.046,
+      "eyeDistanceRangeMetres": [0.05, 0.8]
     },
     "muzzleDirection": [1, 0, 4.898587196589413e-16],
     "calibre": "357-magnum",
