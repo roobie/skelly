@@ -4,9 +4,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it } from 'vitest';
 import { adsCameraEye, nearestSightEyeOffset } from '../src/core/adsView.ts';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
 import type { Registry } from '../src/core/content.ts';
 import { sightedFirearmModel } from '../src/core/firearmSight.ts';
+import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
@@ -28,8 +28,8 @@ import { createHeldViews } from '../src/render/heldViews.ts';
 import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
@@ -314,8 +314,9 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
   }
 });
 
-it('seats the first-person optic window on the same eye as the world actor for either hand', async () => {
-  for (const side of ['right', 'left'] as const) {
+it.each(['right', 'left'] as const)(
+  'seats the first-person optic window on the world actor eye, %s hand',
+  async (side) => {
     const { registry: fitted } = withDefaultAttachment(baseRegistry(), 'pistol_service', 'optic_mini_reflex');
     const { registry, figure, models, inventory, gun, view } = await pistolFixture(fitted, side);
     const scale = makeScale(0.5);
@@ -365,8 +366,8 @@ it('seats the first-person optic window on the same eye as the world actor for e
       view.dispose();
       world.dispose();
     }
-  }
-});
+  },
+);
 
 it('reaches the slide before pulling it through full travel and lets go for its spring return', () => {
   const registry = baseRegistry();
