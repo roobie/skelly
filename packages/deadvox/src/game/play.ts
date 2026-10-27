@@ -2221,6 +2221,7 @@ export const startPlay = (
     return playContext();
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
+  keyboardInput.pointerTarget = (event) => menuPointer.target(event.target);
   keyboardInput.cancelled = (preservePointer, reason) => {
     if (!shouldCancelForViewerFocus(reason ?? 'manual')) {
       return;

@@ -270,6 +270,53 @@ describe('keyboard registry', () => {
       ['movement.forward', 'up'],
     ]);
   });
+  it.each([
+    ['window blur', (keyboard: KeyboardInput) => keyboard.windowBlurred()],
+    [
+      'hidden document',
+      (keyboard: KeyboardInput) => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });
+        try {
+          keyboard.visibilityChanged();
+        } finally {
+          Reflect.deleteProperty(document, 'hidden');
+        }
+      },
+    ],
+  ])('accepts the first press of a key held when focus was lost to a %s', (_name, loseFocus) => {
+    const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+
+    expect(keyboard.press(event('KeyW'))).toBe(true);
+    loseFocus(keyboard);
+    expect(keyboard.held('fixture.move')).toBe(false);
+    commands.length = 0;
+    // The keyup went to another window, so the next press arrives with no release before it.
+    expect(keyboard.press(event('KeyW'))).toBe(true);
+    expect(commands).toEqual([{ action: 'fixture.move', phase: 'down', at: 0 }]);
+  });
+  it('captures a modifier chord, and a lone modifier on its release', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
+    keyboard.context = () => ({ context: 'menu', debug: false });
+    const captured: (Chord | string | undefined)[] = [];
+    keyboard.capture = (chord) => captured.push(chord);
+
+    keyboard.press(event('ShiftLeft', { shiftKey: true }));
+    keyboard.press(event('ShiftLeft', { shiftKey: true, repeat: true }));
+    keyboard.press(event('KeyK', { modifier: 'shift' }));
+    keyboard.release(event('KeyK', { modifier: 'shift' }));
+    keyboard.release(event('ShiftLeft'));
+    expect(captured).toEqual([{ code: 'KeyK', modifier: 'shift' }]);
+
+    captured.length = 0;
+    keyboard.press(event('ShiftLeft', { shiftKey: true }));
+    expect(captured).toEqual([]);
+    keyboard.release(event('ShiftLeft'));
+    expect(captured).toEqual([{ code: 'ShiftLeft' }]);
+    keyboard.capture = undefined;
+  });
   it('rebinds the ADS pointer action to another mouse button or a key', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     const keyboard = new KeyboardInput(bindings);

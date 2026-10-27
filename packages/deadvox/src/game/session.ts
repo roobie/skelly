@@ -1026,6 +1026,8 @@ export const createSession = (options: SessionOptions) => {
     },
   );
 
+  // Where bodies stopped the committed shot's pellets: `onShot` resolves them just before `onTrajectory` traces.
+  let bodyStops: readonly (number | undefined)[] = [];
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
     isSolid: physicalSolid,
@@ -1033,19 +1035,21 @@ export const createSession = (options: SessionOptions) => {
     shotInput: (uid, atSimSeconds) => firearmShotInput(uid, atSimSeconds),
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
-    onTrajectory: (trajectory, time) =>
+    onTrajectory: (trajectory, time) => {
+      const stops = bodyStops;
+      bodyStops = [];
+      const range = currentFirearmsCombatTuning().shotTraceRangeBlocks;
       options.onFirearmTrajectory?.(
         {
           ...trajectory,
-          traces: traceShot(
-            trajectory.origin,
-            trajectory.directions,
-            currentFirearmsCombatTuning().shotTraceRangeBlocks,
-            physicalSolid,
+          // A pellet a body stopped ends at that body, so no wall behind it is marked.
+          traces: trajectory.directions.flatMap((direction, index) =>
+            traceShot(trajectory.origin, [direction], Math.min(stops[index] ?? range, range), physicalSolid),
           ),
         },
         time,
-      ),
+      );
+    },
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
@@ -1063,7 +1067,8 @@ export const createSession = (options: SessionOptions) => {
     onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
     onShot: (shot, time, firearm, sighted) => {
       options.onDischarge?.(firearm, sighted);
-      const hits = zombieSystem.firePellets(shot);
+      const { hits, stops } = zombieSystem.firePellets(shot);
+      bodyStops = stops;
       if (hits > 0 && firearmReadyWalking) {
         const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
         character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
