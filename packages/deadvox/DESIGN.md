@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change HUD crosshair visibility while an optic reticle is presented
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
@@ -1955,17 +1956,18 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
   than its shot ray. Aim state is saved because it can change hit outcomes. The
-  crosshair follows the projected muzzle point, including while the firearm is
-  unready or turned for handling; it is hidden only when outside the view or
-  behind the camera. With no firearm wielded, the main-game center crosshair
-  remains. Handling turns affect the drawn muzzle and crosshair, not the shot
+  HUD crosshair must not cover a presented optic reticle: the diegetic mark
+  already communicates aim, and a duplicate can hide a small dot. Without an
+  optic reticle, the crosshair follows the projected muzzle point, including
+  while unready or turned for handling, and remains hidden outside the view or
+  behind the camera. With no firearm wielded, the centered crosshair remains. Handling turns affect the drawn muzzle and crosshair, not the shot
   ray; firing is refused during handling or a cycle.
   Shots leave along the visible firearm's bore, plus firearm-owned spread.
   `src/game/firearmAim.ts`, `firearmBoreRay`, supplies that shared line to both
   shot resolution and the held-firearm crosshair; `src/game/play.ts`,
   `heldFirearmBore`, supplies its current raise progress. `src/ui/playHud.ts`,
-  `projectCrosshairScreenPosition` and `playCrosshairFrame`, hide it outside the
-  viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
+  `projectCrosshairScreenPosition` and `playCrosshairFrame`, own this visibility
+  boundary and the centered no-firearm default. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
   separate from the optional crosshair. In ADS, recoil, sway, and handling
   move the firearm pose and bore while the view stays fixed; only the intentional

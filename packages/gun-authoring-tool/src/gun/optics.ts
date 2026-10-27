@@ -278,6 +278,7 @@ const ContentSolid = variant('kind', [
 ]);
 
 const MICRO_HOUSING_DISPLAY = { bevel: false, outline: false, mergeGroup: 'micro-housing' } as const;
+const microWindow = opticPresentation.miniReflex;
 
 /** Manufacturer-class visual envelopes and authored optical metadata. */
 export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
@@ -304,10 +305,23 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     sightlineStartX: 2.25,
     solids: [
       // The tunnel's two windows, between the floor, walls and hood listed after them.
-      box('ocular-lens', [-2.25, 1, -0.75], [-2, 2.25, 0.75], lensGlass),
-      box('objective-lens', [2, 1, -0.75], [2.25, 2.25, 0.75], lensGlass),
+      box(
+        'ocular-lens',
+        [-2.25, microWindow.windowBottomY, -microWindow.windowHalfWidthU],
+        [-2, microWindow.windowTopY, microWindow.windowHalfWidthU],
+        lensGlass,
+      ),
+      box(
+        'objective-lens',
+        [2, microWindow.windowBottomY, -microWindow.windowHalfWidthU],
+        [2.25, microWindow.windowTopY, microWindow.windowHalfWidthU],
+        lensGlass,
+      ),
       box('mount-foot', [-1.75, 0, -0.75], [1.75, 0.5, 0.75]),
-      { ...box('housing-floor', [-2.25, 0.5, -1.25], [2.25, 1, 1.25]), display: MICRO_HOUSING_DISPLAY },
+      {
+        ...box('housing-floor', [-2.25, 0.5, -1.25], [2.25, microWindow.windowBottomY, 1.25]),
+        display: MICRO_HOUSING_DISPLAY,
+      },
       // The side walls and roof form a single closed-emitter silhouette, with a tunnel, not a filled prism.
       {
         id: 'housing-left',
@@ -317,10 +331,10 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         profile: [
           [0.5, -1.25],
           [2.25, -1.25],
-          [2.75, -0.75],
-          [1, -0.75],
+          [2.75, -microWindow.windowHalfWidthU],
+          [microWindow.windowBottomY, -microWindow.windowHalfWidthU],
         ],
-        clip: [{ normal: [1, 1, 0], offset: 4.5 }],
+        clip: [{ normal: [1, 1, 0], offset: 2.25 + microWindow.windowTopY }],
         display: MICRO_HOUSING_DISPLAY,
         slot: 'metal',
       },
@@ -330,12 +344,12 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         axis: 'x',
         z: [-2.25, 2.25],
         profile: [
-          [1, 0.75],
-          [2.75, 0.75],
+          [microWindow.windowBottomY, microWindow.windowHalfWidthU],
+          [2.75, microWindow.windowHalfWidthU],
           [2.25, 1.25],
           [0.5, 1.25],
         ],
-        clip: [{ normal: [1, 1, 0], offset: 4.5 }],
+        clip: [{ normal: [1, 1, 0], offset: 2.25 + microWindow.windowTopY }],
         display: MICRO_HOUSING_DISPLAY,
         slot: 'metal',
       },
@@ -343,12 +357,12 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         ...silhouette(
           'sloped-front-hood',
           [
-            [-2.25, 2.25],
-            [2.25, 2.25],
-            [1.75, 2.75],
+            [-2.25, microWindow.windowTopY],
+            [2.25, microWindow.windowTopY],
+            [2.25 - (2.75 - microWindow.windowTopY), 2.75],
             [-2.25, 2.75],
           ],
-          1.5,
+          microWindow.windowHalfWidthU * 2,
         ),
         display: MICRO_HOUSING_DISPLAY,
       },

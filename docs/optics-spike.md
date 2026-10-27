@@ -7,6 +7,7 @@ read_if:
   - you change ADS-only housing visibility or reticle projection
   - you change which owner geometry appears inside unity or magnified optic images
   - you change how a world disc or reticle respects opaque optic housing
+  - you tune a clear optic window or hide overlapping HUD aim marks
   - you investigate a gap where a voxel optic body meets transparent glass
   - you test night-vision or worn-visor effects against the world presentation
 ---
@@ -68,6 +69,14 @@ The silhouette needs its own scene so it cannot consume a world-shadow update
 under a different camera. See `packages/deadvox/src/render/shadows.ts`, `Shadows.drawMaps`.
 See `packages/deadvox/src/render/opticHousingMask.ts`, `OpticHousingMask.prepare`;
 and `packages/deadvox/src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
+
+The clear window, not overpaint through its housing, owns the apparent opening.
+The mini reflex keeps a wider authored tunnel for the intermediate sight picture;
+see `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`, `miniReflex`.
+An optic's reticle replaces overlapping HUD aim marks while it is presented,
+otherwise a small dot can be hidden by the crosshair despite a clear optical path.
+See `packages/deadvox/src/ui/playHud.ts`, `playCrosshairFrame`; and
+`packages/deadvox/src/game/play.ts`, `opticReticleVisible`.
 
 Above unity, the image remains world-only. A real scope focuses far away and its
 front post blurs out; copying the sharp close-eye gun into a magnified disc would

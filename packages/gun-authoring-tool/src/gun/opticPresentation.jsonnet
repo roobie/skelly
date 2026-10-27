@@ -4,6 +4,7 @@
     'hunting-3-9x': { ocularOpeningDiameterU: 2.75, eyeReliefU: 8, envelopeLengthU: 26.25 },
   },
   nonMagnifying: { eyeReliefU: 14 },
+  miniReflex: { windowHalfWidthU: 1, windowBottomY: 0.75, windowTopY: 2.5 },
   holographic: {
     hoodFrontX: 0.25,
     batteryRearX: -3,

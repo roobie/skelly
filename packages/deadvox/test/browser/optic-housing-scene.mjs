@@ -1,5 +1,6 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: each GPU fixture is disposed before loading the next optic
 import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
+import { reticleScale } from '@skelly/thing-core/reticle';
 import {
   AmbientLight,
   Box3,
@@ -110,6 +111,55 @@ const fixture = async (model) => {
   return { scene, root: loaded.scene, camera, frame };
 };
 
+const compositePixels = ({ renderer, pass, source, destination, frame, size }) => {
+  setOpticLensUniforms(pass, frame);
+  pass.uniforms.uLensCenter.value.set(...frame.center);
+  pass.uniforms.uLensRadius.value.set(...frame.radius);
+  pass.render(renderer, destination, source, 0, false);
+  const pixels = new Uint8Array(size * size * 4);
+  renderer.readRenderTargetPixels(destination, 0, 0, size, size, pixels);
+  return pixels;
+};
+
+const dotVisibility = ({ model, root, camera, frame, renderer, pass, source, destination, size }) => {
+  const { sight, properties } = model.gun.attachment;
+  const dot = properties.reticle?.primitives.find((primitive) => primitive.kind === 'dot');
+  if (!dot) {
+    return {};
+  }
+  const projection = projectLensAperture({
+    center: [0, 0, -sight.eyeReliefMetres],
+    right: [1, 0, 0],
+    up: [0, 1, 0],
+    radius: sight.ocularDiameterMetres / 2,
+    verticalFovDegrees: camera.fov,
+    aspect: camera.aspect,
+  });
+  if (!projection) {
+    throw new Error('Need a visible authored dot aperture');
+  }
+  const authored = { ...frame, ...projection, aperture: properties.aperture, reticleCenter: projection.center };
+  const buffers = { renderer, pass, source, destination, size };
+  const before = compositePixels({ ...buffers, frame: authored });
+  const reticle = { ...properties.reticle, primitives: [dot] };
+  const after = compositePixels({ ...buffers, frame: { ...authored, reticle } });
+  const changed = coverage({ root, camera, frame: authored, before, after, size });
+  const scale = reticleScale(reticle, authored.magnification);
+  const uv = authored.reticleCenter.map((value, axis) => value + dot.center[axis] * authored.radius[axis] * scale);
+  const ray = new Raycaster();
+  ray.layers.enable(OPTIC_BODY_LAYER);
+  ray.setFromCamera(new Vector2(uv[0] * 2 - 1, uv[1] * 2 - 1), camera);
+  const glass = ray.intersectObject(root, true).some(({ object, face }) => {
+    const material = Array.isArray(object.material) ? object.material[face.materialIndex] : object.material;
+    return material.visible && material.transparent;
+  });
+  return {
+    dotInsideWindow: glass && !opaqueHit(ray, root),
+    dotVisiblePixels: changed.clearWindowChanged,
+    dotCoveredHousing: changed.coveredHousing,
+  };
+};
+
 const checkModel = async (model, renderer, size) => {
   const { scene, root, camera, frame } = await fixture(model);
   const source = new WebGLRenderTarget(size, size);
@@ -122,16 +172,16 @@ const checkModel = async (model, renderer, size) => {
     const before = new Uint8Array(size * size * 4);
     renderer.readRenderTargetPixels(source, 0, 0, size, size, before);
     lens.prepare(renderer, scene, camera, frame);
-    setOpticLensUniforms(pass, frame);
     pass.uniforms.uZoomTexture.value = lens.texture;
     pass.uniforms.uHousingTexture.value = lens.housingTexture;
     pass.uniforms.uHousingActive.value = lens.housingActive ? 1 : 0;
-    pass.uniforms.uLensCenter.value.set(...frame.center);
-    pass.uniforms.uLensRadius.value.set(...frame.radius);
-    pass.render(renderer, destination, source, 0, false);
-    const after = new Uint8Array(before.length);
-    renderer.readRenderTargetPixels(destination, 0, 0, size, size, after);
-    return { model: model.id, ...coverage({ root, camera, frame, before, after, size }) };
+    const buffers = { renderer, pass, source, destination, size };
+    const after = compositePixels({ ...buffers, frame });
+    return {
+      model: model.id,
+      ...coverage({ root, camera, frame, before, after, size }),
+      ...dotVisibility({ ...buffers, model, root, camera, frame }),
+    };
   } finally {
     source.dispose();
     destination.dispose();

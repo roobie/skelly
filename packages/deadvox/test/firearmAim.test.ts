@@ -91,11 +91,17 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
   expect(screenTop(loweredPoint)).toBeGreaterThan(screenTop(raisedPoint));
   expect(raisedPosition).toBeDefined();
   expect(raisedPosition!.top).toBeCloseTo(screenTop(raisedPoint));
-  expect(playCrosshairFrame(true, true, raisedPosition)).toEqual({ visible: true, screenPosition: raisedPosition });
+  expect(playCrosshairFrame(true, true, raisedPosition, false)).toEqual({
+    visible: true,
+    screenPosition: raisedPosition,
+  });
   if (loweredPosition) {
     expect(loweredPosition.top).toBeCloseTo(screenTop(loweredPoint));
-    expect(playCrosshairFrame(true, true, loweredPosition)).toEqual({ visible: true, screenPosition: loweredPosition });
+    expect(playCrosshairFrame(true, true, loweredPosition, false)).toEqual({
+      visible: true,
+      screenPosition: loweredPosition,
+    });
   } else {
-    expect(playCrosshairFrame(true, true, loweredPosition)).toEqual({ visible: false });
+    expect(playCrosshairFrame(true, true, loweredPosition, false)).toEqual({ visible: false });
   }
 });

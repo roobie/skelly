@@ -15,4 +15,11 @@ export const opticHousingChecks = async (page) => {
     assert.equal(result.coveredHousing, 0, `${result.model}: world disc must preserve opaque housing pixels`);
     assert.ok(result.clearWindowChanged > 0, `${result.model}: the glass still receives the world image`);
   }
+  const dots = results.filter((result) => result.dotVisiblePixels !== undefined);
+  assert.ok(dots.length > 0, 'authored dot optics exercise the visible-window property');
+  for (const result of dots) {
+    assert.ok(result.dotInsideWindow, `${result.model}: dot centre lies in the clear glass window`);
+    assert.ok(result.dotVisiblePixels > 0, `${result.model}: authored dot changes visible window pixels`);
+    assert.equal(result.dotCoveredHousing, 0, `${result.model}: dot does not paint over housing`);
+  }
 };

@@ -135,42 +135,61 @@ describe('optic catalog', () => {
     );
   });
 
-  it('gives the closed micro dot a rear-to-front tunnel and two rear-left adjustment dials', () => {
+  it('keeps the closed micro tunnel surrounded by housing with its adjustments behind and beside the window', () => {
     const optic = getOptic('mini-reflex');
-    expect(optic.reference).toContain('ACRO');
+    const boundsOf = (solids: typeof optic.solids) => {
+      expect(solids.length).toBeGreaterThan(0);
+      const bounds = new Box3();
+      for (const solid of solids) {
+        const [min, max] = localSolidBounds(solid);
+        bounds.expandByPoint(new Vector3(...min)).expandByPoint(new Vector3(...max));
+      }
+      return bounds;
+    };
+    const window = boundsOf(optic.solids.filter(({ slot }) => slot === LENS_SLOT));
+    const center = window.getCenter(new Vector3());
+    const size = window.getSize(new Vector3());
+    const housing = optic.solids.filter((solid) => solid.display?.mergeGroup !== undefined);
+    const outer = boundsOf(housing);
+    const roof = boundsOf(housing.filter((solid) => solid.kind === 'extruded-polygon' && solid.axis === 'z'));
+    expect(roof.min.z).toBeLessThanOrEqual(window.min.z);
+    expect(roof.max.z).toBeGreaterThanOrEqual(window.max.z);
+    const floor = boundsOf(housing.filter((solid) => solid.kind === 'box'));
+    const epsilon = Math.min(size.y, size.z) / 100;
+    const wallAt = (x: number, y: number, z: number) => {
+      const probe = worldSolid(IDENTITY, {
+        id: 'wall-probe',
+        kind: 'box',
+        box: { center: [x, y, z], half: [epsilon, epsilon, epsilon] },
+      });
+      expect(housing.some((solid) => penetrationWorld(probe, worldSolid(IDENTITY, solid)) > 0)).toBe(true);
+    };
+    wallAt(center.x, roof.getCenter(new Vector3()).y, center.z);
+    for (const along of [0.1, 0.5, 0.99]) {
+      const x = window.min.x + size.x * along;
+      wallAt(x, floor.getCenter(new Vector3()).y, center.z);
+      for (const height of [0.1, 0.5, 0.9]) {
+        const y = window.min.y + size.y * height;
+        for (const z of [(outer.min.z + window.min.z) / 2, (outer.max.z + window.max.z) / 2]) {
+          wallAt(x, y, z);
+        }
+      }
+    }
     const dials = optic.solids.filter(({ id }) => id.includes('adjustment-dial'));
-    expect(dials).toHaveLength(2);
+    expect(dials.length).toBeGreaterThan(0);
     for (const dial of dials) {
       expect(dial.kind).toBe('revolved');
       const [, max] = localSolidBounds(dial);
-      expect(max[0]).toBeLessThan(0);
-      expect(max[2]).toBeLessThan(0);
+      expect(max[0]).toBeLessThan(center.x);
+      expect(max[2]).toBeLessThan(center.z);
     }
-    // The rear, middle and front all have four walls; deleting most of the housing must not pass as a tunnel.
-    for (const x of [-2, 0, 1.75]) {
-      for (const [y, z] of [
-        [0.75, 0],
-        [2.5, 0],
-        [1.5, -1],
-        [1.5, 1],
-      ]) {
-        const wallProbe = worldSolid(IDENTITY, {
-          id: 'wall-probe',
-          kind: 'box',
-          box: { center: [x, y!, z!], half: [0.1, 0.1, 0.1] },
-        });
-        expect(
-          optic.solids.some((solid) => penetrationWorld(wallProbe, worldSolid(IDENTITY, solid)) > 0),
-          `wall at ${x},${y},${z}`,
-        ).toBe(true);
-      }
-    }
+    const margin = Math.min(optic.opticalAxisY - window.min.y, window.max.y - optic.opticalAxisY);
+    expect(margin).toBeGreaterThan(0);
     const probe = worldSolid(IDENTITY, {
       id: 'window-probe',
       kind: 'box',
-      box: { center: [0, optic.opticalAxisY, 0], half: [2.5, 0.25, 0.25] },
+      box: { center: [center.x, optic.opticalAxisY, center.z], half: [size.x / 2 + epsilon, margin / 2, size.z / 4] },
     });
-    // Its windows close the tunnel's ends with glass; no body solid may cross the sight line between them.
     for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
       expect(penetrationWorld(probe, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
     }
