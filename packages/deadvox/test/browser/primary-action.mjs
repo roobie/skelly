@@ -1027,6 +1027,8 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         throw new Error('Ground pickup fixture lacks an available worn pocket or small item');
       }
       const floor = r.feet();
+      // Pickup gestures need a visible floor target, not one behind the leaned anatomical eye.
+      floor[2] += 1;
       const first = r.inventory.create(itemDef.id);
       if (!r.inventory.add(first, { kind: 'pile', pos: floor })) {
         throw new Error('Could not place tap-pickup fixture');
@@ -1036,10 +1038,11 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     // A pile lays out a loaded model where its model sits, so aim only once that layout is final.
     await page.waitForFunction((model) => !model || globalThis.primaryActionTest.view.models.has(model), placed.model);
     const fixture = await page.evaluate(
-      async ({ pileLayoutModuleUrl, playerLookPoseModuleUrl, ground }) => {
+      async ({ pileLayoutModuleUrl, playerLookPoseModuleUrl, inputModuleUrl, ground }) => {
         const r = globalThis.primaryActionTest;
         const { pileItemPosition } = await import(pileLayoutModuleUrl);
         const { playerEyePosition } = await import(playerLookPoseModuleUrl);
+        const { LOOK_PITCH_LIMIT } = await import(inputModuleUrl);
         const { itemUid } = ground;
         const pile = [...r.inventory.piles.values()].find(({ items }) =>
           items.some(({ item }) => item.uid === itemUid),
@@ -1052,18 +1055,18 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
         const feetDz = target[2] - r.session.body.pos[2];
         r.input.yaw = Math.atan2(-feetDx, -feetDz);
         // Pitch changes the eye position too, so solve the aim against the posed eye.
-        let low = -Math.PI / 2;
+        let low = -LOOK_PITCH_LIMIT;
         let high = 0;
         for (let step = 0; step < 32; step += 1) {
           const pitch = (low + high) / 2;
           const posedEye = playerEyePosition({
             feet: r.session.body.pos,
-            eyeHeightMetres: r.session.playerEyeHeightMetres,
             blockSize: r.scale.blockSize,
             yaw: r.input.yaw,
             pitch,
             stance: r.session.stance,
             figure: r.inventory.registry.figures.get('player'),
+            models: r.inventory.registry.models,
           });
           const dx = target[0] - posedEye[0];
           const dy = target[1] - posedEye[1];
@@ -1093,6 +1096,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       {
         pileLayoutModuleUrl: pileLayoutModule,
         playerLookPoseModuleUrl: '/src/core/playerLookPose.ts',
+        inputModuleUrl: '/src/game/input.ts',
         ground: placed,
       },
     );

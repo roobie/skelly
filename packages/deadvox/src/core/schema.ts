@@ -3649,7 +3649,10 @@ const FigureSchema = strictObject({
   body: strictObject({
     model: Id,
     joints: strictObject({ leftHip: Id, rightHip: Id, leftShoulder: Id, rightShoulder: Id }),
+    spine: ArmSegmentSchema,
+    neck: ArmSegmentSchema,
     head: ArmSegmentSchema,
+    eyes: tuple([Id, Id]),
   }),
   limbs: strictObject({
     leftArm: FigureLimbSchema,
@@ -3674,6 +3677,14 @@ const FigureSchema = strictObject({
   legRig: LegRigSchema,
   /** Walking swings each leg about its hip and each arm, against its leg, about its shoulder; peak angles. */
   gait: strictObject({ legSwingDegrees: Degrees, armSwingDegrees: Degrees }),
+  aimPose: strictObject({
+    torsoShare: strictObject({ down: Fraction, up: Fraction }),
+    neckShare: Fraction,
+    torsoLimitDegrees: tuple([Positive, Positive]),
+    neckLimitDegrees: tuple([Positive, Positive]),
+    headLimitDegrees: tuple([Positive, Positive]),
+    stockShoulderOffset: Point,
+  }),
   lookDownLean: strictObject({
     startPitchDegrees: pipe(
       NonNegative,

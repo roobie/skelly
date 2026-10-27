@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 import { Group, type Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it, vi } from 'vitest';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { heldHoldFrame, modelToView } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { readyMeleePose } from '../src/core/meleePose.ts';
 import { mountedOptic } from '../src/core/opticView.ts';
+import { playerEyePosition } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
@@ -184,40 +186,70 @@ it('the play frame poses overlay and world held views from this frame rather tha
   }
 });
 
-it('keeps the trigger elbow below its folded grip while both hands follow extreme aim', async () => {
+it('shares an anatomical eye, shouldered stock and gun grips at both aim limits and ready levels', async () => {
   const f = await fixture();
+  const figure = f.registry.figures.get('player')!;
+  const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
+  const bodyModel = f.registry.models.get(figure.body.model)!;
+  const bodyBefore = structuredClone(f.actor.body);
+  expect(model.hands).toBeDefined();
   try {
-    for (const [stance, pitch] of [
-      ['standing', -LOOK_PITCH_LIMIT],
-      ['crouching', LOOK_PITCH_LIMIT],
-      ['crouching', -LOOK_PITCH_LIMIT],
-      ['standing', LOOK_PITCH_LIMIT],
-    ] as const) {
-      f.world.sync({ ...f.actor, stance, pitch, dt: 1 });
+    const cases = (['standing', 'crouching'] as const).flatMap((stance) =>
+      [-LOOK_PITCH_LIMIT, LOOK_PITCH_LIMIT].flatMap((pitch) => [0, 1].map((progress) => ({ stance, pitch, progress }))),
+    );
+    for (const { stance, pitch, progress } of cases) {
+      const label = `${stance} pitch ${pitch} ready ${progress}`;
+      const eye = playerEyePosition({
+        feet: f.actor.body.pos,
+        blockSize: 0.5,
+        yaw: f.actor.yaw,
+        pitch,
+        stance,
+        figure,
+        models: f.registry.models,
+      });
+      const stepOffset = 0.07;
+      f.world.sync({ ...f.actor, eye, stance, pitch, stepOffset, dt: 1 });
       f.update(f.camera, f.pose, 0, {
         firearms: [],
-        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: false },
+        readiness: { uid: f.item.uid, progress, aimingDownSights: false },
       });
-      const eye = new Vector3();
-      f.world.eyePosition(eye);
+      const held = f.physical().getObjectByName('held-item-right')!;
+      const buttOffset = modelToView(
+        model,
+        model.hands!.butt.map((v, i) => v - model.grip!.at[i]!) as [number, number, number],
+      );
+      const butt = held.localToWorld(new Vector3(...buttOffset));
+      const shoulder = new Vector3();
+      f.world.shoulderPosition('right', shoulder);
+      expect(butt.distanceTo(shoulder), `${label}: stock within 10 cm of shoulder`).toBeLessThan(0.1);
+      const head = f.world.group.getObjectByName('figure-head')!;
       const aim = f.physical().getWorldDirection(new Vector3()).negate();
+      expect(
+        head.getWorldDirection(new Vector3()).dot(aim),
+        `${label}: head within three degrees of aim`,
+      ).toBeGreaterThan(Math.cos(Math.PI / 60));
+      const eyes = figure.body.eyes.map((name) => bodyModel.anchors![name]!);
+      const eyeInHead = new Vector3(...eyes[0]!)
+        .add(new Vector3(...eyes[1]!))
+        .multiplyScalar(0.5)
+        .sub(new Vector3(...bodyModel.anchors![figure.body.head.pivot]!));
+      expect(
+        head
+          .localToWorld(eyeInHead)
+          .distanceTo(new Vector3(...eye).multiplyScalar(0.5).add(new Vector3(0, stepOffset, 0))),
+        `${label}: physical and gameplay eye`,
+      ).toBeLessThan(1e-6);
       for (const side of ['right', 'left'] as const) {
         const arm = f.physical().getObjectByName(`first-person-arm-${side}`)!;
         const hand = arm.getObjectByName(ARM_NODE.hand)!.getWorldPosition(new Vector3());
-        const fromEye = hand.clone().sub(eye);
-        expect(fromEye.dot(aim), `${stance} ${pitch} ${side}: hand ahead along aim`).toBeGreaterThan(0);
-        // Authored grips may sit beside the bore rather than exactly on its aiming line.
-        expect(fromEye.cross(aim).length(), `${stance} ${pitch} ${side}: aim-line distance`).toBeLessThan(0.3);
-        if (side === 'right' && pitch < 0) {
-          const shoulder = arm.getObjectByName(ARM_NODE.shoulder)!.getWorldPosition(new Vector3());
-          const elbow = arm.getObjectByName(ARM_NODE.elbow)!.getWorldPosition(new Vector3());
-          expect(elbow.y, `${stance}: trigger elbow below shoulder`).toBeLessThan(shoulder.y);
-          if (stance === 'standing') {
-            expect(elbow.y, 'folded trigger elbow below hand').toBeLessThan(hand.y);
-          }
-        }
+        const grip = held.localToWorld(
+          new Vector3(...heldHoldFrame(model, 'right', side === 'right' ? 'firing' : 'support').at),
+        );
+        expect(hand.distanceTo(grip), `${label} ${side}: hand on gun`).toBeLessThan(1e-6);
       }
     }
+    expect(f.actor.body).toEqual(bodyBefore);
   } finally {
     f.dispose();
   }

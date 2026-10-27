@@ -16,6 +16,7 @@ import type { BlockJolt } from '../core/meleeCombat.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_SHADOWS, lookOf, moodOf } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
+import { figureStancePose } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -529,6 +530,7 @@ export const createPlayView = (
         gaitPhase,
         moving,
         stance,
+        stancePose: figureStancePose(playerFigure, stance),
         dt,
         inventory,
         eye,

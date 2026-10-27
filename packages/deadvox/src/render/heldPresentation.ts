@@ -77,6 +77,7 @@ export class HeldPresentation {
   readonly registry: Registry;
   readonly figure: FigureDef;
   readonly models: ModelLibrary | undefined;
+  stockSeats: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
 
@@ -128,7 +129,11 @@ export class HeldPresentation {
   }
 
   firearmTransform(input: Omit<HeldFirearmTransformInput, 'holds'>): ReturnType<typeof heldFirearmTransform> {
-    return heldFirearmTransform({ ...input, holds: this.figure.holds });
+    return heldFirearmTransform({
+      ...input,
+      holds: this.figure.holds,
+      stockSeat: input.stockSeat ?? this.stockSeats?.[input.side],
+    });
   }
 
   handTransform(side: HandSide, pose: HandPose): ReturnType<typeof interpolateHandPose> | undefined {

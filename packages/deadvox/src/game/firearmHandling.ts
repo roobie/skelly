@@ -200,6 +200,7 @@ export interface FirearmPoseInput {
   /** Feet and eye in simulation blocks. */
   readonly feet: Vec3;
   readonly eye: Vec3;
+  readonly stockSeat?: Vec3 | undefined;
   readonly yaw: number;
   readonly pitch: number;
   readonly blockSize: number;
@@ -659,6 +660,7 @@ export class FirearmMechanics {
       holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
       model: data.model,
       eye: input.eye,
+      stockSeat: input.stockSeat,
       yaw: input.yaw,
       pitch: input.pitch,
       blockSize: this.blockSize,
@@ -1572,6 +1574,7 @@ export class FirearmMechanics {
       side,
       twoHanded,
       eye,
+      stockSeat: pose.stockSeat,
       yaw: pose.yaw,
       pitch: pose.pitch,
     });

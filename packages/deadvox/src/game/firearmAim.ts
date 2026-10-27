@@ -21,6 +21,7 @@ export interface FirearmBoreRayInput {
   readonly twoHanded: boolean;
   readonly aimFrame: AimFrame;
   readonly handlingTurn?: Vec3;
+  readonly stockSeat?: Vec3 | undefined;
   readonly aimingDownSights?: boolean;
   readonly loweredPitchRadians: number;
   readonly adsApertureFill?: number | undefined;
@@ -48,6 +49,7 @@ export const firearmBoreRay = ({
   twoHanded,
   aimFrame,
   handlingTurn,
+  stockSeat,
   aimingDownSights = false,
   loweredPitchRadians,
   adsApertureFill,
@@ -63,6 +65,7 @@ export const firearmBoreRay = ({
     progress,
     aimingDownSights,
     aimFrame,
+    stockSeat,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
     loweredPitchRadians,
     adsApertureFill,

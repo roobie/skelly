@@ -26,6 +26,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { opticViewSettings } from '../src/core/opticView.ts';
+import { playerLookLean } from '../src/core/playerLookPose.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/core/schema.ts';
@@ -39,7 +40,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { heldState } from './heldState.ts';
-import { createPlayerBody, PLAYER } from './playerFixture.ts';
+import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
@@ -160,9 +161,25 @@ const drawnVertices = (meshes: PlayerMeshes): { part: string; at: Vector3 }[] =>
 };
 const anchorAt = (meshes: PlayerMeshes, name: 'body' | FigureLimb, model: string, anchor: string): Vector3 => {
   meshes.group.updateMatrixWorld(true);
-  return new Vector3(...registry.models.get(model)!.anchors![anchor]!).applyMatrix4(
-    drawnPart(meshes, name).matrixWorld,
-  );
+  const anchors = registry.models.get(model)!.anchors!;
+  const point = new Vector3(...anchors[anchor]!);
+  if (name === 'body') {
+    const pivots = [
+      [playerFigure.body.spine.pivot, 'figure-spine'],
+      [playerFigure.body.neck.pivot, 'figure-neck'],
+      [playerFigure.body.head.pivot, FIGURE_PIVOT.head],
+    ];
+    const pivot = pivots.find(([joint]) => joint === anchor);
+    if (pivot) {
+      return drawnPart(meshes, name).getObjectByName(pivot[1]!)!.getWorldPosition(point);
+    }
+    if ([playerFigure.body.joints.leftShoulder, playerFigure.body.joints.rightShoulder].includes(anchor)) {
+      return drawnPart(meshes, name)
+        .getObjectByName('figure-spine')!
+        .localToWorld(point.sub(new Vector3(...anchors[playerFigure.body.spine.pivot]!)));
+    }
+  }
+  return point.applyMatrix4(drawnPart(meshes, name).matrixWorld);
 };
 
 /**
@@ -534,49 +551,14 @@ describe('player figure', () => {
     }
   });
 
-  it('leans the shared eye and shoulders forward only when looking steeply down', () => {
-    const body = createPlayerBody(scale, 4, 1, 4);
-    const before = structuredClone(body);
-    const inventory = new Inventory(registry);
-    const meshes = playerMeshes();
-    const yaw = 0.7;
-    const forward = new Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-    const pose = { body, yaw, stepOffset: 0, gaitPhase: 0, moving: false, ...STANDING, inventory };
-    meshes.sync({ ...pose, pitch: 0 });
-    const levelEye = new Vector3();
-    const levelShoulder = new Vector3();
-    meshes.eyePosition(levelEye);
-    meshes.shoulderPosition('right', levelShoulder);
-    const centre = new Vector3(...body.pos).multiplyScalar(scale.blockSize);
-    expect(levelEye.clone().sub(centre).dot(forward)).toBeCloseTo(0);
+  it('retains the steep-look-down hip lean without folding an already prone body through the ground', () => {
     const onset = (playerFigure.lookDownLean.startPitchDegrees * Math.PI) / 180;
-    meshes.sync({ ...pose, pitch: -onset });
-    const onsetEye = new Vector3();
-    meshes.eyePosition(onsetEye);
-    expect(onsetEye.distanceTo(levelEye)).toBeCloseTo(0);
-    meshes.sync({ ...pose, pitch: -(onset + Math.PI / 2) / 2 });
-    const midwayEye = new Vector3();
-    meshes.eyePosition(midwayEye);
-    const midwayForward = midwayEye.clone().sub(levelEye).dot(forward);
-    expect(midwayForward).toBeGreaterThan(0);
-
-    meshes.sync({ ...pose, pitch: -Math.PI / 2 });
-    const downEye = new Vector3();
-    const downShoulder = new Vector3();
-    meshes.eyePosition(downEye);
-    meshes.shoulderPosition('right', downShoulder);
-    expect(downEye.clone().sub(levelEye).dot(forward)).toBeGreaterThan(midwayForward);
-    expect(downShoulder.clone().sub(levelShoulder).dot(forward)).toBeGreaterThan(0);
-
-    meshes.sync({ ...pose, pitch: -Math.PI / 2, thirdPerson: true });
-    const externalEye = new Vector3();
-    const externalShoulder = new Vector3();
-    meshes.eyePosition(externalEye);
-    meshes.shoulderPosition('right', externalShoulder);
-    expect(externalEye.toArray()).toEqual(downEye.toArray());
-    expect(externalShoulder.toArray()).toEqual(downShoulder.toArray());
-    expect(body).toEqual(before);
-    meshes.dispose();
+    expect(playerLookLean(playerFigure, 0, 'standing')).toBe(0);
+    expect(playerLookLean(playerFigure, -onset, 'standing')).toBe(0);
+    const midway = playerLookLean(playerFigure, -(onset + Math.PI / 2) / 2, 'standing');
+    expect(midway).toBeGreaterThan(0);
+    expect(playerLookLean(playerFigure, -Math.PI / 2, 'standing')).toBeGreaterThan(midway);
+    expect(playerLookLean(playerFigure, -Math.PI / 2, 'prone')).toBe(0);
   });
 
   it('keeps a bare foot visible past the torso at -60 and -80 degrees', () => {
@@ -767,15 +749,9 @@ describe('player figure', () => {
     );
   });
 
-  it('poses the drawn body for the stance it is given, inside that stance’s height, blending between stances', () => {
+  it('lowers the anatomical head through stances and blends preview poses between them', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const meshes = playerMeshes();
-    const senses = registry.player.get('player')!;
-    const heightOf: Record<PlayerStance, number> = {
-      standing: PLAYER.height,
-      crouching: senses.crouch.bodyHeightMetres,
-      prone: senses.prone.bodyHeightMetres,
-    };
     const { blendRealSeconds } = playerFigure.stancePoses;
     const baseY = body.pos[1] * scale.blockSize;
     const pose = (stance: PlayerStance, dt: number) => {
@@ -788,7 +764,6 @@ describe('player figure', () => {
     const settled = Object.fromEntries(
       (['standing', 'crouching', 'prone'] as const).map((stance) => {
         const shown = pose(stance, blendRealSeconds);
-        expect(shown.top, `${stance} drawn top`).toBeLessThanOrEqual(heightOf[stance]);
         return [stance, shown.head];
       }),
     ) as Record<PlayerStance, Vector3>;

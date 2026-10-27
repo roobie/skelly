@@ -441,19 +441,17 @@ export class ActorAnimator {
     const { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition } = presentation;
     if (firearmPose) {
       transform.offset = [...firearmPose.rootOffset];
-      if (aimingDownSights) {
-        this.poseMatrix.makeBasis(
-          new Vector3(...firearmPose.rootRotation[0]),
-          new Vector3(...firearmPose.rootRotation[1]),
-          new Vector3(...firearmPose.rootRotation[2]),
-        );
-        this.poseRotation.setFromRotationMatrix(this.poseMatrix);
-      }
+      this.poseMatrix.makeBasis(
+        new Vector3(...firearmPose.rootRotation[0]),
+        new Vector3(...firearmPose.rootRotation[1]),
+        new Vector3(...firearmPose.rootRotation[2]),
+      );
+      this.poseRotation.setFromRotationMatrix(this.poseMatrix);
     }
     const [turnPitch, turnYaw, turnRoll] = handlingTurn;
     const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
-    if (!aimingDownSights) {
+    if (!firearmPose) {
       this.poseAim(item, readyAim);
       this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, turnRoll, 'YXZ'));
       this.poseRotation.multiply(this.rackRotation);
@@ -509,7 +507,7 @@ export class ActorAnimator {
       item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
     const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
     const aimingDownSights = Boolean(
-      this.viewPlacement && item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
+      item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
     );
     const poseInput =
       itemDefinition?.firearm && modelDefinition

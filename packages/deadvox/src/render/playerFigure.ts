@@ -4,13 +4,12 @@ import { Group, type Material, Mesh, type MeshStandardMaterial, Object3D, type V
 import type { BodyRegion } from '../core/body.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef, Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import type { Body } from '../core/physics.ts';
-import { playerEyePosition, playerLookLean } from '../core/playerLookPose.ts';
+import { type FigureStancePose, type PlayerLookPose, playerLookPose, playerPosePoint } from '../core/playerLookPose.ts';
 import type { PlayerStance } from '../core/playerStance.ts';
 import {
   FIGURE_LIMB_JOINTS,
@@ -156,6 +155,7 @@ export interface PlayerFigurePose {
   emptyFists?: boolean;
   eye?: Vec3;
   pitch?: number;
+  stancePose?: FigureStancePose;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
@@ -294,6 +294,7 @@ export class PlayerMeshes {
   private readonly figure: FigureDef;
   private presentation: HeldPresentation | undefined;
   private lastPose: PlayerFigurePose | undefined;
+  private lookPose: PlayerLookPose | undefined;
   private handPose: MeleePoseFrame | undefined;
   private handling: HeldHandlingFrame = { firearms: [] };
   private recoil = 0;
@@ -339,7 +340,11 @@ export class PlayerMeshes {
     this.modelDefs = modelDefs;
     const { body, legRig, armRig } = figure;
     this.pivotedParts = {
-      body: [{ name: FIGURE_PIVOT.head, parts: [body.head.part], pivot: body.head.pivot }],
+      body: [
+        { name: 'figure-spine', parts: [body.spine.part], pivot: body.spine.pivot },
+        { name: 'figure-neck', parts: [body.neck.part], pivot: body.neck.pivot },
+        { name: FIGURE_PIVOT.head, parts: [body.head.part], pivot: body.head.pivot },
+      ],
       leg: LEG_SEGMENTS.map((segment) => ({
         name: FIGURE_PIVOT[segment],
         parts: [legRig[segment].part],
@@ -385,8 +390,19 @@ export class PlayerMeshes {
 
   sync(pose: PlayerFigurePose): void {
     if (!this.fixedPose) {
-      this.blendStance(pose.stance, pose.dt);
+      if (pose.stancePose) {
+        Object.assign(this.shownPose, pose.stancePose);
+      } else {
+        this.blendStance(pose.stance, pose.dt);
+      }
     }
+    this.lookPose = playerLookPose({
+      figure: this.figure,
+      models: this.modelDefs,
+      pitch: pose.pitch ?? 0,
+      stance: pose.stance,
+      stancePose: this.shownPose,
+    });
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
     this.syncModels();
@@ -397,7 +413,9 @@ export class PlayerMeshes {
     // Models face +z, so turning about +x swings a shin back and tips a toe or the face down; a forearm bends forward
     // the other way. A stance leaves the wrist alone.
     const turns: Readonly<Record<PivotedKind, readonly number[]>> = {
-      body: [-headUpDegrees],
+      body: this.fixedPose
+        ? [0, 0, -headUpDegrees]
+        : [-this.lookPose.spineTurn / RADIANS, -this.lookPose.neckTurn / RADIANS, -this.lookPose.headTurn / RADIANS],
       leg: [kneeBendDegrees, -ankleDegrees],
       arm: [-elbowBendDegrees],
     };
@@ -409,7 +427,7 @@ export class PlayerMeshes {
     for (const [part, drawn] of this.drawn) {
       const side = ARM_SIDE[part.name];
       drawn.visible = !(side && this.presentation?.arms.has(side));
-      this.posePoint(part.at, part.name, pose);
+      this.posePoint(part.at, part.name, pose, part.name === 'body');
       drawn.position.copy(this.dummy.position);
       drawn.quaternion.copy(this.dummy.quaternion);
       drawn.rotateY(Math.PI); // Models face +z and the figure faces -z.
@@ -445,7 +463,7 @@ export class PlayerMeshes {
       return;
     }
     const { registry, hands } = source;
-    this.positionHeldFrame(pose, registry);
+    this.positionHeldFrame(pose);
     const shoulderOf = (side: HandSide): Vector3 => {
       const joint = this.layout.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder'];
       this.posePoint(joint, 'body', pose);
@@ -465,6 +483,7 @@ export class PlayerMeshes {
         shouldersFollowTorso: false,
       });
     }
+    this.presentation!.stockSeats = this.lookPose!.stockSeats;
     this.animator!.setSource(source);
     this.animator!.setShoulders(shoulderOf);
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
@@ -494,25 +513,13 @@ export class PlayerMeshes {
     }
   }
 
-  private positionHeldFrame(pose: PlayerFigurePose, registry: Registry): void {
-    const player = registry.player.get(CORE_CONTENT_IDS.player)!;
-    const lowered = pose.stance === 'crouching' ? player.crouch : player.prone;
-    const drop = pose.stance === 'standing' ? 0 : lowered.eyeDropMetres;
+  private positionHeldFrame(pose: PlayerFigurePose): void {
     if (pose.eye) {
       this.heldFrame.position.set(...(pose.eye.map((value) => value * this.placement.blockSize) as Vec3));
     } else {
-      const eye = playerEyePosition({
-        feet: pose.body.pos,
-        eyeHeightMetres: player.eye - drop,
-        blockSize: this.placement.blockSize,
-        yaw: pose.yaw,
-        pitch: pose.pitch ?? 0,
-        stance: pose.stance,
-        figure: this.figure,
-      });
-      this.heldFrame.position.set(...(eye.map((value) => value * this.placement.blockSize) as Vec3));
-      this.heldFrame.position.y += pose.stepOffset;
+      setPlayerFigurePosition(this.heldFrame.position, this.placement, this.lookPose!.eye);
     }
+    this.heldFrame.position.y += pose.stepOffset;
     this.heldFrame.rotation.set(pose.pitch ?? 0, pose.yaw, 0, 'YXZ');
     this.heldFrame.updateMatrixWorld(true);
   }
@@ -665,7 +672,7 @@ export class PlayerMeshes {
   /**
    * Puts `dummy` at figure-frame point `at`, posed as part `name`: a limb swings about its joint, then all lean.
    */
-  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose): void {
+  private posePoint(at: Vec3, name: FigurePartName, pose: PlayerFigurePose, bodyRoot = false): void {
     const { yaw, stepOffset, gaitPhase, moving } = pose;
     const hip = this.layout.hipHeight;
     const { hipDropMetres, torsoForwardDegrees, legsForwardDegrees, armsForwardDegrees } = this.shownPose;
@@ -679,8 +686,15 @@ export class PlayerMeshes {
     const localY = pivotY + (at[1] - pivotY) * Math.cos(stride) - (at[2] - pivotZ) * Math.sin(stride);
     const localZ = pivotZ + (at[1] - pivotY) * Math.sin(stride) + (at[2] - pivotZ) * Math.cos(stride);
     // The stance swings the legs and the upper body about the hip, then lowers the hip.
-    const lookLean = playerLookLean(this.figure, pose.pitch ?? 0, pose.stance);
-    const swing = isLeg(name) ? legsForwardDegrees * RADIANS : -torsoForwardDegrees * RADIANS - lookLean;
+    if (!(isLeg(name) || bodyRoot || this.fixedPose)) {
+      const point = playerPosePoint(this.lookPose!, [at[0], localY, localZ], 'torso');
+      point[1] += stepOffset;
+      setPlayerFigurePosition(this.dummy.position, this.placement, point);
+      this.dummy.rotation.set(stride + this.lookPose!.hipTurn + this.lookPose!.spineTurn, yaw, 0, 'YXZ');
+      return;
+    }
+    const upperSwing = this.fixedPose ? -torsoForwardDegrees * RADIANS : this.lookPose!.hipTurn;
+    const swing = isLeg(name) ? legsForwardDegrees * RADIANS : upperSwing;
     const aboveHip = localY - hip;
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);

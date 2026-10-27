@@ -1,41 +1,169 @@
-import type { FigureDef } from './content.ts';
+import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { HandSide } from './inventory.ts';
 import type { PlayerStance } from './playerStance.ts';
 
 const RADIANS = Math.PI / 180;
+type Models = ReadonlyMap<string, Pick<ModelDef, 'anchors'>>;
+export type FigureStancePose = FigureDef['stancePoses']['prone'];
+
+export const figureStancePose = (figure: FigureDef, stance: PlayerStance): FigureStancePose =>
+  stance === 'standing'
+    ? {
+        hipDropMetres: 0,
+        torsoForwardDegrees: 0,
+        legsForwardDegrees: 0,
+        kneeBendDegrees: 0,
+        ankleDegrees: 0,
+        armsForwardDegrees: 0,
+        elbowBendDegrees: 0,
+        headUpDegrees: 0,
+      }
+    : figure.stancePoses[stance];
 
 export const playerLookLean = (figure: FigureDef, pitch: number, stance: PlayerStance): number => {
   const { startPitchDegrees, torsoForwardDegrees } = figure.lookDownLean;
   const progress = Math.max(0, Math.min(1, (-pitch / RADIANS - startPitchDegrees) / (90 - startPitchDegrees)));
   const stanceLean = stance === 'standing' ? 0 : figure.stancePoses[stance].torsoForwardDegrees;
-  // A prone torso is already horizontal; looking down must not fold it through the ground.
   return Math.min(torsoForwardDegrees * progress, Math.max(0, 90 - stanceLean)) * RADIANS;
+};
+
+const rotate = ([x, y, z]: Vec3, angle: number): Vec3 => [
+  x,
+  y * Math.cos(angle) - z * Math.sin(angle),
+  y * Math.sin(angle) + z * Math.cos(angle),
+];
+const about = (point: Vec3, pivot: Vec3, angle: number): Vec3 => {
+  const offset = rotate(point.map((v, i) => v - pivot[i]!) as Vec3, angle);
+  return offset.map((v, i) => v + pivot[i]!) as Vec3;
+};
+
+export interface PlayerLookPose {
+  readonly hip: Vec3;
+  readonly spine: Vec3;
+  readonly neck: Vec3;
+  readonly head: Vec3;
+  readonly hipTurn: number;
+  readonly spineTurn: number;
+  readonly neckTurn: number;
+  readonly headTurn: number;
+  readonly hipDrop: number;
+  readonly eye: Vec3;
+  readonly shoulders: Readonly<Record<HandSide, Vec3>>;
+  readonly stockSeats: Readonly<Record<HandSide, Vec3>>;
+}
+
+export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso' | 'neck' | 'head'): Vec3 => {
+  let at = point;
+  if (part === 'head') {
+    at = about(at, pose.head, pose.headTurn);
+  }
+  if (part !== 'torso') {
+    at = about(at, pose.neck, pose.neckTurn);
+  }
+  at = about(at, pose.spine, pose.spineTurn);
+  at = about(at, pose.hip, pose.hipTurn);
+  return [at[0], at[1] - pose.hipDrop, at[2]];
+};
+
+export const playerLookPose = ({
+  figure,
+  models,
+  pitch,
+  stance,
+  stancePose = figureStancePose(figure, stance),
+}: {
+  figure: FigureDef;
+  models: Models;
+  pitch: number;
+  stance: PlayerStance;
+  stancePose?: FigureStancePose;
+}): PlayerLookPose => {
+  const anchors = models.get(figure.body.model)?.anchors;
+  const anchor = (name: string): Vec3 => {
+    const at = anchors?.[name];
+    if (!at) {
+      throw new Error(`Figure ${figure.id} needs body anchor ${name}`);
+    }
+    return at;
+  };
+  const leftHip = anchor(figure.body.joints.leftHip);
+  const rightHip = anchor(figure.body.joints.rightHip);
+  const origin: Vec3 = [
+    (leftHip[0] + rightHip[0]) / 2,
+    figure.hipHeightMetres - (leftHip[1] + rightHip[1]) / 2,
+    (leftHip[2] + rightHip[2]) / 2,
+  ];
+  const point = (name: string): Vec3 => {
+    const at = anchor(name);
+    return [origin[0] - at[0], origin[1] + at[1], origin[2] - at[2]];
+  };
+  const hipTurn = -stancePose.torsoForwardDegrees * RADIANS - playerLookLean(figure, pitch, stance);
+  const { torsoShare, neckShare, torsoLimitDegrees, neckLimitDegrees, headLimitDegrees, stockShoulderOffset } =
+    figure.aimPose;
+  const limit = (angle: number, bounds: readonly [number, number]): number =>
+    Math.max(-bounds[0] * RADIANS, Math.min(bounds[1] * RADIANS, angle));
+  const needed = pitch - hipTurn;
+  const spineTurn = limit(pitch * (pitch < 0 ? torsoShare.down : torsoShare.up), torsoLimitDegrees);
+  const neckTurn = limit((needed - spineTurn) * neckShare, neckLimitDegrees);
+  const headTurn = limit(needed - spineTurn - neckTurn, headLimitDegrees);
+  const pose: PlayerLookPose = {
+    hip: [0, figure.hipHeightMetres, 0],
+    spine: point(figure.body.spine.pivot),
+    neck: point(figure.body.neck.pivot),
+    head: point(figure.body.head.pivot),
+    hipTurn,
+    spineTurn,
+    neckTurn,
+    headTurn,
+    hipDrop: stancePose.hipDropMetres,
+    eye: [0, 0, 0],
+    shoulders: { right: [0, 0, 0], left: [0, 0, 0] },
+    stockSeats: { right: [0, 0, 0], left: [0, 0, 0] },
+  };
+  const eyes = figure.body.eyes.map(point);
+  const eye = playerPosePoint(pose, eyes[0]!.map((v, i) => (v + eyes[1]![i]!) / 2) as Vec3, 'head');
+  const shoulders = Object.fromEntries(
+    (['right', 'left'] as const).map((side) => [
+      side,
+      playerPosePoint(pose, point(figure.body.joints[side === 'right' ? 'rightShoulder' : 'leftShoulder']), 'torso'),
+    ]),
+  ) as Record<HandSide, Vec3>;
+  const stockSeats = Object.fromEntries(
+    (['right', 'left'] as const).map((side) => {
+      const offset: Vec3 = [
+        stockShoulderOffset[0] * (side === 'right' ? 1 : -1),
+        stockShoulderOffset[1],
+        stockShoulderOffset[2],
+      ];
+      const turned = rotate(offset, hipTurn + spineTurn);
+      return [side, rotate(shoulders[side].map((v, i) => v + turned[i]! - eye[i]!) as Vec3, -pitch)];
+    }),
+  ) as Record<HandSide, Vec3>;
+  return { ...pose, eye, shoulders, stockSeats };
 };
 
 export const playerEyePosition = ({
   feet,
-  eyeHeightMetres,
   blockSize,
   yaw,
   pitch,
   stance,
   figure,
+  models,
 }: {
   feet: Readonly<Vec3>;
-  eyeHeightMetres: number;
   blockSize: number;
   yaw: number;
   pitch: number;
   stance: PlayerStance;
   figure: FigureDef;
+  models: Models;
 }): Vec3 => {
-  const lean = playerLookLean(figure, pitch, stance);
-  const hip = figure.hipHeightMetres - (stance === 'standing' ? 0 : figure.stancePoses[stance].hipDropMetres);
-  const aboveHip = eyeHeightMetres - hip;
-  const forward = (aboveHip * Math.sin(lean)) / blockSize;
+  const { eye } = playerLookPose({ figure, models, pitch, stance });
   return [
-    feet[0] - Math.sin(yaw) * forward,
-    feet[1] + (eyeHeightMetres + aboveHip * (Math.cos(lean) - 1)) / blockSize,
-    feet[2] - Math.cos(yaw) * forward,
+    feet[0] + (eye[0] * Math.cos(yaw) + eye[2] * Math.sin(yaw)) / blockSize,
+    feet[1] + eye[1] / blockSize,
+    feet[2] + (-eye[0] * Math.sin(yaw) + eye[2] * Math.cos(yaw)) / blockSize,
   ];
 };

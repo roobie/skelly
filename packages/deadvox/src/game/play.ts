@@ -29,7 +29,7 @@ import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { countText } from '../core/numberText.ts';
 import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
-import { playerEyePosition } from '../core/playerLookPose.ts';
+import { playerEyePosition, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
 import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -2536,13 +2536,21 @@ export const startPlay = (
   const eye = (): Vec3 =>
     playerEyePosition({
       feet: body.pos,
-      eyeHeightMetres: session.playerEyeHeightMetres,
       blockSize: s,
       yaw: spectator.avatarYaw(input.yaw),
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      models: registry.models,
     });
+
+  const stockSeat = (side: HandSide): Vec3 =>
+    playerLookPose({
+      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      models: registry.models,
+      pitch: spectator.avatarPitch(input.pitch),
+      stance: session.stance,
+    }).stockSeats[side];
 
   /** Part boxes for picking: the same projection vehicle reach measures to. */
   const currentVehicleParts = () => session.vehicleParts.all();
@@ -2947,11 +2955,7 @@ export const startPlay = (
     const offset: Vec3 = throwingStance
       ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
       : [0, 0, 0];
-    const origin: Vec3 = [
-      body.pos[0] * s + offset[0],
-      body.pos[1] * s + session.playerEyeHeightMetres + offset[1],
-      body.pos[2] * s + offset[2],
-    ];
+    const origin = eye().map((value, axis) => value * s + offset[axis]!) as Vec3;
     return flightForItem(item, registry, {
       from: origin,
       direction: lookDir(),
@@ -3105,6 +3109,7 @@ export const startPlay = (
       aimingDownSights: isAimingDownSights(),
       sprinting: session.sprinting,
       item,
+      stockSeat: stockSeat(inventory.hands.right?.uid === item.uid ? 'right' : 'left'),
       feet: feet(),
       eye: eye(),
       yaw: input.yaw,
@@ -3663,6 +3668,7 @@ export const startPlay = (
       twoHanded,
       progress,
       aimingDownSights,
+      stockSeat: stockSeat(side),
       aimFrame: aim.frame,
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,

@@ -1630,12 +1630,21 @@ attached rather than moving to suit the observing camera. See
 `src/render/actorAnimator.ts`, `ActorAnimator`; and
 `src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
 
-Looking steeply down bends the upper body and eye forward together, because
-looking through the avatar's centreline is not realistic biomechanics. The lean
-belongs to the actor in every view, not to the observing camera; it must not move
-the collision body. An already horizontal torso must not fold farther toward the
-ground. See `src/core/playerLookPose.ts`, `playerLookLean` and
-`playerEyePosition`; and `src/render/playerFigure.ts`, `PlayerMeshes`.
+Aim belongs to the anatomical torso, neck and head, because the arms alone
+cannot plausibly carry an extreme aim while the face stays level. The gameplay
+eye is the posed head's eye, not a fixed camera target that the drawn body must
+chase. Camera, interaction rays and held-item simulation share that origin so
+an observer cannot change the actor's reach or hold. The live drawing uses the
+gameplay stance without a separate visual blend that could detach the eye.
+Content owns the articulation and its limits. Reach at extreme aim is content
+tuning, not a reason to fork the eye origin. See `src/core/playerLookPose.ts`,
+`playerLookPose` and `playerEyePosition`; and `src/render/playerFigure.ts`,
+`PlayerMeshes`.
+
+Steep look-down hip lean is part of the same pose: looking through the avatar's
+centreline is not realistic biomechanics. It must not move the collision body,
+and an already horizontal torso must not fold farther toward the ground. See
+`src/core/playerLookPose.ts`, `playerLookLean`.
 
 The optical adapter must not become another visible arm or held-item owner.
 Authored head-slot interiors use a matching world-frame exclusion to avoid
@@ -2745,38 +2754,25 @@ shape, decides where a hit lands. Gore placement must not change with the observ
 `src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
-A long gun is held like a rifle, and the hold is authored on the gun's model,
-not in the renderer: the model says where its butt seats in the shoulder and
-where and how each hand takes it. The firing hand wraps the pistol grip when the
-gun has one, and otherwise the stock wrist, fingers under the wrist and thumb over
-it, because a pistol-grip pose on a pump gun or a hunting rifle closes on nothing
-and looks wrong. The gungen export marks the kind: a grip part means a pistol grip
-and a stock part without one means a stock wrist, and a long gun that exports
-neither fails to compile, because a guessed hold would close on nothing and hide
-the missing part. The support hand cups the forend from below at the exported
-support anchor, whose height gungen reads off the forend underside the file
-draws, so the contact follows the drawn forend instead of a stale hand-copied
-height: the bore running across the palm from its heel to the gap between
-thumb and index, the fingers curling up the gun's far side and the thumb lying
-along the near side, because a support hand on the side of the forend reads as
-resting on top of the barrel instead of carrying the gun from under it. The view keeps the butt in its seat and
-lowers and raises the gun by turning it about the butt, so the stock stays
-shouldered at every ready level and both arms reach the gun from the shoulder
-instead of the gun floating in front of the eye. A gun that turns about its
-butt swings its muzzle further than one that only drops, so the lowered pitch
-is set so the lowered gun stays inside the player's view. Both holds are
-authored for a right-handed hold and mirrored together across the gun for a
-left-handed one: the support hand is the other hand, but it keeps the gun's
-side, so a hold is authored once. The hold lives in content because a new gun,
-a mod gun or a retuned hold must not need a renderer change, which is the
-content pillar in `PILLARS.md`, "Content forward compatibility", and because
-one hold formula could not fit a pump gun and a pistol-grip rifle alike. A
-two-handed firearm without an authored hold, a seat left of the eye or a palm
-not square to its fingers fails validation rather than drawing a hand through
-the stock. A one-handed gun keeps the grip frame it had. See
-`src/content/base/long-gun-hands.libsonnet`, `firingHold`, `src/core/schema.ts`,
-`HandsModelSchema`, `src/core/heldPose.ts`, `heldHoldFrame`, and
-`src/core/content.ts`, `checkHeldHands`.
+A long gun stays shouldered at every ready level: lowering pivots about the
+butt rather than releasing the shoulder. Stock contact belongs to the posed
+anatomical shoulder, not an eye-relative offset that can lift the rifle above
+the head. The figure owns the contact and the model owns its butt and hand
+frames, because changing either anatomy or the gun must not require renderer
+tuning. Firing, crosshair prediction and the visible gun must use the same
+seated transform. See `src/core/playerLookPose.ts`, `playerLookPose`;
+`src/core/heldPose.ts`, `heldFirearmTransform`; and `src/game/firearmAim.ts`,
+`firearmBoreRay`.
+
+Grip style and contact stay authored because a pistol-grip pose on a stock
+wrist closes on nothing, and a support hand beside the forend reads as resting
+on the barrel rather than carrying it. Missing export geometry must fail
+instead of hiding the omission behind a guessed hold. Mirroring must retain
+the support hand's gun-side contact. Nominal eye-relative seating remains for
+isolated item presentation and optical effects, not the anatomical actor's
+physical hold. See `src/content/base/long-gun-hands.libsonnet`, `firingHold`;
+`src/core/schema.ts`, `HandsModelSchema`; `src/core/heldPose.ts`, `heldHoldFrame`;
+and `src/core/content.ts`, `checkHeldHands`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
 angle, and code-posed motion such as arm swing and idle breath is one clip among
