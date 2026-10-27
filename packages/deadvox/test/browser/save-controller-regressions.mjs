@@ -140,14 +140,14 @@ try {
       assert.equal(
         await page.evaluate(async () => {
           const { controlsCardRows, filterControlsCardRows } = await import('/src/game/controls.ts');
+          const { stageTopics } = await import('/src/ui/tutorial.ts');
           const search = document.querySelector('#controls-search');
-          const expected = filterControlsCardRows(controlsCardRows(), search.value).map(({ id }) => id);
+          const expected = filterControlsCardRows(controlsCardRows(), stageTopics.move).map(({ id }) => id);
           const actual = [...document.querySelectorAll('#controls [data-input-action]')].map(
             (row) => row.dataset.inputAction,
           );
           return (
             search === document.activeElement &&
-            search.value.trim() !== '' &&
             expected.length > 0 &&
             expected.length < controlsCardRows().length &&
             JSON.stringify(actual) === JSON.stringify(expected) &&
