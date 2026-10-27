@@ -608,6 +608,41 @@ describe('play presentation ownership', () => {
     view.dispose();
   });
 
+  it('moves the live prone ADS camera onto the sight line within the budget unless a wall blocks it', () => {
+    const ads = { side: 'right' as const, model: registry.models.get(registry.items.get('rifle_assault')!.model!)! };
+    const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
+    const damage = { style: { opacity: '' } } as unknown as HTMLElement;
+    const eye: Vec3 = [2, 4.24, 6];
+    const displacement = (isSolid: Engine['isSolid']) => {
+      const { engine, view } = fixture(isSolid);
+      view.updateCamera(
+        {
+          dt: 0.1,
+          body,
+          paused: false,
+          noclip: false,
+          yaw: 0,
+          pitch: 0,
+          stridePhase: 0,
+          stance: 'prone',
+          ads,
+          eye,
+          sightImpaired: false,
+        },
+        damage,
+      );
+      const { position } = engine.camera;
+      view.dispose();
+      return Math.hypot(position.x - eye[0] * scale, position.y - eye[1] * scale, position.z - eye[2] * scale);
+    };
+    const scale = fixture().engine.config.scale.blockSize;
+    const limit = registry.figures.get('player')!.aimPose.ads.cameraOffsetLimitMetres;
+    const free = displacement(() => false);
+    expect(free).toBeGreaterThan(0);
+    expect(free).toBeLessThanOrEqual(limit + 1e-9);
+    expect(displacement(() => true)).toBeLessThan(free);
+  });
+
   it('switches the presentation to third person and restores first-person hands and camera', () => {
     const { engine, view } = fixture();
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };

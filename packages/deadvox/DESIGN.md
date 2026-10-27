@@ -1660,10 +1660,11 @@ anatomical bounds rather than an exact anatomical sight fit. See
 `src/content/base/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
-Only the owning view may suppress camera-enclosing flesh during standing or
-crouching ADS. A stable proximal-body and attached-gear mask prevents walking bob
-and sway from intermittently exposing the torso's interior; local near clipping keeps the
-remaining limbs clear without moving the actor or gun. The firearm retains
+Only the owning view may suppress camera-enclosing flesh during ADS in any
+stance, prone included. A stable proximal-body and attached-gear mask prevents
+walking bob and sway from intermittently exposing the torso's interior; local
+near clipping keeps the remaining limbs and held arms clear without moving the
+actor or gun. The firearm retains
 normal world depth, and external views and shadows retain the whole body. This
 exception is for an enclosing camera, not for hiding world obstructions. Content
 owns the masked body roles and clearance; see `src/content/base/figures-player.jsonnet`,
@@ -1687,9 +1688,8 @@ parallax is accepted unless it becomes a multiplayer peeking problem. See
 Prone ADS has its own posture, chest raised and propped on the elbows. A flat
 prone torso cannot lift the eye to the sight line within the neck limits, so the
 fit is fixed in the posture, shared by first person and the world body in one
-solve, before any per-gun aim value is loosened for prone. The self-mask applies
-to prone like the other stances because the raised torso and neck reach the near
-plane. See `src/content/base/figures-player.jsonnet`, `proneAdsPose`; and
+solve, before any per-gun aim value is loosened for prone. The live camera takes
+the same bounded sight-line correction and wall guard as the other stances. See `src/content/base/figures-player.jsonnet`, `proneAdsPose`; and
 `src/core/playerLookPose.ts`, `figureStancePose`. Moving shot start to the
 muzzle along the barrel belongs to #1383; the viewing-camera offset must not
 change the existing shot origin.
