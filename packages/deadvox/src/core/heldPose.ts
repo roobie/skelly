@@ -62,11 +62,7 @@ export interface HeldHoldFrame {
  * Both holds are authored for a right-handed hold, so `side` is the hand holding the gun, not the hand on this hold:
  * a left-held gun mirrors the firing and the support hold together across the model's z.
  */
-export const heldHoldFrame = (
-  model: ModelDef,
-  side: HandSide,
-  hold: 'firing' | 'support' | 'proneSupport',
-): HeldHoldFrame => {
+export const heldHoldFrame = (model: ModelDef, side: HandSide, hold: 'firing' | 'support'): HeldHoldFrame => {
   if (!(model.hands && model.grip)) {
     throw new Error(`Model ${model.id} needs hands and a grip`);
   }
@@ -76,6 +72,18 @@ export const heldHoldFrame = (
   const palm = normalize(modelToView(model, mirrorModelZ(side, authored.palm)));
   const fingers = normalize(modelToView(model, mirrorModelZ(side, authored.fingers)));
   return { at, palm, fingers, thumbSide: cross(fingers, palm) };
+};
+
+/** Where the support hand takes the gun while prone and aiming, in the same frame as `heldHoldFrame`'s `at`. */
+export const heldProneSupportAt = (model: ModelDef, side: HandSide): Vec3 => {
+  if (!(model.hands && model.grip)) {
+    throw new Error(`Model ${model.id} needs hands and a grip`);
+  }
+  const { grip, hands } = model;
+  return modelToView(
+    model,
+    mirrorModelZ(side, hands.proneSupport.at).map((value, index) => value - grip.at[index]!) as Vec3,
+  );
 };
 
 const rx = ([x, y, z]: Vec3, angle: number): Vec3 => [

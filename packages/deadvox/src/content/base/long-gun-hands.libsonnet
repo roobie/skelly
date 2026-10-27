@@ -30,9 +30,6 @@ function(model, buttX) model {
     },
     proneSupport: {
       at: [model.grip.at[0] + proneSupportAheadOfGripMetres, model.anchors.support[1], 0],
-      palm: [0, 1, 0],
-      fingers: [0.7880108, 0, 0.6156615],
-      pose: 'forend',
     },
   },
 }

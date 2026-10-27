@@ -28,6 +28,7 @@ import {
   type ContentFile,
   ContentFileSchema,
   DayCycleSchema,
+  ModelSchema,
   type TemplateDef,
 } from '../src/core/schema.ts';
 import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
@@ -3245,6 +3246,15 @@ describe('content', () => {
       'models[2].hands.firing',
     ]);
     expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual(baseline);
+  });
+
+  it('refuses a prone support hold that authors an orientation or finger pose, since it only moves the hand', () => {
+    const gun = [...baseRegistry.models.values()].find((model) => model.hands)!;
+    expect(safeParse(ModelSchema, gun).success).toBe(true);
+    for (const extra of [{ palm: [1, 0, 0] }, { fingers: [0, 1, 0] }, { pose: 'holding' }]) {
+      const hands = { ...gun.hands!, proneSupport: { ...gun.hands!.proneSupport, ...extra } };
+      expect(safeParse(ModelSchema, { ...gun, hands }).success, Object.keys(extra)[0]).toBe(false);
+    }
   });
 
   it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {

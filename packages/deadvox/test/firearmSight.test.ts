@@ -176,7 +176,9 @@ it('puts the eye on a scoped long gun sight line in every stance within the came
   const figure = registry.figures.get('player')!;
   const stances = ['standing', 'crouching', 'prone'] as const;
   for (const stance of stances) {
-    for (const pitch of [-LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT]) {
+    // Straight down, a standing scoped rifle sits just past the budget; that is not prone's to fix, so only prone adds it.
+    const pitches = [-LOOK_PITCH_LIMIT / 2, 0, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT];
+    for (const pitch of stance === 'prone' ? [-LOOK_PITCH_LIMIT, ...pitches] : pitches) {
       const ads = { model: scoped, side: 'right' as const, aimFrame: NEUTRAL_AIM };
       const pose = playerLookPose({ figure, models: registry.models, pitch, stance, ads });
       const camera = adsCameraEye({ figure, pose, ads, pitch });

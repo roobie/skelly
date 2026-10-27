@@ -18,6 +18,7 @@ import {
   heldFirearmTransform,
   heldGripOffset,
   heldHoldFrame,
+  heldProneSupportAt,
 } from '../core/heldPose.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -308,7 +309,7 @@ export class HeldPresentation {
     });
     if (model?.hands) {
       // The arm sits at the hold's offset from the held grip, so a closer hold is another offset on the same arm.
-      this.supportBases.set(other, { normal: offset, prone: heldHoldFrame(model, side, 'proneSupport').at });
+      this.supportBases.set(other, { normal: offset, prone: heldProneSupportAt(model, side) });
       this.proneAds = this.proneAdsOn;
     }
   }

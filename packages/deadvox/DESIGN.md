@@ -1700,7 +1700,9 @@ ground: hip drop is set so the legs touch it, and the chest rises only as far as
 the camera offset budget allows. Elbows bend toward the ground through their own
 pole, so the trigger elbow rests under the chest. The support hand takes the gun
 nearer the body when prone, because arm length is anatomy shared by every pose
-and gun, so the hold moves and the arm does not; even there the support elbow
+and gun, so the hold moves and the arm does not. The prone hold moves the hand
+only, since the arm is built once with the support hold's orientation and finger
+pose, so content cannot author those for it. Even there the support elbow
 hangs below its shoulder rather than on the ground, and looking up lifts both
 elbows. Scoped and iron-sighted long guns share the fit. The live camera takes
 the same bounded sight-line correction and wall guard as the other stances. See

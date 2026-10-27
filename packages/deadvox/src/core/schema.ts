@@ -2119,8 +2119,11 @@ const HandsModelSchema = strictObject({
   butt: Point,
   firing: HandHoldSchema,
   support: HandHoldSchema,
-  /** The support hold while lying prone and aiming: nearer the body so the elbow can reach the ground. */
-  proneSupport: HandHoldSchema,
+  /**
+   * Where the support hand takes the gun while lying prone and aiming, nearer the body so the elbow hangs lower. It
+   * moves the hand only: the palm, fingers and pose stay the support hold's, because the arm is built once with them.
+   */
+  proneSupport: strictObject({ at: Point }),
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
