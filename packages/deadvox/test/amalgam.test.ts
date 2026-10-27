@@ -740,7 +740,7 @@ describe('amalgam body and combat seam', () => {
           ray.origin,
           [ray.direction],
         ),
-      ),
+      ).hits,
     ).toBe(1);
     expect(zombie.regions[ray.regionId]).toBeLessThan(before[ray.regionId]!);
     expect(Object.keys(before).filter((region) => zombie.regions[region] !== before[region])).toEqual([ray.regionId]);
@@ -754,7 +754,7 @@ describe('amalgam body and combat seam', () => {
     const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
     const firearm = registry.items.get('pump_shotgun')!.firearm!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
-      simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key }));
+      simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key })).hits;
     const coreBoxes = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
@@ -1263,7 +1263,7 @@ describe('amalgam flesh carving', () => {
     let holes = 0;
     for (const { origin, direction } of lines) {
       const before = zombie.carved.length;
-      if (simulation.firePellets(projectileShot({ ...buck, pellets: 1, damage: 1 }, origin, [direction])) > 0) {
+      if (simulation.firePellets(projectileShot({ ...buck, pellets: 1, damage: 1 }, origin, [direction])).hits > 0) {
         hits += 1;
         holes += zombie.carved.length > before ? 1 : 0;
       }
