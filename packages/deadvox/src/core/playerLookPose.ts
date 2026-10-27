@@ -27,7 +27,6 @@ export const figureStancePose = (figure: FigureDef, stance: PlayerStance, ads = 
       torsoForwardDegrees: 0,
       legsForwardDegrees: 0,
       kneeBendDegrees: 0,
-      leftKneeExtraBendDegrees: 0,
       ankleDegrees: 0,
       armsForwardDegrees: 0,
       elbowBendDegrees: 0,
@@ -202,7 +201,13 @@ export const playerLookPose = ({
     hipDrop: stancePose.hipDropMetres,
     spineRotation: multiplyRotation(
       turnX(spineTurn),
-      turnZ(ads ? figure.aimPose.ads.torsoRollDegrees * RADIANS * (ads.side === 'right' ? 1 : -1) : 0),
+      turnZ(
+        ads
+          ? (stance === 'prone' ? figure.aimPose.ads.proneTorsoRollDegrees : figure.aimPose.ads.torsoRollDegrees) *
+              RADIANS *
+              (ads.side === 'right' ? 1 : -1)
+          : 0,
+      ),
     ),
     neckRotation: turnX(neckTurn),
     headRotation: turnX(headTurn),

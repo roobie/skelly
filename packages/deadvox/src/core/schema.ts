@@ -3572,8 +3572,6 @@ const StancePoseSchema = strictObject({
   legsForwardDegrees: Degrees,
   /** Each shin and foot swing back about the knee. */
   kneeBendDegrees: Degrees,
-  /** The left shin bends this much more than the right, so a body can rest with one knee drawn up. */
-  leftKneeExtraBendDegrees: Degrees,
   /** Each foot turns toe up about the ankle. */
   ankleDegrees: Degrees,
   /** Each arm swings forward about its shoulder, from hanging along the torso. */
@@ -3721,6 +3719,8 @@ const FigureSchema = strictObject({
       ownBodyHide: array(picklist(['spine', 'neck', 'head'])),
       stockShoulderLimitMetres: NonNegative,
       torsoRollDegrees: pipe(number(), minValue(0), maxValue(90)),
+      /** The same roll lying prone, where it swings the shoulders along the ground; negative turns the other way. */
+      proneTorsoRollDegrees: pipe(number(), minValue(-90), maxValue(90)),
       headRollDegrees: pipe(number(), minValue(0), maxValue(90)),
       neckLengthToleranceFraction: pipe(
         Fraction,

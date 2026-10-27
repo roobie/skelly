@@ -754,10 +754,16 @@ describe('player figure', () => {
     meshes.dispose();
   });
 
-  it('rests the empty-handed prone body with one knee drawn up, not both', () => {
-    const { meshes } = proneScene(undefined, false);
-    const top = (leg: 'leftLeg' | 'rightLeg') => new Box3().setFromObject(drawnPart(meshes, leg), true).max.y;
-    expect(top('leftLeg')).toBeGreaterThan(top('rightLeg'));
+  it.each([
+    ['empty hands', undefined, false],
+    ['a long gun aimed down sights', 'rifle_assault', true],
+  ] as const)('keeps both prone feet on the ground with %s', (_label, item, ads) => {
+    const { meshes, ground } = proneScene(item, ads);
+    for (const leg of ['leftLeg', 'rightLeg'] as const) {
+      const foot = new Box3().setFromObject(drawnPart(meshes, leg).getObjectByName(FIGURE_PIVOT.foot)!, true);
+      expect(foot.min.y - ground, `${leg} foot`).toBeLessThanOrEqual(restMetres / 2);
+      expect(foot.min.y - ground, `${leg} foot`).toBeGreaterThanOrEqual(-restMetres);
+    }
     meshes.dispose();
   });
 

@@ -200,9 +200,12 @@ so each stance moves them without stance-specific code.
 
 Lying prone, the drawn body rests on the ground: a floating body reads wrong,
 so hip drop puts the legs on it, and the lower eye and shot origin that follow
-are accepted. Empty-handed, the arms reach in front of the shoulders, not fully
-extended, and one knee is drawn up, the way a body rests and stays ready to act;
-arms at the sides read as a standing neutral pose laid flat. See
+are accepted. Both feet stay on the ground. Empty-handed, the arms reach in
+front of the shoulders, not fully extended, the way a body rests and stays ready
+to act; arms at the sides read as a standing neutral pose laid flat. Aiming
+prone, the torso twists the opposite way to a standing aim, as a shooter lying
+along the ground does, and the twist and the lean are bounded together by the
+camera offset budget. See
 `src/content/base/figures-player.jsonnet`, `stancePoses`.
 
 The drawn pose must fit its collision height, so a head never pokes through a

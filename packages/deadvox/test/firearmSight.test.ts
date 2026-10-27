@@ -169,6 +169,25 @@ it('fits ADS inside the authored camera-to-body-eye offset budget', () => {
   }
 });
 
+it('twists the prone ADS torso the opposite way to a standing one, as a shooter lying along the ground does', () => {
+  const figure = baseRegistry.figures.get('player')!;
+  const { model } = adsCases()[0]!;
+  const yawOf = (stance: 'standing' | 'prone', side: 'right' | 'left') => {
+    const { spineRotation } = playerLookPose({
+      figure,
+      models: baseRegistry.models,
+      pitch: 0,
+      stance,
+      ads: { model, side, aimFrame: NEUTRAL_AIM },
+    });
+    // The roll about the model's z axis shows in the rotation's z component.
+    return Math.sign(spineRotation[2]);
+  };
+  for (const side of ['right', 'left'] as const) {
+    expect(yawOf('prone', side)).toBe(-yawOf('standing', side));
+  }
+});
+
 it('puts the eye on a scoped long gun sight line in every stance within the camera budget', () => {
   const { registry } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');
   const scoped = sightedFirearmModel(registry, new Inventory(registry).create('rifle_hunting'))!;
