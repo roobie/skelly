@@ -16,7 +16,7 @@ The save copy cancels manual motion, not committed ammunition transfers. An open
 
 ## Content and presentation
 
-The civilian cartridge remains separate from military ammunition, and fitting the scope remains the player's choice. No rifle loot placement is authorized until #699 resolves its item-tier dependency. Debug range stock is capability-driven rather than a loot placement; see `src/game/testHouseRange.ts`, `testHouseRangeSupply`.
+The civilian cartridge is separate from military ammunition, and fitting the scope is the player's choice. The rifle and its ammunition reach the world through the loot system like any other item; see `DESIGN.md`, "Loot". Debug range stock is capability-driven rather than a loot placement; see `src/game/testHouseRange.ts`, `testHouseRangeSupply`.
 
 Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `src/content/base/models-firearms.libsonnet`, `items`, and `src/core/schema.ts`, `FirearmSchema`.
 
