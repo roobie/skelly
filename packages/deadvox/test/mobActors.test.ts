@@ -1035,8 +1035,10 @@ describe('MobActorMeshes', () => {
         });
         return { type, realized: zombieFigure(type, figureSeed).realized, id: store.add(zombie) };
       });
+      expect(entries.some(({ type }) => type.model === 'crawler')).toBe(true);
       renderer.sync(store, 1 / 60, 1);
       for (const { type, realized, id } of entries) {
+        expect(realized.body.bones.length, type.id).toBeGreaterThan(0);
         for (const bone of realized.body.bones) {
           const matrix = renderer.boneMatrix(id, bone.id);
           expect(matrix, `${type.id} ${bone.id}`).toHaveLength(12);
