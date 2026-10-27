@@ -359,7 +359,10 @@ type Column = Readonly<Partial<Record<0 | 1 | 2, readonly [number, number]>>>;
  * The model-file triangles drawn by the part `partId`, or by every unrotated part of a set, as a turned part draws no
  * faces square to the axes.
  */
-function* drawnTriangles(glb: Uint8Array, partId: string | ReadonlySet<string>): Generator<readonly [Vec3, Vec3, Vec3]> {
+function* drawnTriangles(
+  glb: Uint8Array,
+  partId: string | ReadonlySet<string>,
+): Generator<readonly [Vec3, Vec3, Vec3]> {
   const view = new DataView(glb.buffer, glb.byteOffset, glb.byteLength);
   const jsonLength = view.getUint32(12, true);
   const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + jsonLength))) as GlbSightJson;
@@ -396,12 +399,7 @@ function* drawnTriangles(glb: Uint8Array, partId: string | ReadonlySet<string>):
  * the guard ears beside it. A column range on `axis` itself bounds where the face may lie, which keeps a post's top
  * from being read off a hood ring over it.
  */
-const drawnFaceMetres = (
-  glb: Uint8Array,
-  axis: 0 | 1 | 2,
-  column: Column,
-  partId: string | ReadonlySet<string>,
-) => {
+const drawnFaceMetres = (glb: Uint8Array, axis: 0 | 1 | 2, column: Column, partId: string | ReadonlySet<string>) => {
   const [u, v] = (
     [
       [1, 2],
@@ -896,7 +894,10 @@ export const exportGunGlb = (
   const fittedAttachments = attachmentData(resolved);
   const magazine = magazineSlotData(resolved);
   const drawn = drawnGeometry(resolved, voxelGrainsOf({ voxelGrain, voxelDetailGrain }));
-  const replaceableNodes = new Set([...fittedAttachments.map(({ node }) => node), ...(magazine ? [magazine.node] : [])]);
+  const replaceableNodes = new Set([
+    ...fittedAttachments.map(({ node }) => node),
+    ...(magazine ? [magazine.node] : []),
+  ]);
   const physical = bodyPhysicalData(resolved, replaceableNodes, { drawn, items });
   if (!physical.ok) {
     return physical;
