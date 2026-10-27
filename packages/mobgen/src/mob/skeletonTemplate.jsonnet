@@ -6,6 +6,7 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
   status: 'comparison-only',
   // The shared-rig attack clip this content selects (attack.ts, ATTACK_CLIPS owns the ids).
   attackClip: 'swipe',
+  flinchClip: 'hit-flinch',
   bodyMassKg: 12,
   sizeReference: 'shambler',
   supportBones: ['foot.L', 'foot.R'],

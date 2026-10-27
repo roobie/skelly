@@ -205,6 +205,8 @@ describe('passable but opaque vegetation', () => {
       cooldown: 0.8,
       contactFraction: 0.4,
       windupCapSimSeconds: 0.25,
+      stamina: 0,
+      impulse: 0,
     };
     expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
     expect(

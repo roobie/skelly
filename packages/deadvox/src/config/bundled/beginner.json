@@ -1674,7 +1674,7 @@
       }
     },
     {
-      "abilities": ["grab"],
+      "abilities": [],
       "attack": {
         "cooldownSimSeconds": 1.7,
         "grabBandMetres": 1.7,

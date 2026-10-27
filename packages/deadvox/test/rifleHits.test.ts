@@ -143,6 +143,7 @@ describe('rifle hits', () => {
         damage: 0,
         reach: ammo.rangeMetres,
         cooldown: 0,
+        impulse: 0,
       })?.region as ZombieRegion | undefined;
       const before = { ...zombie.regions };
       expect(session.zombies.firePellets(projectileShot(ammo, origin, [direction])).hits).toBe(region ? 1 : 0);

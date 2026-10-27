@@ -88,7 +88,7 @@ const findRegionRay = ({
   boxes: readonly ReturnType<typeof posedAmalgamRegionBoxes>[string][number][];
   distanceMetres?: number;
 }): { origin: Vec3; direction: Vec3 } | null => {
-  const weapon = { damage: 0, reach: Math.max(4, distanceMetres), cooldown: 0 };
+  const weapon = { damage: 0, reach: Math.max(4, distanceMetres), cooldown: 0, impulse: 0 };
   for (const box of boxes) {
     for (const direction of MEMBER_RAY_DIRECTIONS) {
       const origin: Vec3 = [
@@ -780,7 +780,7 @@ describe('amalgam body and combat seam', () => {
 
     // Blasts down one line bore through the core and later ones pass, so each follow-up aims at a patch of core
     // flesh still there, wide enough for the spread.
-    const coreWeapon = { damage: 0, reach: rangeMetres + 4, cooldown: 0 };
+    const coreWeapon = { damage: 0, reach: rangeMetres + 4, cooldown: 0, impulse: 0 };
     const coreOffsets = Array.from({ length: 17 * 17 }, (_, index): [number, number] => [
       (index % 17) / 2 - 4,
       Math.floor(index / 17) / 2 - 4,
@@ -1136,7 +1136,7 @@ describe('amalgam flesh carving', () => {
 
   it('misses with a ray just beside the flesh, inside the core box', () => {
     const { simulation, zombie, input } = severedAmalgam();
-    const weapon = { damage: 0, reach: 10, cooldown: 0 };
+    const weapon = { damage: 0, reach: 10, cooldown: 0, impulse: 0 };
     const step = voxelMetres / BLOCK_SIZE;
     const { pos, halfWidth, height } = zombie.body;
     const halfDepth = zombie.body.halfDepth ?? halfWidth;
@@ -1186,7 +1186,7 @@ describe('amalgam flesh carving', () => {
 
   it('lets a later shot through a carved hole strike the flesh behind it, or pass through', () => {
     const target = coreTarget();
-    const weapon = { damage: 0, reach: 10, cooldown: 0 };
+    const weapon = { damage: 0, reach: 10, cooldown: 0, impulse: 0 };
     const before = target.simulation.aimAt(target.origin, target.direction, weapon);
     expect(before?.region).toBe('core.trunk');
     target.pellets(1, Math.min(carving.maxRadiusMetres, 2 * voxelMetres) / carving.radiusMetresPerDamage);
