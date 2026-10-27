@@ -1688,9 +1688,15 @@ parallax is accepted unless it becomes a multiplayer peeking problem. See
 Prone ADS has its own posture, chest raised and propped on the elbows. A flat
 prone torso cannot lift the eye to the sight line within the neck limits, so the
 fit is fixed in the posture, shared by first person and the world body in one
-solve, before any per-gun aim value is loosened for prone. The live camera takes
-the same bounded sight-line correction and wall guard as the other stances. See `src/content/base/figures-player.jsonnet`, `proneAdsPose`; and
-`src/core/playerLookPose.ts`, `figureStancePose`. Moving shot start to the
+solve, before any per-gun aim value is loosened for prone. The body rests on the
+ground: hip drop is set so the legs touch it, and the chest rises only as far as
+the camera offset budget allows. Elbows bend toward the ground through their own
+pole, so the trigger elbow rests under the chest; the support arm reaches the
+forend at full stretch, so its elbow stays above the ground, and looking up
+lifts both elbows. The live camera takes the same bounded sight-line correction
+and wall guard as the other stances. See
+`src/content/base/figures-player.jsonnet`, `proneAdsPose` and
+`proneAdsElbowPole`; and `src/core/playerLookPose.ts`, `figureStancePose`. Moving shot start to the
 muzzle along the barrel belongs to #1383; the viewing-camera offset must not
 change the existing shot origin.
 
