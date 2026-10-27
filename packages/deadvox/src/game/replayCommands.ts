@@ -47,6 +47,8 @@ const isSpot = (value: unknown): boolean =>
   Number.isSafeInteger((value as { x?: unknown }).x) &&
   Number.isSafeInteger((value as { y?: unknown }).y) &&
   typeof (value as { rotated?: unknown }).rotated === 'boolean';
+const isSpotPart = (target: Record<string, unknown>): boolean =>
+  (target.at === undefined || isSpot(target.at)) && (target.reserved === undefined || target.reserved === true);
 const isTargetState = (value: unknown): value is TargetState => {
   if (!(value && typeof value === 'object')) {
     return false;
@@ -62,21 +64,18 @@ const isTargetState = (value: unknown): value is TargetState => {
         isUid(target.ownerUid) &&
         Number.isSafeInteger(target.pocket) &&
         (target.pocket as number) >= 0 &&
-        (target.at === undefined || isSpot(target.at))
+        isSpotPart(target)
       );
     case 'pile':
       return (
-        Array.isArray(target.pos) &&
-        target.pos.length === 3 &&
-        target.pos.every(Number.isFinite) &&
-        (target.at === undefined || isSpot(target.at))
+        Array.isArray(target.pos) && target.pos.length === 3 && target.pos.every(Number.isFinite) && isSpotPart(target)
       );
     case 'furniture':
       return (
         isUid(target.entityUid) &&
         Number.isSafeInteger(target.pocket) &&
         (target.pocket as number) >= 0 &&
-        (target.at === undefined || isSpot(target.at))
+        isSpotPart(target)
       );
     default:
       return false;
