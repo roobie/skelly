@@ -224,7 +224,8 @@ export const assertFirearmState = (state: FirearmState): void => {
   ) {
     throw new Error('Invalid firearm ready progress');
   }
-  if (state.lastShotAtSimSeconds !== undefined && !(Number.isFinite(state.lastShotAtSimSeconds) && state.lastShotAtSimSeconds >= 0)) {
+  const shotAt = state.lastShotAtSimSeconds;
+  if (shotAt !== undefined && !(Number.isFinite(shotAt) && shotAt >= 0)) {
     throw new Error('Invalid firearm last shot time');
   }
   const pending = state.pendingCase;
