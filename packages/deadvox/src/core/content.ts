@@ -1946,6 +1946,14 @@ const checkHeldHands = (registry: Registry, report: Report): void => {
 };
 
 const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void => {
+  if (hands.butt && !hands.proneSupport) {
+    report(
+      'models',
+      modelId,
+      '.hands.proneSupport',
+      'a stocked gun needs a prone support hold, since none is inferred',
+    );
+  }
   if (hands.butt && hands.seat[0] <= 0) {
     report('models', modelId, '.hands.seat', 'the seat is the right shoulder: it must sit right of the eye');
   }

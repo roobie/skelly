@@ -194,17 +194,22 @@ export const stowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | und
 };
 
 /** Ordinary E key still picks the quickest pocket, not quick-move's backpack priority. */
-export const bestPocket = (
+export const quickestPockets = (
   inv: Pick<Inventory, 'carried' | 'registry' | 'name' | 'plan'>,
   item: Item,
-): MoveOption | undefined =>
+): MoveOption[] =>
   playerPockets(inv)
     .map(({ owner, pocket, label }): MoveOption => {
       const target: Target = { kind: 'pocket', owner, pocket };
       return { kind: 'move', label, target, plan: inv.plan(item, target) };
     })
     .filter((o) => o.plan.ok)
-    .sort((a, b) => (a.plan.ok && b.plan.ok ? a.plan.time - b.plan.time : 0))[0];
+    .sort((a, b) => (a.plan.ok && b.plan.ok ? a.plan.time - b.plan.time : 0));
+
+export const bestPocket = (
+  inv: Pick<Inventory, 'carried' | 'registry' | 'name' | 'plan'>,
+  item: Item,
+): MoveOption | undefined => quickestPockets(inv, item)[0];
 
 /** Queues an ordinary ground pickup into the quickest player pocket that can carry it. */
 export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {

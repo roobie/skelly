@@ -3,6 +3,7 @@ import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type HeldFirearmTransform, heldFirearmTransform } from './heldPose.ts';
 import type { PlayerAdsPose, PlayerLookPose } from './playerLookPose.ts';
+import type { PlayerStance } from './playerStance.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import { add, axisRotation, dot, rotateVector, scale, sub } from './spatial.ts';
 
@@ -11,8 +12,11 @@ export const adsLimits = (figure: FigureDef, model: ModelDef) => ({
   stockShoulderMetres: model.hands?.ads?.stockShoulderLimitMetres ?? figure.aimPose.ads.stockShoulderLimitMetres,
 });
 
-export const adsRollDegrees = (figure: FigureDef, model: ModelDef) => ({
-  torso: model.hands?.ads?.torsoRollDegrees ?? figure.aimPose.ads.torsoRollDegrees,
+/** A gun's own roll wins in every stance; otherwise lying prone takes the figure's prone roll. */
+export const adsRollDegrees = (figure: FigureDef, model: ModelDef, stance: PlayerStance = 'standing') => ({
+  torso:
+    model.hands?.ads?.torsoRollDegrees ??
+    (stance === 'prone' ? figure.aimPose.ads.proneTorsoRollDegrees : figure.aimPose.ads.torsoRollDegrees),
   head: model.hands?.ads?.headRollDegrees ?? figure.aimPose.ads.headRollDegrees,
 });
 

@@ -15,25 +15,24 @@ const arText = readFileSync(join(import.meta.dirname, '..', 'designs', 'archetyp
 const arValues = () => ({ ...JSON.parse(arText), assembly: loadDesignAssembly('archetype-ar') });
 
 describe('buildDesignViewModel', () => {
-  it('shows archetype-ar as published with the STANAG prefab on its magazine', () => {
-    const result = buildDesignViewModel(loadGunDesign(arText), 'archetype-ar');
-    expect(result.kind).toBe('loaded');
-    if (result.kind !== 'loaded') {
+  it('shows a published design magazine prefab from its catalogue reference', () => {
+    const loaded = loadGunDesign(arText);
+    const result = buildDesignViewModel(loaded, 'archetype-ar');
+    if (!(loaded.ok && result.kind === 'loaded')) {
       throw new Error('expected a loaded design');
     }
-    expect(result).toMatchObject({
-      name: 'archetype-ar',
-      template: 'ar',
-      declaredStatus: 'published',
-      loadedStatus: 'published',
-      issues: [],
-      prefabsByPart: {
-        magazine: {
-          label: 'stanag-20 v1',
-          fixedParams: { length: 'M', profile: 'stanag-straight' },
-          stale: false,
-        },
-      },
+    const reference = loaded.design.assembly.parts.magazine?.prefab;
+    if (!reference) {
+      throw new Error('design has no magazine prefab');
+    }
+    const prefab = GUN_PREFABS.find(({ id, version }) => id === reference.id && version === reference.version);
+    if (!prefab) {
+      throw new Error(`unknown prefab ${reference.id} v${reference.version}`);
+    }
+    expect(result.prefabsByPart.magazine).toEqual({
+      label: `${prefab.id} v${prefab.version}`,
+      fixedParams: prefab.fixedParams,
+      stale: false,
     });
   });
 

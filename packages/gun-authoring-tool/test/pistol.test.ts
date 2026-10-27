@@ -40,8 +40,12 @@ describe('pistol model', () => {
     expect(barrel.ports.find((port) => port.id === 'muzzle')).toMatchObject({ mount: 'muzzle', gender: 'female' });
   });
 
-  it('keeps the integrated frame magazine path clear across the measured grip bands', () => {
-    for (const gripLength of ['S', 'M', 'L']) {
+  it('keeps the integrated frame magazine path clear for every frame grip length', () => {
+    const gripLengths = gunDomain.families.frame?.params.gripLength?.values;
+    if (!gripLengths) {
+      throw new Error('frame grip lengths are missing');
+    }
+    for (const gripLength of gripLengths) {
       const variantReport = validate(
         variant('archetype-pistol', (draft) => {
           draft.parts.frame!.params!.gripLength = gripLength;
@@ -56,8 +60,9 @@ describe('pistol model', () => {
     const frame = report.resolved.defs.get('frame')!;
     const magazinePort = frame.ports.find((port) => port.id === 'magazine')!;
     const trigger = frame.keepOuts.find((keepOut) => keepOut.id === 'trigger-finger')!;
-    const slideEnd = maxLocalX(report.resolved.defs.get('slide')!.solids);
-    const slideRear = -8;
+    const slideSolids = report.resolved.defs.get('slide')!.solids;
+    const slideRear = Math.min(...slideSolids.map((solid) => localSolidBounds(solid)[0][0]));
+    const slideEnd = maxLocalX(slideSolids);
     const rearThirdEnd = slideRear + (slideEnd - slideRear) / 3;
     const triggerRearEdge = trigger.box.center[0] - trigger.box.half[0];
 

@@ -146,14 +146,17 @@ describe('bench report', () => {
     expect(row[12]).toBe('3.0 / 4.5');
   });
 
-  it('formats one report cell per shambler header and a pasteable summary, defaulting missing actors info to boxes', () => {
-    // No `actors`/`actorSync`/`draws`/`triangles` — a record from before those existed.
+  it('formats one report cell per shambler header and a pasteable summary', () => {
     const shambler: ShamblerRunResult = {
       n: 25,
       seed: 12,
+      actors: 'boxes',
       frame: { ...frames, msMedian: 16.5, msP95: 19, slowFraction: 0.2 },
       zombieTick: { count: 300, median: 0.4, p95: 0.8 },
+      actorSync: { count: 900, median: 2.3, p95: 4.1 },
       renderSubmit: { count: 900, median: 1.1, p95: 2.2 },
+      draws: 12,
+      triangles: 365_000,
       holesMax: 3,
       holeFraction: 0.1,
       interrupted: false,
@@ -167,14 +170,21 @@ describe('bench report', () => {
       '16.5 / 19.0 / 20%',
       '0.4 / 0.8',
       '–',
-      '–',
+      '2.3 / 4.1',
       '1.1 / 2.2',
-      '–',
+      '12 / 365',
       '3 / 10%',
       'no',
     ]);
     expect(shamblerSummary([shambler])).toContain('N=25 active/background=–/– seed=12 actors=boxes');
-    const report = markdownReport({ startedAt: 'now', quick: false, runs: [], shamblers: [shambler] });
+    const report = markdownReport({
+      startedAt: 'now',
+      quick: false,
+      site: 'testHouse',
+      time: '12:00',
+      runs: [],
+      shamblers: [shambler],
+    });
     expect(report).toContain('Shambler summary: N=25 active/background=–/– seed=12 actors=boxes');
     expect(report.split('\n')[2]).toMatch(SHAMBLER_ROW_START);
   });
@@ -205,6 +215,8 @@ describe('bench report', () => {
     const record: BenchRecord = {
       startedAt: 'fixture',
       quick: false,
+      site: 'testHouse',
+      time: '12:00',
       runs: [],
       lightWorkload: {
         active: 1,
@@ -228,21 +240,27 @@ describe('bench report', () => {
     expect(markdownReport(record)).toContain('Light workload:');
   });
 
-  it('shows a dash for render time in runs from before it existed', () => {
-    const { render: _, ...old } = result;
-    expect(resultRow(old).at(-1)).toBe('–');
-  });
-
-  it('says what time of day it ran at, noon for older records', () => {
+  it('says what time of day it ran at', () => {
     const env = { userAgent: 'test', cores: 8, gpu: 'test', canvas: '1×1', pixelRatio: 1 };
-    const report = (time?: string) =>
-      markdownReport({ startedAt: 'now', quick: false, env, runs: [result], ...(time ? { time } : {}) });
-    expect(report('23:30')).toContain('- Time: 23:30');
-    expect(report()).toContain('- Time: 12:00');
+    const report = markdownReport({
+      startedAt: 'now',
+      quick: false,
+      site: 'testHouse',
+      env,
+      runs: [result],
+      time: '23:30',
+    });
+    expect(report).toContain('- Time: 23:30');
   });
 
   it('renders a Markdown table', () => {
-    const table = markdownTable({ startedAt: 'now', quick: false, runs: [result] }).split('\n');
+    const table = markdownTable({
+      startedAt: 'now',
+      quick: false,
+      site: 'testHouse',
+      time: '12:00',
+      runs: [result],
+    }).split('\n');
     expect(table).toHaveLength(3);
     expect(table[2]).toMatch(ROW_START);
   });

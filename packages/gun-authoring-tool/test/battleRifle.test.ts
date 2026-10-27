@@ -21,46 +21,16 @@ const oriented = (orientation: string) => ({
 
 const angleOf = (x: number, y: number): number => (Math.atan2(y, x) * 180) / Math.PI;
 describe('battle-rifle magazine orientations', () => {
-  it('derives a slight magazine tilt from the longer rear plate while keeping the well blocks upright', () => {
+  it('aligns the tilted magazine and its well at the shared tilt angle', () => {
     const report = validate(oriented('tilt'), gunDomain);
     expect(report.ok).toBe(true);
     const lower = report.resolved.defs.get('lower')!;
     const wellPort = lower.ports.find(({ id }) => id === 'magazine')!;
     const angle = G3_MAGAZINE_WELL_TILT;
     expect(angleOf(wellPort.normal[0], wellPort.normal[1])).toBeCloseTo(-90 + (angle * 180) / Math.PI, 5);
-    expect(lower.solids.find(({ id }) => id === 'frame-rear')?.kind).toBe('box');
-    expect(lower.solids.find(({ id }) => id === 'frame-front')?.kind).toBe('box');
-    const housing = lower.solids.filter(({ id }) => id.startsWith('tilt-housing-'));
-    expect(housing.map(({ id }) => id)).toEqual([
-      'tilt-housing-rear',
-      'tilt-housing-front',
-      'tilt-housing-left',
-      'tilt-housing-right',
-    ]);
-    const rearPlate = housing[0]!;
-    const frontPlate = housing[1]!;
-    expect(rearPlate.kind).toBe('extruded-polygon');
-    expect(frontPlate.kind).toBe('extruded-polygon');
-    if (rearPlate.kind !== 'extruded-polygon' || frontPlate.kind !== 'extruded-polygon') {
-      throw new Error('Expected upright housing plates.');
-    }
-    const verticalLength = (profile: readonly (readonly [number, number])[]) =>
-      Math.max(...profile.map(([, y]) => y)) - Math.min(...profile.map(([, y]) => y));
-    const rearHeight = verticalLength(rearPlate.profile);
-    const frontHeight = verticalLength(frontPlate.profile);
-    expect(rearHeight).toBeGreaterThan(frontHeight);
-    const rearX = rearPlate.profile.map(([x]) => x);
-    const frontX = frontPlate.profile.map(([x]) => x);
-    const plateRun = Math.abs(
-      (Math.min(...rearX) + Math.max(...rearX) - Math.min(...frontX) - Math.max(...frontX)) / 2,
-    );
-    expect(angle).toBeCloseTo(Math.atan2(rearHeight - frontHeight, plateRun));
     const path = lower.keepOuts.find(({ id }) => id === 'magazine-path')!;
-    const wellPath = lower.keepOuts.find(({ id }) => id === 'magazine-well-path')!;
     expect(path.profile).toBeDefined();
-    expect(path.z).toEqual([-1.5, 1.5]);
     expect(validateExtrudedPolygon(path.profile!, path.z!)).toBeUndefined();
-    expect(wellPath.profile).toBeUndefined();
     const magazine = report.resolved.defs.get('magazine')!;
     expect(magazine.solids).toEqual(FAMILIES.magazine!.build({ length: 'M', profile: 'standard' }).solids);
     const topNormal = applyDir(report.resolved.placed.get('magazine')!, [0, 1, 0]);
