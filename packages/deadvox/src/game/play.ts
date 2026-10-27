@@ -106,6 +106,7 @@ import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { columnArrival } from './columnArrival.ts';
 import { continueActionResumesJob } from './continueAction.ts';
+import { CrouchProneInput, dispatchReplayStanceAction, type StanceReplayAction } from './crouchProneInput.ts';
 import { DebugGunPose } from './debugGunPose.ts';
 import type {
   DebugHooks,
@@ -291,6 +292,8 @@ const PIN_LINES: Readonly<Record<PinState, string>> = {
 const pinDescription = (state: PinState | undefined): string[] => (state ? [PIN_LINES[state]] : []);
 const isGestureAction = (action: string): boolean =>
   action === 'firearm.reload' ||
+  action === 'player.crouch-toggle' ||
+  action === 'player.prone-toggle' ||
   action === 'player.throw' ||
   action === 'light.worn-toggle' ||
   action === 'world.interact' ||
@@ -2085,10 +2088,17 @@ export const startPlay = (
     runQuickbarAction(slot, true);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
-  const crouchProneInput = new PressHoldInput<string>({
+  const requestStanceAction = (action: StanceReplayAction): void => {
+    withUnlockedInput(() => {
+      if (!replayPlayer) {
+        inputRecorder?.queueAction(action, 'down', inputContext());
+      }
+      input.requestStanceToggle(action === 'player.crouch-toggle' ? 'crouch' : 'prone');
+    });
+  };
+  const crouchProneInput = new CrouchProneInput({
     holdRealMs: () => playerSenseTuning.crouchProneHoldRealSeconds * 1000,
-    tap: () => withUnlockedInput(() => input.requestStanceToggle('crouch')),
-    hold: () => withUnlockedInput(() => input.requestStanceToggle('prone')),
+    action: requestStanceAction,
   });
   const throwStanceInput = new PressHoldInput<string>({
     holdRealMs: () => throwStanceDropHoldRealSeconds * 1000,
@@ -2481,6 +2491,9 @@ export const startPlay = (
     return true;
   };
   const dispatchReplayGesture = (action: ReplayAction): boolean => {
+    if (dispatchReplayStanceAction(action.action, requestStanceAction)) {
+      return true;
+    }
     switch (action.action) {
       case 'firearm.load':
         reloadBinding()?.load();
@@ -3933,7 +3946,7 @@ export const startPlay = (
       interactInput.update(now);
       wornLightInput.update(now);
     }
-    crouchProneInput.update(now);
+    crouchProneInput.update(now, actionRefusal);
     throwStanceInput.update(now);
     updateBackquoteGesture(backquoteGesture, now);
   };
