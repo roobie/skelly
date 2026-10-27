@@ -433,10 +433,10 @@ const scenarioBuildingSources = (registry: Registry, scenario: ScenarioDef): str
   return choices.filter(({ weight, atMost }) => weight > 0 && atMost !== 0).map(({ ref }) => ref.id);
 };
 
-export const scenarioSources = (registry: Registry) => {
-  const scenarios = [...registry.scenarios.values()];
+export const scenarioSources = (registry: Registry, scenarios: Iterable<ScenarioDef> = registry.scenarios.values()) => {
+  const selected = [...scenarios];
   return {
-    templates: scenarios.flatMap((scenario) => [
+    templates: selected.flatMap((scenario) => [
       scenario.serviceTemplate,
       ...scenarioBuildingSources(registry, scenario),
       ...(scenario.composition
@@ -449,7 +449,7 @@ export const scenarioSources = (registry: Registry) => {
           ]
         : []),
     ]),
-    fixedLoot: scenarios.flatMap((scenario) => [
+    fixedLoot: selected.flatMap((scenario) => [
       ...(scenario.composition?.fixedLoot ?? []),
       ...(scenario.composition?.leads.flatMap((lead) => lead.fixedLoot ?? []) ?? []),
       ...(scenario.composition?.events?.flatMap((event) => event.fixedLoot) ?? []),
