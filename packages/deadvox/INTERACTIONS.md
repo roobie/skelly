@@ -79,9 +79,12 @@ not at the end of an absence. See `src/core/power.ts`, `PowerWork`, and
 
 Authored appliance identity must survive streaming and reload rather than depend
 on whichever mesh is visible. See `src/core/sitePower.ts`, `SitePower`, and
-`src/game/session.ts`, `createSessionPower`. Settlement at the snapshot barrier
-prevents a save from keeping power at one time and cell energy at another; see
-`src/core/saveState.ts`, `snapshotSession`.
+`src/game/session.ts`, `createSessionPower`. Every power settlement, from a
+scheduled tick or a control, updates charging cells in the same step, so power
+and cell energy always share one boundary. A snapshot copies that boundary
+without settling it, because settling would make saving change the run. See
+`src/core/power.ts`, `PowerNetwork`; `src/core/batteryChargers.ts`,
+`BatteryChargers`; and `src/core/saveState.ts`, `snapshotSession`.
 
 Loading and collecting use ordinary handling so the same reach and ownership
 checks apply at admission and completion. Starting and stopping do not occupy

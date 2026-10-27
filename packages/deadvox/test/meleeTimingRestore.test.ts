@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { dominantSide, offSide } from '../src/core/character.ts';
+import { meleeContactTime } from '../src/core/meleePose.ts';
+import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
@@ -75,6 +77,58 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
     },
   };
 };
+
+describe('player melee restore at the contact tolerance edge', () => {
+  it('restores a swing whose contact resolved just inside the float tolerance and continues as the uninterrupted one', () => {
+    const contactAt = meleeContactTime(
+      FISTS_MELEE.cooldown,
+      FISTS_MELEE.contactFraction!,
+      FISTS_MELEE.windupCapSimSeconds!,
+    );
+    const hands = { right: null, left: null };
+    const combat = () => {
+      const contacts: number[] = [];
+      const owner = new PlayerCombat({
+        playPlayerMeleeSwing: () => undefined,
+        resolvePlayerMelee: () => {
+          contacts.push(1);
+          return false;
+        },
+      });
+      return { owner, contacts };
+    };
+    const swing = (owner: PlayerCombat) =>
+      owner.beginMeleeSwing({
+        origin: [0, 2, 0],
+        direction: [0, 0, -1],
+        weapon: FISTS_MELEE,
+        profile: 'fists',
+        twoHanded: false,
+        hands,
+      });
+    const uninterrupted = combat();
+    const saved = combat();
+    for (const { owner } of [uninterrupted, saved]) {
+      expect(swing(owner)).toBe(true);
+      owner.tick(contactAt - 5e-10, hands);
+    }
+    const edge = saved.owner.activeMeleeAction!;
+    expect(edge.elapsed).toBeLessThan(contactAt);
+    expect(edge.hitResolved).toBe(true);
+
+    const first = saved.owner.snapshotState();
+    expect(saved.owner.snapshotState()).toEqual(first);
+    const restored = combat();
+    expect(() => restored.owner.restoreState(structuredClone(first))).not.toThrow();
+    for (const step of [1 / 60, FISTS_MELEE.cooldown]) {
+      uninterrupted.owner.tick(step, hands);
+      restored.owner.tick(step, hands);
+      expect(restored.owner.snapshotState()).toEqual(uninterrupted.owner.snapshotState());
+    }
+    expect(uninterrupted.contacts).toHaveLength(1);
+    expect(restored.contacts).toHaveLength(0);
+  });
+});
 
 describe('tick-consumed dominant melee input across save and restore', () => {
   it('retains contact ordering and physical fist alternation rather than reseeding dominance on restore', async () => {

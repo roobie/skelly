@@ -184,7 +184,7 @@ describe('house supply and player controls', () => {
   it('cuts and restores every consumer with the breaker while all sources remain available', () => {
     const f = fixture(43_200);
     f.loadCharger();
-    f.session.frame(0.1);
+    f.session.frame(1.5);
     expect(f.powered().every(Boolean)).toBe(true);
     expect(f.snapshot().world.power!.devices.some((device) => device.storedMicrojoules > 0)).toBe(true);
     expect(f.command('switch', false)).toBeUndefined();

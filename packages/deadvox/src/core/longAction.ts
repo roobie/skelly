@@ -175,6 +175,8 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
   }
 };
 
+// A resumed pry keeps its progress and strike cursor under the new plan, which a skill gain can shorten, so
+// progress may pass the duration and the next strike may lie beyond one interval until the next tick.
 const validateForcing = (job: Extract<LongJob, { jobType: 'forceDoor' }>): void => {
   if (
     typeof job.method !== 'string' ||
@@ -187,12 +189,10 @@ const validateForcing = (job: Extract<LongJob, { jobType: 'forceDoor' }>): void 
     job.elapsed < 0 ||
     !Number.isFinite(job.duration) ||
     job.duration <= 0 ||
-    job.elapsed > job.duration ||
     !Number.isFinite(job.strikeInterval) ||
     job.strikeInterval <= 0 ||
     !Number.isFinite(job.nextStrike) ||
-    job.nextStrike <= job.elapsed ||
-    job.nextStrike > job.elapsed + job.strikeInterval
+    job.nextStrike <= job.elapsed
   ) {
     throw new Error('Invalid forcing descriptor');
   }
