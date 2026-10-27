@@ -147,6 +147,139 @@ const heldCompassCardChange = (page) =>
     });
   }, 12 * 3600);
 
+// Puts the hunting rifle's 3-9x scope in ADS at `power` and records one frame: the lens frame, the lens pass
+// uniforms, the zoom target's centre and every object the zoom camera drew, with layers and parents.
+const opticZoomRecord = (power) => {
+  const r = globalThis.primaryActionTest;
+  const { inventory, engine } = r;
+  r.input.pitch = 0;
+  const { sim } = r.session;
+  sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
+  for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
+    inventory.add(inventory.create(wear), { kind: 'worn' });
+  }
+  const rifle = inventory.create('rifle_hunting');
+  const scope = inventory.create('optic_hunting_3_9x');
+  const definition = inventory.registry.items.get('rifle_hunting');
+  const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
+  let fitted = false;
+  for (const slot of stations) {
+    try {
+      inventory.fitSlot(rifle, slot, scope);
+      fitted = true;
+      break;
+    } catch {
+      // another station may fit
+    }
+  }
+  if (!fitted) {
+    throw new Error('Could not fit the 3-9x scope');
+  }
+  r.setHand(r.dominant, rifle);
+  r.debugGunPose.toggle('ads');
+  const half = (bits) => {
+    const exponent = (bits >> 10) & 0x1f;
+    const fraction = bits & 0x3_ff;
+    const sign = bits & 0x80_00 ? -1 : 1;
+    if (exponent === 0) {
+      return sign * 2 ** -14 * (fraction / 1024);
+    }
+    return exponent === 31 ? sign * Number.POSITIVE_INFINITY : sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
+  };
+  return new Promise((done, failed) => {
+    const lens = engine.mood.opticLens;
+    const camera = lens.zoomCamera;
+    const { renderer, scene } = engine;
+    const { render } = renderer;
+    let drawn;
+    let frames = 0;
+    const isUnder = (object, root) => {
+      for (let node = object; node; node = node.parent) {
+        if (node === root) {
+          return true;
+        }
+      }
+      return false;
+    };
+    const topLevelKey = (object) => {
+      let top = object;
+      while (top.parent && top.parent !== scene) {
+        top = top.parent;
+      }
+      return `${top.name || top.type}[L${top.layers.mask}]`;
+    };
+    const pathOf = (object) => {
+      const names = [];
+      for (let node = object; node; node = node.parent) {
+        names.unshift(`${node.name || node.type}[L${node.layers.mask}]`);
+      }
+      return names.join(' > ');
+    };
+    renderer.render = function (drawnScene, drawnCamera) {
+      render.call(this, drawnScene, drawnCamera);
+      if (drawnCamera !== camera || drawnScene !== scene) {
+        return;
+      }
+      const objects = [];
+      const others = {};
+      scene.traverseVisible((object) => {
+        if (!((object.isMesh || object.isLine || object.isPoints) && object.layers.test(camera.layers))) {
+          return;
+        }
+        if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
+          objects.push(pathOf(object));
+        } else {
+          const key = topLevelKey(object);
+          others[key] = (others[key] ?? 0) + 1;
+        }
+      });
+      const size = Math.min(lens.target.width, lens.target.height);
+      const centre = new Uint16Array(4);
+      renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
+      const { uniforms } = engine.mood.opticPass;
+      drawn = {
+        power,
+        frames,
+        magnification: r.view.held.opticLensFrame?.magnification,
+        zoomCameraFov: camera.fov,
+        mainFov: engine.camera.fov,
+        zoomCameraLayers: camera.layers.mask,
+        mainCameraLayers: engine.camera.layers.mask,
+        uniforms: {
+          uZoomActive: uniforms.uZoomActive.value,
+          uLensCenter: uniforms.uLensCenter.value.toArray(),
+          uLensRadius: uniforms.uLensRadius.value.toArray(),
+        },
+        targetSize: [lens.target.width, lens.target.height, size],
+        targetCentreRgba: [...centre].map(half),
+        drawnObjects: objects,
+        worldLayerDrawnByTopLevel: others,
+      };
+    };
+    const { held } = r.view;
+    const after = held.render;
+    held.render = (...args) => {
+      after.apply(held, args);
+      frames += 1;
+      if (drawn) {
+        held.render = after;
+        renderer.render = render;
+        done(drawn);
+      } else if (frames > 40) {
+        held.render = after;
+        renderer.render = render;
+        failed(new Error('The zoom camera did not draw within 40 frames'));
+      }
+    };
+    // The wheel steps the scope's power one step at a time from its authored 6x.
+    let guard = 0;
+    while (r.opticZoom.appliedPower(rifle, true) > power && guard < 20) {
+      r.opticZoom.wheel(rifle, true, 1);
+      guard += 1;
+    }
+  });
+};
+
 const visorRatio = (page, shot) =>
   page.evaluate(async (base64) => {
     const image = new Image();
@@ -393,6 +526,11 @@ const heldItemChecks = async (chromium, port) => {
       r.thirdPerson.toggle();
       r.input.pitch = -0.55;
     }, uid);
+  });
+  await timePhase('optic-zoom-diagnostic', async () => {
+    const record = await page.evaluate(opticZoomRecord, 3);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
+    process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record, null, 1)}\n`);
   });
   await timePhase('held-compass-pixel-assertion', async () => {
     // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
