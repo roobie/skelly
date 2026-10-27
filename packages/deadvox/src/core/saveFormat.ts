@@ -428,7 +428,7 @@ itemSchema = obj({
         }),
       ),
       readying: opt(obj({ elapsed: nonNegative, duration: positive })),
-      lastShotAt: opt(nonNegative),
+      lastShotAtSimSeconds: opt(nonNegative),
       cycle: opt(
         obj({
           mode: enumeration(['fire', 'hand']),

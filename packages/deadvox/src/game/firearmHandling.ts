@@ -286,7 +286,7 @@ export class FirearmMechanics {
   private readonly handlingSlowdown: () => number;
   private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
-  private readonly shotInput: ((uid: number, simTime: number) => FirearmShotInput | undefined) | undefined;
+  private readonly shotInput: ((uid: number, atSimSeconds: number) => FirearmShotInput | undefined) | undefined;
   private readonly revolvers: RevolverHandling;
   private readonly text: ActionText;
   private committingPull = false;
@@ -317,7 +317,7 @@ export class FirearmMechanics {
        * The trigger input as the body holds it now. A double-action strike reads it when the hammer falls, so a
        * turn or a lowered gun during the pull counts; without it the strike repeats the press (fixed-pose harnesses).
        */
-      shotInput?: (uid: number, simTime: number) => FirearmShotInput | undefined;
+      shotInput?: (uid: number, atSimSeconds: number) => FirearmShotInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
       onCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
       onShot?: (shot: PelletShot, time: number, firearm: Item, sighted: boolean) => void;
@@ -616,7 +616,7 @@ export class FirearmMechanics {
       return 'singleShot';
     }
     const { roundsPerSimSecond } = firearmHandlingFor(item, this.inventory.registry);
-    const previous = item.firearm?.lastShotAt;
+    const previous = item.firearm?.lastShotAtSimSeconds;
     return roundsPerSimSecond !== undefined &&
       previous !== undefined &&
       time >= previous &&
@@ -723,7 +723,7 @@ export class FirearmMechanics {
 
   private deferRevolverPull(input: FirearmShotInput, item: Item): boolean | undefined {
     const tuning = defOf(this.inventory.registry, item.type).firearm!.revolver!;
-    const previous = item.firearm!.lastShotAt;
+    const previous = item.firearm!.lastShotAtSimSeconds;
     if (previous !== undefined && input.simTime < previous + tuning.recoverySimSeconds) {
       return false;
     }
@@ -753,7 +753,7 @@ export class FirearmMechanics {
       cylinder.aligned = (cylinder.aligned + 1) % cylinder.chambers.length;
     }
     cylinder.cocked = false;
-    item.firearm!.lastShotAt = input.simTime;
+    item.firearm!.lastShotAtSimSeconds = input.simTime;
     const chamber = cylinder.chambers[cylinder.aligned]!;
     if (chamber.state !== 'round') {
       this.dropHammer(item, input.simTime);
@@ -813,7 +813,7 @@ export class FirearmMechanics {
     this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     wearFirearmAttachments(this.inventory, item);
-    state.lastShotAt = input.simTime;
+    state.lastShotAtSimSeconds = input.simTime;
     return true;
   }
 
@@ -838,7 +838,7 @@ export class FirearmMechanics {
       chamber: 'case',
       ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
       ...(item.firearm?.landings === undefined ? {} : { landings: item.firearm.landings }),
-      lastShotAt: input.simTime,
+      lastShotAtSimSeconds: input.simTime,
       pendingCase: { ...emission, seed },
       cycle: {
         mode: 'fire',

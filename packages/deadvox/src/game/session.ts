@@ -1030,7 +1030,7 @@ export const createSession = (options: SessionOptions) => {
     blockSize: s,
     isSolid: physicalSolid,
     pose: (uid) => firearmPose(uid),
-    shotInput: (uid, simTime) => firearmShotInput(uid, simTime),
+    shotInput: (uid, atSimSeconds) => firearmShotInput(uid, atSimSeconds),
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onCaseLanded: (caseSeed, item, instanceIndex) => options.onFirearmCaseLanded?.(caseSeed, item, instanceIndex),
     onTrajectory: (trajectory, time) =>
@@ -1319,7 +1319,7 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
     };
   };
-  const firearmShotInput = (uid: number, simTime: number): FirearmShotInput | undefined => {
+  const firearmShotInput = (uid: number, atSimSeconds: number): FirearmShotInput | undefined => {
     const item = inventory.itemByUid(uid);
     const pose = firearmPose(uid);
     if (!(item && pose)) {
@@ -1333,7 +1333,7 @@ export const createSession = (options: SessionOptions) => {
       sprinting,
       item,
       seed,
-      simTime,
+      simTime: atSimSeconds,
     };
   };
   const meleeBlocker = worldMeleeBlocker(world, registry, {
