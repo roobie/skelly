@@ -4,6 +4,7 @@
 
 import { clamp, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep, type Vec3 } from '../core/math.ts';
 import type { Pose } from '../core/pose.ts';
+import type { Template } from '../core/template.ts';
 import { type AttackClip, attackPose, zeroKey } from './attack.ts';
 import { type Extent, GROUND_SMOOTHING, groundOffset, type WalkActor } from './gait.ts';
 
@@ -77,6 +78,22 @@ export const RUNNER_HIT_FLINCH: AttackClip = {
     },
     zeroKey(HIT_FLINCH.duration, FLINCH_BONES),
   ],
+};
+
+const FLINCH_CLIPS: Readonly<Record<string, AttackClip>> = {
+  [HIT_FLINCH.name]: HIT_FLINCH,
+  [RUNNER_HIT_FLINCH.name]: RUNNER_HIT_FLINCH,
+};
+
+export const flinchClipFor = (template: Pick<Template, 'name' | 'flinchClip'>): AttackClip => {
+  const clip =
+    template.flinchClip !== undefined && Object.hasOwn(FLINCH_CLIPS, template.flinchClip)
+      ? FLINCH_CLIPS[template.flinchClip]
+      : undefined;
+  if (!clip) {
+    throw new Error(`template "${template.name}" selects no known flinch clip (${String(template.flinchClip)})`);
+  }
+  return clip;
 };
 
 export interface FlinchParams {

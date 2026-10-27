@@ -95,7 +95,7 @@ export const startPlayerMelee = (
   swing: BeginMeleeSwing,
   staminaRegenDelaySimSeconds = 0,
 ): MeleeStartResult => {
-  const cost = swing.weapon.stamina ?? 0;
+  const cost = swing.weapon.stamina;
   if (needs.stamina <= 0 || needs.stamina < cost) {
     return 'too-tired';
   }

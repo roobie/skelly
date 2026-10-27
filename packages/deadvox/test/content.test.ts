@@ -59,6 +59,22 @@ const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 
 describe('content-owned item and world policies', () => {
+  it('refuses zombie abilities without a runtime mechanism', () => {
+    const zombie = [...baseRegistry.zombies.values()][0]!;
+    for (const ability of [
+      'leap',
+      'scream',
+      'explode',
+      'heatAura',
+      'lightEmitter',
+      'armoured',
+      'regenerate',
+      'burrow',
+    ]) {
+      expect(safeParse(ContentFileSchema, { zombies: [{ ...zombie, abilities: [ability] }] }).success).toBe(false);
+    }
+  });
+
   it('requires explicit item policies, region drops and world liveness', () => {
     const item = structuredClone([...baseRegistry.items.values()][0]!) as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { items: [item] }).success).toBe(true);

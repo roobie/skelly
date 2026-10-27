@@ -1347,7 +1347,7 @@ export const createSession = (options: SessionOptions) => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
-    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse ?? 0);
+    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse);
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({

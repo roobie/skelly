@@ -16,7 +16,7 @@ import {
   walkPose,
 } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
-import { DEATH_FALL_DURATION, deathPose, flinchPose, HIT_FLINCH } from '../src/mob/reactions.ts';
+import { DEATH_FALL_DURATION, deathPose, flinchClipFor, flinchPose, HIT_FLINCH } from '../src/mob/reactions.ts';
 import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
 const setup = (name: string, seed = 1) => {
@@ -61,6 +61,13 @@ const maxPoseDiff = (a: Pose, b: Pose): number => {
 };
 
 describe('flinchPose', () => {
+  it.each([undefined, 'unknown-fixture-clip', 'toString'])(
+    'refuses an unsupported template flinch selection: %s',
+    (flinchClip) => {
+      expect(() => flinchClipFor({ name: 'fixture', ...(flinchClip === undefined ? {} : { flinchClip }) })).toThrow();
+    },
+  );
+
   it('matches the base pose exactly at t=0 and at the end of the clip (zero-slope endpoints)', () => {
     const found = setup('shambler');
     const actor = walkActorOf(found);

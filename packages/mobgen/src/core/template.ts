@@ -37,6 +37,8 @@ export interface Template {
    * ids). Required for a template that attacks through the shared rig; resolving it refuses an absent
    * or unknown selection rather than falling back. */
   readonly attackClip?: string;
+  /** Shared-rig hit reaction, resolved by mob/reactions.ts, flinchClipFor. */
+  readonly flinchClip?: string;
   /** Readiness for consumers; see `TemplateStatus`. Omitted means ready. */
   readonly status?: TemplateStatus;
 }

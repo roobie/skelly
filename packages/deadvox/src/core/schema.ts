@@ -3296,18 +3296,7 @@ const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) =
 
 const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'brute', 'acid', 'amalgam']);
 
-const ZOMBIE_ABILITIES = [
-  'grab',
-  'leap',
-  'scream',
-  'explode',
-  'acidSpit',
-  'heatAura',
-  'lightEmitter',
-  'armoured',
-  'regenerate',
-  'burrow',
-] as const;
+const ZOMBIE_ABILITIES = ['grab', 'acidSpit'] as const;
 
 const MeleeDamageResistanceSchema = strictObject({
   head: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
