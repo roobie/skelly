@@ -110,10 +110,10 @@ it('keeps shots and their aim display blocked by wire even when thrusting melee 
   const weapon: MeleeWeapon = { motion: 'thrust', reach: 10, damage: 1, cooldown: 0, type: 'pierce' };
   const shot = { origin, directions: [direction], damage: 1, rangeMetres: 10, impulse: 0 };
   expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
-  expect(system.firePellets(shot)).toBe(0);
+  expect(system.firePellets(shot).hits).toBe(0);
   wire(0);
   expect(system.aimAt(origin, direction, weapon)).toBeDefined();
-  expect(system.firePellets(shot)).toBe(1);
+  expect(system.firePellets(shot).hits).toBe(1);
 });
 
 it('requires enough content-defined zombie reach to start and land a thrust through wire', () => {

@@ -28,6 +28,8 @@ export interface MenuPointer {
   update: () => void;
   /** Forgets pointers captured by a press; call when the lock is lost. */
   releaseCaptures: () => void;
+  /** What a press with this native target lands on: the element under the drawn cursor while it drives a menu. */
+  target: (native: EventTarget | null) => EventTarget | null;
 }
 
 /** Installs the capturing forwarders on `document`. */
@@ -289,5 +291,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       capturedPointers.clear();
       capturedRanges.clear();
     },
+    target: (native) =>
+      input.locked && input.menuPointer ? document.elementFromPoint(input.cursorX, input.cursorY) : native,
   };
 };
