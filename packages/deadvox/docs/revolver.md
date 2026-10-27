@@ -11,6 +11,8 @@ read_if:
 
 Double action is the default; optional hammer cocking trades handling time for a steadier single-action shot. This preserves the real action's useful choice without forcing a separate weapon mode. A dry strike still advances the cylinder: partial loads must have an observable firing order. See `src/game/firearmHandling.ts`, `FirearmMechanics`, and `src/game/revolverHandling.ts`, `RevolverHandling`.
 
+A double-action shot leaves when the hammer falls, so it takes the body's aim and readiness at that moment, not at the press: a turn during the pull carries the shot, and a gun lowered or sprinted with before the strike does not fire. The session builds that input from the same pose as every other shot. See `src/game/session.ts`, `firearmShotInput`.
+
 A normal top-up preserves live cartridges and picks out cases individually. Deliberate dumping ejects both, because discarding live ammunition must be a distinct choice rather than an unavoidable cost of topping up. Release finishes the current step and closes the crane; cancelling a job keeps only previously completed steps. The queue owns completion, so cancellation cannot consume a half-inserted cartridge. An interrupted close leaves the crane open. See `src/game/reloadInput.ts`, `ReloadInput`, and `CONTROLS.md`, "Settled controls".
 
 Speedloaders are follow-up work, not part of loose-round loading. Separating them keeps the cylinder's ownership and interruptions reviewable before another ammunition container is introduced.
@@ -25,7 +27,7 @@ The export contract and playable handling are separate changes: validating geome
 
 A cylinder is the only ammunition owner in a revolver. It never mirrors its aligned cartridge into a linear chamber or tube. Loading starts after the aligned chamber, because a double-action pull advances before striking; loading must not silently rotate simulation alignment. Cocking advances once, while the cocked strike does not. See `src/core/firearmState.ts`, `CylinderState`, and `src/game/revolverHandling.ts`, `RevolverHandling`.
 
-Each completed shot leaves its case in the same chamber. Ejections become item-owned pending landings before presentation receives the effect, so saving or hiding the model cannot duplicate ammunition. Snapshots deeply copy cylinders. Content-coupled restore checks the exported chamber count and cartridge calibre; structural decoding rejects open, cocked cylinders and competing owners. See `src/core/items.ts`, `assertAmmunition`, and `src/core/saveFormat.ts`, `wirePayloadSchema`.
+Each completed shot leaves its case in the same chamber. Ejections become item-owned pending landings before presentation receives the effect, so saving or hiding the model cannot duplicate ammunition. Snapshots deeply copy cylinders. The last shot time is firearm state and is saved, so a save between two shots keeps the recovery gate. Content-coupled restore checks the exported chamber count and cartridge calibre; structural decoding rejects open, cocked cylinders and competing owners. See `src/core/items.ts`, `assertAmmunition`, and `src/core/saveFormat.ts`, `wirePayloadSchema`.
 
 ## Content and presentation
 
