@@ -105,7 +105,7 @@ export const benchRunFromUrl = (
   };
 };
 
-export const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
+const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 
 export const benchGameConfig = (run: BenchRun, params: URLSearchParams, content: StartupContent): GameConfig => {
   const { blockSize, radiusM } = currentConfig(run);
