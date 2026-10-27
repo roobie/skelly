@@ -677,8 +677,13 @@ it('lifts a refused restore for the tab once the player starts fresh and the fre
   const { events } = freshStartFixture(controller, { a: record.payload, b: null }, { a: null, b: null });
   await controller.prepare();
   expect(await controller.validateContent(saveFixtureRegistry)).toBeUndefined();
+  const overlay = document.getElementById('overlay')!;
+  expect(overlay.classList.contains('save-refused')).toBe(true);
+  expect(['save-fresh', 'save-export'].map((id) => document.getElementById(id)!.hidden)).toEqual([false, false]);
+  expect(document.getElementById('save-status')!.textContent).toBe('fixture refusal');
   await startFresh(controller, false);
   await vi.waitFor(() => expect(events).toContain('commit'));
+  expect(overlay.classList.contains('save-refused')).toBe(false);
 
   const reopened = title();
   stubLiveRecord(reopened, record);

@@ -891,6 +891,10 @@ export class SaveController {
     return !(this.entered || this.requestedContinue) && this.restored !== undefined;
   }
 
+  private get showRefusedSave(): boolean {
+    return !this.entered && this.protectedCurrent;
+  }
+
   private get canOfferPersistence(): boolean {
     return this.savingEnabled && this.storage.canRequestPersistence && this.storageStatus?.persistent !== true;
   }
@@ -916,7 +920,9 @@ export class SaveController {
         storageError: this.storageUnavailable || (Boolean(this.failure) && this.restored === undefined),
       },
     }).saveMenu!;
-    render(html`${[this.statusText, this.oldVersionLabel, this.failure].filter(Boolean).join('\n')}`, status);
+    // A refusal is both the status and the failure, so show each distinct line once.
+    const lines = new Set([this.statusText, this.oldVersionLabel, this.failure].filter(Boolean));
+    render(html`${[...lines].join('\n')}`, status);
     // Title and pause reuse the same card, so this copy has one rendering site.
     render(factDetail(this.text.storageLabel, this.text.storageFact), $('save-note'));
     const savedChoice = this.showSavedChoice;
@@ -936,7 +942,7 @@ export class SaveController {
     if (exportButton) {
       exportButton.hidden = !(this.protectedCurrent || this.corruptRecords);
     }
-    $('save-fresh').hidden = this.entered || !this.protectedCurrent;
+    $('save-fresh').hidden = !this.showRefusedSave;
     render(
       html`<span class="fact-detail"
         ><input id="save-fresh-download" type="checkbox" checked aria-describedby="save-fresh-download-detail" />
@@ -949,6 +955,8 @@ export class SaveController {
     );
     $('save-recovery').hidden = !(this.entered && this.failure);
     render(html`${this.failure}`, $('save-recovery-message'));
+    // An unusable save is the first decision the player must make, so its controls lead the title.
+    $('overlay').classList.toggle('save-refused', this.showRefusedSave);
   }
 }
 

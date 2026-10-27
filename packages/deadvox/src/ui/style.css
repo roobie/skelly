@@ -559,7 +559,8 @@ body.unconscious::after {
 #overlay.startup-ready.saved-choice #new-character-options {
   margin: 0 0 0.75rem;
 }
-#overlay.startup-ready.saved-choice .go {
+#overlay.startup-ready.saved-choice .go,
+#overlay.startup-ready.save-refused .go {
   position: static;
   transform: none;
   white-space: normal;
@@ -2376,4 +2377,21 @@ body.inventory-open.inventory-tab-crafting #crafting {
 #error-report .error-report-card .error-report-actions a {
   min-height: 2.5rem;
   padding: calc(var(--ui-spacing) * 0.5rem) calc(var(--ui-spacing) * 0.75rem);
+}
+/* An unusable save is the player's first decision, so its notice, choice and raw export lead the title. */
+#overlay.startup-ready.save-refused #about {
+  display: flex;
+  flex-direction: column;
+}
+#overlay.startup-ready.save-refused #save-status {
+  order: -3;
+}
+#overlay.startup-ready.save-refused #title-choice {
+  order: -2;
+}
+#overlay.startup-ready.save-refused #save-export {
+  order: -1;
+}
+#overlay.startup-ready.save-refused #about > :not(p, dl, section, div, fieldset) {
+  align-self: flex-start;
 }
