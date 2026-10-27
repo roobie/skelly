@@ -21,19 +21,23 @@ describe('crouch key tap and long press', () => {
     const { actions, input } = fixture();
     input.keyDown('player.crouch-toggle', 0);
     expect(actions).toEqual([]);
-    input.update(holdMs);
-    expect(actions).toEqual(['player.prone-toggle']);
-    input.keyUp('player.crouch-toggle', holdMs + 1);
+    input.keyUp('player.crouch-toggle', holdMs - 1);
+    expect(actions).toEqual(['player.crouch-toggle']);
+
+    input.keyDown('player.crouch-toggle', holdMs);
+    input.update(holdMs * 2);
+    expect(actions).toEqual(['player.crouch-toggle', 'player.prone-toggle']);
+    input.keyUp('player.crouch-toggle', holdMs * 2 + 1);
 
     const replayed: StanceReplayAction[] = [];
-    dispatchReplayStanceAction(actions[0]!, (action) => replayed.push(action));
+    dispatchReplayStanceAction(actions[1]!, (action) => replayed.push(action));
     expect(replayed).toEqual(['player.prone-toggle']);
   });
 
   it('cancels a pending stance hold when refusal crosses its threshold', () => {
     const { actions, input } = fixture();
     input.keyDown('player.crouch-toggle', 0);
-    input.update(holdMs - 1, true);
+    input.update(holdMs, true);
     input.update(holdMs, false);
     input.keyUp('player.crouch-toggle', holdMs + 1);
     expect(actions).toEqual([]);
