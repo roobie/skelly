@@ -758,6 +758,9 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    await page.waitForFunction(() =>
+      globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('held-item-left'),
+    );
     const adsFrame = await page.evaluate(() => globalThis.primaryActionTest.frames);
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame + 1, adsFrame);
     const irons = await page.evaluate(

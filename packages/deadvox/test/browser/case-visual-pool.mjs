@@ -25,7 +25,12 @@ const modelDef = registry.models.get('case_5_d_56x45');
 if (!modelDef) throw new Error('Missing case_5_d_56x45 model definition');
 const mode = new URLSearchParams(location.search).get('mode');
 const modelErrors = [];
-const models = new ModelLibrary({ ...registry, models: new Map([[modelDef.id, modelDef]]) }, (message) => modelErrors.push(message));
+const models = new ModelLibrary(
+  { ...registry, models: new Map([[modelDef.id, modelDef]]) },
+  (message) => modelErrors.push(message),
+  undefined,
+  1,
+);
 const waitFor = async (condition) => {
   const deadline = performance.now() + 20000;
   while (!condition()) {

@@ -25,6 +25,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
 import type { VehicleFittingDef } from '../core/schema.ts';
 import { skyAt } from '../core/sky.ts';
@@ -458,10 +459,15 @@ const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fittin
 };
 
 const { registry } = buildBundledContent();
-const partModels = new ModelLibrary(registry, (message) => {
-  errorText = message;
-  renderPanel();
-});
+const partModels = new ModelLibrary(
+  registry,
+  (message) => {
+    errorText = message;
+    renderPanel();
+  },
+  undefined,
+  graphicsTuningOf(registry).modelLoadConcurrency,
+);
 /** Each content build's fittings: the blueprint's placement beside what loading placed from the export. */
 interface ContentFitting {
   readonly def: VehicleFittingDef;
