@@ -510,7 +510,7 @@ export class PlayerMeshes {
       {
         position: this.heldFrame.position.clone(),
         quaternion: this.heldFrame.quaternion.clone(),
-        rotation: { y: pose.yaw },
+        rotation: { x: pose.pitch ?? 0, y: pose.yaw },
       },
       {
         pose: handPose,

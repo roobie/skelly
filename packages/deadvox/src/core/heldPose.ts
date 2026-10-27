@@ -173,13 +173,37 @@ export const readyFirearmPose = (leading: MeleeHand, holds: HeldPosesDef): Melee
   };
 };
 
-const sightEyeBehind = (model: ModelDef, fill: number | undefined, fovDegrees: number): Vec3 | undefined => {
+const heldSeatInView = (model: ModelDef, seat: Vec3, pitch: number): Vec3 =>
+  model.hands && !model.hands.butt ? rx(seat, -pitch) : seat;
+
+export const heldAdsStandoffMetres = (model: ModelDef | undefined, pitch: number): number => {
+  const points = model?.hands?.adsStandoffByPitch;
+  if (!points) {
+    return 0;
+  }
+  const degrees = (pitch * 180) / Math.PI;
+  const index = points.findIndex((point) => point.pitchDegrees >= degrees);
+  if (index <= 0) {
+    return points[index === 0 ? 0 : points.length - 1]!.metres;
+  }
+  const before = points[index - 1]!;
+  const after = points[index]!;
+  const blend = (degrees - before.pitchDegrees) / (after.pitchDegrees - before.pitchDegrees);
+  return before.metres + (after.metres - before.metres) * blend;
+};
+
+const sightEyeBehind = (
+  model: ModelDef,
+  pitch: number,
+  fill: number | undefined,
+  fovDegrees: number,
+): Vec3 | undefined => {
   const sight = model.gun?.sight;
   if (!sight) {
     return undefined;
   }
   const relief = Math.max(
-    model.hands?.adsEyeReliefMetres ?? 0,
+    heldAdsStandoffMetres(model, pitch),
     sight.kind === 'optic' && sight.ocularDiameterMetres !== undefined && fill !== undefined
       ? opticWindowDistance(sight.ocularDiameterMetres, fill, fovDegrees)
       : sight.eyeReliefMetres,
@@ -209,6 +233,7 @@ export interface HeldFirearmTransformInput {
   readonly progress: number;
   readonly aimingDownSights: boolean;
   readonly aimFrame: AimFrame;
+  readonly lookPitchRadians?: number;
   readonly handlingTurn?: Vec3;
   readonly loweredPitchRadians: number;
   readonly adsApertureFill?: number | undefined;
@@ -250,13 +275,18 @@ export const heldFirearmTransform = ({
   progress,
   aimingDownSights,
   aimFrame,
+  lookPitchRadians = 0,
   handlingTurn = [0, 0, 0],
   loweredPitchRadians,
   adsApertureFill,
   verticalFovDegrees = PLAYER_VIEW_FOV_DEGREES,
 }: HeldFirearmTransformInput): HeldFirearmTransform => {
   if (
-    !(model.grip && model.anchors?.muzzle && [progress, loweredPitchRadians, ...handlingTurn].every(Number.isFinite)) ||
+    !(
+      model.grip &&
+      model.anchors?.muzzle &&
+      [progress, loweredPitchRadians, lookPitchRadians, ...handlingTurn].every(Number.isFinite)
+    ) ||
     progress < 0 ||
     progress > 1 ||
     loweredPitchRadians < 0
@@ -274,13 +304,13 @@ export const heldFirearmTransform = ({
     const aligned = applyAlignedRoot(vector, handlingTurn);
     return progress >= 1 ? inCameraFrame(aligned, aimFrame) : aligned;
   };
-  const sightEye = sightEyeBehind(model, adsApertureFill, verticalFovDegrees);
-  // A long gun keeps its butt seated and only pitches; a free-held gun rises toward its ready offset.
-  const normalRoot = model.hands?.butt
+  const sightEye = sightEyeBehind(model, lookPitchRadians, adsApertureFill, verticalFovDegrees);
+  const seatRoot = model.hands?.butt
     ? heldGripOffset({ side, twoHanded, model, loweredPitch, holds })
     : (heldGripOffset({ side, twoHanded, model, holds }).map(
         (value, index) => value + pose.offset[index]! * eased,
       ) as Vec3);
+  const normalRoot = heldSeatInView(model, seatRoot, lookPitchRadians);
   // Seat the undeviated sight eye at the view; aim and handling turns then pivot the firearm off that baseline.
   const rootOffset =
     aimingDownSights && model.gun?.sight && sightEye
@@ -346,7 +376,7 @@ export const heldEjectionPose = ({
   }
   const local: Vec3 = model.anchors.ejection.map((value, index) => value - model.grip!.at[index]!) as Vec3;
   const at = modelToView(model, local);
-  const grip = heldGripOffset({ side, twoHanded, model, holds });
+  const grip = heldSeatInView(model, heldGripOffset({ side, twoHanded, model, holds }), pitch);
   const offset: Vec3 = at.map((value, index) => value + grip[index]!) as Vec3;
   const worldOffset = ry(rx(offset, pitch), yaw);
   const vector = ry(rx(modelToView(model, model.gun.action.ejectDirection), pitch), yaw);

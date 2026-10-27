@@ -1619,8 +1619,8 @@ The figure is seen whole, not only as arms in first person: a visible body when
 looking down, and mirrors that show the player themselves. So the full body must
 hold up from every side, and a body built only for first person is not enough.
 
-First-person and world-body handling share one animation implementation and
-held-item-and-arms mechanism, with each view supplying its own shoulder frame.
+First-person and world-body handling share one physical held-item-and-arms pose;
+first person projects the world body's final solve.
 This applies to all items, not just guns: the world body is what others and the
 mannequin see, so it must show the same holds and action feedback as first person.
 One animation source prevents those drifting, lets the mannequin judge them from
@@ -1645,6 +1645,14 @@ or add per-view hold offsets. The content's joints and grips determine the fit;
 changing to skinned bones would not remove this geometric constraint. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
+
+A free-held firearm's hip seat stays body-relative while its barrel follows aim.
+Orbiting that seat with the view pitch sends a down-aim grip beyond fixed arm
+reach. ADS standoff belongs to a content curve: the pistol comes closer along the
+sight line as aim rises, letting the elbows bend rather than lengthening arms or
+changing stance. The curve also compresses down-aim holds. Camera framing must
+not supply anatomical reach. See `src/core/heldPose.ts`, `heldFirearmTransform` and
+`heldAdsStandoffMetres`; `src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
 mannequin is an inert drawing of the same world body, not another simulated actor.

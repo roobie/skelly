@@ -2109,7 +2109,16 @@ const HandsModelSchema = strictObject({
   loweredPitchRadians: optional(pipe(number(), minValue(0), maxValue(Math.PI / 2))),
   torsoForwardDegrees: optional(pipe(number(), minValue(0), maxValue(90))),
   elbowBendSide: optional(Point),
-  adsEyeReliefMetres: optional(Positive),
+  adsStandoffByPitch: optional(
+    pipe(
+      array(strictObject({ pitchDegrees: pipe(number(), minValue(-90), maxValue(90)), metres: Positive })),
+      minLength(2),
+      check(
+        (points) => points.every((point, index) => index === 0 || point.pitchDegrees > points[index - 1]!.pitchDegrees),
+        'standoff pitch points must be strictly increasing',
+      ),
+    ),
+  ),
   viewOffset: optional(Point),
   adsViewEyeReliefMetres: optional(Positive),
   firing: HandHoldSchema,

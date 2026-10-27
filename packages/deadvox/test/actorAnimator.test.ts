@@ -28,7 +28,7 @@ const fixture = async (firearm = true, itemType?: string) => {
     : [...base.items.values()].find(
         (def) =>
           def.firearm &&
-          !base.models.get(def.model!)?.hands?.adsEyeReliefMetres &&
+          !base.models.get(def.model!)?.hands?.adsStandoffByPitch &&
           base.models
             .get(def.model!)
             ?.gun?.attachments?.some((attachment) =>

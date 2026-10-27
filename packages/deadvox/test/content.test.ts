@@ -28,6 +28,7 @@ import {
   type ContentFile,
   ContentFileSchema,
   DayCycleSchema,
+  ModelSchema,
   type TemplateDef,
 } from '../src/core/schema.ts';
 import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
@@ -3245,6 +3246,21 @@ describe('content', () => {
       'models[2].hands.firing',
     ]);
     expect(issues.filter((issue) => issue.source !== fixtureSource)).toEqual(baseline);
+  });
+
+  it('requires standoff curves to have ordered, distinct interpolation endpoints', () => {
+    const model = [...baseRegistry.models.values()].find((candidate) => candidate.hands)!;
+    const accepts = (points: { pitchDegrees: number; metres: number }[]) =>
+      safeParse(ModelSchema, {
+        ...model,
+        hands: { ...model.hands, adsStandoffByPitch: points },
+      }).success;
+    const first = { pitchDegrees: -30, metres: 0.4 };
+    const last = { pitchDegrees: 30, metres: 0.2 };
+    expect(accepts([first, last])).toBe(true);
+    for (const invalid of [[], [first, first], [last, first]]) {
+      expect(accepts(invalid)).toBe(false);
+    }
   });
 
   it('gives a long gun the pistol-grip hold when gungen exports a grip part and the stock-wrist hold when it exports a stock and no grip', () => {

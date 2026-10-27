@@ -116,7 +116,7 @@ export const createHeldAnimation = () => {
 export interface ActorEyeFrame {
   readonly position: Vector3;
   readonly quaternion: Quaternion;
-  readonly rotation: { readonly y: number };
+  readonly rotation: { readonly x?: number; readonly y: number };
 }
 
 export interface ActorViewPlacement {
@@ -410,6 +410,7 @@ export class ActorAnimator {
     const itemDefinition = item && defOf(this.inventory.registry, item.type);
     this.poseHeldItem({
       side,
+      lookPitchRadians: main.rotation.x ?? 0,
       recoil,
       handling,
       leadingSide,
@@ -423,6 +424,7 @@ export class ActorAnimator {
 
   private poseHeldItem({
     side,
+    lookPitchRadians,
     recoil,
     handling,
     leadingSide,
@@ -433,6 +435,7 @@ export class ActorAnimator {
     itemDefinition,
   }: {
     side: HandSide;
+    lookPitchRadians: number;
     recoil: number;
     handling: HeldHandlingFrame;
     leadingSide: HandSide;
@@ -444,6 +447,7 @@ export class ActorAnimator {
   }): void {
     const presentation = this.heldFirearmPresentation({
       side,
+      lookPitchRadians,
       handling,
       leadingSide,
       readyAmount,
@@ -504,6 +508,7 @@ export class ActorAnimator {
 
   private heldFirearmPresentation({
     side,
+    lookPitchRadians,
     handling,
     leadingSide,
     readyAmount,
@@ -512,6 +517,7 @@ export class ActorAnimator {
     itemDefinition,
   }: {
     side: HandSide;
+    lookPitchRadians: number;
     handling: HeldHandlingFrame;
     leadingSide: HandSide;
     readyAmount: number;
@@ -537,6 +543,7 @@ export class ActorAnimator {
             progress: firearmReadiness,
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
+            lookPitchRadians,
             loweredPitchRadians,
             adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
               ?.adsApertureFill,

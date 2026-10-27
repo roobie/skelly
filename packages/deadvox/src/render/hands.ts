@@ -21,7 +21,7 @@ import {
 } from 'three';
 import type { FigureDef } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { heldTorsoForwardDegrees } from '../core/heldPose.ts';
+import { heldAdsStandoffMetres, heldTorsoForwardDegrees } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
@@ -119,11 +119,12 @@ export class HeldItems {
       (held) => held && defOf(this.inventory.registry, held.type).firearm,
     );
     const modelId = item && defOf(this.inventory.registry, item.type).model;
-    const hands = modelId ? this.inventory.registry.models.get(modelId)?.hands : undefined;
+    const model = modelId ? this.inventory.registry.models.get(modelId) : undefined;
+    const hands = model?.hands;
     const ads = item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights;
     this.eyeOffset.set(0, 0, 0);
     if (ads && hands?.adsViewEyeReliefMetres !== undefined) {
-      this.eyeOffset.z = (hands.adsEyeReliefMetres ?? 0) - hands.adsViewEyeReliefMetres;
+      this.eyeOffset.z = heldAdsStandoffMetres(model, main.rotation.x) - hands.adsViewEyeReliefMetres;
     } else if (hands?.viewOffset) {
       this.eyeOffset.set(...hands.viewOffset);
     }
@@ -156,7 +157,7 @@ export class HeldItems {
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
     if (heldModel) {
-      heldModel.visible = !active || modelDefinition?.hands?.adsEyeReliefMetres !== undefined;
+      heldModel.visible = !active || modelDefinition?.hands?.adsStandoffByPitch !== undefined;
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
@@ -174,7 +175,7 @@ export class HeldItems {
       return;
     }
     const distance = Math.max(
-      modelDefinition?.hands?.adsEyeReliefMetres ?? 0,
+      heldAdsStandoffMetres(modelDefinition, main.rotation.x),
       opticWindowDistance(diameter, fill, main.fov),
     );
     const innerRadius = diameter / 2;

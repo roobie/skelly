@@ -3664,6 +3664,7 @@ export const startPlay = (
       progress,
       aimingDownSights,
       aimFrame: aim.frame,
+      lookPitchRadians: input.pitch,
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,
       verticalFovDegrees: camera.fov,

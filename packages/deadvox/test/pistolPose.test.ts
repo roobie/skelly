@@ -5,6 +5,9 @@ import { expect, it } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { heldFirearmTransform, heldHoldFrame } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { readyMeleePose } from '../src/core/meleePose.ts';
+import { makeScale } from '../src/core/scale.ts';
+import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { ARM_NODE, type ArmRig } from '../src/render/armRig.ts';
 import {
   actionPartPaths,
@@ -14,10 +17,14 @@ import {
   sampleActionStroke,
 } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
+import type { HeldPresentation } from '../src/render/heldPresentation.ts';
+import { createHeldViews } from '../src/render/heldViews.ts';
 import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { heldState } from './heldState.ts';
+import { createPlayerBody } from './playerFixture.ts';
 
 it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () => {
   const registry = baseRegistry();
@@ -51,7 +58,7 @@ it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () 
   }
 });
 
-it('keeps pistol palms attached to their held and moving slide contacts without stretching the fixed arm rig', async () => {
+const pistolFixture = async () => {
   const registry = baseRegistry();
   const figure = registry.figures.get('player')!;
   const model = registry.models.get(registry.items.get('pistol_service')!.model!)!;
@@ -68,8 +75,15 @@ it('keeps pistol palms attached to their held and moving slide contacts without 
   } as unknown as ModelLibrary;
   const inventory = new Inventory(registry);
   const gun = inventory.create('pistol_service');
-  expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
+  if (!inventory.add(gun, { kind: 'hand', side: 'right' })) {
+    throw new Error('Pistol fixture could not equip its gun');
+  }
   const view = new HeldItems(inventory, models, figure);
+  return { registry, figure, model, models, inventory, gun, view };
+};
+
+it('keeps pistol palms attached to their held and moving slide contacts without stretching the fixed arm rig', async () => {
+  const { model, gun, view } = await pistolFixture();
   try {
     for (const [progress, aimingDownSights] of [
       [0, false],
@@ -142,6 +156,65 @@ it('keeps pistol palms attached to their held and moving slide contacts without 
     }
   } finally {
     view.dispose();
+  }
+});
+
+it('keeps pistol grip contacts within fixed arm reach through the look bounds standing and crouching', async () => {
+  const expectReachableGrip = (owner: HeldPresentation, poseLabel: string): void => {
+    expect(owner.armRigs.size).toBe(2);
+    for (const [side, rig] of owner.armRigs) {
+      const label = `${poseLabel} ${side}`;
+      const palm = rig.hand.getWorldPosition(new Vector3());
+      const contact = owner.gripAnchors.get(side)!.getWorldPosition(new Vector3());
+      expect(palm.distanceTo(contact), label).toBeLessThan(1e-6);
+      const wrist = rig.hand.localToWorld(rig.gripFromWrist.clone().negate());
+      const reach = wrist.clone().sub(rig.shoulder.getWorldPosition(new Vector3()));
+      expect(reach.length(), `${label} reach=${reach.toArray()}`).toBeLessThanOrEqual(
+        rig.upperLength + rig.foreLength + 1e-6,
+      );
+      expect(rig.shoulder.scale.y, label).toBeLessThanOrEqual(1 + 1e-6);
+      expect(rig.elbow.scale.y, label).toBeLessThanOrEqual(1 + 1e-6);
+    }
+  };
+
+  const { registry, figure, models, inventory, gun, view } = await pistolFixture();
+  const scale = makeScale(0.5);
+  const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
+  const update = createHeldViews(inventory, view, world);
+  const camera = new PerspectiveCamera();
+  try {
+    for (const stance of ['standing', 'crouching'] as const) {
+      for (const pitch of [0, -LOOK_PITCH_LIMIT / 2, -LOOK_PITCH_LIMIT, LOOK_PITCH_LIMIT / 2, LOOK_PITCH_LIMIT]) {
+        world.sync({
+          body: createPlayerBody(scale, 0, 0, 0),
+          inventory,
+          stance,
+          yaw: 0,
+          pitch,
+          stepOffset: 0,
+          gaitPhase: 0,
+          moving: false,
+          dt: figure.stancePoses.blendRealSeconds,
+          thirdPerson: true,
+        });
+        camera.position.copy(world.group.getObjectByName('world-held-items')!.position);
+        camera.rotation.set(pitch, 0, 0, 'YXZ');
+        for (const aimingDownSights of [false, true]) {
+          update(camera, readyMeleePose(false, figure.holds), 0, {
+            firearms: [],
+            readiness: { uid: gun.uid, progress: aimingDownSights ? 1 : 0, aimingDownSights },
+          });
+          const source = (world as unknown as { presentation: HeldPresentation }).presentation;
+          const overlay = (heldState(view) as { presentation: HeldPresentation }).presentation;
+          const label = `${stance} pitch=${pitch} ADS=${aimingDownSights}`;
+          expectReachableGrip(source, label);
+          expectReachableGrip(overlay, label);
+        }
+      }
+    }
+  } finally {
+    view.dispose();
+    world.dispose();
   }
 });
 

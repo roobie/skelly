@@ -63,6 +63,7 @@ export const firearmBoreRay = ({
     progress,
     aimingDownSights,
     aimFrame,
+    lookPitchRadians: pitch,
     ...(handlingTurn === undefined ? {} : { handlingTurn }),
     loweredPitchRadians,
     adsApertureFill,
