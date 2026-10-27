@@ -198,7 +198,11 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
         LOOK_PITCH_LIMIT / 2,
         LOOK_PITCH_LIMIT,
       ]) {
-        for (const aimingDownSights of [false, true]) {
+        for (const { progress, aimingDownSights } of [
+          { progress: 0, aimingDownSights: false },
+          { progress: 1, aimingDownSights: false },
+          { progress: 1, aimingDownSights: true },
+        ]) {
           world.sync({
             body: createPlayerBody(scale, 0, 0, 0),
             inventory,
@@ -217,11 +221,11 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
           camera.rotation.set(pitch, 0, 0, 'YXZ');
           update(camera, readyMeleePose(false, figure.holds), 0, {
             firearms: [],
-            readiness: { uid: gun.uid, progress: aimingDownSights ? 1 : 0, aimingDownSights },
+            readiness: { uid: gun.uid, progress, aimingDownSights },
           });
           const source = (world as unknown as { presentation: HeldPresentation }).presentation;
           const overlay = (heldState(view) as { presentation: HeldPresentation }).presentation;
-          const label = `${stance} pitch=${pitch} ADS=${aimingDownSights}`;
+          const label = `${stance} pitch=${pitch} ready=${progress} ADS=${aimingDownSights}`;
           expectReachableGrip(source, label);
           expectReachableGrip(overlay, label);
           const bodyPose = playerLookPose({
@@ -245,7 +249,7 @@ it('keeps pistol grip contacts within fixed arm reach through the look bounds st
             side: 'right',
             leadingSide: 'right',
             twoHanded: true,
-            progress: aimingDownSights ? 1 : 0,
+            progress,
             aimingDownSights,
             aimFrame: NEUTRAL_AIM,
             loweredPitchRadians: 0,
