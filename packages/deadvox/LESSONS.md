@@ -8,6 +8,7 @@ read_if:
   - you're sizing browser-stage budgets after adding pixel captures
   - you're changing sparse vehicle meshing or investigating startup CPU cost
   - you've solved a hard problem and need to preserve its reason
+  - you're considering lowering the held gun near walls
 ---
 
 # Deadvox lessons
@@ -67,6 +68,15 @@ The timeout error and console warning identify the unanswered request's phase, s
 ## Sparse vehicle meshing
 
 Empty space in a sparse vehicle grid contributes no faces. Repeatedly probing a model's entire bounding volume for each face direction and transparency pass makes empty gaps part of startup cost. Neighbour queries should follow occupied voxels instead; the exposed-face and material rules must remain unchanged. See `src/vehicles/voxels.ts`, `meshPass`, and `test/vehicleParts.test.ts`, "queries only occupied voxels’ neighbours when meshing sparse solid and glass slices".
+
+## Wall leeway
+
+The game does not lower the held gun near walls. The gain is too small for the per-frame cost and the loss of general ergonomics, so the spike is kept as a record and is not enabled. The code lives on branch `deadvox/spike-wall-leeway` at commit a074c0ba781060f9c4cb53e28e5d23b627ee7013; it is not on main, and the branch must not be deleted.
+
+Revisit only when the project owner wants it or a gameplay need requires it. Before reviving it:
+
+- Measure cost first. A naive nearest-surface search was far too slow for every frame; an exact closed-form distance brought both detectors well under the frame budget. Prove the budget before building on a detector.
+- Choose the detector by what it must see. The cell-based detector lowers the gun early near thin things. The refined detector uses authored shapes for supported furniture, which improves fidelity there. Extending it needs more shape coverage or authoring, and its cell fallbacks remain, so it can still lower early near unsupported thin things.
 
 ## GPU resource ownership
 
