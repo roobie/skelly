@@ -10,8 +10,8 @@ export const syncClock = (
   simulationTime: number,
   lastActiveStep: number,
   lastBackgroundStep: number,
-): { alpha: number; backgroundAlpha: number; simulationTime: number } => ({
+): { alpha: number; backgroundAlpha: number; simSeconds: number } => ({
   alpha: clamp01((simulationTime - lastActiveStep) * ZOMBIE_RATE),
   backgroundAlpha: clamp01((simulationTime - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE),
-  simulationTime,
+  simSeconds: simulationTime,
 });

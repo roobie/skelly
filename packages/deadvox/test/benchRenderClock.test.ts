@@ -51,7 +51,7 @@ it('draws a background actor partway between its own slice updates when synced o
   const now = updatedAt + 0.25 / BACKGROUND_ZOMBIE_RATE;
   const clock = syncClock(now, now - 0.01, now - 0.001);
   const meshes = new ZombieMeshes(SCALE.blockSize);
-  meshes.sync(system.store, 0, clock.alpha, false, clock.backgroundAlpha, clock.simulationTime);
+  meshes.sync(system.store, 0, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
 
   const matrix = new Matrix4();
   (meshes.group.children[0] as InstancedMesh).getMatrixAt(0, matrix);

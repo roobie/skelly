@@ -372,7 +372,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       const clock = syncClock(simTime + accumulator, lastZombieStepTime, lastBackgroundStepTime);
       zombieMeshes.setCamera?.(camera); // only MobActorMeshes uses this (distance LOD + frustum culling)
       const syncStart = performance.now();
-      zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simulationTime);
+      zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
       if (measuring) {
         actorSync.push(performance.now() - syncStart);
         holes.push(streamer.unmeshedColumns(playerBody.pos[0], playerBody.pos[2], within));

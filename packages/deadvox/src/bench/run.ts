@@ -399,7 +399,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
     zombieMeshes.setCamera?.(camera);
     const renderTime = backgroundStepTime + backgroundAccumulator;
     const clock = syncClock(renderTime, renderTime - zombieAccumulator, backgroundStepTime);
-    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simulationTime);
+    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
   };
 
   let phase: Phase = 'load';
