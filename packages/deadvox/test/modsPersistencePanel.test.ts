@@ -29,12 +29,11 @@ test('unavailable storage names the failure and starts with an empty mod set', a
   const alert = root.querySelector('[role=alert]');
   expect(alert).not.toBeNull();
   expect(alert!.textContent).not.toBe('');
+  expect(root.querySelector('#mods-discard')).toBeNull();
   expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(0);
   root.querySelector<HTMLButtonElement>('#mods-start')!.click();
   expect((await result).admitted).toEqual([]);
 });
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const storeRaw = async (factory: IDBFactory, value: unknown) => {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -75,16 +74,6 @@ test('an invalid stored selection is refused with a discard control, and adding 
   expect((await result).admitted).toHaveLength(1);
 });
 
-test('a storage that is unavailable offers no discard', async () => {
-  const storage = new ModStorage();
-  vi.spyOn(storage, 'load').mockRejectedValue(new Error('blocked'));
-  const root = document.createElement('div');
-  document.body.append(root);
-  chooseMods(root, baseScreenText().mods, storage);
-  await vi.waitFor(() => expect(root.querySelector('[role=alert]')!.textContent).not.toBe(''));
-  expect(root.querySelector('#mods-discard')).toBeNull();
-});
-
 test('a failed save keeps the mods already stored and drops only the change that did not save', async () => {
   const storage = new ModStorage();
   vi.spyOn(storage, 'load').mockResolvedValue([{ source: 'first', text: '{"id":"first"}', enabled: true }]);
@@ -92,7 +81,7 @@ test('a failed save keeps the mods already stored and drops only the change that
   const root = document.createElement('div');
   document.body.append(root);
   const result = chooseMods(root, baseScreenText().mods, storage);
-  await settle();
+  await vi.waitFor(() => expect(root.querySelectorAll('[data-mod-source]')).toHaveLength(1));
   const textarea = root.querySelector<HTMLTextAreaElement>('textarea')!;
   textarea.value = '{"id":"second"}';
   textarea.dispatchEvent(new Event('input'));
