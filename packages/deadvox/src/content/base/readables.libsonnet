@@ -2,6 +2,7 @@
   "items": [
     {
       "id": "sample_note",
+      "notLoot": true,
       "name": "Placeholder note",
       "category": "note",
       "model": "paper_sheet",

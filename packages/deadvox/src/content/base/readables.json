@@ -37,13 +37,13 @@
       "category": "note",
       "description": "A clearly marked prototype reading sample, not playtest lore.",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "sample_note",
       "model": "paper_sheet",
       "name": "Placeholder note",
-      "notLoot": false,
+      "notLoot": true,
       "readable": {
         "text": "PLACEHOLDER TEXT — NOT PLAYTEST LORE\n\nThis paper demonstrates reading an authored note. The evacuation message, Dad's cabin directions and hunter's logbook will be written separately.\n\nYou can put the paper away with Esc or Tab. The world keeps moving while you read.",
         "title": "Placeholder — a folded note"
