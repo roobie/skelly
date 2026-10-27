@@ -3163,10 +3163,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
 - **Carry and optics:** carried furniture is physical and depth-tests with world camera planes; the optical ring and visor are effects closer than the world camera's near plane, so they retain their own planes without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
 - **Zoom shows the environment only:** the magnified image is the world seen through the lens, so the zoom camera
-  takes an explicit world-layer set instead of inheriting the main camera's mask. The player's figure, held and worn
-  items and own-head layers therefore never enter it, whatever a later feature adds to them. See
-  `src/render/opticLens.ts`, `OpticLensRenderer.prepare`; the held browser stage in
-  `test/browser/primary-action-pixel.mjs`, `opticZoomRecord`, checks it at 3x.
+  sets the world layer alone instead of copying the main camera's mask, and the player's figure, held and worn items
+  and own-head layers never enter it. three.js layers do not inherit, so a node added under the figure takes its
+  parent's layers at add time; without that a late child would land on the world layer and be magnified. See
+  `src/render/opticLens.ts`, `OpticLensRenderer.prepare`; `src/render/shadowFlags.ts`, `inheritLayersOnAdd`.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters

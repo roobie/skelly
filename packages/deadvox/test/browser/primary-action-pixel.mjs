@@ -148,7 +148,7 @@ const heldCompassCardChange = (page) =>
   }, 12 * 3600);
 
 // Puts the hunting rifle's 3-9x scope in ADS at `power` and records one frame: the lens frame, the lens pass
-// uniforms, the zoom target's centre and every object the zoom camera drew, with layers and parents.
+// uniforms, the zoom target's centre and every object the zoom camera submitted, with layers and parents.
 const opticZoomRecord = (power) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
@@ -215,24 +215,53 @@ const opticZoomRecord = (power) => {
       }
       return names.join(' > ');
     };
-    renderer.render = function (drawnScene, drawnCamera) {
-      render.call(this, drawnScene, drawnCamera);
-      if (drawnCamera !== camera || drawnScene !== scene) {
-        return;
-      }
+    // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
+    // is what the zoom pass draws, whatever the layer or visibility rules were.
+    const submit = (drawnScene) => {
       const objects = [];
       const others = {};
-      scene.traverseVisible((object) => {
-        if (!((object.isMesh || object.isLine || object.isPoints) && object.layers.test(camera.layers))) {
+      const restore = [];
+      drawnScene.traverse((object) => {
+        if (!(object.isMesh || object.isLine || object.isPoints)) {
           return;
         }
-        if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
-          objects.push(pathOf(object));
-        } else {
-          const key = topLevelKey(object);
-          others[key] = (others[key] ?? 0) + 1;
-        }
+        const prior = object.onBeforeRender;
+        restore.push(() => {
+          object.onBeforeRender = prior;
+        });
+        object.onBeforeRender = function (...args) {
+          if (args[2] === camera) {
+            if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
+              objects.push(pathOf(object));
+            } else {
+              const key = topLevelKey(object);
+              others[key] = (others[key] ?? 0) + 1;
+            }
+          }
+          return prior.apply(this, args);
+        };
       });
+      return {
+        objects,
+        others,
+        restore: () => {
+          for (const undo of restore) {
+            undo();
+          }
+        },
+      };
+    };
+    renderer.render = function (drawnScene, drawnCamera) {
+      if (drawnCamera !== camera || drawnScene !== scene) {
+        render.call(this, drawnScene, drawnCamera);
+        return;
+      }
+      const { objects, others, restore } = submit(drawnScene);
+      try {
+        render.call(this, drawnScene, drawnCamera);
+      } finally {
+        restore();
+      }
       const size = Math.min(lens.target.width, lens.target.height);
       const centre = new Uint16Array(4);
       renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
@@ -534,7 +563,8 @@ const heldItemChecks = async (chromium, port) => {
     assert.equal(record.magnification, 3, 'the scope runs its magnified branch at the stepped power');
     assert.equal(record.uniforms.uZoomActive, 1, 'the lens pass shows the zoom target');
     assert.equal(record.zoomCameraLayers & 0b110, 0, 'the zoom camera sees neither the figure nor the self-mask layer');
-    assert.deepEqual(record.drawnObjects, [], 'the zoom camera draws no held, worn or own-body geometry');
+    assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the zoom camera submits world objects');
+    assert.deepEqual(record.drawnObjects, [], 'the zoom camera is submitted no held, worn or own-body geometry');
     assert.ok(
       record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
       `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
