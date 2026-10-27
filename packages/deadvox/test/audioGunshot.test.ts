@@ -26,6 +26,7 @@ const SHOT_BURST = GUNSHOT_CAP + 1;
 const senseTuning = {
   id: 'fixture_player',
   chestEyeFraction: 0.62,
+  crouchProneHoldRealSeconds: 0.5,
   crouch: {
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
