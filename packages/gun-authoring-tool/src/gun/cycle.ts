@@ -11,7 +11,9 @@ import {
 import type { Solid } from '@skelly/engine/shapes/solid.ts';
 import { AR_CYCLIC_RPM, SMALL_AR_FRAME } from './arFrames.ts';
 
-export type GunAction = 'ak' | 'ar' | 'smg';
+import pistolAction from './pistolAction.json' with { type: 'json' };
+
+export type GunAction = 'ak' | 'ar' | 'smg' | 'slide';
 export type CycleMode = 'fire' | 'hand';
 
 export interface ActionCycleProfile {
@@ -22,6 +24,12 @@ export interface ActionCycleProfile {
   readonly ejectDirection: Vec3;
   readonly rearwardSpeedMetresPerSecond: number;
   readonly dwellSeconds: number;
+  readonly hand?: {
+    readonly reachSeconds: number;
+    readonly pullSeconds: number;
+    readonly dwellSeconds: number;
+    readonly returnHandSeconds: number;
+  };
 }
 
 const unit = (v: Vec3): Vec3 => scale(v, 1 / length(v));
@@ -31,6 +39,7 @@ const unit = (v: Vec3): Vec3 => scale(v, 1 / length(v));
  * SMG cyclic rate: about 800 rpm (HK MP5 specification); its bolt does not hold open on an empty magazine.
  */
 export const ACTION_CYCLE_PROFILES: Readonly<Record<GunAction, ActionCycleProfile>> = {
+  slide: { ...pistolAction, ejectDirection: unit(pistolAction.ejectDirection as unknown as Vec3) },
   ak: {
     rpm: 600,
     holdOpenOnEmpty: false,
@@ -193,11 +202,14 @@ const buildCycleTimeline = (
   { strokeMetres, notchTurnSeconds }: { readonly strokeMetres: number; readonly notchTurnSeconds?: number | undefined },
 ): CycleTimeline => {
   const spring = springReturn(strokeMetres);
-  const rearwardSeconds = mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : 0.65;
-  const dwellSeconds = mode === 'fire' ? profile.dwellSeconds : 0.3;
+  const reachSeconds = mode === 'hand' ? (profile.hand?.reachSeconds ?? 0) : 0;
+  const rearwardSeconds =
+    mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : (profile.hand?.pullSeconds ?? 0.65);
+  const dwellSeconds = mode === 'fire' ? profile.dwellSeconds : (profile.hand?.dwellSeconds ?? 0.3);
   const forwardSeconds = spring.durationSeconds;
   const mechanicalSeconds = rearwardSeconds + dwellSeconds + forwardSeconds;
-  const durationSeconds = mode === 'fire' ? 60 / profile.rpm : mechanicalSeconds + 0.7;
+  const durationSeconds =
+    mode === 'fire' ? 60 / profile.rpm : reachSeconds + mechanicalSeconds + (profile.hand?.returnHandSeconds ?? 0.7);
   if (mechanicalSeconds > durationSeconds + 1e-9) {
     throw new RangeError(`${action} ${mode} cycle exceeds its declared duration`);
   }
@@ -208,6 +220,7 @@ const buildCycleTimeline = (
       : undefined;
   return {
     ...(notch ? { holdSeconds: notch.holdSeconds, turnAt: (seconds: number) => notch.turnAt(wrap(seconds)) } : {}),
+    ...(reachSeconds > 0 ? { unlockSeconds: reachSeconds } : {}),
     mode,
     durationSeconds,
     rearwardSeconds,
@@ -221,7 +234,7 @@ const buildCycleTimeline = (
         mode === 'hand' || !(empty && profile.holdOpenOnEmpty)
           ? wrap(seconds)
           : Math.max(0, Math.min(seconds, durationSeconds));
-      const phase = { time, rearwardSeconds, dwellSeconds, mechanicalSeconds, spring };
+      const phase = { time: time - reachSeconds, rearwardSeconds, dwellSeconds, mechanicalSeconds, spring };
       return mode === 'fire' ? firePosition({ ...phase, empty, profile }) : handPosition(phase);
     },
   };

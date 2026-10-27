@@ -20,6 +20,7 @@ export interface ActionPartPath {
   readonly modes: readonly FirearmMode[];
   /** Travel in the node parent's local frame, including the exported stroke length. */
   readonly travel: Vector3;
+  readonly handGrip?: Vector3;
   readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
   readonly parentFromModel?: Matrix4;
   readonly revolverPart?: keyof NonNullable<GunModelDef['revolver']>;
@@ -32,6 +33,7 @@ export interface HeldActionPart {
   readonly restRotation: Quaternion;
   readonly turn?: { readonly pivot: Vector3; readonly axis: Vector3; readonly angleRadians: number };
   readonly travel: Vector3;
+  readonly handGrip?: Vector3;
   readonly modes: readonly FirearmMode[];
   readonly nodeIndex: number;
   readonly parentFromModel?: Matrix4;
@@ -62,6 +64,20 @@ export const namedNodes = (scene: Object3D, parser: GLTFParser, names: readonly 
   });
 };
 
+const heldNodePath = (scene: Object3D, node: Object3D, id: string): number[] => {
+  const path: number[] = [];
+  for (let current = node; current !== scene; ) {
+    const { parent } = current;
+    if (!parent) {
+      throw new Error(`Action node ${id} is outside its scene`);
+    }
+    path.unshift(parent.children.indexOf(current));
+    current = parent;
+  }
+  // prepareModel's held → turned → offset → cloned scene wrappers.
+  return [0, 0, 0, ...path];
+};
+
 export const actionPartPaths = (
   scene: Object3D,
   action: FirearmAction | undefined,
@@ -76,6 +92,7 @@ export const actionPartPaths = (
         node: revolver[key].node,
         axis: [0, 0, 0],
         strokeMetres: 0,
+        handGrip: undefined,
         modes: [] as FirearmMode[],
         turn: undefined,
         revolverPart: key,
@@ -105,16 +122,6 @@ export const actionPartPaths = (
       .multiplyScalar(part.strokeMetres)
       .applyMatrix4(parentFromModel)
       .sub(origin);
-    const path: number[] = [];
-    for (let current = node; current !== scene; ) {
-      const { parent } = current;
-      if (!parent) {
-        throw new Error(`Action node ${part.node} is outside its scene`);
-      }
-      path.unshift(parent.children.indexOf(current));
-      current = parent;
-    }
-    // prepareModel's held → turned → offset → cloned scene wrappers.
     const turn = part.turn
       ? {
           pivot: new Vector3(...part.turn.pivot).applyMatrix4(parentFromModel),
@@ -124,10 +131,11 @@ export const actionPartPaths = (
       : undefined;
     return {
       id: part.id,
-      path: [0, 0, 0, ...path],
+      path: heldNodePath(scene, node, part.node),
       nodeIndex,
       modes: part.modes,
       travel,
+      ...(part.handGrip ? { handGrip: new Vector3(...part.handGrip).applyMatrix4(parentFromModel) } : {}),
       ...(turn ? { turn } : {}),
       ...(part.revolverPart ? { revolverPart: part.revolverPart, parentFromModel } : {}),
     };
@@ -271,14 +279,15 @@ export const rackGrip = (
   if (!(time >= 0 && time < cycle.durationSimSeconds)) {
     return { reach: 0, stroke: 0 };
   }
-  const release = cycle.rearwardSimSeconds + cycle.dwellSimSeconds;
+  const approach = cycle.unlockSimSeconds ?? 0;
+  const release = approach + cycle.rearwardSimSeconds + cycle.dwellSimSeconds;
   const share = (part: number, whole: number): number => (whole > 0 ? Math.min(1, part / whole) : 1);
   return {
     reach:
       time < release
-        ? smooth(share(time, RACK_REACH_SHARE * cycle.rearwardSimSeconds))
+        ? smooth(share(time, approach || RACK_REACH_SHARE * cycle.rearwardSimSeconds))
         : 1 - smooth(share(time - release, cycle.forwardSimSeconds)),
-    stroke: share(time, cycle.rearwardSimSeconds),
+    stroke: share(Math.max(0, time - approach), cycle.rearwardSimSeconds),
   };
 };
 

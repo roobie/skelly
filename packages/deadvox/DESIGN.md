@@ -1750,6 +1750,16 @@ extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
 
+A free-held firearm's hip seat stays in the posed torso's frame while its barrel
+follows aim. Orbiting that seat with the view pitch, or attaching it to a head
+that moves independently of the torso, sends a down-aim grip beyond fixed arm
+reach. ADS standoff belongs to a content curve: the pistol comes closer along the
+sight line as aim rises, letting the elbows bend rather than lengthening arms or
+changing stance. The curve also compresses down-aim holds. Camera framing must
+not supply anatomical reach. See `src/core/heldPose.ts`, `heldFirearmTransform` and
+`heldAdsStandoffMetres`; `src/core/playerLookPose.ts`, `playerHeldSeatFrame`; and
+`src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
+
 Third person remains a debug inspection aid, not a player-facing camera. The
 mannequin is an inert drawing of the same world body, not another simulated actor.
 Its holds come from the item registry rather than a curated list, so a new item
