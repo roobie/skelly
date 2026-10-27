@@ -14,9 +14,10 @@ import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-// Two groups, so each fits its step's bound: held, worn and dropped items at the test house, and the lake surface.
+// Three groups, so each fits its step's bound: held, worn and dropped items at the test house, the scope's zoom
+// pass at the test house, and the lake surface.
 const [, , group] = process.argv;
-assert.ok(group === 'held' || group === 'lake', 'choose the held or lake group');
+assert.ok(group === 'held' || group === 'optic' || group === 'lake', 'choose the held, optic or lake group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
   const screenshot = await capture();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');
@@ -396,7 +397,7 @@ const enterWorld = async (page) => {
   );
 };
 
-const heldItemChecks = async (chromium, port) => {
+const enterTestHouse = async (chromium, port) => {
   const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
@@ -418,6 +419,11 @@ const heldItemChecks = async (chromium, port) => {
   assert(clip, 'the loaded scene has a canvas');
   // Page clipping avoids the locator screenshot's extra layout-stability frames.
   const capture = () => page.screenshot({ clip });
+  return { page, capture, pageErrors };
+};
+
+const heldItemChecks = async (chromium, port) => {
+  const { page, capture, pageErrors } = await enterTestHouse(chromium, port);
   const baselineShot = await timePhase('glowstick-pixel-assertions', async () => {
     const fixture = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
@@ -556,6 +562,22 @@ const heldItemChecks = async (chromium, port) => {
       r.input.pitch = -0.55;
     }, uid);
   });
+  await timePhase('held-compass-pixel-assertion', async () => {
+    // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
+    // night. Hiding only the card isolates its own pixels from the lit floor and the arm around it.
+    const { png, ...change } = await heldCompassCardChange(page);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), Buffer.from(png, 'base64'));
+    process.stdout.write(`Held compass card pixels: ${JSON.stringify(change)}\n`);
+    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass-world.png'), await capture());
+    assert.ok(
+      change.changed > change.pixels / 20,
+      'the held compass card is visible: hiding it changes its marks and needle on screen',
+    );
+  });
+};
+
+const opticZoomCheck = async (chromium, port) => {
+  const { page, capture } = await enterTestHouse(chromium, port);
   await timePhase('optic-zoom-world-only', async () => {
     const record = await page.evaluate(opticZoomRecord, 3);
     await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
@@ -568,18 +590,6 @@ const heldItemChecks = async (chromium, port) => {
     assert.ok(
       record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
       `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
-    );
-  });
-  await timePhase('held-compass-pixel-assertion', async () => {
-    // The card is lit like the model, so it is read by daylight; nothing after this phase needs the
-    // night. Hiding only the card isolates its own pixels from the lit floor and the arm around it.
-    const { png, ...change } = await heldCompassCardChange(page);
-    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass.png'), Buffer.from(png, 'base64'));
-    process.stdout.write(`Held compass card pixels: ${JSON.stringify(change)}\n`);
-    await writeFile(resolve(projectRoot, 'test-results/primary-action/held-compass-world.png'), await capture());
-    assert.ok(
-      change.changed > change.pixels / 20,
-      'the held compass card is visible: hiding it changes its marks and needle on screen',
     );
   });
 };
@@ -699,7 +709,8 @@ try {
       renderMode: 'pixel',
     }),
   );
-  await (group === 'lake' ? lakeSurfaceCheck(browser, address.port) : heldItemChecks(browser, address.port));
+  const checks = { held: heldItemChecks, optic: opticZoomCheck, lake: lakeSurfaceCheck };
+  await checks[group](browser, address.port);
 } finally {
   if (browser) {
     await timePhase('browser-close', () => browser.close());
