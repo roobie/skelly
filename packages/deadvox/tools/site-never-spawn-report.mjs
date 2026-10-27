@@ -35,25 +35,36 @@ const section = (lines, title, ids, registry) => {
 
 const report = (siteId) => {
   const registry = registryFromBaseContent();
-  if (!(registry.layouts.has(siteId) || registry.scenarios.has(siteId))) {
+  const layout = registry.layouts.get(siteId);
+  if (layout?.demo) {
+    throw new Error(`Demo layout "${siteId}" is not a playable site`);
+  }
+  if (!(layout || registry.scenarios.has(siteId))) {
     throw new Error(`Unknown playable site "${siteId}"`);
   }
   const siteReachability = checkReachability(registry, undefined, { sites: new Set([siteId]) });
   const wholeGame = checkReachability(registry);
-  const { unreachable } = siteReachability;
-  const neverPlaced = unreachable.filter((id) => wholeGame.placed.has(id));
-  const neverRolled = unreachable.filter((id) => !wholeGame.placed.has(id) && wholeGame.rolled.has(id));
-  const notCraftable = unreachable.filter((id) => !(wholeGame.placed.has(id) || wholeGame.rolled.has(id)));
+  const globallyUnreachable = new Set(wholeGame.unreachable);
+  const siteSpecific = siteReachability.unreachable.filter((id) => !globallyUnreachable.has(id));
+  const neverPlaced = siteSpecific.filter((id) => wholeGame.placed.has(id));
+  const neverRolled = siteSpecific.filter((id) => !wholeGame.placed.has(id) && wholeGame.rolled.has(id));
+  const notCraftable = siteSpecific.filter((id) => !(wholeGame.placed.has(id) || wholeGame.rolled.has(id)));
   const lines = [
     `# ${siteId} never-spawn report`,
     '',
     'Static content analysis: a pool member counts as possible. This is not a seeded-run result.',
-    `The lists cover loot-eligible items that this site cannot yield (${unreachable.length} of ${siteReachability.defined}).`,
+    `The site-specific gap is ${siteSpecific.length} of ${siteReachability.defined} loot-eligible items.`,
     '',
   ];
   section(lines, 'Never placed by this site’s layouts or templates', neverPlaced, registry);
   section(lines, 'Never in a loot table this site can roll', neverRolled, registry);
   section(lines, 'Not craftable or disassemblable from what this site yields', notCraftable, registry);
+  section(
+    lines,
+    'Unreachable in every site; see npm run validate',
+    siteReachability.unreachable.filter((id) => globallyUnreachable.has(id)),
+    registry,
+  );
   process.stdout.write(`${lines.join('\n')}\n`);
 };
 
