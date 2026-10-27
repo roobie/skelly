@@ -417,7 +417,6 @@ describe('rifle firearm handling', () => {
       twoHanded: true,
       aimFrame: input.aimFrame,
       loweredPitchRadians: tuning.loweredPitchRadians,
-      isSolid: () => false,
     });
     expect(mechanics.fire(input)).toBe(true);
     if (!trajectory) {
@@ -444,7 +443,7 @@ describe('rifle firearm handling', () => {
     expect(miss).toBeLessThan(1e-6);
   });
 
-  it('traces from the eye when solid geometry blocks the eye-to-muzzle path', () => {
+  it('keeps shots at the posed muzzle even when solid geometry separates it from the eye', () => {
     let trajectory: FirearmTrajectory | undefined;
     let hit: PelletShot | undefined;
     const { mechanics, rifle } = armed(
@@ -461,8 +460,10 @@ describe('rifle firearm handling', () => {
       { type: 'rifle_ak' },
     );
     expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
-    expect(trajectory?.origin).toEqual(pose.eye);
-    expect(hit?.origin).toEqual(trajectory?.origin); // The hit starts where the marks do, not past the wall.
+    expect(trajectory).toBeDefined();
+    expect(trajectory!.muzzle).not.toEqual(pose.eye);
+    expect(trajectory!.origin).toEqual(trajectory!.muzzle);
+    expect(hit?.origin).toEqual(trajectory!.muzzle);
   });
 
   it('requires a completed ready stance, rejects sprinting and cancels released readying', () => {

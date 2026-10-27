@@ -679,7 +679,6 @@ export class FirearmMechanics {
       aimFrame: input.aimFrame,
       aimingDownSights: input.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
-      isSolid: this.isSolid,
     });
     const { origin: shotOrigin, muzzle, direction, up } = bore;
     const shotBasis = basisAlong(direction, up);
