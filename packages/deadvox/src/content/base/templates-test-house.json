@@ -1207,7 +1207,12 @@
         },
         "Q": {
           "furniture": "crate",
-          "loot": "sample_note_loot"
+          "items": [
+            {
+              "count": 1,
+              "item": "sample_note"
+            }
+          ]
         }
       },
       "size": [2, 3, 2]

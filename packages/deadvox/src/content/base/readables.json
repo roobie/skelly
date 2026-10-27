@@ -67,17 +67,5 @@
       "weight": 5,
       "workInProgress": false
     }
-  ],
-  "loot": [
-    {
-      "entries": [
-        {
-          "item": "sample_note",
-          "weight": 1
-        }
-      ],
-      "id": "sample_note_loot",
-      "rolls": [1, 1]
-    }
   ]
 }
