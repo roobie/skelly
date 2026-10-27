@@ -1,0 +1,29 @@
+{
+  "holographic": {
+    "batteryRearX": -3,
+    "batteryTopY": 1,
+    "hoodFrontX": 0.25,
+    "nearFrameDepthU": 0.25,
+    "nearFrameThicknessU": 0.25
+  },
+  "miniReflex": {
+    "windowBottomY": 0.75,
+    "windowHalfWidthU": 1,
+    "windowTopY": 2.5
+  },
+  "nonMagnifying": {
+    "eyeReliefU": 14
+  },
+  "scopes": {
+    "hunting-3-9x": {
+      "envelopeLengthU": 26.25,
+      "eyeReliefU": 8,
+      "ocularOpeningDiameterU": 2.75
+    },
+    "lpvo-1-6x": {
+      "envelopeLengthU": 22.25,
+      "eyeReliefU": 7.5,
+      "ocularOpeningDiameterU": 2.625
+    }
+  }
+}

@@ -20,12 +20,12 @@ export interface OpticZoomFrame {
 export const mountedOptic = (
   registry: Pick<Registry, 'items' | 'models'>,
   firearm: Item,
-): { uid: number; item: ItemDef; model: ModelDef } | undefined => {
-  for (const child of Object.values(firearm.slots ?? {})) {
+): { uid: number; slot: string; item: ItemDef; model: ModelDef } | undefined => {
+  for (const [slot, child] of Object.entries(firearm.slots ?? {})) {
     const item = registry.items.get(child.type);
     const model = item?.model === undefined ? undefined : registry.models.get(item.model);
     if (item && model?.gun?.attachment?.kind === 'optic') {
-      return { uid: child.uid, item, model };
+      return { uid: child.uid, slot, item, model };
     }
   }
   return undefined;
@@ -36,7 +36,15 @@ export interface LensAperture {
   readonly radius: readonly [number, number];
 }
 
-export interface OpticLensFrame extends LensAperture, OpticViewSettings {}
+export interface OpticLensFrame extends LensAperture, OpticViewSettings {
+  readonly reticleCenter: readonly [number, number];
+  readonly border?: boolean;
+  readonly excludeSelf?: boolean;
+  readonly worldAtUnity?: boolean;
+}
+
+export const opticRendersWorld = (frame: OpticLensFrame): boolean =>
+  frame.magnification > 1 || frame.worldAtUnity === true;
 
 export const opticFieldOfView = (verticalFovDegrees: number, magnification: number): number => {
   if (!(verticalFovDegrees > 0 && verticalFovDegrees < 180 && magnification > 0)) {
@@ -75,6 +83,16 @@ const project = (point: Vec3, verticalFovDegrees: number, aspect: number): reado
   }
   const halfHeight = depth * Math.tan((verticalFovDegrees * Math.PI) / 360);
   return [point[0] / (halfHeight * aspect), point[1] / halfHeight];
+};
+
+export const projectOpticReticle = (
+  direction: Vec3,
+  verticalFovDegrees: number,
+  aspect: number,
+  magnification: number,
+): readonly [number, number] | undefined => {
+  const ndc = project(direction, opticFieldOfView(verticalFovDegrees, magnification), aspect);
+  return ndc ? [(ndc[0] + 1) / 2, (ndc[1] + 1) / 2] : undefined;
 };
 
 /** Projects the exported ocular circle from the same camera-local frame as the held optic window. */

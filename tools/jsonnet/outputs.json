@@ -429,6 +429,10 @@
       "output": "packages/gun-authoring-tool/src/gun/magazines.json"
     },
     {
+      "source": "packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/opticPresentation.json"
+    },
+    {
       "source": "packages/gun-authoring-tool/src/gun/physical.jsonnet",
       "output": "packages/gun-authoring-tool/src/gun/physical.json"
     },

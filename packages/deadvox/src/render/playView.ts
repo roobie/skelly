@@ -56,6 +56,7 @@ import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
+import { configureOpticsSpike } from './opticsSpike.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
@@ -91,9 +92,14 @@ const damageOpacity = (detached: boolean, vignette: number, sightImpaired: boole
   detached ? '0' : String(Math.max(vignette, sightImpaired ? 0.2 : 0));
 
 /** The drug vignette and night vision belong to the player's eyes, so a spectator gets neither. */
-const setViewEffects = (mood: Engine['mood'], frame: PlayCameraFrame): NightVision | undefined => {
+const setViewEffects = (
+  mood: Engine['mood'],
+  frame: PlayCameraFrame,
+  worldBorders = false,
+): NightVision | undefined => {
   const player = frame.spectator === undefined;
-  const nightVision = player ? frame.nightVision : undefined;
+  const source = player ? frame.nightVision : undefined;
+  const nightVision = source && worldBorders ? { ...source, edge: { ...source.edge, darkening: 0 } } : source;
   mood?.setDrugVignette(player ? (frame.drugVignette ?? 0) : 0);
   mood?.setNightVision(nightVision);
   return nightVision;
@@ -256,6 +262,7 @@ export const createPlayView = (
   const leverProps = new LeverProps(s, engine.isSolid);
   const acidEffects = new AcidEffects(s, config.seed);
   const held = new HeldItems(inventory, models, playerFigure, engine.sky.light);
+  const opticsSpike = configureOpticsSpike(held, scene, camera);
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
@@ -296,6 +303,7 @@ export const createPlayView = (
   held.attach(carriedPiece.group);
   scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
+  playerMeshes.opticsSpikeWorldBorders = opticsSpike === 'world';
   const updateHeldViews = createHeldViews(inventory, held, playerMeshes);
   const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
   const flashlight = new Flashlight(
@@ -552,7 +560,7 @@ export const createPlayView = (
         updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
       }
       damage.style.opacity = damageOpacity(detached, feedback.vignetteOpacity, sightImpaired);
-      nightVision = setViewEffects(engine.mood, frame);
+      nightVision = setViewEffects(engine.mood, frame, opticsSpike === 'world');
     },
     updateHeld: (
       dt: number,
@@ -595,6 +603,7 @@ export const createPlayView = (
       }
       const start = performance.now();
       const ownView = !(thirdPerson || detached);
+      held.setOpticsSpikeOwnView(ownView);
       drawCounters?.begin();
       try {
         mood.render(

@@ -1,7 +1,7 @@
-// The transitional first-person scene clears depth after the world to keep held objects from wall clipping.
-// It shares world sun and ambient targets; LightPool supplies nearby light copies.
+// See `DESIGN.md`, "Hands: what you see is what's there".
+// The optics comparison is isolated so judging borders does not require an actor-owner refactor.
 
-import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
+import { type OpticAperture, opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
   DirectionalLight,
   DoubleSide,
@@ -25,12 +25,27 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
-import { mountedOptic, type OpticLensFrame, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
-import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
+import {
+  mountedOptic,
+  type OpticLensFrame,
+  opticViewSettings,
+  projectLensAperture,
+  projectOpticReticle,
+} from '../core/opticView.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { LENS, type ModelLibrary } from './models.ts';
+import {
+  defaultOpticsTube,
+  OPTIC_BODY_LAYER,
+  OPTICS_SPIKE_LAYER,
+  type OpticsEye,
+  type OpticsSpike,
+  type OpticsTube,
+  opticsEyeDistance,
+} from './opticsSpike.ts';
 import { firstPersonShoulder } from './playerFigure.ts';
 import type { SkyTargets } from './sky.ts';
 
@@ -50,6 +65,10 @@ export class HeldItems {
   private readonly animator: ActorAnimator;
   private readonly presentation: HeldPresentation;
   private visor: Object3D | undefined;
+  private opticsSpike: OpticsSpike | undefined;
+  private opticsEye: OpticsEye = 'fill';
+  private opticsTube: OpticsTube | undefined;
+  private readonly opticEffects = new Group();
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private drawn = '';
   private readonly opticWindow = new Mesh(
@@ -64,6 +83,7 @@ export class HeldItems {
   );
   private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
+  private opticBody: Object3D | undefined;
 
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
@@ -92,6 +112,22 @@ export class HeldItems {
     this.scene.add(this.view, this.light, this.ambient, this.camera, presentation.warmUp(), modelMaterialWarmUp(false));
   }
 
+  configureOpticsSpike(world: Scene, mode: OpticsSpike, eye: OpticsEye, tube?: OpticsTube): void {
+    this.opticsSpike = mode;
+    this.opticsEye = eye;
+    this.opticsTube = tube;
+    world.add(this.view);
+    this.scene.add(this.opticEffects);
+    this.opticEffects.add(this.opticWindow);
+  }
+
+  setOpticsSpikeOwnView(ownView: boolean): void {
+    if (this.opticsSpike) {
+      this.view.visible = ownView;
+    }
+  }
+
+  /** Draws `object` in the hands' view, in view metres, for something held that this owner doesn't build. */
   attach(object: Object3D): void {
     this.view.add(object);
   }
@@ -113,18 +149,28 @@ export class HeldItems {
     }
     this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
+    this.opticBody = undefined;
     this.animator.update(main, {
       pose,
       recoil,
       handling,
       viewPlacement: {
         fov: main.fov,
+        useAuthoredEyeRelief: this.opticsEye === 'relief',
         poseItem: (frame) => this.poseOptic(frame, main),
       },
     });
     this.presentation.syncWorn(this.inventory);
+    if (this.opticsSpike) {
+      this.syncOpticLayers();
+    }
     this.camera.position.copy(main.position);
     this.camera.quaternion.copy(main.quaternion);
+  }
+
+  private syncOpticLayers(): void {
+    this.view.traverse((object) => object.layers.set(OPTICS_SPIKE_LAYER));
+    this.opticBody?.traverse((object) => object.layers.set(OPTIC_BODY_LAYER));
   }
 
   private poseOptic(
@@ -140,17 +186,23 @@ export class HeldItems {
         : base;
     const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
     const heldModel = this.animator.modelOf(item);
+    const tube = this.opticsTube ?? defaultOpticsTube(this.opticsSpike);
+    if (active && optic) {
+      this.opticBody = this.animator.slotModelOf(item, optic.slot);
+    }
     if (heldModel) {
-      heldModel.visible = !active;
+      heldModel.visible = this.opticsSpike !== undefined || !active;
+      this.syncOpticPieces(heldModel, active);
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     const fill = this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
+    const distance = opticsEyeDistance(this.opticsEye, modelDefinition?.gun?.sight, fill, main.fov);
     if (
       !(
         active &&
         settings &&
         diameter !== undefined &&
-        fill !== undefined &&
+        distance !== undefined &&
         firearmPose?.sightEyeOffset &&
         firearmPose.sightDirection &&
         firearmPose.sightUp
@@ -158,25 +210,8 @@ export class HeldItems {
     ) {
       return;
     }
-    const distance = opticWindowDistance(diameter, fill, main.fov);
     const innerRadius = diameter / 2;
-    const outerRadius = innerRadius * 1.12;
-    const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
-    if (shape !== this.opticWindowShape) {
-      this.opticWindow.geometry.dispose();
-      const geometry = new RingGeometry(innerRadius, outerRadius, 64);
-      const positions = geometry.getAttribute('position');
-      for (let index = 0; index < positions.count; index++) {
-        const x = positions.getX(index);
-        const y = positions.getY(index);
-        const radius = Math.hypot(x, y);
-        const scale = 1 / opticApertureDistance(x / radius, y / radius, settings.aperture);
-        positions.setXY(index, x * scale, y * scale);
-      }
-      geometry.computeBoundingSphere();
-      this.opticWindow.geometry = geometry;
-      this.opticWindowShape = shape;
-    }
+    this.syncOpticWindow(innerRadius, settings.aperture);
     const matrix = new Matrix4().makeBasis(
       ...(firearmPose.rootRotation.map((axis) => new Vector3(...axis)) as [Vector3, Vector3, Vector3]),
     );
@@ -194,7 +229,7 @@ export class HeldItems {
       .set(...transform.offset)
       .add(eyeOffset)
       .addScaledVector(forward, distance);
-    this.opticWindow.visible = true;
+    this.opticWindow.visible = this.opticsSpike !== 'world';
     const center = this.opticWindow.position;
     const aperture = projectLensAperture({
       center: [center.x, center.y, center.z],
@@ -204,9 +239,51 @@ export class HeldItems {
       verticalFovDegrees: main.fov,
       aspect: main.aspect,
     });
-    if (aperture) {
-      this.opticViewFrame = { ...settings, ...aperture };
+    const reticleCenter = projectOpticReticle(
+      [forward.x, forward.y, forward.z],
+      main.fov,
+      main.aspect,
+      settings.magnification,
+    );
+    if (aperture && reticleCenter) {
+      this.opticViewFrame = {
+        ...settings,
+        ...aperture,
+        reticleCenter,
+        ...(this.opticsSpike
+          ? { border: this.opticsSpike === 'effect', excludeSelf: true, worldAtUnity: tube === 'disc' }
+          : {}),
+      };
     }
+  }
+
+  private syncOpticWindow(innerRadius: number, aperture: OpticAperture): void {
+    const outerRadius = innerRadius * 1.12;
+    const shape = `${innerRadius}:${outerRadius}:${aperture.aspectRatio}:${aperture.exponent}`;
+    if (shape === this.opticWindowShape) {
+      return;
+    }
+    this.opticWindow.geometry.dispose();
+    const geometry = new RingGeometry(innerRadius, outerRadius, 64);
+    const positions = geometry.getAttribute('position');
+    for (let index = 0; index < positions.count; index++) {
+      const x = positions.getX(index);
+      const y = positions.getY(index);
+      const radius = Math.hypot(x, y);
+      const scale = 1 / opticApertureDistance(x / radius, y / radius, aperture);
+      positions.setXY(index, x * scale, y * scale);
+    }
+    geometry.computeBoundingSphere();
+    this.opticWindow.geometry = geometry;
+    this.opticWindowShape = shape;
+  }
+
+  private syncOpticPieces(model: Object3D, active: boolean): void {
+    model.traverse((object) => {
+      if (object instanceof Mesh && object.geometry.userData.piece === 'optic-ads-housing') {
+        object.visible = !active;
+      }
+    });
   }
 
   get opticLensFrame(): OpticLensFrame | undefined {
@@ -269,6 +346,8 @@ export class HeldItems {
       this.camera.aspect = main.aspect;
       this.camera.updateProjectionMatrix();
     }
+    this.opticEffects.position.copy(this.view.position);
+    this.opticEffects.quaternion.copy(this.view.quaternion);
     this.visor?.scale.set(
       this.camera.aspect * Math.tan(MathUtils.degToRad(this.camera.fov / 2)),
       Math.tan(MathUtils.degToRad(this.camera.fov / 2)),
@@ -295,6 +374,9 @@ export class HeldItems {
 
   private syncVisor(): void {
     this.clearVisor();
+    if (this.opticsSpike === 'world') {
+      return;
+    }
     const { head } = this.inventory.worn;
     const entry = head && defOf(this.inventory.registry, head.type).wearable?.viewModel;
     const model = entry && this.models?.part(entry.model);

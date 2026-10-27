@@ -4111,8 +4111,15 @@ export const startPlay = (
     const affordance = affordanceForFrame(visible);
     const carry = carryPreview();
     markOutline(affordance.target, carry, visible.interactionOutline);
-    const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
-    debugTools?.setCrosshairVisible(visible.crosshair);
+    const opticReticleVisible =
+      !(spectator.enabled || thirdPersonViewEnabled) && view.held.opticLensFrame?.reticle !== undefined;
+    const crosshair = playCrosshairFrame(
+      visible.crosshair,
+      bore !== undefined,
+      crosshairScreenPosition(bore),
+      opticReticleVisible,
+    );
+    debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },

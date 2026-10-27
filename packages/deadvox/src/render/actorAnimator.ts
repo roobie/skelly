@@ -41,7 +41,7 @@ import {
   stepMagazineRaise,
 } from './magazineLoadPose.ts';
 import { ModelFlames } from './modelFlame.ts';
-import { type ComposedSlot, heldModelFrame, type ModelLibrary } from './models.ts';
+import { type ComposedHeld, heldModelFrame, type ModelLibrary } from './models.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
 
@@ -115,6 +115,7 @@ export interface ActorEyeFrame {
 
 export interface ActorViewPlacement {
   readonly fov: number;
+  readonly useAuthoredEyeRelief?: boolean;
   readonly poseItem: (frame: ActorItemPose) => void;
 }
 
@@ -147,8 +148,7 @@ export class ActorAnimator {
   private readonly firearmParts = new Map<number, { action?: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly cylinderRounds = new Map<number, { key: string; group: Group }>();
   private readonly pumpModels = new Map<number, ModelDef>();
-  /** Each held gun's magazine slot, with what is really fitted there (`DESIGN.md`, "Piles and item models"). */
-  private readonly magazineSlots = new Map<number, ComposedSlot>();
+  private readonly fittedSlots = new Map<number, ComposedHeld['slots']>();
   private readonly incomingMagazines = new Map<number, { object: Object3D; model: string }>();
   private readonly loadingShells = new Map<number, Object3D>();
   /** Each held magazine's top round seat, in its model's frame, with that round's tilt. */
@@ -487,6 +487,12 @@ export class ActorAnimator {
     }
   }
 
+  private adsApertureFill(): number | undefined {
+    return this.viewPlacement?.useAuthoredEyeRelief
+      ? undefined
+      : this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms?.adsApertureFill;
+  }
+
   private heldFirearmPresentation({
     side,
     handling,
@@ -523,8 +529,7 @@ export class ActorAnimator {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
-            adsApertureFill: this.inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms
-              ?.adsApertureFill,
+            adsApertureFill: this.adsApertureFill(),
             ...(this.viewPlacement ? { verticalFovDegrees: this.viewPlacement.fov } : {}),
           }
         : undefined;
@@ -767,7 +772,7 @@ export class ActorAnimator {
 
   /** Plays a magazine job on the held gun: the fitted one leaves the well, the new one seats; returns the hand's grip. */
   private poseMagazine(uid: number, frame: HeldFirearmPose | undefined): OffHandGrip | undefined {
-    const slot = this.magazineSlots.get(uid);
+    const slot = this.fittedSlots.get(uid)?.magazine;
     if (!slot) {
       return undefined;
     }
@@ -1052,6 +1057,10 @@ export class ActorAnimator {
     return this.shown.get(item.uid);
   }
 
+  slotModelOf(item: Item, slot: string): Object3D | undefined {
+    return this.fittedSlots.get(item.uid)?.[slot]?.model;
+  }
+
   /** Rebuilds what's held when the hands changed or a model loaded. */
   private sync(activeEmpty: boolean): void {
     const { right, left } = this.inventory.hands;
@@ -1066,7 +1075,7 @@ export class ActorAnimator {
     this.firearmParts.clear();
     this.cylinderRounds.clear();
     this.pumpModels.clear();
-    this.magazineSlots.clear();
+    this.fittedSlots.clear();
     this.incomingMagazines.clear();
     this.loadingShells.clear();
     this.magazineSeats.clear();
@@ -1177,9 +1186,7 @@ export class ActorAnimator {
     model: NonNullable<ReturnType<ModelLibrary['heldLook']>>,
   ): void {
     const action = definition.gun?.action;
-    if (model.slots.magazine) {
-      this.magazineSlots.set(uid, model.slots.magazine);
-    }
+    this.fittedSlots.set(uid, model.slots);
     if (action || definition.gun?.revolver) {
       this.firearmParts.set(uid, { ...(action ? { action } : {}), parts: model.parts });
       if (definition.gun?.internalMagazine) {
