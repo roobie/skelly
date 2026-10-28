@@ -156,6 +156,15 @@ identity to the evaluated content, as
 - **Settling a clash in the player's UI.** A winner chosen per conflict and recorded in save
   identity would loosen "load order never decides", so it needs a ruling of its own before any
   such UI is built.
+- **Near-miss: Jsonnet hides the frozen copy for in-repo packs.** In-repo packs are rebuilt
+  with the base, so their copies never go stale. This stops holding when a bundled pack is
+  built separately from the base, or when any in-repo pack is shipped as a mod. No action
+  until then.
+- **Near-miss: tags limit what a place can hold.** An economy-eligibility tag stops an item
+  from reaching a place that excludes it however a table is patched, so a broken loot patch
+  gives wrong odds and never absurd loot. This stops holding when an operation lets a mod
+  override tags per row; tags describe items and tables tune odds, so no such operation is
+  added. No action until then.
 - **Order independence of patch admission.** When #1395 moves save identity to the evaluated
   content, an order-only difference stops showing in identity. Add a test of order
   independence over patch admission then.

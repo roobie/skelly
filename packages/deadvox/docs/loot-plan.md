@@ -55,15 +55,18 @@ it says: kept at lower tiers they would stay common, which the Tier4 tag was wri
 The NVG keeps a Tier4 row, as rare random loot in Tier4 places, and the gauntlet also places
 it by hand. In the gauntlet the NVGs are placed loot, so they do not have to spawn
 organically; the placement is extra and does not replace the row. Every loot item has a row
-so that validation can fail on an untabled item, and NVGs are no exception. Fixed loot is
+so that the untabled-item check below can fail on an untabled item, and NVGs are no exception:
+placement does not stand in for the row. Fixed loot is
 admission-checked, so the placement must pass the item's new tiers and usage at its point.
 That is an implementation gate. The row must also be admitted by some Tier4 place, or the
 dead-row check below fails it.
 
 ## Checks
 
-An item with a non-empty economy that no table row, fixed-loot entry or recipe output names is
-reported by the untabled-item check, which says nothing about places.
+The untabled-item check fails any item with a non-empty economy that has no table row, whatever
+else names it: a fixed-loot entry or a recipe output does not excuse the missing row. The rule
+and the check agree, and drift in an economy tag is caught. An item that must never roll is
+marked `notLoot`, which gives it a clean exit. The check says nothing about places.
 
 A dead row is a row of a table that no binding of the table admits. A place refusing a row is
 ordinary filtering, such as a Tier2 scope in a Tier1 cabin, and never makes a row dead. The
@@ -74,7 +77,5 @@ flagged, so scenarios need not skip or accept each other's default rows.
 
 ## Open
 
-- **Derive chain depth and derive across kinds or layers.** Awaiting a ruling; see
-  `docs/decisions/0007-typed-field-patches.md`, "Open".
 - **Patch-based table extension.** Starts when the engine patch merge of
   `docs/decisions/0007-typed-field-patches.md`, "Implementation ownership" lands.
