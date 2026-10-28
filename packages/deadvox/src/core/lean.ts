@@ -43,10 +43,21 @@ export interface LeanBox {
   readonly radius: number;
 }
 
-const clearBox = (min: number[], max: number[], isSolid: SolidAt): boolean => {
-  for (let x = Math.floor(min[0]!); x <= Math.floor(max[0]!); x++) {
-    for (let y = Math.floor(min[1]!); y <= Math.floor(max[1]!); y++) {
-      for (let z = Math.floor(min[2]!); z <= Math.floor(max[2]!); z++) {
+const clearBox = (
+  box: LeanBox,
+  base: LeanBox,
+  padding: number,
+  { offset, isSolid }: { offset: Vec3; isSolid: SolidAt },
+): boolean => {
+  const minX = Math.floor(Math.min(box.min[0], base.min[0]) + offset[0] - padding);
+  const minY = Math.floor(Math.min(box.min[1], base.min[1]) + offset[1] - padding);
+  const minZ = Math.floor(Math.min(box.min[2], base.min[2]) + offset[2] - padding);
+  const maxX = Math.floor(Math.max(box.max[0], base.max[0]) + offset[0] + padding);
+  const maxY = Math.floor(Math.max(box.max[1], base.max[1]) + offset[1] + padding);
+  const maxZ = Math.floor(Math.max(box.max[2], base.max[2]) + offset[2] + padding);
+  for (let x = minX; x <= maxX; x++) {
+    for (let y = minY; y <= maxY; y++) {
+      for (let z = minZ; z <= maxZ; z++) {
         if (isSolid(x, y, z)) {
           return false;
         }
@@ -78,14 +89,13 @@ export const guardLean = ({
     return 0;
   }
   const rest = boxesAt(0);
+  const space = { offset, isSolid };
   const clear = (fraction: number): boolean =>
     (fraction === 0 ? rest : boxesAt(amount * fraction)).every((box, index) => {
       const base = rest[index]!;
       // Chord-to-arc distance is at most r * angle² / 8 for the admitted lean angles.
       const padding = marginBlocks + (Math.max(base.radius, box.radius) * (rollRadians * fraction) ** 2) / 8;
-      const min = box.min.map((v, axis) => Math.min(v, base.min[axis]!) + offset[axis]! - padding);
-      const max = box.max.map((v, axis) => Math.max(v, base.max[axis]!) + offset[axis]! + padding);
-      return clearBox(min, max, isSolid);
+      return clearBox(box, base, padding, space);
     });
   if (!clear(0)) {
     return 0;

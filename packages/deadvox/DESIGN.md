@@ -1667,7 +1667,10 @@ exposure through content tuning. Sprint ends lean before actions resolve, and
 refuses it while sprinting, so held keys resolve in one fixed order for replay.
 The pose is transient, not character-save state; replay segments carry the
 starting lean and held input because they must reproduce the same shot origin.
+Looking round cover is the purpose of lean, so performance must not depend on
+a still view or change which exposure clears cover.
 See `src/core/lean.ts`, `advanceLean` and `guardLean`;
+`src/core/leanGeometry.ts`, `prepareLeanGeometry`;
 `src/core/leanCollision.ts`, `playerLeanBoxes`; `src/content/base/player.jsonnet`,
 `lean`; `src/game/session.ts`, `preparePlayerStep`; and
 `src/game/inputReplay.ts`, `ReplayStartState`.
