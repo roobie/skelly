@@ -673,19 +673,15 @@ try {
   await evaluate(`document.querySelector('${statsLabel}').scrollIntoView({ block: 'center' })`);
   const statsOption = `document.querySelector('${statsLabel} input')`;
   const clockOption = `document.querySelector('${clockLabel} input')`;
-  const toggleHudOption = async (label, option, expected, message) => {
-    await clickAt(label);
-    await waitFor(() => evaluate(`${option}.checked === ${expected}`), message);
-  };
   const statsOptionInitiallyChecked = await evaluate(`${statsOption}.checked`);
   const clockOptionInitiallyChecked = await evaluate(`${clockOption}.checked`);
   if (!clockOptionInitiallyChecked) {
-    await toggleHudOption(clockLabel, clockOption, true, 'clock is enabled for the pause readout');
+    await clickAt(clockLabel);
   }
   assert.equal(await evaluate(`${clockOption}.checked`), true, 'clock is enabled for the pause readout');
-  await toggleHudOption(
-    statsLabel,
-    statsOption,
+  await clickAt(statsLabel);
+  assert.equal(
+    await evaluate(`${statsOption}.checked`),
     !statsOptionInitiallyChecked,
     'drawn cursor toggles F9 menu controls from either default state',
   );
@@ -705,22 +701,17 @@ try {
     'audio volume remains selected when the menu reopens',
   );
   const clockOptionBeforeReset = await evaluate(`${clockOption}.checked`);
-  await toggleHudOption(clockLabel, clockOption, !clockOptionBeforeReset, 'drawn cursor toggles the clock option');
+  await clickAt(clockLabel);
+  assert.equal(
+    await evaluate(`${clockOption}.checked`),
+    !clockOptionBeforeReset,
+    'drawn cursor toggles the clock option',
+  );
   if ((await evaluate(`${clockOption}.checked`)) !== clockOptionInitiallyChecked) {
-    await toggleHudOption(
-      clockLabel,
-      clockOption,
-      clockOptionInitiallyChecked,
-      'clock option restores its initial state',
-    );
+    await clickAt(clockLabel);
   }
   if ((await evaluate(`${statsOption}.checked`)) !== statsOptionInitiallyChecked) {
-    await toggleHudOption(
-      statsLabel,
-      statsOption,
-      statsOptionInitiallyChecked,
-      'stats option restores its initial state',
-    );
+    await clickAt(statsLabel);
   }
   assert.deepEqual(
     await evaluate("[...document.querySelectorAll('#hud-options input')].map((input) => input.checked)"),
