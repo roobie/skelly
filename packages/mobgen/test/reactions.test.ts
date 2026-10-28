@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Bone } from '../src/core/body.ts';
 import { build, generateValid } from '../src/core/generate.ts';
-import { applyPoint, IDENTITY_M } from '../src/core/math.ts';
+import { applyPoint, IDENTITY_M, length, sub } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
 import { attackPose, LUNGE_GRAB } from '../src/mob/attack.ts';
@@ -159,10 +159,15 @@ describe('deathPose', () => {
         const transforms = boneTransforms(actor.bones, pose);
         for (const bone of actor.bones) {
           const transform = transforms.get(bone.id)!;
+          expect(
+            length(sub(applyPoint(transform, bone.tail), applyPoint(transform, bone.head))),
+            `${poseId}: ${bone.id} length`,
+          ).toBeCloseTo(length(sub(bone.tail, bone.head)), 9);
+          const lowest = Math.min(
+            ...corners(actor.bodyExtents.get(bone.id)!).map((point) => applyPoint(transform, point)[1]),
+          );
+          expect.soft(lowest, `${poseId}: ${bone.id} does not sink`).toBeGreaterThanOrEqual(0);
           if (deathContent.settleBones.includes(bone.id)) {
-            const lowest = Math.min(
-              ...corners(actor.bodyExtents.get(bone.id)!).map((point) => applyPoint(transform, point)[1]),
-            );
             expect.soft(lowest, `${poseId}: ${bone.id} support`).toBeLessThan(actor.params.height * 0.1);
           }
           for (const end of [bone.head, bone.tail]) {

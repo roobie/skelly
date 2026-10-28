@@ -3,7 +3,7 @@
   "poses": [
     {
       "id": "backward",
-      "pitch": 90,
+      "pitch": 60,
       "roll": 0,
       "rotations": {
         "forearm.L": [0, 0, -25],
@@ -22,11 +22,12 @@
     },
     {
       "id": "forward",
-      "pitch": -90,
+      "pitch": -60,
       "roll": 0,
       "rotations": {
         "forearm.L": [0, 0, -45],
         "forearm.R": [0, 0, 40],
+        "head": [0, 90, 0],
         "shin.L": [0, 0, 15],
         "shin.R": [0, 0, -50],
         "thigh.L": [0, 0, -12],
@@ -41,7 +42,7 @@
     },
     {
       "id": "sprawled",
-      "pitch": 90,
+      "pitch": 60,
       "roll": 0,
       "rotations": {
         "forearm.L": [0, 0, -25],
@@ -60,6 +61,10 @@
     }
   ],
   "settleBones": [
+    "spine",
+    "chest",
+    "neck",
+    "head",
     "upperArm.L",
     "upperArm.R",
     "forearm.L",
@@ -72,5 +77,9 @@
     "shin.R",
     "foot.L",
     "foot.R"
-  ]
+  ],
+  "supportFaces": {
+    "foot.L": [-1, 0, 0],
+    "foot.R": [1, 0, 0]
+  }
 }

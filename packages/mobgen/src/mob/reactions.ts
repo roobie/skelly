@@ -176,6 +176,7 @@ export interface DeathActor extends WalkActor {
 export const DEATH_FALL_DURATION = deathContent.duration;
 const DEATH_POSES = deathContent.poses;
 const restingPoses = new WeakMap<DeathActor['bodyExtents'], Map<string, Pose>>();
+const supportFaces: Readonly<Record<string, readonly number[]>> = deathContent.supportFaces;
 
 const selectDeathPose = (seed: number, direction: 1 | -1, poseId?: string) => {
   if (poseId !== undefined) {
@@ -248,6 +249,36 @@ const supportedRotation = (
   return atDrop(supported);
 };
 
+const restingRotation = (
+  actor: DeathActor,
+  bone: Bone,
+  world: Transform,
+  flatWorlds: ReadonlyMap<string, Transform> | undefined,
+): Mat3 => {
+  if (bone.parent === null) {
+    // Keep the authored hip incline so a thicker chest does not suspend the pelvis.
+    return world.r;
+  }
+  const face = supportFaces[bone.id];
+  if (face) {
+    const normal: Vec3 = [face[0]!, face[1]!, face[2]!];
+    // The ankle-to-toe axis crosses the foot diagonally; fit the authored contact face instead.
+    return mulMM(align(mulMV(world.r, normal), [0, -1, 0]), world.r);
+  }
+  const vector = mulMV(world.r, sub(bone.tail, bone.head));
+  const horizontal: Vec3 = [vector[0], 0, vector[2]];
+  if (length(horizontal) <= 1e-10) {
+    return world.r;
+  }
+  const atDrop = (drop: number): Mat3 => {
+    const planar = scaleVector(normalize(horizontal), Math.sqrt(Math.max(0, dot(vector, vector) - drop * drop)));
+    return mulMM(align(vector, [planar[0], -drop, planar[2]]), world.r);
+  };
+  return flatWorlds && actor.bodyExtents.has(bone.id) && deathContent.settleBones.includes(bone.id)
+    ? supportedRotation(actor, bone, { world, flatWorlds, atDrop })
+    : atDrop(0);
+};
+
 const relaxBones = (actor: DeathActor, rotations: Record<string, Mat3>, supportFit: boolean): void => {
   const root: Vec3 = [0, groundOffset(actor.bones, actor.bodyExtents, rotations), 0];
   const worlds = new Map<string, Transform>();
@@ -256,19 +287,8 @@ const relaxBones = (actor: DeathActor, rotations: Record<string, Mat3>, supportF
     const parent: Transform = bone.parent === null ? { r: IDENTITY_M, t: [0, 0, 0] } : worlds.get(bone.parent)!;
     const local = boneLocalTransform(bone, { root, rotations });
     const world = compose(parent, local);
-    const vector = mulMV(world.r, sub(bone.tail, bone.head));
-    const horizontal: Vec3 = [vector[0], 0, vector[2]];
-    if (length(horizontal) > 1e-10) {
-      const atDrop = (drop: number): Mat3 => {
-        const planar = scaleVector(normalize(horizontal), Math.sqrt(Math.max(0, dot(vector, vector) - drop * drop)));
-        return mulMM(align(vector, [planar[0], -drop, planar[2]]), world.r);
-      };
-      const settled =
-        flatWorlds && actor.bodyExtents.has(bone.id) && deathContent.settleBones.includes(bone.id)
-          ? supportedRotation(actor, bone, { world, flatWorlds, atDrop })
-          : atDrop(0);
-      rotations[bone.id] = mulMM(transpose(parent.r), settled);
-    }
+    const settled = restingRotation(actor, bone, world, flatWorlds);
+    rotations[bone.id] = mulMM(transpose(parent.r), settled);
     const settledLocal = boneLocalTransform(bone, { root, rotations });
     worlds.set(bone.id, compose(parent, settledLocal));
   }
