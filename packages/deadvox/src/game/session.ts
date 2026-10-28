@@ -250,6 +250,7 @@ const advanceSessionAim = ({
   yaw,
   pitch,
   aimSway,
+  stance,
   firing,
   stridePhase,
   breath,
@@ -266,6 +267,7 @@ const advanceSessionAim = ({
   yaw: number;
   pitch: number;
   aimSway: number;
+  stance: PlayerStance;
   firing: boolean;
   stridePhase: number;
   breath: {
@@ -290,6 +292,7 @@ const advanceSessionAim = ({
     yaw,
     pitch,
     variance: skill.variance * aimSway,
+    stanceDriftScale: tuning.wobbleStanceDriftScale[stance],
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
     stridePhase,
@@ -1199,6 +1202,7 @@ export const createSession = (options: SessionOptions) => {
       yaw: sampledInput().yaw,
       pitch: sampledInput().pitch,
       aimSway: sim.body.consequences.aimSway * sim.body.pain.effects.aimSway,
+      stance: playerStance,
       firing,
       stridePhase: footstepClock.stridePhase,
       breath: {
@@ -1213,7 +1217,7 @@ export const createSession = (options: SessionOptions) => {
       playPlayerSound(`breath_${cue}`);
     }
   };
-  /** `DESIGN.md`, "Holding breath": the sprint key in ADS, standing or crouched, holding still on the ground. */
+  /** `DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
   const breathHoldWanted = (intent: MoveIntent, readyGait: boolean): boolean => {
     const heldFirearm = firearmInHands();
     return (
@@ -1222,7 +1226,6 @@ export const createSession = (options: SessionOptions) => {
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid) &&
       Boolean(controls.aimingDownSights?.()) &&
-      playerStance !== 'prone' &&
       !ladderHold.on &&
       body.onGround &&
       intent.forward === 0 &&
