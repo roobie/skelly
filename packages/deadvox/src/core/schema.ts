@@ -467,6 +467,7 @@ const UiScreenTextSchema = strictObject({
     browserControlsLabel: [],
     storageLabel: [],
     storage: [],
+    keyboardNote: [],
     capturing: ['action'],
     cancel: [],
     saved: [],

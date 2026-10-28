@@ -56,6 +56,7 @@ export const mountInputOptions = (root: HTMLElement, text: ScreenText['inputOpti
       <details class="input-options"><summary>${text.heading}</summary>
         <p>${factDetail(text.browserControlsLabel, NATIVE_EDITING)}</p>
         <p>${factDetail(text.storageLabel, text.storage)}</p>
+        <p>${text.keyboardNote}</p>
         ${capture ? html`<p>${fillText(text.capturing, { action: inputBindings.binding(capture.id)!.description })} <button type="button" @click=${stop}>${text.cancel}</button></p>` : ''}
         <p class="input-binding-status" role="status">${status || inputBindings.diagnostics.at(-1) || ''}</p>
         ${contexts.map(

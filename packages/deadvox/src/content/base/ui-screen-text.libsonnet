@@ -64,6 +64,7 @@
     browserControlsLabel: 'Browser controls',
     storageLabel: 'Binding storage',
     storage: 'Bindings are preferences for this browser, not part of a saved character.',
+    keyboardNote: 'Some keyboards cannot register certain combinations of three keys held at once. The game does not cause this. A different keyboard, or a different binding, avoids it.',
     capturing: 'Binding: {action}',
     cancel: 'Cancel',
     saved: 'Binding saved',

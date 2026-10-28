@@ -508,6 +508,7 @@
           "fixedControl": "{code}: {action}",
           "fixedHeading": "Fixed browser controls",
           "heading": "Input bindings",
+          "keyboardNote": "Some keyboards cannot register certain combinations of three keys held at once. The game does not cause this. A different keyboard, or a different binding, avoids it.",
           "reset": "Reset to defaults",
           "restored": "Defaults restored",
           "saved": "Binding saved",
