@@ -189,6 +189,7 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedImpulseScale": 1.3,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -434,6 +435,7 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -679,6 +681,7 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -924,6 +927,7 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -1169,6 +1173,7 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -1414,6 +1419,7 @@
         "rightLeg": 48,
         "torso": 120
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -1621,6 +1627,7 @@
         "rightLeg": 18,
         "torso": 38
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -1795,6 +1802,7 @@
         "rightLeg": 10,
         "torso": 50
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",
@@ -2006,6 +2014,7 @@
         "member.rightLeg": 24,
         "member.torso": 60
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "core.trunk": null,
         "member.head": null,
@@ -2320,6 +2329,7 @@
         "rightLeg": 24,
         "torso": 60
       },
+      "severedImpulseScale": 1,
       "severedItems": {
         "head": "shambler_head",
         "leftArm": "shambler_left_arm",

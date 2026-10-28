@@ -4249,7 +4249,7 @@ export class ZombieSystem {
       return;
     }
     zombie.severed.push(part);
-    this.options.onSever?.(id, zombie, part, hit);
+    this.options.onSever?.(id, zombie, part, { ...hit, impulse: hit.impulse * zombie.type.severedImpulseScale });
   }
 
   /** Independent rolls for this hit: type.dismember.chance for a random not-yet-severed arm part (skipping

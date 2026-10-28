@@ -33,6 +33,8 @@ const SPRAY_DROPLETS_MAX = 14;
 const SPRAY_BACK_FRACTION = 0.3;
 /** How much spray one carved cell is worth, in the damage units `spray` takes. */
 const CARVED_CELL_SPRAY_DAMAGE = 2;
+// The extra spurt a severed part throws; its speed follows the part's raised severed impulse (src/game/play.ts's onSever).
+const SEVERED_SPRAY_DAMAGE = 4;
 const SPLAT_LIFE_S = 90;
 const SPLAT_FADE_S = 30;
 const SPLAT_OPACITY = 0.9;
@@ -245,7 +247,7 @@ export class Gore {
 
   /** Blood thrown from a wound: most along the strike and on through the body, some back toward the attacker;
    * more for a heavier hit. `hit` is in blocks, like the simulation's. */
-  spray(hit: HitImpulse, damage: number): void {
+  spray(hit: HitImpulse, damage: number, speedScale = 1): void {
     const count = Math.min(SPRAY_DROPLETS_MAX, Math.max(SPRAY_DROPLETS_MIN, Math.round(2 + damage / 5)));
     this.origin.set(hit.point[0], hit.point[1], hit.point[2]).multiplyScalar(this.blockSize);
     for (let i = 0; i < count; i++) {
@@ -257,7 +259,7 @@ export class Gore {
           hit.direction[2] * sense + this.rng.range(-0.5, 0.5),
         )
         .normalize()
-        .multiplyScalar(this.rng.range(1.5, 4.5));
+        .multiplyScalar(this.rng.range(1.5, 4.5) * speedScale);
       if (!this.emit(this.origin, direction, this.rng.range(0.012, 0.026))) {
         return;
       }
@@ -268,6 +270,14 @@ export class Gore {
    * bigger hole. */
   carved(hit: HitImpulse, cells: number): void {
     this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
+  }
+
+  /** The spurt from a cut-off part: only a kind whose severed impulse is raised throws it, and faster as the
+   * impulse rises. `hit` carries the severed impulse, as the simulation hands it over. */
+  severed(hit: HitImpulse, impulseScale: number): void {
+    if (impulseScale > 1) {
+      this.spray(hit, SEVERED_SPRAY_DAMAGE, impulseScale);
+    }
   }
 
   /** A large splat on the floor under something wet that came to rest there, such as a chunk of amalgam

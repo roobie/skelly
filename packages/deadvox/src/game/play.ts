@@ -1035,7 +1035,10 @@ export const startPlay = (
     // them undefined.
     zombieEffects: {
       onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
-      onSever: (id, zombie, part, hit) => zombieMeshes.zombieSevered?.(id, part, hit, zombie),
+      onSever: (id, zombie, part, hit) => {
+        zombieMeshes.zombieSevered?.(id, part, hit, zombie);
+        view.gore.severed(hit, zombie.type.severedImpulseScale);
+      },
       onCarve: (id, zombie, cells, hit) => {
         zombieMeshes.zombieCarved?.(id, zombie, cells, hit);
         view.gore.carved(hit, cells.length);

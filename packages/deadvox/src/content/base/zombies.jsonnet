@@ -141,6 +141,7 @@ local content = {
         "chance": 0.15,
         "headOnKillChance": 0.25
       },
+      "severedImpulseScale": 1.3,
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -268,6 +269,7 @@ local content = {
         "chance": 0.15,
         "headOnKillChance": 0.25
       },
+      "severedImpulseScale": 1,
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -280,6 +282,7 @@ local content = {
       "name": "Farmer",
       "cause": "a farmer",
       "authoredOnly": true,
+      "severedImpulseScale": 1,
       "loot": "farmer_pockets"
     },
     $.zombies[0] + {
@@ -287,6 +290,7 @@ local content = {
       "name": "Site worker",
       "cause": "a site worker",
       "authoredOnly": true,
+      "severedImpulseScale": 1,
       "loot": "worker_pockets"
     },
     $.zombies[0] + {
@@ -294,6 +298,7 @@ local content = {
       "name": "Medic",
       "cause": "a medic",
       "authoredOnly": true,
+      "severedImpulseScale": 1,
       "loot": "medic_pockets"
     },
     $.zombies[0] + {
@@ -304,6 +309,7 @@ local content = {
       "authoredOnly": true,
       // How the brute answers heavy hits belongs to the tier-2 brute (`docs/stagger.md`, "Which types stagger").
       "stagger":: null,
+      "severedImpulseScale": 1,
       "regions": {
         "head": 120,
         "torso": 120,
@@ -453,6 +459,7 @@ local content = {
         ]
       },
       "dismember": { "chance": 0.1, "headOnKillChance": 0.2 },
+      "severedImpulseScale": 1,
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -545,6 +552,7 @@ local content = {
         ]
       },
       "dismember": { "chance": 0.05, "headOnKillChance": 0.15 },
+      "severedImpulseScale": 1,
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -658,6 +666,7 @@ local content = {
       },
       "carving": { "radiusMetresPerDamage": 0.0023, "maxRadiusMetres": 0.75, "interiorColor": "#7a1e22" },
       "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },
+      "severedImpulseScale": 1,
       "abilities": [],
       "loot": "shambler_pockets"
     },
@@ -683,6 +692,7 @@ local content = {
         "hurt": "acid_zombie_hurt"
       },
       "acidResistance": 1,
+      "severedImpulseScale": 1,
       "abilities": ["acidSpit"],
       "acidSpit": {
         "rangeBand": { "nearMetres": 4, "farMetres": 12 },
