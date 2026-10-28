@@ -9,7 +9,7 @@ import { isReplayActionPayload, type ReplayActionPayload } from './replayCommand
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 22;
+export const INPUT_REPLAY_SCHEMA_VERSION = 23;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -127,6 +127,7 @@ const FRAME_FLAGS = {
   useOff: 1 << 7,
   descending: 1 << 8,
   worldReady: 1 << 9,
+  freeLooking: 1 << 10,
 } as const;
 
 export interface ReplayControlSample {
@@ -139,6 +140,9 @@ export interface ReplayControlSample {
   readonly descending: boolean;
   readonly worldReady: boolean;
   readonly compression: number;
+  readonly headYaw?: number;
+  readonly headPitch?: number;
+  readonly freeLooking?: boolean;
 }
 
 export interface ReplayAction {
@@ -156,6 +160,8 @@ export type ReplayFrame = readonly [
   right: number,
   flags: number,
   compression: number,
+  headYaw: number,
+  headPitch: number,
 ];
 
 export type ReplayGeneratedColumn = readonly [cx: number, cz: number];
@@ -312,7 +318,8 @@ const flagOf = (sample: Omit<ReplayControlSample, 'compression'>): number =>
   (sample.intent.useDominantHeld ? FRAME_FLAGS.useDominantHeld : 0) |
   (sample.intent.useOff ? FRAME_FLAGS.useOff : 0) |
   (sample.descending ? FRAME_FLAGS.descending : 0) |
-  (sample.worldReady ? FRAME_FLAGS.worldReady : 0);
+  (sample.worldReady ? FRAME_FLAGS.worldReady : 0) |
+  (sample.freeLooking ? FRAME_FLAGS.freeLooking : 0);
 
 export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample => {
   const [yaw, pitch, forward, right, flags] = frame;
@@ -335,6 +342,9 @@ export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample =
     descending: Boolean(flags & FRAME_FLAGS.descending),
     worldReady: Boolean(flags & FRAME_FLAGS.worldReady),
     compression: frame[5],
+    headYaw: frame[6],
+    headPitch: frame[7],
+    freeLooking: Boolean(flags & FRAME_FLAGS.freeLooking),
   };
 };
 
@@ -409,7 +419,7 @@ export class InputReplayRecorder {
       throw new Error('Invalid input replay window size');
     }
     this.bufferTicks = ticksPerWindow + INPUT_REPLAY_TICKS_PER_FRAME;
-    this.yawPitch = new Float64Array(this.bufferTicks * 2);
+    this.yawPitch = new Float64Array(this.bufferTicks * 4);
     this.compression = new Float64Array(this.bufferTicks);
     this.movement = new Int8Array(this.bufferTicks * 2);
     this.flags = new Uint16Array(this.bufferTicks);
@@ -572,8 +582,10 @@ export class InputReplayRecorder {
     this.pending = [];
     const frame = this.frameCount;
     this.frameCount += 1;
-    this.yawPitch[frame * 2] = sample.yaw;
-    this.yawPitch[frame * 2 + 1] = sample.pitch;
+    this.yawPitch[frame * 4] = sample.yaw;
+    this.yawPitch[frame * 4 + 1] = sample.pitch;
+    this.yawPitch[frame * 4 + 2] = sample.headYaw ?? 0;
+    this.yawPitch[frame * 4 + 3] = sample.headPitch ?? 0;
     this.compression[frame] = compression;
     this.movement[frame * 2] = sample.intent.forward;
     this.movement[frame * 2 + 1] = sample.intent.right;
@@ -587,12 +599,14 @@ export class InputReplayRecorder {
 
   copyInputs(): ReplayInputData {
     const frames: ReplayFrame[] = Array.from({ length: this.frameCount }, (_, tick) => [
-      this.yawPitch[tick * 2]!,
-      this.yawPitch[tick * 2 + 1]!,
+      this.yawPitch[tick * 4]!,
+      this.yawPitch[tick * 4 + 1]!,
       this.movement[tick * 2]!,
       this.movement[tick * 2 + 1]!,
       this.flags[tick]!,
       this.compression[tick]!,
+      this.yawPitch[tick * 4 + 2]!,
+      this.yawPitch[tick * 4 + 3]!,
     ]);
     const actions: ReplayAction[] = Array.from({ length: this.actionCount }, (_, index) => ({
       tick: this.actionTicks[index]!,
@@ -854,7 +868,7 @@ export async function decodeInputReplay(
   const frames: ReplayFrame[] = value.frames.map((candidate, tick) => {
     if (
       !Array.isArray(candidate) ||
-      candidate.length !== 6 ||
+      candidate.length !== 8 ||
       candidate.some((entry) => typeof entry !== 'number' || !Number.isFinite(entry)) ||
       !Number.isInteger(candidate[2]) ||
       !Number.isInteger(candidate[3]) ||
@@ -862,7 +876,7 @@ export async function decodeInputReplay(
       Math.abs(candidate[3]) > 1 ||
       !Number.isSafeInteger(candidate[4]) ||
       candidate[4] < 0 ||
-      candidate[4] > 0x3_ff ||
+      candidate[4] > 0x7_ff ||
       candidate[5] < 1 ||
       candidate[5] > 1_000_000
     ) {
@@ -875,6 +889,8 @@ export async function decodeInputReplay(
       candidate[3] as number,
       candidate[4] as number,
       candidate[5] as number,
+      candidate[6] as number,
+      candidate[7] as number,
     ];
   });
   const generatedColumns: ReplayGeneratedColumn[] = value.generatedColumns.map((candidate, index) => {

@@ -187,6 +187,8 @@ export interface PlayerFigurePose {
   emptyFists?: boolean;
   eye?: Vec3;
   pitch?: number;
+  headYaw?: number;
+  headPitch?: number;
   stancePose?: FigureStancePose;
   ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
 }
@@ -429,6 +431,7 @@ export class PlayerMeshes {
   }
 
   sync(pose: PlayerFigurePose): void {
+    const { headYaw = 0, headPitch = 0 } = pose;
     if (!this.fixedPose) {
       if (pose.stancePose) {
         Object.assign(this.shownPose, pose.stancePose);
@@ -477,6 +480,8 @@ export class PlayerMeshes {
           .sub(new Vector3(...anchors[this.figure.body.neck.pivot]!))
           .multiplyScalar(look.neckScale);
         pivots[1]!.getObjectByName('figure-neck-skin')!.scale.y = look.neckScale;
+        pivots[1]!.rotateY(headYaw);
+        pivots[1]!.rotateX(-headPitch);
       }
     }
     for (const [part, drawn] of this.drawn) {

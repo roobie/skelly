@@ -8,6 +8,8 @@ import {
   type Chord,
   capturedChord,
   chordIssue,
+  controlRowIssue,
+  defaultKeySetIssues,
   INPUT_BINDINGS,
   type InputCommand,
   type InputContext,
@@ -577,6 +579,37 @@ describe('keyboard registry', () => {
     keyboard.press(event('KeyC'));
     expect(keyboard.held('noclip.descend')).toBe(false);
   });
+  it('admits Alt held keys and alternate bindings without admitting Alt chords or hiding held-gate conflicts', () => {
+    const alternatives = INPUT_BINDINGS.map((binding) =>
+      binding.id === 'view.free-look' ? { ...binding, defaults: [{ code: 'AltLeft' }, { code: 'AltRight' }] } : binding,
+    );
+    const bindings = new BindingRegistry(alternatives, storage());
+    expect(bindings.rebind('view.free-look', [{ code: 'AltLeft' }, { code: 'AltRight' }])).toBeUndefined();
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'play', debug: false });
+    expect(keyboard.press(event('AltRight', { altKey: true }))).toBe(true);
+    expect(keyboard.held('view.free-look')).toBe(true);
+    expect(keyboard.press(event('KeyW', { altKey: true }))).toBe(true);
+    expect(keyboard.held('movement.forward')).toBe(true);
+    keyboard.release(event('AltRight'));
+    keyboard.release(event('KeyW'));
+    expect(bindings.rebind('movement.sprint', [{ code: 'AltRight' }])).toBeDefined();
+    expect(bindings.rebind('view.free-look', [{ code: 'KeyJ' }, { code: 'AltRight' }])).toBeUndefined();
+    expect(keyboard.press(event('KeyJ'))).toBe(true);
+    expect(keyboard.held('view.free-look')).toBe(true);
+    keyboard.release(event('KeyJ'));
+    expect(chordIssue({ code: 'KeyJ', modifier: 'alt' })).toBeDefined();
+    const defaults = new Map(INPUT_BINDINGS.map((binding) => [binding.id, binding.defaults]));
+    defaults.set('view.free-look', [{ code: 'AltRight' }]);
+    expect(defaultKeySetIssues(defaults)).toEqual([]);
+    expect(controlRowIssue('view.free-look', [{ code: 'AltLeft' }])).toBeUndefined();
+    expect(controlRowIssue('view.free-look', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
+
+    const gate: Binding = { ...fixture[3]!, defaults: [{ code: 'AltLeft' }] };
+    const gated: Binding = { ...fixture[4]!, defaults: [{ code: 'KeyJ' }] };
+    const held: Binding = { ...fixture[1]!, defaults: [{ code: 'KeyJ' }, { code: 'AltLeft' }] };
+    expect(bindingConflict([gate, gated, held], new Map())).toBeDefined();
+  });
   it('rejects browser-owned modifiers for every game binding', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     for (const binding of INPUT_BINDINGS) {
@@ -646,7 +679,7 @@ describe('keyboard registry', () => {
       expect(typeof capturedChord(event('KeyJ', extra))).toBe('string');
     }
     expect(capturedChord(event('ControlLeft', { ctrlKey: true }))).toEqual(expect.any(String));
-    expect(capturedChord(event('AltLeft', { altKey: true }))).toEqual(expect.any(String));
+    expect(capturedChord(event('AltLeft', { altKey: true }))).toEqual({ code: 'AltLeft' });
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
     keyboard.context = () => ({ context: 'play', debug: true });
     const commands: InputCommand[] = [];
@@ -691,6 +724,76 @@ describe('keyboard registry', () => {
       remove();
     }
   });
+  it.each(['mousemove', 'keydown', 'focus'] as const)('reconciles lost Alt and movement on %s', (type) => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const remove = keyboard.install();
+    try {
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'AltLeft', altKey: false }));
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      globalThis.dispatchEvent(new MouseEvent('mousemove', { altKey: true }));
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      // The releases and blur never reach this owner; recovery must use independent browser evidence.
+      const evidence = {
+        keydown: new KeyboardEvent('keydown', { code: 'KeyZ', altKey: false }),
+        focus: new Event('focus'),
+        mousemove: new MouseEvent('mousemove', { altKey: false }),
+      }[type];
+      globalThis.dispatchEvent(evidence);
+      expect(keyboard.held('view.free-look')).toBe(false);
+      expect(keyboard.held('movement.forward')).toBe(false);
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'AltLeft', altKey: true }));
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+    } finally {
+      remove();
+    }
+  });
+  it.each(['focus', 'visibility', 'pointer-lock'] as const)('clears held keys on sampled %s loss', (lost) => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    let focused = true;
+    let hidden = false;
+    let locked = true;
+    const properties = ['hasFocus', 'hidden', 'pointerLockElement'] as const;
+    const originals = properties.map((name) => Object.getOwnPropertyDescriptor(document, name));
+    Object.defineProperties(document, {
+      hasFocus: { configurable: true, value: () => focused },
+      hidden: { configurable: true, get: () => hidden },
+      pointerLockElement: { configurable: true, get: () => (locked ? document.body : null) },
+    });
+    try {
+      keyboard.press(event('KeyW'));
+      keyboard.press(event('AltLeft', { altKey: true }));
+      keyboard.reconcileFocus();
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      focused = lost !== 'focus';
+      hidden = lost === 'visibility';
+      locked = lost !== 'pointer-lock';
+      keyboard.reconcileFocus();
+      expect(keyboard.held('view.free-look')).toBe(false);
+      expect(keyboard.held('movement.forward')).toBe(false);
+      focused = true;
+      hidden = false;
+      locked = true;
+      keyboard.press(event('KeyW'));
+      expect(keyboard.held('movement.forward')).toBe(true);
+    } finally {
+      for (const [index, name] of properties.entries()) {
+        const original = originals[index];
+        if (original) {
+          Object.defineProperty(document, name, original);
+        } else {
+          Reflect.deleteProperty(document, name);
+        }
+      }
+    }
+  });
   it('cancels browser chords only while playing with pointer lock and outside text fields', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'play';
@@ -709,6 +812,20 @@ describe('keyboard registry', () => {
       expect(prevented(globalThis, 'KeyS', { metaKey: true })).toBe(true);
       expect(prevented(globalThis, 'ArrowLeft', { altKey: true })).toBe(true);
       expect(prevented(globalThis, 'ControlLeft', { ctrlKey: true })).toBe(false);
+      expect(prevented(globalThis, 'AltLeft', { altKey: true })).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      const altUp = new KeyboardEvent('keyup', { code: 'AltLeft', bubbles: true, cancelable: true });
+      globalThis.dispatchEvent(altUp);
+      expect(altUp.defaultPrevented).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(false);
+      prevented(globalThis, 'AltLeft', { altKey: true });
+      locked = null;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      expect(keyboard.held('view.free-look')).toBe(false);
+      locked = document.body;
+      expect(prevented(globalThis, 'AltLeft', { altKey: true })).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      keyboard.release(event('AltLeft'));
 
       const input = document.createElement('input');
       document.body.append(input);

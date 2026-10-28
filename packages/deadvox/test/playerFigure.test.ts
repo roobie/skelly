@@ -509,6 +509,28 @@ describe('optic lens presentation', () => {
 });
 
 describe('player figure', () => {
+  it('turns the neck under free look without moving the torso or firearm stock seats', () => {
+    const meshes = playerMeshes();
+    const pose = {
+      ...STANDING,
+      body: createPlayerBody(scale, 0, 0, 0),
+      yaw: 0.4,
+      pitch: 0.2,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+    };
+    meshes.sync(pose);
+    meshes.group.updateMatrixWorld(true);
+    const bodyMatrix = drawnPart(meshes, 'body').matrixWorld.clone();
+    const headRotation = drawnHead(meshes).getWorldQuaternion(new Quaternion());
+    const seats = structuredClone(meshes.stockSeats);
+    meshes.sync({ ...pose, headYaw: 0.3, headPitch: -0.1 });
+    meshes.group.updateMatrixWorld(true);
+    expect(drawnPart(meshes, 'body').matrixWorld.equals(bodyMatrix)).toBe(true);
+    expect(drawnHead(meshes).getWorldQuaternion(new Quaternion()).angleTo(headRotation)).toBeGreaterThan(0);
+    expect(meshes.stockSeats).toEqual(seats);
+  });
   it('keeps all actor transforms observer-independent through stance lean and dynamic held posing', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const inventory = new Inventory(registry);
