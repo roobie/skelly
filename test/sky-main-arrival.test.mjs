@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import process from 'node:process';
@@ -9,6 +10,7 @@ import {
   adaptMainInteractionPick,
   adaptMainOpticLensPass,
   adaptMainSeedPool,
+  baseOnlyWorkspacePlugin,
   mainArrivalGit,
   mainOverlayPath,
   mainOverlaySources,
@@ -18,6 +20,8 @@ import {
   removedModuleExports,
   workspaceDirectory,
 } from '../packages/deadvox/test/browser/sky-main-arrival.mjs';
+
+const { createServer } = createRequire(new URL('../packages/deadvox/package.json', import.meta.url))('vite');
 
 it('main rendering overlays retain branch core API owners', () => {
   assert.ok(mainSourceOverlays.length > 0);
@@ -237,6 +241,60 @@ it('main imports of an export the branch removed from a sibling package are foun
     assert.deepEqual(removedFrom(join(top, 'packages-mobgen/src/kept.ts')), []);
     assert.deepEqual(shimmed(), { 'packages-mobgen/src/cut.ts': ['PARTS'] });
   } finally {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
+
+it('main reference restores deleted sibling dependencies while retaining branch modules after a workspace move', async () => {
+  const repository = mkdtempSync(join(tmpdir(), 'main-deleted-dependency-'));
+  // biome-ignore lint/style/noProcessEnv: fixture Git must never inherit a hook's repository bindings.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')));
+  const git = (args) => execFileSync('git', args, { cwd: repository, encoding: 'utf8', env }).trim();
+  const write = (path, text) => {
+    mkdirSync(join(repository, path, '..'), { recursive: true });
+    writeFileSync(join(repository, path), text);
+  };
+  const commit = (message) => {
+    git(['add', '-A']);
+    git(['-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', message]);
+    return git(['rev-parse', 'HEAD']);
+  };
+  let server;
+  try {
+    git(['init', '-q']);
+    write('package.json', JSON.stringify({ workspaces: ['game', 'mob'] }));
+    write('game/package.json', JSON.stringify({ name: 'deadvox' }));
+    write('mob/package.json', JSON.stringify({ name: 'mobgen' }));
+    write(
+      'mob/src/legacy.ts',
+      "import data from './data.json'; import { value } from './helper'; import { kept } from './kept'; export const result = data.value + value + kept;\n",
+    );
+    write('mob/src/data.json', JSON.stringify({ value: 7 }));
+    write('mob/src/helper/index.ts', 'export const value = 3;\n');
+    write('mob/src/kept.ts', 'export const kept = 100;\n');
+    const base = commit('base');
+    git(['mv', 'mob', 'packages-mobgen']);
+    git(['rm', '-rf', 'packages-mobgen/src/legacy.ts', 'packages-mobgen/src/data.json', 'packages-mobgen/src/helper']);
+    write('package.json', JSON.stringify({ workspaces: ['game', 'packages-mobgen'] }));
+    write('packages-mobgen/src/kept.ts', 'export const kept = 1;\n');
+    // A deleted same-stem alternative must not displace the retained branch module.
+    write('packages-mobgen/src/data.ts', 'export const value = 2;\n');
+    write(
+      'game/entry.ts',
+      "export { result } from '../packages-mobgen/src/legacy.ts'; export { value } from '../packages-mobgen/src/data';\n",
+    );
+    commit('move and delete');
+    server = await createServer({
+      root: join(repository, 'game'),
+      configFile: false,
+      server: { middlewareMode: true },
+      plugins: [baseOnlyWorkspacePlugin(removedModuleExports(git, base))],
+    });
+    const actual = await server.ssrLoadModule('/entry.ts');
+    assert.equal(actual.result, 11);
+    assert.equal(actual.value, 2);
+  } finally {
+    await server?.close();
     rmSync(repository, { recursive: true, force: true });
   }
 });
