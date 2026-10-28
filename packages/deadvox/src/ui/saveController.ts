@@ -945,7 +945,7 @@ export class SaveController {
     const refusedSave = this.showRefusedSave;
     const refusalHint = $('save-refusal-hint');
     refusalHint.hidden = !refusedSave;
-    render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.failure || this.statusText }) : ''}`, refusalHint);
+    render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.refusalHintText() }) : ''}`, refusalHint);
     $('save-fresh').hidden = !refusedSave;
     render(
       html`<span class="fact-detail"
@@ -961,6 +961,10 @@ export class SaveController {
     render(html`${this.failure}`, $('save-recovery-message'));
     // An unusable save is the first decision the player must make, so its controls lead the title.
     $('overlay').classList.toggle('save-refused', refusedSave);
+  }
+
+  private refusalHintText(): string {
+    return this.failure || this.statusText;
   }
 }
 
