@@ -1996,30 +1996,34 @@ describe('shambler scenarios', () => {
     }
   });
 
-  it('crawls after losing one leg, with matching hit regions and a derived pose after restore', () => {
-    const { system, id, zombie } = destroyRegion(SHAMBLER, 'leftLeg', () => player([1, 1, -8]));
-    expect(zombie.severed.length).toBeGreaterThan(0);
-    const before = [...zombie.body.pos];
-    run(system, 1);
-    expect(zombie.horizontalSpeed).toBeGreaterThan(0);
-    expect(zombie.body.pos).not.toEqual(before);
-    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
-    const posed = posedShambler(input);
-    const crawl = crawlerGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
-    expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
-    expect(zombie.type.id).toBe(SHAMBLER.id);
-    expect(posed.figure).toBe(zombieFigure(zombie.type, zombie.figureSeed));
-    const boxes = posedShamblerRegionBoxes(input);
-    expect(boxes.leftLeg).toEqual([]);
-    expect(boxes.rightLeg.length).toBeGreaterThan(0);
-    expect(boxes.torso.length).toBeGreaterThan(0);
-    const restored = new ZombieSystem(senses(() => player([100, 2, 0])));
-    restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
-    const loaded = restored.store.get(id)!;
-    expect(posedShambler(zombiePoseInputFor(loaded, id, BLOCK_SIZE)).pose).toEqual(posed.pose);
-    expect(loaded.regions).toEqual(zombie.regions);
-    expect(loaded.severed).toEqual(zombie.severed);
-  });
+  it.each([SHAMBLER, RUNNER])(
+    '$id crawls after losing one leg, with matching hit regions and a derived pose after restore',
+    (type) => {
+      const { system, id, zombie } = destroyRegion(type, 'leftLeg', () => player([1, 1, -8]));
+      expect(zombie.severed.length).toBeGreaterThan(0);
+      const before = [...zombie.body.pos];
+      run(system, 1);
+      expect(zombie.horizontalSpeed).toBeGreaterThan(0);
+      expect(zombie.horizontalSpeed).toBeLessThanOrEqual(type.speed.crawlMetresPerSimSecond);
+      expect(zombie.body.pos).not.toEqual(before);
+      const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+      const posed = posedShambler(input);
+      const crawl = crawlerGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
+      expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
+      expect(zombie.type.id).toBe(type.id);
+      expect(posed.figure).toBe(zombieFigure(zombie.type, zombie.figureSeed));
+      const boxes = posedShamblerRegionBoxes(input);
+      expect(boxes.leftLeg).toEqual([]);
+      expect(boxes.rightLeg.length).toBeGreaterThan(0);
+      expect(boxes.torso.length).toBeGreaterThan(0);
+      const restored = new ZombieSystem(senses(() => player([100, 2, 0])));
+      restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
+      const loaded = restored.store.get(id)!;
+      expect(posedShambler(zombiePoseInputFor(loaded, id, BLOCK_SIZE)).pose).toEqual(posed.pose);
+      expect(loaded.regions).toEqual(zombie.regions);
+      expect(loaded.severed).toEqual(zombie.severed);
+    },
+  );
 
   it('F: melee hits obey cooldown, damage and range; fixture fists can kill shamblers', () => {
     let elapsed = 0;

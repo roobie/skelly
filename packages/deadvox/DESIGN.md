@@ -2319,10 +2319,10 @@ application rather than weapon-class special cases. See `ZombieSchema` in
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
-  Losing even one leg starts crawling so a dismembered shambler remains a moving
-  threat rather than an upright target. Only rig and movement change: it stays a
-  shambler, preserving its identity and accumulated wounds. Crawling attacks still
-  need an arm because the body must grab or claw. See `src/core/zombies.ts`,
+  Every humanoid zombie crawls after losing even one leg: whatever its type, a
+  zombie that loses a leg must not keep walking or stand upright on none. Only rig
+  and movement change, preserving its type, identity and accumulated wounds.
+  Crawling attacks still need an arm because the body must grab or claw. See `src/core/zombies.ts`,
   `canStillAttack` and `ZombieSystem.applyMeleeEffects`; `src/core/zombiePose.ts`,
   `zombieCrawls` and `posedShambler`; and `src/core/zombieRegions.ts`,
   `posedShamblerRegionBoxes`. Crawling derives from saved limb state rather than

@@ -63,7 +63,7 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
 };
 
 export const zombieCrawls = (zombie: Zombie): boolean => {
-  if (zombie.type.model !== 'shambler') {
+  if (templateByName(zombie.type.model).bodyPlan !== 'humanoid') {
     return false;
   }
   if (zombie.regions.leftLeg! <= 0 || zombie.regions.rightLeg! <= 0) {
