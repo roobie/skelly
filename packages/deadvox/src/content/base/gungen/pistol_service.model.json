@@ -18,19 +18,19 @@
       "item": "pistol_slide",
       "node": "slide:slide",
       "massKg": 0.27,
-      "centreOfMass": [0.010489208633093529, 0.004733812949640295, -0.00014388489208633166]
+      "centreOfMass": [0.010056737588652486, 0.004950354609929088, -0.00013711583924349964]
     }
   },
   "grip": { "at": [-0.069143, -0.0132, 0], "turn": [0, 0, 0] },
   "anchors": { "muzzle": [0.116, 0, 0], "ejection": [-0.024, 0, 0.009333] },
   "gun": {
     "sight": {
-      "kind": "optic",
-      "eye": [-0.071875, 0.0345, 0],
-      "direction": [1, 0, 0],
-      "up": [0, 1, -2.4492935982947064e-16],
-      "eyeReliefMetres": 0.02875,
-      "ocularDiameterMetres": 0.02875
+      "kind": "iron",
+      "eye": [-0.0805, 0.024, 0],
+      "direction": [0.9999999999960657, 0, -0.0000028050490883483825],
+      "up": [-3.435194387483533e-22, 1, -1.2246467991377173e-16],
+      "eyeReliefMetres": 0.046,
+      "eyeDistanceRangeMetres": [0.05, 0.8]
     },
     "muzzleDirection": [1, 1.4997597826618576e-32, 1.2246467991473532e-16],
     "calibre": "9x19",
@@ -63,33 +63,7 @@
       "holdOpen": true,
       "roundsPerSimMinute": 450
     },
-    "attachments": [
-      {
-        "id": "optic-mini-reflex",
-        "kind": "optic",
-        "mount": "rail-top",
-        "properties": {
-          "aperture": { "aspectRatio": 1.2, "exponent": 6 },
-          "reticle": {
-            "focalPlane": "second",
-            "referenceMagnification": 1,
-            "primitives": [{ "kind": "dot", "center": [0, 0], "radius": 0.026, "color": [0.95, 0.075, 0.035] }]
-          },
-          "railSpanNotches": { "minOffset": -1, "maxOffset": 1 }
-        },
-        "sight": {
-          "kind": "optic",
-          "eye": [-0.025875, 0.01725, 0],
-          "direction": [1, 0, 0],
-          "up": [0, 1, 0],
-          "eyeReliefMetres": 0.028749999999999998,
-          "ocularDiameterMetres": 0.028749999999999998
-        },
-        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
-        "node": "sight:sight",
-        "mountedAt": "slide.rail.1"
-      }
-    ],
+    "attachments": [],
     "attachmentSlots": [
       {
         "id": "slide.rail.0",

@@ -570,6 +570,10 @@ export const PISTOL_CROWN_LENGTH_U = 1;
 const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
 const PISTOL_SLIDE_WALL_THICKNESS = 0.25;
+const PISTOL_IRON_SIGHT_HEIGHT_U = 0.75;
+const PISTOL_IRON_SIGHT_HALF_WIDTH_U = 0.5;
+const PISTOL_IRON_SIGHT_NOTCH_HALF_WIDTH_U = 0.25;
+const PISTOL_IRON_SIGHT_LENGTH_U = 0.5;
 const GRIP_BANDS = { lengthU: { S: 7.5, M: 8.5, L: 9.5 }, leanDegrees: 18 } as const;
 /** Profile points at the grip's upper mount; the first is the front vertex touching a lower's guard. */
 export const GRIP_MOUNT_PROFILE = [
@@ -4762,6 +4766,21 @@ const pistolSlide: PartFamily = {
       family: 'slide',
       solids: [
         solid('top', [PISTOL_SLIDE_REAR, 2.5, -slideHalfWidth], [end, 3, slideHalfWidth]),
+        solid(
+          'front-sight-post',
+          [end - PISTOL_IRON_SIGHT_LENGTH_U, 3, -GRID / 2],
+          [end, 3 + PISTOL_IRON_SIGHT_HEIGHT_U, GRID / 2],
+        ),
+        solid(
+          'rear-sight-left',
+          [PISTOL_SLIDE_REAR, 3, -PISTOL_IRON_SIGHT_HALF_WIDTH_U],
+          [PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U, 3 + PISTOL_IRON_SIGHT_HEIGHT_U, -PISTOL_IRON_SIGHT_NOTCH_HALF_WIDTH_U],
+        ),
+        solid(
+          'rear-sight-right',
+          [PISTOL_SLIDE_REAR, 3, PISTOL_IRON_SIGHT_NOTCH_HALF_WIDTH_U],
+          [PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U, 3 + PISTOL_IRON_SIGHT_HEIGHT_U, PISTOL_IRON_SIGHT_HALF_WIDTH_U],
+        ),
         solid('side-left', [PISTOL_SLIDE_REAR, 0.5, -slideHalfWidth], [end, 2.5, -channelHalfWidth]),
         ...ejection,
         solid('forward-side-right', [0, 0.5, channelHalfWidth], [end, 2.5, slideHalfWidth]),
@@ -4794,6 +4813,12 @@ const pistolSlide: PartFamily = {
           kind: 'rack-grip',
           origin: [PISTOL_SLIDE_REAR + pistolAction.rackGripFromRearU, pistolAction.rackGripHeightU, -slideHalfWidth],
           dir: X,
+        },
+        {
+          kind: 'sight',
+          origin: [PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U / 2, 3 + PISTOL_IRON_SIGHT_HEIGHT_U, 0],
+          dir: X,
+          referenceDistanceU: 4,
         },
       ],
       motion: {

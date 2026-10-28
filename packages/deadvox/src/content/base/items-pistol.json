@@ -167,49 +167,7 @@
             "up": [1, 0, 0]
           }
         ],
-        "attachments": [
-          {
-            "id": "optic-mini-reflex",
-            "kind": "optic",
-            "mount": "rail-top",
-            "mountFrame": {
-              "normal": [0, -1, 0],
-              "up": [1, 0, 0]
-            },
-            "mountedAt": "slide.rail.1",
-            "node": "sight:sight",
-            "properties": {
-              "aperture": {
-                "aspectRatio": 1.2,
-                "exponent": 6
-              },
-              "railSpanNotches": {
-                "maxOffset": 1,
-                "minOffset": -1
-              },
-              "reticle": {
-                "focalPlane": "second",
-                "primitives": [
-                  {
-                    "center": [0, 0],
-                    "color": [0.94999999999999996, 0.074999999999999997, 0.035000000000000003],
-                    "kind": "dot",
-                    "radius": 0.025999999999999999
-                  }
-                ],
-                "referenceMagnification": 1
-              }
-            },
-            "sight": {
-              "direction": [1, 0, 0],
-              "eye": [-0.025874999999999999, 0.017250000000000001, 0],
-              "eyeReliefMetres": 0.028749999999999998,
-              "kind": "optic",
-              "ocularDiameterMetres": 0.028749999999999998,
-              "up": [0, 1, 0]
-            }
-          }
-        ],
+        "attachments": [],
         "calibre": "9x19",
         "compatibility": {
           "slide.rail.0": ["rail-front-sight"],
@@ -223,12 +181,12 @@
         ],
         "muzzleDirection": [1, 1.4997597826618576e-32, 1.2246467991473532e-16],
         "sight": {
-          "direction": [1, 0, 0],
-          "eye": [-0.071874999999999994, 0.034500000000000003, 0],
-          "eyeReliefMetres": 0.028750000000000001,
-          "kind": "optic",
-          "ocularDiameterMetres": 0.028750000000000001,
-          "up": [0, 1, -2.4492935982947064e-16]
+          "direction": [0.9999999999960657, 0, -2.8050490883483825e-6],
+          "eye": [-0.080500000000000002, 0.024, 0],
+          "eyeDistanceRangeMetres": [0.050000000000000003, 0.80000000000000004],
+          "eyeReliefMetres": 0.045999999999999999,
+          "kind": "iron",
+          "up": [-3.4351943874835329e-22, 1, -1.2246467991377173e-16]
         },
         "slots": {
           "magazine": {
@@ -308,7 +266,7 @@
           "node": "frame:frame"
         },
         "slide": {
-          "centreOfMass": [0.010489208633093529, 0.0047338129496402948, -0.00014388489208633166],
+          "centreOfMass": [0.010056737588652486, 0.0049503546099290878, -0.00013711583924349964],
           "item": "pistol_slide",
           "massKg": 0.27000000000000002,
           "node": "slide:slide"

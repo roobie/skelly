@@ -643,7 +643,7 @@
       "id": "pistol_slide",
       "parts": {
         "pistol_slide": {
-          "centreOfMass": [0.010551351351351351, 0.024097297297297295, -0.00016216216216216218],
+          "centreOfMass": [0.010224598930481284, 0.024267379679144375, -0.00015329768270944753],
           "item": "pistol_slide",
           "massKg": 0.27000000000000002,
           "node": "pistol_slide:slide"
