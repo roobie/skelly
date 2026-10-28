@@ -202,6 +202,9 @@ export class Input {
       this.aimingDownSights = !this.aimingDownSights;
     }
   }
+  startFreeLook(): void {
+    this.aimingDownSights = false;
+  }
   useOff(): void {
     if (this.locked && !this.menuPointer) {
       this.offUsePressed = true;

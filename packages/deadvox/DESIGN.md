@@ -2130,8 +2130,13 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   the head and camera may turn, but the hip pose and shot keep the body's direction.
   Keeping the shot on the visible bore makes firing while looking away honest;
   the crosshair remains a projection of that bore and disappears outside the view,
-  rather than implying a shot toward the eyes. ADS ignores free look because the
-  sights and view must share one line. Look-targeted item actions are refused while
+  rather than implying a shot toward the eyes. Pressing free look in ADS ends ADS,
+  then free look starts; releasing it returns to the hip without re-entering ADS.
+  Free look is observer-only and ADS holds the eye on the sight, so leaving ADS keeps
+  one owner for the view and keeps the rule free of ADS state remembered across free
+  look. Toggling ADS while free look is held does nothing: the player first returns
+  the view by releasing free look, then aims, so the view has one owner at a time.
+  Look-targeted item actions are refused while
   free look is held so a glance cannot redirect a throw, strike or interaction.
   Content owns the neck range and return speed; transient head offsets do not belong
   in a character save. See `src/game/input.ts`, `Input`, `src/game/freeLook.ts`, `FreeLook`,

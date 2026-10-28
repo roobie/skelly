@@ -37,6 +37,7 @@ export const freeLookAllowsCommand = (freeLooking: boolean, action: string): boo
   !(
     freeLooking &&
     (action === 'world.interact' ||
+      action === 'aim.ads-toggle' ||
       action === 'player.throw' ||
       action === 'light.worn-toggle' ||
       action.startsWith('firearm.') ||
