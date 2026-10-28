@@ -94,6 +94,8 @@ body {
   display: none;
   width: max-content;
   max-width: min(32rem, 80vw);
+  /* Moved along the row by `placeFactDetail` so the copy stays inside its scrolling host. */
+  translate: var(--fact-detail-shift, 0px) 0;
   pointer-events: none;
   padding: 0.4rem;
   background: var(--panel);

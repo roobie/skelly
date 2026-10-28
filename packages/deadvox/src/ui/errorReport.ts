@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html';
 import { getBuildRevision } from '../core/buildInfo.ts';
 import type { HandBackFile } from '../game/playtestTools.ts';
+import { listenForFactDetailPlacement } from './factDetailPlacement.ts';
 import { isOwnError } from './ownError.ts';
 
 export interface ErrorReportContext {
@@ -106,6 +107,8 @@ export const setErrorReportContext = (context: ErrorReportContext): void => {
 };
 
 export const installErrorReportHandler = (): void => {
+  // The static facts in the panel are never rendered through `factDetail()`, so placement starts here.
+  listenForFactDetailPlacement();
   const panel = document.getElementById('error-report');
   if (!panel) {
     throw new Error('Missing #error-report panel');
