@@ -68,6 +68,11 @@ try {
               '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
             [
+              '/src/game/play.ts',
+              '      advanceLiveFrame',
+              '      if (!sim.paused) globalThis.__uiContractSimulationResumes += 1;\n',
+            ],
+            [
               '/src/core/handling.ts',
               '    return { ok: true, job };',
               '    globalThis.__uiContractQueuedMoves.push(structuredClone(job));\n',
@@ -78,11 +83,17 @@ try {
               '  globalThis.uiContractDebug = { hooks, get readout() { return readout; }, get spawnStatus() { return spawnStatus; } };\n',
             ],
           ];
+          let observed = code;
+          let found = false;
           for (const [suffix, marker, observation] of observations) {
             if (file.endsWith(suffix)) {
-              assert.equal(code.split(marker).length - 1, 1, `UI observer anchor in ${suffix}`);
-              return code.replace(marker, observation + marker);
+              assert.equal(observed.split(marker).length - 1, 1, `UI observer anchor in ${suffix}`);
+              observed = observed.replace(marker, observation + marker);
+              found = true;
             }
+          }
+          if (found) {
+            return observed;
           }
         },
       },
@@ -123,6 +134,7 @@ try {
   page = await context.newPage();
   await page.addInitScript(() => {
     globalThis.__uiContractQueuedMoves = [];
+    globalThis.__uiContractSimulationResumes = 0;
     globalThis.__uiContractFrames = 0;
     const countFrame = () => {
       globalThis.__uiContractFrames += 1;
@@ -674,8 +686,11 @@ try {
     'drawn cursor toggles F9 menu controls from either default state',
   );
   assert.equal(await evaluate('window.uiContractRuntime.sim.paused'), true, 'main menu pauses the simulation');
+  const simulationResumesBefore = await evaluate('window.__uiContractSimulationResumes');
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("document.querySelector('#overlay').hidden"), true, 'menu key closes the menu');
+  const simulationResumed = () => evaluate(`window.__uiContractSimulationResumes > ${simulationResumesBefore}`);
+  await waitFor(simulationResumed, 'closing the menu resumes the simulation');
   assert.equal(await evaluate('window.uiContractRuntime.sim.paused'), false, 'closing the menu resumes the simulation');
   await pressBinding(keyBindings.mainMenu);
   assert.equal(await evaluate("!document.querySelector('#overlay').hidden"), true, 'menu key can open the menu again');

@@ -56,7 +56,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
         // The armoury rack, proved through the roof officer's key alone; the cellar torch is no part of it.
         {
           lot: 'police', at: [18, 1, 5], standing: [18, 1, 7.5],
-          key: { at: [22, 8, 31], standing: [20.5, 8, 32], climbs: [{ ladder: [11, 1, 31], upper: [12.5, 8, 32], lower: [10.5, 1, 32] }] },
+          key: { at: [21, 8, 32], standing: [20.5, 8, 32], climbs: [{ ladder: [11, 1, 31], upper: [12.5, 8, 32], lower: [10.5, 1, 32] }] },
         },
       ],
       storeys: lab.anchors.storeys,
