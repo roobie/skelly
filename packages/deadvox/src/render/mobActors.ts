@@ -28,7 +28,7 @@
 // Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
 // death is different — src/core/zombies.ts's onDeath removes the zombie from its store and calls zombieDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
-// slot/variant/instance, plays deathPose from the frozen living pose, holds once lying, sinks, then frees
+// slot/variant/instance, falls from the frozen living pose, holds once lying, sinks, then frees
 // the slot. Corpses are render-only; incapacitated zombies remain simulation entities, fall once and lie in
 // their existing row, excluded from corpse eviction, until finishing one off makes it an ordinary corpse.
 //
@@ -143,6 +143,7 @@ import type { ColumnReveal } from './columnReveal.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
+import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
@@ -358,13 +359,15 @@ interface Corpse extends SlotHolder {
   readonly walkActor: WalkActor;
   /** The walk (or walk+attack) pose frozen at the instant of death — deathPose's own basePose. */
   readonly basePose: Pose;
-  /** World position (metres) at death; fixed — corpses don't move except sinking (see packCorpse). */
+  /** The simulation's death point stays separate from render-only limb motion and sinking. */
   readonly worldPos: Vec3;
   readonly yaw: number;
   readonly direction: 1 | -1;
   readonly poseSeed: number;
   readonly posture: DeathActor['posture'];
   settledPose?: Pose;
+  ragdoll?: Ragdoll;
+  groundedAt?: number;
   /** Frozen at the instant of death — a corpse keeps whatever was severed while it was still alive (see
    * this module's header comment); parts severed by the killing blow itself are already included, since
    * onSever fires before onDeath (src/core/zombies.ts's swing). */
@@ -627,6 +630,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly frustumMatrix = new Matrix4();
   private readonly boundingSphere = new Sphere(new Vector3(), BOUNDING_RADIUS_M);
   private world: RigidWorld | undefined;
+  private ragdolls: RagdollWorld | undefined;
 
   private readonly options: MobActorMeshesOptions;
 
@@ -799,6 +803,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.variantIndexBySeed = new Map(
       this.variants.map((variant, index) => [`${variant.model}:${variant.figureSeed}`, index]),
     );
+  }
+
+  async whenCorpsesReady(): Promise<void> {
+    await this.ragdolls?.ready;
   }
 
   setCamera(camera: Camera): void {
@@ -1326,6 +1334,9 @@ export class MobActorMeshes implements ZombieRenderer {
     if (!corpse) {
       return;
     }
+    if (corpse.ragdoll) {
+      this.ragdolls?.remove(corpse.ragdoll);
+    }
     this.freeSlot(id, corpse);
     this.corpses.delete(id);
   }
@@ -1353,7 +1364,7 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
-    const basePose = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie)).pose;
+    const basePose = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie), { dt: 0 }).pose;
     this.corpses.set(id, {
       incapacitated: true,
       variantIndex: state.variantIndex,
@@ -1373,6 +1384,7 @@ export class MobActorMeshes implements ZombieRenderer {
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
+    this.startRagdoll(this.corpses.get(id)!);
     this.states.delete(id);
   }
 
@@ -1439,7 +1451,27 @@ export class MobActorMeshes implements ZombieRenderer {
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
+    this.startRagdoll(this.corpses.get(id)!);
     this.states.delete(id);
+  }
+
+  private startRagdoll(corpse: Corpse): void {
+    if (this.ragdolls?.failed) {
+      return;
+    }
+    const variant = this.variants[corpse.variantIndex]!;
+    if (ragdollContent.models.includes(variant.model) && corpse.severed.length === 0) {
+      this.ragdolls ??= new RagdollWorld();
+      corpse.ragdoll = this.ragdolls.spawn({
+        realized: variant.realized,
+        pose: corpse.basePose,
+        position: corpse.worldPos,
+        yaw: corpse.yaw,
+        direction: corpse.direction,
+        seed: corpse.poseSeed,
+        ground: this.rigidWorld(),
+      });
+    }
   }
 
   /** Reports where a dying body's burst bones (the acid sac) were, for the splash. */
@@ -1470,12 +1502,14 @@ export class MobActorMeshes implements ZombieRenderer {
       z: downed.worldPos[2],
       yawRad: downed.yaw,
     };
-    this.burst(
-      variant,
-      boneTransforms(variant.realized.body.bones, this.corpsePose(downed, variant)),
-      placement,
-      zombie,
-    );
+    if (!downed.ragdoll) {
+      this.burst(
+        variant,
+        boneTransforms(variant.realized.body.bones, this.corpsePose(downed, variant)),
+        placement,
+        zombie,
+      );
+    }
     const corpse: Corpse = {
       ...this.corpses.get(id)!,
       incapacitated: false,
@@ -1483,7 +1517,14 @@ export class MobActorMeshes implements ZombieRenderer {
       bloodiness: woundSeverity(zombie),
       insertOrder: this.takeDeadOrder(),
     };
-    corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
+    if (corpse.ragdoll) {
+      corpse.elapsed = 0;
+      if (corpse.ragdoll.settled) {
+        corpse.groundedAt = 0;
+      }
+    } else {
+      corpse.elapsed = Math.min(corpse.elapsed, DEATH_FALL_DURATION);
+    }
     this.corpses.set(id, corpse);
   }
 
@@ -1964,9 +2005,7 @@ export class MobActorMeshes implements ZombieRenderer {
     state.zombie = zombie;
   }
 
-  /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
-   * offset, no re-posing needed) once it's been lying long enough. No LOD/frustum culling — the global
-   * shared corpse cap already bounds this to a small, fixed extra cost regardless of camera or distance. */
+  /** No LOD/frustum culling: the shared corpse cap bounds presentation work regardless of camera distance. */
   private corpsePose(corpse: Corpse, variant: Variant): Pose {
     if (corpse.settledPose) {
       return corpse.settledPose;
@@ -1996,8 +2035,44 @@ export class MobActorMeshes implements ZombieRenderer {
 
   private packCorpse(corpse: Corpse): void {
     const variant = this.variants[corpse.variantIndex]!;
+    const severedIndices = new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed)));
+    if (!corpse.incapacitated) {
+      for (const index of variant.burstIndices) {
+        severedIndices.add(index);
+      }
+    }
+    const sinkElapsed =
+      corpse.elapsed -
+      ((corpse.ragdoll ? (corpse.groundedAt ?? corpse.elapsed) : DEATH_FALL_DURATION) +
+        this.options.look.corpseLieSimSeconds);
+    if (corpse.ragdoll) {
+      const sinkT = corpse.incapacitated
+        ? 0
+        : Math.max(0, Math.min(1, sinkElapsed / this.options.look.corpseSinkSimSeconds));
+      for (const [bone, transform] of corpse.ragdoll.transforms) {
+        if (severedIndices.has(bone)) {
+          this.packZeroBone(corpse.globalRow, bone);
+          continue;
+        }
+        packCrowdBoneMatrix(
+          this.textureData,
+          { layout: this.layout, slot: corpse.globalRow, bone },
+          { r: [...transform.r], t: [...transform.t] },
+          {
+            x: 0,
+            y: -sinkT * this.options.look.corpseSinkDepthMetres,
+            z: 0,
+            yawRad: 0,
+          },
+        );
+      }
+      packSeveredMask(this.textureData, this.layout, corpse.globalRow, severedIndices);
+      packBloodiness(this.textureData, this.layout, corpse.globalRow, corpse.bloodiness);
+      packCharge(this.textureData, this.layout, corpse.globalRow, corpse.charge);
+      this.textureUpdates.touch(corpse.globalRow);
+      return;
+    }
     const pose = this.corpsePose(corpse, variant);
-    const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + this.options.look.corpseLieSimSeconds);
     const sinkT = corpse.incapacitated
       ? 0
       : Math.max(0, Math.min(1, sinkElapsed / this.options.look.corpseSinkSimSeconds));
@@ -2007,12 +2082,6 @@ export class MobActorMeshes implements ZombieRenderer {
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
-    const severedIndices = new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed)));
-    if (!corpse.incapacitated) {
-      for (const index of variant.burstIndices) {
-        severedIndices.add(index);
-      }
-    }
     this.packSkeleton(corpse.globalRow, variant, {
       pose,
       placement: crowdPlacement,
@@ -2244,7 +2313,12 @@ export class MobActorMeshes implements ZombieRenderer {
   /** Corpses are driven entirely by their own `elapsed`, not by the store (the sim has already forgotten
    * them) — advance, re-pose/pack, and free once their whole lifetime (fall + lie + sink) has passed. */
   private advanceCorpses(realDt: number): void {
+    this.ragdolls?.advance(realDt);
     for (const [id, corpse] of this.corpses) {
+      if (corpse.ragdoll) {
+        this.advanceRagdoll(id, corpse, realDt);
+        continue;
+      }
       const wasFalling = corpse.incapacitated && corpse.elapsed < DEATH_FALL_DURATION;
       corpse.elapsed += realDt;
       if (corpse.incapacitated) {
@@ -2261,6 +2335,27 @@ export class MobActorMeshes implements ZombieRenderer {
         this.freeCorpse(id);
         continue;
       }
+      this.packCorpse(corpse);
+    }
+  }
+
+  private advanceRagdoll(id: EntityId, corpse: Corpse, realDt: number): void {
+    if (this.ragdolls?.failed) {
+      this.freeCorpse(id);
+      return;
+    }
+    corpse.elapsed += realDt;
+    if (corpse.ragdoll!.settled && corpse.groundedAt === undefined) {
+      corpse.groundedAt = corpse.elapsed;
+    }
+    if (
+      !corpse.incapacitated &&
+      corpse.groundedAt !== undefined &&
+      corpse.elapsed >=
+        corpse.groundedAt + this.options.look.corpseLieSimSeconds + this.options.look.corpseSinkSimSeconds
+    ) {
+      this.freeCorpse(id);
+    } else {
       this.packCorpse(corpse);
     }
   }
@@ -2303,6 +2398,7 @@ export class MobActorMeshes implements ZombieRenderer {
     for (const id of [...this.wounds.keys()]) {
       this.removeWound(id);
     }
+    this.ragdolls?.dispose();
     this.fleshChunks.dispose();
     this.textureUpdates.dispose();
     this.texture.dispose();

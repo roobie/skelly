@@ -21,7 +21,7 @@ import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
@@ -46,6 +46,8 @@ import {
   MobActorMeshes as RenderMobActorMeshes,
   hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
+import { initializeRagdollPhysics, ragdollContent } from '../src/render/ragdoll.ts';
+import RAPIER from '../src/render/ragdollRapier.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -323,7 +325,7 @@ const makeZombie = (
   };
 };
 
-const incapacitate = (zombie: Zombie) => {
+const incapacitate = (zombie: Zombie, frozen = false) => {
   const blockSize = 0.5;
   const system = new ZombieSystem({
     isSolid: () => false,
@@ -344,6 +346,7 @@ const incapacitate = (zombie: Zombie) => {
     hurtPlayer: () => undefined,
   });
   const id = system.store.add(zombie);
+  system.setFrozen(frozen);
   const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
   const { center } = boxes.torso.find((box) => box.bone === 'chest')!;
   const origin: Vec3 = [center[0] - zombie.facing[0] * 2, center[1], center[2] - zombie.facing[2] * 2];
@@ -1269,7 +1272,7 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
-  it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
+  it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', async () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
       const store = new MapEntityStore<Zombie>();
@@ -1278,12 +1281,16 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 1 / 60, 1);
       store.remove(id);
       renderer.zombieDied(id, zombie);
+      await renderer.whenCorpsesReady();
       expect(renderer.isTracked(id)).toBe(true); // still drawn, as a corpse
 
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(id)).toBe(true);
       const step = 0.1;
-      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      const lifetime =
+        ragdollContent.stepBudget * ragdollContent.timestep +
+        CORPSE_LIFECYCLE.lieSimSeconds +
+        CORPSE_LIFECYCLE.sinkSimSeconds;
       for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
         renderer.sync(store, step, 1);
       }
@@ -1293,7 +1300,64 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
-  it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', () => {
+  it.each([false, true])('builds a ragdoll for torso incapacitation with frozen=%s', async (frozen) => {
+    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      incapacitate(zombie, frozen);
+      renderer.sync(store, 0, 1, frozen);
+      await renderer.whenCorpsesReady();
+      const corpse = (
+        renderer as unknown as {
+          readonly corpses: ReadonlyMap<number, { readonly ragdoll?: { readonly parts: readonly unknown[] } }>;
+        }
+      ).corpses.get(id);
+      expect(zombie.incapacitated).toBe(true);
+      expect(zombie.severed).toEqual([]);
+      expect(corpse?.ragdoll?.parts.length).toBeGreaterThan(0);
+      const before = renderer.boneMatrix(id, 'pelvis');
+      renderer.sync(store, ragdollContent.timestep, 1, frozen);
+      expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(before);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('retains an authored downed body after physics initialization fails', async () => {
+    await initializeRagdollPhysics();
+    const failure = new Error('Physics world unavailable');
+    const world = vi.spyOn(RAPIER.World.prototype, 'timestep', 'set').mockImplementationOnce(() => {
+      throw failure;
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      incapacitate(zombie);
+      renderer.sync(store, 0, 1);
+      await renderer.whenCorpsesReady();
+      expect(warning).toHaveBeenCalledWith(expect.any(String), failure);
+      renderer.sync(store, 0, 1);
+      renderer.sync(store, 0, 1);
+      const upright = renderer.boneMatrix(id, 'pelvis');
+      expect(upright).toBeDefined();
+      renderer.sync(store, DEATH_FALL_DURATION, 1);
+      expect(renderer.isTracked(id)).toBe(true);
+      expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(upright);
+    } finally {
+      renderer.dispose();
+      world.mockRestore();
+      warning.mockRestore();
+    }
+  });
+
+  it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', async () => {
     const renderer = new MobActorMeshes(0.5, CORPSE_LIFECYCLE.maxCorpses + 2, {
       zombies: registry.zombies,
       poolSize: 1,
@@ -1313,13 +1377,17 @@ describe('MobActorMeshes reactions', () => {
       }
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       expect(renderer.isTracked(ids[1]!)).toBe(false); // oldest ordinary corpse evicted; incapacitated row is protected
+      await renderer.whenCorpsesReady();
+      for (let step = 0; step < ragdollContent.stepBudget; step++) {
+        renderer.sync(store, ragdollContent.timestep, 1);
+      }
+      const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
+      expect(lying).toBeDefined();
       renderer.sync(
         store,
         DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
         1,
       );
-      const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
-      expect(lying).toBeDefined();
       expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       renderer.sync(store, CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
@@ -1329,7 +1397,7 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
-  it('lets an incapacitated row lie and sink once its zombie dies, as any corpse does', () => {
+  it('lets an incapacitated row lie and sink once its zombie dies, as any corpse does', async () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
       const store = new MapEntityStore<Zombie>();
@@ -1337,11 +1405,12 @@ describe('MobActorMeshes reactions', () => {
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
       const damage = incapacitate(zombie);
-      renderer.sync(
-        store,
-        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
-        1,
-      );
+      renderer.sync(store, 0, 1);
+      await renderer.whenCorpsesReady();
+      for (let step = 0; step < ragdollContent.stepBudget; step++) {
+        renderer.sync(store, ragdollContent.timestep, 1);
+      }
+      renderer.sync(store, CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);
       expect(damage.system.finishDowned(damage.id, false)).toBeUndefined();
       store.remove(id);
       renderer.zombieDied(id, zombie);
@@ -1421,7 +1490,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('continues corpse sinking while live zombie animation is frozen', () => {
+  it('continues corpse sinking while live zombie animation is frozen', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
       const store = new MapEntityStore<Zombie>();
@@ -1432,10 +1501,15 @@ describe('MobActorMeshes dismemberment', () => {
       store.remove(id);
 
       const step = 0.1;
+      await renderer.whenCorpsesReady();
       let previous = renderer.boneMatrix(id, 'pelvis')![7]!;
       let lying: number | undefined;
-      // One extra sample after the fall distinguishes lying still from falling.
-      for (let frame = 0; frame <= Math.ceil(DEATH_FALL_DURATION / step) && lying === undefined; frame++) {
+      // One extra sample after the step budget distinguishes lying still from falling.
+      for (
+        let frame = 0;
+        frame <= Math.ceil((ragdollContent.stepBudget * ragdollContent.timestep) / step) + 1 && lying === undefined;
+        frame++
+      ) {
         renderer.sync(store, step, 1, true);
         const current = renderer.boneMatrix(id, 'pelvis')![7]!;
         if (current === previous) {
@@ -1445,7 +1519,10 @@ describe('MobActorMeshes dismemberment', () => {
       }
       expect(lying).toBeDefined();
       let sank = false;
-      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      const lifetime =
+        ragdollContent.stepBudget * ragdollContent.timestep +
+        CORPSE_LIFECYCLE.lieSimSeconds +
+        CORPSE_LIFECYCLE.sinkSimSeconds;
       for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
         renderer.sync(store, step, 1, true);
         const pelvis = renderer.boneMatrix(id, 'pelvis');

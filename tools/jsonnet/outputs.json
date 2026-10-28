@@ -485,6 +485,10 @@
       "output": "packages/mobgen/src/mob/materialTemplates.json"
     },
     {
+      "source": "packages/mobgen/src/mob/ragdoll.jsonnet",
+      "output": "packages/mobgen/src/mob/ragdoll.json"
+    },
+    {
       "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/skeletonTemplate.json"
     },

@@ -125,7 +125,8 @@
         "**/src/bench/*-cpu.mjs",
         "**/deadvox/tools/bench-zombie-swings.mjs",
         "packages/deadvox/tools/bench-expressions.mjs",
-        "packages/deadvox/tools/probe-wasm-expressions.mjs"
+        "packages/deadvox/tools/probe-wasm-expressions.mjs",
+        "packages/deadvox/tools/measure-ragdolls.mjs"
       ],
       "linter": {
         "rules": {
@@ -146,7 +147,11 @@
       }
     },
     {
-      "includes": ["packages/deadvox/tools/perf-baseline.mjs", "packages/deadvox/tools/perf-baseline-trace.mjs"],
+      "includes": [
+        "packages/deadvox/tools/perf-baseline.mjs",
+        "packages/deadvox/tools/perf-baseline-trace.mjs",
+        "packages/deadvox/tools/measure-ragdolls.mjs"
+      ],
       "linter": { "rules": { "suspicious": { "noConsole": "off" }, "performance": { "noAwaitInLoops": "off" } } }
     },
     {
@@ -180,6 +185,7 @@
       // undeclared npm package; these simulation/rendering and test files deliberately use that alias.
       "includes": [
         "**/deadvox/src/render/mobActors.ts",
+        "**/deadvox/src/render/ragdoll.ts",
         "**/deadvox/src/core/zombies.ts",
         "**/deadvox/src/core/zombieRegions.ts",
         "**/deadvox/src/core/zombiePose.ts",
