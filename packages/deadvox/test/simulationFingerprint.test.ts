@@ -357,6 +357,37 @@ describe('simulation source fingerprint', () => {
     ).rejects.toThrow(UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR);
   });
 
+  it('ignores ragdoll tuning but fingerprints simulation body content', async () => {
+    const host = await actualSimulationHost();
+    const original = await actualSimulationFingerprint();
+    await Promise.all(
+      [
+        ['../mobgen/src/mob/ragdoll.json', 'gravity'],
+        ['../mobgen/src/mob/acidTemplate.json', 'bodyMassKg'],
+      ].map(async ([path, key]) => {
+        const target = resolve(projectRoot, path!);
+        const content = JSON.parse(await host.readFile(target));
+        const changed = JSON.stringify({ ...content, [key!]: content[key!] + 1 });
+        const graph = await collectSimulationSourceGraph(
+          SIMULATION_ENTRIES,
+          projectRoot,
+          {
+            ...host,
+            readFile: (file) => (file === target ? Promise.resolve(changed) : host.readFile(file)),
+          },
+          { exclude: SIMULATION_EXCLUSIONS },
+        );
+        const fingerprint = fingerprintSimulationSourceMap(graph.sources);
+        if (key === 'gravity') {
+          expect(fingerprint).toBe(original);
+          expect(graph.sources.has('mobgen/mob/ragdoll.json')).toBe(false);
+        } else {
+          expect(fingerprint).not.toBe(original);
+        }
+      }),
+    );
+  });
+
   it('fingerprints pure mobgen modules imported by the simulation', async () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('mobgen/mob/shamblerFigure.ts')).toBe(true);

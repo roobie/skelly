@@ -1,5 +1,3 @@
-// biome-ignore lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
-import ragdoll from '@mobgen/mob/ragdoll.json' with { type: 'json' };
 import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
@@ -9,6 +7,7 @@ import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
 import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
+import { sweepFromUrl } from '../render/ragdollConfig.ts';
 import type { StartupContent } from './bundledContent.ts';
 
 export const DEFAULT_RADIUS_M = 96;
@@ -33,8 +32,6 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (`?debug=1`). */
   debug: boolean;
-  /** Debug-only resting-pose selection for inspecting deaths (`?deathPose=<pose id>`). */
-  debugDeathPose?: string;
   ragdollSweep?: number;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
@@ -247,16 +244,6 @@ export const applyWeatheringConfig = (
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
  * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
  */
-const sweepFromUrl = (params: URLSearchParams, config: GameConfig): Partial<GameConfig> => {
-  if (config.debug && config.site === 'testHouse' && params.has('ragdollSweep')) {
-    const seed = Number(params.get('ragdollSweep'));
-    if (Number.isSafeInteger(seed)) {
-      return { ragdollSweep: seed, debugStart: { ...ragdoll.sweep.viewer } };
-    }
-  }
-  return {};
-};
-
 export const configFromUrl = (params: URLSearchParams, content: StartupContent): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(
@@ -271,9 +258,6 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
   Object.assign(config, sweepFromUrl(params, config));
-  if (config.debug && params.has('deathPose')) {
-    config.debugDeathPose = params.get('deathPose')!;
-  }
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);
   if (weatheringSplit !== undefined) {

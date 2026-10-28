@@ -98,7 +98,9 @@ export interface Actor {
   readonly colorByBone: Group;
   readonly skeleton: Group;
   /** Applies a pose (from gait.ts, or the identity rest pose) to every part above. */
+  readonly pose: Pose;
   readonly applyPose: (pose: Pose) => void;
+  readonly applyTransforms: (transforms: ReadonlyMap<string, Transform>) => void;
   /** Dismemberment preview: hides every flesh/colour-by-bone mesh whose bone id is in `hidden` (see
    * mob/dismember.ts's severedBoneSet), shows every other one. Each bone here is its own Mesh (unlike
    * deadvox's crowd-shader renderer, which shares one InstancedMesh per variant), so hiding one is a plain
@@ -191,8 +193,7 @@ export const buildActor = (realized: Realized, voxelSize: number): Actor => {
   skeleton.add(lines, dots);
 
   const dotMatrix = new Matrix4();
-  const applyPose = (pose: Pose): void => {
-    const transforms = boneTransforms(body.bones, pose);
+  const applyTransforms = (transforms: ReadonlyMap<string, Transform>): void => {
     for (const [boneIndex, bone] of body.bones.entries()) {
       const t = transforms.get(bone.id)!;
       const m = matrixOf(t);
@@ -235,7 +236,23 @@ export const buildActor = (realized: Realized, voxelSize: number): Actor => {
     }
   };
 
-  return { root, flesh, colorByBone, skeleton, applyPose, setSeveredBones };
+  let currentPose: Pose = { root: [0, 0, 0], rotations: {} };
+  const applyPose = (pose: Pose): void => {
+    currentPose = pose;
+    applyTransforms(boneTransforms(body.bones, pose));
+  };
+  return {
+    root,
+    flesh,
+    colorByBone,
+    skeleton,
+    get pose() {
+      return currentPose;
+    },
+    applyPose,
+    applyTransforms,
+    setSeveredBones,
+  };
 };
 
 export const disposeActor = (actor: Actor): void => {

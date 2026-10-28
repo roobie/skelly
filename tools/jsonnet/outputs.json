@@ -477,10 +477,6 @@
       "output": "packages/mobgen/src/mob/attackClips.json"
     },
     {
-      "source": "packages/mobgen/src/mob/deathPoses.jsonnet",
-      "output": "packages/mobgen/src/mob/deathPoses.json"
-    },
-    {
       "source": "packages/mobgen/src/mob/materialTemplates.jsonnet",
       "output": "packages/mobgen/src/mob/materialTemplates.json"
     },

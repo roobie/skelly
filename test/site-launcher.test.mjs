@@ -55,7 +55,6 @@ const authoredLayoutIds = () =>
     .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
-  deathPose: 'A debug-only corpse comparison override, not a launcher gameplay option.',
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
   optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
@@ -237,6 +236,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const supported = paramsReadBy([
       'packages/deadvox/src/main.ts',
       'packages/deadvox/src/game/config.ts',
+      'packages/deadvox/src/render/ragdollConfig.ts',
       'packages/deadvox/src/core/weatheringUrl.ts',
       'packages/deadvox/src/bench/run.ts',
       'packages/deadvox/src/bench/shamblers.ts',

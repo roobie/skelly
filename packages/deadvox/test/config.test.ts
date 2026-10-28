@@ -44,9 +44,17 @@ it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=unknown')).debugHandedness).toBeUndefined();
 });
 
-it('restricts corpse pose overrides to debug URL configuration', () => {
-  expect(configFromUrl(new URLSearchParams('debug=1&deathPose=fixture-pose')).debugDeathPose).toBe('fixture-pose');
-  expect(configFromUrl(new URLSearchParams('deathPose=fixture-pose')).debugDeathPose).toBeUndefined();
+it('restricts ragdoll staging and viewer placement to debug test-house URLs', () => {
+  const selected = configFromUrl(new URLSearchParams('debug=1&site=testHouse&ragdollSweep=19'));
+  expect(selected.ragdollSweep).toBe(19);
+  expect(selected.debugStart).toBeDefined();
+  for (const query of [
+    'site=testHouse&ragdollSweep=19',
+    'debug=1&ragdollSweep=19',
+    'debug=1&site=testHouse&ragdollSweep=no',
+  ]) {
+    expect(configFromUrl(new URLSearchParams(query)).ragdollSweep).toBeUndefined();
+  }
 });
 
 it('copies site-selected weathering into replay and resumed configurations', () => {

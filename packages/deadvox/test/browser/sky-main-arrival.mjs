@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
-import { dirname, posix, relative as relativePath, resolve } from 'node:path';
+import { dirname, isAbsolute, posix, relative as relativePath, resolve } from 'node:path';
 import process from 'node:process';
 import { createServer } from 'vite';
 
@@ -235,6 +235,12 @@ export function removedModuleExports(git, base) {
     return owner?.base === undefined ? null : `${owner.base}/src/${path.slice(owner.prefix.length)}`;
   };
   const baseCopy = (id) => git(['show', `${base}:${basePathOf(id)}`]);
+  const baseFiles = new Set(git(['ls-tree', '-r', '--name-only', base]).split('\n'));
+  const deletedFrom = (id) => {
+    const [path] = id.split('?');
+    const basePath = basePathOf(path);
+    return basePath !== null && baseFiles.has(basePath) && !existsSync(path);
+  };
   const removed = new Map();
   const removedFrom = (id) => {
     const [path] = id.split('?');
@@ -252,7 +258,44 @@ export function removedModuleExports(git, base) {
         .filter(([, names]) => names.length > 0)
         .map(([path, names]) => [relativePath(repository, path), names]),
     );
-  return { removedFrom, baseCopy, shimmed };
+  return { removedFrom, baseCopy, deletedFrom, shimmed };
+}
+
+export function baseOnlyWorkspacePlugin({ deletedFrom, baseCopy }) {
+  let extensions = [];
+  return {
+    name: 'main-first-mesh-deleted-workspace-files',
+    enforce: 'pre',
+    configResolved(config) {
+      ({ extensions } = config.resolve);
+    },
+    async resolveId(id, importer) {
+      const [path] = id.split('?');
+      const query = id.slice(path.length);
+      let local = null;
+      if (isAbsolute(path)) {
+        local = path;
+      } else if (importer && path.startsWith('.')) {
+        local = resolve(dirname(importer.split('?')[0]), path);
+      }
+      if (local === null) {
+        return null;
+      }
+      const candidates = [
+        local,
+        ...extensions.map((ext) => `${local}${ext}`),
+        ...extensions.map((ext) => `${local}/index${ext}`),
+      ];
+      const deleted = candidates.find(deletedFrom);
+      if (deleted === undefined || (await this.resolve(id, importer, { skipSelf: true }))) {
+        return null;
+      }
+      return `${deleted}${query}`;
+    },
+    load(id) {
+      return deletedFrom(id) ? baseCopy(id) : null;
+    },
+  };
 }
 
 /** A branch module beside the overlays links against their base copies, so it may import only what they export. */
@@ -345,19 +388,17 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
   }
   const overlays = new Map(sourceOverlays.map((path) => [path, showBase(path)]));
   assertOverlayBoundary(root, overlays, branchPaths);
-  // A main startup source may import a file the branch deleted; serve that file from the base
-  // too, so the overlay never fails to resolve a module main still owns.
-  const baseOnlyOverlay = (relative) => relative !== null && basePaths.has(relative) && !branchPaths.has(relative);
   // A main source may import an export the branch removed from a module both keep. That module stays the
   // branch's core owner: a shim re-exports it and adds only the removed names, from main's copy of the module.
-  const { removedFrom, baseCopy, shimmed: shimmedExports } = removedModuleExports(git, base);
+  const modules = removedModuleExports(git, base);
+  const { removedFrom, baseCopy, deletedFrom, shimmed: shimmedExports } = modules;
   const servedFromBase = (path) => {
     const relative = path === undefined ? null : mainOverlayPath(root, path);
-    return overlays.has(relative) || baseOnlyOverlay(relative);
+    return overlays.has(relative);
   };
   const mainImporter = (importer) => {
     const relative = mainOverlayPath(root, importer);
-    return importer.includes(BASE_COPY) || overlays.has(relative) || baseOnlyOverlay(relative);
+    return importer.includes(BASE_COPY) || overlays.has(relative) || deletedFrom(importer);
   };
   const mainHtml = git(['show', `${base}:${basePackage}/index.html`]);
   const appliedSources = new Set();
@@ -367,6 +408,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
     logLevel: 'error',
     server: { host: '127.0.0.1', port: 0 },
     plugins: [
+      baseOnlyWorkspacePlugin(modules),
       {
         name: 'main-first-mesh-source-overlay',
         enforce: 'pre',
@@ -398,7 +440,7 @@ export async function measureMainFirstMesh(browser, { root, artifacts, fixtureTr
           if (overlays.has(relative)) {
             return overlays.get(relative);
           }
-          return baseOnlyOverlay(relative) ? showBase(relative) : null;
+          return null;
         },
         transformIndexHtml: {
           order: 'pre',

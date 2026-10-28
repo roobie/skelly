@@ -19,6 +19,19 @@ import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 
 export const ragdollContent = content;
+type Motion = typeof content.motion;
+export function ragdollMotion(
+  base: Motion,
+  kind: Partial<Motion>,
+  override: Partial<Motion>,
+  scale: Partial<Motion>,
+): Motion {
+  const motion = { ...base, ...kind, ...override };
+  for (const key of Object.keys(scale) as (keyof Motion)[]) {
+    motion[key] *= scale[key]!;
+  }
+  return motion;
+}
 const vector = (v: Vec3) => ({ x: v[0], y: v[1], z: v[2] });
 const array = (v: { x: number; y: number; z: number }): [number, number, number] => [v.x, v.y, v.z];
 const scaled = (v: Vec3, factor: number): Vec3 => [v[0] * factor, v[1] * factor, v[2] * factor];
@@ -136,6 +149,7 @@ interface RagdollSpawn {
   reach?: number;
   scale?: number;
   motion?: Partial<typeof content.motion>;
+  motionScale?: Partial<typeof content.motion>;
 }
 export class RagdollWorld {
   readonly ready: Promise<void>;
@@ -143,6 +157,7 @@ export class RagdollWorld {
   private world: InstanceType<typeof RAPIER.World> | undefined;
   private readonly corpses = new Set<Ragdoll>();
   private readonly debris = new Map<Ragdoll, { body: RigidBody; ground: RigidWorld; cell: string }>();
+  private readonly terrain = new Map<Ragdoll, { ground: RigidWorld; cell: string }>();
   private readonly cells = new Map<string, { collider: InstanceType<typeof RAPIER.Collider>; users: number }>();
   private remainder = 0;
   private disposed = false;
@@ -157,7 +172,7 @@ export class RagdollWorld {
       })
       .catch((error: unknown) => {
         // biome-ignore lint/suspicious/noConsole: a failed presentation solver must not disappear without diagnostic evidence.
-        console.warn('Ragdoll physics initialization failed; subsequent corpses will use the authored fall.', error);
+        console.warn('Ragdoll physics initialization failed; corpse physics is unavailable.', error);
         this.failed = true;
       });
   }
@@ -210,18 +225,24 @@ export class RagdollWorld {
       reach,
       scale = 1,
       motion: override,
+      motionScale,
     }: RagdollSpawn,
   ): void {
     const world = this.world!;
-    const groups = ragdollGroups(realized.body.bones, corpse.excluded);
-    const motion = {
-      ...content.motion,
-      ...(content.kindMotion as Record<string, Partial<typeof content.motion>>)[model],
-      ...override,
-    };
+    const groups = ragdollGroups(
+      realized.body.bones,
+      corpse.excluded,
+      (content.modelGroups as Record<string, typeof content.groups>)[model] ?? content.groups,
+    );
+    const motion = ragdollMotion(
+      content.motion,
+      (content.kindMotion as Record<string, Partial<Motion>>)[model] ?? {},
+      override ?? {},
+      motionScale ?? {},
+    );
     const directed = launch && Math.hypot(...launch) > 0;
     const weight = directed ? motion.hitDirectionWeight : 0;
-    const spread = (hash3(seed, 0, 0, 0) - 0.5) * motion.seedSpread * (1 - weight);
+    const spread = (hash3(seed, 0, 0, 0) - 0.5) * motion.seedSpread;
     const fallback = mulMV(rotY((yaw * 180) / Math.PI), [0, 0, -direction]);
     const blend = (axis: number) =>
       fallback[axis]! * (1 - weight) + (directed ? (launch[axis]! / Math.hypot(...launch)) * weight : 0);
@@ -310,6 +331,7 @@ export class RagdollWorld {
         ),
       );
     }
+    this.terrain.set(corpse, { ground, cell: this.cellAt(position, ground.blockSize) });
     this.buildGround(corpse, position, ground);
   }
 
@@ -432,21 +454,41 @@ export class RagdollWorld {
       steps += 1;
       for (const corpse of this.corpses) {
         this.finishStep(corpse);
-        const target = this.debris.get(corpse);
-        const [part] = corpse.parts;
-        if (target && part) {
-          target.body.center = array(part.body.translation());
-          const q = part.body.rotation();
-          target.body.orientation = [q.x, q.y, q.z, q.w];
-          target.body.velocity = array(part.body.linvel());
-          target.body.asleep = corpse.settled;
-          const cell = this.cellAt(target.body.center, target.ground.blockSize);
-          if (cell !== target.cell && !corpse.settled) {
-            target.cell = cell;
-            this.buildGround(corpse, target.body.center, target.ground);
-          }
-        }
+        this.refreshCorpseTerrain(corpse);
+        this.syncRigid(corpse);
       }
+    }
+  }
+
+  private refreshCorpseTerrain(corpse: Ragdoll): void {
+    const terrain = this.terrain.get(corpse);
+    const center = corpse.parts[0]?.body.translation();
+    if (!(terrain && center) || corpse.settled) {
+      return;
+    }
+    const position = array(center);
+    const cell = this.cellAt(position, terrain.ground.blockSize);
+    if (cell !== terrain.cell) {
+      terrain.cell = cell;
+      this.buildGround(corpse, position, terrain.ground);
+    }
+  }
+
+  private syncRigid(corpse: Ragdoll): void {
+    const target = this.debris.get(corpse);
+    const [part] = corpse.parts;
+    if (!(target && part)) {
+      return;
+    }
+    target.body.center = array(part.body.translation());
+    const q = part.body.rotation();
+    target.body.orientation = [q.x, q.y, q.z, q.w];
+    target.body.velocity = array(part.body.linvel());
+    target.body.asleep = corpse.settled;
+    const cell = this.cellAt(target.body.center, target.ground.blockSize);
+    if (cell !== target.cell && !corpse.settled) {
+      target.cell = cell;
+      this.buildGround(corpse, target.body.center, target.ground);
     }
   }
 
@@ -534,6 +576,9 @@ export class RagdollWorld {
   }
 
   remove(corpse: Ragdoll): void {
+    if (corpse.removed) {
+      return;
+    }
     corpse.removed = true;
     for (const part of corpse.parts) {
       this.world?.removeRigidBody(part.body);
@@ -546,6 +591,7 @@ export class RagdollWorld {
     }
     this.corpses.delete(corpse);
     this.debris.delete(corpse);
+    this.terrain.delete(corpse);
   }
 
   dispose(): void {
@@ -555,5 +601,6 @@ export class RagdollWorld {
     this.corpses.clear();
     this.cells.clear();
     this.debris.clear();
+    this.terrain.clear();
   }
 }

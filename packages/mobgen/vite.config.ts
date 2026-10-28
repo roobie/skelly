@@ -10,6 +10,7 @@ const sweepTimeout = process.env.MOBGEN_SWEEPS === '1' ? { testTimeout: 0, hookT
 
 export default defineConfig({
   base: './',
+  resolve: { alias: { '@mobgen': fileURLToPath(new URL('./src', import.meta.url)) } },
   // biome-ignore lint/style/noProcessEnv: only the Pages deploy opts into production analytics.
   plugins: [pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1')],
   build: {

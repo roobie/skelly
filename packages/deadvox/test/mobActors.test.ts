@@ -15,10 +15,9 @@ import {
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
-import { bodyRestExtents, corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
+import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
-import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
@@ -514,7 +513,12 @@ describe('MobActorMeshes', () => {
       store.remove(id);
       renderer.sync(store, 1 / 60);
       upload();
-      renderer.sync(store, CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + DEATH_FALL_DURATION);
+      renderer.sync(
+        store,
+        CORPSE_LIFECYCLE.lieSimSeconds +
+          CORPSE_LIFECYCLE.sinkSimSeconds +
+          ragdollContent.stepBudget * ragdollContent.timestep,
+      );
       upload();
       const replacement = store.add(makeZombie([8, 0, -5]));
       renderer.sync(store, 1 / 60);
@@ -1253,36 +1257,6 @@ describe('MobActorMeshes reactions', () => {
       renderer.dispose();
     }
   });
-  it.for([
-    { label: 'native crawler', type: CRAWLER, severed: [] },
-    { label: 'leg-loss shambler', type: SHAMBLER, severed: ['thigh.L'] },
-  ])('passes $label crawling posture into its corpse fall', ({ type, severed }) => {
-    const renderer = new MobActorMeshes(0.5, 2, {
-      zombies: registry.zombies,
-      poolSize: 1,
-      deathPoseId: 'backward',
-    });
-    try {
-      const store = new MapEntityStore<Zombie>();
-      const zombie = makeZombie([0, 0, 0], [0, 0, -1], severed, { type });
-      const id = store.add(zombie);
-      renderer.sync(store, 0, 1);
-      renderer.zombieDied(id, zombie);
-      store.remove(id);
-      renderer.sync(store, DEATH_FALL_DURATION / 2, 1);
-      const { realized, genome } = zombieFigure(type, zombie.figureSeed);
-      const matrix = renderer.boneMatrix(id, 'chest')!;
-      const extent = bodyRestExtents(realized.body.bones, realized.voxels).get('chest')!;
-      const lowest = Math.min(
-        ...corners(extent).map(([x, y, z]) => matrix[4]! * x + matrix[5]! * y + matrix[6]! * z + matrix[7]!),
-      );
-      expect(lowest).toBeGreaterThanOrEqual(0);
-      expect(lowest).toBeLessThan(genome.params.height! * 0.15);
-    } finally {
-      renderer.dispose();
-    }
-  });
-
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', async () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
@@ -1431,7 +1405,43 @@ describe('MobActorMeshes reactions', () => {
     },
   );
 
-  it('retains an authored downed body after physics initialization fails', async () => {
+  it('places a second cut on the drawn falling body', async () => {
+    const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
+    const store = new MapEntityStore<Zombie>();
+    const zombie = makeZombie([0, 0, 0]);
+    const id = store.add(zombie);
+    try {
+      renderer.sync(store);
+      const crawling = makeZombie([0, 0, 0], [0, 0, -1], ['thigh.L']);
+      store.replace(id, crawling);
+      renderer.sync(store);
+      await renderer.whenCorpsesReady();
+      renderer.sync(store, ragdollContent.timestep);
+      renderer.sync(store, ragdollContent.timestep);
+      const figure = zombieFigure(crawling.type, crawling.figureSeed).realized;
+      const before = renderer.boneMatrix(id, 'hand.L')!;
+      renderer.zombieSevered(id, 'hand.L', undefined, crawling);
+      const debris = [
+        ...(
+          renderer as unknown as {
+            debris: Map<string, { sourceTransforms: Map<number, { t: Vec3; r: readonly number[] }> }>;
+          }
+        ).debris.values(),
+      ][0]!;
+      const hand = figure.body.bones.findIndex((bone) => bone.id === 'hand.L');
+      const source = debris.sourceTransforms.get(hand)!;
+      source.t.forEach((value, axis) => {
+        expect(value).toBeCloseTo(before[axis * 4 + 3]!, 5);
+      });
+      source.r.forEach((value, axis) => {
+        expect(value).toBeCloseTo(before[Math.floor(axis / 3) * 4 + (axis % 3)]!, 5);
+      });
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('retains the frozen downed body after physics initialization fails', async () => {
     await initializeRagdollPhysics();
     const failure = new Error('Physics world unavailable');
     const world = vi.spyOn(RAPIER.World.prototype, 'timestep', 'set').mockImplementationOnce(() => {
@@ -1452,9 +1462,9 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 0, 1);
       const upright = renderer.boneMatrix(id, 'pelvis');
       expect(upright).toBeDefined();
-      renderer.sync(store, DEATH_FALL_DURATION, 1);
+      renderer.sync(store, ragdollContent.stepBudget * ragdollContent.timestep, 1);
       expect(renderer.isTracked(id)).toBe(true);
-      expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(upright);
+      expect(renderer.boneMatrix(id, 'pelvis')).toEqual(upright);
     } finally {
       renderer.dispose();
       world.mockRestore();
@@ -1490,7 +1500,10 @@ describe('MobActorMeshes reactions', () => {
       expect(lying).toBeDefined();
       renderer.sync(
         store,
-        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        ragdollContent.stepBudget * ragdollContent.timestep +
+          CORPSE_LIFECYCLE.lieSimSeconds +
+          CORPSE_LIFECYCLE.sinkSimSeconds +
+          1,
         1,
       );
       expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
@@ -1524,7 +1537,10 @@ describe('MobActorMeshes reactions', () => {
 
       renderer.sync(
         store,
-        DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
+        ragdollContent.stepBudget * ragdollContent.timestep +
+          CORPSE_LIFECYCLE.lieSimSeconds +
+          CORPSE_LIFECYCLE.sinkSimSeconds +
+          1,
         1,
       );
       expect(renderer.isTracked(id)).toBe(false);
