@@ -262,6 +262,7 @@ export class ActorAnimator {
       emptyFists ||
       Boolean(
         readiness ||
+          pose?.guarding ||
           pose?.viewOrientation ||
           handling.grab ||
           handling.job ||
