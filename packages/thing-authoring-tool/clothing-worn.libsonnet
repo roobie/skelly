@@ -44,7 +44,7 @@ local rubber = { cloth: 'rubber-black', trim: 'paint-charcoal' };
     hoodieLevel('hem'),
     hoodieLevel('waist'),
     hoodieLevel('chest'),
-    prism('hood', 'cloth', 0.34, 0.63, 0.30, 0.18, 0.04, cz=-0.08),
+    prism('hood', 'cloth', 0.34, 0.63, 0.30, 0.10, 0.04, cz=-0.07),
     box('kangaroo-pocket', 'trim', [-0.15, 0.15, 0.12], [0.15, 0.27, 0.14]),
   ], hoodie),
   garment('worn_hoodie_upper', [prism('sleeve', 'cloth', -0.32, 0.025, 0.125, 0.13, 0.03)], hoodie),
