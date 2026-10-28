@@ -118,6 +118,54 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         frame: globalThis.primaryActionTest.frames,
       };
     });
+    await page.evaluate(() => {
+      globalThis.freeLookAltEdges = [];
+      for (const type of ['keydown', 'keyup']) {
+        globalThis.addEventListener(type, (event) => {
+          if (event.code === 'AltLeft') {
+            globalThis.freeLookAltEdges.push({ type, prevented: event.defaultPrevented, trusted: event.isTrusted });
+          }
+        });
+      }
+    });
+    await page.keyboard.down('w');
+    await page.keyboard.down('AltLeft');
+    await page.mouse.move(640, 360);
+    await page.mouse.move(700, 380);
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest.input.freeLooking && globalThis.primaryActionTest.input.freeLook.yaw !== 0,
+    );
+    const headLook = await page.evaluate(() => {
+      const { input, frames } = globalThis.primaryActionTest;
+      return { bodyYaw: input.yaw, viewYaw: input.viewYaw, frames };
+    });
+    assert.equal(headLook.bodyYaw, start.yaw, 'free look leaves ballistic and movement yaw with the body');
+    assert.notEqual(headLook.viewYaw, headLook.bodyYaw, 'free look turns the view');
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames >= frame + 3, headLook.frames);
+    await page.keyboard.up('AltLeft');
+    await page.keyboard.up('w');
+    assert.equal(
+      await page.evaluate(() => globalThis.primaryActionTest.input.intent().forward),
+      0,
+      'movement does not latch after W and Alt are released',
+    );
+    await page.waitForFunction(() => {
+      const { input } = globalThis.primaryActionTest;
+      return !input.freeLooking && input.viewYaw === input.yaw && input.viewPitch === input.pitch;
+    });
+    const altEdges = await page.evaluate(() => globalThis.freeLookAltEdges);
+    assert(
+      altEdges.some((event) => event.type === 'keydown'),
+      'Alt down reached play',
+    );
+    assert(
+      altEdges.some((event) => event.type === 'keyup'),
+      'Alt up reached play',
+    );
+    assert(
+      altEdges.every((event) => event.prevented && event.trusted),
+      'both trusted Alt edges are cancelled',
+    );
     await page.mouse.move(640, 360);
     await page.mouse.move(760, 410);
     await page.keyboard.down('w');
@@ -179,6 +227,10 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       return fetch(link.href).then((response) => response.text());
     });
     const cleanArtifact = JSON.parse(replayText);
+    assert(
+      cleanArtifact.frames.some((frame) => frame[6] !== 0),
+      'the recording includes independent head look',
+    );
     assert(cleanArtifact.generatedColumns.length > 0, 'the clean recording captures its ready terrain');
     assert(
       cleanArtifact.actions.some(
@@ -208,7 +260,14 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       buffer: Buffer.from(replayText),
     });
     await replayNavigation;
-    await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(
+      () => document.querySelector('#input-replay-status') || document.querySelector('#errors')?.textContent?.trim(),
+    );
+    assert.equal(
+      await page.locator('#input-replay-status').count(),
+      1,
+      `Replay startup: ${await page.locator('#errors').textContent()}; page errors: ${JSON.stringify(pageErrors)}`,
+    );
     await page.waitForFunction(
       () =>
         ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),

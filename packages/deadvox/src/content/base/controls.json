@@ -17,6 +17,14 @@
       ]
     },
     {
+      "id": "view.free-look",
+      "keys": [
+        {
+          "code": "AltLeft"
+        }
+      ]
+    },
+    {
       "id": "movement.forward",
       "keys": [
         {

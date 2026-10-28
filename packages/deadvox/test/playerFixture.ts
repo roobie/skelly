@@ -35,6 +35,7 @@ export const PLAYER: PlayerDef = {
   aim: {
     moveYawPerSpeed: 0.0045,
     lookSensitivityRadiansPerPixel: 0.0022,
+    freeLook: { yawLimitRadians: 1, pitchLimitRadians: 0.5, returnRadiansPerRealSecond: 4 },
     lookLagPerRadian: 0.035,
     lookSettleSimSeconds: simSeconds(0.22),
     recoilRecoverySimSeconds: simSeconds(0.34),

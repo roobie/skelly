@@ -313,6 +313,7 @@ export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: fal
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
 export interface PlayerInputSample {
+  readonly freeLooking?: boolean;
   readonly active: boolean;
   readonly inputLocked: boolean;
   readonly intent: MoveIntent;
@@ -324,6 +325,7 @@ export interface PlayerInputSample {
 }
 
 export interface SessionControls {
+  freeLooking?: () => boolean;
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
@@ -2017,6 +2019,7 @@ export const createSession = (options: SessionOptions) => {
 
   const preparePlayerStep = (dt: number, time: number) => {
     const live: PlayerInputSample = {
+      freeLooking: controls.freeLooking?.() ?? false,
       active: controls.active(),
       inputLocked: compression.locksInput,
       intent: controls.intent(),
@@ -2056,7 +2059,13 @@ export const createSession = (options: SessionOptions) => {
       }),
     );
     // Losing control or another hands action drops a held charge rather than releasing a free strike.
-    if (!moving || handling || throwCharge.active || ladderHold.refusal(dominantSide(character)) !== undefined) {
+    if (
+      !moving ||
+      handling ||
+      playerInput.freeLooking ||
+      throwCharge.active ||
+      ladderHold.refusal(dominantSide(character)) !== undefined
+    ) {
       playerCombat.cancelCharge();
     }
     playerCombat.tick(dt, heldItemUids(), {

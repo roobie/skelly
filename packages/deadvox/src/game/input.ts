@@ -1,5 +1,6 @@
 // Pointer-lock mouse look; keyboard intents come from the shared semantic owner.
 
+import { FreeLook, type FreeLookTuning } from './freeLook.ts';
 import { keyboardInput } from './inputBindings.ts';
 import type { MoveIntent, StanceToggle } from './player.ts';
 import { ReloadInput } from './reloadInput.ts';
@@ -43,6 +44,8 @@ export function requestInputLock(target: HTMLElement): Promise<void> {
 
 export class Input {
   readonly reload = new ReloadInput();
+  readonly freeLook = new FreeLook();
+  private freeLookInput: { tuning: FreeLookTuning; ads: () => boolean } | undefined;
   yaw = 0;
   pitch = 0;
   walking = false;
@@ -115,6 +118,11 @@ export class Input {
         this.cancel();
       }
     });
+    document.addEventListener('pointerlockchange', () => {
+      if (!this.locked && this.cancelOnBlurAllowed()) {
+        this.freeLook.clear();
+      }
+    });
     document.addEventListener('mousemove', (event) => {
       if (!(this.viewerInputAllowed() && this.locked && !this.menuPointer)) {
         return;
@@ -130,11 +138,17 @@ export class Input {
       if (!(Number.isFinite(sensitivity) && sensitivity > 0)) {
         throw new Error('Invalid look sensitivity');
       }
-      this.yaw -= event.movementX * sensitivity;
-      this.pitch = adjustLookPitch(this.pitch, -event.movementY * sensitivity).pitch;
+      this.advanceFreeLook(0);
+      if (this.freeLook.active && this.freeLookInput) {
+        this.freeLook.turn(-event.movementX * sensitivity, -event.movementY * sensitivity, this.freeLookInput.tuning);
+      } else {
+        this.yaw -= event.movementX * sensitivity;
+        this.pitch = adjustLookPitch(this.pitch, -event.movementY * sensitivity).pitch;
+      }
     });
   }
   cancel(preservePointer = false): void {
+    this.freeLook.clear();
     this.reload.cancel();
     this.rightMousePressed = false;
     this.rightMouseSuppressed = false;
@@ -146,6 +160,29 @@ export class Input {
     this.dominantUsePressed = false;
     this.offUsePressed = false;
     this.stanceTogglePressed = undefined;
+  }
+  setFreeLook(tuning: FreeLookTuning, ads: () => boolean): void {
+    this.freeLookInput = { tuning, ads };
+  }
+  advanceFreeLook(dt: number): void {
+    if (this.freeLookInput && this.viewerInputAllowed()) {
+      this.freeLook.update(
+        dt,
+        this.locked && !this.menuPointer && keyboardInput.held('view.free-look'),
+        this.freeLookInput.ads(),
+        this.freeLookInput.tuning,
+      );
+    }
+  }
+  get freeLooking(): boolean {
+    this.advanceFreeLook(0);
+    return this.freeLook.active;
+  }
+  get viewYaw(): number {
+    return this.yaw + this.freeLook.yaw;
+  }
+  get viewPitch(): number {
+    return adjustLookPitch(this.pitch, this.freeLook.pitch).pitch;
   }
   setMouseLookOverride(override: (movementX: number, movementY: number) => boolean): void {
     this.mouseLookOverride = override;

@@ -34,7 +34,7 @@ import {
 } from '../src/game/inputReplay.ts';
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from '../src/game/inputReplayActions.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
-import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import { inputReplayStatus } from '../src/game/play.ts';
 import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import {
@@ -78,6 +78,9 @@ const replaySample = {
   },
   yaw: 0.4,
   pitch: -0.2,
+  headYaw: 0,
+  headPitch: 0,
+  freeLooking: false,
   walking: false,
   descending: false,
   worldReady: true,
@@ -706,6 +709,23 @@ const createRifleReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
+  it('records head offsets and held free look separately from ballistic body look', () => {
+    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
+    recorder.recordTick({ ...replaySample, headYaw: 0.3, headPitch: -0.1, freeLooking: true });
+    recorder.recordTick({ ...replaySample, headYaw: 0.1, headPitch: 0, freeLooking: false });
+    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
+    const look = { yaw: 0, pitch: 0, freeLook: { yaw: 0, pitch: 0, active: false } };
+    const held = player.next()!;
+    applyReplayLook(look, held);
+    expect(look.yaw).toBe(replaySample.yaw);
+    expect(look.pitch).toBe(replaySample.pitch);
+    expect(look.freeLook).toEqual({ yaw: held.headYaw, pitch: held.headPitch, active: true });
+    const returning = player.next()!;
+    applyReplayLook(look, returning);
+    expect(look.yaw).toBe(held.yaw);
+    expect(look.freeLook.active).toBe(false);
+    expect(Math.abs(look.freeLook.yaw)).toBeLessThan(Math.abs(held.headYaw!));
+  });
   it('records every context named by an input binding', () => {
     const contexts = [...new Set(INPUT_BINDINGS.flatMap(({ contexts: bindingContexts }) => bindingContexts))];
     const gate = INPUT_BINDINGS.find(({ id }) => id === 'debug.gate')!;
@@ -951,7 +971,7 @@ describe('input replay', () => {
   });
 
   it('joins adjacent recording windows and offsets semantic actions from the earlier start save', () => {
-    const frame = (yaw: number) => [yaw, 0, 0, 0, 1, 1] as const;
+    const frame = (yaw: number) => [yaw, 0, 0, 0, 1, 1, 0, 0] as const;
     const action = (tick: number) => ({
       tick,
       action: 'movement.walk-toggle',
@@ -1039,7 +1059,7 @@ describe('input replay', () => {
   });
 
   it('preserves ordered tick-zero column effects when joining recording windows', () => {
-    const frame = [0, 0, 0, 0, 1, 1] as const;
+    const frame = [0, 0, 0, 0, 1, 1, 0, 0] as const;
     const joined = joinInputReplayWindows(
       { frames: [frame], actions: [], generatedColumns: [], columnChanges: [] },
       {
@@ -1060,7 +1080,7 @@ describe('input replay', () => {
   });
 
   it('does not duplicate an explicit tick-zero load with a reconstructed window seam', () => {
-    const frame = [0, 0, 0, 0, 1, 1] as const;
+    const frame = [0, 0, 0, 0, 1, 1, 0, 0] as const;
     const joined = joinInputReplayWindows(
       { frames: [frame], actions: [], generatedColumns: [], columnChanges: [] },
       {
@@ -1493,7 +1513,7 @@ describe('input replay', () => {
     const artifact = await encodeInputReplay(
       start,
       {
-        frames: [[0, 0, 0, 0, 1, 1]],
+        frames: [[0, 0, 0, 0, 1, 1, 0, 0]],
         actions: [
           {
             tick: 0,
@@ -2413,7 +2433,7 @@ describe('input replay', () => {
       version: incompatibleVersion,
     });
     const artifact = encodeFixtureReplay(startSave, {
-      frames: [[0, 0, 0, 0, 1, 1]],
+      frames: [[0, 0, 0, 0, 1, 1, 0, 0]],
       actions: [],
       generatedColumns: [],
       columnChanges: [],

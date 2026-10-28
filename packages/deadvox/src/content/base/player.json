@@ -2,6 +2,11 @@
   "player": [
     {
       "aim": {
+        "freeLook": {
+          "pitchLimitRadians": 0.65000000000000002,
+          "returnRadiansPerRealSecond": 5,
+          "yawLimitRadians": 1.3999999999999999
+        },
         "lookLagPerRadian": 0.035000000000000003,
         "lookSensitivityRadiansPerPixel": 0.0022000000000000001,
         "lookSettleSimSeconds": 0.22,

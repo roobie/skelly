@@ -102,6 +102,7 @@ export const inventoryTabForAction = (action: string) =>
 const INPUT_ACTIONS: readonly Action[] = [
   row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, 'held-state', { device: 'pointer' }),
   row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, 'press', { device: 'pointer' }),
+  row('view.free-look', 'Free look', world, 'held-state'),
   row('movement.forward', 'Move forward', movingWhileReading, 'held-state'),
   row('movement.back', 'Move backward', movingWhileReading, 'held-state'),
   row('movement.left', 'Move left', movingWhileReading, 'held-state'),
@@ -341,7 +342,7 @@ export const chordIssue = (chord: Chord): string | undefined => {
     return native.description;
   }
   const refused = REFUSED_MODIFIERS.find(
-    (modifier) => chord.modifier === modifier || modifierCodes[chord.code] === modifier,
+    (modifier) => chord.modifier === modifier || (modifier !== 'alt' && modifierCodes[chord.code] === modifier),
   );
   if (refused) {
     return modifierRefusal(refused);
@@ -749,7 +750,9 @@ const flags: Readonly<Record<Modifier, keyof Pick<KeyboardEvent, 'shiftKey' | 'a
 };
 export const capturedChord = (event: KeyEvent): Chord | string => {
   const refused = REFUSED_MODIFIERS.find(
-    (modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier,
+    (modifier) =>
+      (modifier !== 'alt' && modifierCodes[event.code] === modifier) ||
+      (event[flags[modifier]] && modifierCodes[event.code] !== modifier),
   );
   if (refused) {
     return modifierRefusal(refused);
@@ -818,10 +821,17 @@ export type InputCancellationReason =
   | 'context-change'
   | 'window-blur'
   | 'document-hidden'
-  | 'pointer-lock-lost';
+  | 'pointer-lock-lost'
+  | 'modifier-state-lost';
 
 export const shouldCancelInputForViewerFocus = (reason: InputCancellationReason, replaying: boolean): boolean =>
-  !(replaying && (reason === 'window-blur' || reason === 'document-hidden' || reason === 'pointer-lock-lost'));
+  !(
+    replaying &&
+    (reason === 'window-blur' ||
+      reason === 'document-hidden' ||
+      reason === 'pointer-lock-lost' ||
+      reason === 'modifier-state-lost')
+  );
 
 export class KeyboardInput {
   private readonly down = new Set<string>();
@@ -851,6 +861,7 @@ export class KeyboardInput {
   private traceCode(code: string): boolean {
     return (
       code.startsWith('Shift') ||
+      code.startsWith('Alt') ||
       (!code.startsWith('Mouse') &&
         this.registry.bindings.some(
           (binding) =>
@@ -1008,7 +1019,11 @@ export class KeyboardInput {
       this.captureModifier = undefined;
       this.capture?.(lone);
     }
-    return !REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier);
+    return !REFUSED_MODIFIERS.some(
+      (modifier) =>
+        (modifier !== 'alt' && modifierCodes[event.code] === modifier) ||
+        (event[flags[modifier]] && modifierCodes[event.code] !== modifier),
+    );
   }
   pressPointer(
     button: number,
@@ -1046,7 +1061,16 @@ export class KeyboardInput {
       this.escape();
       return false;
     }
-    if (this.blocked.has(event.code) || REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]])) {
+    const browserModifier = REFUSED_MODIFIERS.some((modifier) => {
+      if (modifier === 'alt') {
+        const owned = [...this.active].some(
+          ([code, action]) => modifierCodes[code] === modifier && isHeld(this.registry.binding(action)!),
+        );
+        return event.altKey && modifierCodes[event.code] !== 'alt' && !owned;
+      }
+      return event[flags[modifier]];
+    });
+    if (this.blocked.has(event.code) || browserModifier) {
       return this.traceDown(event, false, this.blocked.has(event.code) ? 'blocked' : 'browser-modifier');
     }
     const gate = this.held('debug.gate');
@@ -1105,8 +1129,8 @@ export class KeyboardInput {
       event.cancelable &&
       (this.context().context === 'play' || this.context().context === 'carrying') &&
       Boolean(document.pointerLockElement) &&
-      !modifierCodes[event.code] &&
-      (event.ctrlKey || event.metaKey || event.altKey) &&
+      ((!modifierCodes[event.code] && (event.ctrlKey || event.metaKey || event.altKey)) ||
+        modifierCodes[event.code] === 'alt') &&
       !editable(event.target) &&
       !this.capture
     );
@@ -1120,6 +1144,36 @@ export class KeyboardInput {
     this.down.clear();
     this.blocked.clear();
     this.active.clear();
+  }
+  private reconcileModifiers(event: {
+    readonly code?: string;
+    readonly altKey: boolean;
+    readonly getModifierState?: (key: string) => boolean;
+  }): void {
+    // A modifier's own edge can carry inconsistent flags. Only another input can contradict a missing release.
+    if (modifierCodes[event.code ?? ''] === 'alt') {
+      return;
+    }
+    const alt = event.getModifierState?.('Alt') ?? event.altKey;
+    if (!alt && [...this.down].some((code) => modifierCodes[code] === 'alt')) {
+      // Browser chrome may have swallowed movement releases as well; none of that ownership is safe to retain.
+      this.focusLost('modifier-state-lost');
+    }
+  }
+  reconcileFocus(): void {
+    if (this.down.size === 0) {
+      return;
+    }
+    if (document.hidden) {
+      this.focusLost('document-hidden');
+    } else if (!document.hasFocus()) {
+      this.focusLost('window-blur');
+    } else if (
+      (this.context().context === 'play' || this.context().context === 'carrying') &&
+      !document.pointerLockElement
+    ) {
+      this.focusLost('pointer-lock-lost');
+    }
   }
   windowBlurred(): void {
     this.recordTrace('blur');
@@ -1139,15 +1193,15 @@ export class KeyboardInput {
       target instanceof HTMLElement &&
       Boolean(target.closest('button,a,[role="button"],input[type="checkbox"]')?.closest('[data-debug-controls]'));
     const keyDown = (event: KeyboardEvent) => {
+      if (this.playingBrowserChord(event)) {
+        event.preventDefault();
+      }
+      this.reconcileModifiers(event);
       // DevTools shortcuts are cancelled outside play too, where the browser exposes a cancelable event.
       if (event.cancelable && chromeDevtoolsShortcut(event) && !editable(event.target) && !this.capture) {
         this.traceDown(event, false, 'browser-shortcut');
         event.preventDefault();
         return;
-      }
-      // The game owns the keyboard while playing. A modifier's own press stays a possible game key.
-      if (this.playingBrowserChord(event)) {
-        event.preventDefault();
       }
       if (debugControl(event.target) && nativeActivation(event) && !this.capture && !this.held('debug.gate')) {
         this.traceDown(event, false, 'native-control');
@@ -1160,7 +1214,14 @@ export class KeyboardInput {
         event.preventDefault();
       }
     };
-    const keyUp = (event: KeyboardEvent) => this.release(event);
+    const keyUp = (event: KeyboardEvent) => {
+      if (this.playingBrowserChord(event) || (this.capture && modifierCodes[event.code] === 'alt')) {
+        event.preventDefault();
+      }
+      this.reconcileModifiers(event);
+      this.release(event);
+    };
+    const pointerModifiers = (event: MouseEvent) => this.reconcileModifiers(event);
     // A press on a control (Cancel, Reset, another binding) operates that control rather than being captured.
     const pointerCapture = (event: MouseEvent) => {
       if (this.capture && !pageControl(this.pointerTarget(event))) {
@@ -1170,12 +1231,18 @@ export class KeyboardInput {
       }
     };
     const blur = () => this.windowBlurred();
-    const windowFocus = () => this.recordTrace('focus');
+    const windowFocus = () => {
+      this.recordTrace('focus');
+      // Chrome excursions can deliver the focus return without delivering the blur or releases.
+      if (this.down.size > 0) {
+        this.focusLost('window-blur');
+      }
+    };
     const visibility = () => this.visibilityChanged();
     const lock = () => {
       this.recordTrace('pointer-lock');
       if (!document.pointerLockElement) {
-        this.cancel(false, false, 'pointer-lock-lost');
+        this.focusLost('pointer-lock-lost');
       }
     };
     const focus = (event: FocusEvent) => {
@@ -1190,6 +1257,9 @@ export class KeyboardInput {
         event.stopImmediatePropagation();
       }
     };
+    for (const type of ['mousemove', 'mousedown', 'mouseup', 'wheel'] as const) {
+      globalThis.addEventListener(type, pointerModifiers, true);
+    }
     globalThis.addEventListener('keydown', keyDown, true);
     globalThis.addEventListener('keyup', keyUp, true);
     globalThis.addEventListener('mousedown', pointerCapture, true);
@@ -1200,6 +1270,9 @@ export class KeyboardInput {
     document.addEventListener('pointerlockchange', lock);
     document.addEventListener('focusin', focus);
     this.removeListeners = () => {
+      for (const type of ['mousemove', 'mousedown', 'mouseup', 'wheel'] as const) {
+        globalThis.removeEventListener(type, pointerModifiers, true);
+      }
       globalThis.removeEventListener('keydown', keyDown, true);
       globalThis.removeEventListener('keyup', keyUp, true);
       globalThis.removeEventListener('mousedown', pointerCapture, true);
