@@ -2918,8 +2918,8 @@
     {
       "category": "tool",
       "economy": {
-        "tiers": ["Tier1"],
-        "usage": ["Industrial"]
+        "tiers": [],
+        "usage": []
       },
       "id": "gauntlet_lab_entry_card",
       "key": {
@@ -2927,15 +2927,15 @@
       },
       "model": "gauntlet_lab_entry_card",
       "name": "Security keycard",
-      "notLoot": false,
+      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "tool",
       "economy": {
-        "tiers": ["Tier1"],
-        "usage": ["Residential"]
+        "tiers": [],
+        "usage": []
       },
       "id": "gauntlet_lab_administration_card",
       "key": {
@@ -2943,7 +2943,7 @@
       },
       "model": "folded_note",
       "name": "Clearance keycard",
-      "notLoot": false,
+      "notLoot": true,
       "size": [1, 1],
       "weight": 5,
       "workInProgress": false
@@ -2951,8 +2951,8 @@
     {
       "category": "tool",
       "economy": {
-        "tiers": ["Tier1"],
-        "usage": ["Medical"]
+        "tiers": [],
+        "usage": []
       },
       "id": "gauntlet_lab_research_card",
       "key": {
@@ -2960,7 +2960,7 @@
       },
       "model": "gauntlet_lab_entry_card",
       "name": "Research keycard",
-      "notLoot": false,
+      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },

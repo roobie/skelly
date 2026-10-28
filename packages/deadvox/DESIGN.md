@@ -1166,6 +1166,8 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
+A story item is `notLoot`, and in the two playtest scenarios every key is story because scenarios place story items rather than rolling them.
+
 An item's usages and tiers alone make it eligible for loot; no item gets a special
 admission rule. Ordinary loot admission needs no per-item exception, so the hunting
 rifle and its .308 ammunition carry the same usages and tiers as the revolver and its

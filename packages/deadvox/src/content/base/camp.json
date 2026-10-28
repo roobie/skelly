@@ -597,8 +597,8 @@
       "category": "tool",
       "description": "A key for the locked armoury container.",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "camp_armoury_key",
       "key": {
@@ -606,7 +606,7 @@
       },
       "model": "camp_armoury_key",
       "name": "Military armoury key",
-      "notLoot": false,
+      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
@@ -632,8 +632,8 @@
       "category": "tool",
       "description": "A key for the reserve safe in the officers' quarters.",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "camp_hq_safe_key",
       "key": {
@@ -641,20 +641,20 @@
       },
       "model": "camp_hq_safe_key",
       "name": "HQ reserve key",
-      "notLoot": false,
+      "notLoot": true,
       "size": [1, 1],
       "workInProgress": false
     },
     {
       "category": "note",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "camp_hq_safe_note",
       "model": "paper_sheet",
       "name": "Officer's note",
-      "notLoot": false,
+      "notLoot": true,
       "readable": {
         "text": "The reserve safe is locked. Its key is in the radio desk drawer downstairs. The suppressor in the safe is for the next patrol taking the north road.",
         "title": "Note to the relief officer"

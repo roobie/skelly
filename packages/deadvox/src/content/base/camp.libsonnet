@@ -36,6 +36,7 @@ local campWallRunCrouchHole = campWallRun + {
   "items": [
     {
       "id": "camp_armoury_key",
+      "notLoot": true,
       "name": "Military armoury key",
       "category": "tool",
       "size": [1, 1],
@@ -59,6 +60,7 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_hq_safe_key",
+      "notLoot": true,
       "name": "HQ reserve key",
       "category": "tool",
       "size": [1, 1],
@@ -68,6 +70,7 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_hq_safe_note",
+      "notLoot": true,
       "name": "Officer's note",
       "category": "note",
       "model": "paper_sheet",
