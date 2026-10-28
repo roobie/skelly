@@ -260,7 +260,7 @@ local roofDeck = [
   '######################################',
 ];
 local roof = [
-  '......................................', '....................XXXX..............', '....................XXXX..............', '......................................',
+  '......................................', '....................XXXXY.............', '....................XXXX..............', '......................................',
   '......................................', '......................................', '......................................', '......................................',
   '......................................', '......................................', '......................................', '......................................',
   '......................................', '......................................', '......................................', '......................................',
@@ -296,13 +296,9 @@ breach.breaking(shape.colliding({
     id: 'gauntlet_police_armoury_key', name: 'Police armoury key', category: 'tool',
     size: [1, 1], key: { lock: 'gauntlet_police_armoury' }, model: 'gauntlet_police_armoury_key',
     description: 'A small key stamped ARMOURY.',
-    economy: { usage: ['Police'], tiers: ['Tier1'] },
+    economy: { usage: [], tiers: [] },
     workInProgress: false,
-    notLoot: false,
-  }],
-  loot: [{
-    id: 'gauntlet_police_roof_key', rolls: [1, 1],
-    entries: [{ item: 'gauntlet_police_armoury_key', weight: 1 }],
+    notLoot: true,
   }],
   templates: [{
     id: 'rural_police_station',
@@ -340,7 +336,8 @@ breach.breaking(shape.colliding({
       i: { furniture: 'station_cleaning_sink', facing: 'w' },
       H: { furniture: 'station_coal_hatch' },
       j: { furniture: 'ladder', facing: 'e' },
-      X: { furniture: 'dead_officer_body', loot: 'gauntlet_police_roof_key' },
+      X: { furniture: 'dead_officer_body' },
+      Y: { groundLoot: { kind: 'fixed', items: [{ item: 'gauntlet_police_armoury_key' }] } },
     },
     layers: [foundation, furnished, low, standing, standingUpper, heads, lintel, roofDeck, roof, roofAir, roofAir, roofAir],
     access: {

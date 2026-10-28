@@ -228,8 +228,8 @@ local assembly = {
   amalgam: { marker: amalgamMarker, pit: pit, climb: { ladder: ladderAt, upper: [34, base + 1, 27], lower: [33, ladderAt[1], 30] } },
   fixedLoot: built.stock,
   items: [{
-    id: 'gauntlet_lab_special_notes', name: 'Staff notes', category: 'note', weight: 5, size: [1, 1],
-    model: 'paper_sheet', economy: { usage: ['Medical'], tiers: ['Tier1'] },
+    id: 'gauntlet_lab_special_notes', notLoot: true, name: 'Staff notes', category: 'note', weight: 5, size: [1, 1],
+    model: 'paper_sheet', economy: { usage: [], tiers: [] },
     readable: { title: 'Staff notes', text: |||
       Requisition 9-12 came back unsigned again. Security won't counter-sign another feeding schedule without the director, and the director hasn't answered the intercom since Thursday.
 

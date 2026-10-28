@@ -37,6 +37,12 @@ const near = (positions: Vec3[], piece: PlacedPiece) =>
       ) <=
         STAIR_BODY_HALF_WIDTH + 0.5,
   );
+const fixedKey = (registry: Registry, station: CompiledTemplate, lockIds: ReadonlySet<string>) =>
+  (station.groundLoot ?? []).find(
+    ({ supply }) =>
+      supply.kind === 'fixed' &&
+      supply.items.some(({ item }) => lockIds.has(registry.items.get(item)?.key?.lock ?? '')),
+  );
 const doorApproachIssues = (registry: Registry, station: CompiledTemplate, occupied: Map<string, string>) => {
   const issues: string[] = [];
   for (const door of station.pieces.filter(
@@ -237,7 +243,7 @@ it('keeps police weapons and ammunition behind the armoury lock', () => {
   }
 });
 
-it('lets a player climb to the matching key on the roof corpse in the base station and gauntlet', () => {
+it('lets a player climb to the fixed matching key beside the roof corpse in the base station and gauntlet', () => {
   const { registry } = content;
   const compound = stationOf(registry);
   const lockIds = new Set(compound.pieces.flatMap(({ lock }) => (lock ? [lock.id] : [])));
@@ -248,12 +254,11 @@ it('lets a player climb to the matching key on the roof corpse in the base stati
     .map((definition) => compileTemplate(registry, definition));
   expect(bases.length).toBeGreaterThan(0);
   for (const station of [...bases, compound]) {
-    const keys = station.pieces.filter(
-      ({ loot }) =>
-        loot && lootItems(registry, loot).some((item) => lockIds.has(registry.items.get(item)?.key?.lock ?? '')),
-    );
-    expect(keys.length, station.id).toBeGreaterThan(0);
-    for (const corpse of keys) {
+    const key = fixedKey(registry, station, lockIds)!;
+    expect(key, station.id).toBeDefined();
+    const corpses = station.pieces.filter((piece) => near([key.pos], piece));
+    expect(corpses.length, station.id).toBeGreaterThan(0);
+    for (const corpse of corpses) {
       const definition = registry.furniture.get(corpse.furniture)!;
       expect(definition.container).toBeDefined();
       expect(definition.solid).toBe(false);

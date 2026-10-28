@@ -1396,21 +1396,27 @@ describe('authored fixed loot', () => {
     const safeSpawn = spawns.find(({ spec }) => spec.pos.join(',') === safePiece.pos.join(','))!;
     const lockId = safeSpawn.spec.lock!.id;
     const hqDefinition = result.registry.templates.get('camp_hq')!;
-    const clueOverride = layout.buildings[hqIndex]!.fixedLoot?.find(({ items }) =>
-      items.some(({ item }) => result.registry.items.get(item)?.readable !== undefined),
+    const clueOverrides = (layout.buildings[hqIndex]!.fixedLoot ?? []).filter(({ items }) =>
+      items.some(
+        ({ item, placement }) => placement !== 'surface' && result.registry.items.get(item)?.readable !== undefined,
+      ),
     );
-    expect(clueOverride).toBeDefined();
-    const clueItem = clueOverride!.items.find(({ item }) => result.registry.items.get(item)?.readable !== undefined)!;
-    const cluePiece = compileTemplate(result.registry, hqDefinition).pieces.find(
-      (piece) => piece.pos.join(',') === clueOverride!.at.join(','),
-    );
-    expect(cluePiece).toBeDefined();
-    if (!cluePiece) {
-      throw new Error('the HQ clue needs a furniture anchor');
+    expect(clueOverrides.length).toBeGreaterThan(0);
+    for (const clueOverride of clueOverrides) {
+      const clueItem = clueOverride.items.find(
+        ({ item, placement }) => placement !== 'surface' && result.registry.items.get(item)?.readable !== undefined,
+      )!;
+      const cluePiece = compileTemplate(result.registry, hqDefinition).pieces.find(
+        (piece) => piece.pos.join(',') === clueOverride.at.join(','),
+      );
+      expect(cluePiece).toBeDefined();
+      if (!cluePiece) {
+        throw new Error('the HQ clue needs a furniture anchor');
+      }
+      expect(result.registry.furniture.get(cluePiece.furniture)?.container).toBeDefined();
+      expect(cluePiece.lock).toBeUndefined();
+      expect(spawns.some(({ loot }) => loot.some(({ type }) => type === clueItem.item))).toBe(true);
     }
-    expect(result.registry.furniture.get(cluePiece.furniture)?.container).toBeDefined();
-    expect(cluePiece.lock).toBeUndefined();
-    expect(spawns.some(({ loot }) => loot.some(({ type }) => type === clueItem.item))).toBe(true);
     const keySpawn = spawns.find(({ loot }) =>
       loot.some(({ type }) => result.registry.items.get(type)?.key?.lock === lockId),
     );

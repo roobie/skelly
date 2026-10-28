@@ -12,6 +12,7 @@ import {
   compileTemplate,
   type Placement,
   pieceSize,
+  placedGroundLoot,
   placedPieces,
   placedPoint,
   templateResolves,
@@ -363,8 +364,9 @@ const lotResourceIssues = (registry: Registry, scenario: ScenarioDef): Issue[] =
       return;
     }
     anchor(resource.key.standing, '.key.standing');
-    if (!piece(resource.key.at)) {
-      issues.push([`${path}.key.at`, 'key holder needs a furniture anchor']);
+    const groundKey = template.groundLoot?.some(({ pos }) => pos.join(',') === resource.key!.at.join(','));
+    if (!(piece(resource.key.at) || groundKey)) {
+      issues.push([`${path}.key.at`, 'key needs a furniture or ground-loot anchor']);
     }
     resource.key.climbs.forEach((climb, climbIndex) => {
       const at = `.key.climbs[${climbIndex}]`;
@@ -598,6 +600,12 @@ export const composeScenario = (
         }
         const local = (at: Vec3): Readonly<Vec3> => Object.freeze(placedPoint(parent, at));
         const { key } = resource;
+        const keyAnchor = (at: Vec3): Readonly<Vec3> => {
+          const index = parent.template.groundLoot?.findIndex(({ pos }) => pos.join(',') === at.join(','));
+          return index === undefined || index < 0
+            ? anchorIn(parent, at)
+            : Object.freeze(placedGroundLoot(parent)[index]!.pos);
+        };
         return Object.freeze({
           at: anchorIn(parent, resource.at),
           standing: local(resource.standing),
@@ -605,7 +613,7 @@ export const composeScenario = (
           ...(key
             ? {
                 key: Object.freeze({
-                  at: anchorIn(parent, key.at),
+                  at: keyAnchor(key.at),
                   standing: local(key.standing),
                   climbs: Object.freeze(
                     key.climbs.map((climb) =>
