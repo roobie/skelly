@@ -139,6 +139,7 @@ const blurTrial = async (context) => {
 };
 
 let failed = false;
+const summaries = [];
 try {
   for (const [name, engine] of Object.entries({ chromium, firefox })) {
     let browser;
@@ -203,6 +204,24 @@ try {
           blur,
         })}\n`,
       );
+      summaries.push({
+        browser: name,
+        version: browser.version(),
+        altDown: altEvents.some((event) => event.kind === 'keydown' && !event.repeat),
+        explicitRepeat: altEvents.some((event) => event.kind === 'keydown' && event.repeat),
+        spontaneousRepeats: cancelled.held.events.filter((event) => event.code === 'AltLeft' && event.repeat).length,
+        altUp: altEvents.some((event) => event.kind === 'keyup'),
+        trustedAndCancelled: altEvents.every((event) => event.trusted && event.defaultPrevented),
+        lockedWhileHeld: cancelled.held.locked,
+        lockedAfterRelease: cancelled.released.locked,
+        focusedAfterRelease: cancelled.released.focused,
+        ordinaryKeyAfterRelease: cancelled.afterOrdinaryKey.events.some((event) => event.code === 'KeyW'),
+        uncancelledLocked: uncancelled.released.locked,
+        uncancelledFocused: uncancelled.released.focused,
+        uncancelledOrdinaryKeyArrived: uncancelled.afterOrdinaryKey.events.some((event) => event.code === 'KeyW'),
+        blurObserved: blur.blurred.events.some((event) => event.kind === 'blur'),
+        blurLimitation: blur.focusSwitchError,
+      });
       await context.close();
     } catch (error) {
       failed = true;
@@ -214,4 +233,5 @@ try {
 } finally {
   await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
 }
+process.stdout.write(`${JSON.stringify({ summaries })}\n`);
 process.exitCode = failed ? 1 : 0;
