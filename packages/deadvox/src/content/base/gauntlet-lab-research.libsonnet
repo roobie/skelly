@@ -213,7 +213,7 @@ local built = level.build({
   shaft: { ladder: [shaftLid.at[0] + 1, base - 7, shaftLid.at[1]], upper: [shaftLid.at[0], base + 1, shaftLid.at[1] + 1], lower: [shaftLid.at[0], base - 7, shaftLid.at[1] + 1] },
   seal: { doors: [[17 * scale, base + 1, 7 * scale], [17 * scale, base + 1, 21 * scale]] } + built.cardSeal,
   fixedLoot: built.cardStock,
-  items: [{ id: 'gauntlet_lab_research_card', name: 'Research keycard', category: 'tool', size: [1, 1], economy: { usage: rooms.lab_breached.lootUsage, tiers: ['Tier1'] }, model: 'gauntlet_lab_entry_card', key: { lock: 'gauntlet_lab_research_seal' } }],
+  items: [{ id: 'gauntlet_lab_research_card', notLoot: true, name: 'Research keycard', category: 'tool', size: [1, 1], economy: { usage: [], tiers: [] }, model: 'gauntlet_lab_entry_card', key: { lock: 'gauntlet_lab_research_seal' } }],
   mapPieces: built.mapPieces,
   mapAssemblies: [built.mapAssembly],
   // Margin loot only, as on level one: medical supplies and protective gear, kept thin.

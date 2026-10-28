@@ -21,9 +21,9 @@ local note = function(id, title, text) {
   readable: { title: title, text: text },
 };
 local emptyLoot = { usage: [], tier: 'Tier1' };
-local paper = function(id, title, model, text, usage=['Industrial']) {
-  id: id, name: title, category: 'note', weight: 5, size: [1, 1],
-  model: model, economy: { usage: usage, tiers: ['Tier1'] },
+local paper = function(id, title, model, text) {
+  id: id, name: title, category: 'note', weight: 5, size: [1, 1], notLoot: true,
+  model: model, economy: { usage: [], tiers: [] },
   readable: { title: title, text: text },
 };
 // The secret cellar house's upstairs note: a hint, not directions.
@@ -32,7 +32,7 @@ local houseNotes = [
     Ray, I've taken the kids to my sister's. You won't come, I know. You've barely been up from the cellar since the radio started, and at night I hear you under the house, deeper than any cellar goes. Whatever you're keeping down there, I hope it's worth more to you than we were. Don't come after us until that bite has healed.
 
     M.
-  |||, usage=['Residential']),
+  |||),
 ];
 local publicNotes = [
   paper('gauntlet_public_memo', 'Maintenance route', 'paper_sheet', |||
