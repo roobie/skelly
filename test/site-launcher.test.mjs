@@ -236,6 +236,7 @@ describe('site launchers track the games’ URL parameters', () => {
     const supported = paramsReadBy([
       'packages/deadvox/src/main.ts',
       'packages/deadvox/src/game/config.ts',
+      'packages/deadvox/src/render/ragdollConfig.ts',
       'packages/deadvox/src/core/weatheringUrl.ts',
       'packages/deadvox/src/bench/run.ts',
       'packages/deadvox/src/bench/shamblers.ts',
