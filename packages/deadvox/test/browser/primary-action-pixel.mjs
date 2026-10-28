@@ -277,6 +277,9 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
       };
     };
     const housingCoverage = (frame) => {
+      if (!lens.housingActive) {
+        return { housingActive: false };
+      }
       const mask = new Uint8Array(lens.target.width * lens.target.height * 4);
       renderer.readRenderTargetPixels(lens.housing.target, 0, 0, lens.target.width, lens.target.height, mask);
       let interiorPixels = 0;
@@ -291,7 +294,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
           }
         }
       }
-      return { interiorPixels, maskedInteriorPixels };
+      return { housingActive: true, interiorPixels, maskedInteriorPixels };
     };
     renderer.render = function (drawnScene, drawnCamera) {
       const frame = r.view.held.opticLensFrame;
@@ -315,12 +318,20 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
       const centre = new Uint16Array(4);
       renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
       const { uniforms } = engine.mood.opticPass;
-      const opticMeshCount = [...lens.housing.meshes.keys()].length;
+      const optic = r.view.playerMeshes.animator.slotModelOf(
+        rifle,
+        Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
+      );
+      let opticMeshCount = 0;
+      optic?.traverse((object) => {
+        opticMeshCount += Number(object.isMesh === true);
+      });
       drawn = {
         opticType,
         endpoint,
         targetPower,
         worldImage: true,
+        magnifying: frame.magnifying,
         opticMeshCount,
         opticObjects,
         ...housingCoverage(frame),
@@ -681,6 +692,15 @@ const opticZoomCheck = async (chromium, port) => {
         return;
       }
       assert.deepEqual(record.opticObjects, [], 'the image excludes its own fitted optic');
+      if (record.magnifying) {
+        const pixels = await page.evaluate(async (moduleUrl) => {
+          const { scopeDiscPixels } = await import(moduleUrl);
+          return scopeDiscPixels(globalThis.primaryActionTest);
+        }, '/test/browser/optic-disc-scene.mjs');
+        process.stdout.write(`OPTIC_DISC_PIXELS ${JSON.stringify({ opticType, endpoint, ...pixels })}\n`);
+        assert.ok(pixels.occludingPixels > 0, 'opaque tube geometry would obscure the interior without the disc');
+        assert.equal(pixels.unreplacedPixels, 0, 'the disc replaces every witnessed tube pixel inside its aperture');
+      }
       assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
       if (record.magnification > 1) {
         assert.equal(

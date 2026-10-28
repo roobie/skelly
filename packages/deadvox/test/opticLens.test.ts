@@ -17,6 +17,7 @@ it.each([1, 6])('at %sx draws the window image without the presented optic', (ma
   const frame: OpticLensFrame = {
     magnification,
     worldAtUnity: true,
+    magnifying: magnification > 1,
     aperture: { aspectRatio: 1, exponent: 2 },
     center: [0.5, 0.5],
     reticleCenter: [0.5, 0.5],
@@ -55,10 +56,15 @@ it.each([1, 6])('at %sx draws the window image without the presented optic', (ma
   }
 });
 
-it('a source window clears the preceding disc image and housing mask without moving the reticle', () => {
+it.each([
+  ['source window', { magnification: 1, worldAtUnity: false, magnifying: false }, 0],
+  ['scope at unity', { magnification: 1, worldAtUnity: true, magnifying: true }, 1],
+  ['magnified scope', { magnification: 6, worldAtUnity: true, magnifying: true }, 1],
+] as const)('%s clears the preceding housing mask without moving the reticle', (_name, presentation, imageDraws) => {
   const frame: OpticLensFrame = {
     magnification: 1,
     worldAtUnity: true,
+    magnifying: false,
     aperture: { aspectRatio: 1, exponent: 2 },
     center: [0.5, 0.5],
     reticleCenter: [0.4, 0.6],
@@ -88,12 +94,15 @@ it('a source window clears the preceding disc image and housing mask without mov
     expect(lens.housingActive).toBe(true);
     expect(render).toHaveBeenCalledTimes(2);
     render.mockClear();
-    const source = { ...frame, worldAtUnity: false };
-    lens.prepare(renderer, scene, new PerspectiveCamera(), source);
-    setOpticLensUniforms(pass, source);
-    expect(render).not.toHaveBeenCalled();
+    const next = { ...frame, ...presentation };
+    lens.prepare(renderer, scene, new PerspectiveCamera(), next);
+    setOpticLensUniforms(pass, next);
+    expect(render).toHaveBeenCalledTimes(imageDraws);
+    if (imageDraws > 0) {
+      expect(render.mock.calls[0]![0]).toBe(scene);
+    }
     expect(lens.housingActive).toBe(false);
-    expect(pass.uniforms.uZoomActive!.value).toBe(0);
+    expect(pass.uniforms.uZoomActive!.value).toBe(imageDraws);
     expect(pass.uniforms.uReticleCenter!.value.toArray()).toEqual(frame.reticleCenter);
   } finally {
     lens.dispose();

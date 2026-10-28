@@ -72,19 +72,27 @@ describe('optic view settings', () => {
   it('uses the core-mod value for a variable optic and preserves the exported reticle', () => {
     const item = itemFor(4);
     const model = modelFor({ magnification: { min: 1, max: 6 }, reticle });
-    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, worldAtUnity: true, aperture, reticle });
+    expect(opticViewSettings(item, model)).toEqual({
+      magnification: 4,
+      worldAtUnity: true,
+      magnifying: true,
+      aperture,
+      reticle,
+    });
   });
 
   it('uses a fixed exported power and one-times for a reflex', () => {
     expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 4, max: 4 }, reticle }))).toEqual({
       magnification: 4,
       worldAtUnity: true,
+      magnifying: true,
       aperture,
       reticle,
     });
     expect(opticViewSettings(itemFor(), modelFor({ reticle }))).toEqual({
       magnification: 1,
       worldAtUnity: true,
+      magnifying: false,
       aperture,
       reticle,
     });
@@ -100,6 +108,12 @@ describe('optic view settings', () => {
       expect(opticRendersWorld({ ...settings, magnification: 4 })).toBe(true);
     },
   );
+
+  it('classifies a variable scope from its authored range even at unity', () => {
+    const settings = opticViewSettings(itemFor(1), modelFor({ magnification: { min: 1, max: 6 } }))!;
+    expect(settings.magnification).toBe(1);
+    expect(settings.magnifying).toBe(true);
+  });
 
   it('rejects an optic window without an authored unity image policy', () => {
     const item = { ...itemFor(), opticUnityImage: undefined };

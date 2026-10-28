@@ -124,7 +124,7 @@ export class OpticLensRenderer {
     if (!opticRendersWorld(frame)) {
       return;
     }
-    this.housingPrepared = this.housing.prepare(renderer, scene, camera);
+    this.housingPrepared = !frame.magnifying && this.housing.prepare(renderer, scene, camera);
     const previous = renderer.getRenderTarget();
     this.zoomCamera.copy(camera);
     if (frame.magnification > 1) {

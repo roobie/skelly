@@ -8,6 +8,7 @@ import type { ItemDef, ModelDef } from './schema.ts';
 export interface OpticViewSettings {
   readonly magnification: number;
   readonly worldAtUnity: boolean;
+  readonly magnifying: boolean;
   readonly aperture: OpticAperture;
   readonly reticle?: Reticle;
 }
@@ -94,6 +95,7 @@ export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSe
   return {
     magnification,
     worldAtUnity: item.opticUnityImage === 'world',
+    magnifying: (range?.max ?? 1) > 1,
     aperture,
     ...(attachment.properties.reticle === undefined ? {} : { reticle: attachment.properties.reticle }),
   };

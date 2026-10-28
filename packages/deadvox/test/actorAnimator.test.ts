@@ -697,14 +697,18 @@ it.each(unityOpticTypes())(
       lens.prepare(renderer, scene, camera, frame!);
       if (frame!.worldAtUnity) {
         const image = renders.find((entry) => entry.image)!.drawn;
-        const mask = renders.find((entry) => !entry.image)!.drawn;
+        const mask = renders.find((entry) => !entry.image)?.drawn;
         for (const piece of gunPieces) {
           expect(image.has(piece)).toBe(true);
         }
         for (const piece of opticPieces) {
           expect(image.has(piece)).toBe(false);
         }
-        expect(new Set([...mask].map((proxy) => proxy.geometry))).toEqual(new Set([opticGeometry]));
+        if (frame!.magnifying) {
+          expect(mask).toBeUndefined();
+        } else {
+          expect(new Set([...mask!].map((proxy) => proxy.geometry))).toEqual(new Set([opticGeometry]));
+        }
       } else {
         expect(renders).toEqual([]);
       }
