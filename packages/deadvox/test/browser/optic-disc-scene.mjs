@@ -8,6 +8,19 @@ export const scopeDiscPixels = ({ engine, view }) => {
   const { renderer, scene, camera } = engine;
   const frame = view.held.opticLensFrame;
   const size = renderer.getDrawingBufferSize(new Vector2());
+  // Cropping avoids full-screen readback without subsampling away tube witnesses.
+  const [radiusX, radiusY] = frame.radius;
+  const [centerX, centerY] = frame.center;
+  const rx = radiusX * frame.aperture.aspectRatio;
+  const x0 = Math.max(0, Math.floor((centerX - rx) * size.x));
+  const y0 = Math.max(0, Math.floor((centerY - radiusY) * size.y));
+  const x1 = Math.min(size.x, Math.ceil((centerX + rx) * size.x));
+  const y1 = Math.min(size.y, Math.ceil((centerY + radiusY) * size.y));
+  const width = x1 - x0;
+  const height = y1 - y0;
+  if (width <= 0 || height <= 0) {
+    throw new Error('The scope aperture must intersect the drawing buffer');
+  }
   const source = new WebGLRenderTarget(size.x, size.y);
   const image = new WebGLRenderTarget(size.x, size.y);
   const output = new WebGLRenderTarget(size.x, size.y);
@@ -19,8 +32,8 @@ export const scopeDiscPixels = ({ engine, view }) => {
   const { autoClear } = renderer;
   try {
     silhouette.prepare(renderer, scene, camera);
-    const mask = new Uint8Array(size.x * size.y * 4);
-    renderer.readRenderTargetPixels(silhouette.target, 0, 0, size.x, size.y, mask);
+    const mask = new Uint8Array(width * height * 4);
+    renderer.readRenderTargetPixels(silhouette.target, x0, y0, width, height, mask);
     renderer.autoClear = true;
     for (const [target, color] of [
       [source, 0xff_00_00],
@@ -40,14 +53,14 @@ export const scopeDiscPixels = ({ engine, view }) => {
     pass.material.toneMapped = false;
     pass.render(renderer, output, source, 0, false);
     const pixels = new Uint8Array(mask.length);
-    renderer.readRenderTargetPixels(output, 0, 0, size.x, size.y, pixels);
+    renderer.readRenderTargetPixels(output, x0, y0, width, height, pixels);
     let occludingPixels = 0;
     let unreplacedPixels = 0;
-    for (let y = 0; y < size.y; y += 1) {
-      for (let x = 0; x < size.x; x += 1) {
-        const offset = (y * size.x + x) * 4;
-        const dx = ((x + 0.5) / size.x - frame.center[0]) / frame.radius[0];
-        const dy = ((y + 0.5) / size.y - frame.center[1]) / frame.radius[1];
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const offset = (y * width + x) * 4;
+        const dx = ((x0 + x + 0.5) / size.x - centerX) / radiusX;
+        const dy = ((y0 + y + 0.5) / size.y - centerY) / radiusY;
         if (mask[offset] > 127 && opticApertureDistance(dx, dy, frame.aperture) < 0.9) {
           occludingPixels += 1;
           unreplacedPixels += Number(pixels[offset] > 1 || pixels[offset + 1] < 254 || pixels[offset + 2] > 1);

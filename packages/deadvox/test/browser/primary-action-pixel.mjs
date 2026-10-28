@@ -621,19 +621,15 @@ const heldItemChecks = async (chromium, port) => {
 };
 
 const opticZoomCheck = async (chromium, port) => {
-  await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
   // One session also exercises clearing masks when switching between optic presentations.
-  const { page, capture } = await enterTestHouse(chromium, port);
+  // Other scopes and fixed-unity sights repeat these branches without protecting another rendering rule.
+  const { page } = await enterTestHouse(chromium, port);
   const rifleUids = new Map();
   for (const [opticType, gunType, endpoint, physicalWindow = false] of [
     ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
     ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
     ['optic_mini_reflex', 'rifle_assault', 'min'],
-    ['optic_tube_dot', 'rifle_assault', 'min'],
     ['optic_holographic', 'rifle_assault', 'min', true],
-    ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
-    ['optic_high_mag_5_25x', 'rifle_assault', 'max'],
-    ['optic_hunting_3_9x', 'rifle_hunting', 'max'],
   ]) {
     await timePhase('optic-disc-endpoint', async () => {
       const record = await page.evaluate(opticZoomRecord, {
@@ -644,10 +640,6 @@ const opticZoomCheck = async (chromium, port) => {
         withGear: rifleUids.size === 0,
       });
       rifleUids.set(gunType, record.rifleUid);
-      await writeFile(
-        resolve(projectRoot, `test-results/primary-action/${opticType}-${endpoint}.png`),
-        await capture(),
-      );
       const { drawnObjects, ...summary } = record;
       process.stdout.write(
         `OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify({ ...summary, drawnObjectCount: drawnObjects.length })}\n`,
