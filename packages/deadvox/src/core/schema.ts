@@ -2016,6 +2016,8 @@ const GunModelSchema = pipe(
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Static model metadata for an attachment exported as its own item asset. */
     attachment: optional(AttachmentSchema),
+    /** Physical hold distance is independent of a fitted optic's viewing relief. */
+    adsStandoffMetres: optional(Positive),
     /** Model-derived eye point, sight line and up axis for ADS presentation and ballistics. */
     sight: optional(
       strictObject({

@@ -1783,14 +1783,15 @@ extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
 
-A free-held firearm's hip seat stays in the posed torso's frame while its barrel
-follows aim. Orbiting that seat with the view pitch, or attaching it to a head
-that moves independently of the torso, sends a down-aim grip beyond fixed arm
-reach. ADS standoff belongs to a content curve: the pistol comes closer along the
-sight line as aim rises, letting the elbows bend rather than lengthening arms or
-changing stance. The curve also compresses down-aim holds. Camera framing must
-not supply anatomical reach. See `src/core/heldPose.ts`, `heldFirearmTransform` and
-`heldAdsStandoffMetres`; `src/core/playerLookPose.ts`, `playerHeldSeatFrame`; and
+Free-held hip seats belong to the posed torso rather than the independently
+moving head: orbiting the seat with view pitch sends a down-aim grip beyond fixed
+arm reach. Pitch-dependent ADS standoff lets elbows bend without lengthening arms
+or changing stance. Physical standoff is independent of optical eye relief:
+changing an optic must not pull a handgun back into the shooter's face. Camera
+framing must not supply anatomical reach. See `src/core/heldPose.ts`,
+`heldFirearmTransform` and `heldAdsStandoffMetres`; `src/core/playerLookPose.ts`,
+`playerHeldSeatFrame`; `src/core/schema.ts`, `GunModelSchema`;
+`src/content/base/models-firearms.libsonnet`; and
 `src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
