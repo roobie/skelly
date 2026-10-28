@@ -126,14 +126,34 @@ describe('flinchPose', () => {
   });
 });
 
+const restingSurfaceClearances = (actor: ReturnType<typeof deathActorOf>, pose: Pose): Record<string, number> => {
+  const transforms = boneTransforms(actor.bones, pose);
+  return Object.fromEntries(
+    ['pelvis', 'chest', 'hand.L', 'hand.R'].map((id) => [
+      id,
+      Math.min(...corners(actor.bodyExtents.get(id)!).map((point) => applyPoint(transforms.get(id)!, point)[1])) /
+        actor.params.height,
+    ]),
+  );
+};
+
 describe('deathPose', () => {
-  it.each(TEMPLATES.flatMap((template) => deathContent.poses.map((entry) => [template.name, entry.id] as const)))(
+  it.for(TEMPLATES.flatMap((template) => deathContent.poses.map((entry) => [template.name, entry.id] as const)))(
     '%s %s settles every bone end from a raised walking leg and attacking arms',
-    (name, poseId) => {
+    async ([name, poseId], { annotate }) => {
       const found = setup(name);
       const actor = deathActorOf(found);
       const walking = walkPose(actor, { ...INITIAL_CLOCK, progress: 0.3 }, 1);
       const attacking = attackPose(actor, LUNGE_GRAB, 0.35, walking);
+      const clearances = restingSurfaceClearances(
+        actor,
+        deathPose(actor, walking, DEATH_FALL_DURATION, { direction: -1, poseId }),
+      );
+      await annotate(`Surface clearance / body height: ${JSON.stringify(clearances)}`);
+      for (const [id, clearance] of Object.entries(clearances)) {
+        expect.soft(clearance, `${poseId}: ${id} rests near the floor`).toBeLessThan(0.04);
+        expect.soft(clearance, `${poseId}: ${id} does not sink`).toBeGreaterThanOrEqual(0);
+      }
       for (const base of [walking, attacking]) {
         const pose = deathPose(actor, base, DEATH_FALL_DURATION, { direction: -1, poseId });
         const transforms = boneTransforms(actor.bones, pose);
