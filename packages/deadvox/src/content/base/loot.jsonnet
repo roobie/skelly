@@ -22,7 +22,10 @@ local pills(weight, least, parts, of) =
   loot: [
     {
       id: 'gauntlet_home_gun', rolls: [1, 2],
-      entries: [item('revolver_357', 1, condition=[0.3, 0.8]), item('cartridge_357_h_magnum', 2, count=[2, 5]), nothing(30)],
+      entries: [
+        item('revolver_357', 1, condition=[0.3, 0.8]), item('cartridge_357_h_magnum', 2, count=[2, 5]),
+        item('cartridge_box_9x19', 1), nothing(30),
+      ],
     },
     {
       id: 'kitchen_cupboard',
