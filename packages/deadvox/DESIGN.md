@@ -8,6 +8,7 @@ read_if:
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
+  - you change free look, its gun direction or its action refusals
   - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
   - you change shared held-item presentation, firearm off-hand readiness, arm attachment or the mannequin's item-hold catalogue
   - you change equipped gear fit, torso under-layer selection, shared human attachment frames or inside-headgear presentation
@@ -2110,7 +2111,16 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `firearmBoreRay`; `src/game/play.ts`, `heldFirearmBore`; and
   `src/ui/playHud.ts`, `projectCrosshairScreenPosition` and
   `playCrosshairFrame`. The hip pose reuses the hand placement but not the melee
-  wrist rotation, so the visible bore follows the player's look. The debug X is
+  wrist rotation. Free look lets the player walk or run one way while watching another:
+  the head and camera may turn, but the hip pose and shot keep the body's direction.
+  Keeping the shot on the visible bore makes firing while looking away honest;
+  the crosshair remains a projection of that bore and disappears outside the view,
+  rather than implying a shot toward the eyes. ADS ignores free look because the
+  sights and view must share one line. Look-targeted item actions are refused while
+  free look is held so a glance cannot redirect a throw, strike or interaction.
+  Content owns the neck range and return speed; transient head offsets do not belong
+  in a character save. See `src/game/input.ts`, `Input`, `src/game/freeLook.ts`, `FreeLook`,
+  `freeLookAllowsUse` and `freeLookAllowsCommand`, and `src/render/playView.ts`, `createPlayView`. The debug X is
   separate from the optional crosshair. In ADS, recoil, sway, and handling
   move the firearm pose and bore while the view direction stays fixed; only the intentional
   over-limit pitch shift moves the view. See `heldFirearmTransform` in

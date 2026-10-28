@@ -102,6 +102,7 @@ export const inventoryTabForAction = (action: string) =>
 const INPUT_ACTIONS: readonly Action[] = [
   row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, 'held-state', { device: 'pointer' }),
   row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, 'press', { device: 'pointer' }),
+  row('view.free-look', 'Free look', world, 'held-state'),
   row('movement.forward', 'Move forward', movingWhileReading, 'held-state'),
   row('movement.back', 'Move backward', movingWhileReading, 'held-state'),
   row('movement.left', 'Move left', movingWhileReading, 'held-state'),
@@ -339,7 +340,7 @@ export const chordIssue = (chord: Chord): string | undefined => {
     return native.description;
   }
   const refused = REFUSED_MODIFIERS.find(
-    (modifier) => chord.modifier === modifier || modifierCodes[chord.code] === modifier,
+    (modifier) => chord.modifier === modifier || (modifier !== 'alt' && modifierCodes[chord.code] === modifier),
   );
   if (refused) {
     return modifierRefusal(refused);
@@ -747,7 +748,9 @@ const flags: Readonly<Record<Modifier, keyof Pick<KeyboardEvent, 'shiftKey' | 'a
 };
 export const capturedChord = (event: KeyEvent): Chord | string => {
   const refused = REFUSED_MODIFIERS.find(
-    (modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier,
+    (modifier) =>
+      (modifier !== 'alt' && modifierCodes[event.code] === modifier) ||
+      (event[flags[modifier]] && modifierCodes[event.code] !== modifier),
   );
   if (refused) {
     return modifierRefusal(refused);
@@ -1006,7 +1009,11 @@ export class KeyboardInput {
       this.captureModifier = undefined;
       this.capture?.(lone);
     }
-    return !REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier);
+    return !REFUSED_MODIFIERS.some(
+      (modifier) =>
+        (modifier !== 'alt' && modifierCodes[event.code] === modifier) ||
+        (event[flags[modifier]] && modifierCodes[event.code] !== modifier),
+    );
   }
   pressPointer(
     button: number,
@@ -1044,7 +1051,16 @@ export class KeyboardInput {
       this.escape();
       return false;
     }
-    if (this.blocked.has(event.code) || REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]])) {
+    const browserModifier = REFUSED_MODIFIERS.some((modifier) => {
+      if (modifier === 'alt') {
+        const owned = [...this.active].some(
+          ([code, action]) => modifierCodes[code] === modifier && isHeld(this.registry.binding(action)!),
+        );
+        return event.altKey && modifierCodes[event.code] !== 'alt' && !owned;
+      }
+      return event[flags[modifier]];
+    });
+    if (this.blocked.has(event.code) || browserModifier) {
       return this.traceDown(event, false, this.blocked.has(event.code) ? 'blocked' : 'browser-modifier');
     }
     const gate = this.held('debug.gate');
@@ -1103,8 +1119,8 @@ export class KeyboardInput {
       event.cancelable &&
       (this.context().context === 'play' || this.context().context === 'carrying') &&
       Boolean(document.pointerLockElement) &&
-      !modifierCodes[event.code] &&
-      (event.ctrlKey || event.metaKey || event.altKey) &&
+      ((!modifierCodes[event.code] && (event.ctrlKey || event.metaKey || event.altKey)) ||
+        modifierCodes[event.code] === 'alt') &&
       !editable(event.target) &&
       !this.capture
     );
@@ -1158,7 +1174,12 @@ export class KeyboardInput {
         event.preventDefault();
       }
     };
-    const keyUp = (event: KeyboardEvent) => this.release(event);
+    const keyUp = (event: KeyboardEvent) => {
+      if (this.playingBrowserChord(event) || (this.capture && modifierCodes[event.code] === 'alt')) {
+        event.preventDefault();
+      }
+      this.release(event);
+    };
     // A press on a control (Cancel, Reset, another binding) operates that control rather than being captured.
     const pointerCapture = (event: MouseEvent) => {
       if (this.capture && !pageControl(this.pointerTarget(event))) {
@@ -1173,7 +1194,7 @@ export class KeyboardInput {
     const lock = () => {
       this.recordTrace('pointer-lock');
       if (!document.pointerLockElement) {
-        this.cancel(false, false, 'pointer-lock-lost');
+        this.focusLost('pointer-lock-lost');
       }
     };
     const focus = (event: FocusEvent) => {

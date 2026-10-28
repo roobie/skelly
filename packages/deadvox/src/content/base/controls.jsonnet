@@ -10,6 +10,7 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
   controls: [
     one('stance.ready', 'Mouse2'),
     one('aim.ads-toggle', 'Mouse1'),
+    one('view.free-look', 'AltLeft'),
     one('movement.forward', 'KeyW'),
     one('movement.back', 'KeyS'),
     one('movement.left', 'KeyA'),

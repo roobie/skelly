@@ -74,6 +74,8 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly stridePhase: number;
+  readonly headYaw?: number;
+  readonly headPitch?: number;
   readonly ads?: PlayerAdsPose | undefined;
   readonly stance: PlayerStance;
   readonly eye: Vec3;
@@ -535,7 +537,21 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, stridePhase, stance, eye, spectator, sightImpaired } = frame;
+      const {
+        dt,
+        body,
+        paused,
+        noclip,
+        yaw,
+        pitch,
+        stridePhase,
+        stance,
+        eye,
+        spectator,
+        sightImpaired,
+        headYaw = 0,
+        headPitch = 0,
+      } = frame;
       thirdPerson = frame.thirdPerson === true && spectator === undefined;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
@@ -560,6 +576,8 @@ export const createPlayView = (
         inventory,
         eye,
         pitch,
+        headYaw,
+        headPitch,
         thirdPerson: thirdPerson || detached,
       });
       avatarStudy.sync({ bodyPosition: body.pos, yaw, stepOffset: offset, visible: thirdPerson || detached });
@@ -575,10 +593,16 @@ export const createPlayView = (
           stepOffset: offset,
           yaw,
           target,
-          ...(frame.thirdPersonOrbit ? { orbit: frame.thirdPersonOrbit } : {}),
+          orbit: frame.thirdPersonOrbit ?? { yaw: yaw + headYaw, pitch: headPitch },
         });
       } else {
-        updateFirstPersonCamera({ target, stepOffset: offset, spectator, yaw, pitch });
+        updateFirstPersonCamera({
+          target,
+          stepOffset: offset,
+          spectator,
+          yaw: yaw + headYaw,
+          pitch: pitch + headPitch,
+        });
       }
       damage.style.opacity = damageOpacity(detached, feedback.vignetteOpacity, sightImpaired);
       nightVision = setViewEffects(engine.mood, frame);

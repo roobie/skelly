@@ -17,6 +17,7 @@
     aim: {
       moveYawPerSpeed: 0.0045,
       lookSensitivityRadiansPerPixel: 0.0022,
+      freeLook: { yawLimitRadians: 1.4, pitchLimitRadians: 0.65, returnRadiansPerRealSecond: 5 },
       lookLagPerRadian: 0.035,
       lookSettleSimSeconds: 0.22,
       recoilRecoverySimSeconds: 0.34,

@@ -8,6 +8,8 @@ import {
   type Chord,
   capturedChord,
   chordIssue,
+  controlRowIssue,
+  defaultKeySetIssues,
   INPUT_BINDINGS,
   type InputCommand,
   type InputContext,
@@ -577,6 +579,37 @@ describe('keyboard registry', () => {
     keyboard.press(event('KeyC'));
     expect(keyboard.held('noclip.descend')).toBe(false);
   });
+  it('admits Alt held keys and alternate bindings without admitting Alt chords or hiding held-gate conflicts', () => {
+    const alternatives = INPUT_BINDINGS.map((binding) =>
+      binding.id === 'view.free-look' ? { ...binding, defaults: [{ code: 'AltLeft' }, { code: 'AltRight' }] } : binding,
+    );
+    const bindings = new BindingRegistry(alternatives, storage());
+    expect(bindings.rebind('view.free-look', [{ code: 'AltLeft' }, { code: 'AltRight' }])).toBeUndefined();
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'play', debug: false });
+    expect(keyboard.press(event('AltRight', { altKey: true }))).toBe(true);
+    expect(keyboard.held('view.free-look')).toBe(true);
+    expect(keyboard.press(event('KeyW', { altKey: true }))).toBe(true);
+    expect(keyboard.held('movement.forward')).toBe(true);
+    keyboard.release(event('AltRight'));
+    keyboard.release(event('KeyW'));
+    expect(bindings.rebind('movement.sprint', [{ code: 'AltRight' }])).toBeDefined();
+    expect(bindings.rebind('view.free-look', [{ code: 'KeyJ' }, { code: 'AltRight' }])).toBeUndefined();
+    expect(keyboard.press(event('KeyJ'))).toBe(true);
+    expect(keyboard.held('view.free-look')).toBe(true);
+    keyboard.release(event('KeyJ'));
+    expect(chordIssue({ code: 'KeyJ', modifier: 'alt' })).toBeDefined();
+    const defaults = new Map(INPUT_BINDINGS.map((binding) => [binding.id, binding.defaults]));
+    defaults.set('view.free-look', [{ code: 'AltRight' }]);
+    expect(defaultKeySetIssues(defaults)).toEqual([]);
+    expect(controlRowIssue('view.free-look', [{ code: 'AltLeft' }])).toBeUndefined();
+    expect(controlRowIssue('view.free-look', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
+
+    const gate: Binding = { ...fixture[3]!, defaults: [{ code: 'AltLeft' }] };
+    const gated: Binding = { ...fixture[4]!, defaults: [{ code: 'KeyJ' }] };
+    const held: Binding = { ...fixture[1]!, defaults: [{ code: 'KeyJ' }, { code: 'AltLeft' }] };
+    expect(bindingConflict([gate, gated, held], new Map())).toBeDefined();
+  });
   it('rejects browser-owned modifiers for every game binding', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     for (const binding of INPUT_BINDINGS) {
@@ -646,7 +679,7 @@ describe('keyboard registry', () => {
       expect(typeof capturedChord(event('KeyJ', extra))).toBe('string');
     }
     expect(capturedChord(event('ControlLeft', { ctrlKey: true }))).toEqual(expect.any(String));
-    expect(capturedChord(event('AltLeft', { altKey: true }))).toEqual(expect.any(String));
+    expect(capturedChord(event('AltLeft', { altKey: true }))).toEqual({ code: 'AltLeft' });
     const keyboard = new KeyboardInput(new BindingRegistry(fixture, storage()));
     keyboard.context = () => ({ context: 'play', debug: true });
     const commands: InputCommand[] = [];
@@ -709,6 +742,20 @@ describe('keyboard registry', () => {
       expect(prevented(globalThis, 'KeyS', { metaKey: true })).toBe(true);
       expect(prevented(globalThis, 'ArrowLeft', { altKey: true })).toBe(true);
       expect(prevented(globalThis, 'ControlLeft', { ctrlKey: true })).toBe(false);
+      expect(prevented(globalThis, 'AltLeft', { altKey: true })).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      const altUp = new KeyboardEvent('keyup', { code: 'AltLeft', bubbles: true, cancelable: true });
+      globalThis.dispatchEvent(altUp);
+      expect(altUp.defaultPrevented).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(false);
+      prevented(globalThis, 'AltLeft', { altKey: true });
+      locked = null;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      expect(keyboard.held('view.free-look')).toBe(false);
+      locked = document.body;
+      expect(prevented(globalThis, 'AltLeft', { altKey: true })).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      keyboard.release(event('AltLeft'));
 
       const input = document.createElement('input');
       document.body.append(input);
