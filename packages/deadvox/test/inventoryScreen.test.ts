@@ -660,6 +660,18 @@ describe('inventory screen Lit rendering', () => {
       globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
       expect(action.defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: beans.uid });
+
+      const dimmed = [...root.querySelectorAll<HTMLElement>('.inv-item-unmatched')][0]!;
+      const dimmedUid = Number(dimmed.dataset.uid);
+      dimmed.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+      globalThis.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
+      expect(screen.selected?.uid).toBe(dimmedUid);
+
+      const dimmedAction = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
+      globalThis.dispatchEvent(dimmedAction);
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
+      expect(dimmedAction.defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: dimmedUid });
     } finally {
       remove();
       screen.close();

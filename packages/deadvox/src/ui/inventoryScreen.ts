@@ -1119,7 +1119,7 @@ export class InventoryScreen {
   }
 
   private actionItem(): Item | undefined {
-    return this.selected && this.order.includes(this.selected) ? this.selected : undefined;
+    return this.selected && this.byUid.has(this.selected.uid) ? this.selected : undefined;
   }
 
   private selectedAction(action: string, item: Item): boolean {
