@@ -150,7 +150,7 @@ const heldCompassCardChange = (page) =>
 
 // Puts the hunting rifle's 3-9x scope in ADS at `power` and records one frame: the lens frame, the lens pass
 // uniforms, the zoom target's centre and every object the zoom camera submitted, with layers and parents.
-const opticZoomRecord = (power) => {
+const opticZoomRecord = ({ power, opticType, gunType }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
   r.input.pitch = 0;
@@ -159,9 +159,9 @@ const opticZoomRecord = (power) => {
   for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
     inventory.add(inventory.create(wear), { kind: 'worn' });
   }
-  const rifle = inventory.create('rifle_hunting');
-  const scope = inventory.create('optic_hunting_3_9x');
-  const definition = inventory.registry.items.get('rifle_hunting');
+  const rifle = inventory.create(gunType);
+  const scope = inventory.create(opticType);
+  const definition = inventory.registry.items.get(gunType);
   const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
   let fitted = false;
   for (const slot of stations) {
@@ -277,7 +277,15 @@ const opticZoomRecord = (power) => {
       );
       const { uniforms } = engine.mood.opticPass;
       drawn = {
+        opticType,
         housingCentre: [...maskCentre],
+        housingSources: [...lens.housing.meshes.keys()].map((mesh) => ({
+          name: mesh.name,
+          material: (Array.isArray(mesh.material) ? mesh.material : [mesh.material]).map((m) => ({
+            name: m.name,
+            transparent: m.transparent,
+          })),
+        })),
         lensFrame: r.view.held.opticLensFrame,
         power,
         frames,
@@ -588,26 +596,34 @@ const heldItemChecks = async (chromium, port) => {
 };
 
 const opticZoomCheck = async (chromium, port) => {
-  const { page, capture } = await enterTestHouse(chromium, port);
   await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
-  await timePhase('optic-zoom-world-only', async () => {
-    const record = await page.evaluate(opticZoomRecord, 3);
-    await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
-    process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
-    assert.equal(record.magnification, 3, 'the scope runs its magnified branch at the stepped power');
-    assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
-    assert.equal(
-      record.zoomCameraLayers & 0b1110,
-      0,
-      'the magnified camera sees none of the figure, self-mask or optic body layers',
-    );
-    assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the zoom camera submits world objects');
-    assert.deepEqual(record.drawnObjects, [], 'the zoom camera is submitted no held, worn or own-body geometry');
-    assert.ok(
-      record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
-      `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
-    );
-  });
+  for (const [opticType, power, gunType] of [
+    ['optic_hunting_3_9x', 3, 'rifle_hunting'],
+    ['optic_lpvo_1_6x', 3, 'rifle_assault'],
+    ['optic_fixed_prism_4x', 4, 'rifle_assault'],
+    ['optic_high_mag_5_25x', 5, 'rifle_assault'],
+  ]) {
+    const { page, capture } = await enterTestHouse(chromium, port);
+    await timePhase('optic-zoom-world-only', async () => {
+      const record = await page.evaluate(opticZoomRecord, { power, opticType, gunType });
+      await writeFile(resolve(projectRoot, `test-results/primary-action/${opticType}.png`), await capture());
+      process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
+      assert.equal(record.magnification, power, 'the scope runs its magnified branch at the stepped power');
+      assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
+      assert.equal(
+        record.zoomCameraLayers & 0b1110,
+        0,
+        'the magnified camera sees none of the figure, self-mask or optic body layers',
+      );
+      assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the zoom camera submits world objects');
+      assert.deepEqual(record.drawnObjects, [], 'the zoom camera is submitted no held, worn or own-body geometry');
+      assert.ok(
+        record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
+        `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
+      );
+    });
+    await page.close();
+  }
 };
 
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers
