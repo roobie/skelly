@@ -59,6 +59,19 @@ derived entry serves a per-place variant. Patching the base entry stays availabl
 that is meant to be shared by everything built on it. The cost is that a derived entry can
 change when an unrelated mod patches its base, so the origin trail must show every step.
 
+A derived entry extends only an entry of the same kind, in the same layer or a lower one, so a
+setting table may extend a core table and not the reverse (`packages/deadvox/docs/pack-split.md`,
+"Layers"). Dependencies keep pointing down only, and core still loads and checks alone. The
+restriction is the cheapest to loosen later: loosening breaks nothing, while tightening after
+mods exist would break them. Sharing across kinds waits for a field-mapping rule that
+validation can explain.
+
+A derive chain has a depth cap, and a chain past it is a load error naming the chain and the
+fix. Raising the cap later is free, and lowering it breaks mods. The ruled cap is 10. It is a
+tunable, so it lives in engine configuration beside derive resolution, not in prose; this
+sentence is the only place the value is written until code holds it. A cycle is refused
+regardless of depth.
+
 **Conflicts.** A mod may override another mod's value or entry only if it depends on that
 mod, directly or transitively, and declares the override. Commuting additions never conflict:
 two mods adding to one list both keep their additions, in pack order. The load fails closed,
@@ -143,11 +156,14 @@ identity to the evaluated content, as
 - **Settling a clash in the player's UI.** A winner chosen per conflict and recorded in save
   identity would loosen "load order never decides", so it needs a ruling of its own before any
   such UI is built.
-- **Derive across kinds or upward across layers, and a depth cap on a derive chain.** The
-  proposal forbids derive across kinds and upward across layers: dependencies point down only,
-  so a setting table may extend a core table and not the reverse
-  (`packages/deadvox/docs/pack-split.md`, "Layers"). The restrictions and whether the chain
-  needs a depth cap are proposed and await a ruling; build none of them until then.
+- **Near-miss: Jsonnet hides the frozen copy for in-repo packs.** In-repo packs are rebuilt
+  with the base, so their copies never go stale. This stops holding when a bundled pack is
+  built separately from the base, or when any in-repo pack is shipped as a mod: #1435.
+- **Near-miss: tags limit what a place can hold.** An economy-eligibility tag stops an item
+  from reaching a place that excludes it however a table is patched, so a broken loot patch
+  gives wrong odds and never absurd loot. This stops holding when an operation lets a mod
+  override tags per row: #1436. Tags describe items and tables tune odds, so no such
+  operation is added.
 - **Order independence of patch admission.** When #1395 moves save identity to the evaluated
   content, an order-only difference stops showing in identity. Add a test of order
   independence over patch admission then.
