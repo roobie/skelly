@@ -2,7 +2,7 @@
 // forward and leg stumps trailing. crawlerGaitPose layers alternating arm reach, plant and pull onto it.
 
 import type { Realized } from '../core/generate.ts';
-import { applyPoint, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep } from '../core/math.ts';
+import { applyPoint, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep, transpose } from '../core/math.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../core/voxelBounds.ts';
 import { HIT_FLINCH } from './reactions.ts';
@@ -90,6 +90,20 @@ const solveArmPitch = (realized: Realized, rotations: Record<string, Mat3>, side
   rotations[forearm] = rotX(bestForearm);
 };
 
+// Unlike a crawler's stumps, a damaged humanoid may retain lower legs: cancel their inherited pitch
+// so each segment trails horizontally behind the body rather than pointing through the floor.
+const trailLowerLeg = (realized: Realized, rotations: Record<string, Mat3>, side: 'L' | 'R'): void => {
+  for (const id of [`shin.${side}`, `foot.${side}`]) {
+    const bone = realized.body.bones.find((candidate) => candidate.id === id);
+    if (!bone) {
+      continue;
+    }
+    const parent = boneTransforms(realized.body.bones, { root: ROOT, rotations }).get(bone.parent!)!;
+    const pitch = (Math.atan2(bone.tail[1] - bone.head[1], bone.tail[2] - bone.head[2]) * 180) / Math.PI;
+    rotations[id] = mulMM(transpose(parent.r), rotX(pitch));
+  }
+};
+
 /** Static prone pose, fitted to the torso and support-bone voxel surfaces for each realized figure. */
 export const crawlerPose = (realized: Realized): Pose => {
   const cached = poseCache.get(realized);
@@ -106,8 +120,9 @@ export const crawlerPose = (realized: Realized): Pose => {
   }
   for (const side of ['L', 'R'] as const) {
     solveThighPitch(realized, rotations, `thigh.${side}`, torsoGroundY);
+    trailLowerLeg(realized, rotations, side);
   }
-  const pose = { root: [0, -torsoGroundY, 0] as const, rotations };
+  const pose = groundCrawlerPose(realized, { root: ROOT, rotations });
   poseCache.set(realized, pose);
   return pose;
 };
@@ -122,6 +137,10 @@ const GROUND_CONTACT_BONES = [
   'hand.R',
   'thigh.L',
   'thigh.R',
+  'shin.L',
+  'shin.R',
+  'foot.L',
+  'foot.R',
 ];
 
 export const groundCrawlerPose = (realized: Realized, pose: Pose): Pose => {

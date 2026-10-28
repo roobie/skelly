@@ -2599,7 +2599,12 @@ describe('content references', () => {
             sounds: zombieSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5, backgroundStepMetres: 1 },
+            speed: {
+              ...baseRegistry.zombies.get('shambler')!.speed,
+              wanderMetresPerSimSecond: 0.8,
+              chaseMetresPerSimSecond: 2.5,
+              backgroundStepMetres: 1,
+            },
             stepLength: 0.6,
             wander: {
               obstacleWanderChance: 0.25,

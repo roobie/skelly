@@ -54,6 +54,7 @@ local fit = {
   stabVest: [0.02, 0.032],
   vestWaist: [0.03, 0.038],
   stabVestWaist: [0.03, 0.042],
+  belt: [0.03, 0.038],
   packStrap: [0.04, 0.048],
 } else {};
 

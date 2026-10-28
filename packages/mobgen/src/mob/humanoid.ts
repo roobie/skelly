@@ -279,7 +279,7 @@ export const buildBones = (layout: JointLayout): Body['bones'] => {
         marrowMaterial: 'skin',
         disposition: 'sever',
       },
-      { id: `thigh.${side}`, parent: 'pelvis', head: leg.hip, tail: leg.knee },
+      { id: `thigh.${side}`, parent: 'pelvis', head: leg.hip, tail: leg.knee, disposition: 'sever' },
       { id: `shin.${side}`, parent: `thigh.${side}`, head: leg.knee, tail: leg.ankle },
       { id: `foot.${side}`, parent: `shin.${side}`, head: leg.ankle, tail: leg.toe },
     );

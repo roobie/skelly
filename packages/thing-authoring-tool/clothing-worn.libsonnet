@@ -15,10 +15,14 @@ local garment(id, pieces, finish) = {
   connections: [],
 };
 local jacket = { cloth: 'cloth-shirt-player', trim: 'paint-charcoal', fastener: 'steel-grey' };
+local hoodie = { cloth: 'plastic-red', trim: 'paint-charcoal' };
 local measures = import 'jacket-measures.libsonnet';
 local jacketLevel(id) =
   local d = measures[id];
   prism(id, 'cloth', d.bottom, d.top, d.width, d.depth, d.chamfer);
+local hoodieLevel(id) =
+  local d = measures[id];
+  prism(id, 'cloth', d.bottom, d.top, d.width - 0.02, d.depth - 0.015, d.chamfer + 0.01);
 local trousers = { cloth: 'cloth-pants-player', trim: 'paint-charcoal' };
 local rubber = { cloth: 'rubber-black', trim: 'paint-charcoal' };
 local sneaker = { cloth: 'cloth-pants-player', trim: 'rubber-black' };
@@ -37,6 +41,18 @@ local sneaker = { cloth: 'cloth-pants-player', trim: 'rubber-black' };
     prism('sleeve', 'cloth', -0.24, 0.025, 0.115, 0.125, 0.02),
     prism('cuff', 'trim', -0.255, -0.215, 0.105, 0.115, 0.02),
   ], jacket),
+  garment('worn_hoodie_body', [
+    hoodieLevel('hem'),
+    hoodieLevel('waist'),
+    hoodieLevel('chest'),
+    prism('hood', 'cloth', 0.34, 0.63, 0.30, 0.10, 0.04, cz=-0.07),
+    box('kangaroo-pocket', 'trim', [-0.15, 0.18, 0.10], [0.15, 0.27, 0.12]),
+  ], hoodie),
+  garment('worn_hoodie_upper', [prism('sleeve', 'cloth', -0.32, 0.025, 0.125, 0.13, 0.03)], hoodie),
+  garment('worn_hoodie_fore', [
+    prism('sleeve', 'cloth', -0.24, 0.025, 0.115, 0.125, 0.03),
+    prism('cuff', 'trim', -0.255, -0.215, 0.105, 0.115, 0.025),
+  ], hoodie),
   garment('worn_trousers_pelvis', [
     prism('seat', 'cloth', -0.01, 0.185, 0.355, 0.225, 0.025),
     prism('waistband', 'trim', 0.15, 0.19, 0.36, 0.23, 0.025),

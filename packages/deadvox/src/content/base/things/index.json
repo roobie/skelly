@@ -2628,6 +2628,9 @@
   { "id": "worn_jacket_body", "file": "assets/models/worn_jacket_body.glb" },
   { "id": "worn_jacket_upper", "file": "assets/models/worn_jacket_upper.glb" },
   { "id": "worn_jacket_fore", "file": "assets/models/worn_jacket_fore.glb" },
+  { "id": "worn_hoodie_body", "file": "assets/models/worn_hoodie_body.glb" },
+  { "id": "worn_hoodie_upper", "file": "assets/models/worn_hoodie_upper.glb" },
+  { "id": "worn_hoodie_fore", "file": "assets/models/worn_hoodie_fore.glb" },
   { "id": "worn_trousers_pelvis", "file": "assets/models/worn_trousers_pelvis.glb" },
   { "id": "worn_trousers_thigh", "file": "assets/models/worn_trousers_thigh.glb" },
   { "id": "worn_trousers_shin", "file": "assets/models/worn_trousers_shin.glb" },
@@ -2773,11 +2776,15 @@
     "id": "fanny_pack_worn_jacket",
     "file": "assets/models/fanny_pack_worn_jacket.glb",
     "parts": {
-      "belt": { "node": "belt:belt", "massKg": 0.05, "centreOfMass": [0, 0.15200000000000002, 0.00031775700934579654] },
+      "belt": {
+        "node": "belt:belt",
+        "massKg": 0.05,
+        "centreOfMass": [0.00043609022556390944, 0.15199999999999997, 0.01576942355889724]
+      },
       "bag": {
         "node": "bag:bag",
         "massKg": 0.15,
-        "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.19494693456980938]
+        "centreOfMass": [1.9331839858186666e-17, 0.15538492063492065, 0.21280853174603176]
       }
     }
   },

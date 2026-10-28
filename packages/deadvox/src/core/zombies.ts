@@ -54,6 +54,7 @@ import {
   advanceStanceWeight,
   posedMouth,
   targetStanceWeight,
+  zombieCrawls,
   zombieHitFlinchDuration,
   zombiePoseInputFor,
 } from './zombiePose.ts';
@@ -2539,6 +2540,9 @@ export class ZombieSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
+      if (zombieCrawls(zombie)) {
+        speed = Math.min(speed, zombie.type.speed.crawlMetresPerSimSecond);
+      }
       if (zombie.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
         speed = 0;
       }
@@ -2579,7 +2583,10 @@ export class ZombieSystem {
     const { zombie, dt } = this.tickScratch;
     if (zombie.hitFlinchTime !== undefined) {
       const nextFlinchTime = zombie.hitFlinchTime + dt;
-      zombie.hitFlinchTime = nextFlinchTime > zombieHitFlinchDuration(zombie.type.model) ? undefined : nextFlinchTime;
+      zombie.hitFlinchTime =
+        nextFlinchTime > zombieHitFlinchDuration(zombieCrawls(zombie) ? 'crawler' : zombie.type.model)
+          ? undefined
+          : nextFlinchTime;
     }
     zombie.attackWait = Math.max(0, zombie.attackWait - dt);
     zombie.spitWait = Math.max(0, zombie.spitWait - dt);
@@ -3072,8 +3079,12 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
+    if (zombieCrawls(zombie)) {
+      scratch.desiredSpeed = Math.min(scratch.desiredSpeed, type.speed.crawlMetresPerSimSecond);
+      zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
+    }
     if (
-      (zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
+      (!zombieCrawls(zombie) && zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
       zombie.staggerSimSeconds > 0 ||
       this.options.restrained?.(scratch.id) === true
     ) {
@@ -3114,6 +3125,7 @@ export class ZombieSystem {
     zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
     scratch.jumpAttempted =
       zombie.type.canJumpObstacles &&
+      !zombieCrawls(zombie) &&
       zombie.horizontalSpeed > 0.01 &&
       zombie.body.onGround &&
       canJumpObstacle({

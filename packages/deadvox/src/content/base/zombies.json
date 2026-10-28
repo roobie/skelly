@@ -209,6 +209,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stagger": {
@@ -453,6 +454,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stagger": {
@@ -697,6 +699,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stagger": {
@@ -941,6 +944,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stagger": {
@@ -1185,6 +1189,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stagger": {
@@ -1429,6 +1434,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stepLength": 0.80000000000000004,
@@ -1635,6 +1641,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 6.5,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stepLength": 0.80000000000000004,
@@ -1808,6 +1815,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 1.1000000000000001,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.34999999999999998
       },
       "stepLength": 0.45000000000000001,
@@ -2020,6 +2028,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 1.3999999999999999,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.25
       },
       "stepLength": 0.59999999999999998,
@@ -2331,6 +2340,7 @@
       "speed": {
         "backgroundStepMetres": 1,
         "chaseMetresPerSimSecond": 2.7999999999999998,
+        "crawlMetresPerSimSecond": 0.40000000000000002,
         "wanderMetresPerSimSecond": 0.80000000000000004
       },
       "stagger": {
