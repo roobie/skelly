@@ -52,7 +52,8 @@ export const adsCameraEye = ({
     twoHanded: true,
     progress: 1,
     aimingDownSights: true,
-    aimFrame: ads.aimFrame ?? NEUTRAL_AIM,
+    // Tracking the deviated optic eye cancels parallax; the eye instead follows the unswayed seat.
+    aimFrame: ads.model.gun?.sight?.kind === 'optic' ? NEUTRAL_AIM : (ads.aimFrame ?? NEUTRAL_AIM),
     lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: pose.stockSeats[ads.side],

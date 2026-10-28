@@ -4514,6 +4514,7 @@ const RecipeSchema = strictObject({
 
 const GraphicsTuningSchema = strictObject({
   id: Id,
+  nearPlaneMetres: Positive,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),

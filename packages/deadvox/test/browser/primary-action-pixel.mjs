@@ -294,8 +294,25 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
       );
       let opticMeshCount = 0;
+      let opticVertices = 0;
+      let clippedOpticVertices = 0;
+      let nearestOpticDepth = Number.POSITIVE_INFINITY;
+      engine.camera.updateWorldMatrix(true, false);
       optic?.traverse((object) => {
-        opticMeshCount += Number(object.isMesh === true);
+        if (!object.isMesh) {
+          return;
+        }
+        opticMeshCount += 1;
+        const positions = object.geometry.getAttribute('position');
+        const toCamera = engine.camera.matrixWorldInverse.clone().multiply(object.matrixWorld);
+        const point = engine.camera.position.clone();
+        for (let index = 0; index < positions.count; index += 1) {
+          point.fromBufferAttribute(positions, index).applyMatrix4(toCamera);
+          const depth = -point.z;
+          nearestOpticDepth = Math.min(nearestOpticDepth, depth);
+          clippedOpticVertices += Number(depth <= engine.camera.near);
+          opticVertices += 1;
+        }
       });
       drawn = {
         rifleUid: rifle.uid,
@@ -305,6 +322,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         worldImage: true,
         magnifying: frame.magnifying,
         opticMeshCount,
+        opticVertices,
+        clippedOpticVertices,
+        nearestOpticDepth,
+        nearPlane: engine.camera.near,
         opticObjects,
         housingActive: lens.housingActive,
         magnification: frame.magnification,
@@ -622,12 +643,13 @@ const heldItemChecks = async (chromium, port) => {
 
 const opticZoomCheck = async (chromium, port) => {
   // One session also exercises clearing masks when switching between optic presentations.
-  // Other scopes and fixed-unity sights repeat these branches without protecting another rendering rule.
+  // The short-relief prism also protects the world camera's near-plane boundary.
   const { page } = await enterTestHouse(chromium, port);
   const rifleUids = new Map();
   for (const [opticType, gunType, endpoint, physicalWindow = false] of [
     ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
     ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
+    ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
     ['optic_mini_reflex', 'rifle_assault', 'min'],
     ['optic_holographic', 'rifle_assault', 'min', true],
   ]) {
@@ -657,6 +679,14 @@ const opticZoomCheck = async (chromium, port) => {
         return;
       }
       assert.deepEqual(record.opticObjects, [], 'the image excludes its own fitted optic');
+      if (opticType === 'optic_fixed_prism_4x') {
+        assert.ok(record.opticVertices > 0, 'the prism near-plane witness contains real model vertices');
+        assert.equal(
+          record.clippedOpticVertices,
+          0,
+          'the short-relief prism is not cut into slivers by the near plane',
+        );
+      }
       if (record.magnifying) {
         const pixels = await page.evaluate(async (moduleUrl) => {
           const { scopeDiscPixels } = await import(moduleUrl);

@@ -39,7 +39,7 @@ const HELD_ROOT_PATH = /^inventory\.hands\.(left|right)\./;
 /** Transitional view adapter: physical animation belongs to ActorAnimator, optical effects stay here. */
 export class HeldItems {
   private readonly scene = new Scene();
-  private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
+  private readonly camera: PerspectiveCamera;
   private readonly view = new Group();
   private readonly carried = new Group();
   private readonly torso = new Group();
@@ -61,6 +61,8 @@ export class HeldItems {
 
   constructor(inventory: Inventory, models: ModelLibrary | undefined, figure: FigureDef, sunSource?: DirectionalLight) {
     this.inventory = inventory;
+    const graphics = inventory.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+    this.camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, graphics.nearPlaneMetres, 10);
     this.models = models;
     this.figure = figure;
     this.sunSource = sunSource;
