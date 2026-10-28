@@ -37,6 +37,12 @@ const near = (positions: Vec3[], piece: PlacedPiece) =>
       ) <=
         STAIR_BODY_HALF_WIDTH + 0.5,
   );
+const fixedKey = (registry: Registry, station: CompiledTemplate, lockIds: ReadonlySet<string>) =>
+  (station.groundLoot ?? []).find(
+    ({ supply }) =>
+      supply.kind === 'fixed' &&
+      supply.items.some(({ item }) => lockIds.has(registry.items.get(item)?.key?.lock ?? '')),
+  );
 const doorApproachIssues = (registry: Registry, station: CompiledTemplate, occupied: Map<string, string>) => {
   const issues: string[] = [];
   for (const door of station.pieces.filter(
@@ -248,13 +254,8 @@ it('lets a player climb to the fixed matching key beside the roof corpse in the 
     .map((definition) => compileTemplate(registry, definition));
   expect(bases.length).toBeGreaterThan(0);
   for (const station of [...bases, compound]) {
-    const key = station.groundLoot?.find(
-      ({ supply }) => supply.kind === 'fixed' && supply.items.some(({ item }) => lockIds.has(registry.items.get(item)?.key?.lock ?? '')),
-    );
+    const key = fixedKey(registry, station, lockIds)!;
     expect(key, station.id).toBeDefined();
-    if (!key) {
-      throw new Error(`${station.id}: matching roof key is missing`);
-    }
     const corpses = station.pieces.filter((piece) => near([key.pos], piece));
     expect(corpses.length, station.id).toBeGreaterThan(0);
     for (const corpse of corpses) {
