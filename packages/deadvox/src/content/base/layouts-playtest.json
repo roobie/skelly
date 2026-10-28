@@ -675,11 +675,6 @@
                   "item": "portable_radio",
                   "count": 1,
                   "placement": "surface"
-                },
-                {
-                  "item": "camp_supply_manifest",
-                  "count": 1,
-                  "placement": "surface"
                 }
               ]
             },
@@ -708,6 +703,11 @@
                 {
                   "item": "real_suppressor",
                   "count": 1
+                },
+                {
+                  "item": "camp_supply_manifest",
+                  "count": 1,
+                  "placement": "surface"
                 }
               ]
             }
