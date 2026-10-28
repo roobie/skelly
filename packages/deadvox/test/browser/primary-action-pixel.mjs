@@ -282,10 +282,10 @@ const opticZoomRecord = ({ power, opticType, gunType }) => {
       );
       const { sight } = inventory.registry.models.get(inventory.registry.items.get(opticType).model).gun.attachment;
       const physicalGlass = physical
-        .localToWorld(engine.camera.position.clone().set(...sight.eye))
+        ?.localToWorld(engine.camera.position.clone().set(...sight.eye))
         .project(engine.camera);
       drawn = {
-        physicalGlass: [(physicalGlass.x + 1) / 2, (physicalGlass.y + 1) / 2],
+        physicalGlass: physicalGlass ? [(physicalGlass.x + 1) / 2, (physicalGlass.y + 1) / 2] : null,
         opticType,
         housingCentre: [...maskCentre],
         housingSources: [...lens.housing.meshes.keys()].map((mesh) => ({
@@ -428,7 +428,10 @@ const enterWorld = async (page) => {
 const enterTestHouse = async (chromium, port) => {
   const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+    process.stdout.write(`PAGE_ERROR ${error.stack}\n`);
+  });
   await page.addInitScript(fakePointerLock);
   await timePhase('testHouse-pixel-boot', async () => {
     await page.goto(
