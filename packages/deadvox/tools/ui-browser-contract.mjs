@@ -68,6 +68,11 @@ try {
               '  globalThis.uiContractRuntime = { sim, session, inventory, quickbar, screen, eye: () => [...eye()] };\n',
             ],
             [
+              '/src/core/handling.ts',
+              '    return { ok: true, job };',
+              '    globalThis.__uiContractQueuedMoves.push(structuredClone(job));\n',
+            ],
+            [
               '/src/debug/index.ts',
               '  const runtime: DebugRuntime = {',
               '  globalThis.uiContractDebug = { hooks, get readout() { return readout; }, get spawnStatus() { return spawnStatus; } };\n',
@@ -117,6 +122,7 @@ try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   page = await context.newPage();
   await page.addInitScript(() => {
+    globalThis.__uiContractQueuedMoves = [];
     globalThis.__uiContractFrames = 0;
     const countFrame = () => {
       globalThis.__uiContractFrames += 1;
@@ -763,9 +769,10 @@ try {
     true,
     'browser-owned key does nothing in game',
   );
-  const browserKeyEvent = await evaluate(
-    `window.__keyEvents.slice(${browserKeyEventsBefore}).find((event) => event.code === ${JSON.stringify(keyBindings.browserMenuBar.code)})`,
-  );
+  const recordedBrowserKey = `window.__keyEvents.slice(${browserKeyEventsBefore}).find((event) => event.code === ${JSON.stringify(keyBindings.browserMenuBar.code)})`;
+  // A frame can precede the timer task that records defaultPrevented after event dispatch.
+  await waitFor(() => evaluate(`Boolean(${recordedBrowserKey})`), 'browser-owned key is recorded');
+  const browserKeyEvent = await evaluate(recordedBrowserKey);
   assert.ok(browserKeyEvent, 'browser-owned key reaches the page in Chrome');
   assert.equal(browserKeyEvent.defaultPrevented, false, 'game leaves the browser-owned key unprevented');
   await action('debug.spawn-menu-toggle');
@@ -1167,18 +1174,22 @@ try {
   await moveCursorTo(transferDestination);
   await dispatchPointerAt('pointermove', -1, 1, transferDestination);
   assert(await dragGhost(), 'drag displays the item ghost before drop');
-  inputFrame = await evaluate('window.__uiContractFrames');
+  const queuedMovesBeforeDrop = await evaluate('window.__uiContractQueuedMoves.length');
   await dispatchPointerAt('pointerup', -1, 0, transferDestination);
-  await nextFrame(inputFrame, 'container transfer drop');
+  // Dispatch waits for a player tick; a frame need not run that tick, and later frames can finish the job.
+  const transferQueued = () =>
+    evaluate(`window.__uiContractQueuedMoves.slice(${queuedMovesBeforeDrop}).some((job) =>
+      job.itemUid === ${JSON.stringify(Number(transfer.sourceUid))})`);
+  await waitFor(transferQueued, 'container transfer enters the handling queue');
   assert.equal(await dragGhost(), null, 'drop removes the drag ghost');
-  assert.ok(await moveQueued(), 'container transfer remains in the handling queue');
+  assert.equal(await transferQueued(), true, 'container transfer enters the handling queue');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives queueing the container move');
   await press('Tab', 'Tab', 9);
   assert.equal(
     await evaluate("document.querySelector('#inventory').hidden"),
     true,
-    'Tab closes inventory while the move runs',
+    'Tab closes inventory after queueing the move',
   );
   await press('Tab', 'Tab', 9);
   assert.equal(
