@@ -253,12 +253,14 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       buffer: Buffer.from(replayText),
     });
     await replayNavigation;
-    await page
-      .waitForFunction(() => document.querySelector('#input-replay-status'))
-      .catch(async (cause) => {
-        const screen = await page.locator('body').innerText();
-        throw new Error(`Replay startup failed: ${JSON.stringify({ pageErrors, screen })}`, { cause });
-      });
+    await page.waitForFunction(
+      () => document.querySelector('#input-replay-status') || document.querySelector('#errors')?.textContent,
+    );
+    assert.equal(
+      await page.locator('#input-replay-status').count(),
+      1,
+      `Replay startup: ${await page.locator('#errors').textContent()}; page errors: ${JSON.stringify(pageErrors)}`,
+    );
     await page.waitForFunction(
       () =>
         ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
