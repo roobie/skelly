@@ -151,7 +151,10 @@ try {
   assert.equal(gesture.lockRequests[0].target, 'main#view');
   assert.equal(gesture.lockRequests[0].userActivationActive, true);
   assert.ok(gesture.lockChanges.includes('main#view'));
-  assert.ok(gesture.audioResumeCalls.some((call) => call.afterTrustedStartGesture && call.userActivationActive));
+  // Chromium can start audio already running; the first-gesture resume contract is Firefox's.
+  if (process.argv[2] !== 'chromium') {
+    assert.ok(gesture.audioResumeCalls.some((call) => call.afterTrustedStartGesture && call.userActivationActive));
+  }
   await verifyAltRelease(page);
   process.stdout.write(`Native Alt release browser: ${browser.version()}\n`);
   const gateCode = await page.evaluate(
