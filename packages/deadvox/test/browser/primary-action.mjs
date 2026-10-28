@@ -128,6 +128,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         });
       }
     });
+    await page.keyboard.down('w');
     await page.keyboard.down('AltLeft');
     await page.mouse.move(640, 360);
     await page.mouse.move(700, 380);
@@ -142,6 +143,12 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert.notEqual(headLook.viewYaw, headLook.bodyYaw, 'free look turns the view');
     await page.waitForFunction((frame) => globalThis.primaryActionTest.frames >= frame + 3, headLook.frames);
     await page.keyboard.up('AltLeft');
+    await page.keyboard.up('w');
+    assert.equal(
+      await page.evaluate(() => globalThis.primaryActionTest.input.intent().forward),
+      0,
+      'movement does not latch after W and Alt are released',
+    );
     await page.waitForFunction(() => {
       const { input } = globalThis.primaryActionTest;
       return !input.freeLooking && input.viewYaw === input.yaw && input.viewPitch === input.pitch;

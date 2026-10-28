@@ -724,6 +724,76 @@ describe('keyboard registry', () => {
       remove();
     }
   });
+  it.each(['mousemove', 'keydown', 'focus'] as const)('reconciles lost Alt and movement on %s', (type) => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const remove = keyboard.install();
+    try {
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'AltLeft', altKey: false }));
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      globalThis.dispatchEvent(new MouseEvent('mousemove', { altKey: true }));
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      // The releases and blur never reach this owner; recovery must use independent browser evidence.
+      const evidence = {
+        keydown: new KeyboardEvent('keydown', { code: 'KeyZ', altKey: false }),
+        focus: new Event('focus'),
+        mousemove: new MouseEvent('mousemove', { altKey: false }),
+      }[type];
+      globalThis.dispatchEvent(evidence);
+      expect(keyboard.held('view.free-look')).toBe(false);
+      expect(keyboard.held('movement.forward')).toBe(false);
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW' }));
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'AltLeft', altKey: true }));
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+    } finally {
+      remove();
+    }
+  });
+  it.each(['focus', 'visibility', 'pointer-lock'] as const)('clears held keys on sampled %s loss', (lost) => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    let focused = true;
+    let hidden = false;
+    let locked = true;
+    const properties = ['hasFocus', 'hidden', 'pointerLockElement'] as const;
+    const originals = properties.map((name) => Object.getOwnPropertyDescriptor(document, name));
+    Object.defineProperties(document, {
+      hasFocus: { configurable: true, value: () => focused },
+      hidden: { configurable: true, get: () => hidden },
+      pointerLockElement: { configurable: true, get: () => (locked ? document.body : null) },
+    });
+    try {
+      keyboard.press(event('KeyW'));
+      keyboard.press(event('AltLeft', { altKey: true }));
+      keyboard.reconcileFocus();
+      expect(keyboard.held('movement.forward')).toBe(true);
+      expect(keyboard.held('view.free-look')).toBe(true);
+      focused = lost !== 'focus';
+      hidden = lost === 'visibility';
+      locked = lost !== 'pointer-lock';
+      keyboard.reconcileFocus();
+      expect(keyboard.held('view.free-look')).toBe(false);
+      expect(keyboard.held('movement.forward')).toBe(false);
+      focused = true;
+      hidden = false;
+      locked = true;
+      keyboard.press(event('KeyW'));
+      expect(keyboard.held('movement.forward')).toBe(true);
+    } finally {
+      for (const [index, name] of properties.entries()) {
+        const original = originals[index];
+        if (original) {
+          Object.defineProperty(document, name, original);
+        } else {
+          Reflect.deleteProperty(document, name);
+        }
+      }
+    }
+  });
   it('cancels browser chords only while playing with pointer lock and outside text fields', () => {
     const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
     let context: InputContext = 'play';

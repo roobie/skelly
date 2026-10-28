@@ -55,7 +55,7 @@ try {
       consoleErrors.push(message.text());
     }
     if (message.type() === 'warning') {
-      process.stderr.write(`Firefox warning: ${message.text()}\n`);
+      process.stderr.write(`Browser warning: ${message.text()}\n`);
     }
   });
   await page.addInitScript(() => {
@@ -204,7 +204,7 @@ try {
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
   process.stdout.write(
-    'Firefox NATIVE first-gesture lock/audio/progress and F2-gated debug passed; menu/inventory are tested separately.\n',
+    'NATIVE first-gesture lock/progress, Alt release and F2-gated debug passed; menu/inventory are tested separately.\n',
   );
 } catch (error) {
   let timer;
@@ -237,9 +237,9 @@ try {
   const windows = spawnSync('xwininfo', ['-root', '-tree'], { encoding: 'utf8', timeout: 5000 });
   const focus = spawnSync('xprop', ['-root', '_NET_ACTIVE_WINDOW'], { encoding: 'utf8', timeout: 5000 });
   process.stderr.write(
-    `NATIVE_FIREFOX_FAILURE ${JSON.stringify({
+    `NATIVE_INPUT_FAILURE ${JSON.stringify({
       error: String(error),
-      firefoxVersion: browser?.version(),
+      browserVersion: browser?.version(),
       pageErrors,
       consoleErrors,
       state,

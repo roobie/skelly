@@ -166,7 +166,7 @@ describe('pointer input', () => {
     expect(keyboardInput.held('view.free-look')).toBe(false);
   });
   it('cancels each viewer-focus reason live but not during replay', () => {
-    for (const reason of ['window-blur', 'document-hidden', 'pointer-lock-lost'] as const) {
+    for (const reason of ['window-blur', 'document-hidden', 'pointer-lock-lost', 'modifier-state-lost'] as const) {
       expect(shouldCancelInputForViewerFocus(reason, false)).toBe(true);
       expect(shouldCancelInputForViewerFocus(reason, true)).toBe(false);
     }

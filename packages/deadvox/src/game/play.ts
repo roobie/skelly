@@ -4067,6 +4067,7 @@ export const startPlay = (
   };
 
   const prepareStreaming = (now: RealTimestamp): void => {
+    keyboardInput.reconcileFocus();
     streamer.update(body.pos[0], body.pos[2]);
     if (!worldLoading.ready && replayDriver && !replayDriver.initializeColumns()) {
       worldLoading.fail('Recorded terrain could not be initialized. Reload and choose another replay.');
