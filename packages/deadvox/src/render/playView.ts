@@ -683,6 +683,7 @@ export const createPlayView = (
       }
       drawCounters?.begin();
       try {
+        zombieMeshes.uploadPoses?.(renderer);
         mood.render(
           () => {
             if (ownView) {
