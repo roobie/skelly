@@ -2,7 +2,7 @@ local limbs = {
   'upperArm.L': [0, 0, -40], 'upperArm.R': [0, 0, 25],
   'forearm.L': [0, 0, -25], 'forearm.R': [0, 0, 40],
   'thigh.L': [0, 0, -12], 'thigh.R': [0, 0, 18],
-  'shin.L': [0, 0, 15], 'shin.R': [0, 0, -30],
+  'shin.L': [0, 0, -15], 'shin.R': [0, 0, 30],
 };
 {
   duration: 1.15,
@@ -17,7 +17,7 @@ local limbs = {
     } },
     { id: 'sprawled', weights: { forward: 2, backward: 2 }, pitch: 60, roll: 0, rotations: limbs + {
       'upperArm.R': [0, 0, 85], 'forearm.R': [0, 0, 65],
-      'thigh.L': [0, 0, -35], 'shin.L': [0, 0, 65],
+      'thigh.L': [0, 0, -60], 'shin.L': [0, 0, 65],
     } },
   ],
 }

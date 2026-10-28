@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Bone } from '../src/core/body.ts';
 import { build, generateValid } from '../src/core/generate.ts';
-import { applyPoint, IDENTITY_M, length, sub } from '../src/core/math.ts';
+import { applyPoint, cross, dot, IDENTITY_M, length, mulMV, sub, type Transform } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
 import { attackPose, LUNGE_GRAB } from '../src/mob/attack.ts';
@@ -129,7 +129,7 @@ describe('flinchPose', () => {
 const restingSurfaceClearances = (actor: ReturnType<typeof deathActorOf>, pose: Pose): Record<string, number> => {
   const transforms = boneTransforms(actor.bones, pose);
   return Object.fromEntries(
-    ['pelvis', 'chest', 'hand.L', 'hand.R'].map((id) => [
+    ['pelvis', 'chest', 'hand.L', 'hand.R', 'foot.L', 'foot.R'].map((id) => [
       id,
       Math.min(...corners(actor.bodyExtents.get(id)!).map((point) => applyPoint(transforms.get(id)!, point)[1])) /
         actor.params.height,
@@ -137,9 +137,40 @@ const restingSurfaceClearances = (actor: ReturnType<typeof deathActorOf>, pose: 
   );
 };
 
+const extentsOverlap = (
+  actor: ReturnType<typeof deathActorOf>,
+  transforms: ReadonlyMap<string, Transform>,
+  leftId: string,
+  rightId: string,
+): boolean => {
+  const box = (id: string) => {
+    const transform = transforms.get(id)!;
+    return {
+      points: corners(actor.bodyExtents.get(id)!).map((point) => applyPoint(transform, point)),
+      axes: (
+        [
+          [1, 0, 0],
+          [0, 1, 0],
+          [0, 0, 1],
+        ] as const
+      ).map((axis) => mulMV(transform.r, axis)),
+    };
+  };
+  const left = box(leftId);
+  const right = box(rightId);
+  const axes = [...left.axes, ...right.axes, ...left.axes.flatMap((a) => right.axes.map((b) => cross(a, b)))];
+  return axes
+    .filter((axis) => length(axis) > 1e-10)
+    .every((axis) => {
+      const a = left.points.map((point) => dot(point, axis));
+      const b = right.points.map((point) => dot(point, axis));
+      return Math.max(...a) > Math.min(...b) && Math.max(...b) > Math.min(...a);
+    });
+};
+
 describe('deathPose', () => {
   it.for(TEMPLATES.flatMap((template) => deathContent.poses.map((entry) => [template.name, entry.id] as const)))(
-    '%s %s settles every bone end from a raised walking leg and attacking arms',
+    '%s %s rests with supported limbs and separated feet after walking or attacking',
     async ([name, poseId], { annotate }) => {
       const found = setup(name);
       const actor = deathActorOf(found);
@@ -157,6 +188,7 @@ describe('deathPose', () => {
       for (const base of [walking, attacking]) {
         const pose = deathPose(actor, base, DEATH_FALL_DURATION, { direction: -1, poseId });
         const transforms = boneTransforms(actor.bones, pose);
+        expect.soft(extentsOverlap(actor, transforms, 'foot.L', 'foot.R'), `${poseId}: feet overlap`).toBe(false);
         for (const bone of actor.bones) {
           const transform = transforms.get(bone.id)!;
           expect(

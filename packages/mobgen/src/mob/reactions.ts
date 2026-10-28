@@ -259,20 +259,24 @@ const restingRotation = (
     // Keep the authored hip incline so a thicker chest does not suspend the pelvis.
     return world.r;
   }
-  const face = supportFaces[bone.id];
-  if (face) {
-    const normal: Vec3 = [face[0]!, face[1]!, face[2]!];
-    // The ankle-to-toe axis crosses the foot diagonally; fit the authored contact face instead.
-    return mulMM(align(mulMV(world.r, normal), [0, -1, 0]), world.r);
-  }
   const vector = mulMV(world.r, sub(bone.tail, bone.head));
   const horizontal: Vec3 = [vector[0], 0, vector[2]];
   if (length(horizontal) <= 1e-10) {
     return world.r;
   }
+  let flat = mulMM(align(vector, horizontal), world.r);
+  const face = supportFaces[bone.id];
+  if (face) {
+    const axis = normalize(horizontal);
+    const normal = mulMV(flat, [face[0]!, face[1]!, face[2]!]);
+    const down: Vec3 = [0, -1, 0];
+    // Roll around the bone, not the shortest arc to the floor: that arc swings the toes inward.
+    const angle = (Math.atan2(dot(axis, cross(normal, down)), dot(normal, down)) * 180) / Math.PI;
+    flat = mulMM(rotAxis(axis, angle), flat);
+  }
   const atDrop = (drop: number): Mat3 => {
     const planar = scaleVector(normalize(horizontal), Math.sqrt(Math.max(0, dot(vector, vector) - drop * drop)));
-    return mulMM(align(vector, [planar[0], -drop, planar[2]]), world.r);
+    return mulMM(align(horizontal, [planar[0], -drop, planar[2]]), flat);
   };
   return flatWorlds && actor.bodyExtents.has(bone.id) && deathContent.settleBones.includes(bone.id)
     ? supportedRotation(actor, bone, { world, flatWorlds, atDrop })
