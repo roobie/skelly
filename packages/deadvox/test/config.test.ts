@@ -44,6 +44,11 @@ it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=unknown')).debugHandedness).toBeUndefined();
 });
 
+it('restricts corpse pose overrides to debug URL configuration', () => {
+  expect(configFromUrl(new URLSearchParams('debug=1&deathPose=fixture-pose')).debugDeathPose).toBe('fixture-pose');
+  expect(configFromUrl(new URLSearchParams('deathPose=fixture-pose')).debugDeathPose).toBeUndefined();
+});
+
 it('copies site-selected weathering into replay and resumed configurations', () => {
   const profiles = BUNDLED_CONTENT.registry.weathering;
   const defaultProfile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;

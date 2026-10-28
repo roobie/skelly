@@ -2184,6 +2184,42 @@
     }
   },
   {
+    "id": "worn_hoodie_body",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_hoodie_body",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_hoodie_upper",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_hoodie_upper",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_hoodie_fore",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_hoodie_fore",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "worn_trousers_pelvis",
     "kind": "item",
     "options": {
