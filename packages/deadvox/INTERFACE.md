@@ -136,15 +136,10 @@ state the owned item lacks. See `src/render/itemLook.ts`, `itemLook`.
 
 ## Title choice
 
-A compatible saved world makes Continue and replacement the primary, centred title
-choice. Replacement names its destructive effect and still requires confirmation;
-an empty canvas click must not choose it. Storage and build diagnostics stay secondary
-so they cannot bury the decision. Without a compatible save, the simple start remains.
-See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#overlay.startup-ready.saved-choice".
-
-The new character choice, its start button and the save controls lead the title card in
-every state, with no save, with a save and with a refused save; the controls list follows.
-Starting is the first decision on the title, so it must be seen first, not found below a
-reference list. A refused save's notice comes before that choice, because it changes what
-starting does. See `index.html`, "title-choice", and `src/ui/style.css`,
-"#overlay.startup-ready.save-refused".
+Starting is the first decision on the title, so the player must find it before reference
+material such as the controls list, and storage and build diagnostics must not bury it.
+A save that cannot be used changes what starting means, so the player learns that before
+choosing. Replacing a saved world destroys it, so replacement needs an explicit, confirmed
+choice that names its effect; an empty canvas click must never make it. See
+`src/ui/saveController.ts`, `SaveController`, `index.html`, "title-choice", and
+`src/ui/style.css`, "#overlay.startup-ready.saved-choice".
