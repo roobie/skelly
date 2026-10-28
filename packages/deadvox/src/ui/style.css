@@ -447,7 +447,9 @@ body.unconscious::after {
   width: 100%;
   max-width: 100%;
   max-height: calc(100vh - 2rem);
+  overflow-x: hidden;
   overflow-y: auto;
+  overflow-wrap: anywhere;
   margin: 0;
   padding: calc(var(--ui-spacing) * 1.5rem);
   border: 1px solid var(--line);
