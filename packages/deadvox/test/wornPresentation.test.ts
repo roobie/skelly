@@ -365,7 +365,7 @@ describe('shared worn presentation', () => {
     expect(inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
     const { models } = library();
     const world = new PlayerMeshes(0.5, armFigure, armRegistry.models, models);
-    const view = new HeldItems(inventory, models, armFigure);
+    const view = new HeldItems(inventory, models, armFigure, { nearPlaneMetres: 0.01 });
     const build = vi.spyOn(HeldPresentation.prototype, 'addItem');
     const camera = new PerspectiveCamera();
     const update = () => {

@@ -148,51 +148,56 @@ const heldCompassCardChange = (page) =>
     });
   }, 12 * 3600);
 
-// Puts the hunting rifle's 3-9x scope in ADS at `power` and records one frame: the lens frame, the lens pass
-// uniforms, the zoom target's centre and every object the zoom camera submitted, with layers and parents.
-const opticZoomRecord = (power) => {
+// Endpoint selection catches a variable scope mistaken for a fixed-unity sight at its lowest power.
+const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
   r.input.pitch = 0;
   const { sim } = r.session;
   sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
-  for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
-    inventory.add(inventory.create(wear), { kind: 'worn' });
+  if (withGear) {
+    for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
+      inventory.add(inventory.create(wear), { kind: 'worn' });
+    }
   }
-  const rifle = inventory.create('rifle_hunting');
-  const scope = inventory.create('optic_hunting_3_9x');
-  const definition = inventory.registry.items.get('rifle_hunting');
+  const rifle = rifleUid === undefined ? inventory.create(gunType) : inventory.itemByUid(rifleUid);
+  const scope = inventory.create(opticType);
+  const definition = inventory.registry.items.get(gunType);
   const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
-  let fitted = false;
-  for (const slot of stations) {
-    try {
-      inventory.fitSlot(rifle, slot, scope);
-      fitted = true;
-      break;
-    } catch {
-      // another station may fit
+  const fitOptic = () => {
+    for (const slot of stations) {
+      try {
+        inventory.fitSlot(rifle, slot, scope);
+        return;
+      } catch {
+        // Another station may fit.
+      }
     }
-  }
-  if (!fitted) {
-    throw new Error('Could not fit the 3-9x scope');
-  }
-  r.setHand(r.dominant, rifle);
-  r.debugGunPose.toggle('ads');
-  const half = (bits) => {
-    const exponent = (bits >> 10) & 0x1f;
-    const fraction = bits & 0x3_ff;
-    const sign = bits & 0x80_00 ? -1 : 1;
-    if (exponent === 0) {
-      return sign * 2 ** -14 * (fraction / 1024);
-    }
-    return exponent === 31 ? sign * Number.POSITIVE_INFINITY : sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
+    throw new Error(`Could not fit ${opticType}`);
   };
+  fitOptic();
+  r.setHand(r.dominant, rifle);
+  if (r.debugGunPose.mode !== 'ads') {
+    r.debugGunPose.toggle('ads');
+  }
+  const opticModel = inventory.registry.models.get(inventory.registry.items.get(opticType).model);
+  const range = opticModel.gun.attachment.properties.magnification;
+  const targetPower = range?.[endpoint] ?? 1;
+  if (range && range.min < range.max) {
+    const { step } = inventory.registry.items.get(opticType).opticZoom;
+    const limit = Math.ceil((range.max - range.min) / step) + 1;
+    for (let tick = 0; tick < limit && r.opticZoom.appliedPower(rifle, true) !== targetPower; tick += 1) {
+      r.opticZoom.wheel(rifle, true, endpoint === 'min' ? 1 : -1);
+    }
+  }
   return new Promise((done, failed) => {
     const lens = engine.mood.opticLens;
     const camera = lens.zoomCamera;
     const { renderer, scene } = engine;
     const { render } = renderer;
     let drawn;
+    let sourceDraws = [];
+    let imageDraws = 0;
     let frames = 0;
     const isUnder = (object, root) => {
       for (let node = object; node; node = node.parent) {
@@ -218,10 +223,26 @@ const opticZoomRecord = (power) => {
     };
     // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
     // is what the zoom pass draws, whatever the layer or visibility rules were.
-    const submit = (drawnScene) => {
+    const submit = (drawnScene, observedCamera = camera) => {
       const objects = [];
       const others = {};
+      const opticObjects = [];
+      const optic = r.view.playerMeshes.animator.slotModelOf(
+        rifle,
+        Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
+      );
       const restore = [];
+      const recordObject = (object) => {
+        if (optic && isUnder(object, optic)) {
+          opticObjects.push(object.geometry.userData.piece ?? pathOf(object));
+        }
+        if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
+          objects.push(pathOf(object));
+        } else {
+          const key = topLevelKey(object);
+          others[key] = (others[key] ?? 0) + 1;
+        }
+      };
       drawnScene.traverse((object) => {
         if (!(object.isMesh || object.isLine || object.isPoints)) {
           return;
@@ -231,20 +252,17 @@ const opticZoomRecord = (power) => {
           object.onBeforeRender = prior;
         });
         object.onBeforeRender = function (...args) {
-          if (args[2] === camera) {
-            if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
-              objects.push(pathOf(object));
-            } else {
-              const key = topLevelKey(object);
-              others[key] = (others[key] ?? 0) + 1;
-            }
+          if (args[2] !== observedCamera) {
+            return prior.apply(this, args);
           }
+          recordObject(object);
           return prior.apply(this, args);
         };
       });
       return {
         objects,
         others,
+        opticObjects,
         restore: () => {
           for (const undo of restore) {
             undo();
@@ -253,35 +271,66 @@ const opticZoomRecord = (power) => {
       };
     };
     renderer.render = function (drawnScene, drawnCamera) {
-      if (drawnCamera !== camera || drawnScene !== scene) {
+      const frame = r.view.held.opticLensFrame;
+      const source = frame?.magnification === 1 && frame.worldAtUnity === false && drawnCamera === engine.camera;
+      if (drawnScene !== scene || (drawnCamera !== camera && !source)) {
         render.call(this, drawnScene, drawnCamera);
         return;
       }
-      const { objects, others, restore } = submit(drawnScene);
+      const { objects, others, opticObjects, restore } = submit(drawnScene, drawnCamera);
       try {
         render.call(this, drawnScene, drawnCamera);
       } finally {
         restore();
       }
-      const size = Math.min(lens.target.width, lens.target.height);
-      const centre = new Uint16Array(4);
-      renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
+      if (source) {
+        sourceDraws = opticObjects;
+        return;
+      }
+      imageDraws += 1;
       const { uniforms } = engine.mood.opticPass;
+      const optic = r.view.playerMeshes.animator.slotModelOf(
+        rifle,
+        Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
+      );
+      let opticMeshCount = 0;
+      let opticVertices = 0;
+      let clippedOpticVertices = 0;
+      let nearestOpticDepth = Number.POSITIVE_INFINITY;
+      engine.camera.updateWorldMatrix(true, false);
+      optic?.traverse((object) => {
+        if (!object.isMesh) {
+          return;
+        }
+        opticMeshCount += 1;
+        const positions = object.geometry.getAttribute('position');
+        const toCamera = engine.camera.matrixWorldInverse.clone().multiply(object.matrixWorld);
+        const point = engine.camera.position.clone();
+        for (let index = 0; index < positions.count; index += 1) {
+          point.fromBufferAttribute(positions, index).applyMatrix4(toCamera);
+          const depth = -point.z;
+          nearestOpticDepth = Math.min(nearestOpticDepth, depth);
+          clippedOpticVertices += Number(depth <= engine.camera.near);
+          opticVertices += 1;
+        }
+      });
       drawn = {
-        power,
-        frames,
-        magnification: r.view.held.opticLensFrame?.magnification,
-        zoomCameraFov: camera.fov,
-        mainFov: engine.camera.fov,
+        rifleUid: rifle.uid,
+        opticType,
+        endpoint,
+        targetPower,
+        worldImage: true,
+        magnifying: frame.magnifying,
+        opticMeshCount,
+        opticVertices,
+        clippedOpticVertices,
+        nearestOpticDepth,
+        nearPlane: engine.camera.near,
+        opticObjects,
+        housingActive: lens.housingActive,
+        magnification: frame.magnification,
         zoomCameraLayers: camera.layers.mask,
-        mainCameraLayers: engine.camera.layers.mask,
-        uniforms: {
-          zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.target.texture,
-          uLensCenter: uniforms.uLensCenter.value.toArray(),
-          uLensRadius: uniforms.uLensRadius.value.toArray(),
-        },
-        targetSize: [lens.target.width, lens.target.height, size],
-        targetCentreRgba: [...centre].map(half),
+        zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.target.texture,
         drawnObjects: objects,
         worldLayerDrawnByTopLevel: others,
       };
@@ -291,7 +340,26 @@ const opticZoomRecord = (power) => {
     held.render = (...args) => {
       after.apply(held, args);
       frames += 1;
-      if (drawn) {
+      const frame = held.opticLensFrame;
+      if (frame?.magnification === 1 && frame.worldAtUnity === false && sourceDraws.length > 0) {
+        drawn = {
+          rifleUid: rifle.uid,
+          opticType,
+          endpoint,
+          targetPower,
+          magnification: frame.magnification,
+          worldImage: false,
+          opticMeshCount: sourceDraws.length,
+          drawnObjects: [],
+          sourceDraws,
+          imageDraws,
+          housingActive: lens.housingActive,
+          zoomActive: engine.mood.opticPass.uniforms.uZoomActive.value,
+          reticleCenter: frame.reticleCenter,
+          shaderReticleCenter: engine.mood.opticPass.uniforms.uReticleCenter.value.toArray(),
+        };
+      }
+      if (drawn?.opticMeshCount > 0) {
         held.render = after;
         renderer.render = render;
         done(drawn);
@@ -301,12 +369,6 @@ const opticZoomRecord = (power) => {
         failed(new Error('The zoom camera did not draw within 40 frames'));
       }
     };
-    // The wheel steps the scope's power one step at a time from its authored 6x.
-    let guard = 0;
-    while (r.opticZoom.appliedPower(rifle, true) > power && guard < 20) {
-      r.opticZoom.wheel(rifle, true, 1);
-      guard += 1;
-    }
   });
 };
 
@@ -400,7 +462,10 @@ const enterWorld = async (page) => {
 const enterTestHouse = async (chromium, port) => {
   const page = await chromium.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
-  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+    process.stdout.write(`PAGE_ERROR ${error.stack}\n`);
+  });
   await page.addInitScript(fakePointerLock);
   await timePhase('testHouse-pixel-boot', async () => {
     await page.goto(
@@ -577,25 +642,74 @@ const heldItemChecks = async (chromium, port) => {
 };
 
 const opticZoomCheck = async (chromium, port) => {
-  const { page, capture } = await enterTestHouse(chromium, port);
-  await timePhase('optic-zoom-world-only', async () => {
-    const record = await page.evaluate(opticZoomRecord, 3);
-    await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
-    process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
-    assert.equal(record.magnification, 3, 'the scope runs its magnified branch at the stepped power');
-    assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
-    assert.equal(
-      record.zoomCameraLayers & 0b1110,
-      0,
-      'the magnified camera sees none of the figure, self-mask or optic body layers',
-    );
-    assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the zoom camera submits world objects');
-    assert.deepEqual(record.drawnObjects, [], 'the zoom camera is submitted no held, worn or own-body geometry');
-    assert.ok(
-      record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
-      `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
-    );
-  });
+  // One session also exercises clearing masks when switching between optic presentations.
+  // The short-relief prism also protects the world camera's near-plane boundary.
+  const { page } = await enterTestHouse(chromium, port);
+  const rifleUids = new Map();
+  for (const [opticType, gunType, endpoint, physicalWindow = false] of [
+    ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
+    ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
+    ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
+    ['optic_mini_reflex', 'rifle_assault', 'min'],
+    ['optic_holographic', 'rifle_assault', 'min', true],
+  ]) {
+    await timePhase('optic-disc-endpoint', async () => {
+      const record = await page.evaluate(opticZoomRecord, {
+        opticType,
+        gunType,
+        endpoint,
+        rifleUid: rifleUids.get(gunType),
+        withGear: rifleUids.size === 0,
+      });
+      rifleUids.set(gunType, record.rifleUid);
+      const { drawnObjects, ...summary } = record;
+      process.stdout.write(
+        `OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify({ ...summary, drawnObjectCount: drawnObjects.length })}\n`,
+      );
+      assert.equal(record.magnification, record.targetPower, 'the optic reaches its authored endpoint');
+      assert.ok(record.opticMeshCount > 0, 'a physical optic is present');
+      assert.equal(record.worldImage, !physicalWindow, 'the fixture presents its selected sight picture');
+      if (!record.worldImage) {
+        assert.equal(record.imageDraws, 0, 'the physical window needs no replacement image');
+        assert.equal(record.housingActive, false, 'no stale disc mask clips the source-window reticle');
+        assert.equal(record.zoomActive, 0, 'the shader preserves the source image');
+        assert.ok(record.sourceDraws.includes('optic-near-frame'), 'the physical near frame is actually drawn');
+        assert.ok(!record.sourceDraws.includes('optic-ads-housing'), 'the lengthwise ADS hood is not drawn');
+        assert.deepEqual(record.shaderReticleCenter, record.reticleCenter, 'the reticle is not recentered');
+        return;
+      }
+      assert.deepEqual(record.opticObjects, [], 'the image excludes its own fitted optic');
+      if (opticType === 'optic_fixed_prism_4x') {
+        assert.ok(record.opticVertices > 0, 'the prism near-plane witness contains real model vertices');
+        assert.equal(
+          record.clippedOpticVertices,
+          0,
+          'the short-relief prism is not cut into slivers by the near plane',
+        );
+      }
+      if (record.magnifying) {
+        const pixels = await page.evaluate(async (moduleUrl) => {
+          const { scopeDiscPixels } = await import(moduleUrl);
+          return scopeDiscPixels(globalThis.primaryActionTest);
+        }, '/test/browser/optic-disc-scene.mjs');
+        process.stdout.write(`OPTIC_DISC_PIXELS ${JSON.stringify({ opticType, endpoint, ...pixels })}\n`);
+        assert.ok(pixels.occludingPixels > 0, 'opaque tube geometry would obscure the interior without the disc');
+        assert.equal(pixels.unreplacedPixels, 0, 'the disc replaces every witnessed tube pixel inside its aperture');
+      }
+      assert.equal(record.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
+      assert.equal(record.housingActive, !record.magnifying, 'only fixed-unity discs preserve foreground housing');
+      if (record.magnification > 1) {
+        assert.equal(
+          record.zoomCameraLayers & 0b1110,
+          0,
+          'the magnified camera sees none of the figure, self-mask or optic body layers',
+        );
+        assert.deepEqual(record.drawnObjects, [], 'the magnified camera submits no held, worn or own-body geometry');
+      }
+      assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the image camera submits world objects');
+    });
+  }
+  await page.close();
 };
 
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers

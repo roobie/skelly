@@ -9,7 +9,7 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
     },
     {
       id: 'optic_hunting_3_9x', name: '3–9× hunting scope', category: 'misc',
-      weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom,
+      weight: 400, size: [2, 2], model: 'optic_hunting_3_9x', opticMagnification: 6, opticZoom: opticZoom, opticUnityImage: 'world',
     },
     {
       "id": "optic_digital_thermal",
@@ -17,7 +17,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "category": "misc",
       "weight": 750,
       "size": [2, 2],
-      "model": "optic_digital_thermal"
+      "model": "optic_digital_thermal",
+      opticUnityImage: 'world',
     },
     {
       "id": "optic_fixed_prism_4x",
@@ -25,7 +26,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "category": "misc",
       "weight": 450,
       "size": [1, 2],
-      "model": "optic_fixed_prism_4x"
+      "model": "optic_fixed_prism_4x",
+      opticUnityImage: 'world',
     },
     {
       "id": "optic_high_mag_5_25x",
@@ -34,6 +36,7 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "weight": 900,
       "size": [2, 2],
       "model": "optic_high_mag_5_25x",
+      opticUnityImage: 'world',
       "opticMagnification": 10,
       opticZoom: opticZoom,
     },
@@ -43,7 +46,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "category": "misc",
       "weight": 250,
       "size": [1, 1],
-      "model": "optic_holographic"
+      "model": "optic_holographic",
+      opticUnityImage: 'source',
     },
     {
       "id": "optic_lpvo_1_6x",
@@ -52,6 +56,7 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "weight": 520,
       "size": [2, 2],
       "model": "optic_lpvo_1_6x",
+      opticUnityImage: 'world',
       "opticMagnification": 3,
       opticZoom: opticZoom,
     },
@@ -61,7 +66,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "category": "misc",
       "weight": 180,
       "size": [1, 1],
-      "model": "optic_mini_reflex"
+      "model": "optic_mini_reflex",
+      opticUnityImage: 'world',
     },
     {
       "id": "optic_tube_dot",
@@ -69,7 +75,8 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "category": "misc",
       "weight": 220,
       "size": [1, 2],
-      "model": "optic_tube_dot"
+      "model": "optic_tube_dot",
+      opticUnityImage: 'world',
     },
     {
       "id": "rail_front_sight",
