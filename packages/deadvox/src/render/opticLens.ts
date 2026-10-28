@@ -11,7 +11,7 @@ import {
 } from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import type { OpticLensFrame } from '../core/opticView.ts';
-import { opticFieldOfView } from '../core/opticView.ts';
+import { opticFieldOfView, opticRendersWorld } from '../core/opticView.ts';
 import { OpticHousingMask } from './opticHousingMask.ts';
 import { OPTIC_BODY_LAYER } from './shadowFlags.ts';
 
@@ -20,6 +20,7 @@ const OPTIC_LENS_SHADER = {
   uniforms: {
     tDiffuse: { value: null },
     uZoomTexture: { value: null },
+    uZoomActive: { value: 0 },
     uHousingTexture: { value: null },
     uHousingActive: { value: 0 },
     uLensCenter: { value: new Vector2(0.5, 0.5) },
@@ -41,6 +42,7 @@ void main() {
   fragmentShader: `
 uniform sampler2D tDiffuse;
 uniform sampler2D uZoomTexture;
+uniform float uZoomActive;
 uniform sampler2D uHousingTexture;
 uniform float uHousingActive;
 uniform vec2 uLensCenter;
@@ -84,7 +86,8 @@ void main() {
   float radius = pow(pow(profile.x, uLensShape.y) + pow(profile.y, uLensShape.y), 1.0 / uLensShape.y);
   float housing = texture2D(uHousingTexture, vUv).r * uHousingActive;
   float aperture = (1.0 - smoothstep(0.96, 1.0, radius)) * (1.0 - housing);
-  vec3 color = mix(source.rgb, texture2D(uZoomTexture, vUv).rgb, aperture);
+  vec3 lens = mix(source.rgb, texture2D(uZoomTexture, vUv).rgb, uZoomActive);
+  vec3 color = mix(source.rgb, lens, aperture);
   color = reticle((vUv - uReticleCenter) / uLensRadius, color, aperture);
   gl_FragColor = vec4(color, source.a);
 }`,
@@ -109,15 +112,17 @@ export class OpticLensRenderer {
   }
 
   /**
-   * Every optic presents the world through its window as an image, so glass and the inner tube never fill it.
-   * At unity the image keeps the gun, whose sights and rail stay visible through the window, and drops only the
-   * presented optic. Magnified, it is the environment alone: a scope focused far away does not show a sharp
-   * close-eye gun.
+   * Unity images retain nearby gun features, but exclude the optic itself. A source-window presentation needs
+   * neither a replacement image nor its housing mask. Magnified images remain the far world alone.
    */
   prepare(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, frame: OpticLensFrame): void {
     const pass = renderer.getDrawingBufferSize(new Vector2());
     if (this.target.width !== pass.x || this.target.height !== pass.y) {
       this.target.setSize(pass.x, pass.y);
+    }
+    this.housingPrepared = false;
+    if (!opticRendersWorld(frame)) {
+      return;
     }
     this.housingPrepared = this.housing.prepare(renderer, scene, camera);
     const previous = renderer.getRenderTarget();
@@ -148,6 +153,7 @@ export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER)
 export const setOpticLensUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
   const { reticle, aperture } = frame;
   const { uniforms } = pass;
+  uniforms.uZoomActive!.value = opticRendersWorld(frame) ? 1 : 0;
   uniforms.uReticleCenter!.value.set(...frame.reticleCenter);
   uniforms.uLensShape!.value.set(aperture.aspectRatio, aperture.exponent);
   uniforms.uReticleCount!.value = reticle?.primitives.length ?? 0;

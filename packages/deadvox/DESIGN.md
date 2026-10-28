@@ -3240,9 +3240,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
 - **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor is an effect closer than the world camera's near plane, so it keeps its own planes without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
-  hides more of the scene. At unity the window keeps nearby gun features, as a real 1× sight does, but never the
-  optic itself, which would fill its own window. See `src/render/playerFigure.ts`, `PlayerMeshes`, and
-  `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
+  hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
+  never the optic itself, which would fill its own window. The holographic sight instead keeps its physical
+  window, so its glass and near frame remain part of the sight picture. Image selection is authored rather than
+  selected by item identity in the renderer. See `src/core/opticView.ts`, `opticRendersWorld`;
+  `src/core/schema.ts`, `ItemSchema`; and `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
 - **Zoom shows the environment only:** the magnified image is the world seen through the lens, so the zoom camera
   sets the world layer alone instead of copying the main camera's mask, and the player's figure, held and worn items
   and own-head layers never enter it. three.js layers do not inherit, so a node added under the figure takes its

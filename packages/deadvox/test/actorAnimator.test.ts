@@ -609,7 +609,7 @@ const unityOpticTypes = (): string[] => {
 };
 
 it.each(unityOpticTypes())(
-  '%s shows the gun but not itself through its unity disc, and its hood leaves only own view',
+  '%s presents its authored unity image, and its hood leaves only own view',
   async (opticType) => {
     const geometry = new BoxGeometry();
     const opticGeometry = new BoxGeometry();
@@ -695,15 +695,19 @@ it.each(unityOpticTypes())(
         },
       } as unknown as WebGLRenderer;
       lens.prepare(renderer, scene, camera, frame!);
-      const image = renders.find((entry) => entry.image)!.drawn;
-      const mask = renders.find((entry) => !entry.image)!.drawn;
-      for (const piece of gunPieces) {
-        expect(image.has(piece)).toBe(true);
+      if (frame!.worldAtUnity) {
+        const image = renders.find((entry) => entry.image)!.drawn;
+        const mask = renders.find((entry) => !entry.image)!.drawn;
+        for (const piece of gunPieces) {
+          expect(image.has(piece)).toBe(true);
+        }
+        for (const piece of opticPieces) {
+          expect(image.has(piece)).toBe(false);
+        }
+        expect(new Set([...mask].map((proxy) => proxy.geometry))).toEqual(new Set([opticGeometry]));
+      } else {
+        expect(renders).toEqual([]);
       }
-      for (const piece of opticPieces) {
-        expect(image.has(piece)).toBe(false);
-      }
-      expect(new Set([...mask].map((proxy) => proxy.geometry))).toEqual(new Set([opticGeometry]));
       f.update(camera, f.pose, 0, { ...handling, readiness: { ...handling.readiness, aimingDownSights: false } });
       for (const piece of opticPieces) {
         expect(piece.layers.isEnabled(PLAYER_FIGURE_LAYER)).toBe(true);

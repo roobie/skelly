@@ -2,7 +2,13 @@ import type { OpticAperture } from '@skelly/thing-core/optic-aperture';
 import type { Reticle } from '@skelly/thing-core/reticle';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
-import { insideLensAperture, type LensAperture, opticFieldOfView, opticViewSettings } from '../src/core/opticView.ts';
+import {
+  insideLensAperture,
+  type LensAperture,
+  opticFieldOfView,
+  opticRendersWorld,
+  opticViewSettings,
+} from '../src/core/opticView.ts';
 import type { ItemDef, ModelDef } from '../src/core/schema.ts';
 
 const aperture: OpticAperture = { aspectRatio: 1, exponent: 2 };
@@ -36,6 +42,7 @@ const itemFor = (opticMagnification?: number): ItemDef => ({
   weight: 1,
   size: [1, 1],
   model: 'optic_fixture_model',
+  opticUnityImage: 'world',
   ...(opticMagnification === undefined
     ? {}
     : { opticMagnification, opticZoom: { step: 0.5, rememberPerWeapon: true } }),
@@ -65,20 +72,43 @@ describe('optic view settings', () => {
   it('uses the core-mod value for a variable optic and preserves the exported reticle', () => {
     const item = itemFor(4);
     const model = modelFor({ magnification: { min: 1, max: 6 }, reticle });
-    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, aperture, reticle });
+    expect(opticViewSettings(item, model)).toEqual({ magnification: 4, worldAtUnity: true, aperture, reticle });
   });
 
   it('uses a fixed exported power and one-times for a reflex', () => {
     expect(opticViewSettings(itemFor(), modelFor({ magnification: { min: 4, max: 4 }, reticle }))).toEqual({
       magnification: 4,
+      worldAtUnity: true,
       aperture,
       reticle,
     });
     expect(opticViewSettings(itemFor(), modelFor({ reticle }))).toEqual({
       magnification: 1,
+      worldAtUnity: true,
       aperture,
       reticle,
     });
+  });
+
+  it.each(['world', 'source'] as const)(
+    'uses the authored %s unity image without changing magnified images',
+    (policy) => {
+      const item = { ...itemFor(), opticUnityImage: policy };
+      const settings = opticViewSettings(item, modelFor({ reticle }))!;
+      expect(settings.worldAtUnity).toBe(policy === 'world');
+      expect(opticRendersWorld(settings)).toBe(policy === 'world');
+      expect(opticRendersWorld({ ...settings, magnification: 4 })).toBe(true);
+    },
+  );
+
+  it('rejects an optic window without an authored unity image policy', () => {
+    const item = { ...itemFor(), opticUnityImage: undefined };
+    const model = modelFor({ reticle });
+    expect(opticViewSettings(item, model)).toBeUndefined();
+    const registry = buildRegistry([{ source: 'fixture.json', data: { items: [item], models: [model] } }]);
+    expect(registry.issues).toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: 'items[0].opticUnityImage' })]),
+    );
   });
 
   it('does not invent a setting for an unconfigured variable optic', () => {

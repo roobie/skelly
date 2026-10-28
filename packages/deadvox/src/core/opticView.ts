@@ -7,6 +7,7 @@ import type { ItemDef, ModelDef } from './schema.ts';
 
 export interface OpticViewSettings {
   readonly magnification: number;
+  readonly worldAtUnity: boolean;
   readonly aperture: OpticAperture;
   readonly reticle?: Reticle;
 }
@@ -65,6 +66,8 @@ export interface OpticLensFrame extends LensAperture, OpticViewSettings {
   readonly reticleCenter: readonly [number, number];
 }
 
+export const opticRendersWorld = (frame: OpticViewSettings): boolean => frame.magnification > 1 || frame.worldAtUnity;
+
 export const opticFieldOfView = (verticalFovDegrees: number, magnification: number): number => {
   if (!(verticalFovDegrees > 0 && verticalFovDegrees < 180 && magnification > 0)) {
     throw new RangeError('Invalid optic field of view');
@@ -80,7 +83,7 @@ export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSe
     return undefined;
   }
   const { aperture } = attachment.properties;
-  if (!aperture) {
+  if (!aperture || item.opticUnityImage === undefined) {
     return undefined;
   }
   const range = attachment.properties.magnification;
@@ -90,6 +93,7 @@ export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSe
   const magnification = item.opticMagnification ?? range?.min ?? 1;
   return {
     magnification,
+    worldAtUnity: item.opticUnityImage === 'world',
     aperture,
     ...(attachment.properties.reticle === undefined ? {} : { reticle: attachment.properties.reticle }),
   };

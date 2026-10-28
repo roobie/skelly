@@ -33,6 +33,7 @@ describe('reticle boundary', () => {
       center: [0.5, 0.5] as const,
       reticleCenter: [0.5, 0.5] as const,
       radius: [0.2, 0.2] as const,
+      worldAtUnity: true,
       aperture: { aspectRatio: 1, exponent: 2 },
     };
     const low = 2;
@@ -54,6 +55,7 @@ describe('reticle boundary', () => {
       reticleCenter: [0.5, 0.5] as const,
       radius: [0.2, 0.2] as const,
       magnification: 4,
+      worldAtUnity: true,
       aperture: { aspectRatio: 1.3, exponent: 6 },
     };
     setOpticLensUniforms(pass, { ...frame, reticle });

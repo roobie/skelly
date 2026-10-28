@@ -202,6 +202,8 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
     const { renderer, scene } = engine;
     const { render } = renderer;
     let drawn;
+    let sourceDraws = [];
+    let imageDraws = 0;
     let frames = 0;
     const isUnder = (object, root) => {
       for (let node = object; node; node = node.parent) {
@@ -227,7 +229,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
     };
     // Each object's own render callback fires only when the renderer submits it for this camera, so what it sees
     // is what the zoom pass draws, whatever the layer or visibility rules were.
-    const submit = (drawnScene) => {
+    const submit = (drawnScene, observedCamera = camera) => {
       const objects = [];
       const others = {};
       const opticObjects = [];
@@ -238,7 +240,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
       const restore = [];
       const recordObject = (object) => {
         if (optic && isUnder(object, optic)) {
-          opticObjects.push(pathOf(object));
+          opticObjects.push(object.geometry.userData.piece ?? pathOf(object));
         }
         if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
           objects.push(pathOf(object));
@@ -256,7 +258,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
           object.onBeforeRender = prior;
         });
         object.onBeforeRender = function (...args) {
-          if (args[2] !== camera) {
+          if (args[2] !== observedCamera) {
             return prior.apply(this, args);
           }
           recordObject(object);
@@ -292,26 +294,33 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
       return { interiorPixels, maskedInteriorPixels };
     };
     renderer.render = function (drawnScene, drawnCamera) {
-      if (drawnCamera !== camera || drawnScene !== scene) {
+      const frame = r.view.held.opticLensFrame;
+      const source = frame?.magnification === 1 && frame.worldAtUnity === false && drawnCamera === engine.camera;
+      if (drawnScene !== scene || (drawnCamera !== camera && !source)) {
         render.call(this, drawnScene, drawnCamera);
         return;
       }
-      const { objects, others, opticObjects, restore } = submit(drawnScene);
+      const { objects, others, opticObjects, restore } = submit(drawnScene, drawnCamera);
       try {
         render.call(this, drawnScene, drawnCamera);
       } finally {
         restore();
       }
+      if (source) {
+        sourceDraws = opticObjects;
+        return;
+      }
+      imageDraws += 1;
       const size = Math.min(lens.target.width, lens.target.height);
       const centre = new Uint16Array(4);
       renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
       const { uniforms } = engine.mood.opticPass;
-      const frame = r.view.held.opticLensFrame;
       const opticMeshCount = [...lens.housing.meshes.keys()].length;
       drawn = {
         opticType,
         endpoint,
         targetPower,
+        worldImage: true,
         opticMeshCount,
         opticObjects,
         ...housingCoverage(frame),
@@ -337,6 +346,24 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
     held.render = (...args) => {
       after.apply(held, args);
       frames += 1;
+      const frame = held.opticLensFrame;
+      if (frame?.magnification === 1 && frame.worldAtUnity === false && sourceDraws.length > 0) {
+        drawn = {
+          opticType,
+          endpoint,
+          targetPower,
+          magnification: frame.magnification,
+          worldImage: false,
+          opticMeshCount: sourceDraws.length,
+          drawnObjects: [],
+          sourceDraws,
+          imageDraws,
+          housingActive: lens.housingActive,
+          zoomActive: engine.mood.opticPass.uniforms.uZoomActive.value,
+          reticleCenter: frame.reticleCenter,
+          shaderReticleCenter: engine.mood.opticPass.uniforms.uReticleCenter.value.toArray(),
+        };
+      }
       if (drawn?.opticMeshCount > 0) {
         held.render = after;
         renderer.render = render;
@@ -621,10 +648,11 @@ const heldItemChecks = async (chromium, port) => {
 
 const opticZoomCheck = async (chromium, port) => {
   await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
-  for (const [opticType, gunType, endpoint] of [
+  for (const [opticType, gunType, endpoint, physicalWindow = false] of [
     ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
     ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
     ['optic_mini_reflex', 'rifle_assault', 'min'],
+    ['optic_holographic', 'rifle_assault', 'min', true],
     ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
     ['optic_hunting_3_9x', 'rifle_hunting', 'max'],
     ['optic_high_mag_5_25x', 'rifle_assault', 'max'],
@@ -642,6 +670,16 @@ const opticZoomCheck = async (chromium, port) => {
       );
       assert.equal(record.magnification, record.targetPower, 'the optic reaches its authored endpoint');
       assert.ok(record.opticMeshCount > 0, 'a physical optic is present');
+      assert.equal(record.worldImage, !physicalWindow, 'the fixture presents its selected sight picture');
+      if (!record.worldImage) {
+        assert.equal(record.imageDraws, 0, 'the physical window needs no replacement image');
+        assert.equal(record.housingActive, false, 'no stale disc mask clips the source-window reticle');
+        assert.equal(record.zoomActive, 0, 'the shader preserves the source image');
+        assert.ok(record.sourceDraws.includes('optic-near-frame'), 'the physical near frame is actually drawn');
+        assert.ok(!record.sourceDraws.includes('optic-ads-housing'), 'the lengthwise ADS hood is not drawn');
+        assert.deepEqual(record.shaderReticleCenter, record.reticleCenter, 'the reticle is not recentered');
+        return;
+      }
       assert.deepEqual(record.opticObjects, [], 'the image excludes its own fitted optic');
       assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
       if (record.magnification > 1) {
