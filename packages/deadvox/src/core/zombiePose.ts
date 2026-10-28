@@ -23,6 +23,7 @@ export interface ShamblerPoseInput {
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
+  readonly crawling?: boolean;
   /** Authored scale for amalgam's generated body. */
   readonly bodyScale?: number;
   /** Simulation position in block units. */
@@ -61,6 +62,20 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
   return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
 };
 
+export const zombieCrawls = (zombie: Zombie): boolean => {
+  if (zombie.type.model !== 'shambler') {
+    return false;
+  }
+  if (zombie.regions.leftLeg! <= 0 || zombie.regions.rightLeg! <= 0) {
+    return true;
+  }
+  if (zombie.severed.length === 0) {
+    return false;
+  }
+  const { severableParts } = humanoidFigure(zombie.type.model, zombie.figureSeed);
+  return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => zombie.severed.includes(part));
+};
+
 export const zombiePoseInputFor = (
   zombie: Zombie,
   id: number,
@@ -72,6 +87,7 @@ export const zombiePoseInputFor = (
     id,
     seed: zombie.figureSeed,
     model: zombie.type.model,
+    crawling: zombieCrawls(zombie),
     ...(zombie.type.bodyScale === undefined ? {} : { bodyScale: zombie.type.bodyScale }),
     position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? zombie.facing,
@@ -371,10 +387,10 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   }
   const seeded = actorForSeed(model, input.seed);
   const { actor, bones } = seeded;
-  const template = templateByName(model);
+  const template = templateByName(input.crawling ? 'crawler' : model);
   const attackTime = attackTimeFor(input, attackClipFor(template));
   const walk =
-    model === 'crawler'
+    template.bodyPlan === 'crawler'
       ? crawlerGaitPose(figure.realized, input.gaitPhase, input.speed)
       : humanoidWalkPose(seeded, input, input.stanceWeight ?? targetStanceWeight(input));
   const context = { template, figure, actor };

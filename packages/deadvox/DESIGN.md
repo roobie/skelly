@@ -2319,14 +2319,14 @@ application rather than weapon-class special cases. See `ZombieSchema` in
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
-  Melee hits apply damage to the posed region they land on; a destroyed limb is
-  severed and leaves a prop, while a destroyed head kills. Losing both arms
-  prevents new attacks; `canStillAttack` in `src/core/zombies.ts` owns that rule.
-  How a legless shambler moves remains open; no crawling behavior is modeled.
-  `ZombieSystem.applyMeleeHit` and `ZombieSystem.applyMeleeEffects` own hit,
-  death and severing; `src/core/zombieRegions.ts`, `posedShamblerRegionBoxes`, owns
-  the posed hitboxes. Region health and severed state are simulation state and
-  persist in saves.
+  Losing even one leg starts crawling so a dismembered shambler remains a moving
+  threat rather than an upright target. Only rig and movement change: it stays a
+  shambler, preserving its identity and accumulated wounds. Crawling attacks still
+  need an arm because the body must grab or claw. See `src/core/zombies.ts`,
+  `canStillAttack` and `ZombieSystem.applyMeleeEffects`; `src/core/zombiePose.ts`,
+  `zombieCrawls` and `posedShambler`; and `src/core/zombieRegions.ts`,
+  `posedShamblerRegionBoxes`. Crawling derives from saved limb state rather than
+  a separate flag so the two cannot disagree.
 - **A downed shambler is cleared by hand.** A destroyed torso with the head
   still on leaves the shambler downed: it lies where it fell, stays in the save,
   and can't be hit. It no longer blocks the player or a closing door, so a body

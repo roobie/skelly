@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { crawlerGaitPose } from '@mobgen/mob/crawler.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
@@ -19,7 +20,7 @@ import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
-import { HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { HIT_FLINCH_DURATION, posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
@@ -1743,12 +1744,12 @@ describe('shambler scenarios', () => {
     expect(listened.snapshotState()).toEqual(silent.snapshotState());
   });
 
-  const destroyRegion = (type: ZombieDef, region: ZombieRegion) => {
+  const destroyRegion = (type: ZombieDef, region: ZombieRegion, target = () => player([100, 2, 0])) => {
     const severed: ZombieRegion[] = [];
     const sounds: string[] = [];
     let deaths = 0;
     const system = new ZombieSystem({
-      ...senses(() => player([100, 2, 0])),
+      ...senses(target),
       onSound: (event) => sounds.push(event),
       onSevered: (_zombie, part) => severed.push(part),
       onDeath: () => {
@@ -1995,20 +1996,29 @@ describe('shambler scenarios', () => {
     }
   });
 
-  it('cannot walk after both legs are severed', () => {
-    const walking = { ...SHAMBLER, speed: speedRates(0.8, 0.8) };
-    const system = new ZombieSystem(senses(() => player([100, 2, 0])));
-    const id = system.add(walking, [4, 1, 4]);
-    const zombie = system.store.get(id)!;
-    zombie.regions.leftLeg = 0;
-    zombie.regions.rightLeg = 0;
-    settle(zombie.body);
-    for (let tick = 0; tick < 10 * 20; tick++) {
-      system.tick(1 / 20);
-    }
-    expect(zombie.body.pos[0]).toBe(4);
-    expect(zombie.body.pos[2]).toBe(4);
-    expect(zombie.horizontalSpeed).toBe(0);
+  it('crawls after losing one leg, with matching hit regions and a derived pose after restore', () => {
+    const { system, id, zombie } = destroyRegion(SHAMBLER, 'leftLeg', () => player([1, 1, -8]));
+    expect(zombie.severed.length).toBeGreaterThan(0);
+    const before = [...zombie.body.pos];
+    run(system, 1);
+    expect(zombie.horizontalSpeed).toBeGreaterThan(0);
+    expect(zombie.body.pos).not.toEqual(before);
+    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const posed = posedShambler(input);
+    const crawl = crawlerGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
+    expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
+    expect(zombie.type.id).toBe(SHAMBLER.id);
+    expect(posed.figure).toBe(zombieFigure(zombie.type, zombie.figureSeed));
+    const boxes = posedShamblerRegionBoxes(input);
+    expect(boxes.leftLeg).toEqual([]);
+    expect(boxes.rightLeg.length).toBeGreaterThan(0);
+    expect(boxes.torso.length).toBeGreaterThan(0);
+    const restored = new ZombieSystem(senses(() => player([100, 2, 0])));
+    restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    const loaded = restored.store.get(id)!;
+    expect(posedShambler(zombiePoseInputFor(loaded, id, BLOCK_SIZE)).pose).toEqual(posed.pose);
+    expect(loaded.regions).toEqual(zombie.regions);
+    expect(loaded.severed).toEqual(zombie.severed);
   });
 
   it('F: melee hits obey cooldown, damage and range; fixture fists can kill shamblers', () => {
