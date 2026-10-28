@@ -214,6 +214,13 @@
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
       },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
       "sight": 25,
       "sightCone": 60,
       "sounds": {

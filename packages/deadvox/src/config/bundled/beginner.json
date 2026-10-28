@@ -200,6 +200,13 @@
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
       },
+      "severedSpurt": {
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
+      },
       "sight": 12.5,
       "sightCone": 60,
       "sounds": {
@@ -446,6 +453,13 @@
         "rightArm": "shambler_right_arm",
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
       },
       "sight": 12.5,
       "sightCone": 60,
@@ -694,6 +708,13 @@
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
       },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
+      },
       "sight": 12.5,
       "sightCone": 60,
       "sounds": {
@@ -940,6 +961,13 @@
         "rightArm": "shambler_right_arm",
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
       },
       "sight": 12.5,
       "sightCone": 60,
@@ -1188,6 +1216,13 @@
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
       },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
+      },
       "sight": 12.5,
       "sightCone": 60,
       "sounds": {
@@ -1435,6 +1470,13 @@
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
       },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
+      },
       "sight": 12.5,
       "sightCone": 60,
       "sounds": {
@@ -1644,6 +1686,13 @@
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
       },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
+      },
       "sight": 12.5,
       "sightCone": 60,
       "sounds": {
@@ -1819,6 +1868,13 @@
         "rightArm": "shambler_right_arm",
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
       },
       "sight": 8,
       "sightCone": 55,
@@ -2033,6 +2089,13 @@
         "member.rightArm": null,
         "member.rightLeg": null,
         "member.torso": null
+      },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
       },
       "sight": 12.5,
       "sightCone": 60,
@@ -2348,6 +2411,13 @@
         "rightArm": "shambler_right_arm",
         "rightLeg": "shambler_right_leg",
         "torso": "shambler_torso"
+      },
+      "severedSpurt": {
+        "droplets": 0,
+        "lifetimeRealSeconds": 0,
+        "partVelocityShare": 0,
+        "speedMetresPerRealSecond": 0,
+        "spreadFraction": 0
       },
       "sight": 12.5,
       "sightCone": 60,

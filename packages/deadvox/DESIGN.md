@@ -2342,10 +2342,13 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   `src/game/session.ts`, `standingZombieBodies`.
 - **Gore is presentation only.** Every damaging hit sprays blood from the
   wound, mostly along the strike and some back toward the attacker, more for a
-  heavier hit. A severed part's flight and its cut's spurt scale with the kind's
-  `severedImpulseScale` (`src/content/base/zombies.jsonnet`, `src/core/zombies.ts`,
-  `ZombieSystem.sever`), because a kind's gore is its content and a weapon's
-  impulse also staggers and breaches doors. Where a droplet lands it leaves a splat. Splats fade and are not
+  heavier hit. A severed part flies with the kind's `severedImpulseScale`, and the
+  blood its cut throws inherits part of that launch velocity, so it stays with the
+  part; the kind's `severedSpurt` sets how much blood and how it flies
+  (`src/content/base/zombies.jsonnet`, `src/core/zombies.ts`, `ZombieSystem.sever`,
+  and `src/render/gore.ts`, `Gore.severed`). This is content because a kind's gore
+  is its content, and a weapon's impulse also staggers and breaches doors. Where a
+  droplet lands it leaves a splat. Splats fade and are not
   saved, so a reload starts clean. Wounded bodies drip and wear blood stains,
   both derived from saved state (lost region health, severed parts, carved
   flesh), so they survive a reload with no state of their own; a corpse keeps

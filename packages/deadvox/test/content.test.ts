@@ -392,7 +392,9 @@ describe('content', () => {
 
     const shambler = baseRegistry.zombies.get('shambler')!;
     const sharedShamblerData = Object.fromEntries(
-      Object.entries(shambler).filter(([key]) => !['id', 'name', 'cause', 'loot', 'severedImpulseScale'].includes(key)),
+      Object.entries(shambler).filter(
+        ([key]) => !['id', 'name', 'cause', 'loot', 'severedImpulseScale', 'severedSpurt'].includes(key),
+      ),
     );
     expect(soldier).toMatchObject({ ...sharedShamblerData, authoredOnly: true });
     expect(soldier.loot).not.toBe(shambler.loot);
@@ -2599,6 +2601,13 @@ describe('content references', () => {
             sounds: zombieSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             severedImpulseScale: 1,
+            severedSpurt: {
+              droplets: 0,
+              speedMetresPerRealSecond: 0,
+              spreadFraction: 0,
+              lifetimeRealSeconds: 0,
+              partVelocityShare: 0,
+            },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: {
               ...baseRegistry.zombies.get('shambler')!.speed,

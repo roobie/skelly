@@ -172,7 +172,7 @@ export interface ZombieRenderer {
   /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
-  zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => void;
+  zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => Vec3 | undefined;
   /** Called when a hit knocks flesh out of an amalgam (src/core/zombies.ts's onCarve, forwarded by play.ts). */
   zombieCarved?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
 }
@@ -1492,11 +1492,13 @@ export class MobActorMeshes implements ZombieRenderer {
    * zombieDied hasn't run yet; but a stale/unknown part name, or no position yet on the zombie's very first
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
    * the shared corpse budget exactly like a corpse (see zombieDied's own eviction).
+   * Returns the piece's launch velocity (metres per real second), which the cut's blood inherits; undefined when
+   * no piece was spawned.
    */
-  zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): void {
+  zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): Vec3 | undefined {
     const state = this.states.get(id);
     if (!state) {
-      return;
+      return undefined;
     }
     const variant = this.variants[state.variantIndex]!;
     if (zombie) {
@@ -1505,22 +1507,22 @@ export class MobActorMeshes implements ZombieRenderer {
       state.lastPlacement = posed.placement;
     }
     if (!(state.lastPose && state.lastPlacement)) {
-      return;
+      return undefined;
     }
     const partData = variant.rigidParts.get(part);
     if (!partData) {
-      return;
+      return undefined;
     }
 
     const severedIndices = partData.boneIndices;
     const sourceTransforms = this.posedSourceTransforms(variant, state, severedIndices);
     const initialCenter = this.posedPartCenter(variant, state, new Set(severedIndices));
     if (!initialCenter) {
-      return;
+      return undefined;
     }
     const topIndex = variant.boneIndexById.get(part);
     if (topIndex === undefined) {
-      return;
+      return undefined;
     }
     // The cached OBB and inertia are in the rest-pose model frame. Orient them with the posed cut bone;
     // relative bends in carried descendants (e.g. an elbow in a whole arm) remain an approximation.
@@ -1545,6 +1547,7 @@ export class MobActorMeshes implements ZombieRenderer {
     if (hit) {
       this.applyDebrisHit(rigidBody, initialCenter, originOffsetY, hit);
     }
+    const launchVelocity: Vec3 = [...rigidBody.velocity];
     this.insertDebris({
       id,
       part,
@@ -1558,6 +1561,7 @@ export class MobActorMeshes implements ZombieRenderer {
       body: rigidBody,
       bloodiness: zombie ? woundSeverity(zombie) : 0,
     });
+    return launchVelocity;
   }
 
   private posedSourceTransforms(

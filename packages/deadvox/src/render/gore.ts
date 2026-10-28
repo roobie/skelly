@@ -33,8 +33,6 @@ const SPRAY_DROPLETS_MAX = 14;
 const SPRAY_BACK_FRACTION = 0.3;
 /** How much spray one carved cell is worth, in the damage units `spray` takes. */
 const CARVED_CELL_SPRAY_DAMAGE = 2;
-// The extra spurt a severed part throws; its speed follows the part's raised severed impulse (src/game/play.ts's onSever).
-const SEVERED_SPRAY_DAMAGE = 4;
 const SPLAT_LIFE_S = 90;
 const SPLAT_FADE_S = 30;
 const SPLAT_OPACITY = 0.9;
@@ -55,8 +53,11 @@ interface Droplet {
   readonly position: Vector3;
   readonly velocity: Vector3;
   ageRealSeconds: number;
+  maxAgeRealSeconds: number;
   sizeMetres: number;
 }
+
+type SeveredSpurt = Zombie['type']['severedSpurt'];
 
 interface Splat {
   active: boolean;
@@ -165,6 +166,8 @@ export class Gore {
     blockSize: 1,
   };
   private readonly normal = new Vector3();
+  private readonly launch = new Vector3();
+  private readonly partVelocity = new Vector3();
   private nextDroplet = 0;
   private nextSplat = 0;
   private spawnedSinceUpdate = 0;
@@ -180,6 +183,7 @@ export class Gore {
       position: new Vector3(),
       velocity: new Vector3(),
       ageRealSeconds: 0,
+      maxAgeRealSeconds: DROPLET_MAX_AGE_S,
       sizeMetres: 0,
     }));
     this.splats = Array.from({ length: tuning.splatCap }, () => ({ active: false, ageRealSeconds: 0 }));
@@ -247,7 +251,7 @@ export class Gore {
 
   /** Blood thrown from a wound: most along the strike and on through the body, some back toward the attacker;
    * more for a heavier hit. `hit` is in blocks, like the simulation's. */
-  spray(hit: HitImpulse, damage: number, speedScale = 1): void {
+  spray(hit: HitImpulse, damage: number): void {
     const count = Math.min(SPRAY_DROPLETS_MAX, Math.max(SPRAY_DROPLETS_MIN, Math.round(2 + damage / 5)));
     this.origin.set(hit.point[0], hit.point[1], hit.point[2]).multiplyScalar(this.blockSize);
     for (let i = 0; i < count; i++) {
@@ -259,8 +263,8 @@ export class Gore {
           hit.direction[2] * sense + this.rng.range(-0.5, 0.5),
         )
         .normalize()
-        .multiplyScalar(this.rng.range(1.5, 4.5) * speedScale);
-      if (!this.emit(this.origin, direction, this.rng.range(0.012, 0.026))) {
+        .multiplyScalar(this.rng.range(1.5, 4.5));
+      if (!this.emit(this.origin, direction, this.rng.range(0.012, 0.026), DROPLET_MAX_AGE_S)) {
         return;
       }
     }
@@ -272,11 +276,31 @@ export class Gore {
     this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
   }
 
-  /** The spurt from a cut-off part: only a kind whose severed impulse is raised throws it, and faster as the
-   * impulse rises. `hit` carries the severed impulse, as the simulation hands it over. */
-  severed(hit: HitImpulse, impulseScale: number): void {
-    if (impulseScale > 1) {
-      this.spray(hit, SEVERED_SPRAY_DAMAGE, impulseScale);
+  /** The blood a cut throws as its part flies off (`spurt`, the kind's content): each droplet leaves the wound
+   * along the strike, fanned by the spread, and inherits the part's launch velocity in metres per second, so it
+   * stays with the part. A kind with no spurt throws none. */
+  severed(hit: HitImpulse, partVelocity: Vec3 | undefined, spurt: SeveredSpurt): void {
+    this.origin.set(hit.point[0], hit.point[1], hit.point[2]).multiplyScalar(this.blockSize);
+    for (let i = 0; i < spurt.droplets; i++) {
+      const direction = this.scratch
+        .set(
+          hit.direction[0] + this.rng.range(-0.5, 0.5) * spurt.spreadFraction,
+          hit.direction[1] + this.rng.range(-0.2, 0.6) * spurt.spreadFraction,
+          hit.direction[2] + this.rng.range(-0.5, 0.5) * spurt.spreadFraction,
+        )
+        .normalize()
+        .multiplyScalar(this.rng.range(0.5, 1) * spurt.speedMetresPerRealSecond);
+      const velocity = this.launch.copy(direction);
+      if (partVelocity) {
+        velocity.add(
+          this.partVelocity
+            .set(partVelocity[0], partVelocity[1], partVelocity[2])
+            .multiplyScalar(spurt.partVelocityShare),
+        );
+      }
+      if (!this.emit(this.origin, velocity, this.rng.range(0.012, 0.026), spurt.lifetimeRealSeconds)) {
+        return;
+      }
     }
   }
 
@@ -301,7 +325,7 @@ export class Gore {
       for (let substep = 0; substep < substeps && droplet.active; substep++) {
         this.advance(droplet, step / substeps, isSolid);
       }
-      if (droplet.ageRealSeconds >= DROPLET_MAX_AGE_S) {
+      if (droplet.ageRealSeconds >= droplet.maxAgeRealSeconds) {
         droplet.active = false;
       }
     }
@@ -323,7 +347,7 @@ export class Gore {
   }
 
   /** Starts one droplet, reusing the oldest; false once this update's spawn budget is spent. */
-  private emit(origin: Vector3, velocity: Vector3, sizeMetres: number): boolean {
+  private emit(origin: Vector3, velocity: Vector3, sizeMetres: number, maxAgeRealSeconds: number): boolean {
     if (this.droplets.length === 0 || this.spawnedSinceUpdate >= this.tuning.dropletSpawnsPerFrame) {
       return false;
     }
@@ -332,6 +356,7 @@ export class Gore {
     this.nextDroplet = (this.nextDroplet + 1) % this.tuning.dropletCap;
     droplet.active = true;
     droplet.ageRealSeconds = 0;
+    droplet.maxAgeRealSeconds = maxAgeRealSeconds;
     droplet.sizeMetres = sizeMetres;
     droplet.position.copy(origin);
     droplet.velocity.copy(velocity);
@@ -392,7 +417,14 @@ export class Gore {
       const x = pos[0] * s + this.rng.range(-reach, reach);
       const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
       const z = pos[2] * s + this.rng.range(-reach, reach);
-      if (!this.emit(this.origin.set(x, y, z), this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02))) {
+      if (
+        !this.emit(
+          this.origin.set(x, y, z),
+          this.scratch.set(0, -0.2, 0),
+          this.rng.range(0.01, 0.02),
+          DROPLET_MAX_AGE_S,
+        )
+      ) {
         return;
       }
     }
@@ -412,7 +444,9 @@ export class Gore {
         continue;
       }
       setPlayerDripOrigin(this.origin, this.playerPlacement, region);
-      if (!this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02) * drip.size)) {
+      if (
+        !this.emit(this.origin, this.scratch.set(0, -0.2, 0), this.rng.range(0.01, 0.02) * drip.size, DROPLET_MAX_AGE_S)
+      ) {
         return;
       }
     }
