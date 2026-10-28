@@ -1543,6 +1543,7 @@ const ItemSchema = strictObject({
   alarm: optional(literal(true)),
   /** Initial ADS power for a variable-power optic; constrained by its exported range. */
   opticMagnification: optional(Positive),
+  opticUnityImage: optional(picklist(['world', 'source'])),
   opticZoom: optional(strictObject({ step: Positive, rememberPerWeapon: vBoolean() })),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
@@ -4523,6 +4524,7 @@ const RecipeSchema = strictObject({
 
 const GraphicsTuningSchema = strictObject({
   id: Id,
+  nearPlaneMetres: Positive,
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),

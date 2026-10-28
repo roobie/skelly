@@ -39,8 +39,8 @@ local digits(prefix, count) = [one(prefix + '.' + i, 'Digit' + i) for i in std.r
     one('craft.continue', 'Enter'),
     one('compression.continue', 'Enter'),
   ] + digits('quickbar.use', 5) + digits('quickbar.assign', 5) + [
-    many('inventory.previous', ['ArrowUp', 'ArrowLeft']),
-    many('inventory.next', ['ArrowDown', 'ArrowRight']),
+    many('inventory.previous', ['ArrowUp', 'ArrowLeft', 'KeyQ']),
+    many('inventory.next', ['ArrowDown', 'ArrowRight', 'KeyE']),
     one('inventory.search', 'KeyS'),
     one('inventory.cycle-target', 'KeyC'),
     one('inventory.put-target', 'KeyP'),

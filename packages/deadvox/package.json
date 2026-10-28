@@ -16,6 +16,7 @@
     "lint:time": "node tools/time-lint.mjs",
     "pretest": "npm --prefix ../.. run content:compile",
     "test": "vitest run",
+    "test:optic-parallax-mutant": "node tools/check-optic-parallax-mutant.mjs",
     "test:sweeps": "DEADVOX_SWEEPS=1 vitest run",
     "bench:save-budget": "DEADVOX_BENCH=1 vitest run test/snapshot-format.test.ts -t 'ten-hour fixture save'",
     "bench:craft-planner": "DEADVOX_BENCH=1 vitest run test/crafting.test.ts -t 'indexed 200-item reach snapshot'",

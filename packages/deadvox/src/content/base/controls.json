@@ -331,6 +331,9 @@
         },
         {
           "code": "ArrowLeft"
+        },
+        {
+          "code": "KeyQ"
         }
       ]
     },
@@ -342,6 +345,9 @@
         },
         {
           "code": "ArrowRight"
+        },
+        {
+          "code": "KeyE"
         }
       ]
     },

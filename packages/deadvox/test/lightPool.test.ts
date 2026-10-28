@@ -138,7 +138,7 @@ describe('made-light point pool', () => {
     const glowstick = inventory.create('glowstick');
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
     expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
     const camera = new PerspectiveCamera();
     camera.position.set(2, 1, -3);
     held.update(camera);
@@ -167,7 +167,7 @@ describe('made-light point pool', () => {
     const light = inventory.create(TEST_LIGHTS[0].id);
     expect(toggleLight(fixtureRegistry, light, 0)).toBeUndefined();
     expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
-    const held = new HeldItems(inventory, undefined, fixtureRegistry.figures.get('player')!);
+    const held = new HeldItems(inventory, undefined, fixtureRegistry.figures.get('player')!, { nearPlaneMetres: 0.01 });
     const camera = new PerspectiveCamera();
     camera.position.set(2, 1, -3);
     held.update(camera);

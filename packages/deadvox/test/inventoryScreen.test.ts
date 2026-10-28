@@ -649,11 +649,39 @@ describe('inventory screen Lit rendering', () => {
       field.dispatchEvent(new Event('input', { bubbles: true }));
       expect(screen.selected).toBe(beans);
       const payloadBeforeTypingKey = lastPayload();
-      expect(press('KeyW', 'w').defaultPrevented).toBe(false);
-      expect(lastPayload()).toBe(payloadBeforeTypingKey);
+      for (const [code, key] of [
+        ['KeyQ', 'q'],
+        ['KeyE', 'e'],
+        ['KeyW', 'w'],
+      ] as const) {
+        expect(press(code, key).defaultPrevented).toBe(false);
+        expect(lastPayload()).toBe(payloadBeforeTypingKey);
+      }
       expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
       expect(field.value).toBe(query);
       expect(document.activeElement).not.toBe(field);
+      screen.onAction('inventory.find');
+      field.value = '';
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
+
+      const selectPrevious = new KeyboardEvent('keydown', {
+        code: 'KeyQ',
+        key: 'q',
+        bubbles: true,
+        cancelable: true,
+      });
+      globalThis.dispatchEvent(selectPrevious);
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyQ', key: 'q', bubbles: true }));
+      expect(selectPrevious.defaultPrevented).toBe(true);
+      expect(screen.selected).not.toBe(beans);
+      const selectNext = new KeyboardEvent('keydown', { code: 'KeyE', key: 'e', bubbles: true, cancelable: true });
+      globalThis.dispatchEvent(selectNext);
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE', key: 'e', bubbles: true }));
+      expect(selectNext.defaultPrevented).toBe(true);
+      expect(screen.selected).toBe(beans);
+      field.value = query;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
 
       const action = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
       globalThis.dispatchEvent(action);
