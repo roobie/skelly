@@ -7,6 +7,8 @@
     },
     "packages/deadvox": {
       "ignore": ["vendor/rapier-f64/**"],
+      // The measurement tool substitutes this package into the Rapier seam through a Vite transform.
+      "ignoreDependencies": ["@dimforge/rapier3d-deterministic-compat"],
       "ignoreBinaries": [
         // Local publication uses the operator's mise-managed, authenticated Surge CLI.
         "mise",
@@ -70,7 +72,9 @@
         "tools/bench-zombie-swings.mjs",
         "tools/ui-browser-contract.mjs",
         "tools/perf-baseline.mjs",
-        "tools/perf-baseline-browser.mjs"
+        "tools/perf-baseline-browser.mjs",
+        "tools/measure-ragdolls.mjs",
+        "tools/ragdoll-measurement.ts"
       ],
       "project": [
         "src/**/*.{js,mjs,ts,tsx}!",

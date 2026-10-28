@@ -46,6 +46,7 @@ import {
   MobActorMeshes as RenderMobActorMeshes,
   hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
+import { ragdollContent } from '../src/render/ragdoll.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -1269,7 +1270,7 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
-  it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
+  it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', async () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
       const store = new MapEntityStore<Zombie>();
@@ -1278,12 +1279,16 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(store, 1 / 60, 1);
       store.remove(id);
       renderer.zombieDied(id, zombie);
+      await renderer.whenCorpsesReady();
       expect(renderer.isTracked(id)).toBe(true); // still drawn, as a corpse
 
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(id)).toBe(true);
       const step = 0.1;
-      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      const lifetime =
+        ragdollContent.stepBudget * ragdollContent.timestep +
+        CORPSE_LIFECYCLE.lieSimSeconds +
+        CORPSE_LIFECYCLE.sinkSimSeconds;
       for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
         renderer.sync(store, step, 1);
       }
@@ -1421,7 +1426,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('continues corpse sinking while live zombie animation is frozen', () => {
+  it('continues corpse sinking while live zombie animation is frozen', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
       const store = new MapEntityStore<Zombie>();
@@ -1432,10 +1437,15 @@ describe('MobActorMeshes dismemberment', () => {
       store.remove(id);
 
       const step = 0.1;
+      await renderer.whenCorpsesReady();
       let previous = renderer.boneMatrix(id, 'pelvis')![7]!;
       let lying: number | undefined;
-      // One extra sample after the fall distinguishes lying still from falling.
-      for (let frame = 0; frame <= Math.ceil(DEATH_FALL_DURATION / step) && lying === undefined; frame++) {
+      // One extra sample after the step budget distinguishes lying still from falling.
+      for (
+        let frame = 0;
+        frame <= Math.ceil((ragdollContent.stepBudget * ragdollContent.timestep) / step) + 1 && lying === undefined;
+        frame++
+      ) {
         renderer.sync(store, step, 1, true);
         const current = renderer.boneMatrix(id, 'pelvis')![7]!;
         if (current === previous) {
@@ -1445,7 +1455,10 @@ describe('MobActorMeshes dismemberment', () => {
       }
       expect(lying).toBeDefined();
       let sank = false;
-      const lifetime = DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
+      const lifetime =
+        ragdollContent.stepBudget * ragdollContent.timestep +
+        CORPSE_LIFECYCLE.lieSimSeconds +
+        CORPSE_LIFECYCLE.sinkSimSeconds;
       for (let frame = 0; frame <= Math.ceil(lifetime / step) && renderer.isTracked(id); frame++) {
         renderer.sync(store, step, 1, true);
         const pelvis = renderer.boneMatrix(id, 'pelvis');

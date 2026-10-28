@@ -143,6 +143,7 @@ import type { ColumnReveal } from './columnReveal.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
+import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
@@ -365,6 +366,8 @@ interface Corpse extends SlotHolder {
   readonly poseSeed: number;
   readonly posture: DeathActor['posture'];
   settledPose?: Pose;
+  ragdoll?: Ragdoll;
+  groundedAt?: number;
   /** Frozen at the instant of death — a corpse keeps whatever was severed while it was still alive (see
    * this module's header comment); parts severed by the killing blow itself are already included, since
    * onSever fires before onDeath (src/core/zombies.ts's swing). */
@@ -627,6 +630,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly frustumMatrix = new Matrix4();
   private readonly boundingSphere = new Sphere(new Vector3(), BOUNDING_RADIUS_M);
   private world: RigidWorld | undefined;
+  private ragdolls: RagdollWorld | undefined;
 
   private readonly options: MobActorMeshesOptions;
 
@@ -799,6 +803,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.variantIndexBySeed = new Map(
       this.variants.map((variant, index) => [`${variant.model}:${variant.figureSeed}`, index]),
     );
+  }
+
+  async whenCorpsesReady(): Promise<void> {
+    await this.ragdolls?.ready;
   }
 
   setCamera(camera: Camera): void {
@@ -1326,6 +1334,9 @@ export class MobActorMeshes implements ZombieRenderer {
     if (!corpse) {
       return;
     }
+    if (corpse.ragdoll) {
+      this.ragdolls?.remove(corpse.ragdoll);
+    }
     this.freeSlot(id, corpse);
     this.corpses.delete(id);
   }
@@ -1439,6 +1450,20 @@ export class MobActorMeshes implements ZombieRenderer {
       elapsed: 0,
       insertOrder: this.takeDeadOrder(),
     });
+    const corpse = this.corpses.get(id)!;
+    const variant = this.variants[corpse.variantIndex]!;
+    if (ragdollContent.models.includes(variant.model) && corpse.severed.length === 0) {
+      this.ragdolls ??= new RagdollWorld();
+      corpse.ragdoll = this.ragdolls.spawn({
+        realized: variant.realized,
+        pose: basePose,
+        position: worldPos,
+        yaw: corpse.yaw,
+        direction: corpse.direction,
+        seed: corpse.poseSeed,
+        ground: this.rigidWorld(),
+      });
+    }
     this.states.delete(id);
   }
 
@@ -1996,8 +2021,32 @@ export class MobActorMeshes implements ZombieRenderer {
 
   private packCorpse(corpse: Corpse): void {
     const variant = this.variants[corpse.variantIndex]!;
+    const sinkElapsed =
+      corpse.elapsed -
+      ((corpse.ragdoll ? (corpse.groundedAt ?? corpse.elapsed) : DEATH_FALL_DURATION) +
+        this.options.look.corpseLieSimSeconds);
+    if (corpse.ragdoll) {
+      const sinkT = Math.max(0, Math.min(1, sinkElapsed / this.options.look.corpseSinkSimSeconds));
+      for (const [bone, transform] of corpse.ragdoll.transforms) {
+        packCrowdBoneMatrix(
+          this.textureData,
+          { layout: this.layout, slot: corpse.globalRow, bone },
+          { r: [...transform.r], t: [...transform.t] },
+          {
+            x: 0,
+            y: -sinkT * this.options.look.corpseSinkDepthMetres,
+            z: 0,
+            yawRad: 0,
+          },
+        );
+      }
+      packSeveredMask(this.textureData, this.layout, corpse.globalRow, []);
+      packBloodiness(this.textureData, this.layout, corpse.globalRow, corpse.bloodiness);
+      packCharge(this.textureData, this.layout, corpse.globalRow, corpse.charge);
+      this.textureUpdates.touch(corpse.globalRow);
+      return;
+    }
     const pose = this.corpsePose(corpse, variant);
-    const sinkElapsed = corpse.elapsed - (DEATH_FALL_DURATION + this.options.look.corpseLieSimSeconds);
     const sinkT = corpse.incapacitated
       ? 0
       : Math.max(0, Math.min(1, sinkElapsed / this.options.look.corpseSinkSimSeconds));
@@ -2244,7 +2293,12 @@ export class MobActorMeshes implements ZombieRenderer {
   /** Corpses are driven entirely by their own `elapsed`, not by the store (the sim has already forgotten
    * them) — advance, re-pose/pack, and free once their whole lifetime (fall + lie + sink) has passed. */
   private advanceCorpses(realDt: number): void {
+    this.ragdolls?.advance(realDt);
     for (const [id, corpse] of this.corpses) {
+      if (corpse.ragdoll) {
+        this.advanceRagdoll(id, corpse, realDt);
+        continue;
+      }
       const wasFalling = corpse.incapacitated && corpse.elapsed < DEATH_FALL_DURATION;
       corpse.elapsed += realDt;
       if (corpse.incapacitated) {
@@ -2261,6 +2315,26 @@ export class MobActorMeshes implements ZombieRenderer {
         this.freeCorpse(id);
         continue;
       }
+      this.packCorpse(corpse);
+    }
+  }
+
+  private advanceRagdoll(id: EntityId, corpse: Corpse, realDt: number): void {
+    if (this.ragdolls?.failed) {
+      this.freeCorpse(id);
+      return;
+    }
+    corpse.elapsed += realDt;
+    if (corpse.ragdoll!.settled && corpse.groundedAt === undefined) {
+      corpse.groundedAt = corpse.elapsed;
+    }
+    if (
+      corpse.groundedAt !== undefined &&
+      corpse.elapsed >=
+        corpse.groundedAt + this.options.look.corpseLieSimSeconds + this.options.look.corpseSinkSimSeconds
+    ) {
+      this.freeCorpse(id);
+    } else {
       this.packCorpse(corpse);
     }
   }
@@ -2303,6 +2377,7 @@ export class MobActorMeshes implements ZombieRenderer {
     for (const id of [...this.wounds.keys()]) {
       this.removeWound(id);
     }
+    this.ragdolls?.dispose();
     this.fleshChunks.dispose();
     this.textureUpdates.dispose();
     this.texture.dispose();
