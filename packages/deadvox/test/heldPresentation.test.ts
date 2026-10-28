@@ -128,7 +128,7 @@ it('both views resolve registry item holds through one owner, including the mann
             }
           : {}),
       };
-      const view = new HeldItems(inventory, models, figure);
+      const view = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01 });
       const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
       try {
         build.mockClear();
@@ -250,7 +250,7 @@ it('keeps active and resting firearm off-hand poses equal across first and third
         expect(toggleLight(registry, light)).toBeUndefined();
       }
       const handling = { firearms: [], readiness: { uid: gun.uid, progress, aimingDownSights: false } } as const;
-      const view = new HeldItems(inventory, models, figure);
+      const view = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01 });
       build.mockClear();
       view.update(new PerspectiveCamera(), undefined, 0, handling);
       const firstOwner = build.mock.contexts[0] as HeldPresentation;

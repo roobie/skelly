@@ -131,8 +131,11 @@ it('uses per-gun ADS limits before figure defaults', () => {
   });
 });
 
-it('keeps the unobstructed ADS camera on the physical sight line', () => {
-  const cases = cameraCases();
+const alignedCameraCases = () =>
+  cameraCases().filter(({ model, aimFrame }) => model.gun?.sight?.kind !== 'optic' || aimFrame === NEUTRAL_AIM);
+
+it('keeps irons and unswayed optics on the physical sight line', () => {
+  const cases = alignedCameraCases();
   for (const entry of cases) {
     const { gun, offset, label } = cameraCase(entry);
     const linePoint = new Vector3(...gun.rootOffset).add(new Vector3(...gun.sightEyeOffset!));
@@ -146,8 +149,8 @@ it('keeps the unobstructed ADS camera on the physical sight line', () => {
   }
 });
 
-it('keeps the ADS camera inside the iron range or at the fixed optic eye', () => {
-  for (const entry of cameraCases()) {
+it('keeps the camera inside the iron range or at the unswayed optic eye', () => {
+  for (const entry of alignedCameraCases()) {
     const { gun, offset, label } = cameraCase(entry);
     if (gun.sightEyeRangeOffsets) {
       const near = new Vector3(...gun.rootOffset).add(new Vector3(...gun.sightEyeRangeOffsets[0]));

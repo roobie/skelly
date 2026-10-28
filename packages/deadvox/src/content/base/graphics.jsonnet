@@ -4,6 +4,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
 {
   graphics: [{
     id: 'core',
+    nearPlaneMetres: 0.01,
     readyRadiusM: 64,
     streamHysteresisM: 16,
     fogFarPlaneScale: 1.5,

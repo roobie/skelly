@@ -51,6 +51,7 @@
         "maxCorpses": 16
       },
       "modelLoadConcurrency": 8,
+      "nearPlaneMetres": 0.01,
       "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {
