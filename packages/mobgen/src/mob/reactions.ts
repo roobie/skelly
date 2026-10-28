@@ -307,8 +307,9 @@ const relaxBones = (actor: DeathActor, rotations: Record<string, Mat3>, supportF
 const restingPose = (actor: DeathActor, rotations: Record<string, Mat3>, headRolls: readonly number[]): Pose => {
   relaxBones(actor, rotations, false);
   relaxBones(actor, rotations, true);
+  const root: Vec3 = [0, groundOffset(actor.bones, actor.bodyExtents, rotations, GROUND_SMOOTHING), 0];
   fitSkullContact(actor, rotations, [0, groundOffset(actor.bones, actor.bodyExtents, rotations), 0], headRolls);
-  return { root: [0, groundOffset(actor.bones, actor.bodyExtents, rotations, GROUND_SMOOTHING), 0], rotations };
+  return { root, rotations };
 };
 
 export const deathPose = (actor: DeathActor, basePose: Pose, t: number, params: DeathParams): Pose => {
@@ -356,7 +357,9 @@ export const deathPose = (actor: DeathActor, basePose: Pose, t: number, params: 
     ...blended,
     root: [
       basePose.root[0],
-      groundOffset(actor.bones, actor.bodyExtents, blended.rotations, GROUND_SMOOTHING),
+      t >= DEATH_FALL_DURATION
+        ? rest.root[1]
+        : groundOffset(actor.bones, actor.bodyExtents, blended.rotations, GROUND_SMOOTHING),
       basePose.root[2],
     ],
   };

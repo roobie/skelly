@@ -30,6 +30,9 @@ interface ContactActor {
 
 const boneCells = (actor: ContactActor, id: string): readonly Vec3[] => {
   const owner = actor.bones.findIndex((bone) => bone.id === id) + 1;
+  if (owner === 0) {
+    throw new Error(`Unknown corpse contact bone: ${id}`);
+  }
   const { voxels } = actor;
   const result: Vec3[] = [];
   voxels.owner.forEach((cellOwner, index) => {
@@ -55,7 +58,7 @@ const basis = (r: Mat3): readonly Vec3[] =>
 
 const cellKey = (x: number, y: number, z: number): string => `${x}:${y}:${z}`;
 
-const chestCollider = (points: readonly Vec3[], size: number) => {
+const chestCollider = (points: readonly Vec3[], size: number, inset: number) => {
   const index = new Map(
     points.map((point) => [
       cellKey(Math.round(point[0] / size), Math.floor(point[1] / size), Math.round(point[2] / size)),
@@ -70,7 +73,9 @@ const chestCollider = (points: readonly Vec3[], size: number) => {
     );
     const projections = axes.map((axis) => ({
       axis,
-      radius: (size / 2) * [...a, ...b].reduce((sum, direction) => sum + Math.abs(dot(axis, direction)), 0),
+      radius:
+        (size / 2) * [...a, ...b].reduce((sum, direction) => sum + Math.abs(dot(axis, direction)), 0) -
+        inset * length(axis),
     }));
     return skull.some((point) => {
       const centre = applyPoint(relative, point);
@@ -143,18 +148,34 @@ export const fitSkullContact = (
     return;
   }
   const initial = boneTransforms(actor.bones, { root, rotations });
-  const chest = initial.get('chest')!;
+  const chest = initial.get('chest');
+  if (!chest) {
+    throw new Error('Corpse contact requires a chest bone');
+  }
   const inverseR = transpose(chest.r);
   const inverse: Transform = { r: inverseR, t: scale(mulMV(inverseR, chest.t), -1) };
-  const collision = chestCollider(boneCells(actor, 'chest'), actor.voxels.size);
+  const chestCells = boneCells(actor, 'chest');
+  let collision = chestCollider(chestCells, actor.voxels.size, 0);
+  const nearContact = chestCollider(
+    chestCells,
+    actor.voxels.size,
+    -deathContent.contact.supportDistanceVoxels * actor.voxels.size,
+  );
   const skull = ['head', 'jaw'].map((id) => ({ id, cells: boneCells(actor, id) }));
   const overlaps = (world: Transform): boolean => skull.some(({ cells }) => collision(cells, compose(inverse, world)));
-  if (!skull.some(({ id, cells }) => collision(cells, compose(inverse, initial.get(id)!)))) {
+  const floorClearance = (id: string, world: Transform): number =>
+    Math.min(...corners(actor.bodyExtents.get(id)!).map((point) => applyPoint(world, point)[1]));
+  const supported = (id: string, cells: readonly Vec3[], world: Transform): boolean =>
+    floorClearance(id, world) <= deathContent.contact.supportDistanceVoxels * actor.voxels.size ||
+    nearContact(cells, compose(inverse, world));
+  if (
+    !skull.some(({ id, cells }) => collision(cells, compose(inverse, initial.get(id)!))) &&
+    skull.some(({ id, cells }) => supported(id, cells, initial.get(id)!))
+  ) {
     return;
   }
   const axis = cross(mulMV(chest.r, sub(neck.tail, neck.head)), [0, 1, 0]);
-  const aboveFloor = (id: string, world: Transform): boolean =>
-    corners(actor.bodyExtents.get(id)!).every((point) => applyPoint(world, point)[1] >= 0);
+  const aboveFloor = (id: string, world: Transform): boolean => floorClearance(id, world) >= 0;
   const original = { ...rotations };
   const atNeck = (angle: number): boolean => {
     rotations.neck = mulMM(inverseR, mulMM(rotAxis(axis, angle), chest.r));
@@ -164,20 +185,27 @@ export const fitSkullContact = (
     }
     for (const roll of headRolls) {
       const atHead = (pitch: number): boolean => {
-        const worldR = mulMM(rotAxis(axis, pitch), mulMM(chest.r, rotY(roll)));
+        const worldR = mulMM(rotAxis(axis, pitch), mulMM(neckWorld.r, rotY(roll)));
         rotations.head = mulMM(transpose(neckWorld.r), worldR);
         const world = compose(neckWorld, boneLocalTransform(head, { root, rotations }));
         return aboveFloor('head', world) && aboveFloor('jaw', world) && !overlaps(world);
       };
       if (firstSupported(deathContent.contact.headPitch, atHead) !== undefined) {
-        rotations.jaw = IDENTITY_M;
-        return true;
+        const world = compose(neckWorld, boneLocalTransform(head, { root, rotations }));
+        if (skull.some(({ id, cells }) => supported(id, cells, world))) {
+          rotations.jaw = IDENTITY_M;
+          return true;
+        }
       }
     }
     return false;
   };
-  if (firstSupported(deathContent.contact.neckLift, atNeck) === undefined) {
-    Object.assign(rotations, original);
-    throw new Error('Death pose has no supported head/chest contact within its authored search range');
+  for (const penetration of deathContent.contact.penetrationVoxels) {
+    collision = chestCollider(chestCells, actor.voxels.size, penetration * actor.voxels.size);
+    if (firstSupported(deathContent.contact.neckLift, atNeck) !== undefined) {
+      return;
+    }
   }
+  Object.assign(rotations, original);
+  throw new Error('Death pose has no supported head/chest contact within its authored search range');
 };

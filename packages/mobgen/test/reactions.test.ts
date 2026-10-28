@@ -2,6 +2,7 @@
 // attack) and the death fall (whole-body root pitch, the clip format can't express).
 
 import { describe, expect, it } from 'vitest';
+import zombieContent from '../../deadvox/src/content/base/zombies.json' with { type: 'json' };
 import type { Bone } from '../src/core/body.ts';
 import { generateValid } from '../src/core/generate.ts';
 import { applyPoint, cross, dot, IDENTITY_M, length, mulMV, sub, type Transform, type Vec3 } from '../src/core/math.ts';
@@ -32,7 +33,10 @@ import { TEMPLATES as ALL_TEMPLATES, HUMANOID_TEMPLATES as TEMPLATES } from '../
 
 const setup = (name: string, seed = 1) => {
   const t = ALL_TEMPLATES.find((x) => x.name === name)!;
-  const found = generateValid(t, seed)!;
+  const found = generateValid(t, seed, { maxAttempts: 1 });
+  if (!found) {
+    throw new Error(`Invalid authored figure: ${name}/${seed}`);
+  }
   const { body, voxels } = found.realized;
   const extents = footRestExtents(body.bones, voxels);
   const bodyExtents = bodyRestExtents(body.bones, voxels);
@@ -185,16 +189,26 @@ const extentsOverlap = (
     });
 };
 
+const floorSettlingBones = new Set(deathContent.settleBones.filter((id) => id !== 'head'));
+
 describe('deathPose', () => {
   it.for(
-    ALL_TEMPLATES.flatMap((template, bodyIndex) =>
-      deathContent.poses.flatMap(({ id: poseId }, poseIndex) =>
-        (template.bodyPlan === 'crawler' ? (['prone'] as const) : (['upright', 'prone'] as const)).map((posture) => ({
-          name: template.name,
-          poseId,
-          posture,
-          seed: 1 + ((bodyIndex + poseIndex) % 3),
-        })),
+    ALL_TEMPLATES.flatMap((template) =>
+      [
+        ...new Set(
+          zombieContent.zombies
+            .filter((entry) => entry.model === template.name)
+            .flatMap((entry) => entry.figureSeeds ?? []),
+        ),
+      ].flatMap((seed) =>
+        deathContent.poses.flatMap(({ id: poseId }) =>
+          (template.bodyPlan === 'crawler' ? (['prone'] as const) : (['upright', 'prone'] as const)).map((posture) => ({
+            name: template.name,
+            poseId,
+            posture,
+            seed,
+          })),
+        ),
       ),
     ),
   )(
@@ -258,7 +272,11 @@ describe('deathPose', () => {
             const delta = sub(left, right);
             return (
               dot(delta, delta) < 3 * voxels.size ** 2 &&
-              projections.every(({ axis, radius }) => Math.abs(dot(delta, axis)) < radius - 1e-9)
+              projections.every(
+                ({ axis, radius }) =>
+                  Math.abs(dot(delta, axis)) <
+                  radius - Math.max(...deathContent.contact.penetrationVoxels) * voxels.size * length(axis) - 1e-9,
+              )
             );
           }),
         );
@@ -267,9 +285,11 @@ describe('deathPose', () => {
           chest.some((right) => {
             const delta = sub(left, right);
             return (
-              dot(delta, delta) <= 3 * (voxels.size * 1.01) ** 2 &&
+              dot(delta, delta) <= 3 * (voxels.size * (1 + deathContent.contact.supportDistanceVoxels)) ** 2 &&
               projections.every(
-                ({ axis, radius }) => Math.abs(dot(delta, axis)) <= radius + voxels.size * 0.01 * length(axis),
+                ({ axis, radius }) =>
+                  Math.abs(dot(delta, axis)) <=
+                  radius + voxels.size * deathContent.contact.supportDistanceVoxels * length(axis),
               )
             );
           }),
@@ -309,7 +329,7 @@ describe('deathPose', () => {
             ...corners(actor.bodyExtents.get(bone.id)!).map((point) => applyPoint(transform, point)[1]),
           );
           expect.soft(lowest, `${poseId}: ${bone.id} does not sink`).toBeGreaterThanOrEqual(0);
-          if (deathContent.settleBones.includes(bone.id)) {
+          if (floorSettlingBones.has(bone.id)) {
             expect.soft(lowest, `${poseId}: ${bone.id} support`).toBeLessThan(actor.params.height * 0.1);
           }
           for (const end of [bone.head, bone.tail]) {

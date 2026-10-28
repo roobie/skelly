@@ -1,7 +1,9 @@
 {
   "contact": {
     "headPitch": [-90, 90],
-    "neckLift": [0, 90]
+    "neckLift": [0, 90],
+    "penetrationVoxels": [0, 0.5],
+    "supportDistanceVoxels": 0.01
   },
   "duration": 1.1499999999999999,
   "poses": [

@@ -23,7 +23,7 @@ local pose(id, weights, pitch, rotations, headRolls=[0, 90, -90, 180]) = {
 };
 {
   duration: 1.15,
-  contact: { neckLift: [0, 90], headPitch: [-90, 90] },
+  contact: { neckLift: [0, 90], headPitch: [-90, 90], penetrationVoxels: [0, 0.5], supportDistanceVoxels: 0.01 },
   supportFaces: { upright: feet, prone: feet + { head: [1, 0, 0] } },
   settleBones: ['spine', 'chest', 'neck', 'head', 'upperArm.L', 'upperArm.R', 'forearm.L', 'forearm.R', 'hand.L', 'hand.R', 'thigh.L', 'thigh.R', 'shin.L', 'shin.R', 'foot.L', 'foot.R'],
   poses: [
