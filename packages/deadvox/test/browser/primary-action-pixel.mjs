@@ -276,7 +276,16 @@ const opticZoomRecord = ({ power, opticType, gunType }) => {
         maskCentre,
       );
       const { uniforms } = engine.mood.opticPass;
+      const physical = r.view.playerMeshes.animator.slotModelOf(
+        rifle,
+        Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
+      );
+      const { sight } = inventory.registry.models.get(inventory.registry.items.get(opticType).model).gun;
+      const physicalGlass = physical
+        .localToWorld(engine.camera.position.clone().set(...sight.eye))
+        .project(engine.camera);
       drawn = {
+        physicalGlass: [(physicalGlass.x + 1) / 2, (physicalGlass.y + 1) / 2],
         opticType,
         housingCentre: [...maskCentre],
         housingSources: [...lens.housing.meshes.keys()].map((mesh) => ({
