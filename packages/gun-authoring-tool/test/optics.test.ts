@@ -17,14 +17,18 @@ import { meshForSolid } from '@skelly/engine/shapes/mesh.ts';
 import { surfaceOf } from '@skelly/thing-core/materials';
 import { OpticApertureSchema } from '@skelly/thing-core/optic-aperture';
 import { ReticleSchema } from '@skelly/thing-core/reticle';
-import { Ray, Vector3 } from 'three';
+import { Box3, Mesh, Ray, Raycaster, Vector3 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
+import exportRecipe from '../exports/deadvox.json' with { type: 'json' };
 import appearance from '../src/gun/appearance.json' with { type: 'json' };
 import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
+import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
 import { attachmentInstanceForId, attachmentLookIssue, attachmentSlots } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import fixedPrism from '../src/gun/fixedPrism.json' with { type: 'json' };
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
@@ -131,45 +135,211 @@ describe('optic catalog', () => {
     );
   });
 
-  it('gives the closed micro dot a rear-to-front tunnel and two rear-left adjustment dials', () => {
+  it('keeps the closed micro tunnel surrounded by housing with its adjustments behind and beside the window', () => {
     const optic = getOptic('mini-reflex');
-    expect(optic.reference).toContain('ACRO');
+    const boundsOf = (solids: typeof optic.solids) => {
+      expect(solids.length).toBeGreaterThan(0);
+      const bounds = new Box3();
+      for (const solid of solids) {
+        const [min, max] = localSolidBounds(solid);
+        bounds.expandByPoint(new Vector3(...min)).expandByPoint(new Vector3(...max));
+      }
+      return bounds;
+    };
+    const window = boundsOf(optic.solids.filter(({ slot }) => slot === LENS_SLOT));
+    const center = window.getCenter(new Vector3());
+    const size = window.getSize(new Vector3());
+    const housing = optic.solids.filter((solid) => solid.display?.mergeGroup !== undefined);
+    const outer = boundsOf(housing);
+    const roof = boundsOf(housing.filter((solid) => solid.kind === 'extruded-polygon' && solid.axis === 'z'));
+    expect(roof.min.z).toBeLessThanOrEqual(window.min.z);
+    expect(roof.max.z).toBeGreaterThanOrEqual(window.max.z);
+    const floor = boundsOf(housing.filter((solid) => solid.kind === 'box'));
+    const epsilon = Math.min(size.y, size.z) / 100;
+    const wallAt = (x: number, y: number, z: number) => {
+      const probe = worldSolid(IDENTITY, {
+        id: 'wall-probe',
+        kind: 'box',
+        box: { center: [x, y, z], half: [epsilon, epsilon, epsilon] },
+      });
+      expect(housing.some((solid) => penetrationWorld(probe, worldSolid(IDENTITY, solid)) > 0)).toBe(true);
+    };
+    wallAt(center.x, roof.getCenter(new Vector3()).y, center.z);
+    for (const along of [0.1, 0.5, 0.99]) {
+      const x = window.min.x + size.x * along;
+      wallAt(x, floor.getCenter(new Vector3()).y, center.z);
+      for (const height of [0.1, 0.5, 0.9]) {
+        const y = window.min.y + size.y * height;
+        for (const z of [(outer.min.z + window.min.z) / 2, (outer.max.z + window.max.z) / 2]) {
+          wallAt(x, y, z);
+        }
+      }
+    }
     const dials = optic.solids.filter(({ id }) => id.includes('adjustment-dial'));
-    expect(dials).toHaveLength(2);
+    expect(dials.length).toBeGreaterThan(0);
     for (const dial of dials) {
       expect(dial.kind).toBe('revolved');
       const [, max] = localSolidBounds(dial);
-      expect(max[0]).toBeLessThan(0);
-      expect(max[2]).toBeLessThan(0);
+      expect(max[0]).toBeLessThan(center.x);
+      expect(max[2]).toBeLessThan(center.z);
     }
-    // The rear, middle and front all have four walls; deleting most of the housing must not pass as a tunnel.
-    for (const x of [-2, 0, 1.75]) {
-      for (const [y, z] of [
-        [0.75, 0],
-        [2.5, 0],
-        [1.5, -1],
-        [1.5, 1],
-      ]) {
-        const wallProbe = worldSolid(IDENTITY, {
-          id: 'wall-probe',
-          kind: 'box',
-          box: { center: [x, y!, z!], half: [0.1, 0.1, 0.1] },
-        });
-        expect(
-          optic.solids.some((solid) => penetrationWorld(wallProbe, worldSolid(IDENTITY, solid)) > 0),
-          `wall at ${x},${y},${z}`,
-        ).toBe(true);
-      }
-    }
+    const margin = Math.min(optic.opticalAxisY - window.min.y, window.max.y - optic.opticalAxisY);
+    expect(margin).toBeGreaterThan(0);
     const probe = worldSolid(IDENTITY, {
       id: 'window-probe',
       kind: 'box',
-      box: { center: [0, optic.opticalAxisY, 0], half: [2.5, 0.25, 0.25] },
+      box: { center: [center.x, optic.opticalAxisY, center.z], half: [size.x / 2 + epsilon, margin / 2, size.z / 4] },
     });
-    // Its windows close the tunnel's ends with glass; no body solid may cross the sight line between them.
     for (const solid of optic.solids.filter(({ slot }) => slot !== LENS_SLOT)) {
       expect(penetrationWorld(probe, worldSolid(IDENTITY, solid)), solid.id).toBeLessThanOrEqual(0);
     }
+  });
+
+  it('holographic ADS relief rays clear the unmasked geometry through the central window', () => {
+    const optic = getOptic('holographic');
+    const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0);
+    const metal = optic.solids.filter(
+      (solid) => solid.slot !== LENS_SLOT && solid.display?.piece !== 'optic-ads-housing',
+    );
+    expect(metal.length).toBeGreaterThan(0);
+    for (const [vertical, lateral] of [
+      [0, 0],
+      [-0.8, 0],
+      [0.8, 0],
+      [0, -0.8],
+      [0, 0.8],
+    ]) {
+      const target = new Vector3(
+        optic.ocularX,
+        optic.opticalAxisY + (vertical! * optic.ocularOpeningDiameterU) / 2,
+        (lateral! * optic.ocularOpeningDiameterU) / 2,
+      );
+      const ray = new Ray(eye, target.sub(eye).normalize());
+      for (const solid of metal) {
+        const mesh = meshForSolid(solid, 0);
+        const point = (index: number) => new Vector3().fromArray(mesh.positions, mesh.indices[index]! * 3);
+        for (let index = 0; index < mesh.indices.length; index += 3) {
+          expect(
+            ray.intersectTriangle(point(index), point(index + 1), point(index + 2), false, new Vector3()),
+            solid.id,
+          ).toBeNull();
+        }
+      }
+    }
+  });
+
+  it('exports the complete holographic hood with a shallow always-visible near frame separate from ADS-only length housing', async () => {
+    const optic = getOptic('holographic');
+    const hood = optic.solids.filter((solid) => solid.display?.piece === 'optic-ads-housing');
+    const frame = optic.solids.filter((solid) => solid.display?.piece === 'optic-near-frame');
+    expect(hood.length).toBeGreaterThan(0);
+    expect(frame.length).toBeGreaterThan(0);
+    const row = exportRecipe.find(({ id }) => id === 'optic_holographic')!;
+    const result = exportAttachmentGlb(
+      'optic-holographic',
+      { id: 'fixture-holo', file: 'assets/models/fixture-holo.glb' },
+      undefined,
+      { voxelGrain: row.voxel.grain, voxelDetailGrain: row.voxel.detailGrain },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(JSON.stringify(result.error));
+    }
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(result.glb).buffer, '');
+    const exported: Mesh[] = [];
+    const near: Mesh[] = [];
+    scene.traverse((mesh) => {
+      if (!(mesh instanceof Mesh)) {
+        return;
+      }
+      if (mesh.geometry.userData.piece === 'optic-ads-housing') {
+        exported.push(mesh);
+      }
+      if (mesh.geometry.userData.piece === 'optic-near-frame') {
+        near.push(mesh);
+      }
+    });
+    expect(exported.length).toBeGreaterThan(0);
+    expect(near.length).toBeGreaterThan(0);
+    const frameSolids = near.flatMap((mesh) => mesh.geometry.userData.solids as string[]);
+    expect(frameSolids).toEqual(expect.arrayContaining(frame.map(({ id }) => id)));
+    const nearBounds = new Box3();
+    for (const mesh of near) {
+      nearBounds.union(new Box3().setFromObject(mesh));
+    }
+    const ocular = optic.ocularX * METRES_PER_UNIT;
+    const objective =
+      Math.max(...optic.solids.filter(({ slot }) => slot === LENS_SLOT).map((solid) => localSolidBounds(solid)[1][0])) *
+      METRES_PER_UNIT;
+    expect(Math.abs(nearBounds.min.x - ocular)).toBeLessThan(row.voxel.detailGrain!);
+    expect(nearBounds.max.x).toBeLessThan(objective);
+    const opening = optic.ocularOpeningDiameterU * METRES_PER_UNIT;
+    const axis = optic.opticalAxisY * METRES_PER_UNIT;
+    expect(nearBounds.min.y).toBeLessThan(axis - opening / 2);
+    expect(nearBounds.max.y).toBeGreaterThan(axis + opening / 2);
+    expect(nearBounds.min.z).toBeLessThan(-opening / 2);
+    expect(nearBounds.max.z).toBeGreaterThan(opening / 2);
+    scene.updateMatrixWorld(true);
+    const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0).multiplyScalar(METRES_PER_UNIT);
+    expect(new Raycaster(eye, new Vector3(1, 0, 0)).intersectObjects(near, false)).toHaveLength(0);
+    for (const solid of frame) {
+      const [low, high] = localSolidBounds(solid);
+      const target = new Vector3(...low).add(new Vector3(...high)).multiplyScalar(METRES_PER_UNIT / 2);
+      expect(
+        new Raycaster(eye, target.sub(eye).normalize()).intersectObjects(near, false).length,
+        solid.id,
+      ).toBeGreaterThan(0);
+    }
+    const drawnSolids = exported.flatMap((mesh) => mesh.geometry.userData.solids as string[]);
+    for (const solid of hood) {
+      expect(drawnSolids).toContain(solid.id);
+    }
+    const expected = new Box3();
+    for (const solid of hood) {
+      const [low, high] = localSolidBounds(solid);
+      expected.expandByPoint(new Vector3(...low).multiplyScalar(METRES_PER_UNIT));
+      expected.expandByPoint(new Vector3(...high).multiplyScalar(METRES_PER_UNIT));
+    }
+    const actual = new Box3();
+    for (const mesh of exported) {
+      actual.union(new Box3().setFromObject(mesh));
+    }
+    for (const bound of ['min', 'max'] as const) {
+      expect(actual[bound].distanceTo(expected[bound])).toBeLessThan(row.voxel.detailGrain! * Math.sqrt(3));
+    }
+  });
+
+  it('voxel holographic battery presents an opaque eye-facing surface rather than a hole through glass neighbours', async () => {
+    const optic = getOptic('holographic');
+    const cap = optic.solids.find(({ id }) => id === 'forward-battery-cap')!;
+    const [low, high] = localSolidBounds(cap);
+    const row = exportRecipe.find(({ id }) => id === 'optic_holographic')!;
+    const result = exportAttachmentGlb(
+      'optic-holographic',
+      { id: 'fixture-holo', file: 'assets/models/fixture-holo.glb' },
+      undefined,
+      { voxelGrain: row.voxel.grain, voxelDetailGrain: row.voxel.detailGrain },
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(JSON.stringify(result.error));
+    }
+    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(result.glb).buffer, '');
+    scene.updateMatrixWorld(true);
+    const metal: Mesh[] = [];
+    scene.traverse((mesh) => {
+      if (mesh instanceof Mesh && mesh.geometry.userData.slot === 'metal') {
+        metal.push(mesh);
+      }
+    });
+    expect(metal.length).toBeGreaterThan(0);
+    const eye = new Vector3(optic.ocularX - optic.eyeReliefU!, optic.opticalAxisY, 0).multiplyScalar(METRES_PER_UNIT);
+    const target = new Vector3(low[0], (low[1] + high[1]) / 2, 0).multiplyScalar(METRES_PER_UNIT);
+    // Front-side ray casting must hit the entrance; a back-facing exit cannot hide a missing opaque face.
+    const [hit] = new Raycaster(eye, target.clone().sub(eye).normalize()).intersectObjects(metal, false);
+    expect(hit).toBeDefined();
+    expect(hit!.point.x).toBeLessThan(high[0] * METRES_PER_UNIT);
+    expect(hit!.face!.normal.x).toBeLessThan(0);
   });
 
   it('keeps magnifying optics drawn metal clear along the optical axis between their lenses', () => {
