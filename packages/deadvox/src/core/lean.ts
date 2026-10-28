@@ -56,6 +56,15 @@ const clearBox = (min: number[], max: number[], isSolid: SolidAt): boolean => {
   return true;
 };
 
+interface LeanGuardInput {
+  amount: number;
+  rollRadians: number;
+  boxesAt: (amount: number) => readonly LeanBox[];
+  isSolid: SolidAt;
+  marginBlocks: number;
+  offset?: Vec3;
+}
+
 /** Include rest-to-lean travel so a clear endpoint cannot skip cover. */
 export const guardLean = ({
   amount,
@@ -63,24 +72,19 @@ export const guardLean = ({
   boxesAt,
   isSolid,
   marginBlocks,
-}: {
-  amount: number;
-  rollRadians: number;
-  boxesAt: (amount: number) => readonly LeanBox[];
-  isSolid: SolidAt;
-  marginBlocks: number;
-}): number => {
+  offset = [0, 0, 0],
+}: LeanGuardInput): number => {
   if (amount === 0) {
     return 0;
   }
   const rest = boxesAt(0);
   const clear = (fraction: number): boolean =>
-    boxesAt(amount * fraction).every((box, index) => {
+    (fraction === 0 ? rest : boxesAt(amount * fraction)).every((box, index) => {
       const base = rest[index]!;
       // Chord-to-arc distance is at most r * angle² / 8 for the admitted lean angles.
       const padding = marginBlocks + (Math.max(base.radius, box.radius) * (rollRadians * fraction) ** 2) / 8;
-      const min = box.min.map((v, axis) => Math.min(v, base.min[axis]!) - padding);
-      const max = box.max.map((v, axis) => Math.max(v, base.max[axis]!) + padding);
+      const min = box.min.map((v, axis) => Math.min(v, base.min[axis]!) + offset[axis]! - padding);
+      const max = box.max.map((v, axis) => Math.max(v, base.max[axis]!) + offset[axis]! + padding);
       return clearBox(min, max, isSolid);
     });
   if (!clear(0)) {
@@ -100,4 +104,49 @@ export const guardLean = ({
     }
   }
   return amount * low;
+};
+
+const sameKey = (a: readonly unknown[], b: readonly unknown[]): boolean =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
+/** Pose bounds survive translation; clearance survives only while both the pose and surroundings agree. */
+export const createLeanGuard = () => {
+  let poseKey: readonly unknown[] = [];
+  let spaceKey: readonly unknown[] = [];
+  const bounds = new Map<number, readonly LeanBox[]>();
+  const limits = new Map<number, number>();
+  return (input: LeanGuardInput & { poseKey: readonly unknown[]; spaceKey: readonly unknown[] }): number => {
+    if (input.amount === 0) {
+      return 0;
+    }
+    const newPose = !sameKey(poseKey, input.poseKey);
+    if (newPose) {
+      poseKey = input.poseKey.slice();
+      bounds.clear();
+    }
+    if (newPose || !sameKey(spaceKey, input.spaceKey)) {
+      spaceKey = input.spaceKey.slice();
+      limits.clear();
+    }
+    const sign = Math.sign(input.amount);
+    let limit = limits.get(sign);
+    if (limit === undefined) {
+      const boxesAt = (amount: number): readonly LeanBox[] => {
+        let boxes = bounds.get(amount);
+        if (!boxes) {
+          boxes = input.boxesAt(amount);
+          // Moving beside cover can visit many bisection fractions without changing the anatomical pose.
+          if (bounds.size >= 64) {
+            bounds.delete(bounds.keys().next().value!);
+          }
+          bounds.set(amount, boxes);
+        }
+        return boxes;
+      };
+      // A fixed full-range solve keeps warm and cold caches identical at standalone replay starts.
+      limit = guardLean({ ...input, amount: sign, rollRadians: input.rollRadians / Math.abs(input.amount), boxesAt });
+      limits.set(sign, limit);
+    }
+    return limit === 0 ? 0 : sign * Math.min(Math.abs(input.amount), Math.abs(limit));
+  };
 };

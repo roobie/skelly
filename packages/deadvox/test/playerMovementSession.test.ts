@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
+// biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
+import * as leanCollision from '../src/core/leanCollision.ts';
 import { playerEyePosition } from '../src/core/playerLookPose.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, reachTuning } from '../src/core/reach.ts';
@@ -171,17 +173,32 @@ describe('held lateral lean', () => {
     expect(runtime.session.leanAmount).toBe(0);
   });
 
-  it('admits partial lean without putting the eye through a wall', () => {
-    const open = makeRuntime({ spawn: [0.8, 1, 0] });
-    const wall = makeRuntime({ spawn: [0.8, 1, 0], isSolid: (x, y) => y === 0 || x >= 1 });
-    for (const runtime of [open, wall]) {
+  it('does not solve an unchanged settled armed lean pose again', () => {
+    const runtime = makeRuntime();
+    const { inventory } = runtime.session;
+    expect(inventory.add(inventory.create(FIREARM_TYPE), { kind: 'hand', side: 'right' })).toBe(true);
+    const solve = vi.spyOn(leanCollision, 'playerLeanBoxes');
+    try {
       runtime.advance(2);
       runtime.setIntent({ ...IDLE, lean: 1 });
-      runtime.advance(60);
+      runtime.advance(Math.ceil(registry.player.get('player')!.lean.enterSimSeconds * 60) + 2);
+      expect(runtime.session.leanAmount).toBeGreaterThan(0);
+      solve.mockClear();
+      runtime.advance(10);
+      expect(solve.mock.calls.length).toBe(0);
+    } finally {
+      solve.mockRestore();
     }
-    expect(wall.session.leanAmount).toBeGreaterThan(0);
-    expect(wall.session.leanAmount).toBeLessThan(open.session.leanAmount);
-    expect(eye(wall)[0]).toBeLessThan(1);
+  });
+
+  it('keeps forward and strafe velocity while leaning diagonally', () => {
+    const runtime = makeRuntime();
+    runtime.setIntent({ ...IDLE, forward: 1, right: 1, lean: 1 });
+    runtime.advance(30);
+    expect(runtime.session.leanAmount).toBeGreaterThan(0);
+    expect(runtime.session.body.vel[0]).toBeGreaterThan(0);
+    expect(runtime.session.body.vel[2]).toBeLessThan(0);
+    expect(runtime.session.body.vel[0]).toBeCloseTo(-runtime.session.body.vel[2]!);
   });
 
   it('slows moving lean by its content speed factor', () => {

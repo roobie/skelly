@@ -64,7 +64,7 @@ import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
-import { advanceLean, guardLean, leanFrame } from '../core/lean.ts';
+import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
@@ -1952,10 +1952,31 @@ export const createSession = (options: SessionOptions) => {
     return readyGait;
   };
 
+  const guardPlayerLean = createLeanGuard();
   const limitLean = (amount: number): number => {
+    if (amount === 0) {
+      return 0;
+    }
     const { yaw, pitch } = sampledInput();
+    const progress = Object.values(inventory.hands).map((item) => (item ? firearms.readyProgress(item.uid) : 0));
     const ads = playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame);
-    return guardLean({
+    const aiming = ads !== undefined || progress.some((value) => value >= 1);
+    const { loweredPitchRadians } = currentFirearmsCombatTuning();
+    return guardPlayerLean({
+      poseKey: [
+        yaw,
+        pitch,
+        playerStance,
+        inventory.version,
+        dominantSide(character),
+        ...progress,
+        ads !== undefined,
+        aiming ? aim.frame.yaw : 0,
+        aiming ? aim.frame.pitch : 0,
+        loweredPitchRadians,
+      ],
+      spaceKey: [...body.pos, world.version, entities.version, inventory.vehicles.version],
+      offset: body.pos,
       amount,
       rollRadians: leanFrame(amount, Player.lean).rollRadians,
       boxesAt: (at) =>
@@ -1969,14 +1990,14 @@ export const createSession = (options: SessionOptions) => {
             ads,
             lean: leanFrame(at, Player.lean),
           }),
-          feet: body.pos,
+          feet: [0, 0, 0],
           blockSize: s,
           yaw,
           pitch,
           aimFrame: aim.frame,
           ads: ads !== undefined,
           progress: (uid) => firearms.readyProgress(uid),
-          loweredPitchRadians: currentFirearmsCombatTuning().loweredPitchRadians,
+          loweredPitchRadians,
         }),
       isSolid: physicalSolid,
       marginBlocks: Player.lean.wallMarginMetres / s,
