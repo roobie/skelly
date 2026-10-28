@@ -225,6 +225,7 @@ export class Input {
     return {
       forward: on('movement.forward') - on('movement.back'),
       right: on('movement.right') - on('movement.left'),
+      lean: on('player.lean-right') - on('player.lean-left'),
       jump: keyboardInput.held('movement.jump') || keyboardInput.held('noclip.ascend'),
       sprint: keyboardInput.held('movement.sprint'),
       walk: this.walking,

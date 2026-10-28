@@ -15,6 +15,7 @@ import {
   figureStancePose,
   type PlayerLookPose,
   playerHeldSeatFrame,
+  playerLeanPoint,
   playerLookPose,
   playerPosePoint,
 } from '../core/playerLookPose.ts';
@@ -189,6 +190,7 @@ export interface PlayerFigurePose {
   pitch?: number;
   stancePose?: FigureStancePose;
   ads?: import('../core/playerLookPose.ts').PlayerAdsPose | undefined;
+  lean?: import('../core/lean.ts').LeanFrame | undefined;
 }
 
 type StancePose = FigureDef['stancePoses']['prone'];
@@ -443,6 +445,7 @@ export class PlayerMeshes {
       stance: pose.stance,
       stancePose: this.shownPose,
       ads: pose.ads,
+      lean: pose.lean,
     });
     this.placement.bodyPosition = pose.body.pos;
     this.placement.yaw = pose.yaw;
@@ -556,6 +559,7 @@ export class PlayerMeshes {
       });
     }
     this.presentation!.stockSeats = this.lookPose!.stockSeats;
+    this.presentation!.leanRollRadians = this.lookPose!.lateralLean?.frame.rollRadians ?? 0;
     this.presentation!.proneAds = this.lookPose!.proneAds;
     this.presentation!.seatFrame = playerHeldSeatFrame(this.lookPose!, pose.pitch ?? 0);
     this.presentation!.adsEyes = this.lookPose!.eyes;
@@ -823,7 +827,11 @@ export class PlayerMeshes {
       const point = playerPosePoint(this.lookPose!, [at[0], localY, localZ], 'torso');
       point[1] += stepOffset;
       setPlayerFigurePosition(this.dummy.position, this.placement, point);
-      this.dummy.rotation.set(this.lookPose!.hipTurn, yaw, 0, 'YXZ');
+      this.dummy.rotation.set(0, yaw, 0, 'YXZ');
+      if (this.lookPose!.lateralLean) {
+        this.dummy.quaternion.multiply(this.jointTurn.fromArray(this.lookPose!.lateralLean.rotation));
+      }
+      this.dummy.rotateX(this.lookPose!.hipTurn);
       this.dummy.quaternion.multiply(this.jointTurn.fromArray(this.lookPose!.spineRotation));
       this.dummy.rotateX(stride);
       return;
@@ -834,8 +842,19 @@ export class PlayerMeshes {
     this.localPosition[0] = at[0];
     this.localPosition[1] = stepOffset + hip - hipDropMetres + aboveHip * Math.cos(swing) - localZ * Math.sin(swing);
     this.localPosition[2] = aboveHip * Math.sin(swing) + localZ * Math.cos(swing);
-    setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
-    this.dummy.rotation.order = 'YXZ';
-    this.dummy.rotation.set(stride + swing, yaw, 0);
+    const lateral = bodyRoot && !this.fixedPose ? this.lookPose!.lateralLean : undefined;
+    if (lateral) {
+      this.localPosition[1] -= stepOffset;
+      const leaned = playerLeanPoint(this.lookPose!, this.localPosition);
+      leaned[1] += stepOffset;
+      setPlayerFigurePosition(this.dummy.position, this.placement, leaned);
+      this.dummy.rotation.set(0, yaw, 0, 'YXZ');
+      this.dummy.quaternion.multiply(this.jointTurn.fromArray(lateral.rotation));
+      this.dummy.rotateX(stride + swing);
+    } else {
+      setPlayerFigurePosition(this.dummy.position, this.placement, this.localPosition);
+      this.dummy.rotation.order = 'YXZ';
+      this.dummy.rotation.set(stride + swing, yaw, 0);
+    }
   }
 }

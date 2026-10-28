@@ -4086,6 +4086,14 @@ const PlayerSchema = strictObject({
   reach: Positive,
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
+  lean: strictObject({
+    offsetMetres: NonNegative,
+    rollDegrees: pipe(NonNegative, maxValue(45)),
+    enterSimSeconds: PositiveSimSeconds,
+    returnSimSeconds: PositiveSimSeconds,
+    movementSpeedScale: Fraction,
+    wallMarginMetres: Positive,
+  }),
   crouch: PlayerStanceTuningSchema,
   prone: PlayerStanceTuningSchema,
   load: pipe(

@@ -67,6 +67,19 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantNa
 type ExportedGun = ReturnType<typeof exported>;
 // These read-only groups share one identical AR export; determinism keeps independent exports below.
 const arBaseline = exported(design('archetype-ar'), ASSET, 'ar');
+
+it('exports physical collision bounds for every firearm body part so cover checks use drawn geometry', () => {
+  const parts = Object.values(arBaseline.modelEntry.parts);
+  expect(parts.length).toBeGreaterThan(0);
+  for (const part of parts) {
+    expect(part.collision?.length).toBeGreaterThan(0);
+    const boxes = part.collision!;
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.min(...boxes.map(({ min }) => min[axis]!))).toBeLessThanOrEqual(part.centreOfMass[axis]! + 1e-9);
+      expect(Math.max(...boxes.map(({ max }) => max[axis]!))).toBeGreaterThanOrEqual(part.centreOfMass[axis]! - 1e-9);
+    }
+  }
+});
 const actionExportFacts = (name: string) => {
   const out = exported(design(name));
   const action = out.modelEntry.gun.action!;

@@ -749,6 +749,7 @@ describe('content', () => {
         },
       ],
     };
+    Object.assign(data.models[0]!, { collision: [{ min: [0, 0, 0], max: [1, 1, 1] }] });
     const { issues } = buildRegistry([{ source: 'effects-fixture.json', data }]);
     expect(issues.map(({ path }) => path)).toEqual(['items[0].firearmAttachmentEffects']);
   });
@@ -943,6 +944,9 @@ describe('content', () => {
         },
       ],
     };
+    for (const model of data.models) {
+      Object.assign(model, { collision: [{ min: [0, 0, 0], max: [1, 1, 1] }] });
+    }
     const source = 'suppressor-fixture.json';
     expect(buildRegistry([baseSounds, { source, data }]).issues).toContainEqual({
       source,

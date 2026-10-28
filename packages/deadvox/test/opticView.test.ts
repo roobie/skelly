@@ -21,6 +21,7 @@ const reticle: Reticle = {
 const modelFor = (properties: NonNullable<NonNullable<ModelDef['gun']>['attachment']>['properties']): ModelDef => ({
   id: 'optic_fixture_model',
   file: 'assets/models/optic_fixture_model.glb',
+  collision: [{ min: [0, 0, 0], max: [1, 1, 1] }],
   gun: {
     attachment: {
       id: 'optic_fixture',

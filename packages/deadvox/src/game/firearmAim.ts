@@ -25,6 +25,7 @@ export interface FirearmBoreRayInput {
   readonly adsEyes?: HeldFirearmTransformInput['adsEyes'];
   readonly aimingDownSights?: boolean;
   readonly loweredPitchRadians: number;
+  readonly leanRollRadians?: number | undefined;
 }
 
 export interface FirearmBoreRay {
@@ -52,6 +53,7 @@ export const firearmBoreRay = ({
   adsEyes,
   aimingDownSights = false,
   loweredPitchRadians,
+  leanRollRadians,
 }: FirearmBoreRayInput): FirearmBoreRay => {
   const pose = heldFirearmTransform({
     holds,
@@ -63,6 +65,7 @@ export const firearmBoreRay = ({
     aimingDownSights,
     aimFrame,
     lookPitchRadians: pitch,
+    leanRollRadians,
     stockSeat,
     seatFrame,
     adsEyes,

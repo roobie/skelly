@@ -95,6 +95,8 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
 });
 
 export interface MoveIntent {
+  /** Held lateral lean: opposing keys cancel. */
+  lean?: number;
   forward: number; // -1..1
   right: number; // -1..1
   jump: boolean;

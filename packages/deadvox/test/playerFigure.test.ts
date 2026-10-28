@@ -23,11 +23,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { leanFrame } from '../src/core/lean.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { insideLensAperture, opticViewSettings } from '../src/core/opticView.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
-import { playerLookLean } from '../src/core/playerLookPose.ts';
+import { playerEyePosition, playerLookLean } from '../src/core/playerLookPose.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FIGURE_LIMB_JOINTS, FIGURE_LIMBS, type FigureLimb } from '../src/core/schema.ts';
@@ -479,6 +480,56 @@ describe('optic lens presentation', () => {
 });
 
 describe('player figure', () => {
+  it('draws lateral torso lean and the gameplay eye without moving either foot', () => {
+    const body = createPlayerBody(scale, 4, 1, 4);
+    const meshes = playerMeshes();
+    for (const stance of ['standing', 'crouching'] as const) {
+      const common = {
+        body,
+        yaw: 0.3,
+        pitch: -0.4,
+        stepOffset: 0,
+        gaitPhase: 0,
+        moving: false,
+        stance,
+        dt: 1,
+        inventory: new Inventory(registry),
+      };
+      meshes.sync(common);
+      meshes.group.updateMatrixWorld(true);
+      const feet = ['leftLeg', 'rightLeg'].map((part) => drawnPart(meshes, part as FigureLimb).matrixWorld.clone());
+      const neutralEye = new Vector3();
+      meshes.eyePosition(neutralEye);
+      const lean = leanFrame(0.8, registry.player.get('player')!.lean);
+      meshes.sync({ ...common, lean });
+      meshes.group.updateMatrixWorld(true);
+      for (const [index, part] of ['leftLeg', 'rightLeg'].entries()) {
+        expect(drawnPart(meshes, part as FigureLimb).matrixWorld.equals(feet[index]!)).toBe(true);
+      }
+      const drawnEye = new Vector3();
+      meshes.eyePosition(drawnEye);
+      const eye = playerEyePosition({
+        feet: body.pos,
+        blockSize: scale.blockSize,
+        yaw: common.yaw,
+        pitch: common.pitch,
+        stance,
+        figure: playerFigure,
+        models: registry.models,
+        lean,
+      });
+      const expected = new Vector3(...eye).multiplyScalar(scale.blockSize);
+      expect(drawnEye.distanceTo(expected)).toBeLessThan(1e-9);
+      const anchors = registry.models.get(playerFigure.body.model)!.anchors!;
+      const midpoint = new Vector3(...anchors[playerFigure.body.eyes[0]]!)
+        .add(new Vector3(...anchors[playerFigure.body.eyes[1]]!))
+        .multiplyScalar(0.5);
+      midpoint.sub(new Vector3(...anchors[playerFigure.body.head.pivot]!));
+      const headEye = drawnPart(meshes, 'body').getObjectByName(FIGURE_PIVOT.head)!.localToWorld(midpoint);
+      expect(headEye.distanceTo(expected)).toBeLessThan(1e-9);
+      expect(drawnEye.distanceTo(neutralEye)).toBeGreaterThan(0);
+    }
+  });
   it('keeps all actor transforms observer-independent through stance lean and dynamic held posing', () => {
     const body = createPlayerBody(scale, 4, 1, 4);
     const inventory = new Inventory(registry);

@@ -408,6 +408,7 @@ const playSession = (
       },
     },
   );
+  replay.session.restoreLean(startState.leanAmount);
   const generatedColumns = new Set(replay.columns.map(([cx, cz]) => `${cx},${cz}`));
   const driver = new InputReplayDriver({
     player,
@@ -751,12 +752,17 @@ describe('input replay', () => {
   it('captures and restores every play-state value across a replay rollover', async () => {
     const start = capture(createRuntime());
     const liveState = {
+      leanAmount: 0,
       throwingStance: false,
       readyHeld: false,
       aimingDownSights: false,
       inventoryOpen: false,
     };
     const binding = createReplayPlayStateBinding({
+      getLeanAmount: () => liveState.leanAmount,
+      setLeanAmount: (value) => {
+        liveState.leanAmount = value;
+      },
       getThrowingStance: () => liveState.throwingStance,
       setThrowingStance: (value) => {
         liveState.throwingStance = value;
@@ -774,6 +780,7 @@ describe('input replay', () => {
         liveState.inventoryOpen = value;
       },
     });
+    liveState.leanAmount = 0.5;
     liveState.throwingStance = true;
     liveState.readyHeld = true;
     liveState.aimingDownSights = true;
@@ -786,6 +793,7 @@ describe('input replay', () => {
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
 
+    liveState.leanAmount = 0;
     liveState.throwingStance = false;
     liveState.readyHeld = false;
     liveState.aimingDownSights = false;
@@ -793,12 +801,50 @@ describe('input replay', () => {
     binding.restore(decoded.startState);
 
     expect(decoded.startState).toEqual({
+      leanAmount: 0.5,
       throwingStance: true,
       readyHeld: true,
       aimingDownSights: true,
       inventoryOpen: true,
     });
     expect(liveState).toEqual(decoded.startState);
+  });
+
+  it('records held lean and restores a partially leaned standalone segment without saving the pose', async () => {
+    const initial = createRuntime(undefined, false, undefined, { active: true });
+    initial.sim.paused = false;
+    initial.view.intent.lean = 1;
+    initial.session.frame(1 / 60);
+    const amount = initial.session.leanAmount;
+    expect(amount).toBeGreaterThan(0);
+    expect(amount).toBeLessThan(1);
+    const start = capture(initial);
+    const startState = { ...DEFAULT_REPLAY_START_STATE, leanAmount: amount };
+    const recorder = new InputReplayRecorder(start, 120, [], { startState });
+    const source = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        return live;
+      },
+    });
+    expect(source.session.leanAmount).toBe(0);
+    source.session.restoreLean(startState.leanAmount);
+    expect(source.session.leanAmount).toBe(amount);
+    source.sim.paused = false;
+    source.view.intent.lean = -1;
+    source.session.frame(1 / 60);
+    const end = capture(source);
+    const decoded = await decodeInputReplay(
+      await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, end),
+      { contentLookup },
+    );
+    expect(sampleFromReplayFrame(decoded.inputs.frames[0]!).intent.lean).toBe(-1);
+    const replay = playSession(decoded.snapshot, decoded.inputs, {
+      endSimTimestamp: decoded.endSimTimestamp,
+      startState: decoded.startState,
+    });
+    expect(replay.session.leanAmount).toBe(source.session.leanAmount);
+    expect(replay.session.leanAmount).not.toBe(amount);
   });
 
   it('replays a held-ready stance at a standalone segment start', async () => {
@@ -813,6 +859,7 @@ describe('input replay', () => {
     }
     const start = capture(initial);
     const startState: ReplayStartState = {
+      leanAmount: 0,
       throwingStance: false,
       readyHeld: true,
       aimingDownSights: false,
@@ -855,6 +902,7 @@ describe('input replay', () => {
     }
     const start = capture(initial);
     const startState: ReplayStartState = {
+      leanAmount: 0,
       throwingStance: false,
       readyHeld: true,
       aimingDownSights: true,
@@ -2116,6 +2164,7 @@ describe('input replay', () => {
     const initial = createRuntime();
     const start = capture(initial);
     const startState: ReplayStartState = {
+      leanAmount: 0,
       throwingStance: true,
       readyHeld: false,
       aimingDownSights: false,

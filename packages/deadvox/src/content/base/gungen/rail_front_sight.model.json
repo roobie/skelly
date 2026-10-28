@@ -1,6 +1,10 @@
 {
   "id": "rail_front_sight",
   "file": "assets/models/rail_front_sight.glb",
+  "collision": [
+    { "min": [-0.012, 0, -0.012], "max": [0.012, 0.006, 0.012] },
+    { "min": [-0.002, 0.006, -0.002], "max": [0.002, 0.02, 0.002] }
+  ],
   "gun": {
     "attachment": {
       "id": "rail-front-sight",

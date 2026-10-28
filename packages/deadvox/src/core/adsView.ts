@@ -57,6 +57,7 @@ export const adsCameraEye = ({
     lookPitchRadians: pitch,
     loweredPitchRadians: 0,
     stockSeat: pose.stockSeats[ads.side],
+    leanRollRadians: pose.lateralLean?.frame.rollRadians,
     adsEyes: pose.eyes,
   });
   const offset: Vec3 = nearestSightEyeOffset(gun) ?? [0, 0, 0];

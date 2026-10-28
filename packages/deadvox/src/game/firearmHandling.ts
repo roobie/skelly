@@ -207,6 +207,7 @@ export interface FirearmPoseInput {
   readonly eye: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
+  readonly leanRollRadians?: number | undefined;
   readonly adsEyes?: HeldFirearmTransformInput['adsEyes'];
   readonly yaw: number;
   readonly pitch: number;
@@ -676,6 +677,7 @@ export class FirearmMechanics {
       eye: input.eye,
       stockSeat: input.stockSeat,
       seatFrame: input.seatFrame,
+      leanRollRadians: input.leanRollRadians,
       adsEyes: input.adsEyes,
       yaw: input.yaw,
       pitch: input.pitch,
@@ -1592,6 +1594,7 @@ export class FirearmMechanics {
       eye,
       stockSeat: pose.stockSeat,
       seatFrame: pose.seatFrame,
+      leanRollRadians: pose.leanRollRadians,
       yaw: pose.yaw,
       pitch: pose.pitch,
     });

@@ -275,6 +275,7 @@ export interface HeldFirearmTransformInput {
   readonly aimingDownSights: boolean;
   readonly aimFrame: AimFrame;
   readonly lookPitchRadians?: number;
+  readonly leanRollRadians?: number | undefined;
   readonly handlingTurn?: Vec3;
   readonly stockSeat?: Vec3 | undefined;
   readonly seatFrame?: HeldSeatFrame | undefined;
@@ -349,6 +350,7 @@ export const heldFirearmTransform = ({
   aimingDownSights,
   aimFrame,
   lookPitchRadians = 0,
+  leanRollRadians = 0,
   handlingTurn = [0, 0, 0],
   stockSeat,
   seatFrame,
@@ -359,7 +361,7 @@ export const heldFirearmTransform = ({
     !(
       model.grip &&
       model.anchors?.muzzle &&
-      [progress, loweredPitchRadians, lookPitchRadians, ...handlingTurn].every(Number.isFinite)
+      [progress, loweredPitchRadians, lookPitchRadians, leanRollRadians, ...handlingTurn].every(Number.isFinite)
     ) ||
     progress < 0 ||
     progress > 1 ||
@@ -414,16 +416,17 @@ export const heldFirearmTransform = ({
     applyRootRotation([0, 1, 0]),
     applyRootRotation([0, 0, 1]),
   ] as const;
+  const cant = (point: Vec3): Vec3 => rz(point, leanRollRadians);
   return {
-    rootOffset,
-    muzzleOffset,
-    muzzleDirection: normalize(muzzleDirection),
-    muzzleUp: normalize(muzzleUp),
-    ...(sightEyeOffset ? { sightEyeOffset } : {}),
-    ...sightRangeFrame(model, applyRootRotation),
-    ...(sightDirection ? { sightDirection: normalize(sightDirection) } : {}),
-    ...(sightUp ? { sightUp: normalize(sightUp) } : {}),
-    rootRotation,
+    rootOffset: cant(rootOffset),
+    muzzleOffset: cant(muzzleOffset),
+    muzzleDirection: cant(normalize(muzzleDirection)),
+    muzzleUp: cant(normalize(muzzleUp)),
+    ...(sightEyeOffset ? { sightEyeOffset: cant(sightEyeOffset) } : {}),
+    ...sightRangeFrame(model, (point) => cant(applyRootRotation(point))),
+    ...(sightDirection ? { sightDirection: cant(normalize(sightDirection)) } : {}),
+    ...(sightUp ? { sightUp: cant(normalize(sightUp)) } : {}),
+    rootRotation: [cant(rootRotation[0]), cant(rootRotation[1]), cant(rootRotation[2])],
   };
 };
 
@@ -445,11 +448,13 @@ export const heldEjectionPose = ({
   seatFrame,
   yaw,
   pitch,
+  leanRollRadians = 0,
 }: {
   model: ModelDef;
   side: HandSide;
   twoHanded: boolean;
   eye: Vec3;
+  leanRollRadians?: number | undefined;
   stockSeat?: Vec3 | undefined;
   seatFrame?: HeldSeatFrame | undefined;
   yaw: number;
@@ -465,8 +470,8 @@ export const heldEjectionPose = ({
     seatedFirearmRoot(model, stockSeat, (point) => point) ??
     heldSeatInView(model, heldGripOffset({ side, twoHanded, model, holds }), pitch, seatFrame);
   const offset: Vec3 = at.map((value, index) => value + grip[index]!) as Vec3;
-  const worldOffset = ry(rx(offset, pitch), yaw);
-  const vector = ry(rx(modelToView(model, model.gun.action.ejectDirection), pitch), yaw);
+  const worldOffset = ry(rx(rz(offset, leanRollRadians), pitch), yaw);
+  const vector = ry(rx(rz(modelToView(model, model.gun.action.ejectDirection), leanRollRadians), pitch), yaw);
   const length = Math.hypot(...vector);
   return {
     origin: worldOffset.map((value, index) => value + eye[index]!) as Vec3,

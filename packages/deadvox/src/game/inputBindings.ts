@@ -107,6 +107,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('movement.left', 'Move left', movingWhileReading, 'held-state'),
   row('movement.right', 'Move right', movingWhileReading, 'held-state'),
   row('movement.sprint', 'Sprint; hold breath while aiming down sights', moving, 'held-state'),
+  row('player.lean-left', 'Lean left', world, 'held-state'),
+  row('player.lean-right', 'Lean right', world, 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving),
   row(
     'player.crouch-toggle',
