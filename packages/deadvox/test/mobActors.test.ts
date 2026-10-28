@@ -12,6 +12,7 @@ import {
   indexBonesByParent,
   type Pose,
 } from '@mobgen/core/pose.ts';
+import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
@@ -1533,9 +1534,18 @@ describe('MobActorMeshes dismemberment', () => {
       const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
       const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
       const { realized } = generateValid(template, 1)!;
-      const expected = severableParts(realized.body.bones).map((part) => [
+      const { bones } = realized.body;
+      const indices = new Map(bones.map((bone, index) => [bone.id, index]));
+      const expected = severableParts(bones).map((part) => [
         part,
-        template.bodyMassKg * template.massFractions![part]!,
+        templatePartMassProperties({
+          voxels: realized.voxels,
+          partBoneIndices: [...severedBoneSet(bones, [part])].map((bone) => indices.get(bone)!),
+          bodyBoneIndices: bones.map((_, index) => index),
+          voxelSize: realized.voxels.size,
+          template,
+          part,
+        }).mass,
       ]);
       expect(masses).toEqual(expected);
     } finally {
