@@ -1,8 +1,11 @@
 // @vitest-environment happy-dom
 import { render } from 'lit-html';
 import { describe, expect, it } from 'vitest';
+import { Character, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { decimalText } from '../src/core/numberText.ts';
+import { fillText } from '../src/core/textTemplate.ts';
 import { labelForAction } from '../src/game/inputBindings.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import {
@@ -64,18 +67,26 @@ describe('quickbarViewModel', () => {
   });
 
   it('shows an item in a pocket, with the owner and the handling time', () => {
-    const { inv, hoodie } = kitchen();
-    const matches = inv.create('matches');
-    inv.add(matches, { kind: 'pocket', owner: hoodie, pocket: 0 });
     const bar = new Quickbar();
-    bar.assign(2, matches);
-    const vm = quickbarViewModel(bar, inv);
-    const where = vm.slots[2]?.where ?? '';
-    expect(where).toContain(inv.name(hoodie).toLowerCase());
-    const seconds = Number.parseFloat(where.split('·')[1] ?? '');
-    const from = inv.locate(matches)!;
-    const expected = inv.handlingTime(matches, from, { kind: 'hand', side: 'left' });
-    expect(seconds).toBeCloseTo(expected, 1);
+    const character = new Character(registry);
+    const skilled = new Inventory(registry, undefined, undefined, character);
+    const owner = skilled.create('hoodie');
+    expect(skilled.add(owner, { kind: 'worn' })).toBe(true);
+    const item = skilled.create('matches');
+    expect(skilled.add(item, { kind: 'pocket', owner, pocket: 0 })).toBe(true);
+    bar.assign(2, item);
+    const before = quickbarKey(bar, skilled);
+    character.awardPractice('inventory_management', Number.MAX_SAFE_INTEGER);
+    expect(character.skills.inventory_management).toBe(SKILL_LEVEL_MAX);
+    expect(skilled.scaleHandlingTime(1)).not.toBe(1);
+    const expected = skilled.handlingTime(item, skilled.locate(item)!, { kind: 'hand', side: 'left' });
+    expect(quickbarViewModel(bar, skilled).slots[2]?.where).toBe(
+      fillText(baseScreenText().quickbar.pocket, {
+        container: skilled.name(owner).toLowerCase(),
+        secs: decimalText(expected),
+      }),
+    );
+    expect(quickbarKey(bar, skilled)).not.toBe(before);
   });
 
   it('renders an item left in furniture as an empty slot', () => {

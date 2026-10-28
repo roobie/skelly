@@ -2,8 +2,8 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { handlingWeights, type Inventory, type Location } from '../core/inventory.ts';
-import { cellCount, defOf, type Item } from '../core/items.ts';
+import type { Inventory, Location } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import { countText, decimalText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
@@ -17,7 +17,6 @@ type HandlingText = ScreenText['handling'];
 
 /** Where a quickbar item is on the person, and how long it takes to get it in hand. */
 const whereText = (inv: Inventory, item: Item, at: Location | undefined, text: QuickbarText): string => {
-  const cells = cellCount(defOf(inv.registry, item.type));
   switch (at?.kind) {
     case 'hand':
       return at.side === 'right' ? text.inRightHand : text.inLeftHand;
@@ -26,7 +25,7 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined, text: Q
     case 'pocket':
       return fillText(text.pocket, {
         container: inv.name(at.owner).toLowerCase(),
-        secs: decimalText(inv.pocketHandling(at.owner, at.pocket) + handlingWeights(inv.registry).perCell * cells),
+        secs: decimalText(inv.handlingTime(item, at, { kind: 'hand', side: 'right' })),
       });
     default:
       return '';
@@ -112,7 +111,7 @@ export const positionLookedAtReadout = (readout: HTMLElement): void => {
 
 /** Changes when the inventory or a slot's item does; the redraw contract's key. */
 export const quickbarKey = (bar: Quickbar, inv: Inventory): string =>
-  `${inputBindings.revision}|${inv.version}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
+  `${inputBindings.revision}|${inv.version}|${inv.scaleHandlingTime(1)}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
 
 export interface HandlingViewModel {
   readonly visible: boolean;
