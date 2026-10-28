@@ -143,10 +143,11 @@ identity to the evaluated content, as
 - **Settling a clash in the player's UI.** A winner chosen per conflict and recorded in save
   identity would loosen "load order never decides", so it needs a ruling of its own before any
   such UI is built.
-- **Derive across kinds or upward across layers, and a depth cap on a derive chain.** The model
-  forbids derive across kinds and upward across layers: dependencies point down only, so a
-  setting table may extend a core table and not the reverse (`packages/deadvox/docs/pack-split.md`,
-  "Layers"). Whether the chain needs a depth cap awaits a ruling; build neither until then.
+- **Derive across kinds or upward across layers, and a depth cap on a derive chain.** The
+  proposal forbids derive across kinds and upward across layers: dependencies point down only,
+  so a setting table may extend a core table and not the reverse
+  (`packages/deadvox/docs/pack-split.md`, "Layers"). The restrictions and whether the chain
+  needs a depth cap are proposed and await a ruling; build none of them until then.
 - **Order independence of patch admission.** When #1395 moves save identity to the evaluated
   content, an order-only difference stops showing in identity. Add a test of order
   independence over patch admission then.

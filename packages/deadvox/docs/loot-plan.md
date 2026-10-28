@@ -52,14 +52,13 @@ with the cabins'. The roof is not guaranteed to hold anything; it is a place tha
 NVGs take Tier4 in place of their earlier tiers. Replacing, not adding, makes "Tier4" mean what
 it says: kept at lower tiers they would stay common, which the Tier4 tag was written to end.
 
-In the gauntlet the NVGs are placed loot, so they do not have to spawn organically. This
-reconciles with the Tier4 ruling as follows. The tier states how rare the item is wherever it
-rolls; the gauntlet placement is fixed loot and does not roll. Fixed loot is admission-checked,
-so the placement must pass the item's new tiers and usage at its point; that is an
-implementation gate, not a reason to add a rolling place. The NVG needs no rolling place and
-no table row: the untabled-item check counts a fixed-loot entry as naming the item. A row
-added only to satisfy "every item has a row" would have no admissible binding and fail the
-dead-row check below.
+The NVG keeps a Tier4 row, as rare random loot in Tier4 places, and the gauntlet also places
+it by hand. In the gauntlet the NVGs are placed loot, so they do not have to spawn
+organically; the placement is extra and does not replace the row. Every loot item has a row
+so that validation can fail on an untabled item, and NVGs are no exception. Fixed loot is
+admission-checked, so the placement must pass the item's new tiers and usage at its point.
+That is an implementation gate. The row must also be admitted by some Tier4 place, or the
+dead-row check below fails it.
 
 ## Checks
 
