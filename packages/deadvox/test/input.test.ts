@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { ModelDef } from '../src/core/content.ts';
+import { makeScale } from '../src/core/scale.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { Input, nextMenuCursor, requestInputLock } from '../src/game/input.ts';
 import { keyboardInput, shouldCancelInputForViewerFocus } from '../src/game/inputBindings.ts';
+import { baseRegistry } from './baseRegistry.ts';
+import { createPlayerBody, PLAYER, steer } from './playerFixture.ts';
 
 const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => boolean = () => true) => {
   const targetListeners = new Map<string, (event: MouseEvent) => void>();
@@ -36,10 +41,13 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
   };
   input = new Input(target, allowed, () => true, viewerInputAllowed);
   input.setLookSensitivity(1, () => 1);
+  input.setFreeLook(PLAYER.aim.freeLook, () => input.aimingDownSights);
   keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
   return { input, target, document, targetListeners, windowListeners, documentListeners };
 };
 afterEach(() => {
+  keyboardInput.release(key('AltLeft'));
+  keyboardInput.release(key('KeyW'));
   keyboardInput.cancel();
   for (let button = 0; button <= 4; button++) {
     keyboardInput.releasePointer(button, 0);
@@ -60,9 +68,105 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const key = (code: string, altKey = false) => ({
+  code,
+  altKey,
+  shiftKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  repeat: false,
+  isComposing: false,
+  timeStamp: 0,
+});
+
 describe('pointer input', () => {
+  it('turns only the head while free look leaves movement heading unchanged, then returns to the body', () => {
+    const { input, documentListeners } = fixture();
+    const scale = makeScale(0.5);
+    const before = createPlayerBody(scale, 0, 0, 0);
+    const after = createPlayerBody(scale, 0, 0, 0);
+    keyboardInput.press(key('KeyW'));
+    const intent = input.intent();
+    const bore = () =>
+      firearmBoreRay({
+        model: {
+          hold: 'upright',
+          grip: { at: [0, 0, 0] },
+          anchors: { muzzle: [0, 0, 0] },
+          gun: { muzzleDirection: [0, 0, -1] },
+        } as unknown as ModelDef,
+        holds: baseRegistry().figures.get('player')!.holds,
+        eye: [0, 2, 0],
+        yaw: input.yaw,
+        pitch: input.pitch,
+        blockSize: scale.blockSize,
+        side: 'right',
+        leadingSide: 'right',
+        twoHanded: false,
+        aimFrame: { yaw: 0, pitch: 0 },
+        progress: 1,
+        loweredPitchRadians: 0.5,
+      });
+    const bodyBore = bore();
+    steer(before, scale, input.yaw, intent);
+    keyboardInput.press(key('AltLeft', true));
+    documentListeners.get('mousemove')!({ movementX: 100, movementY: -50 } as MouseEvent);
+    steer(after, scale, input.yaw, input.intent());
+    expect(input.freeLooking).toBe(true);
+    expect(input.viewYaw).not.toBe(input.yaw);
+    expect(input.viewPitch).not.toBe(input.pitch);
+    expect(input.intent()).toEqual(intent);
+    expect(after.vel).toEqual(before.vel);
+    expect(bore()).toEqual(bodyBore);
+    expect(Math.abs(input.freeLook.yaw)).toBeLessThanOrEqual(PLAYER.aim.freeLook.yawLimitRadians);
+    expect(Math.abs(input.freeLook.pitch)).toBeLessThanOrEqual(PLAYER.aim.freeLook.pitchLimitRadians);
+    keyboardInput.release(key('AltLeft'));
+    input.advanceFreeLook(0.01);
+    const returning = Math.abs(input.freeLook.yaw);
+    expect(returning).toBeLessThan(PLAYER.aim.freeLook.yawLimitRadians);
+    input.advanceFreeLook(
+      (PLAYER.aim.freeLook.yawLimitRadians + PLAYER.aim.freeLook.pitchLimitRadians) /
+        PLAYER.aim.freeLook.returnRadiansPerRealSecond,
+    );
+    expect(input.freeLooking).toBe(false);
+    expect(input.viewYaw).toBe(input.yaw);
+    expect(input.viewPitch).toBe(input.pitch);
+    expect(input.freeLook.yaw).toBe(0);
+    expect(input.freeLook.pitch).toBe(0);
+    keyboardInput.release(key('KeyW'));
+  });
+  it('ignores free look while sights are toggled on', () => {
+    const { input, targetListeners, documentListeners } = fixture();
+    targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
+    input.toggleAimingDownSights();
+    expect(input.aimingDownSights).toBe(true);
+    keyboardInput.press(key('AltLeft', true));
+    const before = input.yaw;
+    documentListeners.get('mousemove')!({ movementX: 0.1, movementY: 0 } as MouseEvent);
+    expect(input.yaw).not.toBe(before);
+    expect(input.freeLooking).toBe(false);
+    expect(input.viewYaw).toBe(input.yaw);
+  });
+  it.each(['blur', 'pointerlockchange'] as const)('ends free look on %s without waiting for Alt release', (reason) => {
+    const { input, document, documentListeners, windowListeners } = fixture();
+    keyboardInput.press(key('AltLeft', true));
+    documentListeners.get('mousemove')!({ movementX: 1, movementY: 1 } as MouseEvent);
+    expect(input.freeLooking).toBe(true);
+    if (reason === 'blur') {
+      windowListeners.get('blur')!({} as MouseEvent);
+      keyboardInput.windowBlurred();
+    } else {
+      document.pointerLockElement = null;
+      documentListeners.get('pointerlockchange')!({} as MouseEvent);
+      keyboardInput.cancel();
+    }
+    expect(input.freeLook.active).toBe(false);
+    expect(input.viewYaw).toBe(input.yaw);
+    expect(input.viewPitch).toBe(input.pitch);
+    expect(keyboardInput.held('view.free-look')).toBe(false);
+  });
   it('cancels each viewer-focus reason live but not during replay', () => {
-    for (const reason of ['window-blur', 'document-hidden', 'pointer-lock-lost'] as const) {
+    for (const reason of ['window-blur', 'document-hidden', 'pointer-lock-lost', 'modifier-state-lost'] as const) {
       expect(shouldCancelInputForViewerFocus(reason, false)).toBe(true);
       expect(shouldCancelInputForViewerFocus(reason, true)).toBe(false);
     }

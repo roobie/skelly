@@ -122,6 +122,7 @@ import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
+import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection } from './furnitureActions.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
@@ -789,7 +790,14 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      if (inputRecorder && !inputRecorder.recordTick(live, compressionAtTick)) {
+      input.advanceFreeLook(0);
+      const sample = {
+        ...live,
+        headYaw: input.freeLook.yaw,
+        headPitch: input.freeLook.pitch,
+        freeLooking: input.freeLooking,
+      };
+      if (inputRecorder && !inputRecorder.recordTick(sample, compressionAtTick)) {
         stopInputRecordingForColumnOverflow();
       }
       pendingPlayerTickActions.applyAtNextTick();
@@ -883,6 +891,7 @@ export const startPlay = (
         active: () => worldLoading.ready && (Boolean(options.replay) || (input.locked && !input.menuPointer)),
         intent: (): MoveIntent => input.intent(),
         sampleAtPlayerTick: samplePlayerInput,
+        freeLooking: () => input.freeLooking,
         readyHeld: () => input.rightMouseHeld,
         firearmReady: (uid) => isFirearmReady(uid),
         aimingDownSights: () => debugGunPose.aimingDownSights(input.aimingDownSights) && isAimingDownSights(),
@@ -923,6 +932,10 @@ export const startPlay = (
           }
           handleHeldDominantUse(time, pressed, triggerHeld);
           const action = selectPrimaryAction(inventory);
+          if (!freeLookAllowsUse(input.freeLooking, action.kind)) {
+            magazines.advanceHeldStrip(undefined, time, false);
+            return;
+          }
           const stripUid =
             action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
               ? action.item.uid
@@ -1105,7 +1118,8 @@ export const startPlay = (
     const action = selectPrimaryAction(inventory);
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
   });
-  const { lookSensitivityRadiansPerPixel } = playerTuning(registry).aim;
+  const { lookSensitivityRadiansPerPixel, freeLook } = playerTuning(registry).aim;
+  input.setFreeLook(freeLook, () => spectator.enabled || isAimingDownSights());
   input.setLookSensitivity(lookSensitivityRadiansPerPixel, () =>
     opticZoom.appliedPower(zoomFirearm(), isAimingDownSights()),
   );
@@ -2060,6 +2074,9 @@ export const startPlay = (
     notice: (text) => showRefusal(text, sim.time),
   });
   const runQuickbarAction = (slot: number, held: boolean): void => {
+    if (input.freeLooking) {
+      return;
+    }
     if (sim.body.actionRefusal) {
       showRefusal(sim.body.actionRefusal, sim.time);
       return;
@@ -2303,6 +2320,9 @@ export const startPlay = (
     }
   };
   const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (!freeLookAllowsCommand(input.freeLooking, action)) {
+      return;
+    }
     switch (action) {
       case 'stance.ready':
         input.rightMouseHeld = true;
@@ -2530,6 +2550,7 @@ export const startPlay = (
   };
   dispatchReplayAction = (action, sample) => {
     replaySample = sample;
+    applyReplayLook(input, sample);
     if (action.payload) {
       const reason = applyScreenCommand(action.payload);
       if (reason) {
@@ -2795,6 +2816,10 @@ export const startPlay = (
 
   /** While a piece is carried, either press sets it down wherever the crosshair points. */
   function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
+    if (input.freeLooking) {
+      interactionPressTarget = undefined;
+      return;
+    }
     const target = interactionPressTarget;
     interactionPressTarget = undefined;
     let payload: ReplayActionPayload | undefined;
@@ -2842,6 +2867,9 @@ export const startPlay = (
   }
 
   function toggleThrowingStance(): void {
+    if (input.freeLooking) {
+      return;
+    }
     throwingStance = !throwingStance;
     automaticFireUid = undefined;
     if (!replayPlayer) {
@@ -2870,6 +2898,9 @@ export const startPlay = (
   }
 
   function toggleWornLightsNow(): void {
+    if (input.freeLooking) {
+      return;
+    }
     refusalReason(survival.toggleWornLights());
   }
 
@@ -2883,6 +2914,9 @@ export const startPlay = (
   }
 
   function useForwardButtonNow(): void {
+    if (input.freeLooking) {
+      return;
+    }
     // Instant off-hand use shares Survival's owner with a quickbar second press.
     const item = offHandUse(registry, inventory);
     const reason = item && survival.use(item);
@@ -2908,6 +2942,9 @@ export const startPlay = (
   }
 
   function dropHeldItemForThrowingStanceNow(): void {
+    if (input.freeLooking) {
+      return;
+    }
     if (sim.body.actionRefusal) {
       showRefusal(sim.body.actionRefusal, sim.time);
       return;
@@ -2930,6 +2967,9 @@ export const startPlay = (
   }
 
   function beginItemThrow(): void {
+    if (input.freeLooking) {
+      return;
+    }
     const refusal = sim.body.actionRefusal;
     if (refusal) {
       showRefusal(refusal, sim.time);
@@ -2945,6 +2985,10 @@ export const startPlay = (
 
   /** A replay charges as the live game did, so a climber holds still alike, but throws from the recording. */
   function releaseItemThrow(): void {
+    if (input.freeLooking) {
+      cancelItemThrow();
+      return;
+    }
     if (!session.throwCharge.active) {
       return;
     }
@@ -3040,6 +3084,9 @@ export const startPlay = (
   }
 
   function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
+    if (input.freeLooking) {
+      return;
+    }
     if (inventory.hands[hand] !== item) {
       return;
     }
@@ -3282,11 +3329,14 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
+    const held = inventory.hands[hand];
+    const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
+    if (!freeLookAllowsUse(input.freeLooking, action.kind)) {
+      return;
+    }
     if (sharpenAtWheel(hand)) {
       return;
     }
-    const held = inventory.hands[hand];
-    const action = selectPrimaryAction(inventory, hand, held && survival.selectedItemAction(held)?.id);
     switch (action.kind) {
       case 'sharpen':
         refusalReason(sharpening.activate(hand));
@@ -3569,6 +3619,7 @@ export const startPlay = (
   };
 
   const updateVisualFeedback = (dt: number): void => {
+    input.advanceFreeLook(dt);
     for (const event of damageEvents.read()) {
       if (event.kind === 'damage') {
         view.damage(event.amount);
@@ -3583,6 +3634,8 @@ export const startPlay = (
         noclip: debugTools?.noclip ?? false,
         yaw: spectator.avatarYaw(input.yaw),
         pitch: spectator.avatarPitch(input.pitch),
+        headYaw: spectator.enabled ? 0 : input.freeLook.yaw,
+        headPitch: spectator.enabled ? 0 : input.viewPitch - input.pitch,
         stridePhase: session.playerStridePhase,
         stance: session.stance,
         ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
@@ -3942,7 +3995,12 @@ export const startPlay = (
 
   const updateActionInputs = (now: number): void => {
     const actionRefusal = Boolean(sim.body.actionRefusal);
-    if (actionRefusal) {
+    const { freeLooking } = input;
+    if (freeLooking) {
+      cancelItemThrow();
+      throwStanceInput.cancel();
+    }
+    if (actionRefusal || freeLooking) {
       input.reload.cancel();
       quickbarInput.cancel();
       interactInput.cancel();
@@ -3951,7 +4009,7 @@ export const startPlay = (
       input.reload.advance(now, reloadBinding());
     }
     const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
-    if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal) {
+    if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal || freeLooking) {
       quickbarInput.cancel();
       interactInput.cancel();
       wornLightInput.cancel();
@@ -4009,6 +4067,7 @@ export const startPlay = (
   };
 
   const prepareStreaming = (now: RealTimestamp): void => {
+    keyboardInput.reconcileFocus();
     streamer.update(body.pos[0], body.pos[2]);
     if (!worldLoading.ready && replayDriver && !replayDriver.initializeColumns()) {
       worldLoading.fail('Recorded terrain could not be initialized. Reload and choose another replay.');

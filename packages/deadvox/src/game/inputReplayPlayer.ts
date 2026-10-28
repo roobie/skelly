@@ -9,11 +9,16 @@ import type {
 import { sampleFromReplayFrame } from './inputReplay.ts';
 
 export const applyReplayLook = (
-  look: { yaw: number; pitch: number },
-  sample: Pick<ReplayControlSample, 'yaw' | 'pitch'>,
+  look: { yaw: number; pitch: number; freeLook?: { yaw: number; pitch: number; active: boolean } },
+  sample: Pick<ReplayControlSample, 'yaw' | 'pitch' | 'headYaw' | 'headPitch' | 'freeLooking'>,
 ): void => {
   look.yaw = sample.yaw;
   look.pitch = sample.pitch;
+  if (look.freeLook) {
+    look.freeLook.yaw = sample.headYaw ?? 0;
+    look.freeLook.pitch = sample.headPitch ?? 0;
+    look.freeLook.active = sample.freeLooking ?? false;
+  }
 };
 
 export class InputReplayPlayer {
