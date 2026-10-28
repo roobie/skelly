@@ -87,6 +87,31 @@ export function adaptMainInteractionPick(source) {
   );
 }
 
+const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
+      buildActorVariant(model, seed, amalgamType),
+    ),`;
+
+// A base renderer that builds every model on one shared seed pool meets the branch's figure realization, which
+// refuses a seed that is not valid for a model by itself rather than drawing the next seed's body. The base
+// renderer then builds, per model, only the pool seeds that realize, as the branch builds each model's own
+// authored seeds; any other build error still fails the run. A base that builds per-model seeds needs no rewrite.
+// See `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+export function adaptMainSeedPool(source) {
+  return source.replace(
+    SHARED_SEED_POOL,
+    `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
+      try {
+        return [buildActorVariant(model, seed, amalgamType)];
+      } catch (error) {
+        if (String(error?.message).endsWith(\`\${model} seed \${seed} is not valid\`)) {
+          return [];
+        }
+        throw error;
+      }
+    }),`,
+  );
+}
+
 const VALUE_DECLARATION =
   /^export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|var|function\*?|(?:abstract\s+)?class|enum)\s+([\w$]+)/gm;
 const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm;
@@ -245,6 +270,7 @@ function assertOverlayBoundary(root, overlays, branchPaths) {
 const OVERLAY_ADAPTERS = {
   'render/playView.ts': contentLookView,
   'game/play.ts': adaptMainInteractionPick,
+  'render/mobActors.ts': adaptMainSeedPool,
   'game/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',

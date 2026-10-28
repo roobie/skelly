@@ -25,7 +25,6 @@ import type { BodyTuningDef, NightVision } from '../core/schema.ts';
 import type { PoweredLight } from '../core/sitePower.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
-import { amalgamTypeOf, figureSeedPool } from '../core/zombieFigure.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
@@ -329,11 +328,8 @@ export const createPlayView = (
           maxCorpses: graphics.mobActors.maxCorpses,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
-          figureSeeds: figureSeedPool(registry.zombies),
-          includeAmalgam: true,
-          includeAcid: true,
+          zombies: registry.zombies,
           onBurst: (position, zombie) => acidEffects.deathSplash(position, zombie),
-          amalgamType: amalgamTypeOf(registry.zombies),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (zombie) => gore.severity(zombie),
         })

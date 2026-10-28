@@ -13,7 +13,6 @@ import type { SoundId } from '../src/core/soundEvents.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
@@ -872,7 +871,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   expect(zombie.investigationTier).toBe('near');
   expect(zombie.lastPerceived).toEqual(noise.pos);
 
-  const renderer = new MobActorMeshes(scale.blockSize, 2, { figureSeeds: figureSeedPool(registry.zombies) });
+  const renderer = new MobActorMeshes(scale.blockSize, 2, { zombies: registry.zombies });
   try {
     const camera = new PerspectiveCamera(55, 1, 0.01, 50);
     camera.position.set(4, 2, -3);

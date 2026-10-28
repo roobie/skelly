@@ -4,7 +4,6 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import type { PlayerMovement, PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -21,7 +20,7 @@ const FLOOR = (_x: number, y: number): boolean => y === 0;
 let renderer!: MobActorMeshes;
 
 beforeAll(() => {
-  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { figureSeeds: figureSeedPool(registry.zombies) });
+  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.zombies });
 });
 
 afterAll(() => renderer.dispose());
