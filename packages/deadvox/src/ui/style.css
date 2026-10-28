@@ -93,7 +93,7 @@ body {
   z-index: var(--ui-layer-inventory-feedback);
   display: none;
   width: max-content;
-  max-width: min(32rem, 80vw);
+  max-width: min(32rem, 80vw, 100cqi);
   pointer-events: none;
   padding: 0.4rem;
   background: var(--panel);
@@ -444,6 +444,7 @@ body.unconscious::after {
 }
 /* This card is opaque because there is no dimming layer behind it. */
 #overlay .card {
+  container-type: inline-size;
   width: 100%;
   max-width: 100%;
   max-height: calc(100vh - 2rem);
