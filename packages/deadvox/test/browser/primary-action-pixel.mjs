@@ -181,7 +181,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
   const range = opticModel.gun.attachment.properties.magnification;
   const targetPower = range?.[endpoint] ?? 1;
   if (range && range.min < range.max) {
-    const step = inventory.registry.items.get(opticType).opticZoom.step;
+    const { step } = inventory.registry.items.get(opticType).opticZoom;
     const limit = Math.ceil((range.max - range.min) / step) + 1;
     for (let tick = 0; tick < limit && r.opticZoom.appliedPower(rifle, true) !== targetPower; tick += 1) {
       r.opticZoom.wheel(rifle, true, endpoint === 'min' ? 1 : -1);
@@ -236,6 +236,17 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
         Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
       );
       const restore = [];
+      const recordObject = (object) => {
+        if (optic && isUnder(object, optic)) {
+          opticObjects.push(pathOf(object));
+        }
+        if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
+          objects.push(pathOf(object));
+        } else {
+          const key = topLevelKey(object);
+          others[key] = (others[key] ?? 0) + 1;
+        }
+      };
       drawnScene.traverse((object) => {
         if (!(object.isMesh || object.isLine || object.isPoints)) {
           return;
@@ -245,17 +256,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
           object.onBeforeRender = prior;
         });
         object.onBeforeRender = function (...args) {
-          if (args[2] === camera) {
-            if (optic && isUnder(object, optic)) {
-              opticObjects.push(pathOf(object));
-            }
-            if (isUnder(object, r.view.playerMeshes.group) || object.layers.mask !== 1) {
-              objects.push(pathOf(object));
-            } else {
-              const key = topLevelKey(object);
-              others[key] = (others[key] ?? 0) + 1;
-            }
+          if (args[2] !== camera) {
+            return prior.apply(this, args);
           }
+          recordObject(object);
           return prior.apply(this, args);
         };
       });
@@ -269,6 +273,23 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
           }
         },
       };
+    };
+    const housingCoverage = (frame) => {
+      const mask = new Uint8Array(lens.target.width * lens.target.height * 4);
+      renderer.readRenderTargetPixels(lens.housing.target, 0, 0, lens.target.width, lens.target.height, mask);
+      let interiorPixels = 0;
+      let maskedInteriorPixels = 0;
+      for (let y = 0; y < lens.target.height; y += 1) {
+        for (let x = 0; x < lens.target.width; x += 1) {
+          const dx = (x / lens.target.width - frame.center[0]) / frame.radius[0];
+          const dy = (y / lens.target.height - frame.center[1]) / frame.radius[1];
+          if (Math.hypot(dx, dy) < 0.9) {
+            interiorPixels += 1;
+            maskedInteriorPixels += Number(mask[(y * lens.target.width + x) * 4] > 0);
+          }
+        }
+      }
+      return { interiorPixels, maskedInteriorPixels };
     };
     renderer.render = function (drawnScene, drawnCamera) {
       if (drawnCamera !== camera || drawnScene !== scene) {
@@ -286,20 +307,6 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
       renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
       const { uniforms } = engine.mood.opticPass;
       const frame = r.view.held.opticLensFrame;
-      const mask = new Uint8Array(lens.target.width * lens.target.height * 4);
-      renderer.readRenderTargetPixels(lens.housing.target, 0, 0, lens.target.width, lens.target.height, mask);
-      let interiorPixels = 0;
-      let maskedInteriorPixels = 0;
-      for (let y = 0; y < lens.target.height; y += 1) {
-        for (let x = 0; x < lens.target.width; x += 1) {
-          const dx = (x / lens.target.width - frame.center[0]) / frame.radius[0];
-          const dy = (y / lens.target.height - frame.center[1]) / frame.radius[1];
-          if (Math.hypot(dx, dy) < 0.9) {
-            interiorPixels += 1;
-            maskedInteriorPixels += Number(mask[(y * lens.target.width + x) * 4] > 0);
-          }
-        }
-      }
       const opticMeshCount = [...lens.housing.meshes.keys()].length;
       drawn = {
         opticType,
@@ -307,8 +314,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
         targetPower,
         opticMeshCount,
         opticObjects,
-        interiorPixels,
-        maskedInteriorPixels,
+        ...housingCoverage(frame),
         frames,
         magnification: r.view.held.opticLensFrame?.magnification,
         zoomCameraFov: camera.fov,
@@ -619,11 +625,17 @@ const opticZoomCheck = async (chromium, port) => {
     ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
     ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
     ['optic_mini_reflex', 'rifle_assault', 'min'],
+    ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
+    ['optic_hunting_3_9x', 'rifle_hunting', 'max'],
+    ['optic_high_mag_5_25x', 'rifle_assault', 'max'],
   ]) {
     const { page, capture } = await enterTestHouse(chromium, port);
     await timePhase('optic-zoom-world-only', async () => {
       const record = await page.evaluate(opticZoomRecord, { opticType, gunType, endpoint });
-      await writeFile(resolve(projectRoot, `test-results/primary-action/${opticType}-${endpoint}.png`), await capture());
+      await writeFile(
+        resolve(projectRoot, `test-results/primary-action/${opticType}-${endpoint}.png`),
+        await capture(),
+      );
       process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
       assert.equal(record.magnification, record.targetPower, 'the optic reaches its authored endpoint');
       assert.ok(record.opticMeshCount > 0, 'a physical optic is present');
