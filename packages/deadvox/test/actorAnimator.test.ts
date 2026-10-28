@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs';
 import {
   Box3,
+  BoxGeometry,
+  type Color,
   Group,
   type Intersection,
   type Material,
   Mesh,
+  MeshBasicMaterial,
   type Object3D,
   PerspectiveCamera,
   Raycaster,
@@ -24,6 +27,7 @@ import { mountedOptic } from '../src/core/opticView.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { figureStancePose, playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { ARM_NODE, solveArmRig } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -31,8 +35,9 @@ import { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
 import { stepMagazineRaise } from '../src/render/magazineLoadPose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
+import { OpticLensRenderer } from '../src/render/opticLens.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
-import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
+import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { heldState } from './heldState.ts';
@@ -41,7 +46,11 @@ import { createPlayerBody } from './playerFixture.ts';
 vi.mock('../src/render/magazineLoadPose.ts', { spy: true });
 vi.mock('../src/render/armRig.ts', { spy: true });
 
-const fixture = async (firearm = true, firearmType?: string) => {
+const fixture = async (
+  firearm = true,
+  firearmType?: string,
+  { preview, heldLook }: { preview?: string; heldLook?: ModelLibrary['heldLook'] } = {},
+) => {
   const base = baseRegistry();
   const gun = firearmType
     ? base.items.get(firearmType)
@@ -75,15 +84,22 @@ const fixture = async (firearm = true, firearmType?: string) => {
       };
   const registry = { ...base, items: new Map(base.items).set(itemDef.id, itemDef) };
   const inventory = new Inventory(registry);
-  const item = inventory.create(itemDef.id);
-  if (!inventory.add(item, { kind: 'hand', side: 'right' })) {
+  if (preview && !equipDebugLoadout(inventory, true, true, preview)) {
+    throw new Error('Preview loadout was not applied');
+  }
+  const item = preview ? inventory.hands.right : inventory.create(itemDef.id);
+  if (!item) {
+    throw new Error('Preview did not equip a right-hand firearm');
+  }
+  if (!(preview || inventory.add(item, { kind: 'hand', side: 'right' }))) {
     throw new Error('Cannot hold fixture item');
   }
   const figure = registry.figures.get('player')!;
   const models = {
     version: 0,
     ...(await loadFigureModels(registry)),
-    heldLook: () => ({ root: new Group().add(new Group().add(new Group())), parts: [], slots: {} }),
+    heldLook: heldLook ?? (() => ({ root: new Group().add(new Group().add(new Group())), parts: [], slots: {} })),
+    partBounds: () => undefined,
   } as unknown as ModelLibrary;
   const scale = makeScale(0.5);
   const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
@@ -573,3 +589,132 @@ it('optic ADS hides the owner-view gun and supplies its window without hiding th
     f.dispose();
   }
 });
+
+const unityOpticTypes = (): string[] => {
+  const registry = baseRegistry();
+  const types = [...registry.items.values()]
+    .filter((item) => {
+      const attachment = item.model ? registry.models.get(item.model)?.gun?.attachment : undefined;
+      if (attachment?.kind !== 'optic') {
+        return false;
+      }
+      const range = attachment.properties.magnification;
+      return range ? range.min <= 1 && range.max >= 1 : (item.opticMagnification ?? 1) === 1;
+    })
+    .map(({ id }) => id);
+  if (types.length === 0) {
+    throw new Error('Need an authored unity optic to exercise the disc');
+  }
+  return types;
+};
+
+it.each(unityOpticTypes())(
+  '%s shows the gun but not itself through its unity disc, and its hood leaves only own view',
+  async (opticType) => {
+    const geometry = new BoxGeometry();
+    const opticGeometry = new BoxGeometry();
+    const hoodGeometry = new BoxGeometry();
+    hoodGeometry.userData.piece = 'optic-ads-housing';
+    const material = new MeshBasicMaterial();
+    // Both the world figure and the hidden optics animator compose the gun; the test checks the world's.
+    const fitted: { slot: string; fit: Object3D }[] = [];
+    const f = await fixture(true, undefined, {
+      preview: `?loadout=ar&optic=${opticType}`,
+      heldLook: (look) => {
+        const parts = new Group().add(new Mesh(geometry, material), new Mesh(geometry, material));
+        const slots = Object.fromEntries(
+          look.slots.map(({ slot, model }) => {
+            const frame = new Group();
+            parts.add(frame);
+            if (model === undefined) {
+              return [slot, { frame }];
+            }
+            const fit = new Group().add(new Mesh(opticGeometry, material), new Mesh(hoodGeometry, material));
+            frame.add(fit);
+            fitted.push({ slot, fit });
+            return [slot, { frame, model: fit, modelId: model }];
+          }),
+        );
+        return { root: new Group().add(new Group().add(parts)), parts: [], slots };
+      },
+    });
+    const scene = new Scene().add(f.world.group);
+    const camera = new PerspectiveCamera();
+    camera.layers.enable(PLAYER_FIGURE_LAYER);
+    camera.layers.enable(OPTIC_BODY_LAYER);
+    const lens = new OpticLensRenderer();
+    try {
+      const optic = mountedOptic(f.registry, f.item)!;
+      const range = optic.model.gun!.attachment!.properties.magnification;
+      const handling = {
+        firearms: [],
+        readiness: { uid: f.item.uid, progress: 1, aimingDownSights: true },
+        ...(range && range.min < range.max
+          ? { opticZoom: { uid: f.item.uid, opticUid: optic.uid, magnification: 1 } }
+          : {}),
+      };
+      f.update(camera, f.pose, 0, handling);
+      const frame = f.view.opticLensFrame;
+      expect(frame?.magnification).toBe(1);
+      const worldGun = f.physical().getObjectByName('held-item-right')!;
+      const inWorldGun = (object: Object3D): boolean => {
+        let found = false;
+        object.traverseAncestors((ancestor) => {
+          found ||= ancestor === worldGun;
+        });
+        return found;
+      };
+      const worldOptic = fitted.find(({ slot, fit }) => slot === optic.slot && inWorldGun(fit))!.fit;
+      const opticPieces = new Set<Mesh>();
+      worldOptic.traverse((object) => object instanceof Mesh && opticPieces.add(object));
+      const gunPieces: Mesh[] = [];
+      worldGun.traverse((object) => object instanceof Mesh && !opticPieces.has(object) && gunPieces.push(object));
+      const hood = [...opticPieces].filter((piece) => piece.geometry === hoodGeometry);
+      expect(hood.length).toBeGreaterThan(0);
+      expect(gunPieces.length).toBeGreaterThan(0);
+      for (const piece of hood) {
+        expect(piece.layers.isEnabled(PLAYER_SELF_MASK_LAYER)).toBe(true);
+      }
+      const renders: { image: boolean; drawn: Set<Mesh> }[] = [];
+      const renderer = {
+        getDrawingBufferSize: (out: Vector2) => out.set(8, 8),
+        getRenderTarget: () => null,
+        setRenderTarget: () => undefined,
+        getClearColor: (out: Color) => out.set(0),
+        getClearAlpha: () => 1,
+        setClearColor: () => undefined,
+        render: (drawnScene: Scene, drawing: PerspectiveCamera) => {
+          const drawn = new Set<Mesh>();
+          drawnScene.updateMatrixWorld(true);
+          drawnScene.traverseVisible((object) => {
+            if (object instanceof Mesh && drawing.layers.test(object.layers)) {
+              drawn.add(object);
+            }
+          });
+          renders.push({ image: drawnScene === scene, drawn });
+        },
+      } as unknown as WebGLRenderer;
+      lens.prepare(renderer, scene, camera, frame!);
+      const image = renders.find((entry) => entry.image)!.drawn;
+      const mask = renders.find((entry) => !entry.image)!.drawn;
+      for (const piece of gunPieces) {
+        expect(image.has(piece)).toBe(true);
+      }
+      for (const piece of opticPieces) {
+        expect(image.has(piece)).toBe(false);
+      }
+      expect(new Set([...mask].map((proxy) => proxy.geometry))).toEqual(new Set([opticGeometry]));
+      f.update(camera, f.pose, 0, { ...handling, readiness: { ...handling.readiness, aimingDownSights: false } });
+      for (const piece of opticPieces) {
+        expect(piece.layers.isEnabled(PLAYER_FIGURE_LAYER)).toBe(true);
+      }
+    } finally {
+      lens.dispose();
+      f.dispose();
+      geometry.dispose();
+      opticGeometry.dispose();
+      hoodGeometry.dispose();
+      material.dispose();
+    }
+  },
+);

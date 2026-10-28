@@ -19,6 +19,7 @@ import {
 import appearance from './appearance.json' with { type: 'json' };
 import fixedPrism from './fixedPrism.json' with { type: 'json' };
 import type { MountRequirement } from './mounts.ts';
+import opticPresentation from './opticPresentation.json' with { type: 'json' };
 import reticleContent from './reticles.json' with { type: 'json' };
 
 export const opticRailContactSolids = (solids: readonly Solid[]): readonly Solid[] =>
@@ -137,6 +138,9 @@ const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall =
   ),
   sides: OPTIC_BODY_SIDES,
 });
+
+const adsHousing = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-ads-housing' } });
+const nearFrame = (solid: Solid): Solid => ({ ...solid, display: { piece: 'optic-near-frame' } });
 
 const ringBand = (id: string, centerX: number, centerY: number, radius: number): Solid =>
   scopeBody(
@@ -274,6 +278,7 @@ const ContentSolid = variant('kind', [
 ]);
 
 const MICRO_HOUSING_DISPLAY = { bevel: false, outline: false, mergeGroup: 'micro-housing' } as const;
+const microWindow = opticPresentation.miniReflex;
 
 /** Manufacturer-class visual envelopes and authored optical metadata. */
 export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
@@ -295,15 +300,28 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     opticalAxisY: 1.5,
     ocularX: -2.25,
     ocularOpeningDiameterU: 2.5,
-    eyeReliefU: 2.5,
+    eyeReliefU: microWindow.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 2.25,
     solids: [
       // The tunnel's two windows, between the floor, walls and hood listed after them.
-      box('ocular-lens', [-2.25, 1, -0.75], [-2, 2.25, 0.75], lensGlass),
-      box('objective-lens', [2, 1, -0.75], [2.25, 2.25, 0.75], lensGlass),
+      box(
+        'ocular-lens',
+        [-2.25, microWindow.windowBottomY, -microWindow.windowHalfWidthU],
+        [-2, microWindow.windowTopY, microWindow.windowHalfWidthU],
+        lensGlass,
+      ),
+      box(
+        'objective-lens',
+        [2, microWindow.windowBottomY, -microWindow.windowHalfWidthU],
+        [2.25, microWindow.windowTopY, microWindow.windowHalfWidthU],
+        lensGlass,
+      ),
       box('mount-foot', [-1.75, 0, -0.75], [1.75, 0.5, 0.75]),
-      { ...box('housing-floor', [-2.25, 0.5, -1.25], [2.25, 1, 1.25]), display: MICRO_HOUSING_DISPLAY },
+      {
+        ...box('housing-floor', [-2.25, 0.5, -1.25], [2.25, microWindow.windowBottomY, 1.25]),
+        display: MICRO_HOUSING_DISPLAY,
+      },
       // The side walls and roof form a single closed-emitter silhouette, with a tunnel, not a filled prism.
       {
         id: 'housing-left',
@@ -313,10 +331,10 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         profile: [
           [0.5, -1.25],
           [2.25, -1.25],
-          [2.75, -0.75],
-          [1, -0.75],
+          [2.75, -microWindow.windowHalfWidthU],
+          [microWindow.windowBottomY, -microWindow.windowHalfWidthU],
         ],
-        clip: [{ normal: [1, 1, 0], offset: 4.5 }],
+        clip: [{ normal: [1, 1, 0], offset: 2.25 + microWindow.windowTopY }],
         display: MICRO_HOUSING_DISPLAY,
         slot: 'metal',
       },
@@ -326,12 +344,12 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         axis: 'x',
         z: [-2.25, 2.25],
         profile: [
-          [1, 0.75],
-          [2.75, 0.75],
+          [microWindow.windowBottomY, microWindow.windowHalfWidthU],
+          [2.75, microWindow.windowHalfWidthU],
           [2.25, 1.25],
           [0.5, 1.25],
         ],
-        clip: [{ normal: [1, 1, 0], offset: 4.5 }],
+        clip: [{ normal: [1, 1, 0], offset: 2.25 + microWindow.windowTopY }],
         display: MICRO_HOUSING_DISPLAY,
         slot: 'metal',
       },
@@ -339,12 +357,12 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
         ...silhouette(
           'sloped-front-hood',
           [
-            [-2.25, 2.25],
-            [2.25, 2.25],
-            [1.75, 2.75],
+            [-2.25, microWindow.windowTopY],
+            [2.25, microWindow.windowTopY],
+            [2.25 - (2.75 - microWindow.windowTopY), 2.75],
             [-2.25, 2.75],
           ],
-          1.5,
+          microWindow.windowHalfWidthU * 2,
         ),
         display: MICRO_HOUSING_DISPLAY,
       },
@@ -369,7 +387,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     opticalAxisY: 2,
     ocularX: -3,
     ocularOpeningDiameterU: 2.5,
-    eyeReliefU: 3,
+    eyeReliefU: opticPresentation.tubeDot.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 3,
     solids: [
@@ -394,26 +412,35 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
       description: 'integral low rail foot',
       clearanceU: { forward: 0.5, rearward: 0.5, lateral: 0.5 },
     }),
-    opticalAxisY: 3,
+    opticalAxisY: 2.875,
     ocularX: -3.75,
     ocularOpeningDiameterU: 2.75,
-    eyeReliefU: 3.5,
+    eyeReliefU: opticPresentation.holographic.eyeReliefU,
     ironCoWitness: true,
     sightlineStartX: 4,
     solids: [
       // The window's rear and front panes, between the side walls and roof listed after them.
       box('ocular-lens', [-3.75, 1.5, -1.5], [-3.5, 4.25, 1.5], lensGlass),
-      box('objective-lens', [0, 1.5, -1.5], [0.25, 4.25, 1.5], lensGlass),
+      box(
+        'objective-lens',
+        [opticPresentation.holographic.hoodFrontX - LENS_THICKNESS_U, 1.5, -1.5],
+        [opticPresentation.holographic.hoodFrontX, 4.25, 1.5],
+        lensGlass,
+      ),
       box('mount-foot', [-2.75, 0, -0.75], [2.75, 0.5, 0.75]),
-      box('lower-battery-section', [-3.75, 0.5, -2.25], [4, 1.5, 2.25]),
-      box('forward-battery-cap', [0.25, 1.5, -2.25], [4, 2, 2.25]),
-      box('window-left-side', [-3.75, 1.5, -2.25], [0.25, 4.25, -1.5]),
-      box('window-right-side', [-3.75, 1.5, 1.5], [0.25, 4.25, 2.25]),
-      {
+      box('lower-battery-section', [-3.75, 0.5, -2.25], [opticPresentation.holographic.batteryRearX, 1.5, 2.25]),
+      box(
+        'forward-battery-cap',
+        [opticPresentation.holographic.batteryRearX, 0.5, -2.25],
+        [4, opticPresentation.holographic.batteryTopY, 2.25],
+      ),
+      adsHousing(box('window-left-side', [-3.75, 1.5, -2.25], [opticPresentation.holographic.hoodFrontX, 4.25, -1.5])),
+      adsHousing(box('window-right-side', [-3.75, 1.5, 1.5], [opticPresentation.holographic.hoodFrontX, 4.25, 2.25])),
+      adsHousing({
         id: 'window-hood-roof',
         kind: 'extruded-polygon',
         axis: 'x',
-        z: [-3.75, 0.25],
+        z: [-3.75, opticPresentation.holographic.hoodFrontX],
         profile: [
           [4.25, -2.25],
           [5, -1.5],
@@ -421,7 +448,52 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
           [4.25, 2.25],
         ],
         slot: 'metal',
-      },
+      }),
+      // Later voxel paint separates the retained rim without changing the full hood's occupied volume.
+      nearFrame(
+        box(
+          'near-frame-left',
+          [-3.75, 1.5, -1.5 - opticPresentation.holographic.nearFrameThicknessU],
+          [-3.75 + opticPresentation.holographic.nearFrameDepthU, 4.25, -1.5],
+        ),
+      ),
+      nearFrame(
+        box(
+          'near-frame-right',
+          [-3.75, 1.5, 1.5],
+          [
+            -3.75 + opticPresentation.holographic.nearFrameDepthU,
+            4.25,
+            1.5 + opticPresentation.holographic.nearFrameThicknessU,
+          ],
+        ),
+      ),
+      nearFrame(
+        box(
+          'near-frame-top',
+          [-3.75, 4.25, -1.5 - opticPresentation.holographic.nearFrameThicknessU],
+          [
+            -3.75 + opticPresentation.holographic.nearFrameDepthU,
+            4.25 + opticPresentation.holographic.nearFrameThicknessU,
+            1.5 + opticPresentation.holographic.nearFrameThicknessU,
+          ],
+        ),
+      ),
+      nearFrame(
+        box(
+          'near-frame-bottom',
+          [
+            -3.75,
+            1.5 - opticPresentation.holographic.nearFrameThicknessU,
+            -1.5 - opticPresentation.holographic.nearFrameThicknessU,
+          ],
+          [
+            -3.75 + opticPresentation.holographic.nearFrameDepthU,
+            1.5,
+            1.5 + opticPresentation.holographic.nearFrameThicknessU,
+          ],
+        ),
+      ),
     ],
   }),
   'fixed-prism-4x': makeEntry({
@@ -450,7 +522,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reference: 'Vortex Razor HD Gen II-E 1–6×24, approximately 257 mm long',
     source: 'https://vortexoptics.com/razor-hd-gen-ii-e-1-6x24.html',
     envelopeMm: [257, 80, 65],
-    envelopeU: [22.25, 4.75, 4.5],
+    envelopeU: [opticPresentation.scopes['lpvo-1-6x'].envelopeLengthU, 4.75, 4.5],
     mount: railMount({
       contactLengthU: 12,
       contactWidthU: 1.75,
@@ -461,8 +533,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 2,
     ocularX: -10,
-    ocularOpeningDiameterU: 2.75,
-    eyeReliefU: 7.5,
+    ocularOpeningDiameterU: opticPresentation.scopes['lpvo-1-6x'].ocularOpeningDiameterU,
+    eyeReliefU: opticPresentation.scopes['lpvo-1-6x'].eyeReliefU,
     eyeDatumToleranceU: 8,
     ironCoWitness: false,
     sightlineStartX: 11.25,
@@ -489,7 +561,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     reference: 'Vortex Crossfire II 3–9×40: L1 11.86 in, H1 1.89 in; turret envelope estimated',
     source: 'https://vortexoptics.com/vortex-crossfire-ii-3-9x40-riflescope.html',
     envelopeMm: [301.244, 48.006, 48.006],
-    envelopeU: [26.25, 4.75, 4.75],
+    envelopeU: [opticPresentation.scopes['hunting-3-9x'].envelopeLengthU, 4.75, 4.75],
     mount: railMount({
       contactLengthU: 12,
       contactWidthU: 1.75,
@@ -500,8 +572,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 2.25,
     ocularX: -13,
-    ocularOpeningDiameterU: 2.75,
-    eyeReliefU: 8,
+    ocularOpeningDiameterU: opticPresentation.scopes['hunting-3-9x'].ocularOpeningDiameterU,
+    eyeReliefU: opticPresentation.scopes['hunting-3-9x'].eyeReliefU,
     eyeDatumToleranceU: 8,
     ironCoWitness: false,
     sightlineStartX: 13.25,

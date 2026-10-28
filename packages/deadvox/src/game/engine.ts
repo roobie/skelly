@@ -11,7 +11,7 @@ import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { skyAt } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
-import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
+import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { Shadows } from '../render/shadows.ts';
 import { applySky, type SkyTargets } from '../render/sky.ts';
 import { Skylight } from '../render/skylight.ts';
@@ -78,6 +78,7 @@ export function createEngine(
   const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.05, radiusM);
   camera.rotation.order = 'YXZ';
   camera.layers.enable(PLAYER_FIGURE_LAYER);
+  camera.layers.enable(OPTIC_BODY_LAYER);
   const sky: SkyTargets = {
     scene,
     light: new DirectionalLight(),

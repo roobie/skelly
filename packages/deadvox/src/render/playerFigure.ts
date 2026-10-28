@@ -8,6 +8,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import { presentedOptic } from '../core/opticView.ts';
 import type { Body } from '../core/physics.ts';
 import {
   type FigureStancePose,
@@ -32,7 +33,13 @@ import { ActorAnimator, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { OwnBodyClip } from './ownBodyClip.ts';
-import { castsAndReceives, inheritLayersOnAdd, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
+import {
+  castsAndReceives,
+  inheritLayersOnAdd,
+  OPTIC_BODY_LAYER,
+  PLAYER_FIGURE_LAYER,
+  PLAYER_SELF_MASK_LAYER,
+} from './shadowFlags.ts';
 import { WornModels } from './wornModels.ts';
 
 export interface PlayerFigurePlacement {
@@ -557,6 +564,7 @@ export class PlayerMeshes {
     const readyGun = pose.holdReady && Object.values(hands).find((item) => item && defOf(registry, item.type).firearm);
     const readiness =
       this.handling.readiness ?? (readyGun ? { uid: readyGun.uid, progress: 1, aimingDownSights: false } : undefined);
+    let presented: { item: Item; slot: string } | undefined;
     this.animator!.update(
       {
         position: this.heldFrame.position.clone(),
@@ -568,9 +576,23 @@ export class PlayerMeshes {
         recoil: this.recoil,
         emptyFists: pose.emptyFists ?? false,
         handling: { ...this.handling, ...(readiness ? { readiness } : {}) },
+        viewPlacement: {
+          poseItem: ({ item, modelDefinition, aimingDownSights, handling }) => {
+            const optic = presentedOptic(registry, {
+              item,
+              modelDefinition,
+              aimingDownSights,
+              zoom: handling.opticZoom,
+            });
+            presented = optic ? { item, slot: optic.slot } : presented;
+          },
+        },
       },
     );
     this.heldFrame.traverse((object) => object.layers.set(this.layer));
+    if (presented && this.layer === PLAYER_FIGURE_LAYER) {
+      this.layerPresentedOptic(this.animator!.slotModelOf(presented.item, presented.slot));
+    }
     castsAndReceives(this.heldFrame);
     this.presentation.syncWorn(pose.wornItems ?? pose.inventory);
     this.ownBodyClip.attach(this.presentation.arms.values());
@@ -580,6 +602,17 @@ export class PlayerMeshes {
         drawn.visible = !this.presentation!.arms.has(side);
       }
     }
+  }
+
+  /**
+   * The aimed optic gets its own layer so its window image can leave it out (render/opticLens.ts). Its ADS-only
+   * hood would close in around the eye, so own view masks it while external views and the sun still see it.
+   */
+  private layerPresentedOptic(optic: Object3D | undefined): void {
+    optic?.traverse((object) => {
+      const hood = object instanceof Mesh && object.geometry.userData.piece === 'optic-ads-housing';
+      object.layers.set(hood ? PLAYER_SELF_MASK_LAYER : OPTIC_BODY_LAYER);
+    });
   }
 
   private positionHeldFrame(pose: PlayerFigurePose): void {

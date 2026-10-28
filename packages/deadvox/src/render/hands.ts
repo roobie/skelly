@@ -1,6 +1,5 @@
 // Transitional optical effects and carry adapter; physical actor colour belongs to PlayerMeshes.
 
-import { opticApertureDistance } from '@skelly/thing-core/optic-aperture';
 import {
   DirectionalLight,
   DoubleSide,
@@ -13,7 +12,6 @@ import {
   type Object3D,
   PerspectiveCamera,
   Quaternion,
-  RingGeometry,
   Scene,
   Vector3,
   type WebGLRenderer,
@@ -25,7 +23,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
-import { mountedOptic, type OpticLensFrame, opticViewSettings, projectLensAperture } from '../core/opticView.ts';
+import { type OpticLensFrame, presentedOptic, projectLensAperture, projectOpticReticle } from '../core/opticView.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
@@ -54,17 +52,6 @@ export class HeldItems {
   private visor: Object3D | undefined;
   private readonly visorMaterials: MeshBasicMaterial[] = [];
   private drawn = '';
-  private readonly opticWindow = new Mesh(
-    new RingGeometry(0.01, 0.011, 64),
-    new MeshBasicMaterial({
-      color: 0x0b_0c_0d,
-      side: DoubleSide,
-      depthTest: false,
-      depthWrite: false,
-      toneMapped: false,
-    }),
-  );
-  private opticWindowShape = '';
   private opticViewFrame: OpticLensFrame | undefined;
 
   private readonly inventory: Inventory;
@@ -91,10 +78,8 @@ export class HeldItems {
       this.light.shadow = sunSource.shadow;
       this.light.castShadow = sunSource.castShadow;
     }
-    this.opticWindow.visible = false;
-    this.opticWindow.renderOrder = 100;
     this.physical.add(this.torso);
-    this.view.add(this.opticWindow, this.carried);
+    this.view.add(this.carried);
     this.scene.add(
       this.view,
       this.physical,
@@ -125,7 +110,6 @@ export class HeldItems {
       this.drawn = version;
       this.syncVisor();
     }
-    this.opticWindow.visible = false;
     this.opticViewFrame = undefined;
     this.presentation.stockSeats = handling.stockSeats;
     this.presentation.proneAds = handling.proneAds ?? false;
@@ -156,22 +140,19 @@ export class HeldItems {
     { item, modelDefinition, aimingDownSights, firearmPose, transform, rotation, handling }: ActorItemPose,
     main: PerspectiveCamera,
   ): void {
-    const optic = mountedOptic(this.inventory.registry, item);
-    const base = optic && opticViewSettings(optic.item, optic.model);
-    const zoom = handling.opticZoom;
-    const settings =
-      base && zoom?.uid === item.uid && zoom.opticUid === optic?.uid
-        ? { ...base, magnification: zoom.magnification }
-        : base;
-    const active = Boolean(aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic' && settings);
+    const settings = presentedOptic(this.inventory.registry, {
+      item,
+      modelDefinition,
+      aimingDownSights,
+      zoom: handling.opticZoom,
+    })?.settings;
     const heldModel = this.animator.modelOf(item);
     if (heldModel) {
-      heldModel.visible = !active || modelDefinition?.hands?.adsStandoffByPitch !== undefined;
+      heldModel.visible = !settings || modelDefinition?.hands?.adsStandoffByPitch !== undefined;
     }
     const diameter = modelDefinition?.gun?.sight?.ocularDiameterMetres;
     if (
       !(
-        active &&
         settings &&
         diameter !== undefined &&
         firearmPose?.sightEyeOffset &&
@@ -186,24 +167,6 @@ export class HeldItems {
       (modelDefinition?.hands?.adsStandoffByPitch
         ? heldAdsStandoffMetres(modelDefinition, main.rotation.x)
         : modelDefinition!.gun!.sight!.eyeReliefMetres);
-    const innerRadius = diameter / 2;
-    const outerRadius = innerRadius * 1.12;
-    const shape = `${innerRadius}:${outerRadius}:${settings.aperture.aspectRatio}:${settings.aperture.exponent}`;
-    if (shape !== this.opticWindowShape) {
-      this.opticWindow.geometry.dispose();
-      const geometry = new RingGeometry(innerRadius, outerRadius, 64);
-      const positions = geometry.getAttribute('position');
-      for (let index = 0; index < positions.count; index++) {
-        const x = positions.getX(index);
-        const y = positions.getY(index);
-        const radius = Math.hypot(x, y);
-        const scale = 1 / opticApertureDistance(x / radius, y / radius, settings.aperture);
-        positions.setXY(index, x * scale, y * scale);
-      }
-      geometry.computeBoundingSphere();
-      this.opticWindow.geometry = geometry;
-      this.opticWindowShape = shape;
-    }
     const matrix = new Matrix4().makeBasis(
       ...(firearmPose.rootRotation.map((axis) => new Vector3(...axis)) as [Vector3, Vector3, Vector3]),
     );
@@ -215,24 +178,26 @@ export class HeldItems {
     const up = new Vector3(...firearmPose.sightUp).applyQuaternion(inverse).applyQuaternion(rotation).normalize();
     const right = new Vector3().crossVectors(forward, up).normalize();
     up.crossVectors(right, forward).normalize();
-    this.opticWindow.quaternion.setFromRotationMatrix(matrix.makeBasis(right, up, forward.clone().negate()));
     const eyeOffset = new Vector3(...firearmPose.sightEyeOffset).applyQuaternion(inverse).applyQuaternion(rotation);
-    this.opticWindow.position
-      .set(...transform.offset)
-      .add(eyeOffset)
-      .addScaledVector(forward, distance);
-    this.opticWindow.visible = true;
-    const center = main.worldToLocal(this.view.localToWorld(this.opticWindow.position.clone()));
+    const glass = new Vector3(...transform.offset).add(eyeOffset).addScaledVector(forward, distance);
+    const center = main.worldToLocal(this.view.localToWorld(glass));
     const aperture = projectLensAperture({
       center: [center.x, center.y, center.z],
       right: [right.x, right.y, right.z],
       up: [up.x, up.y, up.z],
-      radius: innerRadius,
+      radius: diameter / 2,
       verticalFovDegrees: main.fov,
       aspect: main.aspect,
     });
-    if (aperture) {
-      this.opticViewFrame = { ...settings, ...aperture };
+    // The view group shares the main camera's orientation, so `forward` is already camera-local.
+    const reticleCenter = projectOpticReticle(
+      [forward.x, forward.y, forward.z],
+      main.fov,
+      main.aspect,
+      settings.magnification,
+    );
+    if (aperture && reticleCenter) {
+      this.opticViewFrame = { ...settings, ...aperture, reticleCenter };
     }
   }
 
@@ -309,22 +274,18 @@ export class HeldItems {
       1,
     );
     const { autoClear } = renderer;
-    const opticVisible = this.opticWindow.visible;
     const cameraVisible = this.camera.visible;
     const carriedVisible = this.carried.visible;
     renderer.autoClear = false;
     try {
       if (carriedVisible && this.carried.children.some((child) => child.visible)) {
-        this.opticWindow.visible = false;
         this.camera.visible = false;
         renderer.render(this.scene, main);
-        this.opticWindow.visible = opticVisible;
         this.camera.visible = cameraVisible;
       }
       this.carried.visible = false;
       renderer.render(this.scene, this.camera);
     } finally {
-      this.opticWindow.visible = opticVisible;
       this.camera.visible = cameraVisible;
       this.carried.visible = carriedVisible;
       renderer.autoClear = autoClear;
@@ -371,8 +332,6 @@ export class HeldItems {
   dispose(): void {
     this.clearVisor();
     this.animator.dispose();
-    this.opticWindow.geometry.dispose();
-    (this.opticWindow.material as MeshBasicMaterial).dispose();
     this.drawn = '';
   }
 }
