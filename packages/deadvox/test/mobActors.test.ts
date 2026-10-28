@@ -1384,6 +1384,53 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
+  it.each([
+    { model: 'shambler', cuts: ['thigh.L'] },
+    { model: 'runner', cuts: ['thigh.L', 'thigh.R'] },
+    { model: 'brute', cuts: ['thigh.R'] },
+  ])(
+    'hands $model leg loss back to crawling and releases its physics without mutating simulation',
+    async ({ model, cuts }) => {
+      const type = [...registry.zombies.values()].find((candidate) => candidate.model === model)!;
+      const renderer = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
+      const reference = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
+      const store = new MapEntityStore<Zombie>();
+      const seed = type.figureSeeds![0]!;
+      const id = store.add(makeZombie([0, 0, 0], [0, 0, -1], [], { type, figureSeed: seed }));
+      try {
+        renderer.sync(store);
+        const upright = renderer.boneMatrix(id, 'chest');
+        const crawling = makeZombie([0, 0, 0], [0, 0, -1], cuts, { type, figureSeed: seed });
+        store.replace(id, crawling);
+        const before = structuredClone(crawling);
+        renderer.zombieWounded(id, { point: [0, 0, 0], direction: [1, 0, 0], impulse: 1 });
+        renderer.sync(store);
+        expect(renderer.boneMatrix(id, 'chest')).toEqual(upright);
+        await renderer.whenCorpsesReady();
+        const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
+        expect(physics.counts().bodies).toBeGreaterThan(0);
+        renderer.sync(store, ragdollContent.timestep);
+        renderer.sync(store, ragdollContent.timestep);
+        expect(renderer.boneMatrix(id, 'chest')).not.toEqual(upright);
+        const moved = makeZombie([2, 0, 1], [1, 0, 0], cuts, { type, figureSeed: seed });
+        store.replace(id, moved);
+        const movedBefore = structuredClone(moved);
+        const horizon = ragdollContent.crawlFall.fallSeconds + ragdollContent.crawlFall.blendSeconds;
+        for (let time = 0; time <= horizon; time += ragdollContent.timestep) {
+          renderer.sync(store, ragdollContent.timestep);
+        }
+        expect(moved).toEqual(movedBefore);
+        reference.sync(store);
+        expect(renderer.boneMatrix(id, 'chest')).toEqual(reference.boneMatrix(id, 'chest'));
+        expect(physics.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
+        expect(crawling).toEqual(before);
+      } finally {
+        renderer.dispose();
+        reference.dispose();
+      }
+    },
+  );
+
   it('retains an authored downed body after physics initialization fails', async () => {
     await initializeRagdollPhysics();
     const failure = new Error('Physics world unavailable');

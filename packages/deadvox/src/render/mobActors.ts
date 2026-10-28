@@ -57,6 +57,7 @@ import {
   mulMV,
   quatToMat3,
   rotY,
+  slerpQuat,
   type Transform,
   transpose,
 } from '@mobgen/core/math.ts';
@@ -278,6 +279,9 @@ interface ZombieRenderState extends SlotHolder {
   previousPerceptionSimSeconds: number | undefined;
   perceptionSimSeconds: number | undefined;
   readonly walkActor: WalkActor;
+  crawling: boolean;
+  fallHit?: Vec3 | undefined;
+  crawlFall?: { physics: Ragdoll; elapsed: number; released: boolean } | undefined;
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
   /** The simulation zombie last drawn in this slot. */
@@ -1118,6 +1122,7 @@ export class MobActorMeshes implements ZombieRenderer {
       globalRow,
       instanceIndex,
       walkActor: { ...variant.walkActorTemplate, cache: createGaitCache() },
+      crawling: zombieCrawls(zombie),
       lastPose: undefined,
       lastPlacement: undefined,
       zombie: undefined,
@@ -1340,6 +1345,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private removeZombie(id: EntityId, state: ZombieRenderState): void {
     this.removePerceptionLabel(id);
     this.removeTentacle(id);
+    this.releaseCrawlFall(state);
     this.freeSlot(id, state);
     this.states.delete(id);
   }
@@ -1388,6 +1394,7 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
+    this.releaseCrawlFall(state);
     const basePose = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie), { dt: 0 }).pose;
     this.corpses.set(id, {
       incapacitated: true,
@@ -1454,6 +1461,7 @@ export class MobActorMeshes implements ZombieRenderer {
       zombie.body.pos[1] * this.blockSize,
       zombie.body.pos[2] * this.blockSize,
     ];
+    this.releaseCrawlFall(state);
     const posed = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie), { dt: 0 });
     const basePose = posed.pose;
     this.burst(this.variants[state.variantIndex]!, posed.transforms, posed.placement, zombie);
@@ -1486,6 +1494,10 @@ export class MobActorMeshes implements ZombieRenderer {
   zombieWounded(id: EntityId, hit: HitImpulse): void {
     const direction: Vec3 = [...hit.direction];
     this.hitDirections.set(id, direction);
+    const state = this.states.get(id);
+    if (state) {
+      state.fallHit = direction;
+    }
     queueMicrotask(() => {
       if (this.hitDirections.get(id) === direction) {
         this.hitDirections.delete(id);
@@ -1596,7 +1608,7 @@ export class MobActorMeshes implements ZombieRenderer {
       return this.severDowned(id, part, hit, zombie);
     }
     const variant = this.variants[state.variantIndex]!;
-    if (zombie) {
+    if (zombie && !(zombieCrawls(zombie) && !state.crawling && state.lastPose)) {
       const posed = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie));
       state.lastPose = posed.pose;
       state.lastPlacement = posed.placement;
@@ -2063,15 +2075,104 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds: frame.presentationSimSeconds,
     });
     const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
-    this.packSkeleton(state.globalRow, variant, {
-      ...posed,
-      severedIndices,
-      bloodiness: this.bloodiness(zombie),
-      charge: acidCharge(zombie),
-    });
+    if (state.crawlFall) {
+      this.packCrawlFall(state, variant, zombie, { posed, severedIndices });
+    } else {
+      this.packSkeleton(state.globalRow, variant, {
+        ...posed,
+        severedIndices,
+        bloodiness: this.bloodiness(zombie),
+        charge: acidCharge(zombie),
+      });
+    }
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
     state.zombie = zombie;
+  }
+
+  private releaseCrawlFall(state: ZombieRenderState): void {
+    if (state.crawlFall && !state.crawlFall.released) {
+      this.ragdolls?.remove(state.crawlFall.physics);
+    }
+    state.crawlFall = undefined;
+  }
+
+  private beginCrawlFall(state: ZombieRenderState, variant: Variant, zombie: Zombie): void {
+    const crawling = zombieCrawls(zombie);
+    if (crawling && !state.crawling && state.lastPose && state.lastPlacement && !this.ragdolls?.failed) {
+      this.ragdolls ??= new RagdollWorld();
+      const placement = state.lastPlacement;
+      state.crawlFall = {
+        elapsed: 0,
+        released: false,
+        physics: this.ragdolls.spawn({
+          realized: variant.realized,
+          model: variant.model,
+          pose: state.lastPose,
+          position: [placement.x, placement.y, placement.z],
+          yaw: placement.yawRad,
+          direction: -1,
+          seed: this.options.ragdollSeed ?? state.id ^ zombie.figureSeed,
+          ground: this.rigidWorld(),
+          excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, zombie.severed))),
+          ...(state.fallHit ? { launch: state.fallHit } : {}),
+          motion: ragdollContent.crawlFall.motion,
+        }),
+      };
+    }
+    if (state.crawlFall && !state.crawlFall.released) {
+      const excluded = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
+      if ([...excluded].some((index) => !state.crawlFall!.physics.excluded.has(index))) {
+        this.ragdolls?.sever(state.crawlFall.physics, variant.realized, excluded);
+      }
+    }
+    state.crawling = crawling;
+    state.fallHit = undefined;
+  }
+
+  private packCrawlFall(
+    state: ZombieRenderState,
+    variant: Variant,
+    zombie: Zombie,
+    {
+      posed,
+      severedIndices,
+    }: {
+      posed: ReturnType<MobActorMeshes['posedFrame']>;
+      severedIndices: ReadonlySet<number>;
+    },
+  ): void {
+    const fall = state.crawlFall!;
+    const progress = clamp01(
+      (fall.elapsed - ragdollContent.crawlFall.fallSeconds) / ragdollContent.crawlFall.blendSeconds,
+    );
+    const blend = progress * progress * (3 - 2 * progress);
+    const yaw = rotY((posed.placement.yawRad * 180) / Math.PI);
+    const hidden = new Set(severedIndices);
+    variant.realized.body.bones.forEach((bone, index) => {
+      if (hidden.has(index)) {
+        this.packZeroBone(state.globalRow, index);
+        return;
+      }
+      const source = fall.physics.transforms.get(index)!;
+      const target = posed.transforms.get(bone.id)!;
+      const offset = mulMV(yaw, target.t);
+      const translation = [posed.placement.x, posed.placement.y, posed.placement.z];
+      const transform: MutableTransform = {
+        r: [...quatToMat3(slerpQuat(mat3ToQuat(source.r), mat3ToQuat(mulMM(yaw, target.r)), blend))],
+        t: source.t.map((value, axis) => value + (offset[axis]! + translation[axis]! - value) * blend) as Vec3,
+      };
+      packCrowdBoneMatrix(this.textureData, { layout: this.layout, slot: state.globalRow, bone: index }, transform, {
+        x: 0,
+        y: 0,
+        z: 0,
+        yawRad: 0,
+      });
+    });
+    packSeveredMask(this.textureData, this.layout, state.globalRow, hidden);
+    packBloodiness(this.textureData, this.layout, state.globalRow, this.bloodiness(zombie));
+    packCharge(this.textureData, this.layout, state.globalRow, acidCharge(zombie));
+    this.textureUpdates.touch(state.globalRow);
   }
 
   /** Live actors' glow and mouth anchors as last drawn, for the glow light and drips. Presentation only. */
@@ -2278,7 +2379,7 @@ export class MobActorMeshes implements ZombieRenderer {
     },
   ): void {
     const bounds = this.zombiePoseBounds(zombie, frame.placement);
-    if (this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
+    if (!state.crawlFall && this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
       this.packCachedPose(state, variant, zombie, frame.placement);
       return;
     }
@@ -2318,6 +2419,7 @@ export class MobActorMeshes implements ZombieRenderer {
     this.syncWound(id, state, zombie.carved);
     const variant = this.variants[state.variantIndex]!;
     const placement = this.currentRenderPlacement(zombie);
+    this.beginCrawlFall(state, variant, zombie);
     this.updatePerceptionLabel(id, zombie, state, placement);
     this.packZombiePose(state, variant, zombie, {
       placement,
@@ -2346,6 +2448,7 @@ export class MobActorMeshes implements ZombieRenderer {
     this.activeBlend = blend;
     this.backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
     this.renderBlend = blend;
+    this.advanceCrawlFalls(realDt);
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
@@ -2368,6 +2471,23 @@ export class MobActorMeshes implements ZombieRenderer {
     this.fleshChunks.update(realDt);
     this.applyReveal();
     this.textureUpdates.flush();
+  }
+
+  private advanceCrawlFalls(realDt: number): void {
+    for (const state of this.states.values()) {
+      const fall = state.crawlFall;
+      if (!fall) {
+        continue;
+      }
+      fall.elapsed += realDt;
+      if (!fall.released && fall.elapsed >= ragdollContent.crawlFall.fallSeconds) {
+        this.ragdolls?.remove(fall.physics);
+        fall.released = true;
+      }
+      if (fall.elapsed >= ragdollContent.crawlFall.fallSeconds + ragdollContent.crawlFall.blendSeconds) {
+        state.crawlFall = undefined;
+      }
+    }
   }
 
   // Slot compaction can rewrite a moved actor's row, so gate only after all insertion and pruning.

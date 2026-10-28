@@ -13,6 +13,8 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     lieSeconds: 120,
     capacity: 64,
     finishSeconds: 12,
+    crawlCuts: [['thigh.L'], ['thigh.L', 'thigh.R']],
+    crawlDelaySeconds: 2,
   },
   timestep: 1 / 60,
   stepBudget: 600,
@@ -33,6 +35,11 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     runner: { launchSpeed: 1.2 },
     brute: { launchSpeed: 1.2 },
     crawler: { launchSpeed: 1.2 },
+  },
+  crawlFall: {
+    fallSeconds: 0.85,
+    blendSeconds: 0.55,
+    motion: { launchSpeed: 1.6, upwardLift: 0.15, spinSpeed: 0.4, hitDirectionWeight: 1, seedSpread: 0.3 },
   },
   downedDriftMetres: 2,
   debris: {
