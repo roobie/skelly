@@ -2080,7 +2080,7 @@
         "member.rightLeg": 12,
         "member.torso": 30
       },
-      "severedImpulseScale": 1,
+      "severedImpulseScale": 1.3,
       "severedItems": {
         "core.trunk": null,
         "member.head": null,
@@ -2091,11 +2091,11 @@
         "member.torso": null
       },
       "severedSpurt": {
-        "droplets": 0,
-        "lifetimeRealSeconds": 0,
-        "partVelocityShare": 0,
-        "speedMetresPerRealSecond": 0,
-        "spreadFraction": 0
+        "droplets": 14,
+        "lifetimeRealSeconds": 4.5,
+        "partVelocityShare": 0.80000000000000004,
+        "speedMetresPerRealSecond": 5,
+        "spreadFraction": 1.5
       },
       "sight": 12.5,
       "sightCone": 60,

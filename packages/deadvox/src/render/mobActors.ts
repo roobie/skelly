@@ -745,8 +745,11 @@ export class MobActorMeshes implements ZombieRenderer {
           boneIndices: readonly number[];
         }
       >();
-      for (const part of v.model === 'amalgam' ? [] : severableParts(v.realized.body.bones)) {
-        const boneIndices = [...severedBoneSet(v.realized.body.bones, [part])]
+      const parts = v.severedRoots.size > 0 ? [...v.severedRoots.keys()] : severableParts(v.realized.body.bones);
+      const scale = v.bodyScale ?? 1;
+      for (const part of parts) {
+        const root = v.severedRoots.get(part) ?? part;
+        const boneIndices = [...severedBoneSet(v.realized.body.bones, [root])]
           .map((boneId) => boneIndexById.get(boneId))
           .filter((index): index is number => index !== undefined);
         const properties = templatePartMassProperties({
@@ -761,11 +764,11 @@ export class MobActorMeshes implements ZombieRenderer {
         rigidParts.set(part, {
           mass: properties.mass,
           inertiaBody: [
-            [...properties.inertia[0]] as Vec3,
-            [...properties.inertia[1]] as Vec3,
-            [...properties.inertia[2]] as Vec3,
+            properties.inertia[0].map((value) => value * scale ** 2) as Vec3,
+            properties.inertia[1].map((value) => value * scale ** 2) as Vec3,
+            properties.inertia[2].map((value) => value * scale ** 2) as Vec3,
           ],
-          corners: bounds.corners.map((corner) => [...corner] as Vec3),
+          corners: bounds.corners.map((corner) => corner.map((value) => value * scale) as Vec3),
           boneIndices,
         });
       }
@@ -1520,7 +1523,7 @@ export class MobActorMeshes implements ZombieRenderer {
     if (!initialCenter) {
       return undefined;
     }
-    const topIndex = variant.boneIndexById.get(part);
+    const topIndex = variant.boneIndexById.get(variant.severedRoots.get(part) ?? part);
     if (topIndex === undefined) {
       return undefined;
     }
@@ -1575,9 +1578,10 @@ export class MobActorMeshes implements ZombieRenderer {
     const transforms = new Map<number, MutableTransform>();
     for (const index of indices) {
       const source = variant.scratch[index]!;
-      const rotated = mulMV(yawMatrix, source.t);
+      const scale = variant.bodyScale ?? 1;
+      const rotated = mulMV(yawMatrix, source.t.map((value) => value * scale) as Vec3);
       transforms.set(index, {
-        r: [...mulMM(yawMatrix, source.r)] as MutableTransform['r'],
+        r: mulMM(yawMatrix, source.r).map((value) => value * scale) as MutableTransform['r'],
         t: [rotated[0] + x, rotated[1] + y, rotated[2] + z],
       });
     }
@@ -1603,9 +1607,10 @@ export class MobActorMeshes implements ZombieRenderer {
           }
           const bone = variant.scratch[owner]!;
           const actorPoint = mulMV(bone.r, worldPosition(voxels, i, j, k));
-          const actorX = actorPoint[0] + bone.t[0];
-          const actorY = actorPoint[1] + bone.t[1];
-          const actorZ = actorPoint[2] + bone.t[2];
+          const scale = variant.bodyScale ?? 1;
+          const actorX = (actorPoint[0] + bone.t[0]) * scale;
+          const actorY = (actorPoint[1] + bone.t[1]) * scale;
+          const actorZ = (actorPoint[2] + bone.t[2]) * scale;
           sumX += cos * actorX + sin * actorZ + x;
           sumY += actorY + y;
           sumZ += cos * actorZ - sin * actorX + z;

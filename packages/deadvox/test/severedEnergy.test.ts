@@ -150,8 +150,8 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
   const id = system.add(zombieTypeForCut(mode), position, [0, 0, -1]);
   const zombie = system.store.get(id)!;
   const actorMeshes = new MobActorMeshes(BLOCK, 16, {
-    zombies: registry.zombies,
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
+    zombies: new Map([[zombie.type.id, zombie.type]]),
+    poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[zombie.type.id, zombie.type]])), zombie.figureSeed),
   });
   renderer = actorMeshes;
   actorMeshes.setWorld(isSolid, BLOCK);

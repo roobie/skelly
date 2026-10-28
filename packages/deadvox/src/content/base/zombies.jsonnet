@@ -663,8 +663,6 @@ local content = {
       },
       "carving": { "radiusMetresPerDamage": 0.0023, "maxRadiusMetres": 0.75, "interiorColor": "#7a1e22" },
       "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "abilities": [],
       "loot": "shambler_pockets"
     },
@@ -725,7 +723,7 @@ local content = {
   ]
 };
 content + {
-  zombies: [zombie + (if zombie.model == 'amalgam' then {} else severedGore) + {
+  zombies: [zombie + severedGore + {
     speed+: { crawlMetresPerSimSecond: 0.4 },
     severedItems: if zombie.model == 'amalgam' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
     hearingModel+: {
