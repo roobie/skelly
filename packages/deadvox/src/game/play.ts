@@ -46,7 +46,6 @@ import { soundVariantKey } from '../core/soundSynth.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
-import { stageRagdollSweep } from '../debug/ragdollSweep.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -1216,15 +1215,6 @@ export const startPlay = (
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
-  const advanceRagdollSweep = stageRagdollSweep({
-    system: zombieSystem,
-    renderer: zombieMeshes,
-    registry,
-    origin: body.pos,
-    blockSize: s,
-    seed: config.ragdollSweep,
-    restored: Boolean(options.restore),
-  });
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -1693,6 +1683,7 @@ export const startPlay = (
     },
     roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
+    zombieRenderer: zombieMeshes,
     spectatorCamera: {
       enabled: () => spectator.enabled,
       toggle: () => {
@@ -4225,7 +4216,7 @@ export const startPlay = (
     options.saveController?.afterFrame();
     updateTutorial();
     observePlaytestFrame(elapsedReal, now);
-    advanceRagdollSweep(dt);
+    debugTools?.advanceRagdollSweep(dt);
     const { sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,

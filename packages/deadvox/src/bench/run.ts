@@ -11,6 +11,7 @@ import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { Body } from '../core/physics.ts';
+import { reachTuning } from '../core/reach.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
@@ -363,6 +364,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         zombies: engine.registry.zombies,
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
+        handlingReachMetres: reachTuning(engine.registry).reachMetres,
       });
       engine.scene.add(zombieMeshes.group);
     } catch (error) {

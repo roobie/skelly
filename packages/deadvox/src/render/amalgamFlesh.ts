@@ -7,10 +7,10 @@ import { materialOf, shadeOf, type Voxels, worldPosition } from '@mobgen/core/vo
 import { crowdEmission } from '@mobgen/mob/crowd.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import type { RigidBody, RigidWorld } from '../core/rigidBody.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { type Ragdoll, type RagdollWorld, ragdollContent } from './ragdoll.ts';
+import type { RigidBody, RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 // The amalgam's carved flesh (core/amalgamCarving.ts, Zombie.carved), drawn two ways: the body rebuilt
@@ -213,14 +213,14 @@ export class FleshChunks {
   }
 
   spawn({ realized, scale, cells, rotation, translation, direction }: FleshChunkSpawn): void {
+    if (cells.length === 0) {
+      return;
+    }
     const order = this.owner.reserve();
     if (order === undefined) {
       return;
     }
     const { voxels, body } = realized;
-    if (cells.length === 0) {
-      return;
-    }
     const owner = new Uint8Array(voxels.owner.length);
     const centre: Vec3 = [0, 0, 0];
     for (const cell of cells) {
@@ -253,7 +253,10 @@ export class FleshChunks {
     // Spin about the horizontal axis across the strike, so the chunk tumbles away from the hit.
     const across = Math.hypot(direction[0], direction[2]) > 1e-6 ? [-direction[2], 0, direction[0]] : [1, 0, 0];
     const acrossLength = Math.hypot(...across);
-    const spin = (tuning.launchSpin * (inertia[0] + inertia[1] + inertia[2])) / 3 / acrossLength;
+    const spin =
+      (tuning.launchSpin * ragdollContent.debris.impulseScale * (inertia[0] + inertia[1] + inertia[2])) /
+      3 /
+      acrossLength;
     const corners: Vec3[] = [];
     for (const sx of [-1, 1]) {
       for (const sy of [-1, 1]) {
@@ -267,9 +270,9 @@ export class FleshChunks {
       center: [translation[0] + offset[0], translation[1] + offset[1], translation[2] + offset[2]],
       orientation: mat3ToQuat(rotation) as Quaternion,
       velocity: [
-        direction[0] * tuning.launchSpeed,
-        direction[1] * tuning.launchSpeed + tuning.launchLift,
-        direction[2] * tuning.launchSpeed,
+        direction[0] * tuning.launchSpeed * ragdollContent.debris.impulseScale,
+        (direction[1] * tuning.launchSpeed + tuning.launchLift) * ragdollContent.debris.impulseScale,
+        direction[2] * tuning.launchSpeed * ragdollContent.debris.impulseScale,
       ],
       angularMomentum: [across[0]! * spin, across[1]! * spin, across[2]! * spin],
       inertiaBody: [
@@ -278,9 +281,6 @@ export class FleshChunks {
         [0, 0, inertia[2]],
       ],
       corners,
-      remainderRealSeconds: 0,
-      elapsedRealSeconds: 0,
-      quietRealSeconds: 0,
       asleep: false,
     };
     const mesh = new Mesh(geometry, this.material);

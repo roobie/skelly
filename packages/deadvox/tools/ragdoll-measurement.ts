@@ -2,12 +2,14 @@
 import { crawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
+import inventory from '../src/content/base/inventory.json' with { type: 'json' };
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { initializeRagdollPhysics, RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 
 interface Sample {
   seed: number;
   model: string;
+  constrained: boolean;
   restDriftMetres: number[];
   residualSpeed: number[];
   residualSpin: number[];
@@ -23,16 +25,17 @@ export async function measureRagdolls() {
   await initializeRagdollPhysics();
   const initMs = performance.now() - start;
   const { maxCorpses } = graphics.graphics[0]!.mobActors;
-  const seeds = [17];
+  const seed = 17;
   const samples: Sample[] = [];
   for (const model of ragdollContent.sweep.models) {
-    for (const seed of seeds) {
+    for (const constrained of [false, true]) {
       const figure = zombieFigure({ model }, seed).realized;
       const world = new RagdollWorld();
       try {
         const corpses = Array.from({ length: maxCorpses }, (_, index) =>
           world.spawn({
             realized: figure,
+            model,
             pose: model === 'crawler' ? crawlerPose(figure) : { root: [0, 0, 0], rotations: {} },
             excluded: new Set(
               [
@@ -46,6 +49,9 @@ export async function measureRagdolls() {
             yaw: 0,
             direction: -1,
             seed,
+            ...(constrained
+              ? { reach: Math.min(inventory.inventory[0]!.reachMetres, ragdollContent.downedDriftMetres) }
+              : {}),
             ground: { blockSize: 1, isSolid: (_x, y, _z) => y < 0 },
           }),
         );
@@ -89,6 +95,7 @@ export async function measureRagdolls() {
         samples.push({
           seed,
           model,
+          constrained,
           restDriftMetres: corpses.map((corpse, index) => {
             const t = corpse.parts[0]!.body.translation();
             return Math.hypot(t.x - index * ragdollContent.footprintMetres[0]! * 2, t.z);

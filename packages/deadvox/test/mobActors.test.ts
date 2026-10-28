@@ -30,6 +30,7 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
+import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -1222,6 +1223,7 @@ describe('MobActorMeshes reactions', () => {
       poolSize: 1,
       look: LOOK_FIXTURE.mobActors,
       maxCorpses: row.mobActors.maxCorpses,
+      handlingReachMetres: reachTuning(registry).reachMetres,
     });
     const gore = new Gore(0.5, row.gore);
     try {
@@ -1359,6 +1361,12 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(system.store, 0, 1);
       expect(renderer.isBoneHidden(id, 'head')).toBe(true);
       expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
+      const head = zombieFigure({ model: 'shambler' }, 1).realized.body.bones.findIndex((bone) => bone.id === 'head');
+      const finished = (
+        renderer as unknown as { corpses: ReadonlyMap<number, { ragdoll: import('../src/render/ragdoll.ts').Ragdoll }> }
+      ).corpses.get(id)!;
+      expect(finished.ragdoll.parts.length).toBeGreaterThan(0);
+      expect(finished.ragdoll.parts.some((part) => part.sources.has(head))).toBe(false);
       const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
       expect(physics.counts().bodies).toBeGreaterThan(0);
       const horizon =

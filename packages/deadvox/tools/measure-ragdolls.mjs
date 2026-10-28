@@ -54,7 +54,7 @@ try {
         repository,
         'diff',
         '--name-only',
-        '--diff-filter=M',
+        '--diff-filter=MD',
         baselineRef,
         '--',
         'packages/deadvox/src',
@@ -82,6 +82,19 @@ try {
           {
             name: 'measurement-baseline',
             enforce: 'pre',
+            resolveId(source, importer) {
+              if (variant === 'baseline' && importer && source.startsWith('.')) {
+                const path = resolve(dirname(importer), source);
+                if (baselineSources.has(path)) {
+                  return path;
+                }
+              }
+            },
+            load(id) {
+              if (variant === 'baseline') {
+                return baselineSources.get(id);
+              }
+            },
             transform(_code, id) {
               if (variant === 'baseline') {
                 return baselineSources.get(id);

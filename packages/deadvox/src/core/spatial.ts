@@ -12,7 +12,7 @@ export const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] +
 export const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 export const scale = (a: Vec3, value: number): Vec3 => [a[0] * value, a[1] * value, a[2] * value];
 export const normalize = (a: Vec3): Vec3 => scale(a, 1 / (Math.hypot(...a) || 1));
-export const normalizeRotation = (q: Quaternion): Quaternion => {
+const normalizeRotation = (q: Quaternion): Quaternion => {
   const n = Math.hypot(...q) || 1;
   return [q[0] / n, q[1] / n, q[2] / n, q[3] / n];
 };

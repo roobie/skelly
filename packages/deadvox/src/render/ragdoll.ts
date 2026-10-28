@@ -15,8 +15,8 @@ import {
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import content from '@mobgen/mob/ragdoll.json' with { type: 'json' };
 import { hash3 } from '../core/random.ts';
-import { angularVelocity, type RigidBody, type RigidWorld } from '../core/rigidBody.ts';
 import RAPIER from './ragdollRapier.ts';
+import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 
 export const ragdollContent = content;
 const vector = (v: Vec3) => ({ x: v[0], y: v[1], z: v[2] });
@@ -108,7 +108,8 @@ export interface Ragdoll {
   readonly transforms: Map<number, Transform>;
   readonly excluded: Set<number>;
   readonly parts: Part[];
-  readonly ground: string[];
+  readonly anchors: InstanceType<typeof RAPIER.RigidBody>[];
+  readonly ground: Set<string>;
   readonly joints: InstanceType<typeof RAPIER.ImpulseJoint>[];
   steps: number;
   settled: boolean;
@@ -123,6 +124,7 @@ export const initializeRagdollPhysics = (): Promise<void> => {
 };
 interface RagdollSpawn {
   realized: Realized;
+  model?: string;
   pose: Pose;
   position: Vec3;
   yaw: number;
@@ -131,6 +133,7 @@ interface RagdollSpawn {
   ground: RigidWorld;
   excluded?: ReadonlySet<number>;
   launch?: Vec3;
+  reach?: number;
   scale?: number;
 }
 export class RagdollWorld {
@@ -138,7 +141,7 @@ export class RagdollWorld {
   failed = false;
   private world: InstanceType<typeof RAPIER.World> | undefined;
   private readonly corpses = new Set<Ragdoll>();
-  private readonly debris = new Map<Ragdoll, RigidBody>();
+  private readonly debris = new Map<Ragdoll, { body: RigidBody; ground: RigidWorld; cell: string }>();
   private readonly cells = new Map<string, { collider: InstanceType<typeof RAPIER.Collider>; users: number }>();
   private remainder = 0;
   private disposed = false;
@@ -176,7 +179,8 @@ export class RagdollWorld {
       transforms,
       excluded: new Set(input.excluded),
       parts: [],
-      ground: [],
+      anchors: [],
+      ground: new Set(),
       joints: [],
       steps: 0,
       settled: false,
@@ -193,10 +197,29 @@ export class RagdollWorld {
 
   private build(
     corpse: Ragdoll,
-    { realized, position, direction, seed, ground, launch, scale = 1 }: RagdollSpawn,
+    { realized, model = 'shambler', position, yaw, direction, seed, ground, launch, reach, scale = 1 }: RagdollSpawn,
   ): void {
     const world = this.world!;
     const groups = ragdollGroups(realized.body.bones, corpse.excluded);
+    const motion = {
+      ...content.motion,
+      ...(content.kindMotion as Record<string, Partial<typeof content.motion>>)[model],
+    };
+    const directed = launch && Math.hypot(...launch) > 0;
+    const weight = directed ? motion.hitDirectionWeight : 0;
+    const spread = (hash3(seed, 0, 0, 0) - 0.5) * motion.seedSpread * (1 - weight);
+    const fallback = mulMV(rotY((yaw * 180) / Math.PI), [0, 0, -direction]);
+    const blend = (axis: number) =>
+      fallback[axis]! * (1 - weight) + (directed ? (launch[axis]! / Math.hypot(...launch)) * weight : 0);
+    const aim: Vec3 = [blend(0), blend(1), blend(2)];
+    const length = Math.hypot(...aim) || 1;
+    const spin = (axis: number) => (hash3(seed, axis, 1, 0) - 0.5) * 2 * motion.spinSpeed;
+    const across = Math.hypot(aim[0], aim[2]);
+    const velocity: Vec3 = [
+      (aim[0] * motion.launchSpeed) / length + (across > 0 ? (-aim[2] * spread) / across : 0),
+      (aim[1] * motion.launchSpeed) / length + motion.upwardLift,
+      (aim[2] * motion.launchSpeed) / length + (across > 0 ? (aim[0] * spread) / across : 0),
+    ];
     for (const group of groups) {
       const source = corpse.transforms.get(group.indices[0]!)!;
       const bounds = voxelBounds(realized.voxels, group.indices);
@@ -209,15 +232,8 @@ export class RagdollWorld {
           .setLinearDamping(content.linearDamping)
           .setAngularDamping(content.angularDamping),
       );
-      const velocity = mulMV(source.r, [
-        (hash3(seed, 0, 0, 0) - 0.5) * content.seedSpread,
-        0,
-        -direction * content.launchSpeed,
-      ]);
-      body.setLinvel(
-        vector(launch ? [launch[0] * content.launchSpeed, 0, launch[2] * content.launchSpeed] : velocity),
-        true,
-      );
+      body.setLinvel(vector(velocity), true);
+      body.setAngvel(vector([spin(0), spin(1), spin(2)]), true);
       const { mass } = massProperties(realized.voxels, group.indices, realized.voxels.size);
       world.createCollider(
         RAPIER.ColliderDesc.cuboid(...scaled(bounds.halfExtents, scale))
@@ -265,6 +281,21 @@ export class RagdollWorld {
         world.impulseJoints.raw.jointSetLimits(joint.handle, axis + 3, limits[0]!, limits[1]!);
       });
     });
+    if (reach !== undefined && corpse.parts[0]) {
+      const trunk = corpse.parts[0].body;
+      const anchor = world.createRigidBody(
+        RAPIER.RigidBodyDesc.fixed().setTranslation(position[0], trunk.translation().y, position[2]),
+      );
+      corpse.anchors.push(anchor);
+      corpse.joints.push(
+        world.createImpulseJoint(
+          RAPIER.JointData.rope(reach, vector([0, 0, 0]), vector([0, 0, 0])),
+          anchor,
+          trunk,
+          true,
+        ),
+      );
+    }
     this.buildGround(corpse, position, ground);
   }
 
@@ -273,14 +304,15 @@ export class RagdollWorld {
       transforms: new Map(),
       excluded: new Set(),
       parts: [],
-      ground: [],
+      anchors: [],
+      ground: new Set(),
       joints: [],
       steps: 0,
       settled: false,
       removed: false,
     };
     this.corpses.add(piece);
-    this.debris.set(piece, body);
+    this.debris.set(piece, { body, ground, cell: this.cellAt(body.center, ground.blockSize) });
     this.ready.then(() => {
       if (piece.removed || !this.world) {
         return;
@@ -296,12 +328,15 @@ export class RagdollWorld {
           })
           .setLinvel(...body.velocity)
           .setAngvel(vector(angularVelocity(body)))
-          .setLinearDamping(content.linearDamping)
-          .setAngularDamping(content.angularDamping),
+          .setLinearDamping(content.debris.linearDamping)
+          .setAngularDamping(content.debris.angularDamping)
+          .setCcdEnabled(true),
       );
       const half = [0, 1, 2].map((axis) => Math.max(...body.corners.map((corner) => Math.abs(corner[axis]!))));
       this.world.createCollider(
-        RAPIER.ColliderDesc.cuboid(half[0]!, half[1]!, half[2]!).setMass(body.mass).setFriction(content.friction),
+        RAPIER.ColliderDesc.cuboid(half[0]!, half[1]!, half[2]!)
+          .setMass(body.mass)
+          .setFriction(content.debris.friction),
         rigid,
       );
       piece.parts.push({
@@ -315,32 +350,59 @@ export class RagdollWorld {
   }
 
   private buildGround(corpse: Ragdoll, position: Vec3, ground: RigidWorld): void {
-    const world = this.world!;
     const size = ground.blockSize;
     const origin = position.map((value) => Math.floor(value / size));
+    const desired = new Set<string>();
     const radius = content.footprintMetres.map((value) => Math.ceil(value / size));
     for (let x = origin[0]! - radius[0]!; x <= origin[0]! + radius[0]!; x++) {
       for (let y = origin[1]! - radius[1]!; y <= origin[1]! + radius[1]!; y++) {
         for (let z = origin[2]! - radius[2]!; z <= origin[2]! + radius[2]!; z++) {
           if (ground.isSolid(x, y, z)) {
             const key = `${size}:${x}:${y}:${z}`;
-            let cell = this.cells.get(key);
-            if (!cell) {
-              cell = {
-                users: 0,
-                collider: world.createCollider(
-                  RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
-                    .setTranslation((x + 0.5) * size, (y + 0.5) * size, (z + 0.5) * size)
-                    .setFriction(content.friction),
-                ),
-              };
-              this.cells.set(key, cell);
-            }
-            cell.users += 1;
-            corpse.ground.push(key);
+            desired.add(key);
+            this.retainCell(corpse, key, size, [x, y, z]);
           }
         }
       }
+    }
+    for (const key of corpse.ground) {
+      if (!desired.has(key)) {
+        this.releaseCell(key);
+        corpse.ground.delete(key);
+      }
+    }
+  }
+
+  private retainCell(corpse: Ragdoll, key: string, size: number, [x, y, z]: Vec3): void {
+    if (corpse.ground.has(key)) {
+      return;
+    }
+    let cell = this.cells.get(key);
+    if (!cell) {
+      cell = {
+        users: 0,
+        collider: this.world!.createCollider(
+          RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
+            .setTranslation((x + 0.5) * size, (y + 0.5) * size, (z + 0.5) * size)
+            .setFriction(content.friction),
+        ),
+      };
+      this.cells.set(key, cell);
+    }
+    cell.users += 1;
+    corpse.ground.add(key);
+  }
+
+  private cellAt(position: Vec3, size: number): string {
+    return position.map((value) => Math.floor(value / size)).join(':');
+  }
+
+  private releaseCell(key: string): void {
+    const cell = this.cells.get(key)!;
+    cell.users -= 1;
+    if (cell.users === 0) {
+      this.world?.removeCollider(cell.collider, false);
+      this.cells.delete(key);
     }
   }
 
@@ -359,11 +421,16 @@ export class RagdollWorld {
         const target = this.debris.get(corpse);
         const [part] = corpse.parts;
         if (target && part) {
-          target.center = array(part.body.translation());
+          target.body.center = array(part.body.translation());
           const q = part.body.rotation();
-          target.orientation = [q.x, q.y, q.z, q.w];
-          target.velocity = array(part.body.linvel());
-          target.asleep = corpse.settled;
+          target.body.orientation = [q.x, q.y, q.z, q.w];
+          target.body.velocity = array(part.body.linvel());
+          target.body.asleep = corpse.settled;
+          const cell = this.cellAt(target.body.center, target.ground.blockSize);
+          if (cell !== target.cell && !corpse.settled) {
+            target.cell = cell;
+            this.buildGround(corpse, target.body.center, target.ground);
+          }
         }
       }
     }
@@ -457,13 +524,11 @@ export class RagdollWorld {
     for (const part of corpse.parts) {
       this.world?.removeRigidBody(part.body);
     }
+    for (const anchor of corpse.anchors) {
+      this.world?.removeRigidBody(anchor);
+    }
     for (const key of corpse.ground) {
-      const cell = this.cells.get(key)!;
-      cell.users -= 1;
-      if (cell.users === 0) {
-        this.world?.removeCollider(cell.collider, false);
-        this.cells.delete(key);
-      }
+      this.releaseCell(key);
     }
     this.corpses.delete(corpse);
     this.debris.delete(corpse);

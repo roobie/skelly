@@ -43,7 +43,7 @@
 // shader. A corpse's severed set is frozen at the instant of death, same as its pose. Severing also spawns
 // one piece of flying debris (see the Debris type below) — its own InstancedMesh row shows only the
 // severed subtree (the inverse of a live zombie/corpse: the carried bones are real, everything else is
-// zeroed) and is driven by the core rigid-body stepper, reusing the corpse cap/eviction/lifecycle machinery
+// zeroed) and shares the corpse Rapier world and cap/eviction/lifecycle machinery
 // (a debris row counts toward the shared corpse budget exactly like a corpse does).
 
 import type { BodyAnchor } from '@mobgen/core/body.ts';
@@ -123,7 +123,6 @@ import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.t
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { LookDefaults } from '../core/mood.ts';
-import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from '../core/rigidBody.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import type { ZombieModel } from '../core/zombieModels.ts';
@@ -138,6 +137,7 @@ import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
 import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
+import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 /** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
@@ -430,6 +430,7 @@ export interface MobActorMeshesOptions {
   readonly ragdollSeed?: number | undefined;
   readonly look: LookDefaults['mobActors'];
   readonly maxCorpses: number;
+  readonly handlingReachMetres: number;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
@@ -1501,6 +1502,7 @@ export class MobActorMeshes implements ZombieRenderer {
       this.ragdolls ??= new RagdollWorld();
       corpse.ragdoll = this.ragdolls.spawn({
         realized: variant.realized,
+        model: variant.model,
         pose: corpse.basePose,
         position: corpse.worldPos,
         yaw: corpse.yaw,
@@ -1510,6 +1512,9 @@ export class MobActorMeshes implements ZombieRenderer {
         ground: this.rigidWorld(),
         excluded: new Set(this.indicesFor(variant, severedBoneIds(variant, corpse.severed))),
         ...(corpse.launch ? { launch: corpse.launch } : {}),
+        ...(corpse.incapacitated
+          ? { reach: Math.min(this.options.handlingReachMetres, ragdollContent.downedDriftMetres) }
+          : {}),
       });
     }
   }
@@ -1629,9 +1634,6 @@ export class MobActorMeshes implements ZombieRenderer {
       angularMomentum: [0, 0, 0],
       inertiaBody: partData.inertiaBody,
       corners: partData.corners,
-      remainderRealSeconds: 0,
-      elapsedRealSeconds: 0,
-      quietRealSeconds: 0,
       asleep: false,
     };
     if (hit) {
@@ -1690,9 +1692,6 @@ export class MobActorMeshes implements ZombieRenderer {
       angularMomentum: [0, 0, 0],
       inertiaBody: data.inertiaBody,
       corners: data.corners,
-      remainderRealSeconds: 0,
-      elapsedRealSeconds: 0,
-      quietRealSeconds: 0,
       asleep: false,
     };
     if (hit) {
@@ -1784,9 +1783,9 @@ export class MobActorMeshes implements ZombieRenderer {
       hitPoint[2] + dz * projection,
     ];
     const appliedPoint = applyImpulseAtClampedPoint(body, point, [
-      dx * hit.impulse,
-      dy * hit.impulse,
-      dz * hit.impulse,
+      dx * hit.impulse * ragdollContent.debris.impulseScale,
+      dy * hit.impulse * ragdollContent.debris.impulseScale,
+      dz * hit.impulse * ragdollContent.debris.impulseScale,
     ]);
     const spin = Math.hypot(...angularVelocity(body));
     if (spin > this.options.look.launchSpinRadiansPerSimSecond) {
@@ -2480,8 +2479,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
   }
 
-  /** Steps each debris rigid body against `rigidWorld()`. Lying and sinking begin only after the solver
-   * sleeps the body. */
+  /** Debris lifetime begins at physical rest, not at launch. */
   private advanceDebris(realDt: number): void {
     for (const [key, d] of this.debris) {
       d.elapsed += realDt;

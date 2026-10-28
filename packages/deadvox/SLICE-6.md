@@ -4,6 +4,7 @@ read_if:
   - you're applying the settled vehicle scope and deferred directions from issue 322
   - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
+  - you're comparing presentation physics with vehicle simulation
 ---
 
 # Slice 6 — Wheels
@@ -192,10 +193,10 @@ motion and recovery. Greater realism remains the long-term direction, not a reas
 to delay the playable loop. Fuel and electricity retain pools rather than cable
 and pipe graphs.
 
-Rapier remains a candidate, not a selected dependency. Compare it with a bounded
-project-owned solver before selecting an implementation; the existing
-`src/core/rigidBody.ts`, `RigidBody` and `stepRigidBody`, is a contact/impulse seam,
-not evidence that car suspension, tunnelling or deterministic replay is solved.
+Rapier remains a candidate for vehicle simulation. Compare it with a bounded
+project-owned solver before selecting an implementation. Presentation-only corpse
+contact is not evidence that car suspension, tunnelling or deterministic replay is
+solved; see `src/render/ragdoll.ts`, `RagdollWorld`.
 
 Leaving a moving car permits unattended coasting, collision and bystander damage.
 Budget and prove its deterministic coarse transition after regional departure;

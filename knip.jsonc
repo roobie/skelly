@@ -68,7 +68,6 @@
         "tools/probe-wasm-expressions.mjs",
         "tools/rapier-f64/candidate.ts",
         "src/spikes/expressions/benchmark.ts",
-        "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
         "tools/ui-browser-contract.mjs",
         "tools/perf-baseline.mjs",

@@ -8,6 +8,7 @@ import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import { type Body, stepBody } from '../core/physics.ts';
+import { reachTuning } from '../core/reach.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
@@ -196,6 +197,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
             zombies: engine.registry.zombies,
             look: lookDefaultsOf(engine.registry).mobActors,
             maxCorpses: graphics.mobActors.maxCorpses,
+            handlingReachMetres: reachTuning(engine.registry).reachMetres,
           })
         : new ZombieMeshes(s, count);
     scene.add(zombieMeshes.group);

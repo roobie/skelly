@@ -13,16 +13,18 @@ export function stageRagdollSweep({
   blockSize,
   seed,
   restored,
+  groundAt,
 }: {
-  system: ZombieSystem;
+  system: ZombieSystem | undefined;
   renderer: ZombieRenderer;
   registry: Registry;
   origin: Vec3;
   blockSize: number;
   seed: number | undefined;
   restored: boolean;
+  groundAt: (x: number, z: number) => number;
 }): (dt: number) => void {
-  if (restored || seed === undefined) {
+  if (restored || seed === undefined || !system) {
     return () => undefined;
   }
   const tuning = ragdollContent.sweep;
@@ -31,10 +33,11 @@ export function stageRagdollSweep({
     const type = [...registry.zombies.values()].find((candidate) => candidate.model === model)!;
     for (const [column, cuts] of tuning.cuts.entries()) {
       const position: Vec3 = [
-        origin[0] + (tuning.startMetres[0]! + column * tuning.spacingMetres) / blockSize,
+        origin[0] + (tuning.startMetres[0]! + row * tuning.spacingMetres) / blockSize,
         origin[1],
-        origin[2] + (tuning.startMetres[1]! - row * tuning.spacingMetres) / blockSize,
+        origin[2] + (tuning.startMetres[1]! + column * tuning.spacingMetres) / blockSize,
       ];
+      position[1] = groundAt(position[0], position[2]);
       const id = system.add(type, position);
       const zombie = system.store.get(id)!;
       const seeds = type.figureSeeds!;

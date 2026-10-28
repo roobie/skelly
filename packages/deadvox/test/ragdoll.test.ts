@@ -4,11 +4,14 @@ import { crawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
 import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
+import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const fixtureFigure = zombieFigure({ model: 'shambler' }, 17).realized;
 const ground = { blockSize: 1, isSolid: (_x: number, y: number, _z: number) => y < 0 };
@@ -64,13 +67,9 @@ describe('render ragdoll', () => {
     ).toThrow();
   });
 
-  it.each([
-    { model: 'shambler', cuts: [] },
-    { model: 'runner', cuts: ['head'] },
-    { model: 'brute', cuts: ['upperArm.L'] },
-    { model: 'crawler', cuts: ['thigh.L', 'thigh.R'] },
-  ])('$model settles above ground within handling reach with $cuts absent', async ({ model, cuts }) => {
-    const figure = zombieFigure({ model }, 17).realized;
+  // biome-ignore-start lint/suspicious/noMisplacedAssertion: shared invariant probe runs only inside default cases or the gated seed sweep.
+  const assertRest = async ({ model, cuts, seed = 17 }: { model: string; cuts: string[]; seed?: number }) => {
+    const figure = zombieFigure({ model }, seed).realized;
     const excluded = new Set(
       [...severedBoneSet(figure.body.bones, cuts)].map((id) => figure.body.bones.findIndex((bone) => bone.id === id)),
     );
@@ -82,7 +81,7 @@ describe('render ragdoll', () => {
         position: [0, 0, 0],
         yaw: 0,
         direction: -1,
-        seed: 17,
+        seed,
         ground,
         excluded,
       });
@@ -109,6 +108,73 @@ describe('render ragdoll', () => {
       expect(Math.hypot(trunk.x, trunk.z)).toBeLessThanOrEqual(reachTuning(baseRegistry()).reachMetres);
       world.remove(corpse);
       expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
+    } finally {
+      world.dispose();
+    }
+  };
+  // biome-ignore-end lint/suspicious/noMisplacedAssertion: shared invariant probe.
+
+  it.each([
+    { model: 'shambler', cuts: [] },
+    { model: 'runner', cuts: ['head'] },
+    { model: 'brute', cuts: ['upperArm.L'] },
+    { model: 'crawler', cuts: ['thigh.L', 'thigh.R'] },
+  ])('$model settles above ground within handling reach with $cuts absent', assertRest);
+
+  sweepGroup('ragdoll seed sweep', () => {
+    it.each([31, 89])('rest invariants across the presentation row, seed %s', async (seed) => {
+      for (const model of ragdollContent.sweep.models) {
+        for (const cuts of ragdollContent.sweep.cuts.slice(0, -1)) {
+          // biome-ignore lint/performance/noAwaitInLoops: each solver world is measured independently.
+          await assertRest({ model, cuts, seed });
+        }
+      }
+    });
+  });
+
+  it('keeps a downed brute trunk within handling reach and removes its tether with the body', async () => {
+    const world = new RagdollWorld();
+    try {
+      const reach = reachTuning(baseRegistry()).reachMetres;
+      const corpse = world.spawn({
+        realized: zombieFigure({ model: 'brute' }, 17).realized,
+        pose,
+        position: [0, 0, 0],
+        yaw: 0,
+        direction: -1,
+        seed: 17,
+        ground,
+        reach,
+      });
+      await world.ready;
+      for (let step = 0; step < ragdollContent.stepBudget; step++) {
+        world.advance(ragdollContent.timestep);
+      }
+      const trunk = corpse.parts[0]!.body.translation();
+      expect(Math.hypot(trunk.x, trunk.z)).toBeLessThanOrEqual(reach);
+      world.remove(corpse);
+      expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
+    } finally {
+      world.dispose();
+    }
+  });
+
+  it('launches along the world-space hit direction regardless of body yaw', async () => {
+    const world = new RagdollWorld();
+    try {
+      const corpse = world.spawn({
+        realized: fixtureFigure,
+        pose,
+        position: [0, 0, 0],
+        yaw: Math.PI / 2,
+        direction: 1,
+        launch: [0, 0, -1],
+        seed: 17,
+        ground,
+      });
+      await world.ready;
+      expect(corpse.parts.length).toBeGreaterThan(0);
+      expect(corpse.parts.every(({ body }) => body.linvel().z < -Math.abs(body.linvel().x))).toBe(true);
     } finally {
       world.dispose();
     }
@@ -146,9 +212,6 @@ describe('render ragdoll', () => {
             [-0.1, -0.1, -0.1],
             [0.1, 0.1, 0.1],
           ],
-          remainderRealSeconds: 0,
-          elapsedRealSeconds: 0,
-          quietRealSeconds: 0,
           asleep: false,
         },
         ground,
@@ -167,6 +230,49 @@ describe('render ragdoll', () => {
       world.dispose();
     }
   });
+
+  it.each([
+    { label: 'travels beyond its starting ground footprint', center: [0, 8, 0], velocity: [25, 0, 0], travels: true },
+    { label: 'crosses the floor within one timestep', center: [0, 0.6, 0], velocity: [0, -400, 0], travels: false },
+  ])(
+    'keeps debris above ground when it $label and releases its travelled cells',
+    async ({ center, velocity, travels }) => {
+      const world = new RagdollWorld();
+      try {
+        const body: RigidBody = {
+          mass: 1,
+          center: center as Vec3,
+          orientation: [0, 0, 0, 1] as [number, number, number, number],
+          velocity: velocity as Vec3,
+          angularMomentum: [0, 0, 0] as Vec3,
+          inertiaBody: [
+            [1, 0, 0],
+            [0, 1, 0],
+            [0, 0, 1],
+          ],
+          corners: [
+            [-0.1, -0.1, -0.1],
+            [0.1, 0.1, 0.1],
+          ] as Vec3[],
+          asleep: false,
+        };
+        const piece = world.spawnRigid(body, ground);
+        await world.ready;
+        for (let step = 0; step < ragdollContent.stepBudget; step++) {
+          world.advance(ragdollContent.timestep);
+        }
+        if (travels) {
+          expect(body.center[0]).toBeGreaterThan(ragdollContent.footprintMetres[0]!);
+        }
+        expect(body.center[1]).toBeGreaterThanOrEqual(0);
+        expect(body.asleep).toBe(true);
+        world.remove(piece);
+        expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
+      } finally {
+        world.dispose();
+      }
+    },
+  );
 
   it('repeats the same seeded fall in independent worlds with identical step sequences', async () => {
     const figure = fixtureFigure;

@@ -61,6 +61,7 @@ import { describeLookedAt } from './lookedAt.ts';
 import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
+import { stageRagdollSweep } from './ragdollSweep.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import {
   spawnShamblers,
@@ -1120,6 +1121,17 @@ export const copyTextOrSelect = async (
 export const loadSkyRoute = async () => (await import('./skyRoute.ts')).attachSkyRoute;
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
+  const s = hooks.engine.config.scale.blockSize;
+  const advanceRagdollSweep = stageRagdollSweep({
+    system: hooks.zombies(),
+    renderer: hooks.zombieRenderer,
+    registry: hooks.engine.registry,
+    origin: hooks.body.pos,
+    blockSize: s,
+    seed: hooks.engine.config.ragdollSweep,
+    restored: !hooks.newGame,
+    groundAt: (x, z) => hooks.engine.groundAt(x * s, z * s) / s,
+  });
   const keyTrace = new KeyTrace();
   keyboardInput.trace = undefined;
   let keyTraceEnabled = false;
@@ -1945,6 +1957,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       transientDraw.point(marker, frame);
     },
     updateTransientDraw: (nowMs) => transientDraw.update(nowMs),
+    advanceRagdollSweep,
     click: (button, eye, dir) => build.click(button, eye, dir),
     wheel: (delta) => build.wheel(delta),
     stepNoclip: (step: DebugNoclipStep) => stepNoclip(step, playerTuning(hooks.engine.registry)),

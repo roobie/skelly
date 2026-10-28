@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're reviewing why the default Deadvox unit suite was reduced
+  - you're changing the solver behind corpse or severed-limb coverage
   - you're revisiting a cut after a budget overrun or related defect
   - you're measuring suite growth between milestones
   - you're changing content-scaling route, start-phase admission or chunk-order test work
@@ -15,7 +16,7 @@ The suite keeps its worker policy and timeout rules; reductions target repeated 
 ## Retained coverage
 
 - Narrower mesher samples retain `test/mesher.test.ts`, "draws the same faces as plain face culling (random mixed-density chunk)"; narrower occlusion samples retain `test/occlusion.test.ts`, "gives every merged-quad corner the per-vertex value (random terrain)".
-- The shorter idle/stroll horizon retains `test/zombies.test.ts`, "uses seeded idle and straight stroll intervals during a sustained sample". Reduced dismemberment cases retain `test/zombies.test.ts`, "scales launch distance monotonically through fixture impulses", and `test/severedEnergy.test.ts`, "caps a bat launch and dissipates each bounce for seed %i".
+- Idle/stroll timing needs a sustained sample rather than an exhaustive horizon; see `test/zombies.test.ts`, "uses seeded idle and straight stroll intervals during a sustained sample". Dismemberment needs both impulse-ordered flight and bounded launch energy: monotonic but unbounded motion would still throw limbs implausibly far. See `test/zombies.test.ts`, "scales launch distance monotonically through fixture impulses", and `test/severedEnergy.test.ts`, "clamps application points and spin for region, random-roll, head-cut and off-ray debris".
 - Content admission is guarded by `test/content.test.ts`, "base content has no issues". Save continuation is covered by `test/snapshot-continuation.test.ts`, "deeply matches N steps with K/save/load/N−K (active rest)"; `test/snapshot-continuation.test.ts`, "preserves an active-sleep interruption emitted between frames across save/load"; `test/snapshot-continuation.test.ts`, "preserves a pending sleep interruption across a paused snapshot and load". Edited-world format coverage remains in `test/snapshot-format.test.ts`, "round-trips an edited fixture column byte-exactly and continues deterministically from restored bytes".
 - Save/scheduler fixture reductions also retain `test/snapshot-continuation.test.ts`, "detects omission of simulation, world, scheduler, inventory, and audio state". These named tests protect the properties for which incidental full-world fixture coverage was removed.
 
