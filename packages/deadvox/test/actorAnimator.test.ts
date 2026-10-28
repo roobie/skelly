@@ -116,7 +116,7 @@ const fixture = async (
     inventory,
   };
   world.sync(actor);
-  const view = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01 });
+  const view = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
   const update = createHeldViews(inventory, view, world);
   const camera = new PerspectiveCamera();
   const pose = readyMeleePose(false, figure.holds);

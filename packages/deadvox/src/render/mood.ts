@@ -94,7 +94,7 @@ export class Mood {
   externalGpuTiming = false;
   private contextLost = false;
   private bloomScaleValue: number;
-  private readonly graphicsTuning: GraphicsOptions & Partial<Pick<GraphicsTuningDef, 'opticLens'>>;
+  private readonly graphicsTuning: GraphicsOptions & Pick<GraphicsTuningDef, 'opticLens'>;
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
@@ -117,7 +117,7 @@ export class Mood {
     renderer: WebGLRenderer,
     scene: Scene,
     camera: PerspectiveCamera,
-    graphicsTuning: GraphicsOptions & Partial<Pick<GraphicsTuningDef, 'opticLens'>>,
+    graphicsTuning: GraphicsOptions & Pick<GraphicsTuningDef, 'opticLens'>,
   ) {
     this.graphicsTuning = graphicsTuning;
     this.adaptiveScale = new AdaptiveScale(graphicsTuning.renderScale);

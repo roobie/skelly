@@ -226,6 +226,7 @@ describe('held light presentation', () => {
     sourceSun.castShadow = true;
     const held = new HeldItems(new Inventory(registry), figureModels, playerFigure, {
       nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
       sunSource: sourceSun,
     });
     const camera = new PerspectiveCamera();
@@ -262,7 +263,10 @@ describe('held light presentation', () => {
       farPlaneScale: 1,
     };
     const worldAmbientIntensity = sky.ambient.intensity;
-    const held = new HeldItems(new Inventory(registry), undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     held.update(camera);
     const handAmbient = held.warmUpTarget.scene.children.find((child) => child instanceof HemisphereLight)!;
     const renderer = {
@@ -282,7 +286,10 @@ describe('held light presentation', () => {
   });
 
   it('depth-tests carried adapter geometry against world surfaces with the main camera projection', () => {
-    const held = new HeldItems(new Inventory(registry), undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(new Inventory(registry), undefined, playerFigure, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     const main = new PerspectiveCamera(75, 16 / 9, 0.05, 80);
     const carried = new Mesh(new BoxGeometry(0.2, 0.2, 0.2));
     carried.position.set(0, 0, -1);
@@ -338,7 +345,10 @@ describe('held light presentation', () => {
   it('never redraws physical arms or items or clears world depth in the retained optical adapter', () => {
     const inventory = new Inventory(registry);
     inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
-    const held = new HeldItems(inventory, figureModels, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, figureModels, playerFigure, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     const camera = new PerspectiveCamera();
     held.update(camera);
     const { scene } = held.warmUpTarget;
@@ -375,7 +385,7 @@ describe('held light presentation', () => {
     const light = inventory.create(id);
     expect(toggleLight(registry, light, 0)).toBeUndefined();
     expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
-    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     held.update(new PerspectiveCamera());
     const { shown } = heldState(held) as { shown: Map<number, Group> };
     let visibleBody = false;
@@ -416,7 +426,7 @@ describe('held light presentation', () => {
       has: () => false,
       heldLook: () => ({ root: modelRoot.clone(), parts: [], slots: {} }),
     } as unknown as import('../src/render/models.ts').ModelLibrary;
-    const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     held.update(new PerspectiveCamera());
     const { shown } = heldState(held) as { shown: Map<number, Group> };
     let tube: Mesh | undefined;
@@ -453,7 +463,10 @@ describe('optic lens presentation', () => {
       const inventory = new Inventory(content);
       const firearm = inventory.create(item.id);
       expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
-      const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+      const held = new HeldItems(inventory, undefined, playerFigure, {
+        nearPlaneMetres: 0.01,
+        playerViewFovDegrees: 75,
+      });
       try {
         held.update(new PerspectiveCamera(75, 16 / 9, 0.05, 128), undefined, 0, {
           firearms: [],
@@ -492,7 +505,7 @@ describe('optic lens presentation', () => {
     if (!expected) {
       throw new Error('Fixture optic needs a supported view');
     }
-    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
     const handling = { firearms: [], readiness: { uid: firearm.uid, progress: 1, aimingDownSights: true } } as const;
     held.update(camera, undefined, 0, handling);
@@ -1029,7 +1042,7 @@ describe('player figure', () => {
 
   it('keeps idle first-person grips camera-relative when the camera turns', () => {
     const inventory = new Inventory(registry);
-    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const internals = heldState(held) as { view: Group; arms: Map<'left' | 'right', Group> };
     const camera = new PerspectiveCamera();
     camera.rotation.set(0, Math.PI / 2, 0, 'YXZ');
@@ -1042,7 +1055,10 @@ describe('player figure', () => {
 
   it('rigs each idle view arm from the authored arm model: shoulder on its anchor, hand on the held grip', () => {
     const inventory = new Inventory(registry);
-    const held = new HeldItems(inventory, figureModels, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, figureModels, playerFigure, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     const internals = heldState(held) as ArmInternals;
     const camera = new PerspectiveCamera();
     held.update(camera);
@@ -1081,7 +1097,7 @@ describe('player figure', () => {
       has: () => false,
       heldLook: () => (modelLoaded ? { root: new Group(), parts: [], slots: {} } : undefined),
     } as unknown as NonNullable<ConstructorParameters<typeof HeldItems>[1]>;
-    const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const internals = heldState(held) as { scene: Group; arms: Map<'left' | 'right', Group> };
     const camera = new PerspectiveCamera();
     const renderedArmCount = () => {
@@ -1151,7 +1167,7 @@ describe('player figure', () => {
     const inventory = new Inventory(registry);
     const bat = inventory.create('baseball_bat');
     expect(inventory.add(bat, { kind: 'hand', side: 'right' })).toBe(true);
-    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const internals = held as unknown as { scene: Group };
     const camera = new PerspectiveCamera();
     const armCount = () => {
@@ -1174,7 +1190,10 @@ describe('player figure', () => {
       registry,
       inventory.snapshotState() as Parameters<typeof Inventory.restoreState>[1],
     );
-    const restoredHeld = new HeldItems(restored, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const restoredHeld = new HeldItems(restored, undefined, playerFigure, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     const restoredInternals = restoredHeld as unknown as { scene: Group };
     restoredHeld.update(camera, readyMeleePose(false));
     let restoredArmCount = 0;
@@ -1200,7 +1219,7 @@ describe('player figure', () => {
     const inventory = new Inventory(registry);
     const knife = inventory.create('kitchen_knife');
     inventory.add(knife, { kind: 'hand', side: 'right' });
-    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const internals = heldState(held) as {
       view: Group;
       arms: Map<'left' | 'right', Group>;
@@ -1237,7 +1256,7 @@ describe('player figure', () => {
     const inventory = new Inventory(registry);
     const flashlight = inventory.create('flashlight');
     expect(inventory.add(flashlight, { kind: 'hand', side: 'left' })).toBe(true);
-    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const internals = heldState(held) as {
       view: Group;
       arms: Map<'left' | 'right', Group>;
@@ -1309,7 +1328,10 @@ describe('player figure', () => {
       expect(inventory.add(inventory.create(def.id), { kind: 'hand', side })).toBe(true);
       const mirrored = ([x, y, z]: Vec3): Vector3 =>
         new Vector3(z, y, -x).multiply(new Vector3(side === 'right' ? 1 : -1, 1, 1));
-      const held = new HeldItems(inventory, figureOnlyModels, playerFigure, { nearPlaneMetres: 0.01 });
+      const held = new HeldItems(inventory, figureOnlyModels, playerFigure, {
+        nearPlaneMetres: 0.01,
+        playerViewFovDegrees: 75,
+      });
       const internals = heldState(held) as ArmInternals & { heldByHand: Map<'left' | 'right', Group> };
       try {
         held.update(new PerspectiveCamera());
@@ -1362,7 +1384,10 @@ describe('player figure', () => {
           const inventory = new Inventory(registry);
           const bat = inventory.create('baseball_bat');
           inventory.add(bat, { kind: 'hand', side });
-          const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+          const held = new HeldItems(inventory, undefined, playerFigure, {
+            nearPlaneMetres: 0.01,
+            playerViewFovDegrees: 75,
+          });
           const internals = heldState(held) as {
             view: Group;
             arms: Map<'left' | 'right', Group>;
@@ -1419,7 +1444,10 @@ describe('player figure', () => {
         if (item) {
           inventory.add(inventory.create(item), { kind: 'hand', side });
         }
-        const held = new HeldItems(inventory, figureOnlyModels, playerFigure, { nearPlaneMetres: 0.01 });
+        const held = new HeldItems(inventory, figureOnlyModels, playerFigure, {
+          nearPlaneMetres: 0.01,
+          playerViewFovDegrees: 75,
+        });
         const internals = heldState(held) as ArmInternals;
         held.update(camera);
         const arm = internals.arms.get(side)!;

@@ -213,7 +213,7 @@ it('mood scale setters enforce content bounds without the former URL trial floor
     { domElement: new EventTarget() } as unknown as WebGLRenderer,
     new Scene(),
     new PerspectiveCamera(),
-    tuning,
+    { ...tuning, opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 } },
   );
   mood.setRenderScale(tuning.renderScale.min);
   mood.setBloomScale(tuning.bloomScale.min);

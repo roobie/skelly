@@ -81,7 +81,7 @@ it.each([
     radius: [0.2, 0.2],
   };
   const lens = new OpticLensRenderer();
-  const pass = opticLensPass();
+  const pass = opticLensPass(graphicsTuningOf(baseRegistry()).opticLens);
   const scene = new Scene();
   const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
   mesh.layers.set(OPTIC_BODY_LAYER);

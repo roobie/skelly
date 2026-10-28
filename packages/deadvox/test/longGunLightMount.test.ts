@@ -155,7 +155,10 @@ describe('a light mount on a long gun', () => {
     const light = gun.slots![LIGHT_MOUNT_SLOT]!;
     expect(toggleLight(registry, light, 0)).toBeUndefined();
     expect(light.on).toBe(true);
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     held.update(new PerspectiveCamera());
     expect(held.lensOf(light, new Vector3())).toBe(true);
     held.dispose();

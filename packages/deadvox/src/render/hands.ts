@@ -64,9 +64,9 @@ export class HeldItems {
     figure: FigureDef,
     {
       nearPlaneMetres,
-      playerViewFovDegrees = 75,
+      playerViewFovDegrees,
       sunSource,
-    }: { nearPlaneMetres: number; playerViewFovDegrees?: number; sunSource?: DirectionalLight },
+    }: { nearPlaneMetres: number; playerViewFovDegrees: number; sunSource?: DirectionalLight },
   ) {
     this.inventory = inventory;
     this.camera = new PerspectiveCamera(playerViewFovDegrees, 1, nearPlaneMetres, 10);

@@ -37,8 +37,8 @@
     {
       "category": "misc",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "optic_digital_thermal",
       "model": "optic_digital_thermal",

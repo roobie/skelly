@@ -39,7 +39,10 @@ it('the firing hand follows the exported bolt knob rather than moving the suppor
         return { ...clone, slots: {} };
       },
     } as unknown as ModelLibrary;
-    const held = new HeldItems(inventory, models, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, models, registry.figures.get('player')!, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     const queue = new HandlingQueue(inventory);
     const mechanics = new FirearmMechanics(inventory, queue, {
       blockSize: 0.5,
@@ -138,7 +141,7 @@ it.each(SIDES.flatMap((holdingSide) => (['pump', 'bolt'] as const).map((kind) =>
         return { root, parts: [], slots: {} };
       },
     } as unknown as ModelLibrary;
-    const held = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
     const world = new PlayerMeshes(0.5, figure, content.models, models);
     world.sync({
       body: { pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0, height: 0, onGround: true },

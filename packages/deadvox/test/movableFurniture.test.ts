@@ -159,7 +159,10 @@ describe('movable furniture', () => {
       (entity, def) => meshes.pieceMesh(entity, def),
       reachTuning(registry).furnitureMove.carriedView,
     );
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, {
+      nearPlaneMetres: 0.01,
+      playerViewFovDegrees: 75,
+    });
     held.attach(view.group);
     const camera = new PerspectiveCamera();
     const sky = {

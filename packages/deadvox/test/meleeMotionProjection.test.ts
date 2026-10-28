@@ -114,7 +114,7 @@ function measure(
             library.heldLook({ ...look, model: look.model === modelId ? modelOverride : look.model }),
         } as ModelLibrary)
       : library;
-  const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01 });
+  const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
   const internals = heldState(held) as HeldInternals;
   const camera = new PerspectiveCamera(75, 16 / 9, 0.01, 128);
   camera.rotation.order = 'YXZ';

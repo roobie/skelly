@@ -92,7 +92,10 @@ const fixture = (
     part: () => undefined,
     heldLook: () => ({ root: heldRoot(), parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, registry.figures.get('player')!, { nearPlaneMetres });
+  const held = new HeldItems(inventory, models, registry.figures.get('player')!, {
+    nearPlaneMetres,
+    playerViewFovDegrees: 75,
+  });
   const camera = new PerspectiveCamera();
   const project = (handling: HeldHandlingFrame = { firearms: mechanics.frames(), job: queue.jobs[0] }) => {
     const before = structuredClone({

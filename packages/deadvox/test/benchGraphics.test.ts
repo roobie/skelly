@@ -17,6 +17,7 @@ afterEach(() => vi.unstubAllGlobals());
 const scale = { label: 'Fixture scale', min: 0.2, max: 1, default: 0.7 };
 const toggle = { label: 'Fixture toggle', options: [false, true], default: true };
 const tuning = {
+  opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
   renderScale: {
     ...scale,
     adaptive: {
@@ -48,7 +49,6 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
             id: CORE_CONTENT_IDS.coreGraphics,
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
-            opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
             readyRadiusM: 16,
             streamHysteresisM: 16,
             fogFarPlaneScale: 1.5,

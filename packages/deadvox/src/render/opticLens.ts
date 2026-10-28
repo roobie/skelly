@@ -32,8 +32,8 @@ const OPTIC_LENS_SHADER = {
     uReticleCenter: { value: new Vector2(0.5, 0.5) },
     uLensRadius: { value: new Vector2(0.25, 0.4) },
     uLensShape: { value: new Vector2() },
-    uRimSoftness: { value: 0.04 },
-    uReticleAntiAliasWidth: { value: 0.5 },
+    uRimSoftness: { value: 0 },
+    uReticleAntiAliasWidth: { value: 0 },
     uReticleCount: { value: 0 },
     uReticleScale: { value: 1 },
     uReticleGeometry: { value: Array.from({ length: MAX_RETICLE_PRIMITIVES }, () => new Vector4()) },
@@ -154,12 +154,10 @@ export class OpticLensRenderer {
   }
 }
 
-export const opticLensPass = (tuning?: OpticLensTuning): ShaderPass => {
+export const opticLensPass = (tuning: OpticLensTuning): ShaderPass => {
   const pass = new ShaderPass(OPTIC_LENS_SHADER);
-  if (tuning) {
-    pass.uniforms.uRimSoftness!.value = tuning.rimSoftness;
-    pass.uniforms.uReticleAntiAliasWidth!.value = tuning.reticleAntiAliasWidth;
-  }
+  pass.uniforms.uRimSoftness!.value = tuning.rimSoftness;
+  pass.uniforms.uReticleAntiAliasWidth!.value = tuning.reticleAntiAliasWidth;
   return pass;
 };
 

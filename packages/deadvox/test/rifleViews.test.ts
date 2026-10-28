@@ -363,7 +363,10 @@ const heldGun = async (type: string) => {
   if (!inventory.add(gun, { kind: 'hand', side })) {
     throw new Error(`Cannot hold ${type}`);
   }
-  const held = new HeldItems(inventory, models, content.figures.get('player')!, { nearPlaneMetres: 0.01 });
+  const held = new HeldItems(inventory, models, content.figures.get('player')!, {
+    nearPlaneMetres: 0.01,
+    playerViewFovDegrees: 75,
+  });
   const camera = new PerspectiveCamera();
   return {
     queue,

@@ -80,7 +80,7 @@ local authorTemplate(template) = template + {
   },
 };
 // Vehicle parts arrive fitted to vehicles, so none spawns as loose loot. A placed-only item (`notLoot`) is never rolled.
-local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.get(item, 'notLoot', false) || std.member(notSpawnable, item.id));
+local spawnsLoose(item) = !(std.objectHas(item, 'vehicle') || std.get(item, 'notLoot', false) || std.get(item, 'opticView', null) == 'unavailable' || std.member(notSpawnable, item.id));
 local authorItem(item) =
   assert !spawnsLoose(item) || std.member(commonItems + militaryItems + medicalItems + policeItems + huntingItems, item.id) : 'author economy metadata for ' + item.id;
   { workInProgress: false } + item + {
