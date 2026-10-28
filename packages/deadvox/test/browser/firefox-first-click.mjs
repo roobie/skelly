@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { verifyAltRelease } from './alt-release.mjs';
+import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -42,7 +44,10 @@ try {
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  browser = await firefox.launch({ headless: false });
+  browser =
+    process.argv[2] === 'chromium'
+      ? await launchChromium({ headless: false })
+      : await firefox.launch({ headless: false });
   page = await browser.newPage();
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('console', (message) => {
@@ -147,6 +152,8 @@ try {
   assert.equal(gesture.lockRequests[0].userActivationActive, true);
   assert.ok(gesture.lockChanges.includes('main#view'));
   assert.ok(gesture.audioResumeCalls.some((call) => call.afterTrustedStartGesture && call.userActivationActive));
+  await verifyAltRelease(page);
+  process.stdout.write(`Native Alt release browser: ${browser.version()}\n`);
   const gateCode = await page.evaluate(
     `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
   );
