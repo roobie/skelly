@@ -1512,6 +1512,18 @@
     }
   },
   {
+    "id": "sneakers",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "sneakers",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
     "id": "cargo_pants",
     "kind": "item",
     "options": {
@@ -2226,6 +2238,18 @@
       "mass": "inventory-atom"
     },
     "source": "worn_boot_foot",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.01
+    }
+  },
+  {
+    "id": "worn_sneaker_foot",
+    "kind": "item",
+    "options": {
+      "mass": "inventory-atom"
+    },
+    "source": "worn_sneaker_foot",
     "voxel": {
       "detailGrain": 0.002,
       "grain": 0.01

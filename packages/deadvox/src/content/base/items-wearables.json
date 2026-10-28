@@ -141,6 +141,43 @@
     },
     {
       "category": "clothing",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "left_boot",
+          "model": "worn_sneaker_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["foot"],
+          "frame": "right_boot",
+          "model": "worn_sneaker_foot",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "sneakers",
+      "model": "sneakers",
+      "name": "Sneakers",
+      "notLoot": false,
+      "size": [2, 3],
+      "wearable": {
+        "encumbrance": 4,
+        "slot": "feet",
+        "warmth": 2,
+        "wearPerDamage": 0.0011999999999999999
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
       "container": {
         "pockets": [
           {

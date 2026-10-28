@@ -4439,6 +4439,37 @@
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
+        "part": "sneakers",
+        "roll": 0,
+        "solid": "shaft--1",
+        "turn": [0, 0, -90]
+      },
+      "id": "sneakers",
+      "parts": [
+        {
+          "family": "boots",
+          "finish": {
+            "body": "cloth-pants-player",
+            "trim": "rubber-black"
+          },
+          "id": "sneakers",
+          "massKg": 0.80000000000000004,
+          "params": {
+            "depth": "0.32000000000000001",
+            "gap": "0.02",
+            "height": "0.13",
+            "width": "0.26000000000000001"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
         "part": "cargo_pants",
         "roll": 0,
         "solid": "body",
@@ -7191,6 +7222,26 @@
           "massKg": 0.10000000000000001,
           "params": {
             "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0.02,\n        \"id\": \"upper\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.05500000000000001,\n                -0.065\n            ],\n            [\n                0.20500000000000002,\n                -0.065\n            ],\n            [\n                0.22499999999999998,\n                -0.045\n            ],\n            [\n                0.22499999999999998,\n                0.045\n            ],\n            [\n                0.20500000000000002,\n                0.065\n            ],\n            [\n                -0.05500000000000001,\n                0.065\n            ],\n            [\n                -0.075,\n                0.045\n            ],\n            [\n                -0.075,\n                -0.045\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.075\n    },\n    {\n        \"id\": \"sole\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.07,\n            -0.065,\n            0.23\n        ],\n        \"min\": [\n            -0.07,\n            -0.09,\n            -0.08\n        ],\n        \"slot\": \"trim\"\n    }\n]"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "connections": [],
+      "exportMass": "inventory-atom",
+      "id": "worn_sneaker_foot",
+      "parts": [
+        {
+          "family": "compound",
+          "finish": {
+            "cloth": "cloth-pants-player",
+            "trim": "rubber-black"
+          },
+          "id": "garment",
+          "massKg": 0.10000000000000001,
+          "params": {
+            "pieces": "[\n    {\n        \"axis\": \"y\",\n        \"end\": 0,\n        \"id\": \"upper\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.05500000000000001,\n                -0.065\n            ],\n            [\n                0.20500000000000002,\n                -0.065\n            ],\n            [\n                0.22499999999999998,\n                -0.045\n            ],\n            [\n                0.22499999999999998,\n                0.045\n            ],\n            [\n                0.20500000000000002,\n                0.065\n            ],\n            [\n                -0.05500000000000001,\n                0.065\n            ],\n            [\n                -0.075,\n                0.045\n            ],\n            [\n                -0.075,\n                -0.045\n            ]\n        ],\n        \"slot\": \"cloth\",\n        \"start\": -0.075\n    },\n    {\n        \"id\": \"sole\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.07,\n            -0.065,\n            0.23\n        ],\n        \"min\": [\n            -0.07,\n            -0.09,\n            -0.08\n        ],\n        \"slot\": \"trim\"\n    }\n]"
           },
           "ports": []
         }
