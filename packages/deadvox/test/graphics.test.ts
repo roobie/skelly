@@ -20,6 +20,11 @@ import { Mood } from '../src/render/mood.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
 const toggle = (label: string) => ({ label, default: true, options: [false, true] });
+const fixtureGraphics = {
+  nearPlaneMetres: 0.01,
+  playerViewFovDegrees: 75,
+  opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
+};
 const tuning: GraphicsOptions = {
   renderScale: {
     ...scale('Fixture scene'),
@@ -38,7 +43,7 @@ const source = (options: GraphicsOptions) => ({
     graphics: [
       {
         id: CORE_CONTENT_IDS.coreGraphics,
-        nearPlaneMetres: 0.01,
+        ...fixtureGraphics,
         readyRadiusM: 16,
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,
@@ -213,7 +218,7 @@ it('mood scale setters enforce content bounds without the former URL trial floor
     { domElement: new EventTarget() } as unknown as WebGLRenderer,
     new Scene(),
     new PerspectiveCamera(),
-    { ...tuning, opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 } },
+    { ...fixtureGraphics, ...tuning },
   );
   mood.setRenderScale(tuning.renderScale.min);
   mood.setBloomScale(tuning.bloomScale.min);
