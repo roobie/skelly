@@ -284,7 +284,27 @@ const opticZoomRecord = ({ power, opticType, gunType }) => {
       const physicalGlass = physical
         ?.localToWorld(engine.camera.position.clone().set(...sight.eye))
         .project(engine.camera);
+      const frame = r.view.held.opticLensFrame;
+      const maskAt = (uv) => {
+        const pixel = new Uint8Array(4);
+        renderer.readRenderTargetPixels(
+          lens.housing.target,
+          Math.floor(uv[0] * lens.target.width),
+          Math.floor(uv[1] * lens.target.height),
+          1,
+          1,
+          pixel,
+        );
+        return pixel[0];
+      };
+      const reticleRadius = Math.hypot(
+        (frame.reticleCenter[0] - frame.center[0]) / frame.radius[0],
+        (frame.reticleCenter[1] - frame.center[1]) / frame.radius[1],
+      );
       drawn = {
+        reticleRadius,
+        maskAtReticle: maskAt(frame.reticleCenter),
+        maskAtLens: maskAt(frame.center),
         physicalGlass: physicalGlass ? [(physicalGlass.x + 1) / 2, (physicalGlass.y + 1) / 2] : null,
         opticType,
         housingCentre: [...maskCentre],
@@ -295,7 +315,7 @@ const opticZoomRecord = ({ power, opticType, gunType }) => {
             transparent: m.transparent,
           })),
         })),
-        lensFrame: r.view.held.opticLensFrame,
+        lensFrame: { center: frame.center, radius: frame.radius, reticleCenter: frame.reticleCenter },
         power,
         frames,
         magnification: r.view.held.opticLensFrame?.magnification,
@@ -610,10 +630,10 @@ const heldItemChecks = async (chromium, port) => {
 const opticZoomCheck = async (chromium, port) => {
   await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
   for (const [opticType, power, gunType] of [
-    ['optic_hunting_3_9x', 3, 'rifle_hunting'],
+    ['optic_hunting_3_9x', 6, 'rifle_hunting'],
     ['optic_lpvo_1_6x', 3, 'rifle_assault'],
     ['optic_fixed_prism_4x', 4, 'rifle_assault'],
-    ['optic_high_mag_5_25x', 5, 'rifle_assault'],
+    ['optic_high_mag_5_25x', 10, 'rifle_assault'],
   ]) {
     const { page, capture } = await enterTestHouse(chromium, port);
     await timePhase('optic-zoom-world-only', async () => {
