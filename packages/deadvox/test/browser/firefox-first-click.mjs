@@ -46,7 +46,7 @@ try {
   assert(address && typeof address !== 'string');
   browser =
     process.argv[2] === 'chromium'
-      ? await launchChromium({ headless: false })
+      ? await launchChromium('firefox-first-click', { headless: false })
       : await firefox.launch({ headless: false });
   page = await browser.newPage();
   page.on('pageerror', (error) => pageErrors.push(error.message));
