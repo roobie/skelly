@@ -266,8 +266,19 @@ const opticZoomRecord = (power) => {
       const size = Math.min(lens.target.width, lens.target.height);
       const centre = new Uint16Array(4);
       renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
+      const maskCentre = new Uint8Array(4);
+      renderer.readRenderTargetPixels(
+        lens.housing.target,
+        lens.target.width >> 1,
+        lens.target.height >> 1,
+        1,
+        1,
+        maskCentre,
+      );
       const { uniforms } = engine.mood.opticPass;
       drawn = {
+        housingCentre: [...maskCentre],
+        lensFrame: r.view.held.opticLensFrame,
         power,
         frames,
         magnification: r.view.held.opticLensFrame?.magnification,
@@ -578,6 +589,7 @@ const heldItemChecks = async (chromium, port) => {
 
 const opticZoomCheck = async (chromium, port) => {
   const { page, capture } = await enterTestHouse(chromium, port);
+  await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
   await timePhase('optic-zoom-world-only', async () => {
     const record = await page.evaluate(opticZoomRecord, 3);
     await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
