@@ -60,9 +60,39 @@ export function stageRagdollSweep({
       }
     }
   }
+  const living: { id: EntityId; cuts: string[] }[] = [];
+  for (const [row, model] of tuning.models.entries()) {
+    const type = [...registry.zombies.values()].find((candidate) => candidate.model === model)!;
+    for (const [column, cuts] of tuning.crawlCuts.entries()) {
+      const position: Vec3 = [
+        origin[0] + (tuning.startMetres[0]! + row * tuning.spacingMetres) / blockSize,
+        origin[1],
+        origin[2] + (tuning.startMetres[1]! + (tuning.cuts.length + column) * tuning.spacingMetres) / blockSize,
+      ];
+      position[1] = groundAt(position[0], position[2]);
+      living.push({ id: system.add(type, position), cuts });
+    }
+  }
+  const collapseLiving = () => {
+    for (const { id, cuts } of living.splice(0)) {
+      const zombie = system.store.get(id);
+      if (!zombie) {
+        continue;
+      }
+      const hit = { point: zombie.body.pos, direction: [0, 0, -1] as Vec3, impulse: 1 };
+      renderer.zombieWounded?.(id, hit);
+      for (const part of cuts) {
+        zombie.severed.push(part);
+        renderer.zombieSevered?.(id, part, hit, zombie);
+      }
+    }
+  };
   let elapsed = 0;
   return (dt) => {
     elapsed += dt;
+    if (elapsed >= tuning.crawlDelaySeconds) {
+      collapseLiving();
+    }
     if (elapsed >= tuning.finishSeconds) {
       for (const id of downed.splice(0)) {
         system.finishDowned(id, true);
