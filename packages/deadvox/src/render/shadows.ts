@@ -47,7 +47,7 @@ import {
 } from 'three';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../core/mood.ts';
 import type { ChunkMeshes } from './chunks.ts';
-import { PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
+import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 
 /** Side of the sun's shadow map in texels: 2048² is 16 MB of depth, which Iris Xe copes with. */
 export const SUN_MAP_SIZE = 2048;
@@ -318,6 +318,7 @@ export class Shadows {
       const { mask } = camera.layers;
       camera.layers.enable(PLAYER_FIGURE_LAYER);
       camera.layers.enable(PLAYER_SELF_MASK_LAYER);
+      camera.layers.enable(OPTIC_BODY_LAYER);
       try {
         draw([light], scene, camera);
       } finally {

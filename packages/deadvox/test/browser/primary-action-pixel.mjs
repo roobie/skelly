@@ -276,7 +276,7 @@ const opticZoomRecord = (power) => {
         zoomCameraLayers: camera.layers.mask,
         mainCameraLayers: engine.camera.layers.mask,
         uniforms: {
-          uZoomActive: uniforms.uZoomActive.value,
+          zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.target.texture,
           uLensCenter: uniforms.uLensCenter.value.toArray(),
           uLensRadius: uniforms.uLensRadius.value.toArray(),
         },
@@ -583,8 +583,12 @@ const opticZoomCheck = async (chromium, port) => {
     await writeFile(resolve(projectRoot, 'test-results/primary-action/optic-3x.png'), await capture());
     process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
     assert.equal(record.magnification, 3, 'the scope runs its magnified branch at the stepped power');
-    assert.equal(record.uniforms.uZoomActive, 1, 'the lens pass shows the zoom target');
-    assert.equal(record.zoomCameraLayers & 0b110, 0, 'the zoom camera sees neither the figure nor the self-mask layer');
+    assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
+    assert.equal(
+      record.zoomCameraLayers & 0b1110,
+      0,
+      'the magnified camera sees none of the figure, self-mask or optic body layers',
+    );
     assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the zoom camera submits world objects');
     assert.deepEqual(record.drawnObjects, [], 'the zoom camera is submitted no held, worn or own-body geometry');
     assert.ok(

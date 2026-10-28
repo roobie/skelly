@@ -20,15 +20,39 @@ export interface OpticZoomFrame {
 export const mountedOptic = (
   registry: Pick<Registry, 'items' | 'models'>,
   firearm: Item,
-): { uid: number; item: ItemDef; model: ModelDef } | undefined => {
-  for (const child of Object.values(firearm.slots ?? {})) {
+): { uid: number; slot: string; item: ItemDef; model: ModelDef } | undefined => {
+  for (const [slot, child] of Object.entries(firearm.slots ?? {})) {
     const item = registry.items.get(child.type);
     const model = item?.model === undefined ? undefined : registry.models.get(item.model);
     if (item && model?.gun?.attachment?.kind === 'optic') {
-      return { uid: child.uid, item, model };
+      return { uid: child.uid, slot, item, model };
     }
   }
   return undefined;
+};
+
+/** The optic a firearm presents while aiming down sights, with its view settings at the current zoom. */
+export const presentedOptic = (
+  registry: Pick<Registry, 'items' | 'models'>,
+  {
+    item,
+    modelDefinition,
+    aimingDownSights,
+    zoom,
+  }: {
+    readonly item: Item;
+    readonly modelDefinition: ModelDef | undefined;
+    readonly aimingDownSights: boolean;
+    readonly zoom: OpticZoomFrame | undefined;
+  },
+): { slot: string; settings: OpticViewSettings } | undefined => {
+  const optic = mountedOptic(registry, item);
+  const base = optic && opticViewSettings(optic.item, optic.model);
+  if (!(optic && base && aimingDownSights && modelDefinition?.gun?.sight?.kind === 'optic')) {
+    return undefined;
+  }
+  const zoomed = zoom?.uid === item.uid && zoom.opticUid === optic.uid;
+  return { slot: optic.slot, settings: zoomed ? { ...base, magnification: zoom.magnification } : base };
 };
 
 export interface LensAperture {
@@ -36,7 +60,10 @@ export interface LensAperture {
   readonly radius: readonly [number, number];
 }
 
-export interface OpticLensFrame extends LensAperture, OpticViewSettings {}
+export interface OpticLensFrame extends LensAperture, OpticViewSettings {
+  /** Where the sight direction meets the image, in the same UV space as `center`. */
+  readonly reticleCenter: readonly [number, number];
+}
 
 export const opticFieldOfView = (verticalFovDegrees: number, magnification: number): number => {
   if (!(verticalFovDegrees > 0 && verticalFovDegrees < 180 && magnification > 0)) {
@@ -75,6 +102,20 @@ const project = (point: Vec3, verticalFovDegrees: number, aspect: number): reado
   }
   const halfHeight = depth * Math.tan((verticalFovDegrees * Math.PI) / 360);
   return [point[0] / (halfHeight * aspect), point[1] / halfHeight];
+};
+
+/**
+ * Projects the sight direction through the image camera. The reticle marks aim on the world image, so it must not
+ * follow the finite glass centre, which shifts with the instrument relative to the eye.
+ */
+export const projectOpticReticle = (
+  direction: Vec3,
+  verticalFovDegrees: number,
+  aspect: number,
+  magnification: number,
+): readonly [number, number] | undefined => {
+  const ndc = project(direction, opticFieldOfView(verticalFovDegrees, magnification), aspect);
+  return ndc ? [(ndc[0] + 1) / 2, (ndc[1] + 1) / 2] : undefined;
 };
 
 /** Projects the exported ocular circle from the same camera-local frame as the held optic window. */
