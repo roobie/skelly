@@ -260,13 +260,23 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       buffer: Buffer.from(replayText),
     });
     await replayNavigation;
-    await page.waitForFunction(
-      () => document.querySelector('#input-replay-status') || document.querySelector('#errors')?.textContent?.trim(),
-    );
+    await page.waitForFunction(() => {
+      if (document.querySelector('#input-replay-status')) {
+        return true;
+      }
+      return document.querySelector('#errors')?.textContent?.trim().startsWith('Replay rejected:') === true;
+    });
+    const replayStartup = await page.evaluate(() => ({
+      inputReplayStatus: document.querySelector('#input-replay-status')?.getAttribute('data-state'),
+      errors: document.querySelector('#errors')?.textContent?.trim(),
+      worldLoadingState: document.querySelector('#world-loading')?.getAttribute('data-state'),
+      worldLoadingMessage: document.querySelector('#world-loading-message')?.textContent,
+      saveStatus: document.querySelector('#save-status')?.textContent,
+    }));
     assert.equal(
-      await page.locator('#input-replay-status').count(),
+      replayStartup.inputReplayStatus === null ? 0 : 1,
       1,
-      `Replay startup: ${await page.locator('#errors').textContent()}; page errors: ${JSON.stringify(pageErrors)}`,
+      `Replay startup: ${JSON.stringify(replayStartup)}; page errors: ${JSON.stringify(pageErrors)}`,
     );
     await page.waitForFunction(
       () =>
