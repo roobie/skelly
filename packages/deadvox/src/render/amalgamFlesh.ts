@@ -174,7 +174,6 @@ interface FleshChunk {
   readonly mesh: Mesh;
   readonly body: RigidBody;
   readonly physics: Ragdoll;
-  readonly order: number;
   ageRealSeconds: number;
   groundedAtRealSeconds: number | undefined;
 }
@@ -194,11 +193,11 @@ export class FleshChunks {
   private readonly group: Group;
   private readonly onLanded: ((centre: Vec3) => void) | undefined;
 
-  private readonly owner: { physics: () => RagdollWorld; ground: () => RigidWorld; reserve: () => number | undefined };
+  private readonly owner: { physics: () => RagdollWorld; ground: () => RigidWorld };
 
   constructor(
     group: Group,
-    owner: { physics: () => RagdollWorld; ground: () => RigidWorld; reserve: () => number | undefined },
+    owner: { physics: () => RagdollWorld; ground: () => RigidWorld },
     onLanded?: (centre: Vec3) => void,
   ) {
     this.owner = owner;
@@ -213,12 +212,11 @@ export class FleshChunks {
   }
 
   spawn({ realized, scale, cells, rotation, translation, direction }: FleshChunkSpawn): void {
-    if (cells.length === 0) {
+    if (cells.length === 0 || tuning.capacity === 0) {
       return;
     }
-    const order = this.owner.reserve();
-    if (order === undefined) {
-      return;
+    if (this.chunks.length >= tuning.capacity) {
+      this.remove(0);
     }
     const { voxels, body } = realized;
     const owner = new Uint8Array(voxels.owner.length);
@@ -291,7 +289,6 @@ export class FleshChunks {
       mesh,
       body: rigid,
       physics: this.owner.physics().spawnRigid(rigid, this.owner.ground()),
-      order,
       ageRealSeconds: 0,
       groundedAtRealSeconds: undefined,
     });
@@ -324,14 +321,6 @@ export class FleshChunks {
       }
       this.place(chunk, (Math.max(0, sinking) / tuning.sinkSeconds) * tuning.sinkDepthMetres);
     }
-  }
-
-  get oldestOrder(): number {
-    return this.chunks[0]?.order ?? Number.POSITIVE_INFINITY;
-  }
-
-  evictOldest(): void {
-    this.remove(0);
   }
 
   dispose(): void {

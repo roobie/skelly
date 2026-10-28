@@ -1,5 +1,3 @@
-// Import boundaries: mobgen is self-contained (no sibling project), and src/core is a browser-pure,
-// domain-agnostic library: no three.js, no node:, no mob/viewer/cli.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -31,12 +29,18 @@ describe('import boundaries', () => {
     expect(files.length).toBeGreaterThan(coreFiles.length);
   });
 
-  it('nothing in mobgen imports outside mobgen/ (no sibling project, no repo-root file)', () => {
+  it('keeps mobgen standalone except the viewer and its tests sharing the game ragdoll owner', () => {
     for (const file of files) {
       for (const spec of specifiers(file)) {
         if (spec.startsWith('.')) {
           const target = resolve(file, '..', spec);
-          expect(relative(ROOT, target).startsWith('..'), `${relative(REPO, file)} -> ${spec}`).toBe(false);
+          const path = relative(ROOT, file);
+          const sharedRagdoll =
+            target === resolve(ROOT, '../deadvox/src/render/ragdoll.ts') &&
+            (path.startsWith('src/viewer/') || path.startsWith('test/'));
+          expect(relative(ROOT, target).startsWith('..') && !sharedRagdoll, `${relative(REPO, file)} -> ${spec}`).toBe(
+            false,
+          );
         }
         expect(spec.startsWith('/'), `${relative(REPO, file)} -> ${spec}`).toBe(false);
       }

@@ -15,6 +15,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { type Ragdoll, RagdollWorld, ragdollContent } from '../../../deadvox/src/render/ragdoll.ts';
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
@@ -37,7 +38,6 @@ import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/do
 import { dogTemplate } from '../mob/dogTemplate.ts';
 import {
   advanceClock,
-  bodyRestExtents,
   createGaitCache,
   footRestExtents,
   type GaitClock,
@@ -51,7 +51,7 @@ import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
-import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
+import { flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { skeletonTemplate } from '../mob/skeletonTemplate.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
@@ -176,7 +176,6 @@ interface Loaded {
   readonly actor: Actor;
   readonly params?: HumanoidParams;
   readonly extents?: ReturnType<typeof footRestExtents>;
-  readonly bodyExtents?: ReturnType<typeof bodyRestExtents>;
   readonly legGeometry?: LegGeometry | undefined;
   /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
   readonly walkActor?: WalkActor;
@@ -219,12 +218,10 @@ attackClipSelect.addEventListener('change', () => {
 });
 let hitTime: number | undefined; // seconds into HIT_FLINCH, or undefined when idle
 let hitSide = 0; // -1..1, alternates each press so the side-mirror is visible across repeated hits
-// Death freezes whatever pose was current (walk, standing, or mid-attack) the instant it starts, and
-// plays deathPose forward from that frozen snapshot — same "layer over the current base pose" spirit as
-// a flinch, but frozen rather than live, since a falling body doesn't keep striding underneath itself.
 let deathTime: number | undefined;
 let deathBasePose: Pose | undefined;
 let deathDirection: 1 | -1 = 1;
+let deathPhysics: { world: RagdollWorld; body: Ragdoll } | undefined;
 let lastAcidPose: Pose | undefined;
 /** Every part cut so far — cumulative, so "Sever" a second part while the first is still missing just adds
  * to it (severedBoneSet handles any redundancy, e.g. severing a hand after its own upperArm already took
@@ -261,6 +258,7 @@ const sever = (): void => {
 };
 
 const heal = (): void => {
+  resetDeath();
   severedCuts = [];
   applySeveredBones();
 };
@@ -268,35 +266,24 @@ const heal = (): void => {
 /** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
  * snapshot — a falling body doesn't keep striding underneath itself, unlike a flinch. */
 const playDeath = (): void => {
-  if (current?.template.bodyPlan === 'acid') {
+  resetDeath();
+  if (!current) {
+    return;
+  }
+  if (current.template.bodyPlan === 'acid') {
     deathBasePose = lastAcidPose ?? acidIdlePose(current.realized, idleTime);
     deathDirection = dieBackward.checked ? -1 : 1;
     deathTime = 0;
     return;
   }
-  if (!current?.walkActor) {
-    return;
-  }
-  const actor = current.walkActor;
-  if (!usesHumanoidRig(current.template)) {
-    deathBasePose =
-      current.template.bodyPlan === 'dog'
-        ? dogPose(current.realized, dogStance(current.genome, severedBones))
-        : crawlerPose(current.realized);
-    deathDirection = dieBackward.checked ? -1 : 1;
-    deathTime = 0;
-    return;
-  }
-  const walking = walkOn.checked;
-  const speed = walking ? Number(speedInput.value) : 0;
-  const idle = idlePose(actor, currentStance(), idleTime);
-  const walkBase: Pose = walkPose(actor, clock, speed, { idle });
-  deathBasePose = attackTime === undefined ? walkBase : attackPose(actor, activeClip, attackTime, walkBase);
+  deathBasePose = current.actor.pose;
   deathDirection = dieBackward.checked ? -1 : 1;
   deathTime = 0;
 };
 
 const resetDeath = (): void => {
+  deathPhysics?.world.dispose();
+  deathPhysics = undefined;
   deathTime = undefined;
   deathBasePose = undefined;
 };
@@ -473,7 +460,6 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
     severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
   } else {
     const extents = footRestExtents(realized.body.bones, realized.voxels);
-    const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
     const legGeometry = usesHumanoidRig(template) ? legGeometryFor(realized.body.bones, extents, 'L') : undefined;
     const params = genome.params as HumanoidParams;
     const walkActor: WalkActor = {
@@ -495,7 +481,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
       initialPose = crawlerPose(realized);
     }
     actor.applyPose(initialPose);
-    loaded = { ...loaded, params, extents, bodyExtents, legGeometry, walkActor };
+    loaded = { ...loaded, params, extents, legGeometry, walkActor };
     severPart.replaceChildren(
       ...(template.bodyPlan === 'dog' ? DOG_SEVERABLE_PARTS : severableParts(realized.body.bones)).map(
         (part) => new Option(part, part),
@@ -506,7 +492,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   syncAttackClip(template);
   walkFieldset.hidden = staticOnly;
   attackFieldset.hidden = staticOnly;
-  reactionsFieldset.hidden = staticOnly;
+  reactionsFieldset.hidden = false;
   current = loaded;
   clock = INITIAL_CLOCK;
   crawlerPhase = 0;
@@ -867,25 +853,41 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   applyLookAt(loaded, pose, dt);
 };
 
-/** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the
- * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
 const applyDeathFrame = (loaded: Loaded, dt: number): void => {
   if (loaded.template.bodyPlan === 'acid') {
     deathTime = (deathTime ?? 0) + dt;
     loaded.actor.applyPose(acidDeathPose(loaded.realized, deathBasePose!, deathTime, deathDirection));
     return;
   }
-  if (!(loaded.walkActor && loaded.bodyExtents)) {
-    return;
+  if (!deathPhysics) {
+    const world = new RagdollWorld();
+    deathPhysics = {
+      world,
+      body: world.spawn({
+        realized: loaded.realized,
+        model: loaded.template.name,
+        pose: deathBasePose!,
+        position: [0, 0, 0],
+        yaw: 0,
+        direction: deathDirection,
+        seed: loaded.genome.seed,
+        ground: { blockSize: ragdollContent.viewer.blockSizeMetres, isSolid: (_x, y, _z) => y < 0 },
+        excluded: new Set(
+          loaded.realized.body.bones.flatMap((bone, index) => (severedBones.has(bone.id) ? [index] : [])),
+        ),
+      }),
+    };
   }
-  deathTime = (deathTime ?? 0) + dt;
-  // A fresh wrapper per frame, but it carries the persistent actor's cache.
-  const actor = {
-    ...loaded.walkActor,
-    bodyExtents: loaded.bodyExtents,
-    posture: loaded.template.bodyPlan === 'crawler' ? ('prone' as const) : ('upright' as const),
-  };
-  loaded.actor.applyPose(deathPose(actor, deathBasePose!, deathTime, { direction: deathDirection }));
+  const { world, body } = deathPhysics;
+  world.sever(
+    body,
+    loaded.realized,
+    new Set(loaded.realized.body.bones.flatMap((bone, index) => (severedBones.has(bone.id) ? [index] : []))),
+  );
+  world.advance(dt);
+  loaded.actor.applyTransforms(
+    new Map(loaded.realized.body.bones.map((bone, index) => [bone.id, body.transforms.get(index)!])),
+  );
 };
 
 let lastFrameTime = performance.now();

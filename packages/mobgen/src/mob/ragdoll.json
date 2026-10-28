@@ -9,11 +9,11 @@
     "blendSeconds": 0.55000000000000004,
     "fallSeconds": 0.84999999999999998,
     "motion": {
-      "hitDirectionWeight": 1,
-      "launchSpeed": 1.6000000000000001,
-      "seedSpread": 0.29999999999999999,
       "spinSpeed": 0.40000000000000002,
       "upwardLift": 0.14999999999999999
+    },
+    "motionScale": {
+      "launchSpeed": 1.3333333333333333
     }
   },
   "debris": {
@@ -24,6 +24,7 @@
   },
   "downedDriftMetres": 2,
   "flesh": {
+    "capacity": 24,
     "density": 1000,
     "launchLift": 1.5,
     "launchSpeed": 3.5,
@@ -99,6 +100,66 @@
   },
   "linearDamping": 0.80000000000000004,
   "maxStepsPerFrame": 8,
+  "modelGroups": {
+    "dog": [
+      {
+        "bones": ["pelvis", "spine"],
+        "limits": null
+      },
+      {
+        "bones": ["neck", "head"],
+        "limits": [
+          [-0.69999999999999996, 0.69999999999999996],
+          [-0.80000000000000004, 0.80000000000000004],
+          [-0.59999999999999998, 0.59999999999999998]
+        ]
+      },
+      {
+        "bones": ["jaw"],
+        "limits": [[0, 0.69999999999999996], [0, 0], [0, 0]]
+      },
+      {
+        "bones": ["tail"],
+        "limits": [
+          [-0.69999999999999996, 0.69999999999999996],
+          [-0.80000000000000004, 0.80000000000000004],
+          [-0.59999999999999998, 0.59999999999999998]
+        ]
+      },
+      {
+        "bones": ["foreUpper.L"],
+        "limits": [[-1.5, 1.5], [-1, 1], [-1.2, 1.2]]
+      },
+      {
+        "bones": ["foreLower.L", "forePaw.L"],
+        "limits": [[-2.3999999999999999, 0.10000000000000001], [0, 0], [0, 0]]
+      },
+      {
+        "bones": ["foreUpper.R"],
+        "limits": [[-1.5, 1.5], [-1, 1], [-1.2, 1.2]]
+      },
+      {
+        "bones": ["foreLower.R", "forePaw.R"],
+        "limits": [[-2.3999999999999999, 0.10000000000000001], [0, 0], [0, 0]]
+      },
+      {
+        "bones": ["hindUpper.L"],
+        "limits": [[-1.5, 1.5], [-1, 1], [-1.2, 1.2]]
+      },
+      {
+        "bones": ["hindLower.L", "hindPaw.L"],
+        "limits": [[-2.3999999999999999, 0.10000000000000001], [0, 0], [0, 0]]
+      },
+      {
+        "bones": ["hindUpper.R"],
+        "limits": [[-1.5, 1.5], [-1, 1], [-1.2, 1.2]]
+      },
+      {
+        "bones": ["hindLower.R", "hindPaw.R"],
+        "limits": [[-2.3999999999999999, 0.10000000000000001], [0, 0], [0, 0]]
+      }
+    ]
+  },
   "models": ["shambler", "runner", "brute", "crawler", "amalgam"],
   "motion": {
     "hitDirectionWeight": 1,
@@ -128,5 +189,8 @@
       "z": 5.5
     }
   },
-  "timestep": 0.016666666666666666
+  "timestep": 0.016666666666666666,
+  "viewer": {
+    "blockSizeMetres": 1
+  }
 }

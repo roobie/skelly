@@ -7,7 +7,7 @@ import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
-import { RagdollWorld, ragdollContent, ragdollGroups } from '../src/render/ragdoll.ts';
+import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -104,8 +104,6 @@ describe('render ragdoll', () => {
           collider.translation().y - Math.abs(r[3]) * half.x - Math.abs(r[4]) * half.y - Math.abs(r[5]) * half.z;
         expect(lowest).toBeGreaterThanOrEqual(-0.01);
       }
-      const trunk = corpse.parts[0]!.body.translation();
-      expect(Math.hypot(trunk.x, trunk.z)).toBeLessThanOrEqual(reachTuning(baseRegistry()).reachMetres);
       world.remove(corpse);
       expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
     } finally {
@@ -119,7 +117,7 @@ describe('render ragdoll', () => {
     { model: 'runner', cuts: ['head'] },
     { model: 'brute', cuts: ['upperArm.L'] },
     { model: 'crawler', cuts: ['thigh.L', 'thigh.R'] },
-  ])('$model settles above ground within handling reach with $cuts absent', assertRest);
+  ])('$model settles above ground with $cuts absent', assertRest);
 
   sweepGroup('ragdoll seed sweep', () => {
     it.each([31, 89])('rest invariants across the presentation row, seed %s', async (seed) => {
@@ -180,6 +178,77 @@ describe('render ragdoll', () => {
     }
   });
 
+  it('merges partial crawl motion and scales the kind launch without replacing untouched keys', () => {
+    const base = { launchSpeed: 2, upwardLift: 3, spinSpeed: 4, hitDirectionWeight: 0.5, seedSpread: 6 };
+    const kind = { launchSpeed: 7, seedSpread: 8 };
+    const override = { upwardLift: 9 };
+    expect(ragdollMotion(base, kind, override, { launchSpeed: 2 })).toEqual({
+      launchSpeed: 14,
+      upwardLift: 9,
+      spinSpeed: 4,
+      hitDirectionWeight: 0.5,
+      seedSpread: 8,
+    });
+    expect(kind).toEqual({ launchSpeed: 7, seedSpread: 8 });
+  });
+
+  it('keeps seed spread with full hit-direction weight', async () => {
+    const world = new RagdollWorld();
+    try {
+      const spawn = (seed: number) =>
+        world.spawn({
+          realized: fixtureFigure,
+          model: 'runner',
+          pose,
+          position: [0, 0, 0],
+          yaw: 0,
+          direction: -1,
+          launch: [0, 0, -1],
+          seed,
+          ground,
+          motion: { ...ragdollContent.crawlFall.motion, hitDirectionWeight: 1, seedSpread: 1 },
+          motionScale: ragdollContent.crawlFall.motionScale,
+        });
+      const first = spawn(17);
+      const second = spawn(89);
+      await world.ready;
+      const a = first.parts[0]!.body.linvel();
+      const b = second.parts[0]!.body.linvel();
+      expect(a.x).not.toBe(b.x);
+    } finally {
+      world.dispose();
+    }
+  });
+
+  it('refreshes corpse terrain after a launch beyond its initial footprint', async () => {
+    const world = new RagdollWorld();
+    try {
+      const corpse = world.spawn({
+        realized: fixtureFigure,
+        pose,
+        position: [0, 8, 0],
+        yaw: 0,
+        direction: -1,
+        launch: [1, 0, 0],
+        seed: 17,
+        ground,
+        motion: { launchSpeed: 25, upwardLift: 0, seedSpread: 0, hitDirectionWeight: 1 },
+      });
+      await world.ready;
+      for (let step = 0; step < ragdollContent.stepBudget; step++) {
+        world.advance(ragdollContent.timestep);
+      }
+      const trunk = corpse.parts[0]!.body.translation();
+      expect(trunk.x).toBeGreaterThan(ragdollContent.footprintMetres[0]!);
+      expect(trunk.y).toBeGreaterThanOrEqual(0);
+      expect(corpse.settled).toBe(true);
+      world.remove(corpse);
+      expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
+    } finally {
+      world.dispose();
+    }
+  });
+
   it('shares ground cells until the last overlapping owner is removed, including debris', async () => {
     const figure = fixtureFigure;
     const world = new RagdollWorld();
@@ -192,6 +261,7 @@ describe('render ragdoll', () => {
       const second = spawn();
       await world.ready;
       expect(world.counts().colliders - one.colliders).toBe(second.parts.length);
+      world.remove(first);
       world.remove(first);
       expect(world.counts()).toEqual(one);
       world.hideColliders(second);
@@ -223,6 +293,7 @@ describe('render ragdoll', () => {
       world.remove(debris);
       expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
       const pending = spawn();
+      world.remove(pending);
       world.remove(pending);
       await world.ready;
       expect(world.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });

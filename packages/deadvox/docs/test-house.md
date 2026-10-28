@@ -88,7 +88,7 @@ repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCo
 The ragdoll sample is opt-in and debug-only because staged deaths are evaluation fixtures,
 not residents of the haven. It uses the handling range rather than adding bodies or a
 floor to domestic space. See `src/debug/ragdollSweep.ts`, `stageRagdollSweep`, and
-`src/game/config.ts`, `sweepFromUrl`.
+`src/render/ragdollConfig.ts`, `sweepFromUrl`.
 
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather

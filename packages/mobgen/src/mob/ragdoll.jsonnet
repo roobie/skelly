@@ -39,7 +39,8 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
   crawlFall: {
     fallSeconds: 0.85,
     blendSeconds: 0.55,
-    motion: { launchSpeed: 1.6, upwardLift: 0.15, spinSpeed: 0.4, hitDirectionWeight: 1, seedSpread: 0.3 },
+    motion: { upwardLift: 0.15, spinSpeed: 0.4 },
+    motionScale: { launchSpeed: 4 / 3 },
   },
   downedDriftMetres: 2,
   debris: {
@@ -49,6 +50,7 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     angularDamping: 1.5,
   },
   flesh: {
+    capacity: 24,
     lieSeconds: 6,
     sinkSeconds: 1.5,
     sinkDepthMetres: 0.5,
@@ -57,6 +59,22 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
     launchLift: 1.5,
     launchSpin: 6,
     density: 1000,
+  },
+  viewer: { blockSizeMetres: 1 },
+  modelGroups: {
+    dog: [
+      { bones: ['pelvis', 'spine'], limits: null },
+      ball(['neck', 'head'], [-0.7, 0.7], [-0.6, 0.6], [-0.8, 0.8]),
+      hinge(['jaw'], [0, 0.7]),
+      ball(['tail'], [-0.7, 0.7], [-0.6, 0.6], [-0.8, 0.8]),
+    ] + std.flattenArrays([
+      [
+        ball([limb + 'Upper.' + side], [-1.5, 1.5], [-1.2, 1.2], [-1, 1]),
+        hinge([limb + 'Lower.' + side, limb + 'Paw.' + side], [-2.4, 0.1]),
+      ]
+      for limb in ['fore', 'hind']
+      for side in ['L', 'R']
+    ]),
   },
   groups: [
     { bones: ['pelvis', 'spine', 'chest'], limits: null },

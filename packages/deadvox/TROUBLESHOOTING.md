@@ -53,8 +53,6 @@ Software-rendered browser contracts should exercise logic without paying rendere
 
 The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnZombieType`.
 
-For repeatable corpse comparisons, a debug URL may force a resting pose before killing a spawned humanoid. The selection is presentation-only; it does not change damage or severing, and the acid body's separate death remains independent. See `src/game/config.ts`, `GameConfig.debugDeathPose`, `src/render/mobActors.ts`, `corpsePose`, and `packages/mobgen/src/mob/deathPoses.jsonnet`, `poses`.
-
 ## Browser stages
 
 A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `tools/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.

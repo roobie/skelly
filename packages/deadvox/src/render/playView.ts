@@ -347,7 +347,6 @@ export const createPlayView = (
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
           ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
-          deathPoseId: config.debugDeathPose,
           handlingReachMetres: reachTuning(registry).reachMetres,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
