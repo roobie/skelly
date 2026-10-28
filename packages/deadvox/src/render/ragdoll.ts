@@ -135,6 +135,7 @@ interface RagdollSpawn {
   launch?: Vec3;
   reach?: number;
   scale?: number;
+  motion?: Partial<typeof content.motion>;
 }
 export class RagdollWorld {
   readonly ready: Promise<void>;
@@ -197,13 +198,26 @@ export class RagdollWorld {
 
   private build(
     corpse: Ragdoll,
-    { realized, model = 'shambler', position, yaw, direction, seed, ground, launch, reach, scale = 1 }: RagdollSpawn,
+    {
+      realized,
+      model = 'shambler',
+      position,
+      yaw,
+      direction,
+      seed,
+      ground,
+      launch,
+      reach,
+      scale = 1,
+      motion: override,
+    }: RagdollSpawn,
   ): void {
     const world = this.world!;
     const groups = ragdollGroups(realized.body.bones, corpse.excluded);
     const motion = {
       ...content.motion,
       ...(content.kindMotion as Record<string, Partial<typeof content.motion>>)[model],
+      ...override,
     };
     const directed = launch && Math.hypot(...launch) > 0;
     const weight = directed ? motion.hitDirectionWeight : 0;

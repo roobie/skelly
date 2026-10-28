@@ -5,6 +5,17 @@
     "memberRoot": "pelvis",
     "root": "core"
   },
+  "crawlFall": {
+    "blendSeconds": 0.55000000000000004,
+    "fallSeconds": 0.84999999999999998,
+    "motion": {
+      "hitDirectionWeight": 1,
+      "launchSpeed": 1.6000000000000001,
+      "seedSpread": 0.29999999999999999,
+      "spinSpeed": 0.40000000000000002,
+      "upwardLift": 0.14999999999999999
+    }
+  },
   "debris": {
     "angularDamping": 1.5,
     "friction": 0.80000000000000004,
@@ -103,6 +114,8 @@
   "stepBudget": 600,
   "sweep": {
     "capacity": 64,
+    "crawlCuts": [["thigh.L"], ["thigh.L", "thigh.R"]],
+    "crawlDelaySeconds": 2,
     "cuts": [[], ["head"], ["upperArm.L"], ["thigh.L", "thigh.R"], []],
     "finishSeconds": 12,
     "lieSeconds": 120,
