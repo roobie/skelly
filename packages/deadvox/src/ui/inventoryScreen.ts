@@ -35,7 +35,7 @@ import {
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { blursFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
@@ -899,6 +899,7 @@ export class InventoryScreen {
   private drag: Drag | undefined;
   /** What the player typed into the find field; items it doesn't match are dimmed, not hidden. */
   private findQuery = '';
+  private matchSelectionToFind = false;
   private readonly viewer: ItemViewer;
 
   constructor(
@@ -1083,7 +1084,7 @@ export class InventoryScreen {
       return true;
     }
     const digit = this.quickbarDigit(action);
-    const item = this.selected && this.order.includes(this.selected) ? this.selected : this.order[0];
+    const item = this.actionItem();
     if (action === 'handling.stop') {
       this.report(this.hooks.dispatch({ kind: 'inventory.cancel-handling' }));
       return true;
@@ -1115,6 +1116,10 @@ export class InventoryScreen {
       return true;
     }
     return this.selectedAction(action, item);
+  }
+
+  private actionItem(): Item | undefined {
+    return this.selected && this.order.includes(this.selected) ? this.selected : undefined;
   }
 
   private selectedAction(action: string, item: Item): boolean {
@@ -1282,7 +1287,14 @@ export class InventoryScreen {
     this.entityByUid.clear();
     this.vehicleOptionsByUid.clear();
     this.order = [];
-    const vm = this.viewModel();
+    let vm = this.viewModel();
+    if (this.selectFirstMatchingItem()) {
+      this.byUid.clear();
+      this.entityByUid.clear();
+      this.vehicleOptionsByUid.clear();
+      this.order = [];
+      vm = this.viewModel();
+    }
     render(
       inventoryTemplate(
         vm,
@@ -1293,11 +1305,12 @@ export class InventoryScreen {
             query: this.findQuery,
             change: (query) => {
               this.findQuery = query;
+              this.matchSelectionToFind = true;
               this.drawn = '';
               this.update();
             },
             key: (e) => {
-              if (e instanceof KeyboardEvent && e.key === 'Escape') {
+              if (blursFindField(e)) {
                 (e.target as HTMLInputElement).blur();
                 e.preventDefault();
                 e.stopPropagation();
@@ -1595,6 +1608,18 @@ export class InventoryScreen {
         );
       }),
     };
+  }
+
+  private selectFirstMatchingItem(): boolean {
+    if (!this.matchSelectionToFind) {
+      return false;
+    }
+    this.matchSelectionToFind = false;
+    if (!this.selected || this.order.includes(this.selected)) {
+      return false;
+    }
+    this.selected = this.order[0];
+    return true;
   }
 
   private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {

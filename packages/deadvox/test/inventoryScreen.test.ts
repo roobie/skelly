@@ -74,6 +74,10 @@ Object.defineProperty(globalThis, 'removeEventListener', {
   configurable: true,
   value: dom.removeEventListener.bind(dom),
 });
+Object.defineProperty(globalThis, 'dispatchEvent', {
+  configurable: true,
+  value: dom.dispatchEvent.bind(dom),
+});
 // Happy DOM has no layout and omits this API; a moved cursor in these controls hits no drop zone.
 Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [] });
 const { InventoryScreen, targetForPackedFloorDrop } = await import('../src/ui/inventoryScreen.ts');
@@ -625,9 +629,25 @@ describe('inventory screen Lit rendering', () => {
       expect(screen.selected).toBe(beans);
       expect(press('ArrowDown').defaultPrevented).toBe(true);
       expect(screen.selected).not.toBe(beans);
+      expect(press('ArrowUp').defaultPrevented).toBe(true);
+      expect(screen.selected).toBe(beans);
+      for (const [code, key] of [
+        ['ArrowLeft', 'ArrowLeft'],
+        ['ArrowRight', 'ArrowRight'],
+        ['Home', 'Home'],
+        ['End', 'End'],
+      ]) {
+        expect(press(code!, key!).defaultPrevented).toBe(false);
+        expect(screen.selected).toBe(beans);
+      }
+      expect(press('Enter').defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: beans.uid });
+      expect(press('ArrowDown').defaultPrevented).toBe(true);
+      expect(screen.selected).not.toBe(beans);
 
       field.value = query;
       field.dispatchEvent(new Event('input', { bubbles: true }));
+      expect(screen.selected).toBe(beans);
       const payloadBeforeTypingKey = lastPayload();
       expect(press('KeyW', 'w').defaultPrevented).toBe(false);
       expect(lastPayload()).toBe(payloadBeforeTypingKey);
@@ -636,14 +656,21 @@ describe('inventory screen Lit rendering', () => {
       expect(document.activeElement).not.toBe(field);
 
       const action = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
-      window.dispatchEvent(action);
-      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
+      globalThis.dispatchEvent(action);
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
       expect(action.defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: beans.uid });
     } finally {
       remove();
       screen.close();
     }
+  });
+
+  it('does not act on an unselected inventory item', () => {
+    const { screen, lastPayload } = setup();
+    expect(screen.selected).toBeUndefined();
+    expect(screen.onAction('inventory.hands')).toBe(true);
+    expect(lastPayload()).toBeUndefined();
   });
 
   it('keys body redraws by displayed values, not live recovery state', () => {
