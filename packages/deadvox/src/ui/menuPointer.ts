@@ -4,6 +4,7 @@
 // input's lock and cursor state and the DOM, never simulation state (ADR 0002: it is
 // excluded from the save fingerprint, so pointer fixes don't invalidate saves).
 
+import { placeFactDetail } from './factDetail.ts';
 import { wheelPane, wheelPixels } from './wheel.ts';
 
 /** The input state the cursor needs; `Input` satisfies it. */
@@ -280,6 +281,9 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       hoveredFact?.classList.remove('game-cursor-hover');
       hoveredFact = input.locked && input.menuPointer ? (underCursor?.closest('.fact-detail') ?? null) : null;
       hoveredFact?.classList.add('game-cursor-hover');
+      if (hoveredFact) {
+        placeFactDetail(hoveredFact);
+      }
       const clickable =
         underCursor?.closest('button, a, input, select, textarea, [role="button"], [role="option"]') ?? null;
       cursor.classList.toggle('hand', clickable !== null);

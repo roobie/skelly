@@ -137,6 +137,8 @@ import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
+import { factDetail } from '/src/ui/factDetail.ts';
+import { render } from 'lit-html';
 const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement);
 if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
 const { registry, issues } = buildRegistry([
@@ -291,6 +293,30 @@ globalThis.scrollFixture = { input, screen, inventory, dispatches, target, menu,
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('redraw fixture failed');
     screen.update();
   },
+  // A card host with a scrolling column, and a fact whose label starts past the middle of its row.
+  mountCardFact() {
+    const overlay = document.querySelector('#overlay');
+    overlay.replaceChildren();
+    overlay.hidden = false;
+    const shell = document.createElement('div');
+    shell.className = 'card-scroll-shell';
+    const card = document.createElement('div');
+    card.className = 'card';
+    const row = document.createElement('p');
+    const spacer = document.createElement('span');
+    spacer.style.display = 'inline-block';
+    spacer.style.width = '60%';
+    row.append(spacer);
+    render(factDetail('Offset label', 'Fixture fact text. '.repeat(20)), row);
+    card.append(row);
+    for (let i = 0; i < 40; i++) {
+      const filler = document.createElement('p');
+      filler.textContent = 'Filler';
+      card.append(filler);
+    }
+    shell.append(card);
+    overlay.append(shell);
+  },
   redrawAfterNeedsChange() {
     needsText = needsText === 'health 100% · stamina 100%' ? 'health 100% · stamina 99%' : 'health 100% · stamina 100%';
     screen.update();
@@ -410,6 +436,34 @@ try {
   await page.evaluate(() => {
     globalThis.scrollFixture.input.setPointerModeForTest(false);
     globalThis.scrollFixture.menu.update();
+  });
+  // A card host's fact must show whole: its copy stays inside the card's scrollport on hover and keyboard focus.
+  const SCROLLPORT_EDGE = 0.5;
+  await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
+  const cardFact = page.locator('#overlay .card .fact-detail');
+  const cardCopy = cardFact.locator('[role="tooltip"]');
+  const assertCopyInScrollport = async (message) => {
+    const copyBox = await cardCopy.boundingBox();
+    const port = await page.evaluate(() => {
+      const card = document.querySelector('#overlay .card');
+      const left = card.getBoundingClientRect().left + card.clientLeft;
+      return { left, right: left + card.clientWidth };
+    });
+    assert.ok(copyBox, `${message}: the copy has a box`);
+    assert.ok(
+      copyBox.x >= port.left - SCROLLPORT_EDGE && copyBox.x + copyBox.width <= port.right + SCROLLPORT_EDGE,
+      `${message}: ${JSON.stringify({ copy: copyBox, scrollport: port })}`,
+    );
+  };
+  await cardFact.hover();
+  assert.equal(await cardCopy.isVisible(), true, 'card-host hover exposes the copy');
+  await assertCopyInScrollport('card-host hover keeps the copy in the scrollport');
+  await page.mouse.move(0, 0);
+  await cardFact.focus();
+  assert.equal(await cardCopy.isVisible(), true, 'card-host keyboard focus exposes the copy');
+  await assertCopyInScrollport('card-host keyboard focus keeps the copy in the scrollport');
+  await page.evaluate(() => {
+    document.querySelector('#overlay').hidden = true;
   });
   await page.setViewportSize({ width: 800, height: 400 });
   await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
