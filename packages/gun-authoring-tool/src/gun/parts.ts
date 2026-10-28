@@ -4774,12 +4774,20 @@ const pistolSlide: PartFamily = {
         solid(
           'rear-sight-left',
           [PISTOL_SLIDE_REAR, 3, -PISTOL_IRON_SIGHT_HALF_WIDTH_U],
-          [PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U, 3 + PISTOL_IRON_SIGHT_HEIGHT_U, -PISTOL_IRON_SIGHT_NOTCH_HALF_WIDTH_U],
+          [
+            PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U,
+            3 + PISTOL_IRON_SIGHT_HEIGHT_U,
+            -PISTOL_IRON_SIGHT_NOTCH_HALF_WIDTH_U,
+          ],
         ),
         solid(
           'rear-sight-right',
           [PISTOL_SLIDE_REAR, 3, PISTOL_IRON_SIGHT_NOTCH_HALF_WIDTH_U],
-          [PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U, 3 + PISTOL_IRON_SIGHT_HEIGHT_U, PISTOL_IRON_SIGHT_HALF_WIDTH_U],
+          [
+            PISTOL_SLIDE_REAR + PISTOL_IRON_SIGHT_LENGTH_U,
+            3 + PISTOL_IRON_SIGHT_HEIGHT_U,
+            PISTOL_IRON_SIGHT_HALF_WIDTH_U,
+          ],
         ),
         solid('side-left', [PISTOL_SLIDE_REAR, 0.5, -slideHalfWidth], [end, 2.5, -channelHalfWidth]),
         ...ejection,

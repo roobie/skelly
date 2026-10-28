@@ -32,7 +32,9 @@ it('exports a cycling semi-auto slide with the calibre and anchors Deadvox admit
     throw new Error('Pistol slide is missing from the exported model');
   }
   const solids = new Set(
-    glb.json.meshes[slide.mesh]!.primitives.flatMap((primitive) => (primitive.extras?.solid ? [primitive.extras.solid] : [])),
+    glb.json.meshes[slide.mesh]!.primitives.flatMap((primitive) =>
+      primitive.extras?.solid ? [primitive.extras.solid] : [],
+    ),
   );
   expect([...solids]).toEqual(expect.arrayContaining(['front-sight-post', 'rear-sight-left', 'rear-sight-right']));
   expect(Object.values(action.parts).length).toBeGreaterThan(0);
