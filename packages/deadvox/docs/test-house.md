@@ -4,6 +4,7 @@ read_if:
   - you change parking bays or where the test house places vehicles
   - you change the haven's rooms, landscape, lake or south-facing view
   - you add a feature demonstration near the test-house spawn
+  - you change the opt-in ragdoll sample's staging or normal/debug boundary
   - you change the liquid-service demonstration's normal-mode boundary
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
@@ -83,6 +84,11 @@ Derived repair stock and the handling range are debug-only because their purpose
 repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
 `DESIGN.md`, "Debug scenes".
+
+The ragdoll sample is opt-in and debug-only because staged deaths are evaluation fixtures,
+not residents of the haven. It uses the handling range rather than adding bodies or a
+floor to domestic space. See `src/debug/ragdollSweep.ts`, `stageRagdollSweep`, and
+`src/game/config.ts`, `sweepFromUrl`.
 
 House power and its controls belong in normal mode: mixed generation and storage,
 lighting, refrigeration demand and charging demonstrate ordinary home systems rather

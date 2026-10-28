@@ -1,5 +1,27 @@
 {
   "angularDamping": 1.5,
+  "compound": {
+    "limits": [[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]],
+    "memberRoot": "pelvis",
+    "root": "core"
+  },
+  "debris": {
+    "angularDamping": 1.5,
+    "friction": 0.80000000000000004,
+    "impulseScale": 1,
+    "linearDamping": 0.80000000000000004
+  },
+  "downedDriftMetres": 2,
+  "flesh": {
+    "density": 1000,
+    "launchLift": 1.5,
+    "launchSpeed": 3.5,
+    "launchSpin": 6,
+    "lieSeconds": 6,
+    "maxAgeSeconds": 20,
+    "sinkDepthMetres": 0.5,
+    "sinkSeconds": 1.5
+  },
   "footprintMetres": [2.5, 2.5, 2.5],
   "friction": 0.80000000000000004,
   "gravity": -9.8100000000000005,
@@ -53,11 +75,45 @@
       "limits": [[-0.10000000000000001, 2.3999999999999999], [0, 0], [0, 0]]
     }
   ],
-  "launchSpeed": 1.2,
+  "kindMotion": {
+    "brute": {
+      "launchSpeed": 1.2
+    },
+    "crawler": {
+      "launchSpeed": 1.2
+    },
+    "runner": {
+      "launchSpeed": 1.2
+    }
+  },
   "linearDamping": 0.80000000000000004,
   "maxStepsPerFrame": 8,
-  "models": ["shambler"],
-  "seedSpread": 0.29999999999999999,
+  "models": ["shambler", "runner", "brute", "crawler", "amalgam"],
+  "motion": {
+    "hitDirectionWeight": 1,
+    "launchSpeed": 1.2,
+    "seedSpread": 0.29999999999999999,
+    "spinSpeed": 0,
+    "upwardLift": 0
+  },
+  "shortenedLegs": {
+    "absent": ["shin.L", "shin.R"],
+    "omit": ["shin.L", "shin.R", "foot.L", "foot.R"]
+  },
   "stepBudget": 600,
+  "sweep": {
+    "capacity": 64,
+    "cuts": [[], ["head"], ["upperArm.L"], ["thigh.L", "thigh.R"], []],
+    "finishSeconds": 12,
+    "lieSeconds": 120,
+    "models": ["shambler", "runner", "brute", "crawler"],
+    "spacingMetres": 3,
+    "startMetres": [0, -15],
+    "viewer": {
+      "x": 24,
+      "yawDegrees": -25,
+      "z": 5.5
+    }
+  },
   "timestep": 0.016666666666666666
 }

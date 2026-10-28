@@ -1,4 +1,5 @@
 import process from 'node:process';
+import { mulMV, quatToMat3 } from '@mobgen/core/math.ts';
 import { crawlerGaitPose } from '@mobgen/mob/crawler.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
@@ -43,6 +44,8 @@ import {
   type Zombie,
 } from '../src/core/zombies.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
+import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
+import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -3798,7 +3801,7 @@ describe('dismemberment', () => {
     expect(severingImpulse(2)).toBeCloseTo(2 * base);
   });
 
-  it('scales launch distance monotonically through fixture impulses', () => {
+  it('scales launch distance monotonically through fixture impulses', async () => {
     const type = {
       ...SHAMBLER,
       speed: speedRates(0, 0),
@@ -3806,9 +3809,8 @@ describe('dismemberment', () => {
       dismember: { chance: 1, headOnKillChance: 0 },
     };
     const fists = FISTS_MELEE;
-    const simulate = (weapon: Parameters<ZombieSystem['swing']>[2], settleToRest = false) => {
+    const simulate = async (weapon: Parameters<ZombieSystem['swing']>[2]) => {
       let renderer: MobActorMeshes;
-      let debrisBody: { asleep: boolean; center: Vec3 } | undefined;
       let firstTouchdownCenter: Vec3 | undefined;
       let hit: HitImpulse | undefined;
       const system = new ZombieSystem({
@@ -3825,47 +3827,43 @@ describe('dismemberment', () => {
         zombies: registry.zombies,
         poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
       });
-      renderer.setWorld((_x, y, _z) => {
-        const solid = y === -1;
-        if (solid && debrisBody && firstTouchdownCenter === undefined) {
-          firstTouchdownCenter = [...debrisBody.center];
-        }
-        return solid;
-      }, BLOCK_SIZE);
+      renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
       renderer.sync(system.store, 0, 1);
       const ray = regionRay(zombie, 'rightArm');
       expect(system.swing(ray.origin, ray.direction, weapon)).toBe(id);
       const debrisMap = (
         renderer as unknown as {
-          debris: Map<string, { body: { asleep: boolean; center: Vec3 } }>;
+          debris: Map<string, { body: RigidBody }>;
+          ragdolls: RagdollWorld;
         }
       ).debris;
       const [debrisKey, debris] = [...debrisMap.entries()][0]!;
-      debrisBody = debris.body;
+      await (renderer as unknown as { ragdolls: RagdollWorld }).ragdolls.ready;
       const part = debrisKey.split(':')[2]!;
-      for (
-        let frame = 0;
-        frame < 300 && (settleToRest ? !debris.body.asleep : firstTouchdownCenter === undefined);
-        frame++
-      ) {
-        renderer.sync(system.store, 1 / 30, 1);
+      try {
+        for (let frame = 0; frame < ragdollContent.stepBudget && !debris.body.asleep; frame++) {
+          renderer.sync(system.store, ragdollContent.timestep, 1);
+          const r = quatToMat3(debris.body.orientation);
+          const bottom = Math.min(...debris.body.corners.map((corner) => mulMV(r, corner)[1] + debris.body.center[1]));
+          if (bottom <= 0.02 && firstTouchdownCenter === undefined) {
+            firstTouchdownCenter = [...debris.body.center];
+          }
+        }
+        expect(debris.body.asleep, `impulse ${weapon.impulse} should settle within the step budget`).toBe(true);
+        expect(firstTouchdownCenter).toBeDefined();
+        const hitPointMetres = hit!.point.map((coordinate) => coordinate * BLOCK_SIZE);
+        const horizontalDistance = (center: Vec3) =>
+          Math.hypot(center[0] - hitPointMetres[0]!, center[2] - hitPointMetres[2]!);
+        return {
+          distance: horizontalDistance(firstTouchdownCenter!),
+          part,
+          hit,
+        };
+      } finally {
+        renderer.dispose();
       }
-      if (settleToRest) {
-        expect(debris.body.asleep, `impulse ${weapon.impulse} should settle within ten seconds`).toBe(true);
-      }
-      expect(firstTouchdownCenter).toBeDefined();
-      const hitPointMetres = hit!.point.map((coordinate) => coordinate * BLOCK_SIZE);
-      const horizontalDistance = (center: Vec3) =>
-        Math.hypot(center[0] - hitPointMetres[0]!, center[2] - hitPointMetres[2]!);
-      return {
-        distance: horizontalDistance(firstTouchdownCenter!),
-        restDistance: settleToRest ? horizontalDistance(debris.body.center) : undefined,
-        part,
-        hit,
-      };
     };
-    const settled = simulate({ ...fists, impulse: 4 }, true);
-    const sweep = [4, 8, 10, 20, 40].map((impulse) => (impulse === 4 ? settled : simulate({ ...fists, impulse })));
+    const sweep = await Promise.all([4, 8, 10, 20, 40].map((impulse) => simulate({ ...fists, impulse })));
 
     for (const outcome of sweep) {
       expect(armParts).toContain(outcome.part);
@@ -3876,7 +3874,6 @@ describe('dismemberment', () => {
     for (let index = 1; index < sweep.length; index++) {
       expect.soft(sweep[index]!.distance).toBeGreaterThan(sweep[index - 1]!.distance);
     }
-    expect(settled.restDistance).toBeDefined();
   });
 
   it('chance 1 always severs a random arm part on a hit that does not kill', () => {

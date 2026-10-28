@@ -1,3 +1,4 @@
+import inventory from '../src/content/base/inventory.json' with { type: 'json' };
 import { type MobActorMeshesOptions, MobActorMeshes as RenderMobActorMeshes } from '../src/render/mobActors.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
@@ -16,12 +17,13 @@ export class MobActorMeshes extends RenderMobActorMeshes {
   constructor(
     blockSize: number,
     capacity: number | undefined,
-    options: Omit<MobActorMeshesOptions, 'look' | 'maxCorpses'>,
+    options: Omit<MobActorMeshesOptions, 'look' | 'maxCorpses' | 'handlingReachMetres'>,
   ) {
     super(blockSize, capacity, {
       ...options,
       look: LOOK_FIXTURE.mobActors,
       maxCorpses: CORPSE_LIFECYCLE.maxCorpses,
+      handlingReachMetres: inventory.inventory[0]!.reachMetres,
     });
   }
 }

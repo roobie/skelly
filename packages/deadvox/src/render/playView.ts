@@ -53,18 +53,26 @@ import { ItemThrows } from './itemThrows.ts';
 import { LeverProps } from './leverProps.ts';
 import { acidGlows, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
-import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
+import { MobActorMeshes, type MobActorMeshesOptions, type ZombieRenderer } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
+import { ragdollContent } from './ragdoll.ts';
+
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
 import { ZombieMeshes } from './zombies.ts';
+
+const corpseBudget = (seed: number | undefined, maxCorpses: number, look: MobActorMeshesOptions['look']) => ({
+  maxCorpses: seed === undefined ? maxCorpses : ragdollContent.sweep.capacity,
+  ragdollSeed: seed,
+  look: seed === undefined ? look : { ...look, corpseLieSimSeconds: ragdollContent.sweep.lieSeconds },
+});
 
 export interface PlayCameraFrame {
   readonly dt: number;
@@ -338,9 +346,9 @@ export const createPlayView = (
   const zombieMeshes: ZombieRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
-          look: look.mobActors,
+          ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
           deathPoseId: config.debugDeathPose,
-          maxCorpses: graphics.mobActors.maxCorpses,
+          handlingReachMetres: reachTuning(registry).reachMetres,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           zombies: registry.zombies,

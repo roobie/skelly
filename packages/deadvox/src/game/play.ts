@@ -1047,7 +1047,10 @@ export const startPlay = (
     // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
     // them undefined.
     zombieEffects: {
-      onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
+      onWound: (id, _zombie, hit, damage) => {
+        zombieMeshes.zombieWounded?.(id, hit);
+        view.gore.spray(hit, damage);
+      },
       onSever: (id, zombie, part, hit) => {
         const launchVelocity = zombieMeshes.zombieSevered?.(id, part, hit, zombie);
         view.gore.severed(hit, launchVelocity, zombie.type.severedSpurt);
@@ -1680,6 +1683,7 @@ export const startPlay = (
     },
     roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
+    zombieRenderer: zombieMeshes,
     spectatorCamera: {
       enabled: () => spectator.enabled,
       toggle: () => {
@@ -4212,6 +4216,7 @@ export const startPlay = (
     options.saveController?.afterFrame();
     updateTutorial();
     observePlaytestFrame(elapsedReal, now);
+    debugTools?.advanceRagdollSweep(dt);
     const { sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,
