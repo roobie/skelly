@@ -15,6 +15,11 @@ local senseHeightMetres = 1.3;
 local hordeSpacing = { innerMetres: 0.35, stepMetres: 0.38 };
 local grabBandMetres = 1.7;
 local backgroundStepMetres = 1;
+// Severed parts fly and throw blood the same way on every enemy kind that has rigid debris (see the mapper at the end).
+local severedGore = {
+  severedImpulseScale: 1.3,
+  severedSpurt: { droplets: 14, speedMetresPerRealSecond: 5, spreadFraction: 1.5, lifetimeRealSeconds: 4.5, partVelocityShare: 0.8 },
+};
 
 local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
 local content = {
@@ -141,8 +146,6 @@ local content = {
         "chance": 0.15,
         "headOnKillChance": 0.25
       },
-      "severedImpulseScale": 1.3,
-      "severedSpurt": { "droplets": 14, "speedMetresPerRealSecond": 5, "spreadFraction": 1.5, "lifetimeRealSeconds": 4.5, "partVelocityShare": 0.8 },
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -270,8 +273,6 @@ local content = {
         "chance": 0.15,
         "headOnKillChance": 0.25
       },
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -284,8 +285,6 @@ local content = {
       "name": "Farmer",
       "cause": "a farmer",
       "authoredOnly": true,
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "loot": "farmer_pockets"
     },
     $.zombies[0] + {
@@ -293,8 +292,6 @@ local content = {
       "name": "Site worker",
       "cause": "a site worker",
       "authoredOnly": true,
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "loot": "worker_pockets"
     },
     $.zombies[0] + {
@@ -302,8 +299,6 @@ local content = {
       "name": "Medic",
       "cause": "a medic",
       "authoredOnly": true,
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "loot": "medic_pockets"
     },
     $.zombies[0] + {
@@ -314,8 +309,6 @@ local content = {
       "authoredOnly": true,
       // How the brute answers heavy hits belongs to the tier-2 brute (`docs/stagger.md`, "Which types stagger").
       "stagger":: null,
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "regions": {
         "head": 120,
         "torso": 120,
@@ -465,8 +458,6 @@ local content = {
         ]
       },
       "dismember": { "chance": 0.1, "headOnKillChance": 0.2 },
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -559,8 +550,6 @@ local content = {
         ]
       },
       "dismember": { "chance": 0.05, "headOnKillChance": 0.15 },
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "downed": {
         "finishOff": { "simSeconds": 3 },
         "dismember": { "simSeconds": 15, "quality": "cutting", "level": 1 }
@@ -701,8 +690,6 @@ local content = {
         "hurt": "acid_zombie_hurt"
       },
       "acidResistance": 1,
-      "severedImpulseScale": 1,
-      "severedSpurt": { "droplets": 0, "speedMetresPerRealSecond": 0, "spreadFraction": 0, "lifetimeRealSeconds": 0, "partVelocityShare": 0 },
       "abilities": ["acidSpit"],
       "acidSpit": {
         "rangeBand": { "nearMetres": 4, "farMetres": 12 },
@@ -738,7 +725,7 @@ local content = {
   ]
 };
 content + {
-  zombies: [zombie + {
+  zombies: [zombie + (if zombie.model == 'amalgam' then {} else severedGore) + {
     speed+: { crawlMetresPerSimSecond: 0.4 },
     severedItems: if zombie.model == 'amalgam' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
     hearingModel+: {
