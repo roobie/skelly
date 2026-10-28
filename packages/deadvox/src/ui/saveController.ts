@@ -491,11 +491,16 @@ export class SaveController {
   }
 
   private renderGoLabel(): void {
-    let label = this.titleNewWorldLabel === this.text.newWorld ? this.newWorldGoLabel : this.titleNewWorldLabel;
-    if (this.restored) {
-      label = this.text.replaceSaved;
-    }
+    const label = this.newWorldLabel();
     render(html`${label}`, $('go'));
+    render(html`${label}`, $('title-prompt'));
+  }
+
+  private newWorldLabel(): string {
+    if (this.restored) {
+      return this.text.replaceSaved;
+    }
+    return this.titleNewWorldLabel === this.text.newWorld ? this.newWorldGoLabel : this.titleNewWorldLabel;
   }
 
   /** Protects a decoded save when generating the restored world fails, so autosave cannot overwrite it. */
@@ -943,6 +948,7 @@ export class SaveController {
       exportButton.hidden = !(this.protectedCurrent || this.corruptRecords);
     }
     const refusedSave = this.showRefusedSave;
+    this.renderTitlePrompt(refusedSave);
     const refusalHint = $('save-refusal-hint');
     refusalHint.hidden = !refusedSave;
     render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.refusalHintText() }) : ''}`, refusalHint);
@@ -965,6 +971,10 @@ export class SaveController {
 
   private refusalHintText(): string {
     return this.failure || this.statusText;
+  }
+
+  private renderTitlePrompt(refusedSave: boolean): void {
+    $('title-prompt').hidden = this.entered || !this.ready || !this.newWorldLauncher || refusedSave;
   }
 }
 

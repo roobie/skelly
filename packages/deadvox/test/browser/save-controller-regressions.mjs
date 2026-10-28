@@ -1175,6 +1175,7 @@ try {
         { id: 'new-character-options', shown: true, beforeList: true },
         { id: 'go', shown: true, beforeList: true },
       ]);
+      assert.equal(await debugPage.locator('#title-prompt').isVisible(), true, 'fresh title has a centre start prompt');
       const unsaved = await enterAndCheckpoint(debugPage);
       assert.deepEqual(unsaved, { namespaces: [], canSave: false });
       await debugPage.close();

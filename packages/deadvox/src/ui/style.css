@@ -531,6 +531,21 @@ body.unconscious::after {
 #overlay.startup-ready {
   background: #000;
 }
+#title-prompt {
+  position: fixed;
+  z-index: var(--ui-layer-save-recovery);
+  left: 50%;
+  top: 50%;
+  margin: 0;
+  transform: translate(-50%, -50%);
+  color: #b8bcc2;
+  font-weight: 400;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#title-prompt[hidden] {
+  display: none;
+}
 #save-refusal-hint {
   position: fixed;
   z-index: var(--ui-layer-save-recovery);
