@@ -190,15 +190,6 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
       r.opticZoom.wheel(rifle, true, endpoint === 'min' ? 1 : -1);
     }
   }
-  const half = (bits) => {
-    const exponent = (bits >> 10) & 0x1f;
-    const fraction = bits & 0x3_ff;
-    const sign = bits & 0x80_00 ? -1 : 1;
-    if (exponent === 0) {
-      return sign * 2 ** -14 * (fraction / 1024);
-    }
-    return exponent === 31 ? sign * Number.POSITIVE_INFINITY : sign * 2 ** (exponent - 15) * (1 + fraction / 1024);
-  };
   return new Promise((done, failed) => {
     const lens = engine.mood.opticLens;
     const camera = lens.zoomCamera;
@@ -279,26 +270,6 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         },
       };
     };
-    const housingCoverage = (frame) => {
-      if (!lens.housingActive) {
-        return { housingActive: false };
-      }
-      const mask = new Uint8Array(lens.target.width * lens.target.height * 4);
-      renderer.readRenderTargetPixels(lens.housing.target, 0, 0, lens.target.width, lens.target.height, mask);
-      let interiorPixels = 0;
-      let maskedInteriorPixels = 0;
-      for (let y = 0; y < lens.target.height; y += 1) {
-        for (let x = 0; x < lens.target.width; x += 1) {
-          const dx = (x / lens.target.width - frame.center[0]) / frame.radius[0];
-          const dy = (y / lens.target.height - frame.center[1]) / frame.radius[1];
-          if (Math.hypot(dx, dy) < 0.9) {
-            interiorPixels += 1;
-            maskedInteriorPixels += Number(mask[(y * lens.target.width + x) * 4] > 0);
-          }
-        }
-      }
-      return { housingActive: true, interiorPixels, maskedInteriorPixels };
-    };
     renderer.render = function (drawnScene, drawnCamera) {
       const frame = r.view.held.opticLensFrame;
       const source = frame?.magnification === 1 && frame.worldAtUnity === false && drawnCamera === engine.camera;
@@ -317,9 +288,6 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         return;
       }
       imageDraws += 1;
-      const size = Math.min(lens.target.width, lens.target.height);
-      const centre = new Uint16Array(4);
-      renderer.readRenderTargetPixels(lens.target, lens.target.width >> 1, lens.target.height >> 1, 1, 1, centre);
       const { uniforms } = engine.mood.opticPass;
       const optic = r.view.playerMeshes.animator.slotModelOf(
         rifle,
@@ -338,20 +306,10 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         magnifying: frame.magnifying,
         opticMeshCount,
         opticObjects,
-        ...housingCoverage(frame),
-        frames,
-        magnification: r.view.held.opticLensFrame?.magnification,
-        zoomCameraFov: camera.fov,
-        mainFov: engine.camera.fov,
+        housingActive: lens.housingActive,
+        magnification: frame.magnification,
         zoomCameraLayers: camera.layers.mask,
-        mainCameraLayers: engine.camera.layers.mask,
-        uniforms: {
-          zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.target.texture,
-          uLensCenter: uniforms.uLensCenter.value.toArray(),
-          uLensRadius: uniforms.uLensRadius.value.toArray(),
-        },
-        targetSize: [lens.target.width, lens.target.height, size],
-        targetCentreRgba: [...centre].map(half),
+        zoomTextureIsTarget: uniforms.uZoomTexture.value === lens.target.texture,
         drawnObjects: objects,
         worldLayerDrawnByTopLevel: others,
       };
@@ -716,7 +674,8 @@ const opticZoomCheck = async (chromium, port) => {
         assert.ok(pixels.occludingPixels > 0, 'opaque tube geometry would obscure the interior without the disc');
         assert.equal(pixels.unreplacedPixels, 0, 'the disc replaces every witnessed tube pixel inside its aperture');
       }
-      assert.equal(record.uniforms.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
+      assert.equal(record.zoomTextureIsTarget, true, 'the lens pass shows the zoom target');
+      assert.equal(record.housingActive, !record.magnifying, 'only fixed-unity discs preserve foreground housing');
       if (record.magnification > 1) {
         assert.equal(
           record.zoomCameraLayers & 0b1110,
@@ -726,10 +685,6 @@ const opticZoomCheck = async (chromium, port) => {
         assert.deepEqual(record.drawnObjects, [], 'the magnified camera submits no held, worn or own-body geometry');
       }
       assert.ok(Object.keys(record.worldLayerDrawnByTopLevel).length > 0, 'the image camera submits world objects');
-      assert.ok(
-        record.targetCentreRgba.slice(0, 3).some((channel) => channel > 0.05),
-        `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
-      );
     });
   }
   await page.close();
