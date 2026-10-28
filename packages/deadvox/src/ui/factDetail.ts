@@ -22,7 +22,7 @@ export const placeFactDetail = (owner: Element): void => {
   }
   copy.style.maxWidth = '';
   copy.style.setProperty('--fact-detail-shift', '0px');
-  const width = copy.getBoundingClientRect().width;
+  const { width } = copy.getBoundingClientRect();
   if (width === 0) {
     return;
   }
