@@ -21,7 +21,7 @@ import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
@@ -46,7 +46,8 @@ import {
   MobActorMeshes as RenderMobActorMeshes,
   hearingGazeTarget as renderHearingGazeTarget,
 } from '../src/render/mobActors.ts';
-import { ragdollContent } from '../src/render/ragdoll.ts';
+import { initializeRagdollPhysics, ragdollContent } from '../src/render/ragdoll.ts';
+import RAPIER from '../src/render/ragdollRapier.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -1325,6 +1326,37 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
+  it('retains an authored downed body after physics initialization fails', async () => {
+    await initializeRagdollPhysics();
+    const failure = new Error('Physics world unavailable');
+    const world = vi.spyOn(RAPIER.World.prototype, 'timestep', 'set').mockImplementationOnce(() => {
+      throw failure;
+    });
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0]);
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      incapacitate(zombie);
+      renderer.sync(store, 0, 1);
+      await renderer.whenCorpsesReady();
+      expect(warning).toHaveBeenCalledWith(expect.any(String), failure);
+      renderer.sync(store, 0, 1);
+      renderer.sync(store, 0, 1);
+      const upright = renderer.boneMatrix(id, 'pelvis');
+      expect(upright).toBeDefined();
+      renderer.sync(store, DEATH_FALL_DURATION, 1);
+      expect(renderer.isTracked(id)).toBe(true);
+      expect(renderer.boneMatrix(id, 'pelvis')).not.toEqual(upright);
+    } finally {
+      renderer.dispose();
+      world.mockRestore();
+      warning.mockRestore();
+    }
+  });
+
   it('keeps an incapacitated row lying beyond corpse lifetime and out of MAX_CORPSES eviction', async () => {
     const renderer = new MobActorMeshes(0.5, CORPSE_LIFECYCLE.maxCorpses + 2, {
       zombies: registry.zombies,
@@ -1349,13 +1381,13 @@ describe('MobActorMeshes reactions', () => {
       for (let step = 0; step < ragdollContent.stepBudget; step++) {
         renderer.sync(store, ragdollContent.timestep, 1);
       }
+      const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
+      expect(lying).toBeDefined();
       renderer.sync(
         store,
         DEATH_FALL_DURATION + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds + 1,
         1,
       );
-      const lying = renderer.boneMatrix(ids[0]!, 'pelvis');
-      expect(lying).toBeDefined();
       expect(renderer.boneMatrix(ids[0]!, 'head')).not.toEqual(uprightHead); // prove this is the fall pose, not a standing live row
       expect(renderer.isTracked(ids[0]!)).toBe(true);
       renderer.sync(store, CORPSE_LIFECYCLE.sinkSimSeconds + 1, 1);

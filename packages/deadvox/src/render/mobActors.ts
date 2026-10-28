@@ -1456,6 +1456,9 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   private startRagdoll(corpse: Corpse): void {
+    if (this.ragdolls?.failed) {
+      return;
+    }
     const variant = this.variants[corpse.variantIndex]!;
     if (ragdollContent.models.includes(variant.model) && corpse.severed.length === 0) {
       this.ragdolls ??= new RagdollWorld();

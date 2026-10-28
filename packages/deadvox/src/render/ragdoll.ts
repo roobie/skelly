@@ -111,7 +111,7 @@ export class RagdollWorld {
       })
       .catch((error: unknown) => {
         // biome-ignore lint/suspicious/noConsole: a failed presentation solver must not disappear without diagnostic evidence.
-        console.warn('Ragdoll physics initialization failed; corpses will not be drawn.', error);
+        console.warn('Ragdoll physics initialization failed; subsequent corpses will use the authored fall.', error);
         this.failed = true;
       });
   }
