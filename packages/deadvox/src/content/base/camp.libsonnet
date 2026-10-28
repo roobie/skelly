@@ -48,6 +48,7 @@ local campWallRunCrouchHole = campWallRun + {
     },
     {
       "id": "camp_supply_manifest",
+      "notLoot": true,
       "name": "Military supply manifest",
       "category": "book",
       "weight": 5,
@@ -110,10 +111,6 @@ local campWallRunCrouchHole = campWallRun + {
         },
         {
           "item": "bandage",
-          "weight": 1
-        },
-        {
-          "item": "camp_supply_manifest",
           "weight": 1
         },
         {

@@ -613,13 +613,13 @@
     {
       "category": "book",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": [],
+        "usage": []
       },
       "id": "camp_supply_manifest",
       "model": "notebook",
       "name": "Military supply manifest",
-      "notLoot": false,
+      "notLoot": true,
       "readable": {
         "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection.",
         "title": "Clinic supply manifest"
@@ -695,10 +695,6 @@
         },
         {
           "item": "bandage",
-          "weight": 1
-        },
-        {
-          "item": "camp_supply_manifest",
           "weight": 1
         },
         {

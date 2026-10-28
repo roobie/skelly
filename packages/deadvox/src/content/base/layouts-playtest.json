@@ -675,6 +675,11 @@
                   "item": "portable_radio",
                   "count": 1,
                   "placement": "surface"
+                },
+                {
+                  "item": "camp_supply_manifest",
+                  "count": 1,
+                  "placement": "surface"
                 }
               ]
             },
