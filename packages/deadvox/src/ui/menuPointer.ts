@@ -4,7 +4,7 @@
 // input's lock and cursor state and the DOM, never simulation state (ADR 0002: it is
 // excluded from the save fingerprint, so pointer fixes don't invalidate saves).
 
-import { placeFactDetail } from './factDetail.ts';
+import { placeFactDetail } from './factDetailPlacement.ts';
 import { wheelPane, wheelPixels } from './wheel.ts';
 
 /** The input state the cursor needs; `Input` satisfies it. */
