@@ -59,25 +59,28 @@ describe('viewer geometry', () => {
       return;
     }
     const template = TEMPLATES.find((candidate) => candidate.name === loaded.design.template);
+    if (!template) {
+      throw new Error(`missing template ${loaded.design.template}`);
+    }
     const report = validate(loaded.design.assembly, gunDomain);
     const layers = buildLayers(report, [], 'finish', {
-      ...(template ? { appearanceProfile: template.name } : {}),
+      appearanceProfile: template.name,
       ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
     });
-    const role = buildLayers(report, [], 'role');
     try {
       const stock = layers.solids.children.find((child) => String(child.userData.label).startsWith('stock (')) as Mesh;
-      const roleStock = role.solids.children.find((child) =>
-        String(child.userData.label).startsWith('stock ('),
-      ) as Mesh;
-      expect((stock.material as MeshStandardMaterial).color.getHex()).not.toBe(
-        (roleStock.material as MeshStandardMaterial).color.getHex(),
-      );
+      const finishMaterial = loaded.design.finish?.furniture;
+      if (!finishMaterial) {
+        throw new Error('curated AWM design has no furniture finish');
+      }
+      const expected = GUN_PALETTE.materials?.[finishMaterial]?.colour;
+      if (!expected) {
+        throw new Error(`unknown finish material ${finishMaterial}`);
+      }
+      const expectedHex = expected.reduce((hex, channel) => (hex << 8) + Math.round(channel * 255), 0);
+      expect((stock.material as MeshStandardMaterial).color.getHex()).toBe(expectedHex);
     } finally {
       for (const group of Object.values(layers)) {
-        disposeGroup(group);
-      }
-      for (const group of Object.values(role)) {
         disposeGroup(group);
       }
     }

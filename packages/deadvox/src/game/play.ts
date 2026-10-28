@@ -2518,6 +2518,9 @@ export const startPlay = (
       case 'light.worn-toggle':
         toggleWornLights();
         return true;
+      case 'hand.use-forward':
+        useForwardButton();
+        return true;
       default:
         return dispatchReplayQuickbar(action);
     }
@@ -2865,6 +2868,24 @@ export const startPlay = (
 
   function toggleWornLightsNow(): void {
     refusalReason(survival.toggleWornLights());
+  }
+
+  function useForwardButton(): void {
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('hand.use-forward', 'down', inputContext());
+      pendingPlayerTickActions.enqueue(useForwardButtonNow);
+      return;
+    }
+    useForwardButtonNow();
+  }
+
+  function useForwardButtonNow(): void {
+    // Instant off-hand use shares Survival's owner with a quickbar second press.
+    const item = offHandUse(registry, inventory);
+    const reason = item && survival.use(item);
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
   }
 
   function dropHeldItemForThrowingStance(): void {
@@ -3343,12 +3364,7 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
-    // Instant off-hand use shares Survival's owner with a quickbar second press.
-    const item = offHandUse(registry, inventory);
-    const reason = item && survival.use(item);
-    if (reason) {
-      showRefusal(reason, sim.time);
-    }
+    useForwardButton();
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);

@@ -109,7 +109,20 @@ describe('merged display appearances', () => {
       const grouped = appearancePairs(merged(order));
       expect(grouped).toEqual(expected);
       expect(grouped.exportedPairs).toEqual(['polymer-fde:furniture', 'rubber-black:accent']);
-      expect(grouped.viewerPairs).toEqual(['181a1b', 'b19162']);
+      const hex = (material: keyof NonNullable<typeof GUN_PALETTE.materials>) => {
+        const colour = GUN_PALETTE.materials?.[material]?.colour;
+        if (!colour) {
+          throw new Error(`missing palette material ${material}`);
+        }
+        return colour
+          .map((channel) =>
+            Math.round(channel * 255)
+              .toString(16)
+              .padStart(2, '0'),
+          )
+          .join('');
+      };
+      expect(grouped.viewerPairs).toEqual([hex('rubber-black'), hex('polymer-fde')].sort());
     }
   });
 });

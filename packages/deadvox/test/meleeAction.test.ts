@@ -616,7 +616,7 @@ describe('player melee action', () => {
     expect(blunt.headDamageMultiplier).toBeGreaterThan(pierce.headDamageMultiplier);
     expect(cut.limbDamageMultiplier).toBeGreaterThan(blunt.limbDamageMultiplier);
     expect(cut.limbDamageMultiplier).toBeGreaterThan(pierce.limbDamageMultiplier);
-    const base: MeleeWeapon = { motion: 'swing', damage: 1, reach: 3, cooldown: 1 };
+    const base: MeleeWeapon = { ...FISTS_MELEE, damage: 1, reach: 3, cooldown: 1 };
     const bluntCooldown = resolveMeleeWeapon({ ...base, type: 'blunt' }, blunt).cooldown;
     const cutCooldown = resolveMeleeWeapon({ ...base, type: 'cut' }, cut).cooldown;
     const pierceCooldown = resolveMeleeWeapon({ ...base, type: 'pierce' }, pierce).cooldown;
@@ -651,7 +651,7 @@ describe('player melee action', () => {
       const system = makeSystem(FLOOR, [], [], { seed });
       const { id, zombie } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
-        { motion: 'swing', damage: 20, reach: 3, cooldown: 1, type },
+        { ...FISTS_MELEE, damage: 20, reach: 3, cooldown: 1, type },
         registry.meleeClasses.get(type)!,
       );
       let hits = 0;
@@ -683,7 +683,7 @@ describe('player melee action', () => {
       const system = makeSystem();
       const { id, zombie } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
-        { motion: 'swing', damage: sameBaseDamage, damageVariance: 0, reach: 3, cooldown: 1, type },
+        { ...FISTS_MELEE, damage: sameBaseDamage, damageVariance: 0, reach: 3, cooldown: 1, type },
         registry.meleeClasses.get(type)!,
       );
       const ray = regionRay(zombie, id, 'leftArm');
@@ -705,7 +705,7 @@ describe('player melee action', () => {
       const { id, zombie } = makeTarget(system, withoutDismemberment);
       const ray = regionRay(zombie, id, 'torso');
       const weapon = resolveMeleeWeapon(
-        { motion: 'swing', damage: 1, reach: 3, cooldown: 1, type: 'blunt', damageVariance },
+        { ...FISTS_MELEE, damage: 1, reach: 3, cooldown: 1, type: 'blunt', damageVariance },
         registry.meleeClasses.get('blunt')!,
       );
       expect(system.swing(ray.origin, ray.direction, weapon)).toBe(id);
@@ -725,7 +725,7 @@ describe('player melee action', () => {
       const { id, zombie } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
         {
-          motion: 'swing',
+          ...FISTS_MELEE,
           damage: 10,
           reach: 3,
           cooldown: 1,

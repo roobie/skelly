@@ -20,6 +20,8 @@ Save discovery and content validation protect entry into a world. The loading ma
 
 A stuck load keeps the scene covered and offers reload instead of exposing incomplete terrain, because a missing chunk can show what solid blocks hide, such as a sealed or buried room. The mask protects the ready ring; the terrain reveal gate protects the remaining view as it fills in. Replay uses the same ready ring within recorded terrain so loading never invents simulation columns. Recording starts after readiness to preserve the initial player view without load-time simulation ticks. Pause and held-input restoration must agree at that boundary so the first action, ready stance and ADS do not depend on a later frame. See `src/game/play.ts`, `updateWorldLoading`, `src/game/streamer.ts`, `unmeshedRecordedColumns`, and `src/render/chunks.ts`, `ChunkMeshes`.
 
+A world mesh worker failure stops play instead of letting streaming go on without meshing, because holes would open and autosave would keep saving a session the player cannot see. The worker is not restarted with its work requeued, because a deterministic build failure fails again on the same chunk, and requeueing would need per-worker tracking of mesh and sky requests. See `src/game/streamer.ts`, `Streamer.update` and `Streamer.receive`, and `src/worker/mesh.worker.ts`, `onmessage`.
+
 Continue may wait for another page's origin-wide save lock. A timeout does not mean a frozen holder can be recovered from the current page; use the reported holder/pending state and the controlled busy-lock browser contract. A successful competing read does not prove that contention caused a failure. See `src/game/saveStorage.ts`, `SaveStorage.withLock`, and `test/browser/save-storage.mjs`.
 
 A frozen page can hold the lock, so the last committed generation is the recovery point. Firefox may cancel module requests when the fixture closes or replaces a document. Mark every owned close and rescan through `test/browser/save-storage.mjs`, `navigatePage`, so cancellation is attributed to that outgoing document; destination-page failures remain errors. Only the destination page's successful load and save checks establish the navigation outcome. See [ADR 0002](docs/decisions/0002-saves.md).
@@ -52,6 +54,8 @@ Software-rendered browser contracts should exercise logic without paying rendere
 The zombie spawn catalogue follows loaded content, including authored-only types, so modded and site-specific actors can be inspected without making them ambient spawns. Keyboard shortcuts are optional; an unbound type remains available in the panel. See `src/debug/index.ts`, `createDebugActions`, and `src/debug/shamblerSpawning.ts`, `spawnZombieType`.
 
 ## Browser stages
+
+A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `tools/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.
 
 A successful throw fixture needs room at that item's own landing: different dragged flights do not share a destination, and generated loot is not guaranteed to leave it free. Select a valid aim rather than weakening the throw refusal or waiting longer for a refused launch. See `test/browser/primary-action.mjs`, `aimThrowAtFreeLanding`.
 

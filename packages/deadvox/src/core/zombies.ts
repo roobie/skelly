@@ -52,9 +52,9 @@ import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
 import {
   advanceStanceWeight,
-  HIT_FLINCH_DURATION,
   posedMouth,
   targetStanceWeight,
+  zombieHitFlinchDuration,
   zombiePoseInputFor,
 } from './zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
@@ -183,6 +183,9 @@ export const pickZombieHitRegion = (choices: readonly ZombieHitRegionChoice[], r
   pickByWeight(choices, roll).region;
 
 export interface MeleeWeapon extends HitWeapon {
+  readonly contactFraction: number;
+  readonly windupCapSimSeconds: number;
+  readonly stamina: number;
   readonly motion: MeleeMotion;
   readonly charge?: MeleeCharge | undefined;
 }
@@ -191,11 +194,7 @@ interface HitWeapon {
   readonly damage: number;
   readonly reach: number;
   readonly cooldown: number;
-  /** A player swing's contact timing; required to begin one, unused by zombie and projectile hits. */
-  readonly contactFraction?: number | undefined;
-  readonly windupCapSimSeconds?: number | undefined;
-  readonly stamina?: number | undefined;
-  readonly impulse?: number | undefined;
+  readonly impulse: number;
   readonly damageVariance?: number | undefined;
   readonly headDamageMultiplier?: number | undefined;
   readonly limbDamageMultiplier?: number | undefined;
@@ -2580,7 +2579,7 @@ export class ZombieSystem {
     const { zombie, dt } = this.tickScratch;
     if (zombie.hitFlinchTime !== undefined) {
       const nextFlinchTime = zombie.hitFlinchTime + dt;
-      zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
+      zombie.hitFlinchTime = nextFlinchTime > zombieHitFlinchDuration(zombie.type.model) ? undefined : nextFlinchTime;
     }
     zombie.attackWait = Math.max(0, zombie.attackWait - dt);
     zombie.spitWait = Math.max(0, zombie.spitWait - dt);
@@ -4053,7 +4052,7 @@ export class ZombieSystem {
     const hit: HitImpulse = {
       point: [origin[0] + ray[0] * distance, origin[1] + ray[1] * distance, origin[2] + ray[2] * distance],
       direction: ray,
-      impulse: weapon.impulse ?? 4,
+      impulse: weapon.impulse,
     };
     const damage = damageOverride ?? meleeDamageForContact(zombie, region, weapon, damageType);
     if (!projectile) {

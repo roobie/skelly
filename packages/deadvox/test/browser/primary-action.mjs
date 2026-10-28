@@ -371,6 +371,134 @@ const verifyContainerSearchTab = async (page) => {
   }
 };
 
+const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#dominant-hand').selectOption('left');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () =>
+        globalThis.primaryActionTest &&
+        document.querySelector('#overlay')?.hidden &&
+        document.pointerLockElement &&
+        document.querySelector('#world-loading')?.dataset.state === 'ready' &&
+        document.querySelector('#world-loading').hidden,
+    );
+    const fixture = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const light = r.inventory.create('glowstick');
+      r.setHand(r.off, light);
+      r.startInputReplayRecording();
+      return { uid: light.uid, start: r.session.sim.time };
+    });
+    const litInEvent = await page.evaluate((uid) => {
+      document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
+      return Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)?.on);
+    }, fixture.uid);
+    assert.equal(litInEvent, false, 'the forward-button use waits for the player tick');
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
+      fixture.uid,
+    );
+    await waitForSimulation(
+      page,
+      progressingSample,
+      { start: fixture.start },
+      {
+        seconds: 0.35,
+        label: 'forward-button replay recording advances',
+        record: (line) => process.stdout.write(`${line}\n`),
+      },
+    );
+    const command = async (action) =>
+      page.evaluate(
+        async ({ id, moduleUrl }) => {
+          const { keyboardInput } = await import(moduleUrl);
+          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        },
+        { id: action, moduleUrl: inputBindingsModule },
+      );
+    await command('debug.panel-toggle');
+    const liveEndSnapshot = await page.evaluate(
+      async ({ id, moduleUrl }) => {
+        const { keyboardInput } = await import(moduleUrl);
+        const snapshot = globalThis.primaryActionTest.captureSnapshot();
+        keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        return snapshot;
+      },
+      { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule },
+    );
+    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    const replayText = await page.evaluate(() => {
+      const link = document.querySelector('#replay-download');
+      if (!link?.href.startsWith('blob:')) {
+        throw new Error('Forward-button replay export did not create a downloadable artifact');
+      }
+      return fetch(link.href).then((response) => response.text());
+    });
+    const artifact = JSON.parse(replayText);
+    assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'forward-button-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(
+      () =>
+        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      undefined,
+      { timeout: 20_000 },
+    );
+    const replay = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return {
+        state: document.querySelector('#input-replay-status')?.dataset.state,
+        lightOn: r.inventory.itemByUid(uid)?.on,
+        endSnapshot: r.captureSnapshot(),
+      };
+    }, fixture.uid);
+    assert.equal(replay.lightOn, true, 'replaying the recorded forward-button press lights the off-hand light');
+    assert.equal(replay.state, 'verified', 'the replay reproduces the recorded end state');
+    assert.deepEqual(replay.endSnapshot, liveEndSnapshot);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
 const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) => {
   const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
   try {
@@ -3848,6 +3976,9 @@ try {
     });
     await timePhase('clean-look-replay-case', () => verifyCleanLookReplay(browser, address.port, renderOverride));
     await timePhase('stance-throw-replay-case', () => verifyStanceThrowReplay(browser, address.port, renderOverride));
+    await timePhase('forward-button-replay-case', () =>
+      verifyForwardButtonReplay(browser, address.port, renderOverride),
+    );
     await timePhase('ads-fire-replay-case', () => verifyAdsFireReplay(browser, address.port, renderOverride));
   }
   await timePhase('flow-browser-close', () => browser.close());

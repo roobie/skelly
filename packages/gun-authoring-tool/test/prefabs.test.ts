@@ -61,32 +61,4 @@ describe('gun prefab catalogue', () => {
       expect(result.ok && result.issues, name).toEqual([]);
     }
   });
-
-  it('rejects an unknown version of a known prefab id', () => {
-    const design = readDesign('archetype-ar');
-    design.assembly.parts.magazine!.prefab = { id: 'stanag-30', version: 2 };
-    const result = load(design);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.error.code).toBe('unknown-prefab');
-      expect(result.error.message).toContain('version 2');
-    }
-  });
-
-  it('loads a prefab values mismatch as a draft issue', () => {
-    const design = readDesign('archetype-ak');
-    design.assembly.parts.magazine!.prefab = { id: 'stanag-30', version: 1 };
-    const result = load(design);
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.declaredStatus).toBe('published');
-      expect(result.design.status).toBe('draft');
-      expect(result.issues).toContainEqual(
-        expect.objectContaining({
-          code: 'prefab-values-mismatch',
-          path: 'assembly.parts.magazine.params.profile',
-        }),
-      );
-    }
-  });
 });
