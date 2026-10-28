@@ -280,7 +280,7 @@ const opticZoomRecord = ({ power, opticType, gunType }) => {
         rifle,
         Object.keys(rifle.slots).find((slot) => rifle.slots[slot].uid === scope.uid),
       );
-      const { sight } = inventory.registry.models.get(inventory.registry.items.get(opticType).model).gun;
+      const { sight } = inventory.registry.models.get(inventory.registry.items.get(opticType).model).gun.attachment;
       const physicalGlass = physical
         .localToWorld(engine.camera.position.clone().set(...sight.eye))
         .project(engine.camera);
