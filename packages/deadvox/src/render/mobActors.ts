@@ -69,6 +69,7 @@ import {
   type ParentIndex,
   type Pose,
 } from '@mobgen/core/pose.ts';
+import { templateByName } from '@mobgen/core/template.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { acidDeathPose } from '@mobgen/mob/acidPoses.ts';
@@ -132,7 +133,7 @@ import {
 import type { Quaternion } from '../core/spatial.ts';
 import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import type { ZombieModel } from '../core/zombieModels.ts';
-import { acidSpitWindupProgress, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
+import { acidSpitWindupProgress, posedShambler, zombieCrawls, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
@@ -347,6 +348,9 @@ export const hearingGazeTarget = (
   return [-Math.sin(yaw) * horizontal, Math.sin(pitch) * distance, -Math.cos(yaw) * horizontal];
 };
 
+const deathPosture = (zombie: Zombie): DeathActor['posture'] =>
+  templateByName(zombie.type.model).bodyPlan === 'crawler' || zombieCrawls(zombie) ? 'prone' : 'upright';
+
 /** A dead zombie keeps its live slot after the simulation has forgotten it. */
 interface Corpse extends SlotHolder {
   /** Permanent incapacitation uses the fall pose but remains a saved simulation entity and is never evicted. */
@@ -359,6 +363,7 @@ interface Corpse extends SlotHolder {
   readonly yaw: number;
   readonly direction: 1 | -1;
   readonly poseSeed: number;
+  readonly posture: DeathActor['posture'];
   settledPose?: Pose;
   /** Frozen at the instant of death — a corpse keeps whatever was severed while it was still alive (see
    * this module's header comment); parts severed by the killing blow itself are already included, since
@@ -1358,6 +1363,7 @@ export class MobActorMeshes implements ZombieRenderer {
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, undefined),
       poseSeed: id ^ zombie.figureSeed,
+      posture: deathPosture(zombie),
       severed: [...zombie.severed],
       bloodiness: woundSeverity(zombie),
       charge: acidCharge(zombie),
@@ -1423,6 +1429,7 @@ export class MobActorMeshes implements ZombieRenderer {
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, playerPos),
       poseSeed: id ^ zombie.figureSeed,
+      posture: deathPosture(zombie),
       severed: [...zombie.severed],
       bloodiness: woundSeverity(zombie),
       charge: acidCharge(zombie),
@@ -1962,7 +1969,11 @@ export class MobActorMeshes implements ZombieRenderer {
       }
       return pose;
     }
-    const deathActor: DeathActor = { ...corpse.walkActor, bodyExtents: variant.bodyExtents };
+    const deathActor: DeathActor = {
+      ...corpse.walkActor,
+      bodyExtents: variant.bodyExtents,
+      posture: corpse.posture,
+    };
     const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, {
       direction: corpse.direction,
       seed: corpse.poseSeed,

@@ -167,6 +167,7 @@ export interface DeathParams {
 }
 
 export interface DeathActor extends WalkActor {
+  readonly posture: 'upright' | 'prone';
   /** Every bone's rest-pose extents (gait.ts's bodyRestExtents), not just the feet: a fallen body's
    * lowest point is rarely a foot, so re-grounding needs the whole body, not just what walkPose/attackPose
    * ground against. */
@@ -176,7 +177,8 @@ export interface DeathActor extends WalkActor {
 export const DEATH_FALL_DURATION = deathContent.duration;
 const DEATH_POSES = deathContent.poses;
 const restingPoses = new WeakMap<DeathActor['bodyExtents'], Map<string, Pose>>();
-const supportFaces: Readonly<Record<string, readonly number[]>> = deathContent.supportFaces;
+const supportFaces: Readonly<Record<DeathActor['posture'], Readonly<Record<string, readonly number[]>>>> =
+  deathContent.supportFaces;
 
 const selectDeathPose = (seed: number, direction: 1 | -1, poseId?: string) => {
   if (poseId !== undefined) {
@@ -265,7 +267,7 @@ const restingRotation = (
     return world.r;
   }
   let flat = mulMM(align(vector, horizontal), world.r);
-  const face = supportFaces[bone.id];
+  const face = supportFaces[actor.posture][bone.id];
   if (face) {
     const axis = normalize(horizontal);
     const normal = mulMV(flat, [face[0]!, face[1]!, face[2]!]);
@@ -326,17 +328,20 @@ export const deathPose = (actor: DeathActor, basePose: Pose, t: number, params: 
     cache = new Map();
     restingPoses.set(actor.bodyExtents, cache);
   }
-  let rest = cache.get(entry.id);
+  const cacheKey = `${actor.posture}:${entry.id}`;
+  let rest = cache.get(cacheKey);
   if (!rest) {
+    // An already-prone body must not interpolate through an upright fall or reverse its reaching arms.
+    const target = entry.postures[actor.posture];
     const rotations: Record<string, Mat3> = Object.fromEntries(
-      Object.entries(entry.rotations).map(([id, angles]) => [
+      Object.entries(target.rotations).map(([id, angles]) => [
         id,
         mulMM(rotZ(angles[2]!), mulMM(rotY(angles[1]!), rotX(angles[0]!))),
       ]),
     );
-    rotations.pelvis = mulMM(rotX(entry.pitch), rotY(entry.roll));
+    rotations.pelvis = mulMM(rotX(target.pitch), rotY(target.roll));
     rest = restingPose(actor, rotations);
-    cache.set(entry.id, rest);
+    cache.set(cacheKey, rest);
   }
   const blended = blendPose(
     basePose,

@@ -3,12 +3,13 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Bone } from '../src/core/body.ts';
-import { build, generateValid } from '../src/core/generate.ts';
+import { generateValid } from '../src/core/generate.ts';
 import { applyPoint, cross, dot, IDENTITY_M, length, mulMV, sub, type Transform } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { voxelize } from '../src/core/voxelize.ts';
 import { attackPose, LUNGE_GRAB } from '../src/mob/attack.ts';
+import { crawlerGaitPose } from '../src/mob/crawler.ts';
 import deathContent from '../src/mob/deathPoses.json' with { type: 'json' };
+import { severedBoneSet } from '../src/mob/dismember.ts';
 import {
   bodyRestExtents,
   corners,
@@ -18,14 +19,20 @@ import {
   walkPose,
 } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
-import { DEATH_FALL_DURATION, deathPose, flinchClipFor, flinchPose, HIT_FLINCH } from '../src/mob/reactions.ts';
-import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
+import {
+  DEATH_FALL_DURATION,
+  type DeathActor,
+  deathPose,
+  flinchClipFor,
+  flinchPose,
+  HIT_FLINCH,
+} from '../src/mob/reactions.ts';
+import { TEMPLATES as ALL_TEMPLATES, HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
 const setup = (name: string, seed = 1) => {
-  const t = TEMPLATES.find((x) => x.name === name)!;
+  const t = ALL_TEMPLATES.find((x) => x.name === name)!;
   const found = generateValid(t, seed)!;
-  const body = build(found.genome);
-  const voxels = voxelize(body, found.genome.voxelSize, found.genome.seed);
+  const { body, voxels } = found.realized;
   const extents = footRestExtents(body.bones, voxels);
   const bodyExtents = bodyRestExtents(body.bones, voxels);
   return {
@@ -33,6 +40,7 @@ const setup = (name: string, seed = 1) => {
     voxels,
     extents,
     bodyExtents,
+    realized: found.realized,
     params: found.genome.params as HumanoidParams,
     seed: found.genome.seed,
   };
@@ -46,7 +54,11 @@ const walkActorOf = (found: ReturnType<typeof setup>) => ({
   cache: createGaitCache(),
 });
 
-const deathActorOf = (found: ReturnType<typeof setup>) => ({ ...walkActorOf(found), bodyExtents: found.bodyExtents });
+const deathActorOf = (found: ReturnType<typeof setup>) => ({
+  ...walkActorOf(found),
+  bodyExtents: found.bodyExtents,
+  posture: 'upright' as const,
+});
 
 /** Worst absolute difference between two poses — root and every bone's rotation matrix, treating a
  * missing entry on either side as identity. Same helper shape as attack.test.ts's maxPoseDiff. */
@@ -125,6 +137,9 @@ describe('flinchPose', () => {
     expect(headZAt(straight)).toBeCloseTo(0, 9);
   });
 });
+
+const surfaceClearance = (actor: DeathActor, transforms: ReadonlyMap<string, Transform>, id: string): number =>
+  Math.min(...corners(actor.bodyExtents.get(id)!).map((point) => applyPoint(transforms.get(id)!, point)[1]));
 
 const restingSurfaceClearances = (actor: ReturnType<typeof deathActorOf>, pose: Pose): Record<string, number> => {
   const transforms = boneTransforms(actor.bones, pose);
@@ -211,6 +226,58 @@ describe('deathPose', () => {
       }
     },
   );
+  it.for(
+    [
+      { model: 'crawler', cuts: [] },
+      { model: 'shambler', cuts: ['thigh.L'] },
+    ].flatMap((fixture) => deathContent.poses.map(({ id: poseId }) => ({ ...fixture, poseId }))),
+  )('$model keeps its crawling trunk down during $poseId death', ({ model, cuts, poseId }) => {
+    const found = setup(model);
+    const actor = { ...deathActorOf(found), posture: 'prone' as const };
+    // A figure can die standing or after leg loss without changing its cached skeleton.
+    if (model === 'shambler') {
+      const upright = { ...actor, posture: 'upright' as const };
+      deathPose(upright, walkPose(upright, INITIAL_CLOCK, 0), DEATH_FALL_DURATION, { direction: -1, poseId });
+    }
+    const hidden = severedBoneSet(actor.bones, cuts);
+    const base = crawlerGaitPose(found.realized, 0.5, 1);
+    const baseTransforms = boneTransforms(actor.bones, base);
+    const endTransforms = boneTransforms(
+      actor.bones,
+      deathPose(actor, base, DEATH_FALL_DURATION, { direction: -1, poseId }),
+    );
+    const transitionLimits = new Map(
+      ['pelvis', 'chest'].map((id) => [
+        id,
+        // Skull rotation can need clearance between endpoints, but must not stand the trunk up.
+        Math.max(surfaceClearance(actor, baseTransforms, id), surfaceClearance(actor, endTransforms, id)) +
+          actor.params.height * 0.04,
+      ]),
+    );
+    const restingLimits = new Map(
+      ['pelvis', 'chest', 'head', 'upperArm.L', 'upperArm.R', 'forearm.L', 'forearm.R', 'hand.L', 'hand.R'].map(
+        (id) => [id, actor.params.height * 0.04],
+      ),
+    );
+    for (const time of [DEATH_FALL_DURATION / 2, DEATH_FALL_DURATION]) {
+      const pose = deathPose(actor, base, time, { direction: -1, poseId });
+      const transforms = boneTransforms(actor.bones, pose);
+      const limits = time === DEATH_FALL_DURATION ? restingLimits : transitionLimits;
+      for (const bone of actor.bones.filter((candidate) => !hidden.has(candidate.id))) {
+        const transform = transforms.get(bone.id)!;
+        const lowest = surfaceClearance(actor, transforms, bone.id);
+        expect.soft(lowest, `${poseId}/${time}/${bone.id}: no sinking`).toBeGreaterThanOrEqual(0);
+        expect(length(sub(applyPoint(transform, bone.tail), applyPoint(transform, bone.head)))).toBeCloseTo(
+          length(sub(bone.tail, bone.head)),
+          9,
+        );
+        const limit = limits.get(bone.id);
+        if (limit !== undefined) {
+          expect.soft(lowest, `${poseId}/${time}/${bone.id}: rests near floor`).toBeLessThanOrEqual(limit);
+        }
+      }
+    }
+  });
   it('refuses unknown resting pose selections', () => {
     const actor = deathActorOf(setup('shambler'));
     const base = walkPose(actor, INITIAL_CLOCK, 0);
@@ -257,13 +324,12 @@ describe('deathPose', () => {
   it.each(cases)('%s seed %i ends lying down, not penetrating the ground, in both fall directions', (name, seed) => {
     const found = generateValid(TEMPLATES.find((t) => t.name === name)!, seed);
     expect(found, `${name} seed ${seed} must produce a valid fixture`).toBeDefined();
-    const body = build(found!.genome);
-    const voxels = voxelize(body, found!.genome.voxelSize, found!.genome.seed);
+    const { body, voxels } = found!.realized;
     const extents = footRestExtents(body.bones, voxels);
     const bodyExtents = bodyRestExtents(body.bones, voxels);
     const params = found!.genome.params as HumanoidParams;
     const walkActor = { bones: body.bones, extents, params, seed: found!.genome.seed, cache: createGaitCache() };
-    const actor = { ...walkActor, bodyExtents };
+    const actor = { ...walkActor, bodyExtents, posture: 'upright' as const };
     const standing = walkPose(walkActor, INITIAL_CLOCK, 0);
     const byId = new Map(body.bones.map((b: Bone) => [b.id, b]));
     const worldOf = (pose: Pose, boneId: string): number =>
