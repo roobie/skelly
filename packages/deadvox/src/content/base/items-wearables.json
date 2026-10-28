@@ -234,6 +234,48 @@
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "covers": ["torso"],
+          "frame": "clothing_body",
+          "model": "worn_hoodie_body",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "left_sleeve",
+          "model": "worn_hoodie_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["upper"],
+          "frame": "right_sleeve",
+          "model": "worn_hoodie_upper",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "left_cuff",
+          "model": "worn_hoodie_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        },
+        {
+          "at": [0, 0, 0],
+          "covers": ["fore"],
+          "frame": "right_cuff",
+          "model": "worn_hoodie_fore",
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
       "id": "hoodie",
       "model": "hoodie",
       "name": "Hoodie",
@@ -241,6 +283,7 @@
       "size": [3, 3],
       "wearable": {
         "encumbrance": 8,
+        "figureFit": "jacket",
         "slot": "torso",
         "warmth": 25,
         "wearPerDamage": 0.0015

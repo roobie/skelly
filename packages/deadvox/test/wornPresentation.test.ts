@@ -106,6 +106,25 @@ const library = () => {
 };
 
 describe('shared worn presentation', () => {
+  it('draws every base torso clothing item when worn', async () => {
+    const torsoClothing = [...base.items.values()].filter(
+      (item) => item.category === 'clothing' && item.wearable?.slot === 'torso',
+    );
+    expect(torsoClothing.length).toBeGreaterThan(0);
+    const wornModels = torsoClothing.map((item) => {
+      expect(item.figureModels).toBeDefined();
+      return item.figureModels!.map(({ model }) => model);
+    });
+    const libraries = await Promise.all(wornModels.map((models) => loadFigureModels(base, 'player', models)));
+    for (const [index, item] of torsoClothing.entries()) {
+      const inventory = new Inventory(base);
+      expect(inventory.add(inventory.create(item.id), { kind: 'worn' })).toBe(true);
+      const meshes = new PlayerMeshes(0.5, figure, base.models, libraries[index]! as ModelLibrary);
+      meshes.sync(pose(inventory));
+      expect(meshes.group.getObjectByName('worn-torso')).toBeDefined();
+    }
+  });
+
   it('keeps an authored item pivot on a posed attachment frame for an inventory-independent consumer', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create(fixtureItem.id);

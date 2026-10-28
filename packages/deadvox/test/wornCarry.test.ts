@@ -32,10 +32,15 @@ for (const def of registry.items.values()) {
 const outfits = Array.from({ length: Math.max(...[...bySlot.values()].map((defs) => defs.length)) }, (_, index) =>
   [...bySlot.values()].map((defs) => defs[index % defs.length]!),
 );
-const underLayers = [...registry.items.values()].filter((def) => def.wearable?.figureFit);
+const torsoGarments = [...registry.items.values()].filter(
+  (def) => def.wearable?.slot === 'torso' && def.figureModels !== undefined,
+);
+const outerTorso = [...registry.items.values()].filter(
+  (def) => def.wearable !== undefined && def.figureModels?.some((entry) => entry.overTorso !== undefined),
+);
 const models = (await loadFigureModels(registry, 'player', [
   ...new Set(
-    [...[...bySlot.values()].flat(), sling, ...underLayers].flatMap((def) =>
+    [...[...bySlot.values()].flat(), sling, ...torsoGarments, ...outerTorso].flatMap((def) =>
       def.figureModels!.flatMap(({ model, overTorso }) => [model, ...Object.values(overTorso ?? {})]),
     ),
   ),
@@ -93,48 +98,50 @@ const drawnAs = (meshes: PlayerMeshes, item: Item) => {
 };
 
 describe('worn carry and armour on the figure', () => {
-  it('switches vest fits with the torso under-layer and keeps the whole chest shell outside the jacket', () => {
-    const vests = bySlot.get('vest') ?? [];
-    expect(vests.length).toBeGreaterThan(0);
-    expect(underLayers.length).toBeGreaterThan(0);
-    for (const under of underLayers) {
-      for (const vest of vests) {
+  it('switches every outer torso item to each torso garment fit without interpenetration', () => {
+    expect(outerTorso.length).toBeGreaterThan(0);
+    expect(torsoGarments.length).toBeGreaterThan(0);
+    const bodyFrames = new Set(
+      Object.entries(figure.attachmentFrames)
+        .filter(([, attachment]) => attachment.part === 'body')
+        .map(([name]) => `wear-frame-${name}`),
+    );
+    for (const garmentDef of torsoGarments) {
+      for (const outerDef of outerTorso) {
         const inventory = new Inventory(registry);
-        wear(inventory, inventory.create(vest.id));
+        wear(inventory, inventory.create(outerDef.id));
         const meshes = new PlayerMeshes(0.5, figure, registry.models, models);
         meshes.sync(pose(inventory));
-        const [bare] = wornObjects(meshes, 'vest');
+        const slot = slotOf(outerDef);
+        const [bare] = wornObjects(meshes, slot);
         expect(bare).toBeDefined();
-        const garment = wear(inventory, inventory.create(under.id));
+        const garment = wear(inventory, inventory.create(garmentDef.id));
         meshes.sync(pose(inventory));
         meshes.group.updateMatrixWorld(true);
-        const outer = wornObjects(meshes, 'vest');
-        const bodyFrames = new Set(
-          Object.entries(figure.attachmentFrames)
-            .filter(([, attachment]) => attachment.part === 'body')
-            .map(([name]) => `wear-frame-${name}`),
-        );
+        const outer = wornObjects(meshes, slot);
         const inner = wornObjects(meshes, 'torso').filter((object) => bodyFrames.has(object.parent!.name));
         expect(outer[0]).not.toBe(bare);
         const surfaces = [
-          { name: 'under-layer', shell: shellOf(meshesUnder(inner)) },
-          { name: 'vest', shell: shellOf(meshesUnder(outer)) },
+          { name: garmentDef.id, shell: shellOf(meshesUnder(inner)) },
+          { name: outerDef.id, shell: shellOf(meshesUnder(outer)) },
         ];
         expect(surfaces.every(({ shell }) => shell.points.length > 0)).toBe(true);
-        const frame = meshes.group.getObjectByName('wear-frame-torso')!;
-        expect(overlapsOf(surfaces)).toEqual([]);
-        const anchors = registry.models.get(figure.body.model)!.anchors!;
-        const chest = new Vector3(...anchors[figure.body.joints.leftShoulder]!)
-          .add(new Vector3(...anchors[figure.body.joints.rightShoulder]!))
-          .multiplyScalar(0.5);
-        const vestFront = frontAt(meshesUnder(outer), frame, chest);
-        const jacketFront = frontAt(meshesUnder(inner), frame, chest);
-        expect(vestFront.length).toBeGreaterThan(0);
-        expect(jacketFront.length).toBeGreaterThan(0);
-        expect(Math.min(...vestFront)).toBeGreaterThan(Math.max(...jacketFront));
+        expect(overlapsOf(surfaces), `${outerDef.id} over ${garmentDef.id}`).toEqual([]);
+        if (slot === 'vest') {
+          const frame = meshes.group.getObjectByName('wear-frame-torso')!;
+          const anchors = registry.models.get(figure.body.model)!.anchors!;
+          const chest = new Vector3(...anchors[figure.body.joints.leftShoulder]!)
+            .add(new Vector3(...anchors[figure.body.joints.rightShoulder]!))
+            .multiplyScalar(0.5);
+          const vestFront = frontAt(meshesUnder(outer), frame, chest);
+          const garmentFront = frontAt(meshesUnder(inner), frame, chest);
+          expect(vestFront.length).toBeGreaterThan(0);
+          expect(garmentFront.length).toBeGreaterThan(0);
+          expect(Math.min(...vestFront)).toBeGreaterThan(Math.max(...garmentFront));
+        }
         expect(inventory.move(garment, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
         meshes.sync(pose(inventory));
-        expect(wornObjects(meshes, 'vest')[0]).not.toBe(outer[0]);
+        expect(wornObjects(meshes, slot)[0]).not.toBe(outer[0]);
         meshes.dispose();
       }
     }
