@@ -7,6 +7,7 @@ import {
   skillEffectLevel,
   skillSaturation,
 } from './character.ts';
+import type { PlayerStance } from './playerStance.ts';
 
 export const FIREARMS_SKILL_ZERO_RANGES = {
   variance: { min: 0.1, max: 100, step: 0.1 },
@@ -54,6 +55,7 @@ export interface FirearmsCombatTuning {
   readonly wobbleNoiseReversionRatePerSimSecond: number;
   readonly wobbleNoiseSigmaRadiansPerSqrtSecond: number;
   readonly wobbleNoiseSmoothingSimSeconds: number;
+  readonly wobbleStanceDriftScale: Readonly<Record<PlayerStance, number>>;
   readonly reloadFactorFloor: number;
   readonly reloadFactorHalfLifeLevels: number;
   readonly rackFactorFloor: number;

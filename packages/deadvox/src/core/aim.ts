@@ -33,6 +33,7 @@ export interface AimStep {
   readonly recoilRecoveryRate: number;
   /** Fraction of the shared two-step footfall stride. */
   readonly stridePhase: number;
+  readonly stanceDriftScale?: number;
   /** Absent means no hold is asked for. */
   readonly breath?: BreathHoldStep | undefined;
 }
@@ -354,6 +355,7 @@ export class AimController {
   private readonly breathHold: Pick<BreathHoldTuning, 'recoverySimSeconds' | 'recoverySwayScale'>;
   private breath: BreathHoldState;
   private breathSteadying = 0;
+  private stanceDriftScale = 1;
   private lastBreathCue: BreathCue | undefined;
 
   constructor({
@@ -490,7 +492,7 @@ export class AimController {
       shape: this.wobbleShape,
       stridePhase: this.stridePhase,
       wobbleNoise: { yaw: this.wobbleNoiseYaw.smooth, pitch: this.wobbleNoisePitch.smooth },
-      wobbleNoiseStrengthScale: this.wobbleNoiseStrengthScale * this.breathDriftScale(),
+      wobbleNoiseStrengthScale: this.wobbleNoiseStrengthScale * this.breathDriftScale() * this.stanceDriftScale,
     });
     this.state.frame = result.frame;
     this.viewPitchShift = result.viewPitchShift;
@@ -518,6 +520,7 @@ export class AimController {
     firing,
     recoilRecoveryRate,
     stridePhase,
+    stanceDriftScale = 1,
     breath,
   }: AimStep): AimFrame {
     if (
@@ -532,6 +535,8 @@ export class AimController {
         [yaw, pitch, recoilRecoveryRate, stridePhase].every(Number.isFinite) &&
         stridePhase >= 0 &&
         stridePhase < 1 &&
+        Number.isFinite(stanceDriftScale) &&
+        stanceDriftScale >= 0 &&
         typeof firing === 'boolean' &&
         recoilRecoveryRate > 0
       )
@@ -559,6 +564,7 @@ export class AimController {
     this.variance = variance;
     this.speed = speed;
     this.stridePhase = stridePhase;
+    this.stanceDriftScale = stanceDriftScale;
 
     if (state.hasLookSample) {
       const yawRate = wrapAngle(yaw - state.lastYaw) / dt;

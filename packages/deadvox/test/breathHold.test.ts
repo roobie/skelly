@@ -8,13 +8,14 @@ import {
   INITIAL_BREATH_HOLD,
 } from '../src/core/aim.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import type { PlayerStance } from '../src/core/playerStance.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { type MoveIntent, PLAYER } from './playerFixture.ts';
+import { type MoveIntent, PLAYER, type StanceToggle } from './playerFixture.ts';
 
 const registry = baseRegistry();
 const firearmsTuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
@@ -139,6 +140,7 @@ describe('holding breath (`DESIGN.md`, "Holding breath")', () => {
 const makeRuntime = (restore?: Readonly<SaveSnapshot>) => {
   let intent: MoveIntent = { ...IDLE };
   let aimingDownSights = true;
+  let stanceToggle: StanceToggle | undefined;
   const played: Readonly<SoundEmission>[] = [];
   const session = createSession({
     registry,
@@ -154,6 +156,11 @@ const makeRuntime = (restore?: Readonly<SaveSnapshot>) => {
     controls: {
       active: () => true,
       intent: () => intent,
+      consumeStanceToggle: () => {
+        const pressed = stanceToggle;
+        stanceToggle = undefined;
+        return pressed;
+      },
       readyHeld: () => true,
       aimingDownSights: () => aimingDownSights,
       yaw: () => 0,
@@ -174,6 +181,9 @@ const makeRuntime = (restore?: Readonly<SaveSnapshot>) => {
       for (let i = 0; i < frames; i++) {
         session.frame(DT);
       }
+    },
+    setStance: (stance: Exclude<PlayerStance, 'standing'>) => {
+      stanceToggle = stance === 'crouching' ? 'crouch' : 'prone';
     },
     setIntent: (next: Partial<MoveIntent>) => {
       intent = { ...IDLE, ...next };
@@ -203,6 +213,45 @@ const snapshotOf = (session: ReturnType<typeof makeRuntime>['session']) =>
   session.snapshot({ worldId: 'world-73', characterId: 'character-1' });
 
 describe('holding breath in play', () => {
+  it('steadies drift more when crouched and most when prone', () => {
+    const runtimes = (['standing', 'crouching', 'prone'] as const).map((stance) => {
+      const runtime = readiedRuntime();
+      if (stance !== 'standing') {
+        runtime.setStance(stance);
+      }
+      runtime.advance(1);
+      expect(runtime.session.stance).toBe(stance);
+      return runtime;
+    });
+    for (let tick = 0; tick < 30; tick++) {
+      for (const runtime of runtimes) {
+        runtime.advance(1);
+      }
+      const amplitudes = runtimes.map(({ session }) => magnitude(session.aim.frame));
+      expect(amplitudes[0]).toBeGreaterThan(amplitudes[1]!);
+      expect(amplitudes[1]).toBeGreaterThan(amplitudes[2]!);
+      expect(amplitudes[2]).toBeGreaterThan(0);
+    }
+  });
+
+  it('starts holding breath and steadies drift while prone', () => {
+    const free = readiedRuntime();
+    const held = readiedRuntime();
+    for (const runtime of [free, held]) {
+      runtime.setStance('prone');
+    }
+    held.setIntent({ sprint: true });
+    for (let tick = 0; tick < 30; tick++) {
+      free.advance(1);
+      held.advance(1);
+      expect(held.session.stance).toBe('prone');
+      expect(held.session.aim.breathHeld).toBe(true);
+      expect(magnitude(free.session.aim.frame)).toBeGreaterThan(0);
+      expect(magnitude(held.session.aim.frame)).toBeLessThan(magnitude(free.session.aim.frame));
+      expect(held.session.sprinting).toBe(false);
+    }
+  });
+
   it('holds with the sprint key in ADS and spends stamina, but not while moving or outside ADS', () => {
     const runtime = readiedRuntime();
     const { session } = runtime;
@@ -250,12 +299,14 @@ describe('holding breath in play', () => {
 
   it('keeps a held breath and a recovery across save and restore', () => {
     const holding = readiedRuntime();
+    holding.setStance('prone');
     holding.setIntent({ sprint: true });
     holding.advance(10);
     expect(holding.session.aim.breathHeld).toBe(true);
     const heldSave = snapshotOf(holding.session);
     const restoredHold = makeRuntime(heldSave);
     expect(restoredHold.session.aim.breathHeld).toBe(true);
+    expect(restoredHold.session.stance).toBe('prone');
     restoredHold.setIntent({ sprint: true });
     restoredHold.advance(1);
     expect(restoredHold.session.aim.breathHeld).toBe(true);

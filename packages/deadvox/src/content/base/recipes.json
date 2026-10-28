@@ -624,6 +624,11 @@
           "wobbleNoiseSigmaRadiansPerSqrtSecond": 0.002,
           "wobbleNoiseSmoothingSimSeconds": 0.12,
           "wobbleSkillTenVariance": 0.050000000000000003,
+          "wobbleStanceDriftScale": {
+            "crouching": 0.80000000000000004,
+            "prone": 0.59999999999999998,
+            "standing": 1
+          },
           "wobbleVerticalToHorizontalRatio": 0.22500000000000001
         }
       },

@@ -3869,6 +3869,11 @@ const SkillSchema = pipe(
             wobbleNoiseReversionRatePerSimSecond: pipe(Positive, maxValue(30)),
             wobbleNoiseSigmaRadiansPerSqrtSecond: pipe(NonNegative, maxValue(1)),
             wobbleNoiseSmoothingSimSeconds: pipe(Positive, maxValue(1)),
+            wobbleStanceDriftScale: strictObject({
+              standing: NonNegative,
+              crouching: NonNegative,
+              prone: NonNegative,
+            }),
             reloadFactorFloor: Fraction,
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,
