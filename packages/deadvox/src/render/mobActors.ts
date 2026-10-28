@@ -281,7 +281,7 @@ interface ZombieRenderState extends SlotHolder {
   readonly walkActor: WalkActor;
   crawling: boolean;
   fallHit?: Vec3 | undefined;
-  crawlFall?: { physics: Ragdoll; elapsed: number; released: boolean } | undefined;
+  crawlFall?: { physics: Ragdoll; elapsedRealSeconds: number; released: boolean } | undefined;
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
   /** The simulation zombie last drawn in this slot. */
@@ -2103,7 +2103,7 @@ export class MobActorMeshes implements ZombieRenderer {
       this.ragdolls ??= new RagdollWorld();
       const placement = state.lastPlacement;
       state.crawlFall = {
-        elapsed: 0,
+        elapsedRealSeconds: 0,
         released: false,
         physics: this.ragdolls.spawn({
           realized: variant.realized,
@@ -2144,7 +2144,7 @@ export class MobActorMeshes implements ZombieRenderer {
   ): void {
     const fall = state.crawlFall!;
     const progress = clamp01(
-      (fall.elapsed - ragdollContent.crawlFall.fallSeconds) / ragdollContent.crawlFall.blendSeconds,
+      (fall.elapsedRealSeconds - ragdollContent.crawlFall.fallSeconds) / ragdollContent.crawlFall.blendSeconds,
     );
     const blend = progress * progress * (3 - 2 * progress);
     const yaw = rotY((posed.placement.yawRad * 180) / Math.PI);
@@ -2479,12 +2479,12 @@ export class MobActorMeshes implements ZombieRenderer {
       if (!fall) {
         continue;
       }
-      fall.elapsed += realDt;
-      if (!fall.released && fall.elapsed >= ragdollContent.crawlFall.fallSeconds) {
+      fall.elapsedRealSeconds += realDt;
+      if (!fall.released && fall.elapsedRealSeconds >= ragdollContent.crawlFall.fallSeconds) {
         this.ragdolls?.remove(fall.physics);
         fall.released = true;
       }
-      if (fall.elapsed >= ragdollContent.crawlFall.fallSeconds + ragdollContent.crawlFall.blendSeconds) {
+      if (fall.elapsedRealSeconds >= ragdollContent.crawlFall.fallSeconds + ragdollContent.crawlFall.blendSeconds) {
         state.crawlFall = undefined;
       }
     }
