@@ -114,6 +114,42 @@ describe('actual-slot held placement', () => {
     }
   });
 
+  it('takes free-held ADS eye distance from content without changing sight alignment or the hip hold', () => {
+    const item = registry.items.get('revolver_357')!;
+    const model = registry.models.get(item.model!)!;
+    const authoredStandoff = model.gun!.adsStandoffMetres!;
+    expect(authoredStandoff).toBeGreaterThan(0);
+    const sight = model.gun!.sight!;
+    for (const kind of ['iron', 'optic'] as const) {
+      let hipRoot: Vec3 | undefined;
+      for (const standoff of [authoredStandoff, authoredStandoff * 1.5]) {
+        const tuned: ModelDef = {
+          ...model,
+          gun: { ...model.gun!, adsStandoffMetres: standoff, sight: { ...sight, kind } },
+        };
+        const input = {
+          holds: registry.figures.get('player')!.holds,
+          model: tuned,
+          side: 'right' as const,
+          leadingSide: 'right' as const,
+          twoHanded: item.twoHanded === true,
+          progress: 1,
+          aimFrame: NEUTRAL_AIM,
+          loweredPitchRadians: 0,
+        };
+        const pose = heldFirearmTransform({ ...input, aimingDownSights: true });
+        const sightFromGrip = modelToView(tuned, sight.eye.map((value, axis) => value - tuned.grip!.at[axis]!) as Vec3);
+        const eyeToSight = pose.rootOffset.map((value, axis) => value + sightFromGrip[axis]!) as Vec3;
+        for (let axis = 0; axis < 3; axis++) {
+          expect(eyeToSight[axis]).toBeCloseTo(pose.sightDirection![axis]! * standoff);
+        }
+        const hip = heldFirearmTransform({ ...input, aimingDownSights: false });
+        hipRoot ??= hip.rootOffset;
+        expect(hip.rootOffset).toEqual(hipRoot);
+      }
+    }
+  });
+
   it('cups the support palm under the bore with the bore running across it from the heel to the thumb-index gap', () => {
     const model = JSON.parse(compileJsonnetFile(HOLD_FIXTURE)) as ModelDef;
     // A gungen export runs its bore along the model's +x through the origin.

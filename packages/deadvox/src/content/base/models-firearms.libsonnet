@@ -122,7 +122,7 @@ local slung(model) = [{
     import 'gungen/case_5_d_56x45.model.json',
     import 'gungen/round_12_h_gauge_h_00_h_buck.model.json',
     import 'gungen/case_12_h_gauge_h_00_h_buck.model.json',
-    import 'gungen/revolver.model.json',
+    (import 'gungen/revolver.model.json') { gun+: { adsStandoffMetres: 0.4 } },
     import 'gungen/round_357_h_magnum.model.json',
     import 'gungen/case_357_h_magnum.model.json',
     longGunHands(import 'gungen/shotgun_pump.model.json', -0.568) { hands+: { ads: { stockShoulderLimitMetres: 0.09 } } },

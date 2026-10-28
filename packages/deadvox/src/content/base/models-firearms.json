@@ -3328,6 +3328,7 @@
         "turn": [0, 0, 0]
       },
       "gun": {
+        "adsStandoffMetres": 0.40000000000000002,
         "attachmentSlots": [
           {
             "direction": [1, 0, 4.8985871965894128e-16],
