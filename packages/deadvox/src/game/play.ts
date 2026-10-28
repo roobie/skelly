@@ -2335,6 +2335,9 @@ export const startPlay = (
       case 'aim.ads-toggle':
         input.toggleAimingDownSights(replayPlayer !== undefined);
         break;
+      case 'view.free-look':
+        input.startFreeLook();
+        break;
       case 'movement.walk-toggle':
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;

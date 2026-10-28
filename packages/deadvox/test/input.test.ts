@@ -37,6 +37,8 @@ const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => 
       }
     } else if (action === 'aim.ads-toggle' && phase === 'down') {
       input.toggleAimingDownSights();
+    } else if (action === 'view.free-look' && phase === 'down') {
+      input.startFreeLook();
     }
   };
   input = new Input(target, allowed, () => true, viewerInputAllowed);
@@ -135,17 +137,21 @@ describe('pointer input', () => {
     expect(input.freeLook.pitch).toBe(0);
     keyboardInput.release(key('KeyW'));
   });
-  it('ignores free look while sights are toggled on', () => {
+  it('ends sights when free look starts in ADS and stays at hip after release', () => {
     const { input, targetListeners, documentListeners } = fixture();
     targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
     input.toggleAimingDownSights();
     expect(input.aimingDownSights).toBe(true);
     keyboardInput.press(key('AltLeft', true));
+    expect(input.aimingDownSights).toBe(false);
     const before = input.yaw;
     documentListeners.get('mousemove')!({ movementX: 0.1, movementY: 0 } as MouseEvent);
-    expect(input.yaw).not.toBe(before);
+    expect(input.yaw).toBe(before);
+    expect(input.freeLooking).toBe(true);
+    keyboardInput.release(key('AltLeft'));
+    input.advanceFreeLook(0);
     expect(input.freeLooking).toBe(false);
-    expect(input.viewYaw).toBe(input.yaw);
+    expect(input.aimingDownSights).toBe(false);
   });
   it.each(['blur', 'pointerlockchange'] as const)('ends free look on %s without waiting for Alt release', (reason) => {
     const { input, document, documentListeners, windowListeners } = fixture();
