@@ -188,6 +188,7 @@
         "**/deadvox/test/mobActors.test.ts",
         "**/deadvox/test/poseAgreement.test.ts",
         "**/deadvox/test/zombieClips.test.ts",
+        "**/deadvox/test/zombies.test.ts",
         "**/deadvox/test/shamblerAudio.test.ts",
         "**/deadvox/test/zombieRegions.test.ts"
       ],

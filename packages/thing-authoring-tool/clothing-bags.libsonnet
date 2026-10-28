@@ -19,6 +19,7 @@ local garment(id, massKg, style, body, trim, dimensions) = atom(
     width: 0.38, height: 0.045, depth: 0.44, sleeveLength: 0, hoodDepth: 0, pocketDepth: 0, cargoDepth: 0, legGap: 0.025,
   }),
   atom('rubber_boots', 'boots', 1.800, { width: 0.28, height: 0.22, depth: 0.34, gap: 0.025 }, { body: 'paint-charcoal', trim: 'steel-grey' }, 'shaft--1'),
+  atom('sneakers', 'boots', 0.800, { width: 0.26, height: 0.13, depth: 0.32, gap: 0.02 }, { body: 'cloth-pants-player', trim: 'rubber-black' }, 'shaft--1'),
   garment('cargo_pants', 0.800, 'pants', 'cord-olive', 'paint-charcoal', {
     width: 0.40, height: 0.05, depth: 0.46, sleeveLength: 0, hoodDepth: 0, pocketDepth: 0, cargoDepth: 0.035, legGap: 0.025,
   }),

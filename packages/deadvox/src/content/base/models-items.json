@@ -3157,6 +3157,23 @@
       "roll": 0
     },
     {
+      "file": "assets/models/sneakers.glb",
+      "grip": {
+        "at": [-0.070000000000000007, 0.065000000000000002, 0.084999999999999992],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "sneakers",
+      "parts": {
+        "sneakers": {
+          "centreOfMass": [6.356720054441276e-18, 0.045037523452157592, 0.029577861163227016],
+          "massKg": 0.80000000000000004,
+          "node": "sneakers:boots"
+        }
+      },
+      "roll": 0
+    },
+    {
       "file": "assets/models/cargo_pants.glb",
       "grip": {
         "at": [0, 0.025000000000000001, 0],
@@ -3911,6 +3928,10 @@
     {
       "file": "assets/models/worn_boot_foot.glb",
       "id": "worn_boot_foot"
+    },
+    {
+      "file": "assets/models/worn_sneaker_foot.glb",
+      "id": "worn_sneaker_foot"
     },
     {
       "file": "assets/models/utility_vest_worn.glb",

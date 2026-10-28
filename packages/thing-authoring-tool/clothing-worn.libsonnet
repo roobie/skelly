@@ -21,6 +21,7 @@ local jacketLevel(id) =
   prism(id, 'cloth', d.bottom, d.top, d.width, d.depth, d.chamfer);
 local trousers = { cloth: 'cloth-pants-player', trim: 'paint-charcoal' };
 local rubber = { cloth: 'rubber-black', trim: 'paint-charcoal' };
+local sneaker = { cloth: 'cloth-pants-player', trim: 'rubber-black' };
 [
   garment('worn_jacket_body', [
     jacketLevel('hem'),
@@ -53,4 +54,8 @@ local rubber = { cloth: 'rubber-black', trim: 'paint-charcoal' };
     prism('upper', 'cloth', -0.075, 0.02, 0.13, 0.30, 0.02, cz=0.075),
     box('sole', 'trim', [-0.07, -0.09, -0.08], [0.07, -0.065, 0.23]),
   ], rubber),
+  garment('worn_sneaker_foot', [
+    prism('upper', 'cloth', -0.075, 0, 0.13, 0.30, 0.02, cz=0.075),
+    box('sole', 'trim', [-0.07, -0.09, -0.08], [0.07, -0.065, 0.23]),
+  ], sneaker),
 ]

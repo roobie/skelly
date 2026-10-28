@@ -564,6 +564,14 @@ try {
         : { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     })()`);
     await moveCursorTo(position);
+    assert.equal(
+      await evaluate(`(() => {
+        const target = document.querySelector(${JSON.stringify(selector)});
+        return document.elementFromPoint(${position.x}, ${position.y})?.closest(${JSON.stringify(selector)}) === target;
+      })()`),
+      true,
+      `drawn cursor reaches ${selector}`,
+    );
     await evaluate(`window.__cursorBeforeClick = (() => {
       const cursor = document.querySelector('#game-cursor');
       const rect = cursor.getBoundingClientRect();
@@ -701,6 +709,7 @@ try {
     'audio volume remains selected when the menu reopens',
   );
   const clockOptionBeforeReset = await evaluate(`${clockOption}.checked`);
+  await evaluate(`document.querySelector('${clockLabel}').scrollIntoView({ block: 'center' })`);
   await clickAt(clockLabel);
   assert.equal(
     await evaluate(`${clockOption}.checked`),
