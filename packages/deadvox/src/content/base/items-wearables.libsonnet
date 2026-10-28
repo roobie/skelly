@@ -73,9 +73,13 @@ local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }
       "name": "Hoodie",
       "category": "clothing",
       "model": "hoodie",
+      figureModels: [worn('worn_hoodie_body', 'clothing_body', ['torso'])]
+        + pair('worn_hoodie_upper', 'left_sleeve', 'right_sleeve', ['upper'])
+        + pair('worn_hoodie_fore', 'left_cuff', 'right_cuff', ['fore']),
       "size": [3, 3],
       "wearable": {
         "slot": "torso",
+        figureFit: 'jacket',
         "encumbrance": 8,
         "warmth": 25,
         "wearPerDamage": 0.0015
