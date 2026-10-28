@@ -14,6 +14,7 @@ import {
 } from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
+import deathContent from '@mobgen/mob/deathPoses.json' with { type: 'json' };
 import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { bodyRestExtents, corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
@@ -21,7 +22,7 @@ import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
@@ -379,6 +380,47 @@ const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward:
     center: [...applyPoint(head, [0, 0, 0])] as Vec3,
   };
 };
+
+describe('corpse preparation', () => {
+  it.for(deathContent.poses)('prepares $id contact before any death frame', async ({ id: poseId }) => {
+    const reactions = await import('@mobgen/mob/reactions.ts');
+    const corpseContact = await import('@mobgen/mob/corpseContact.ts');
+    const preparation = vi.spyOn(reactions, 'prepareDeathPoses');
+    const contact = vi.spyOn(corpseContact, 'fitSkullContact');
+    const renderer = new MobActorMeshes(0.5, 3, {
+      zombies: new Map([
+        [SHAMBLER.id, SHAMBLER],
+        [CRAWLER.id, CRAWLER],
+      ]),
+      poolSize: 1,
+      deathPoseId: poseId,
+    });
+    try {
+      contact.mockClear();
+      const store = new MapEntityStore<Zombie>();
+      for (const { type, severed } of [
+        { type: SHAMBLER, severed: [] },
+        { type: SHAMBLER, severed: ['thigh.L'] },
+        { type: CRAWLER, severed: [] },
+      ]) {
+        const zombie = makeZombie([0, 0, 0], [0, 0, -1], severed, { type });
+        const id = store.add(zombie);
+        renderer.sync(store, 0, 1);
+        renderer.zombieDied(id, zombie);
+        store.remove(id);
+        renderer.sync(store, DEATH_FALL_DURATION / 2, 1);
+        expect(renderer.boneMatrix(id, 'chest')).toBeDefined();
+        renderer.sync(store, DEATH_FALL_DURATION, 1);
+      }
+      expect(contact).not.toHaveBeenCalled();
+      expect(preparation).toHaveBeenCalled();
+    } finally {
+      renderer.dispose();
+      preparation.mockRestore();
+      contact.mockRestore();
+    }
+  });
+});
 
 describe('facing convention', () => {
   it('renders a +X-facing zombie with its local forward along +X in world', () => {
@@ -955,11 +997,15 @@ describe('MobActorMeshes', () => {
   });
 
   it('draws the exact persisted figure seed, not an EntityId-derived variant', () => {
-    const renderer = new MobActorMeshes(0.5, 8, { zombies: registry.zombies });
+    const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, 2);
+    expect(figureSeeds.length).toBeGreaterThan(1);
+    const type = { ...SHAMBLER, figureSeeds };
+    const spawnSeeds = [...figureSeeds].reverse();
+    const renderer = new MobActorMeshes(0.5, spawnSeeds.length, { zombies: new Map([[type.id, type]]) });
     try {
       const store = new MapEntityStore<Zombie>();
-      const ids = SHAMBLER_FIGURE_SEEDS.map((seed, index) =>
-        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], { figureSeed: seed })),
+      const ids = spawnSeeds.map((seed, index) =>
+        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], { type, figureSeed: seed })),
       );
       renderer.sync(store, 0, 1);
       const internals = renderer as unknown as {
@@ -968,7 +1014,7 @@ describe('MobActorMeshes', () => {
       };
       for (let i = 0; i < ids.length; i++) {
         const state = internals.states.get(ids[i]!)!;
-        expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(SHAMBLER_FIGURE_SEEDS[i]);
+        expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(spawnSeeds[i]);
       }
     } finally {
       renderer.dispose();

@@ -18,36 +18,49 @@ import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
 import zombieContent from '../src/content/base/zombies.json' with { type: 'json' };
 
+const figures = TEMPLATES.flatMap((template) =>
+  [
+    ...new Set(
+      zombieContent.zombies
+        .filter((entry) => entry.model === template.name)
+        .flatMap((entry) => entry.figureSeeds ?? []),
+    ),
+  ].map((seed) => {
+    const found = generateValid(template, seed, { maxAttempts: 1 });
+    return {
+      template,
+      seed,
+      found,
+      bodyExtents: found && bodyRestExtents(found.realized.body.bones, found.realized.voxels),
+      extents: found && footRestExtents(found.realized.body.bones, found.realized.voxels),
+    };
+  }),
+);
+
 describe('authored corpse contact', () => {
   it.for(
-    TEMPLATES.flatMap((template) =>
-      [
-        ...new Set(
-          zombieContent.zombies
-            .filter((entry) => entry.model === template.name)
-            .flatMap((entry) => entry.figureSeeds ?? []),
-        ),
-      ].flatMap((seed) =>
-        deathContent.poses.flatMap(({ id: poseId }) =>
-          (template.bodyPlan === 'crawler' ? (['prone'] as const) : (['upright', 'prone'] as const)).map((posture) => ({
-            name: template.name,
-            poseId,
-            posture,
-            seed,
-          })),
-        ),
+    figures.flatMap(({ template, seed }) =>
+      deathContent.poses.flatMap(({ id: poseId }) =>
+        (template.bodyPlan === 'crawler' ? (['prone'] as const) : (['upright', 'prone'] as const)).map((posture) => ({
+          name: template.name,
+          poseId,
+          posture,
+          seed,
+        })),
       ),
     ),
   )(
     '$name seed $seed $posture $poseId keeps the settled skull clear of the chest',
     async ({ name, seed, posture, poseId }, { annotate }) => {
-      const found = generateValid(TEMPLATES.find((template) => template.name === name)!, seed, { maxAttempts: 1 });
+      const { found, bodyExtents, extents } = figures.find(
+        (figure) => figure.template.name === name && figure.seed === seed,
+      )!;
       expect(found, `${name}/${seed} is a valid authored figure`).toBeDefined();
       const { body, voxels } = found!.realized;
       const actor = {
         bones: body.bones,
-        bodyExtents: bodyRestExtents(body.bones, voxels),
-        extents: footRestExtents(body.bones, voxels),
+        bodyExtents: bodyExtents!,
+        extents: extents!,
         voxels,
         posture,
         params: found!.genome.params as HumanoidParams,

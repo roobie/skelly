@@ -26,6 +26,7 @@ import {
   flinchClipFor,
   flinchPose,
   HIT_FLINCH,
+  prepareDeathPoses,
 } from '../src/mob/reactions.ts';
 import { TEMPLATES as ALL_TEMPLATES, HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
@@ -190,6 +191,20 @@ const extentsOverlap = (
 const floorSettlingBones = new Set(deathContent.settleBones.filter((id) => id !== 'head'));
 
 describe('deathPose', () => {
+  it.for(['upright', 'prone'] as const)('preparation preserves every %s fall and resting pose', (posture) => {
+    const found = setup('shambler');
+    const actor = { ...deathActorOf(found), posture };
+    const prepared = { ...actor, bodyExtents: new Map(actor.bodyExtents) };
+    const base = posture === 'prone' ? crawlerGaitPose(found.realized, 0.5, 1) : walkPose(actor, INITIAL_CLOCK, 0);
+    prepareDeathPoses(prepared);
+    for (const { id: poseId } of deathContent.poses) {
+      for (const time of [DEATH_FALL_DURATION / 2, DEATH_FALL_DURATION]) {
+        expect(deathPose(prepared, base, time, { direction: -1, poseId })).toEqual(
+          deathPose(actor, base, time, { direction: -1, poseId }),
+        );
+      }
+    }
+  });
   it.for(TEMPLATES.flatMap((template) => deathContent.poses.map((entry) => [template.name, entry.id] as const)))(
     '%s %s rests with supported limbs and separated feet after walking or attacking',
     async ([name, poseId], { annotate }) => {

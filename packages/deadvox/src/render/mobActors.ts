@@ -96,7 +96,7 @@ import { bodyRestExtents, createGaitCache, type Extent, footRestExtents, type Wa
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '@mobgen/mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '@mobgen/mob/lookAtProfiles.ts';
-import { DEATH_FALL_DURATION, type DeathActor, deathPose } from '@mobgen/mob/reactions.ts';
+import { DEATH_FALL_DURATION, type DeathActor, deathPose, prepareDeathPoses } from '@mobgen/mob/reactions.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   type BufferGeometry,
@@ -525,11 +525,36 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
   }
 };
 
+const deathExtentsByFigure = new WeakMap<Realized, ReadonlyMap<string, Extent>>();
+
+const prepareActorVariant = (variant: BuiltActorVariant): void => {
+  if (variant.model === 'acid') {
+    return;
+  }
+  const postures =
+    [...TEMPLATES, amalgamTemplate].find((template) => template.name === variant.model)!.bodyPlan === 'crawler'
+      ? (['prone'] as const)
+      : (['upright', 'prone'] as const);
+  for (const posture of postures) {
+    prepareDeathPoses({
+      ...variant.walkActorTemplate,
+      bodyExtents: variant.bodyExtents,
+      voxels: variant.realized.voxels,
+      posture,
+    });
+  }
+};
+
 const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ZombieFigureType): BuiltActorVariant => {
   const type = model === 'amalgam' ? requireAmalgamType(amalgamType) : { model };
   const figure = zombieFigure(type, seed);
   const { genome, realized } = figure;
   const bodyScale = model === 'amalgam' ? type.bodyScale : undefined;
+  let bodyExtents = deathExtentsByFigure.get(realized);
+  if (!bodyExtents) {
+    bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
+    deathExtentsByFigure.set(realized, bodyExtents);
+  }
   return {
     model,
     figureSeed: seed,
@@ -541,7 +566,7 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: Zombie
       params: genome.params as HumanoidParams,
       seed: genome.seed,
     },
-    bodyExtents: bodyRestExtents(realized.body.bones, realized.voxels),
+    bodyExtents,
     lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
     severedRoots: severedRootsFor(figure),
     headPart: 'severableParts' in figure ? figure.severableParts.head[0] : undefined,
@@ -648,6 +673,9 @@ export class MobActorMeshes implements ZombieRenderer {
 
     const t0 = performance.now();
     const built = buildActorVariants(figureSeedsByModel(options.zombies, options.poolSize), amalgamType);
+    for (const variant of built) {
+      prepareActorVariant(variant);
+    }
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);

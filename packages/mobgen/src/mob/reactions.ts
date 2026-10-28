@@ -312,6 +312,12 @@ const restingPose = (actor: DeathActor, rotations: Record<string, Mat3>, headRol
   return { root, rotations };
 };
 
+export const prepareDeathPoses = (actor: DeathActor): void => {
+  for (const { id } of deathContent.poses) {
+    deathPose(actor, { root: [0, 0, 0], rotations: {} }, DEATH_FALL_DURATION, { direction: -1, poseId: id });
+  }
+};
+
 export const deathPose = (actor: DeathActor, basePose: Pose, t: number, params: DeathParams): Pose => {
   if (t <= 0) {
     return basePose;
