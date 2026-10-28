@@ -882,12 +882,11 @@ try {
     await page.waitForFunction(
       () => document.querySelector('#overlay')?.hidden && document.querySelector('#card-scroll-down')?.hidden,
     );
-    await page.evaluate(() => {
-      document.querySelector('#overlay').hidden = false;
-    });
+    await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => document.querySelector('#card-scroll-down')?.hidden === false);
+    await pressAction(page, 'ui.main-menu-toggle');
+    await page.waitForFunction(() => document.querySelector('#overlay')?.hidden);
     await page.evaluate(() => {
-      document.querySelector('#overlay').hidden = true;
       document.querySelector('#scroll-cue-filler').remove();
     });
     await page.setViewportSize({ width: 800, height: 600 });
