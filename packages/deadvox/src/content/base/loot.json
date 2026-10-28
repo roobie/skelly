@@ -13,6 +13,10 @@
           "weight": 2
         },
         {
+          "item": "cartridge_box_9x19",
+          "weight": 1
+        },
+        {
           "nothing": true,
           "weight": 30
         }

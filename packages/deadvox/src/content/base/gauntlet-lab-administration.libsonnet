@@ -229,7 +229,7 @@ local built = level.build({
   stair: { upper: [stairAt[0] + 11, base + 1, stairAt[2] + 1], lower: [stairAt[0] + 1, stairAt[1], stairAt[2] + 1] },
   seal: { doors: [[20 * scale, base + 1, 12 * scale], [29 * scale, base + 1, 8 * scale]] } + built.cardSeal,
   fixedLoot: built.cardStock,
-  items: [{ id: 'gauntlet_lab_administration_card', name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: rooms.director.lootUsage, tiers: ['Tier1'] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
+  items: [{ id: 'gauntlet_lab_administration_card', notLoot: true, name: 'Clearance keycard', category: 'tool', weight: 5, size: [1, 1], economy: { usage: [], tiers: [] }, model: 'folded_note', key: { lock: 'gauntlet_lab_administration_seal' } }],
   mapPieces: built.mapPieces + [wellPiece],
   mapAssemblies: [built.mapAssembly],
   // Each room rolls what it was used for, kept as thin as the lab's other margins; offices hold desk clutter, not paper,

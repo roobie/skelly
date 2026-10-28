@@ -1,7 +1,7 @@
 ---
 read_if:
   - you build or change how a zombie holds the player, or a move's `grapple` content
-  - you add a hit response, a fall, a ladder or a knockback that should end a hold
+  - you add a hit response, a fall, a ladder or a knockback that should end a hold or throw the player
   - you tune how a held player moves, turns or breaks free
   - you add a type that grabs, or a target other than the player
 ---
@@ -26,7 +26,9 @@ The code word is grapple. "Grab" already means the ladder grab, the pickup anima
 
 **Every tick, each grapple re-checks its cause.** The grabber must be alive, the gripping arm must still work by the same rule that ends attacks (`src/core/zombies.ts`, `armDisabled`), the grabber must be in reach with a clear line, and the duration must not be exceeded. A grapple also ends on damage over its break threshold, on a stagger (`docs/stagger.md`, "The rules"), and on an impulse over a threshold. One release function owns every exit, so a hold can never outlive its cause, and nothing like a killed grabber or a severed arm needs its own release path. The impulse rule is the single rule brute knockback will meet when it lands (`EPIC.md`, "5. Holding ground").
 
-**Effects are slow only, keyed by region.** Legs give a strong movement slow; the chest gives a weaker slow and slower turning. Both land where load and handling already scale pace (`src/game/player.ts`, `movementPace`) and where mouse look is scaled (`src/game/input.ts`, `lookSensitivity`). The player is never pinned: hands, movement and most actions stay free, and the few refusals a grapple adds are listed under "While held" so no other code need ask whether the player is held. This gives up the "buried under a horde" fantasy and, for the first slice, richer torso effects such as aim sway, slower swings, a locked arm or a drag toward the bite.
+**Knockback on a held player throws.** When a knockback lands on a player a brute holds, the impulse rule releases the grapple and a throw impulse is added at release, so a held player flies farther than a free one. The throw is the first effect a zombie's grapple has beyond the slow, and it is allowed because it lands at release, not while held: nothing a held player does changes, and the only grapple-side cost is that knockback reads the record list. Throw strength is a number on the brute's content, not a brute branch in code, so a second throwing type is content (`PILLARS.md`, "Content forward compatibility"). The throw belongs to the knockback work, which has no code yet, and not to the first grapple slice.
+
+**Effects are slow only, keyed by region.** Region effects are slows. Legs give a strong movement slow; the chest gives a weaker slow and slower turning. Both land where load and handling already scale pace (`src/game/player.ts`, `movementPace`) and where mouse look is scaled (`src/game/input.ts`, `lookSensitivity`). The player is never pinned: hands, movement and most actions stay free, and the few refusals a grapple adds are listed under "While held" so no other code need ask whether the player is held. The brute's throw is the one effect outside the slow, and it lands at release, above. This gives up the "buried under a horde" fantasy and, for the first slice, richer torso effects such as aim sway, slower swings, a locked arm or a drag toward the bite.
 
 **Several grapples compound under a cap.** Each grapple's slow fraction compounds on the speed left over, and a global cap stops the product short of zero, so movement can never drop out and a horde death stays the player's fault. A short grace period after any release blocks new grapples, so a horde cannot re-grab in the same tick it lost its grip.
 
@@ -36,7 +38,9 @@ The code word is grapple. "Grab" already means the ladder grab, the pickup anima
 
 **It persists in saves.** Saving and loading must neither free a held player nor invent a hold, so the records travel with the game and are validated on load like the ladder grab (`src/core/saveFormat.ts`, `grabbedLadder`).
 
-**Starting a ladder climb releases.** A climber's body is the ladder's, and a grapple that followed it up a ladder would fight the ladder owner for the body. The release is one more exit in the release function.
+**Starting a ladder climb releases.** Grabbing a ladder moves the body onto the rails, the same kind of displacement as a fall or a knockback, so it releases like an impulse does. The release is one more exit in the release function.
+
+**A climber can be grappled.** A grapple that lands on a player already on a ladder holds, and its slow lands on the climb. The pace factor that slows walking does not reach a climb on its own: the climb normalizes the steered velocity before it applies the ladder's own climb speed, and that speed arrives from ladder content with no pace on it (`src/core/ladders.ts`, `climb`; `src/game/session.ts`, `advancePlayerBody`), so a slow on the steered velocity cancels out. The implementing slice therefore carries the grapple slow into the climb speed as a second seam beside the walking pace. The ladder needs no new reach condition. A ladder is not a safe perch: a shambler at the ladder foot slows the climb, and climbing on until out of reach breaks the grapple through the per-tick line check, so release comes free too. Pulling a climber off the ladder is a non-slow effect and stays out of the first slice. The reach line to a climber above the grabber is a geometry case the chest-to-chest line may not cover cleanly; it is open below for the implementing slice.
 
 ## While held
 
@@ -64,5 +68,6 @@ Tests cover release on the grabber's death, release on a severed arm, the save r
 - Torso effects beyond slower turning, such as a drag toward the grabber or a locked arm, from slice 2 on.
 - Non-player targets: zombies grappling other characters, or the player grappling or shoving a zombie. The record allows it; nothing produces it yet.
 - A balance pass on crawler encounters and the gated slow scenarios once crawlers hinder movement.
+- Whether the reach line reaches a climber above the grabber. The chest line is built for two standing bodies (`src/core/zombies.ts`, `withinAttackReach`), so the implementing slice must check that a grabber at the ladder foot can start and keep a grapple on a climber, and what height ends it.
 - Whether carried items survive a grapple, if an enemy that grabs the wielded item is added. Until then they stay in hand.
 - Whether a leg grapple also damages the legs. The player's body already has leg regions (`src/core/body.ts`, `BODY_REGIONS`), so this is a content choice on the move's `hitRegions`, not a body change.

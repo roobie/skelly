@@ -341,6 +341,27 @@ describe('final composed body-route certificate', () => {
     ]);
   });
 
+  it('rejects a keyed lot resource whose ground key source is missing', () => {
+    const site = siteOf();
+    const resource = base.composition!.resources.find(
+      (candidate) =>
+        candidate.key &&
+        !site
+          .furnitureIn(toChunk(candidate.key.at[0]), toChunk(candidate.key.at[2]))
+          .some(({ spec }) => spec.pos.every((value, axis) => value === candidate.key!.at[axis])),
+    );
+    if (!resource?.key) {
+      throw new Error('Production scenario has no ground-keyed lot resource');
+    }
+    const original = site.lootPointsIn.bind(site);
+    vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+      original(cx, cz).filter((point) => !point.destination.every((value, axis) => value === resource.key!.at[axis])),
+    );
+    expect(scenarioLotResourceCertificate(site).issues.map(([path]) => path)).toContain(
+      `.composition.resources[${base.composition!.resources.indexOf(resource)}].key`,
+    );
+  });
+
   it("keeps a keyed resource's admitted locks from opening a later unkeyed lot resource's route", () => {
     const keyed = base.composition!.resources.find((resource) => resource.key);
     if (!keyed) {

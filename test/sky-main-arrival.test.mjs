@@ -7,6 +7,7 @@ import process from 'node:process';
 import { it } from 'node:test';
 import {
   adaptMainInteractionPick,
+  adaptMainSeedPool,
   mainArrivalGit,
   mainOverlayPath,
   mainOverlaySources,
@@ -68,6 +69,28 @@ it('main picker callers supply both branch reach predicates without changing an 
   assert.equal(options.isSolid, physical);
   assert.equal(options.isOpaque, sight);
   assert.equal(adaptMainInteractionPick(adapted), adapted);
+});
+
+it('a main renderer on one shared seed pool builds only the seeds each model realizes and rethrows other errors', () => {
+  const source = `return modelIds.flatMap((model) =>
+    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
+      buildActorVariant(model, seed, amalgamType),
+    ),
+  );`;
+  const adapted = adaptMainSeedPool(source);
+  const build = Function('modelIds', 'figureSeeds', 'buildActorVariant', 'AMALGAM_FIGURE_SEED', 'amalgamType', adapted);
+  const strict = (model, seed) => {
+    if (model === 'crawler' && seed === 2) {
+      throw new Error(`Zombie figure ${model} seed ${seed} is not valid`);
+    }
+    return `${model}:${seed}`;
+  };
+  assert.deepEqual(build(['shambler', 'crawler'], [1, 2], strict, 1), ['shambler:1', 'shambler:2', 'crawler:1']);
+  const broken = () => {
+    throw new Error('geometry failed');
+  };
+  assert.throws(() => build(['shambler'], [1], broken, 1), { message: 'geometry failed' });
+  assert.equal(adaptMainSeedPool(adapted), adapted);
 });
 
 it('main imports of an export the branch removed are found, and type-only or kept exports are not', () => {

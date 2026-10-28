@@ -289,7 +289,7 @@ class Certificate {
     }
   }
 
-  /** Takes the key from its holder and returns where it is carried from and what it opens, or undefined on failure. */
+  /** Takes the key from its furniture holder or ground source and returns where it is carried from and what it opens. */
   keyRoute(
     key: NonNullable<ScenarioResource['key']>,
     path: string,
@@ -306,13 +306,16 @@ class Certificate {
       feet = [climb.upper];
     }
     const holder = this.entityAt(key.at);
-    if (!(reaches(key.standing) && holder && this.space.visibleReach(key.standing, holder))) {
-      this.fail(`${path}.key`, 'key holder needs a reachable visible face on the key route');
+    const reachable = holder
+      ? this.space.visibleReach(key.standing, holder)
+      : this.space.visibleGroundReach(key.standing, key.at);
+    if (!(reaches(key.standing) && reachable)) {
+      this.fail(`${path}.key`, 'key source needs a reachable visible face on the key route');
       return undefined;
     }
-    const locks = this.heldLocks(key.at);
+    const locks = holder ? this.heldLocks(key.at) : this.groundLocks(key.at);
     if (locks.length === 0) {
-      this.fail(`${path}.key`, 'key holder holds no key');
+      this.fail(`${path}.key`, 'key source holds no key');
       return undefined;
     }
     return { feet: [key.climbs[0]?.lower ?? key.standing], locks };
@@ -320,7 +323,7 @@ class Certificate {
 
   /**
    * A lot's resource is proved from the start's feet, through its key's route alone when it has one: up the climbs to
-   * the holder, back down the certified-reversible climbs, then in past only the locks its own key opens.
+   * the key source, back down the certified-reversible climbs, then in past only the locks its own key opens.
    */
   lotResource(resource: ScenarioResource, index: number): void {
     const path = `.composition.resources[${index}]`;
@@ -351,16 +354,20 @@ class Certificate {
     });
   }
 
-  groundCard(at: Readonly<Vec3>, lock: string): boolean {
+  groundLocks(at: Readonly<Vec3>): string[] {
     const source = this.site
       .lootPointsIn(toChunk(at[0]), toChunk(at[2]))
       .find((point) => point.channel === 'ground' && point.destination.every((value, axis) => value === at[axis]));
-    return (
-      source?.supply.kind === 'fixed' &&
-      source.supply.items.some(
-        (item) => this.site.registry.items.get(item.item)?.key?.lock === lock && (item.count ?? 1) > 0,
-      )
-    );
+    return source?.supply.kind === 'fixed'
+      ? source.supply.items.flatMap((item) => {
+          const lock = this.site.registry.items.get(item.item)?.key?.lock;
+          return lock && (item.count ?? 1) > 0 ? [lock] : [];
+        })
+      : [];
+  }
+
+  groundCard(at: Readonly<Vec3>, lock: string): boolean {
+    return this.groundLocks(at).includes(lock);
   }
 
   seals(): void {
