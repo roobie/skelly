@@ -38,6 +38,7 @@ const source = (options: GraphicsOptions) => ({
     graphics: [
       {
         id: CORE_CONTENT_IDS.coreGraphics,
+        nearPlaneMetres: 0.01,
         readyRadiusM: 16,
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,

@@ -54,7 +54,7 @@ read_if:
   - you add or change a first-person handling animation (what it may read its timing from)
   - you change optic magnification, its input ownership or its persistence policy
   - you change HUD crosshair visibility while an optic reticle is presented
-  - you change what the optic window image shows, the optic housing mask or the ADS optic hood
+  - you change what the optic window image shows, the optic housing mask, ADS eye-to-optic parallax or the camera near plane
   - you tune body infection or unconsciousness through content packs
   - you're changing the HUD defaults or why players can turn HUD elements off
   - you're changing timed-action progress presentation or its relationship to HUD scale
@@ -1675,18 +1675,15 @@ neck length is a body dimension, not a reach handle. The pose uses simulation
 aim so rendering cannot invent another weld. See `src/core/playerLookPose.ts`,
 `adsLookPose`; and `src/core/playerAdsPose.ts`, `playerAdsPose`.
 
-Only the first-person ADS camera may cover the remaining gap. In clear space
-it takes the point on the physical sight line nearest the body eye, within the
-content-owned camera offset bound. Iron sights export an eye-distance range
-from the gun tool; optics retain their fixed eye point. Neither camera position
-nor FOV may relocate the shared firearm. The camera stays level rather than
-inheriting head cant. Per-gun camera and stock-contact limits override the figure
-defaults, because existing gun dimensions and sight heights differ. Content owns
-those limits, while anatomy remains independent of the gun. Checks enforce
-sight-line membership, viewing range, camera displacement, stock contact and
-anatomical bounds rather than an exact anatomical sight fit. See
-`src/core/adsView.ts`, `adsCameraEye` and `adsLimits`;
-`src/content/base/models-firearms.libsonnet`, `longGunHands`; and
+Only the first-person ADS camera may cover the remaining gap, within a
+content-owned camera offset bound. Irons use the nearest point in their exported
+physical eye-distance range. Optics use their unswayed fixed eye: tracking every
+movement of the instrument would cancel eye-to-optic misalignment. Neither
+camera position nor FOV may relocate the shared firearm. The camera stays level
+rather than inheriting head cant. Per-gun camera and stock-contact limits override
+the figure defaults because gun dimensions and sight heights differ; anatomy
+remains independent of the gun. See `src/core/adsView.ts`, `adsCameraEye` and
+`adsLimits`; `src/content/base/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
 Only the owning view may suppress camera-enclosing flesh during ADS in any
@@ -3243,22 +3240,39 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
-- **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor is an effect closer than the world camera's near plane, so it keeps its own planes without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
+- **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor sits closer than the world near plane, so it remains an isolated effect without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
+- **The near plane must admit short-relief optics:** the world camera draws physical optic housing too. Cutting
+  through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
+  authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
+  `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
-  hides more of the scene. At unity the window keeps nearby gun features, as a real 1× sight does, but never the
-  optic itself, which would fill its own window. See `src/render/playerFigure.ts`, `PlayerMeshes`, and
-  `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
+  hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
+  never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
+  window, so its glass and thin near frame remain part of the sight picture. Image selection is authored rather than
+  selected by item identity in the renderer. See `src/core/opticView.ts`, `opticRendersWorld`;
+  `src/core/schema.ts`, `ItemSchema`; and `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
 - **Zoom shows the environment only:** the magnified image is the world seen through the lens, so the zoom camera
   sets the world layer alone instead of copying the main camera's mask, and the player's figure, held and worn items
   and own-head layers never enter it. three.js layers do not inherit, so a node added under the figure takes its
   parent's layers at add time; without that a late child would land on the world layer and be magnified. See
   `src/render/opticLens.ts`, `OpticLensRenderer.prepare`; `src/render/shadowFlags.ts`, `inheritLayersOnAdd`.
-- **The housing stays in front of the window:** compositing the window image must not erase optic housing that
-  crosses the disc. See `src/render/opticHousingMask.ts`, `OpticHousingMask`.
+- **Scope discs replace the inner tube:** the golden magnifying-optic look is a full world-image disc, not the
+  small opening at the far end of a physical tube. A variable scope keeps that disc at unity; changing power
+  must not bring the tube back. Classify the instrument by its authored range, not its selected power or item
+  identity. Outside the disc, physical housing remains visible. See `src/core/opticView.ts`, `opticViewSettings`,
+  and `src/render/opticLens.ts`, `OpticLensRenderer.prepare`.
+- **Fixed unity discs preserve their frames:** the golden mini-reflex and tube-dot look keeps opaque housing in
+  front of the image, otherwise the nominal aperture erases the frame. Applying that silhouette to a magnifying
+  scope would instead restore its unwanted inner tube. See `src/render/opticHousingMask.ts`, `OpticHousingMask`.
 - **The ADS hood is hidden only in own view:** at eye relief it obstructs the player's eye, while other viewers and
   the sun should still see it. See `src/render/playerFigure.ts`, `PlayerMeshes`.
-- **The reticle sits on the sight line:** the glass sits a finite distance from the eye, so a reticle tied to the
-  disc would show parallax. See `src/core/opticView.ts`, `projectOpticReticle`.
+- **The reticle marks aim, not the glass centre:** finite glass and housing move relative to the angular mark.
+  Perfect eye-to-optic alignment at every skill is unrealistic. Alignment is a firearms skill: an expert standing
+  still is nearly aligned, while walking adds misalignment through gait sway. The eye uses the unswayed optic seat
+  rather than following the deviated instrument; the existing content-owned skill variance and gait govern the
+  difference, including at unity power. Do not recenter the reticle to hide it. See `src/core/adsView.ts`,
+  `adsCameraEye`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`; `src/core/aim.ts`, `AimController`; and
+  `src/core/opticView.ts`, `projectOpticReticle`.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters

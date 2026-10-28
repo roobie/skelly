@@ -17,6 +17,7 @@ const fixture = (rememberPerWeapon = true, fixed = false) => {
     weight: 1,
     size: [1, 1],
     model: 'fixture_optic_model',
+    opticUnityImage: 'world',
     ...(fixed ? {} : { opticMagnification: initial, opticZoom: tuning }),
   };
   const model: ModelDef = {

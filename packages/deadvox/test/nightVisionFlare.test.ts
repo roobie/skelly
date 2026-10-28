@@ -73,7 +73,7 @@ describe('night-vision flare', () => {
     const goggles = inventory.create('night_vision_goggles');
     expect(inventory.add(goggles, { kind: 'worn' })).toBe(true);
     expect(toggleLight(registry, goggles, 0)).toBeUndefined();
-    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!);
+    const held = new HeldItems(inventory, undefined, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
     const camera = fixtureCamera();
     held.update(camera);
     const pool = new LightPool(new Scene(), TEST_SENSE_TUNING.light.renderedFixtureLimit);

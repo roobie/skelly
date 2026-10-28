@@ -74,8 +74,12 @@ export function createEngine(
   }
 
   const scene = new Scene();
-  // The far plane is set by the sky from where the fog ends.
-  const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.05, radiusM);
+  const graphicsTuning = config.content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  if (!graphicsTuning) {
+    throw new Error('Missing core graphics policy');
+  }
+  // Short-relief optics belong to this scene too, not only to the optical adapter's closer camera.
+  const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, graphicsTuning.nearPlaneMetres, radiusM);
   camera.rotation.order = 'YXZ';
   camera.layers.enable(PLAYER_FIGURE_LAYER);
   camera.layers.enable(OPTIC_BODY_LAYER);
@@ -100,10 +104,6 @@ export function createEngine(
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const { skyFields } = worldSetup;
-  const graphicsTuning = worldSetup.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
-  if (!graphicsTuning) {
-    throw new Error('Missing core graphics policy');
-  }
   const skylight =
     skyFields.fields.length > 0
       ? new Skylight(

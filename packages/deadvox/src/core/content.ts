@@ -715,6 +715,12 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   const attachment = model?.gun?.attachment;
   const range = attachment?.properties.magnification;
   const variable = attachment?.kind === 'optic' && range !== undefined && range.min < range.max;
+  if (attachment?.kind === 'optic' && attachment.properties.aperture && item.opticUnityImage === undefined) {
+    report('items', item.id, '.opticUnityImage', 'an optic window needs an authored unity image policy');
+  }
+  if (item.opticUnityImage !== undefined && attachment?.kind !== 'optic') {
+    report('items', item.id, '.opticUnityImage', 'a unity image policy needs an optic model');
+  }
   if (item.opticMagnification !== undefined && attachment?.kind !== 'optic') {
     report('items', item.id, '.opticMagnification', 'an initial ADS magnification needs an optic model');
     return;
