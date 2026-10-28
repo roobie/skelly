@@ -221,6 +221,11 @@ try {
     null,
     { timeout: 5000 },
   );
+  assert.equal(
+    await page.locator('#overlay .card').evaluate((card) => card.scrollWidth <= card.clientWidth),
+    true,
+    'main menu content does not overflow sideways',
+  );
   const controlsSearch = page.locator('#controls-search');
   const controlsBeforeSearch = await page.locator('#controls dt').count();
   await controlsSearch.focus();

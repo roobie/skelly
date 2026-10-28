@@ -96,6 +96,7 @@ if (menuCard && scrollUpCue && scrollDownCue) {
   };
   menuCard.addEventListener('scroll', updateScrollCues, { passive: true });
   window.addEventListener('resize', updateScrollCues);
+  // ResizeObserver delivers the open-path update when unhiding lays out the card; the subtree observer covers content changes while open.
   new ResizeObserver(updateScrollCues).observe(menuCard);
   new MutationObserver(updateScrollCues).observe(menuCard, { attributes: true, childList: true, subtree: true });
   updateScrollCues();
