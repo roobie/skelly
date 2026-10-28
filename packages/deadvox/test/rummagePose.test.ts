@@ -63,6 +63,7 @@ if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
 
+const nearPlaneMetres = 0.012;
 const fixture = (
   type: string,
   checkState: (before: unknown, after: unknown) => void,
@@ -91,7 +92,7 @@ const fixture = (
     part: () => undefined,
     heldLook: () => ({ root: heldRoot(), parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, registry.figures.get('player')!);
+  const held = new HeldItems(inventory, models, registry.figures.get('player')!, { nearPlaneMetres });
   const camera = new PerspectiveCamera();
   const project = (handling: HeldHandlingFrame = { firearms: mechanics.frames(), job: queue.jobs[0] }) => {
     const before = structuredClone({
@@ -245,7 +246,9 @@ it('held-display capability selects the raised compass display and rummage grip 
   // A slab whose top face is the screen stands in for the loaded model file.
   const slab = new Mesh(new BoxGeometry(0.04, 0.01, 0.06), new MeshBasicMaterial());
   const displayModel = content.registry.models.get('fixture_display_model')!;
+  expect(content.registry.graphics.size).toBe(0);
   const plain = fixture('fixture_plain', (before, after) => expect(after).toEqual(before), content.registry);
+  expect(plain.held.warmUpTarget.camera.near).toBe(nearPlaneMetres);
   expect(plain.inventory.move(plain.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
   const plainEmpty = plain.project();
   expect(plain.inventory.move(plain.item, { kind: 'hand', side: 'right' }).ok).toBe(true);

@@ -3237,10 +3237,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
-- **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor remains an isolated effect without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
+- **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor sits closer than the world near plane, so it remains an isolated effect without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
 - **The near plane must admit short-relief optics:** the world camera draws physical optic housing too. Cutting
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
-  authored near-plane policy, rather than protecting only the optical adapter. See `src/core/schema.ts`,
+  authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but

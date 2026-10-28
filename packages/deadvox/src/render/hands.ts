@@ -59,10 +59,14 @@ export class HeldItems {
   private readonly figure: FigureDef;
   private readonly sunSource: DirectionalLight | undefined;
 
-  constructor(inventory: Inventory, models: ModelLibrary | undefined, figure: FigureDef, sunSource?: DirectionalLight) {
+  constructor(
+    inventory: Inventory,
+    models: ModelLibrary | undefined,
+    figure: FigureDef,
+    { nearPlaneMetres, sunSource }: { nearPlaneMetres: number; sunSource?: DirectionalLight },
+  ) {
     this.inventory = inventory;
-    const graphics = inventory.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
-    this.camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, graphics.nearPlaneMetres, 10);
+    this.camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, nearPlaneMetres, 10);
     this.models = models;
     this.figure = figure;
     this.sunSource = sunSource;
