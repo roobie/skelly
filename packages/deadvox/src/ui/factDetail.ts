@@ -52,4 +52,10 @@ if (typeof document !== 'undefined') {
       placeFactDetail(owner);
     }
   });
+  // A shown copy was fitted to the geometry it was entered in, so a resize re-fits the facts still shown.
+  window.addEventListener('resize', () => {
+    for (const owner of document.querySelectorAll('.fact-detail:is(:hover, :focus-within, .game-cursor-hover)')) {
+      placeFactDetail(owner);
+    }
+  });
 }

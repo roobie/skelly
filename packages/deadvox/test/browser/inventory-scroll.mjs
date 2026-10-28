@@ -459,9 +459,16 @@ try {
   assert.equal(await cardCopy.isVisible(), true, 'card-host hover exposes the copy');
   await assertCopyInScrollport('card-host hover keeps the copy in the scrollport');
   await page.mouse.move(0, 0);
+  // A fresh fact, never entered by pointer, so only the focus listener can place its copy.
+  await page.evaluate(() => globalThis.scrollFixture.mountCardFact());
   await cardFact.focus();
   assert.equal(await cardCopy.isVisible(), true, 'card-host keyboard focus exposes the copy');
   await assertCopyInScrollport('card-host keyboard focus keeps the copy in the scrollport');
+  // Resizing keeps focus on the fact, so the copy it shows is refitted to the new viewport.
+  await page.setViewportSize({ width: 320, height: 480 });
+  assert.equal(await cardFact.evaluate((owner) => owner === document.activeElement), true, 'resize keeps focus');
+  assert.equal(await cardCopy.isVisible(), true, 'resize keeps the focused copy shown');
+  await assertCopyInScrollport('resize with focus retained keeps the copy in the scrollport');
   await page.evaluate(() => {
     document.querySelector('#overlay').hidden = true;
   });
