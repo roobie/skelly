@@ -191,7 +191,7 @@ describe('debug starting equipment', () => {
     expect(system.swing(playerEye, ray, FISTS_MELEE)).toBeUndefined();
     expect(system.swing(playerEye, ray, weapon)).toBe(id);
     expect(zombie.regions.head).toBe(0);
-    expect(launchImpulse).toBe(10);
+    expect(launchImpulse).toBeCloseTo(10 * shambler.severedImpulseScale);
   });
 
   it('gives a fresh debug game an empty worn hiking backpack and nothing else', () => {

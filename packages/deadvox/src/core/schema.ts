@@ -3581,6 +3581,18 @@ const ZombieSchema = strictObject({
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,
    * not a shared budget. */
   dismember: strictObject({ chance: Fraction, headOnKillChance: Fraction }),
+  /** Multiplies the impulse of the hit that severs a part, so the flying piece leaves faster (src/render/mobActors.ts's
+   * zombieSevered). Only that flight reads it; the hit's stagger and damage keep the weapon's own impulse. */
+  severedImpulseScale: NonNegative,
+  /** The blood a cut throws as its part goes: how many droplets, how fast they leave the wound and how far they
+   * fan from the strike, how long they live, and how much of the part's launch velocity each one inherits. */
+  severedSpurt: strictObject({
+    droplets: Count,
+    speedMetresPerRealSecond: NonNegative,
+    spreadFraction: NonNegative,
+    lifetimeRealSeconds: NonNegative,
+    partVelocityShare: Fraction,
+  }),
   /** The timed actions that clear a downed body (src/game/downedBody.ts). Finishing it off needs no tool;
    * dismembering it needs a carried tool with the quality and leaves its arms and head behind. */
   downed: optional(

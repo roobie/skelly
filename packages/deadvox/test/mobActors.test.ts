@@ -53,6 +53,7 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
+import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const hearingGazeTarget = (target: Vec3, id: number, time: number): Vec3 =>
@@ -955,10 +956,12 @@ describe('MobActorMeshes', () => {
   });
 
   it('draws the exact persisted figure seed, not an EntityId-derived variant', () => {
-    const renderer = new MobActorMeshes(0.5, 8, { zombies: registry.zombies });
+    const seeds = SHAMBLER_FIGURE_SEEDS;
+    const type = { ...SHAMBLER, figureSeeds: seeds };
+    const renderer = new MobActorMeshes(0.5, 8, { zombies: new Map([[type.id, type]]) });
     try {
       const store = new MapEntityStore<Zombie>();
-      const ids = SHAMBLER_FIGURE_SEEDS.map((seed, index) =>
+      const ids = seeds.map((seed, index) =>
         store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], { figureSeed: seed })),
       );
       renderer.sync(store, 0, 1);
@@ -968,7 +971,7 @@ describe('MobActorMeshes', () => {
       };
       for (let i = 0; i < ids.length; i++) {
         const state = internals.states.get(ids[i]!)!;
-        expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(SHAMBLER_FIGURE_SEEDS[i]);
+        expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(seeds[i]);
       }
     } finally {
       renderer.dispose();
@@ -1553,6 +1556,38 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.dispose();
     }
   });
+  it('launches a manifest-owned amalgam part with blood from its shared severing presentation', () => {
+    const type = registry.zombies.get('amalgam')!;
+    const renderer = new MobActorMeshes(0.5, 4, { zombies: new Map([[type.id, type]]), poolSize: 1 });
+    const gore = new Gore(0.5, GORE_TUNING_FIXTURE);
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type });
+      const id = store.add(zombie);
+      const figure = amalgamFigureForType(type, zombie.figureSeed);
+      const part = figure.manifest.parts.find((candidate) => candidate.severable)!;
+      expect(part).toBeDefined();
+      renderer.sync(store, 0, 1);
+      const before = renderer.boneMatrix(id, part.rootBone)!;
+      const hit = { point: [0, 1, 0] as Vec3, direction: [1, 0, 0] as Vec3, impulse: 10 };
+      const velocity = renderer.zombieSevered(id, part.id, hit, zombie);
+      gore.severed(hit, velocity, type.severedSpurt);
+      expect.soft(velocity).toBeDefined();
+      expect.soft(Math.hypot(...(velocity ?? [0, 0, 0]))).toBeGreaterThan(0);
+      expect.soft(renderer.debrisCountFor(id)).toBeGreaterThan(0);
+      expect.soft(gore.activeDroplets).toBeGreaterThan(0);
+      renderer.sync(store, 0, 1);
+      const debrisMatrix = renderer.debrisBoneMatrix(id, part.id, part.rootBone)!;
+      expect(debrisMatrix).toBeDefined();
+      for (let index = 0; index < before.length; index++) {
+        expect(debrisMatrix[index]).toBeCloseTo(before[index]!, 4);
+      }
+    } finally {
+      renderer.dispose();
+      gore.dispose();
+    }
+  });
+
   it('caches template-assigned mass for every severable variant part', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {

@@ -172,7 +172,7 @@ export interface ZombieRenderer {
   /** Called once for every part severed (src/core/zombies.ts's onSever, forwarded by play.ts) — a flying
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
-  zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => void;
+  zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => Vec3 | undefined;
   /** Called when a hit knocks flesh out of an amalgam (src/core/zombies.ts's onCarve, forwarded by play.ts). */
   zombieCarved?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
 }
@@ -745,8 +745,11 @@ export class MobActorMeshes implements ZombieRenderer {
           boneIndices: readonly number[];
         }
       >();
-      for (const part of v.model === 'amalgam' ? [] : severableParts(v.realized.body.bones)) {
-        const boneIndices = [...severedBoneSet(v.realized.body.bones, [part])]
+      const parts = v.severedRoots.size > 0 ? [...v.severedRoots.keys()] : severableParts(v.realized.body.bones);
+      const scale = v.bodyScale ?? 1;
+      for (const part of parts) {
+        const root = v.severedRoots.get(part) ?? part;
+        const boneIndices = [...severedBoneSet(v.realized.body.bones, [root])]
           .map((boneId) => boneIndexById.get(boneId))
           .filter((index): index is number => index !== undefined);
         const properties = templatePartMassProperties({
@@ -761,11 +764,11 @@ export class MobActorMeshes implements ZombieRenderer {
         rigidParts.set(part, {
           mass: properties.mass,
           inertiaBody: [
-            [...properties.inertia[0]] as Vec3,
-            [...properties.inertia[1]] as Vec3,
-            [...properties.inertia[2]] as Vec3,
+            properties.inertia[0].map((value) => value * scale ** 2) as Vec3,
+            properties.inertia[1].map((value) => value * scale ** 2) as Vec3,
+            properties.inertia[2].map((value) => value * scale ** 2) as Vec3,
           ],
-          corners: bounds.corners.map((corner) => [...corner] as Vec3),
+          corners: bounds.corners.map((corner) => corner.map((value) => value * scale) as Vec3),
           boneIndices,
         });
       }
@@ -1492,11 +1495,13 @@ export class MobActorMeshes implements ZombieRenderer {
    * zombieDied hasn't run yet; but a stale/unknown part name, or no position yet on the zombie's very first
    * frame, are both defensively handled the same way: nothing to spawn from). Debris counts toward
    * the shared corpse budget exactly like a corpse (see zombieDied's own eviction).
+   * Returns the piece's launch velocity (metres per real second), which the cut's blood inherits; undefined when
+   * no piece was spawned.
    */
-  zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): void {
+  zombieSevered(id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie): Vec3 | undefined {
     const state = this.states.get(id);
     if (!state) {
-      return;
+      return undefined;
     }
     const variant = this.variants[state.variantIndex]!;
     if (zombie) {
@@ -1505,22 +1510,22 @@ export class MobActorMeshes implements ZombieRenderer {
       state.lastPlacement = posed.placement;
     }
     if (!(state.lastPose && state.lastPlacement)) {
-      return;
+      return undefined;
     }
     const partData = variant.rigidParts.get(part);
     if (!partData) {
-      return;
+      return undefined;
     }
 
     const severedIndices = partData.boneIndices;
     const sourceTransforms = this.posedSourceTransforms(variant, state, severedIndices);
     const initialCenter = this.posedPartCenter(variant, state, new Set(severedIndices));
     if (!initialCenter) {
-      return;
+      return undefined;
     }
-    const topIndex = variant.boneIndexById.get(part);
+    const topIndex = variant.boneIndexById.get(variant.severedRoots.get(part) ?? part);
     if (topIndex === undefined) {
-      return;
+      return undefined;
     }
     // The cached OBB and inertia are in the rest-pose model frame. Orient them with the posed cut bone;
     // relative bends in carried descendants (e.g. an elbow in a whole arm) remain an approximation.
@@ -1545,6 +1550,7 @@ export class MobActorMeshes implements ZombieRenderer {
     if (hit) {
       this.applyDebrisHit(rigidBody, initialCenter, originOffsetY, hit);
     }
+    const launchVelocity: Vec3 = [...rigidBody.velocity];
     this.insertDebris({
       id,
       part,
@@ -1558,6 +1564,7 @@ export class MobActorMeshes implements ZombieRenderer {
       body: rigidBody,
       bloodiness: zombie ? woundSeverity(zombie) : 0,
     });
+    return launchVelocity;
   }
 
   private posedSourceTransforms(
@@ -1571,9 +1578,10 @@ export class MobActorMeshes implements ZombieRenderer {
     const transforms = new Map<number, MutableTransform>();
     for (const index of indices) {
       const source = variant.scratch[index]!;
-      const rotated = mulMV(yawMatrix, source.t);
+      const scale = variant.bodyScale ?? 1;
+      const rotated = mulMV(yawMatrix, source.t.map((value) => value * scale) as Vec3);
       transforms.set(index, {
-        r: [...mulMM(yawMatrix, source.r)] as MutableTransform['r'],
+        r: mulMM(yawMatrix, source.r).map((value) => value * scale) as MutableTransform['r'],
         t: [rotated[0] + x, rotated[1] + y, rotated[2] + z],
       });
     }
@@ -1599,9 +1607,10 @@ export class MobActorMeshes implements ZombieRenderer {
           }
           const bone = variant.scratch[owner]!;
           const actorPoint = mulMV(bone.r, worldPosition(voxels, i, j, k));
-          const actorX = actorPoint[0] + bone.t[0];
-          const actorY = actorPoint[1] + bone.t[1];
-          const actorZ = actorPoint[2] + bone.t[2];
+          const scale = variant.bodyScale ?? 1;
+          const actorX = (actorPoint[0] + bone.t[0]) * scale;
+          const actorY = (actorPoint[1] + bone.t[1]) * scale;
+          const actorZ = (actorPoint[2] + bone.t[2]) * scale;
           sumX += cos * actorX + sin * actorZ + x;
           sumY += actorY + y;
           sumZ += cos * actorZ - sin * actorX + z;

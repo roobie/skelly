@@ -3771,6 +3771,33 @@ describe('dismemberment', () => {
     return system.swing(origin, [1, 0, 0], FISTS_MELEE);
   };
 
+  it("hands the severing hit to the renderer scaled by the kind's severedImpulseScale", () => {
+    const severingImpulse = (severedImpulseScale: number): number => {
+      let hit: HitImpulse | undefined;
+      const system = new ZombieSystem({
+        ...senses(() => player([100, 2, 0])),
+        seed: 5,
+        onSever: (_id, _zombie, _part, severHit) => {
+          hit = severHit;
+        },
+      });
+      const type = {
+        ...SHAMBLER,
+        regions: { ...survives },
+        dismember: { chance: 1, headOnKillChance: 0 },
+        severedImpulseScale,
+      };
+      const id = system.add(type, [4, 1, 4], [0, 0, -1]);
+      const ray = regionRay(system.store.get(id)!, 'rightArm');
+      expect(system.swing(ray.origin, ray.direction, { ...FISTS_MELEE, impulse: 5 })).toBe(id);
+      expect(hit).toBeDefined();
+      return hit!.impulse;
+    };
+    const base = severingImpulse(1);
+    expect(base).toBeGreaterThan(0);
+    expect(severingImpulse(2)).toBeCloseTo(2 * base);
+  });
+
   it('scales launch distance monotonically through fixture impulses', () => {
     const type = {
       ...SHAMBLER,
@@ -3893,9 +3920,15 @@ describe('dismemberment', () => {
     swingAt(system, id);
     expect(calls).toHaveLength(1);
     expect(calls[0]![0]).toBe(id);
-    expect(hitRecordMatches({ hit: receivedHit, origin, direction, distance, impulse: FISTS_MELEE.impulse })).toBe(
-      true,
-    );
+    expect(
+      hitRecordMatches({
+        hit: receivedHit,
+        origin,
+        direction,
+        distance,
+        impulse: FISTS_MELEE.impulse * type.severedImpulseScale,
+      }),
+    ).toBe(true);
   });
 
   it('passes the exact hit record when a destroyed arm region causes a sever', () => {
@@ -3924,7 +3957,7 @@ describe('dismemberment', () => {
         origin: ray.origin,
         direction: ray.direction,
         distance,
-        impulse: weapon.impulse,
+        impulse: weapon.impulse * type.severedImpulseScale,
       }),
     ).toBe(true);
   });
@@ -4017,7 +4050,7 @@ describe('dismemberment', () => {
         origin: ray.origin,
         direction: ray.direction,
         distance,
-        impulse: weapon.impulse,
+        impulse: weapon.impulse * type.severedImpulseScale,
       }),
     ).toBe(true);
   });
