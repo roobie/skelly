@@ -880,7 +880,11 @@ const applyDeathFrame = (loaded: Loaded, dt: number): void => {
   }
   deathTime = (deathTime ?? 0) + dt;
   // A fresh wrapper per frame, but it carries the persistent actor's cache.
-  const actor = { ...loaded.walkActor, bodyExtents: loaded.bodyExtents };
+  const actor = {
+    ...loaded.walkActor,
+    bodyExtents: loaded.bodyExtents,
+    posture: loaded.template.bodyPlan === 'crawler' ? ('prone' as const) : ('upright' as const),
+  };
   loaded.actor.applyPose(deathPose(actor, deathBasePose!, deathTime, { direction: deathDirection }));
 };
 

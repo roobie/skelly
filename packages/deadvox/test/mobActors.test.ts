@@ -15,7 +15,7 @@ import {
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
-import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
+import { bodyRestExtents, corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { DEATH_FALL_DURATION } from '@mobgen/mob/reactions.ts';
@@ -1236,6 +1236,36 @@ describe('MobActorMeshes reactions', () => {
       renderer.dispose();
     }
   });
+  it.for([
+    { label: 'native crawler', type: CRAWLER, severed: [] },
+    { label: 'leg-loss shambler', type: SHAMBLER, severed: ['thigh.L'] },
+  ])('passes $label crawling posture into its corpse fall', ({ type, severed }) => {
+    const renderer = new MobActorMeshes(0.5, 2, {
+      zombies: registry.zombies,
+      poolSize: 1,
+      deathPoseId: 'backward',
+    });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], severed, { type });
+      const id = store.add(zombie);
+      renderer.sync(store, 0, 1);
+      renderer.zombieDied(id, zombie);
+      store.remove(id);
+      renderer.sync(store, DEATH_FALL_DURATION / 2, 1);
+      const { realized, genome } = zombieFigure(type, zombie.figureSeed);
+      const matrix = renderer.boneMatrix(id, 'chest')!;
+      const extent = bodyRestExtents(realized.body.bones, realized.voxels).get('chest')!;
+      const lowest = Math.min(
+        ...corners(extent).map(([x, y, z]) => matrix[4]! * x + matrix[5]! * y + matrix[6]! * z + matrix[7]!),
+      );
+      expect(lowest).toBeGreaterThanOrEqual(0);
+      expect(lowest).toBeLessThan(genome.params.height! * 0.15);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
