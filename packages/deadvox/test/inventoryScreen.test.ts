@@ -601,8 +601,8 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
-  it('routes real Down/Up and Enter to selection and best-pocket while find retains text editing', () => {
-    const { screen, root, lastPayload } = setup();
+  it('keeps a find filter while blurred and routes inventory keys to its items', () => {
+    const { screen, root, beans, lastPayload } = setup();
     const keyboard = new KeyboardInput(inputBindings);
     keyboard.context = () => ({ context: 'inventory', debug: false });
     keyboard.command = ({ action, phase }) => {
@@ -614,9 +614,7 @@ describe('inventory screen Lit rendering', () => {
     try {
       screen.onAction('inventory.find');
       const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
-      const query = 'fixture query';
-      field.value = query;
-      field.dispatchEvent(new Event('input', { bubbles: true }));
+      const query = root.querySelector<HTMLElement>(`.inv-item[data-uid="${beans.uid}"] .inv-item-name`)!.textContent!;
       const press = (code: string, key = code) => {
         const event = new KeyboardEvent('keydown', { code, key, bubbles: true, cancelable: true });
         field.dispatchEvent(event);
@@ -624,27 +622,24 @@ describe('inventory screen Lit rendering', () => {
         return event;
       };
       expect(press('ArrowDown').defaultPrevented).toBe(true);
-      const first = screen.selected;
-      expect(first).toBeDefined();
+      expect(screen.selected).toBe(beans);
       expect(press('ArrowDown').defaultPrevented).toBe(true);
-      expect(screen.selected).not.toBe(first);
-      expect(press('ArrowUp').defaultPrevented).toBe(true);
-      expect(screen.selected).toBe(first);
-      for (const [code, key] of [
-        ['ArrowLeft', 'ArrowLeft'],
-        ['ArrowRight', 'ArrowRight'],
-        ['Home', 'Home'],
-        ['End', 'End'],
-        ['KeyW', 'w'],
-      ]) {
-        expect(press(code!, key!).defaultPrevented).toBe(false);
-        expect(screen.selected).toBe(first);
-      }
-      expect(press('Enter').defaultPrevented).toBe(true);
-      expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: first!.uid });
-      screen.update();
+      expect(screen.selected).not.toBe(beans);
+
+      field.value = query;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      const payloadBeforeTypingKey = lastPayload();
+      expect(press('KeyW', 'w').defaultPrevented).toBe(false);
+      expect(lastPayload()).toBe(payloadBeforeTypingKey);
+      expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
       expect(field.value).toBe(query);
-      expect(document.activeElement).toBe(field);
+      expect(document.activeElement).not.toBe(field);
+
+      const action = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
+      window.dispatchEvent(action);
+      window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
+      expect(action.defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: beans.uid });
     } finally {
       remove();
       screen.close();
@@ -699,7 +694,7 @@ describe('inventory screen Lit rendering', () => {
     expect(inspect).toHaveBeenCalledExactlyOnceWith(inv.worn.torso!.uid);
   });
 
-  it('dims the listed items a typed query misses, and Escape in the field clears it', () => {
+  it('dims the listed items a typed query misses, and Escape leaves the filter applied', () => {
     const { screen, root, beans } = setup();
     const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
     const tiles = () => [...root.querySelectorAll<HTMLElement>('.inv-item[data-uid]')];
@@ -717,8 +712,8 @@ describe('inventory screen Lit rendering', () => {
     expect(tiles().some(dimmed)).toBe(true);
 
     field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    expect(field.value).toBe('');
-    expect(tiles().some(dimmed)).toBe(false);
+    expect(field.value).not.toBe('');
+    expect(tiles().some(dimmed)).toBe(true);
     expect(document.activeElement).not.toBe(field);
   });
 

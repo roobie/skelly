@@ -35,7 +35,7 @@ import {
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { clearsFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
@@ -1083,7 +1083,7 @@ export class InventoryScreen {
       return true;
     }
     const digit = this.quickbarDigit(action);
-    const item = this.selected;
+    const item = this.selected && this.order.includes(this.selected) ? this.selected : this.order[0];
     if (action === 'handling.stop') {
       this.report(this.hooks.dispatch({ kind: 'inventory.cancel-handling' }));
       return true;
@@ -1267,13 +1267,6 @@ export class InventoryScreen {
     }
   }
 
-  private clearFind(): void {
-    this.findQuery = '';
-    this.drawn = '';
-    this.update();
-    this.root.querySelector<HTMLInputElement>('[data-inventory-find]')?.blur();
-  }
-
   private step(dir: number): void {
     if (this.order.length === 0) {
       return;
@@ -1304,8 +1297,8 @@ export class InventoryScreen {
               this.update();
             },
             key: (e) => {
-              if (clearsFindField(e)) {
-                this.clearFind();
+              if (e instanceof KeyboardEvent && e.key === 'Escape') {
+                (e.target as HTMLInputElement).blur();
                 e.preventDefault();
                 e.stopPropagation();
               }
@@ -1609,9 +1602,11 @@ export class InventoryScreen {
     const text = this.text();
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
-    this.order.push(item);
     const words = queryWords(this.findQuery);
     const unmatched = !matchesFind(words, [workName(this.inv.registry, item), def.name, ...(def.keywords ?? [])]);
+    if (!unmatched) {
+      this.order.push(item);
+    }
     return {
       item,
       uid: String(item.uid),
