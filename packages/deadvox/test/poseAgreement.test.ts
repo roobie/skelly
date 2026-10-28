@@ -72,13 +72,11 @@ const startTurnedAttack = () => {
   return live;
 };
 
-const rendererFor = (zombie: Zombie) => {
-  const figureSeeds = figureSeedPool(registry.zombies);
-  return new MobActorMeshes(BLOCK_SIZE, 4, {
-    figureSeeds,
-    poolSize: mobFigurePoolSizeThrough(figureSeeds, zombie.figureSeed),
+const rendererFor = (zombie: Zombie) =>
+  new MobActorMeshes(BLOCK_SIZE, 4, {
+    zombies: registry.zombies,
+    poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
   });
-};
 
 const offsetForBox = ({
   renderer,

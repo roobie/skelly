@@ -105,8 +105,9 @@ export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
   // A consumer refuses a comparison-only template here, so a model kept only for side-by-side checks
   // cannot be spawned or exported even if a caller asks for it by name.
   const template = consumableTemplate(model);
-  const generated = generateValid(template, seed);
-  if (!generated || (model === 'shambler' && generated.seed !== seed)) {
+  // A seed must be valid itself: falling through to the next valid seed would draw it as that seed's body.
+  const generated = generateValid(template, seed, { maxAttempts: 1 });
+  if (!generated) {
     throw new Error(`Zombie figure ${model} seed ${seed} is not valid`);
   }
   const { regionBones } = planOf(template.bodyPlan);
