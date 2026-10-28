@@ -16,11 +16,6 @@
       {
         "from": "frame.magazine",
         "to": "magazine.top"
-      },
-      {
-        "from": "slide.rail",
-        "slot": 1,
-        "to": "sight.base"
       }
     ],
     "description": "Polymer-frame striker-fired 9×19 mm service pistol.",
@@ -41,12 +36,6 @@
         "prefab": {
           "id": "pistol-9",
           "version": 1
-        }
-      },
-      "sight": {
-        "family": "sight",
-        "params": {
-          "type": "mini-reflex"
         }
       },
       "slide": {
