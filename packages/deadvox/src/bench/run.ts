@@ -16,7 +16,6 @@ import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
-import { figureSeedPool } from '../core/zombieFigure.ts';
 import {
   BACKGROUND_ZOMBIE_RATE,
   BACKGROUND_ZOMBIE_SLICE_COUNT,
@@ -361,7 +360,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       });
       const graphics = graphicsTuningOf(engine.registry);
       zombieMeshes = new MobActorMeshes(s, shamblerCount, {
-        figureSeeds: figureSeedPool(engine.registry.zombies),
+        zombies: engine.registry.zombies,
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
       });

@@ -31,6 +31,7 @@ describe('reticle boundary', () => {
     const pass = opticLensPass();
     const frame = {
       center: [0.5, 0.5] as const,
+      reticleCenter: [0.5, 0.5] as const,
       radius: [0.2, 0.2] as const,
       aperture: { aspectRatio: 1, exponent: 2 },
     };
@@ -50,6 +51,7 @@ describe('reticle boundary', () => {
     const pass = opticLensPass();
     const frame = {
       center: [0.5, 0.5] as const,
+      reticleCenter: [0.5, 0.5] as const,
       radius: [0.2, 0.2] as const,
       magnification: 4,
       aperture: { aspectRatio: 1.3, exponent: 6 },

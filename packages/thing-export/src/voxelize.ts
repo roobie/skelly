@@ -544,8 +544,13 @@ const greedy = (mask: Int32Array, size: readonly [number, number], emit: (rect: 
   }
 };
 
-/** The faces of the voxels that have no neighbour in the sweep's direction, bucketed by slice. */
-const exposedFaces = (grid: Grid, sweep: Sweep): { readonly slices: Map<number, Face[]>; readonly count: number } => {
+type ExposeInterface = (group: number, neighbour: number) => boolean;
+
+const exposedFaces = (
+  grid: Grid,
+  sweep: Sweep,
+  exposeInterface?: ExposeInterface,
+): { readonly slices: Map<number, Face[]>; readonly count: number } => {
   const { d, sign } = sweep;
   const slices = new Map<number, Face[]>();
   let count = 0;
@@ -553,7 +558,8 @@ const exposedFaces = (grid: Grid, sweep: Sweep): { readonly slices: Map<number, 
     const at = voxelOf(key);
     const next: [number, number, number] = [at[0], at[1], at[2]];
     next[d] = at[d]! + sign;
-    if (grid.has(keyOf(...next))) {
+    const neighbour = grid.get(keyOf(...next));
+    if (neighbour !== undefined && !exposeInterface?.(group, neighbour)) {
       continue;
     }
     const slice = slices.get(at[d]!) ?? [];
@@ -607,7 +613,12 @@ const sliceMask = (
   return mask;
 };
 
-const meshGrid = (grid: Grid, grain: number, preserveFace?: PreserveVoxelFace): Voxelized => {
+const meshGrid = (
+  grid: Grid,
+  grain: number,
+  preserveFace?: PreserveVoxelFace,
+  exposeInterface?: ExposeInterface,
+): Voxelized => {
   const builders = new Map<number, Builder>();
   const builderOf = (group: number): Builder => {
     let builder = builders.get(group);
@@ -623,7 +634,7 @@ const meshGrid = (grid: Grid, grain: number, preserveFace?: PreserveVoxelFace): 
   for (let d = 0; d < 3; d += 1) {
     for (const sign of [1, -1] as const) {
       const sweep: Sweep = { d, u: (d + 1) % 3, v: (d + 2) % 3, sign };
-      const exposed = exposedFaces(grid, sweep);
+      const exposed = exposedFaces(grid, sweep, exposeInterface);
       const { slices } = exposed;
       faces += exposed.count;
       const du = bounds[1][sweep.u]! - bounds[0][sweep.u]! + 1;
@@ -762,9 +773,11 @@ export const voxelize = (
   {
     neighbours = [],
     preserveFace,
+    exposeInterface,
   }: {
     readonly neighbours?: readonly VoxelSource[];
     readonly preserveFace?: PreserveVoxelFace | undefined;
+    readonly exposeInterface?: ExposeInterface;
   } = {},
 ): Voxelized => {
   checkedGrain(grain);
@@ -785,7 +798,7 @@ export const voxelize = (
           max.map((value, axis) => value + origin[axis]!),
         )
     : undefined;
-  const { groups, stats } = meshGrid(grid, grain, localFace);
+  const { groups, stats } = meshGrid(grid, grain, localFace, exposeInterface);
   return {
     groups: new Map([...groups].map(([group, b]) => [group, { ...b, positions: shifted(b.positions, origin, 1) }])),
     stats,

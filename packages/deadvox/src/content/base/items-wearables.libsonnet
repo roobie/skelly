@@ -48,6 +48,20 @@ local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }
       }
     },
     {
+      "id": "sneakers",
+      "name": "Sneakers",
+      "category": "clothing",
+      "model": "sneakers",
+      figureModels: pair('worn_sneaker_foot', 'left_boot', 'right_boot', ['foot']),
+      "size": [2, 3],
+      "wearable": {
+        "slot": "feet",
+        "encumbrance": 4,
+        "warmth": 2,
+        "wearPerDamage": 0.0012
+      }
+    },
+    {
       "id": "cargo_pants",
       "name": "Cargo pants",
       "category": "clothing",

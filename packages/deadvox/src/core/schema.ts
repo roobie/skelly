@@ -84,6 +84,7 @@ import {
 } from './time.ts';
 import { TREE_SHAPES, type TreeShape } from './treeShapes.ts';
 import { WEATHERING_RANGES } from './weather.ts';
+import { ZOMBIE_MODELS } from './zombieModels.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -2015,6 +2016,8 @@ const GunModelSchema = pipe(
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Static model metadata for an attachment exported as its own item asset. */
     attachment: optional(AttachmentSchema),
+    /** Physical hold distance is independent of a fitted optic's viewing relief. */
+    adsStandoffMetres: optional(Positive),
     /** Model-derived eye point, sight line and up axis for ADS presentation and ballistics. */
     sight: optional(
       strictObject({
@@ -3305,7 +3308,7 @@ export type ZombieRegions = Record<string, number>;
 
 const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'brute', 'acid', 'amalgam']);
+const ZOMBIE_MODEL = picklist(ZOMBIE_MODELS);
 
 const ZOMBIE_ABILITIES = ['acidSpit'] as const;
 

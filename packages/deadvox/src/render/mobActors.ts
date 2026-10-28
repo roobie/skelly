@@ -15,8 +15,8 @@
 // <begin_vertex>/<beginnormal_vertex> chunks, same relative order, so the same patch applies unchanged).
 //
 // Known simplification: each model/seed variant owns a block of `capacity` bone-texture rows. The models
-// come from `modelIds`, and the seeds from the content-authored `figureSeeds` option; `DEFAULT_CAPACITY`
-// provides the default capacity. A variant's overflow is not drawn, though its sim state
+// and seeds are those the `zombies` option's types select and author (`figureSeedsByModel`);
+// `DEFAULT_CAPACITY` provides the default capacity. A variant's overflow is not drawn, though its sim state
 // is unaffected — a hard per-variant cap for that zombie's whole life, not a rotating "nearest capacity"
 // set. Picking the nearest actors would require per-frame distance sorting within every overflowing variant.
 //
@@ -130,7 +130,8 @@ import {
   stepRigidBody,
 } from '../core/rigidBody.ts';
 import type { Quaternion } from '../core/spatial.ts';
-import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
+import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
+import type { ZombieModel } from '../core/zombieModels.ts';
 import { acidSpitWindupProgress, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
@@ -425,20 +426,14 @@ export interface MobActorMeshesOptions {
   readonly maxCorpses: number;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
-  /** The authored figure seeds to build variants for (`figureSeedPool` of the registry's zombie types). */
-  readonly figureSeeds: readonly number[];
-  /** Builds only the first this-many of `figureSeeds`. */
+  /** The zombie types to draw: a variant per model they select and figure seed they author. */
+  readonly zombies: ReadonlyMap<string, DrawnZombieType>;
+  /** Builds only the first this-many figure seeds of each model. */
   readonly poolSize?: number;
-  readonly includeAmalgam?: boolean;
-  readonly amalgamType?:
-    | (ZombieFigureType & { readonly carving?: { readonly interiorColor: string } | undefined })
-    | undefined;
   /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
   readonly onFleshLanded?: (centre: Vec3) => void;
   /** How bloodied a live body is drawn, 0 to 1; gore.ts's woundSeverity unless gore shares its per-frame value. */
   readonly bloodiness?: (zombie: Zombie) => number;
-  /** Draws acid-model actors as well. */
-  readonly includeAcid?: boolean;
   /** A death burst bones away (the acid sac) at this glow-anchor position in metres, for the splash. */
   readonly onBurst?: (position: Vec3, zombie: Zombie) => void;
 }
@@ -470,7 +465,11 @@ const anchorWorld = (
   return [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
 };
 
-type ActorModel = 'shambler' | 'runner' | 'crawler' | 'brute' | 'acid' | 'amalgam';
+type ActorModel = ZombieModel;
+type DrawnZombieType = ZombieFigureType & {
+  readonly model: ZombieModel;
+  readonly carving?: { readonly interiorColor: string } | undefined;
+};
 interface BuiltActorVariant {
   model: ActorModel;
   figureSeed: number;
@@ -544,16 +543,34 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: Zombie
   };
 };
 
+/** Each model the types select, with the figure seeds they author for it in authored order, the first
+ * `poolSize` of them; the amalgam's seed is fixed. */
+const figureSeedsByModel = (
+  zombies: ReadonlyMap<string, DrawnZombieType>,
+  poolSize: number | undefined,
+): ReadonlyMap<ActorModel, readonly number[]> => {
+  const byModel = new Map<ActorModel, number[]>();
+  for (const type of zombies.values()) {
+    const authored = type.model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : (type.figureSeeds ?? []);
+    const seeds = byModel.get(type.model) ?? [];
+    byModel.set(type.model, [...new Set([...seeds, ...authored])]);
+  }
+  for (const [model, seeds] of byModel) {
+    if (seeds.length === 0) {
+      throw new Error(`MobActorMeshes requires authored figureSeeds for the ${model} model`);
+    }
+    if (poolSize !== undefined) {
+      seeds.splice(Math.max(1, poolSize));
+    }
+  }
+  return byModel;
+};
+
 const buildActorVariants = (
-  modelIds: readonly ActorModel[],
-  figureSeeds: readonly number[],
+  seedsByModel: ReadonlyMap<ActorModel, readonly number[]>,
   amalgamType?: ZombieFigureType,
 ): BuiltActorVariant[] =>
-  modelIds.flatMap((model) =>
-    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
-      buildActorVariant(model, seed, amalgamType),
-    ),
-  );
+  [...seedsByModel].flatMap(([model, seeds]) => seeds.map((seed) => buildActorVariant(model, seed, amalgamType)));
 
 /** Draws zombies as full mobgen actors, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
@@ -614,32 +631,18 @@ export class MobActorMeshes implements ZombieRenderer {
     this.blockSize = blockSize;
     this.reveal = options.reveal;
     this.capacity = capacity;
-    this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
-    this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.16, 8, 6) : undefined;
-    this.tentacleMaterial = options.includeAmalgam
+    const amalgamType = amalgamTypeOf(options.zombies);
+    this.tentacleGeometry = amalgamType ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
+    this.tentacleTipGeometry = amalgamType ? new SphereGeometry(0.16, 8, 6) : undefined;
+    this.tentacleMaterial = amalgamType
       ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
       : undefined;
-    if (options.figureSeeds.length === 0) {
-      throw new Error('MobActorMeshes requires authored figureSeeds');
-    }
-    const poolSize = Math.min(options.figureSeeds.length, Math.max(1, options.poolSize ?? options.figureSeeds.length));
-    if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
-      throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
-    }
     const templatesByModel = new Map(
       [...TEMPLATES, acidTemplate, amalgamTemplate].map((template) => [template.name, template]),
     );
-    const modelIds: readonly ActorModel[] = [
-      'shambler',
-      'runner',
-      'crawler',
-      'brute',
-      ...(options.includeAcid ? (['acid'] as const) : []),
-      ...(options.includeAmalgam ? (['amalgam'] as const) : []),
-    ];
 
     const t0 = performance.now();
-    const built = buildActorVariants(modelIds, options.figureSeeds.slice(0, poolSize), options.amalgamType);
+    const built = buildActorVariants(figureSeedsByModel(options.zombies, options.poolSize), amalgamType);
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
@@ -687,7 +690,7 @@ export class MobActorMeshes implements ZombieRenderer {
     // one fetches the same bone matrices (the gore varying it declares is simply unused).
     const depthMaterial = new MeshDepthMaterial();
     this.depthMaterial = depthMaterial;
-    const interiorColor = options.amalgamType?.carving?.interiorColor;
+    const interiorColor = amalgamType?.carving?.interiorColor;
     this.fleshInterior = interiorColor === undefined ? undefined : new Color(interiorColor);
     this.fleshChunks = new FleshChunks(this.group, options.onFleshLanded);
     this.bloodiness = options.bloodiness ?? woundSeverity;

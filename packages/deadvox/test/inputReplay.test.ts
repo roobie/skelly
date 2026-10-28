@@ -1570,7 +1570,7 @@ describe('input replay', () => {
     );
   });
 
-  it('replays UID-based inventory assignments to the same fingerprint', async () => {
+  it('round-trips UID-based inspection and inventory assignment commands to the same fingerprint', async () => {
     const runtime = createRuntime();
     const backpack = runtime.inventory.hands.right!;
     const beans = backpack.pockets?.[0]?.[0]?.item;
@@ -1579,6 +1579,11 @@ describe('input replay', () => {
     }
     const start = capture(runtime);
     const payloads = [
+      {
+        tick: 12,
+        context: 'inventory' as const,
+        payload: { kind: 'inventory.inspect' as const, itemUid: beans.uid },
+      },
       {
         tick: 12,
         context: 'inventory' as const,

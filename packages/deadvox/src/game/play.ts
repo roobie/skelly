@@ -1375,15 +1375,12 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    describe: (item) => {
-      tutorial?.weapons.inspected(item, registry);
-      return [
-        ...survival.describe(item),
-        ...firearms.describe(item),
-        ...magazines.describe(item),
-        ...pinDescription(session.fuses.state(item)),
-      ];
-    },
+    describe: (item) => [
+      ...survival.describe(item),
+      ...firearms.describe(item),
+      ...magazines.describe(item),
+      ...pinDescription(session.fuses.state(item)),
+    ],
     workOptions: (uid) => session.crafting.options(uid),
     character: () => session.character,
     body: () => sim.body,
@@ -1945,6 +1942,12 @@ export const startPlay = (
       }
       playtestObserver?.beginSearch(entity, nameOf(entity));
       return search(entity);
+    },
+    inspect: (uid) => {
+      const item = inventory.itemByUid(uid);
+      if (item) {
+        tutorial?.weapons.inspected(item, registry);
+      }
     },
     work: actOnWork,
     vehicleWork: session.beginVehicleWork,
@@ -4172,8 +4175,16 @@ export const startPlay = (
     const affordance = affordanceForFrame(visible);
     const carry = carryPreview();
     markOutline(affordance.target, carry, visible.interactionOutline);
-    const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
-    debugTools?.setCrosshairVisible(visible.crosshair);
+    const opticReticleVisible =
+      !isPlayerFigureWhole(thirdPersonViewEnabled, spectator.enabled) &&
+      view.held.opticLensFrame?.reticle !== undefined;
+    const crosshair = playCrosshairFrame(
+      visible.crosshair,
+      bore !== undefined,
+      crosshairScreenPosition(bore),
+      opticReticleVisible,
+    );
+    debugTools?.setCrosshairVisible(visible.crosshair && !opticReticleVisible);
     $('throw-stance').hidden = !throwStanceCueVisible(visible.interaction);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
