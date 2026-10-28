@@ -1062,11 +1062,17 @@ try {
       for (let attempt = 0; controller.writing && attempt < 200; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 5));
       }
+      if (controller.writing) {
+        throw new Error('The refused save did not settle');
+      }
       health = 60;
       time = 1;
       controller.beforeSleep();
       for (let attempt = 0; calls < 2 && attempt < 200; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 5));
+      }
+      if (calls < 2) {
+        throw new Error('The retry save did not begin');
       }
       health = 30;
       time = 2;
@@ -1132,10 +1138,21 @@ try {
         for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 5));
         }
+        if (controller.writing || controller.queued) {
+          throw new Error('The checkpoint did not settle');
+        }
         return { namespaces: await storage.listNamespaces(), canSave: controller.canSaveCurrentGame };
       });
     };
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
+    await context.addInitScript(() => {
+      globalThis.saveControllerFrames = 0;
+      const countFrame = () => {
+        globalThis.saveControllerFrames += 1;
+        requestAnimationFrame(countFrame);
+      };
+      requestAnimationFrame(countFrame);
+    });
     try {
       const pageErrors = [];
       const debugPage = await context.newPage();
@@ -1174,8 +1191,11 @@ try {
         }
         const persist = document.querySelector('#save-persist');
         const { hidden } = persist;
+        const inputFrame = globalThis.saveControllerFrames;
         persist.click();
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        while (globalThis.saveControllerFrames <= inputFrame) {
+          await new Promise(requestAnimationFrame);
+        }
         return {
           showsDebugMessage: before.includes(controller.text.debugRun),
           unchanged: status.textContent === before,

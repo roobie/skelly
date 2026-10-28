@@ -55,6 +55,8 @@ The zombie spawn catalogue follows loaded content, including authored-only types
 
 ## Browser stages
 
+A rendered frame does not establish input-observer task completion or player-tick command admission. Wait for the recorded event, and latch handling-queue admission rather than requiring a transient job to remain visible: a frame may precede the player tick or follow job completion. Keep the eventual destination check independent of admission. See `tools/ui-browser-contract.mjs`, `recordedBrowserKey` and `transferQueued`.
+
 A successful throw fixture needs room at that item's own landing: different dragged flights do not share a destination, and generated loot is not guaranteed to leave it free. Select a valid aim rather than weakening the throw refusal or waiting longer for a refused launch. See `test/browser/primary-action.mjs`, `aimThrowAtFreeLanding`.
 
 Keep artifact-only screenshots out of pixel stages when the render-free flow already checks the interaction. Software-rendered capture and scene changes consume the stage budget without adding a visual assertion. See `test/browser/primary-action-pixel.mjs` and `test/browser/primary-action.mjs`.

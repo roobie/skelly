@@ -60,6 +60,7 @@ const shamblerParams: Template['params'] = {
 
 export const shambler: Template = {
   name: 'shambler',
+  flinchClip: 'hit-flinch',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
   description: 'Average build, hunched, shuffling walk with an occasional forward reach.',
@@ -80,6 +81,7 @@ export const shambler: Template = {
 
 const runner: Template = {
   name: 'runner',
+  flinchClip: 'runner-hit-flinch',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
   description: 'Lean, taller, upright, faster stride.',
@@ -110,6 +112,7 @@ const runner: Template = {
 
 const crawler: Template = {
   name: 'crawler',
+  attackClip: 'lunge-grab',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
   description: 'Prone, low-profile corpse with reaching arms and trailing leg stumps.',
@@ -137,6 +140,7 @@ const crawler: Template = {
 
 const brute: Template = {
   name: 'brute',
+  flinchClip: 'hit-flinch',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
   description: 'Tall, very broad, heavy, big hands. Coarser voxels (1/10 of a block).',
