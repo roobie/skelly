@@ -1,0 +1,14 @@
+{
+  "id": "sneakers",
+  "file": "assets/models/sneakers.glb",
+  "parts": {
+    "sneakers": {
+      "node": "sneakers:boots",
+      "massKg": 0.8,
+      "centreOfMass": [6.356720054441276e-18, 0.04503752345215759, 0.029577861163227016]
+    }
+  },
+  "grip": { "at": [-0.07, 0.065, 0.08499999999999999], "turn": [0, 0, -90] },
+  "hold": "upright",
+  "roll": 0
+}
