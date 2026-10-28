@@ -4,6 +4,7 @@ import { applyPoint } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
 import { posedVoxelSurfaceBounds } from '../src/core/voxelBounds.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../src/mob/crawler.ts';
+import { severedBoneSet } from '../src/mob/dismember.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -16,6 +17,7 @@ const CRAWLER_SWEEP_SEEDS = Array.from({ length: 64 }, (_, index) => index + 1).
   (seed) => !SHAMBLER_SEED_SET.has(seed),
 );
 const LOWER_LEG_BONE = /^(shin|foot)\./;
+const LEG_BONE = /^(thigh|shin|foot)\./;
 const pullElbowProperties = (
   realized: ReturnType<typeof realize>,
   phase: number,
@@ -92,6 +94,31 @@ describe('crawler', () => {
     const { body } = realize(generate(crawler, 1));
     expect(body.bones.some((bone) => bone.id.startsWith('thigh.'))).toBe(true);
     expect(body.bones.some((bone) => LOWER_LEG_BONE.test(bone.id))).toBe(false);
+  });
+
+  it.each([
+    { name: 'one severed leg', cuts: ['thigh.L'] },
+    { name: 'damaged but retained legs', cuts: [] },
+  ])('keeps visible humanoid legs trailing flat above the floor with $name', ({ cuts }) => {
+    const humanoid = TEMPLATES.find((template) => template.name === 'shambler')!;
+    const realized = realize(generate(humanoid, 1));
+    const hidden = severedBoneSet(realized.body.bones, cuts);
+    const legs = realized.body.bones.filter((bone) => LEG_BONE.test(bone.id) && !hidden.has(bone.id));
+    const lowerLegs = legs.filter((bone) => LOWER_LEG_BONE.test(bone.id));
+    expect(lowerLegs.length).toBeGreaterThan(0);
+    const gait = crawlerGaitPose(realized, 0.5, 1);
+    for (const pose of [crawlerPose(realized), gait, crawlerHitPose(realized, gait, 0.08, 0.5)]) {
+      const surfaces = posedVoxelSurfaceBounds(realized, pose).byBone;
+      const transforms = boneTransforms(realized.body.bones, pose);
+      expect(Math.min(...legs.map((bone) => surfaces.get(bone.id)!))).toBeGreaterThanOrEqual(-1e-9);
+      for (const bone of lowerLegs) {
+        const transform = transforms.get(bone.id)!;
+        const head = applyPoint(transform, bone.head);
+        const tail = applyPoint(transform, bone.tail);
+        expect(tail[1]).toBeCloseTo(head[1], 9);
+        expect(tail[2]).toBeGreaterThan(head[2]);
+      }
+    }
   });
 
   it('alternates the arm drag and keeps gait and flinch surfaces grounded', () => {

@@ -258,6 +258,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.wander.bodyTurnDegreesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.wander.headTurnDegreesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.speed.wanderMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'zombies.speed.crawlMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.speed.chaseMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   {
     path: 'zombies.wander.movementAccelerationMetresPerSimSecondSquared',

@@ -114,6 +114,8 @@ export class SaveController {
   private storageUnavailable = false;
   private protectedCurrent = false;
   private corruptRecords = false;
+  private startingFresh = false;
+  private freshStart = false;
   private requestedContinue = false;
   private deadRecord = false;
   private entered = false;
@@ -489,11 +491,16 @@ export class SaveController {
   }
 
   private renderGoLabel(): void {
-    let label = this.titleNewWorldLabel === this.text.newWorld ? this.newWorldGoLabel : this.titleNewWorldLabel;
-    if (this.restored) {
-      label = this.text.replaceSaved;
-    }
+    const label = this.newWorldLabel();
     render(html`${label}`, $('go'));
+    render(html`${label}`, $('title-prompt'));
+  }
+
+  private newWorldLabel(): string {
+    if (this.restored) {
+      return this.text.replaceSaved;
+    }
+    return this.titleNewWorldLabel === this.text.newWorld ? this.newWorldGoLabel : this.titleNewWorldLabel;
   }
 
   /** Protects a decoded save when generating the restored world fails, so autosave cannot overwrite it. */
@@ -523,7 +530,7 @@ export class SaveController {
 
   get titleNewWorldLabel(): string {
     if (this.protectedCurrent) {
-      return this.text.needsRecoveryLabel;
+      return this.text.startFresh;
     }
     return this.storageUnavailable ? this.text.playWithoutSaving : this.text.newWorld;
   }
@@ -620,14 +627,22 @@ export class SaveController {
     this.writing = true;
     this.queued = undefined;
     try {
-      const result = await this.storage.save(this.namespace, (generation) =>
-        this.storage.encodeSnapshot(task.snapshot, generation, {
-          worldOptions: this.worldOptions!,
-          version: this.identityValue!.components,
-          buildRevision: this.identityValue!.buildRevision,
-        }),
+      const result = await this.storage.save(
+        this.namespace,
+        (generation) =>
+          this.storage.encodeSnapshot(task.snapshot, generation, {
+            worldOptions: this.worldOptions!,
+            version: this.identityValue!.components,
+            buildRevision: this.identityValue!.buildRevision,
+          }),
+        { replaceCorrupt: this.freshStart },
       );
       this.savedGeneration = result.generation;
+      if (this.freshStart) {
+        // The refused record is no longer the newest, so the tab may offer Continue again.
+        this.freshStart = false;
+        sessionStorage.removeItem(`${RESTORE_REFUSAL_KEY}:${this.namespace}`);
+      }
       if (
         task.snapshot.world.id === this.worldId &&
         task.snapshot.character.id === this.characterId &&
@@ -665,8 +680,7 @@ export class SaveController {
     if (this.protectedCurrent) {
       event.preventDefault();
       event.stopImmediatePropagation();
-      this.statusText = this.text.needsRecovery;
-      this.render();
+      this.startFresh().catch((error: unknown) => this.failNewWorld(error));
       return;
     }
     if (this.currentRecord && !this.deadRecord) {
@@ -678,6 +692,34 @@ export class SaveController {
     event.preventDefault();
     event.stopImmediatePropagation();
     this.confirmNewWorld();
+  }
+
+  /** Leaves an unusable save in storage, downloading it first when asked, until the new world's first commit. */
+  private async startFresh(): Promise<void> {
+    if (this.startingFresh) {
+      return;
+    }
+    this.startingFresh = true;
+    try {
+      if (($('save-fresh-download') as HTMLInputElement).checked) {
+        try {
+          await this.downloadRawRecords();
+        } catch (error) {
+          this.statusText = fillText(this.text.recordsExportFailed, { error: errorMessage(error) });
+          this.render();
+          return;
+        }
+      }
+      this.protectedCurrent = false;
+      this.freshStart = true;
+      this.candidate = undefined;
+      this.restoreWorldOptions = undefined;
+      this.restored = undefined;
+      this.failure = '';
+      await this.launchNewWorld();
+    } finally {
+      this.startingFresh = false;
+    }
   }
 
   private confirmNewWorld(): void {
@@ -815,23 +857,27 @@ export class SaveController {
     }
   }
 
+  private async downloadRawRecords(): Promise<void> {
+    const slots = await this.storage.readRawSlots(this.namespace);
+    for (const slot of ['a', 'b'] as const) {
+      const bytes = slots[slot];
+      if (!bytes) {
+        continue;
+      }
+      const url = URL.createObjectURL(
+        new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'application/octet-stream' }),
+      );
+      const link = $('save-download') as HTMLAnchorElement;
+      link.href = url;
+      link.download = `deadvox-${this.namespace}-${slot}.bin`;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
   private async exportCurrentRecords(): Promise<void> {
     try {
-      const slots = await this.storage.readRawSlots(this.namespace);
-      for (const slot of ['a', 'b'] as const) {
-        const bytes = slots[slot];
-        if (!bytes) {
-          continue;
-        }
-        const url = URL.createObjectURL(
-          new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'application/octet-stream' }),
-        );
-        const link = $('save-download') as HTMLAnchorElement;
-        link.href = url;
-        link.download = `deadvox-${this.namespace}-${slot}.bin`;
-        link.click();
-        URL.revokeObjectURL(url);
-      }
+      await this.downloadRawRecords();
       this.statusText = this.text.recordsExported;
     } catch (error) {
       this.statusText = fillText(this.text.recordsExportFailed, { error: errorMessage(error) });
@@ -848,6 +894,10 @@ export class SaveController {
 
   private get showSavedChoice(): boolean {
     return !(this.entered || this.requestedContinue) && this.restored !== undefined;
+  }
+
+  private get showRefusedSave(): boolean {
+    return !this.entered && this.protectedCurrent;
   }
 
   private get canOfferPersistence(): boolean {
@@ -875,7 +925,9 @@ export class SaveController {
         storageError: this.storageUnavailable || (Boolean(this.failure) && this.restored === undefined),
       },
     }).saveMenu!;
-    render(html`${[this.statusText, this.oldVersionLabel, this.failure].filter(Boolean).join('\n')}`, status);
+    // A refusal is both the status and the failure, so show each distinct line once.
+    const lines = new Set([this.statusText, this.oldVersionLabel, this.failure].filter(Boolean));
+    render(html`${[...lines].join('\n')}`, status);
     // Title and pause reuse the same card, so this copy has one rendering site.
     render(factDetail(this.text.storageLabel, this.text.storageFact), $('save-note'));
     const savedChoice = this.showSavedChoice;
@@ -895,8 +947,35 @@ export class SaveController {
     if (exportButton) {
       exportButton.hidden = !(this.protectedCurrent || this.corruptRecords);
     }
+    const refusedSave = this.showRefusedSave;
+    this.renderTitlePrompt(refusedSave);
+    const refusalHint = $('save-refusal-hint');
+    refusalHint.hidden = !refusedSave;
+    render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.refusalHintText() }) : ''}`, refusalHint);
+    $('save-fresh').hidden = !refusedSave;
+    render(
+      html`<span class="fact-detail"
+        ><input id="save-fresh-download" type="checkbox" checked aria-describedby="save-fresh-download-detail" />
+        <label for="save-fresh-download">${this.text.downloadOldSave}</label
+        ><span id="save-fresh-download-detail" class="fact-detail-copy" role="tooltip"
+          >${this.text.downloadOldSaveNote}</span
+        ></span
+      >`,
+      $('save-fresh'),
+    );
     $('save-recovery').hidden = !(this.entered && this.failure);
     render(html`${this.failure}`, $('save-recovery-message'));
+    // An unusable save is the first decision the player must make, so its controls lead the title.
+    $('overlay').classList.toggle('save-refused', refusedSave);
+  }
+
+  private refusalHintText(): string {
+    return this.failure || this.statusText;
+  }
+
+  private renderTitlePrompt(refusedSave: boolean): void {
+    $('title-prompt').hidden =
+      this.entered || !this.ready || !this.newWorldLauncher || refusedSave || this.showSavedChoice;
   }
 }
 

@@ -15,6 +15,12 @@ import { startupContent } from './baseRegistry.ts';
 const BUNDLED_CONTENT = startupContent();
 
 import type { SaveLoadResult } from '../src/game/saveStorage.ts';
+import {
+  commitSavePayload,
+  type RawSaveSlots,
+  SaveCorruptionError,
+  type SaveSlotPair,
+} from '../src/game/saveStorageProtocol.ts';
 import { shouldConfirmPageLeave } from '../src/ui/leaveConfirmation.ts';
 import { SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';
@@ -55,6 +61,7 @@ afterEach(() => {
   restoreDescriptor(navigator, 'storage', originalEnvironment.storage);
   localStorage.clear();
   sessionStorage.clear();
+  vi.restoreAllMocks();
 });
 const snapshotForWorld = (id: string): SaveSnapshot => ({
   ...fixtureSnapshot,
@@ -131,6 +138,20 @@ it('refuses Continue and names the browser mod missing from a saved world', asyn
   expect(status).toContain(browserMods[0]!.id);
   expect(status).not.toContain('browser.fixture-mod');
   expect(status).not.toMatch(FULL_HASH);
+});
+
+it('shows the refused-load status in the centre hint when a current save cannot decode', async () => {
+  enableSaveEnvironment();
+  const controller = title();
+  const identity = await currentSaveVersionIdentity();
+  const record = await recordFor('fixture-world', identity);
+  stubLiveRecord(controller, { ...record, payload: Uint8Array.of(0) });
+
+  await controller.prepare();
+
+  const status = document.getElementById('save-status')!.textContent!;
+  expect(status).not.toBe('');
+  expect(document.getElementById('save-refusal-hint')!.textContent).toContain(status);
 });
 
 it('preserves an older simulation save without appending decoder diagnostics', async () => {
@@ -581,4 +602,106 @@ it('shows a save failure that escapes the write handler and still accepts the ne
   await vi.waitFor(() => expect(document.getElementById('save-status')!.textContent).toContain('fixture presentation'));
   controller.beforeSleep();
   await vi.waitFor(() => expect(save).toHaveBeenCalledTimes(2));
+});
+
+/** Real commit protocol over in-memory slots; records downloads, launch and commits in order. */
+const freshStartFixture = (controller: SaveController, raw: RawSaveSlots, stored: SaveSlotPair) => {
+  const events: string[] = [];
+  const downloads: Promise<Uint8Array>[] = [];
+  let slots = stored;
+  vi.spyOn(URL, 'createObjectURL').mockImplementation((blob) => {
+    downloads.push((blob as Blob).arrayBuffer().then((buffer) => new Uint8Array(buffer)));
+    return 'blob:fixture';
+  });
+  vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+  document.getElementById('save-download')!.addEventListener('click', (event) => {
+    event.preventDefault();
+    events.push('download');
+  });
+  vi.spyOn(controller.storage, 'readRawSlots').mockResolvedValue(raw);
+  vi.spyOn(controller.storage, 'encodeSnapshot').mockResolvedValue(new Uint8Array([1]));
+  const driver = {
+    readSlots: async () => slots,
+    commit: (request: { slot: 'a' | 'b'; payload: Uint8Array }) => {
+      slots = { ...slots, [request.slot]: request.payload.slice().buffer };
+      events.push('commit');
+      return Promise.resolve();
+    },
+  };
+  vi.spyOn(controller.storage, 'save').mockImplementation(async (namespace, encode, options) => ({
+    ...(await commitSavePayload(driver, namespace, encode, options)),
+    backend: 'indexeddb',
+  }));
+  controller.setNewWorldLauncher(() => {
+    events.push('launch');
+    controller.bindSession(
+      () => fixtureSnapshot,
+      () => 0,
+      { blockSize: 0.5, site: 'forest', storeys: 1, density: 0.75 },
+      { checkpointSimSeconds: 1 },
+    );
+    return Promise.resolve({ enter: () => undefined });
+  });
+  return { events, downloads };
+};
+
+const startFresh = async (controller: SaveController, download: boolean) => {
+  const box = document.getElementById('save-fresh-download') as HTMLInputElement | null;
+  if (box) {
+    box.checked = download;
+  }
+  document.getElementById('go')!.click();
+  await vi.waitFor(() => {
+    if (!controller.isEntered) {
+      throw new Error('The fresh world has not entered');
+    }
+  });
+  controller.beforeSleep();
+};
+
+it.each([true, false])(
+  'starts fresh over only-corrupt records and commits; download %s fetches the old bytes first',
+  async (download) => {
+    enableSaveEnvironment();
+    const encode = (value: string) => new TextEncoder().encode(value);
+    const old = { a: encode('truncated-a'), b: encode('truncated-b') };
+    const controller = title();
+    stubLiveRecord(controller, undefined as unknown as SaveLoadResult);
+    vi.spyOn(controller.storage, 'load').mockRejectedValue(new SaveCorruptionError('fixture corruption', old));
+    const { events, downloads } = freshStartFixture(controller, old, {
+      a: old.a.slice().buffer,
+      b: old.b.slice().buffer,
+    });
+    await controller.prepare();
+    await controller.validateContent(saveFixtureRegistry);
+    await startFresh(controller, download);
+    await vi.waitFor(() => expect(events).toContain('commit'));
+    expect(events.lastIndexOf('download')).toBeLessThan(events.indexOf('launch'));
+    expect(await Promise.all(downloads)).toEqual(download ? [old.a, old.b] : []);
+  },
+);
+
+it('lifts a refused restore for the tab once the player starts fresh and the fresh world saves', async () => {
+  enableSaveEnvironment();
+  const identity = await currentSaveVersionIdentity();
+  const record = await recordFor('fixture-refused-world', identity);
+  const controller = title();
+  stubLiveRecord(controller, record);
+  sessionStorage.setItem(`deadvox.restore-refusal:${identity.digest}`, 'fixture refusal');
+  const { events } = freshStartFixture(controller, { a: record.payload, b: null }, { a: null, b: null });
+  await controller.prepare();
+  expect(await controller.validateContent(saveFixtureRegistry)).toBeUndefined();
+  const overlay = document.getElementById('overlay')!;
+  expect(overlay.classList.contains('save-refused')).toBe(true);
+  expect(['save-fresh', 'save-export'].map((id) => document.getElementById(id)!.hidden)).toEqual([false, false]);
+  expect(document.getElementById('save-status')!.textContent).toBe('fixture refusal');
+  await startFresh(controller, false);
+  await vi.waitFor(() => expect(events).toContain('commit'));
+  expect(overlay.classList.contains('save-refused')).toBe(false);
+
+  const reopened = title();
+  stubLiveRecord(reopened, record);
+  await reopened.prepare();
+  expect(await reopened.validateContent(saveFixtureRegistry)).toBeDefined();
+  expect(document.getElementById('continue')!.hidden).toBe(false);
 });

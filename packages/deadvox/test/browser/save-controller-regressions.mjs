@@ -74,6 +74,7 @@ const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
+const REFUSED_SAVE_FIXTURE = /refused save fixture/i;
 
 try {
   await test('gauntlet discovery, resources and ordinary traversal preserve running, won and dead save boundaries', async () => {
@@ -567,6 +568,7 @@ try {
       );
       assert.equal(await page.locator('#tutorial-start').isVisible(), true);
       assert.equal(await page.locator('#continue').isEnabled(), true);
+      assert.equal(await page.locator('#title-prompt').isHidden(), true, 'saved-world choice hides the centre prompt');
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
@@ -1158,6 +1160,23 @@ try {
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
       await debugPage.goto(withParams({ debug: '1' }));
+      await debugPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: 30_000,
+      });
+      // With no save, the new character choice and its start button still lead the card, above the controls list.
+      const order = await debugPage.evaluate(() => {
+        const box = (id) => document.getElementById(id).getBoundingClientRect();
+        const list = box('controls-search');
+        return ['new-character-options', 'go'].map((id) => {
+          const rect = box(id);
+          return { id, shown: rect.height > 0, beforeList: rect.bottom <= list.top };
+        });
+      });
+      assert.deepEqual(order, [
+        { id: 'new-character-options', shown: true, beforeList: true },
+        { id: 'go', shown: true, beforeList: true },
+      ]);
+      assert.equal(await debugPage.locator('#title-prompt').isVisible(), true, 'fresh title has a centre start prompt');
       const unsaved = await enterAndCheckpoint(debugPage);
       assert.deepEqual(unsaved, { namespaces: [], canSave: false });
       await debugPage.close();
@@ -1169,6 +1188,38 @@ try {
       assert.equal(saved.canSave, true);
       assert.equal(saved.namespaces.length, 1);
       await savingPage.close();
+
+      const refusedPage = await context.newPage();
+      await refusedPage.addInitScript((namespace) => {
+        sessionStorage.setItem(`deadvox.restore-refusal:${namespace}`, 'Refused save fixture');
+      }, saved.namespaces[0]);
+      await refusedPage.goto(withParams({ debug: '1', save: '1' }));
+      await refusedPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: 30_000,
+      });
+      const refusalHint = refusedPage.locator('#save-refusal-hint');
+      assert.equal(await refusalHint.isVisible(), true, 'a refused save leaves a visible centre hint');
+      assert.match(await refusalHint.textContent(), REFUSED_SAVE_FIXTURE, 'the centre hint repeats the refusal');
+      assert.equal(
+        await refusalHint.evaluate((hint) => {
+          const overlay = document.querySelector('#overlay');
+          return Number(getComputedStyle(hint).zIndex) > Number(getComputedStyle(overlay).zIndex);
+        }),
+        true,
+        'the centre hint paints above the refused-save overlay',
+      );
+      const hintPosition = await refusalHint.evaluate((hint) => {
+        const bounds = hint.getBoundingClientRect();
+        return {
+          x: bounds.left + bounds.width / 2,
+          y: bounds.top + bounds.height / 2,
+          viewportWidth: innerWidth,
+          viewportHeight: innerHeight,
+        };
+      });
+      assert.ok(Math.abs(hintPosition.x - hintPosition.viewportWidth / 2) < hintPosition.viewportWidth / 4);
+      assert.ok(Math.abs(hintPosition.y - hintPosition.viewportHeight / 2) < hintPosition.viewportHeight / 4);
+      await refusedPage.close();
 
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));

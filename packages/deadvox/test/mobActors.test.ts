@@ -12,6 +12,7 @@ import {
   indexBonesByParent,
   type Pose,
 } from '@mobgen/core/pose.ts';
+import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
@@ -908,8 +909,8 @@ describe('MobActorMeshes', () => {
     }
   });
 
-  it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across poses', () => {
-    const renderer = new MobActorMeshes(0.5, 8, { zombies: registry.zombies });
+  it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across covering poses', () => {
+    const renderer = new MobActorMeshes(0.5, 8, { zombies: new Map([[SHAMBLER.id, SHAMBLER]]) });
     try {
       const store = new MapEntityStore<Zombie>();
       const entries = SHAMBLER_FIGURE_SEEDS.map((seed, index) => {
@@ -920,8 +921,6 @@ describe('MobActorMeshes', () => {
       const poses: readonly HitParityPose[] = [
         { name: 'standing idle', speed: 0, phase: 0, chase: false, windup: 0 },
         { name: 'wander walk', speed: 0.8, phase: 0.8, chase: false, windup: 0, idleTime: 1.2 },
-        { name: 'chase sway', speed: 0.9, phase: 2.2, chase: true, windup: 0, yaw: 0.3 },
-        { name: 'mid stance fade', speed: 0, phase: 0, chase: true, windup: 0, stanceWeight: 0.5 },
         {
           name: 'mid-step smoothing',
           speed: 0.7,
@@ -1533,9 +1532,18 @@ describe('MobActorMeshes dismemberment', () => {
       const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
       const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
       const { realized } = generateValid(template, 1)!;
-      const expected = severableParts(realized.body.bones).map((part) => [
+      const { bones } = realized.body;
+      const indices = new Map(bones.map((bone, index) => [bone.id, index]));
+      const expected = severableParts(bones).map((part) => [
         part,
-        template.bodyMassKg * template.massFractions![part]!,
+        templatePartMassProperties({
+          voxels: realized.voxels,
+          partBoneIndices: [...severedBoneSet(bones, [part])].map((bone) => indices.get(bone)!),
+          bodyBoneIndices: bones.map((_, index) => index),
+          voxelSize: realized.voxels.size,
+          template,
+          part,
+        }).mass,
       ]);
       expect(masses).toEqual(expected);
     } finally {

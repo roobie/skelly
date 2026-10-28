@@ -42,7 +42,12 @@ const spitter: ZombieDef = {
 const shambler: ZombieDef = {
   ...base.zombies.get('shambler')!,
   id: 'fixture_shambler',
-  speed: { wanderMetresPerSimSecond: simRate(0), chaseMetresPerSimSecond: simRate(0), backgroundStepMetres: 1 },
+  speed: {
+    ...base.zombies.get('shambler')!.speed,
+    wanderMetresPerSimSecond: simRate(0),
+    chaseMetresPerSimSecond: simRate(0),
+    backgroundStepMetres: 1,
+  },
 };
 const resistant: ZombieDef = { ...shambler, id: 'fixture_resistant', acidResistance: 1 };
 const spreadSpitter: ZombieDef = {

@@ -718,8 +718,10 @@ const UiScreenTextSchema = strictObject({
     incompatible: ['error'],
     newWorld: [],
     replaceSaved: [],
-    needsRecoveryLabel: [],
-    needsRecovery: [],
+    startFresh: [],
+    refusedHint: ['hint'],
+    downloadOldSave: [],
+    downloadOldSaveNote: [],
     playWithoutSaving: [],
     unreadable: ['error'],
     failure: ['what', 'error'],
@@ -3427,6 +3429,7 @@ const ZombieSchema = strictObject({
   speed: strictObject({
     wanderMetresPerSimSecond: SimRate,
     chaseMetresPerSimSecond: SimRate,
+    crawlMetresPerSimSecond: SimRate,
     /** The farthest one background-tier tick moves it toward its target. */
     backgroundStepMetres: Positive,
   }),
