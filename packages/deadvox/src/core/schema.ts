@@ -718,6 +718,7 @@ const UiScreenTextSchema = strictObject({
     newWorld: [],
     replaceSaved: [],
     startFresh: [],
+    refusedHint: ['hint'],
     downloadOldSave: [],
     downloadOldSaveNote: [],
     playWithoutSaving: [],

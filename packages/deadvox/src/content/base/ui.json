@@ -739,6 +739,7 @@
           "reasonWon": "scenario won",
           "recordsExportFailed": "Could not export save records: {error}",
           "recordsExported": "Raw save records exported for recovery.",
+          "refusedHint": "{hint} — see choices on the right.",
           "replaceSaved": "New character — replace saved world",
           "saveFailed": "Save failed",
           "saveFailedFor": "Save failed ({reason}): {error}",

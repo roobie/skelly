@@ -942,7 +942,11 @@ export class SaveController {
     if (exportButton) {
       exportButton.hidden = !(this.protectedCurrent || this.corruptRecords);
     }
-    $('save-fresh').hidden = !this.showRefusedSave;
+    const refusedSave = this.showRefusedSave;
+    const refusalHint = $('save-refusal-hint');
+    refusalHint.hidden = !refusedSave;
+    render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.failure }) : ''}`, refusalHint);
+    $('save-fresh').hidden = !refusedSave;
     render(
       html`<span class="fact-detail"
         ><input id="save-fresh-download" type="checkbox" checked aria-describedby="save-fresh-download-detail" />
@@ -956,7 +960,7 @@ export class SaveController {
     $('save-recovery').hidden = !(this.entered && this.failure);
     render(html`${this.failure}`, $('save-recovery-message'));
     // An unusable save is the first decision the player must make, so its controls lead the title.
-    $('overlay').classList.toggle('save-refused', this.showRefusedSave);
+    $('overlay').classList.toggle('save-refused', refusedSave);
   }
 }
 

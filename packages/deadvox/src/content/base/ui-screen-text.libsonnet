@@ -316,6 +316,7 @@
     newWorld: 'New world',
     replaceSaved: 'New character — replace saved world',
     startFresh: 'Start fresh',
+    refusedHint: '{hint} — see choices on the right.',
     downloadOldSave: 'Download old save',
     downloadOldSaveNote: 'The file can be sent to the developer for bug hunting.',
     playWithoutSaving: 'Play without saving',

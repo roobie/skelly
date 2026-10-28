@@ -1186,6 +1186,30 @@ try {
       assert.equal(saved.namespaces.length, 1);
       await savingPage.close();
 
+      const refusedPage = await context.newPage();
+      await refusedPage.addInitScript((namespace) => {
+        sessionStorage.setItem(`deadvox.restore-refusal:${namespace}`, 'Refused save fixture');
+      }, saved.namespaces[0]);
+      await refusedPage.goto(withParams({ debug: '1', save: '1' }));
+      await refusedPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: 30_000,
+      });
+      const refusalHint = refusedPage.locator('#save-refusal-hint');
+      assert.equal(await refusalHint.isVisible(), true, 'a refused save leaves a visible centre hint');
+      assert.match(await refusalHint.textContent(), /refused save fixture/i, 'the centre hint repeats the refusal');
+      const hintPosition = await refusalHint.evaluate((hint) => {
+        const bounds = hint.getBoundingClientRect();
+        return {
+          x: bounds.left + bounds.width / 2,
+          y: bounds.top + bounds.height / 2,
+          viewportWidth: innerWidth,
+          viewportHeight: innerHeight,
+        };
+      });
+      assert.ok(Math.abs(hintPosition.x - hintPosition.viewportWidth / 2) < hintPosition.viewportWidth / 4);
+      assert.ok(Math.abs(hintPosition.y - hintPosition.viewportHeight / 2) < hintPosition.viewportHeight / 4);
+      await refusedPage.close();
+
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));
       await reloaded.goto(withParams({ debug: '1' }));
