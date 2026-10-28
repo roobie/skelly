@@ -74,6 +74,7 @@ const PERSISTENCE_GRANTED = /Persistent storage granted/;
 const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
+const REFUSED_SAVE_FIXTURE = /refused save fixture/i;
 
 try {
   await test('gauntlet discovery, resources and ordinary traversal preserve running, won and dead save boundaries', async () => {
@@ -1196,7 +1197,15 @@ try {
       });
       const refusalHint = refusedPage.locator('#save-refusal-hint');
       assert.equal(await refusalHint.isVisible(), true, 'a refused save leaves a visible centre hint');
-      assert.match(await refusalHint.textContent(), /refused save fixture/i, 'the centre hint repeats the refusal');
+      assert.match(await refusalHint.textContent(), REFUSED_SAVE_FIXTURE, 'the centre hint repeats the refusal');
+      assert.equal(
+        await refusalHint.evaluate((hint) => {
+          const overlay = document.querySelector('#overlay');
+          return Number(getComputedStyle(hint).zIndex) > Number(getComputedStyle(overlay).zIndex);
+        }),
+        true,
+        'the centre hint paints above the refused-save overlay',
+      );
       const hintPosition = await refusalHint.evaluate((hint) => {
         const bounds = hint.getBoundingClientRect();
         return {

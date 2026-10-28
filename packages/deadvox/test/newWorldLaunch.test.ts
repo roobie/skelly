@@ -140,6 +140,20 @@ it('refuses Continue and names the browser mod missing from a saved world', asyn
   expect(status).not.toMatch(FULL_HASH);
 });
 
+it('shows the refused-load status in the centre hint when a current save cannot decode', async () => {
+  enableSaveEnvironment();
+  const controller = title();
+  const identity = await currentSaveVersionIdentity();
+  const record = await recordFor('fixture-world', identity);
+  stubLiveRecord(controller, { ...record, payload: Uint8Array.of(0) });
+
+  await controller.prepare();
+
+  const status = document.getElementById('save-status')!.textContent!;
+  expect(status).not.toBe('');
+  expect(document.getElementById('save-refusal-hint')!.textContent).toContain(status);
+});
+
 it('preserves an older simulation save without appending decoder diagnostics', async () => {
   enableSaveEnvironment();
   const controller = title();

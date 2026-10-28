@@ -945,7 +945,7 @@ export class SaveController {
     const refusedSave = this.showRefusedSave;
     const refusalHint = $('save-refusal-hint');
     refusalHint.hidden = !refusedSave;
-    render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.failure }) : ''}`, refusalHint);
+    render(html`${refusedSave ? fillText(this.text.refusedHint, { hint: this.failure || this.statusText }) : ''}`, refusalHint);
     $('save-fresh').hidden = !refusedSave;
     render(
       html`<span class="fact-detail"
