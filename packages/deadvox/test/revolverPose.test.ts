@@ -110,7 +110,7 @@ it('seats every loaded round inside its exported cylinder chamber', async () => 
   mechanics.releaseLoad(gun.uid, time);
   finish();
   expect(gun.firearm!.cylinder!.chambers.every((chamber) => chamber.state === 'round')).toBe(true);
-  const held = new HeldItems(inventory, models, registry.figures.get('player')!);
+  const held = new HeldItems(inventory, models, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
   try {
     held.update(new PerspectiveCamera(), undefined, 0, { firearms: mechanics.frames() });
     const { scene } = held.warmUpTarget;
@@ -192,7 +192,7 @@ it('keeps the loading cartridge at the palm grip through the real revolver trans
       pose: () => undefined,
       onEjection: () => undefined,
     });
-    const held = new HeldItems(inventory, models, figure);
+    const held = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01 });
     const camera = new PerspectiveCamera();
     const other = side === 'right' ? 'left' : 'right';
     const { scene } = held.warmUpTarget;

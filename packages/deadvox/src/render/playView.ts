@@ -258,7 +258,10 @@ export const createPlayView = (
   const blastFlashes = new BlastFlashes();
   const leverProps = new LeverProps(s, engine.isSolid);
   const acidEffects = new AcidEffects(s, config.seed);
-  const held = new HeldItems(inventory, models, playerFigure, engine.sky.light);
+  const held = new HeldItems(inventory, models, playerFigure, {
+    nearPlaneMetres: engine.camera.near,
+    sunSource: engine.sky.light,
+  });
   scene.add(
     caseEffects.mesh,
     impactEffects.group,
