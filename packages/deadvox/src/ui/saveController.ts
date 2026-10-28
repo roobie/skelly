@@ -974,7 +974,8 @@ export class SaveController {
   }
 
   private renderTitlePrompt(refusedSave: boolean): void {
-    $('title-prompt').hidden = this.entered || !this.ready || !this.newWorldLauncher || refusedSave;
+    $('title-prompt').hidden =
+      this.entered || !this.ready || !this.newWorldLauncher || refusedSave || this.showSavedChoice;
   }
 }
 

@@ -568,6 +568,7 @@ try {
       );
       assert.equal(await page.locator('#tutorial-start').isVisible(), true);
       assert.equal(await page.locator('#continue').isEnabled(), true);
+      assert.equal(await page.locator('#title-prompt').isHidden(), true, 'saved-world choice hides the centre prompt');
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       await Promise.all([
