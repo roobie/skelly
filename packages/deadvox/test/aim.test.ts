@@ -80,6 +80,25 @@ const step = (overrides: AimStepOverrides = {}) => ({
   ...overrides,
 });
 
+it('stance scaling leaves gait, look lag and recoil unchanged', () => {
+  const standing = createAim();
+  const prone = createAim();
+  for (const aim of [standing, prone]) {
+    aim.advance(step());
+    aim.recordShot(5, 0.02);
+  }
+  for (let tick = 0; tick < 30; tick++) {
+    const moving = step({ velocity: [1, 0, 1], yaw: 0.2, stridePhase: tick / 30 });
+    const standingFrame = standing.advance({
+      ...moving,
+      stanceDriftScale: stanceTuning.wobbleStanceDriftScale.standing,
+    });
+    const proneFrame = prone.advance({ ...moving, stanceDriftScale: stanceTuning.wobbleStanceDriftScale.prone });
+    expect(Math.hypot(standingFrame.yaw, standingFrame.pitch)).toBeGreaterThan(0);
+    expect(proneFrame).toEqual(standingFrame);
+  }
+});
+
 it('restores and advances saved look offsets at the geometric limit beyond core tuning', () => {
   const state = {
     ...createAim().snapshotState(),

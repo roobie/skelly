@@ -77,6 +77,11 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
           "wobbleNoiseReversionRatePerSimSecond": 2.4,
           "wobbleNoiseSigmaRadiansPerSqrtSecond": 0.002,
           "wobbleNoiseSmoothingSimSeconds": 0.12,
+          "wobbleStanceDriftScale": {
+            "standing": 1,
+            "crouching": 0.8,
+            "prone": 0.6,
+          },
           "reloadFactorFloor": 0.025,
           "reloadFactorHalfLifeLevels": 5,
           "rackFactorFloor": 0.16,
