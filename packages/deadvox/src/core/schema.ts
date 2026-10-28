@@ -1544,6 +1544,8 @@ const ItemSchema = strictObject({
   /** Initial ADS power for a variable-power optic; constrained by its exported range. */
   opticMagnification: optional(Positive),
   opticUnityImage: optional(picklist(['world', 'source'])),
+  /** Explicitly excludes an optic from fitting until its dedicated image mechanism exists. */
+  opticView: optional(picklist(['unavailable'])),
   opticZoom: optional(strictObject({ step: Positive, rememberPerWeapon: vBoolean() })),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
@@ -4545,6 +4547,11 @@ const RecipeSchema = strictObject({
 const GraphicsTuningSchema = strictObject({
   id: Id,
   nearPlaneMetres: Positive,
+  playerViewFovDegrees: pipe(number(), finite(), minValue(1), maxValue(179)),
+  opticLens: strictObject({
+    rimSoftness: pipe(Positive, maxValue(0.5)),
+    reticleAntiAliasWidth: pipe(Positive, maxValue(2)),
+  }),
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),

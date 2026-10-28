@@ -252,21 +252,35 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert(lastFrame, 'the clean recording contains player ticks');
     assert.notEqual(lastFrame[0], start.yaw, 'the final replay sample contains the recorded yaw');
     assert.notEqual(lastFrame[1], start.pitch, 'the final replay sample contains the recorded pitch');
-    const replayNavigation = page.waitForNavigation();
+    const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
       name: 'clean-look-replay.json',
       mimeType: 'application/json',
       buffer: Buffer.from(replayText),
     });
-    await replayNavigation;
-    await page.waitForFunction(
-      () => document.querySelector('#input-replay-status') || document.querySelector('#errors')?.textContent?.trim(),
-    );
+    await replayRestart;
+    await page.waitForFunction(() => {
+      if (document.querySelector('#input-replay-status')) {
+        return true;
+      }
+      return document.querySelector('#errors')?.textContent?.trim().startsWith('Replay rejected:') === true;
+    });
+    const replayStartup = await page.evaluate(() => {
+      const status = document.querySelector('#input-replay-status');
+      return {
+        hasInputReplayStatus: status !== null,
+        inputReplayStatus: status?.getAttribute('data-state'),
+        errors: document.querySelector('#errors')?.textContent?.trim(),
+        worldLoadingState: document.querySelector('#world-loading')?.getAttribute('data-state'),
+        worldLoadingMessage: document.querySelector('#world-loading-message')?.textContent,
+        saveStatus: document.querySelector('#save-status')?.textContent,
+      };
+    });
     assert.equal(
-      await page.locator('#input-replay-status').count(),
-      1,
-      `Replay startup: ${await page.locator('#errors').textContent()}; page errors: ${JSON.stringify(pageErrors)}`,
+      replayStartup.hasInputReplayStatus,
+      true,
+      `Replay startup: ${JSON.stringify(replayStartup)}; page errors: ${JSON.stringify(pageErrors)}`,
     );
     await page.waitForFunction(
       () =>
@@ -526,14 +540,14 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     });
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
-    const replayNavigation = page.waitForNavigation();
+    const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
       name: 'forward-button-replay.json',
       mimeType: 'application/json',
       buffer: Buffer.from(replayText),
     });
-    await replayNavigation;
+    await replayRestart;
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(
       () =>
@@ -748,14 +762,14 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     assert(dropActionIndex > quickbarActionIndex, 'the same-sample drop follows the quickbar action');
     assert.equal(artifact.actions[quickbarActionIndex].tick, artifact.actions[throwActionIndex].tick);
     assert.equal(artifact.actions[dropActionIndex].tick, artifact.actions[throwActionIndex].tick);
-    const replayNavigation = page.waitForNavigation();
+    const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
       name: 'two-hand-throw-replay.json',
       mimeType: 'application/json',
       buffer: Buffer.from(replayText),
     });
-    await replayNavigation;
+    await replayRestart;
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(
       () =>
@@ -1116,14 +1130,14 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       artifact.actions.some(({ action }) => action === 'aim.ads-toggle'),
       'the replay records the mid-segment ADS toggle',
     );
-    const replayNavigation = page.waitForNavigation();
+    const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
       name: 'ads-fire-replay.json',
       mimeType: 'application/json',
       buffer: Buffer.from(replayText),
     });
-    await replayNavigation;
+    await replayRestart;
     await page.waitForFunction(() => document.querySelector('#input-replay-status'));
     await page.waitForFunction(() => {
       const r = globalThis.primaryActionTest;
@@ -3956,14 +3970,14 @@ try {
     assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
     assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
     await timePhase('full-replay-import-accepted', async () => {
-      const replayNavigation = page.waitForNavigation();
+      const replayRestart = page.waitForEvent('load');
       await command('debug.input-replay-import');
       await page.locator('#input-replay-file').setInputFiles({
         name: 'input-replay.json',
         mimeType: 'application/json',
         buffer: Buffer.from(replayText),
       });
-      await replayNavigation;
+      await replayRestart;
       await page.waitForFunction(() => document.querySelector('#input-replay-status')?.dataset.state === 'playing');
       const replayError = await page.locator('#errors').textContent();
       assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
@@ -4023,14 +4037,14 @@ try {
       'fixture write changes the recorded end state',
     );
     await timePhase('fixture-write-replay-divergence', async () => {
-      const shortReplayNavigation = page.waitForNavigation();
+      const shortReplayRestart = page.waitForEvent('load');
       await command('debug.input-replay-import');
       await page.locator('#input-replay-file').setInputFiles({
         name: 'fixture-write-replay.json',
         mimeType: 'application/json',
         buffer: Buffer.from(shortReplayText),
       });
-      await shortReplayNavigation;
+      await shortReplayRestart;
       const replayCompletionTimeout = Math.ceil((shortReplayArtifact.frames.length / 60) * 2000 + 10_000);
       await page.waitForFunction(
         () => {

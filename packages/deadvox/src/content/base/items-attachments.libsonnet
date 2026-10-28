@@ -19,6 +19,7 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "size": [2, 2],
       "model": "optic_digital_thermal",
       opticUnityImage: 'world',
+      opticView: 'unavailable',
     },
     {
       "id": "optic_fixed_prism_4x",

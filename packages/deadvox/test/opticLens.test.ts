@@ -9,9 +9,19 @@ import {
   WebGLRenderTarget,
 } from 'three';
 import { expect, it, vi } from 'vitest';
+import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import type { OpticLensFrame } from '../src/core/opticView.ts';
 import { OpticLensRenderer, opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER } from '../src/render/shadowFlags.ts';
+import { baseRegistry } from './baseRegistry.ts';
+
+it('takes optic rim and reticle edge tuning from content', () => {
+  const tuning = graphicsTuningOf(baseRegistry()).opticLens;
+  const pass = opticLensPass(tuning);
+  expect(pass.uniforms.uRimSoftness!.value).toBe(tuning.rimSoftness);
+  expect(pass.uniforms.uReticleAntiAliasWidth!.value).toBe(tuning.reticleAntiAliasWidth);
+  pass.dispose();
+});
 
 it.each([1, 6])('at %sx draws the window image without the presented optic', (magnification) => {
   const frame: OpticLensFrame = {
@@ -71,7 +81,7 @@ it.each([
     radius: [0.2, 0.2],
   };
   const lens = new OpticLensRenderer();
-  const pass = opticLensPass();
+  const pass = opticLensPass(graphicsTuningOf(baseRegistry()).opticLens);
   const scene = new Scene();
   const mesh = new Mesh(new BoxGeometry(), new MeshBasicMaterial());
   mesh.layers.set(OPTIC_BODY_LAYER);

@@ -39,6 +39,7 @@ const tuning: GraphicsOptions = {
   coarseWeathering: toggle,
   cachedSurfaceNoise: toggle,
 };
+const opticLens = { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 };
 
 it('non-post rendering scales the scene and hands, presents at display resolution, and probes the complete draw', () => {
   vi.stubGlobal('document', { visibilityState: 'visible' });
@@ -74,7 +75,7 @@ it('non-post rendering scales the scene and hands, presents at display resolutio
     }),
     copyFramebufferToTexture: vi.fn((_texture: FramebufferTexture) => undefined),
   };
-  const mood = new Mood(renderer as unknown as WebGLRenderer, scene, new PerspectiveCamera(), tuning);
+  const mood = new Mood(renderer as unknown as WebGLRenderer, scene, new PerspectiveCamera(), { ...tuning, opticLens });
   expect(mood.post).toBe(false);
   mood.render(() => drawing.push({ kind: 'hands', viewport: viewport.clone() }));
   const scaled = new Vector4(

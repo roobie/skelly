@@ -45,7 +45,10 @@ it('rack pose turns an away-facing port only during handling without changing ga
       return { root, parts: [], slots: {} };
     },
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, registry.figures.get('player')!, { nearPlaneMetres: 0.01 });
+  const held = new HeldItems(inventory, models, registry.figures.get('player')!, {
+    nearPlaneMetres: 0.01,
+    playerViewFovDegrees: 75,
+  });
   const camera = new PerspectiveCamera();
   const state = () =>
     structuredClone({

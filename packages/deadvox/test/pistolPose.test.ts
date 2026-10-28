@@ -124,7 +124,7 @@ const pistolFixture = async (
   if (!inventory.add(gun, { kind: 'hand', side })) {
     throw new Error('Pistol fixture could not equip its gun');
   }
-  const view = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01 });
+  const view = new HeldItems(inventory, models, figure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
   return { registry, figure, model, models, inventory, gun, view };
 };
 

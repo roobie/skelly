@@ -2,10 +2,11 @@ import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
+import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const BUNDLED_CONTENT = startupContent();
+const PLAYER_VIEW_FOV_DEGREES = graphicsTuningOf(BUNDLED_CONTENT.registry).playerViewFovDegrees;
 
 import { firearmBoreRay, firearmBoreTarget } from '../src/game/firearmAim.ts';
 import { playCrosshairFrame, projectCrosshairScreenPosition } from '../src/ui/playHud.ts';

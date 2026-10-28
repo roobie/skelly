@@ -3,6 +3,7 @@ import { safeParse } from 'valibot';
 import { describe, expect, it } from 'vitest';
 import { opticLensPass, setOpticLensUniforms } from '../src/render/opticLens.ts';
 
+const opticLens = { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 };
 const reticle: Reticle = {
   focalPlane: 'first',
   referenceMagnification: 8,
@@ -28,7 +29,7 @@ describe('reticle boundary', () => {
   });
 
   it('scales first-plane shader marks with power but keeps second-plane screen size fixed', () => {
-    const pass = opticLensPass();
+    const pass = opticLensPass(opticLens);
     const frame = {
       center: [0.5, 0.5] as const,
       reticleCenter: [0.5, 0.5] as const,
@@ -50,7 +51,7 @@ describe('reticle boundary', () => {
   });
 
   it('packs every primitive and clears the previous sight picture when no reticle is active', () => {
-    const pass = opticLensPass();
+    const pass = opticLensPass(opticLens);
     const frame = {
       center: [0.5, 0.5] as const,
       reticleCenter: [0.5, 0.5] as const,

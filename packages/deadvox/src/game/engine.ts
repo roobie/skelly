@@ -7,7 +7,6 @@
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { skyAt } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
@@ -79,7 +78,7 @@ export function createEngine(
     throw new Error('Missing core graphics policy');
   }
   // Short-relief optics belong to this scene too, not only to the optical adapter's closer camera.
-  const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, graphicsTuning.nearPlaneMetres, radiusM);
+  const camera = new PerspectiveCamera(graphicsTuning.playerViewFovDegrees, 1, graphicsTuning.nearPlaneMetres, radiusM);
   camera.rotation.order = 'YXZ';
   camera.layers.enable(PLAYER_FIGURE_LAYER);
   camera.layers.enable(OPTIC_BODY_LAYER);

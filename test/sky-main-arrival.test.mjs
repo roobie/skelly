@@ -7,6 +7,7 @@ import process from 'node:process';
 import { it } from 'node:test';
 import {
   adaptMainInteractionPick,
+  adaptMainOpticLensPass,
   adaptMainSeedPool,
   mainArrivalGit,
   mainOverlayPath,
@@ -69,6 +70,13 @@ it('main picker callers supply both branch reach predicates without changing an 
   assert.equal(options.isSolid, physical);
   assert.equal(options.isOpaque, sight);
   assert.equal(adaptMainInteractionPick(adapted), adapted);
+});
+
+it('main Mood overlays pass graphics-owned optic-lens tuning to the branch renderer', () => {
+  const source = 'this.opticPass = opticLensPass();';
+  const adapted = adaptMainOpticLensPass(source);
+  assert.equal(adapted, 'this.opticPass = opticLensPass(this.graphicsTuning.opticLens);');
+  assert.equal(adaptMainOpticLensPass(adapted), adapted);
 });
 
 it('a main renderer on one shared seed pool builds only the seeds each model realizes and rethrows other errors', () => {

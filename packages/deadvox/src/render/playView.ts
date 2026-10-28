@@ -270,6 +270,7 @@ export const createPlayView = (
   const acidEffects = new AcidEffects(s, config.seed);
   const held = new HeldItems(inventory, models, playerFigure, {
     nearPlaneMetres: engine.camera.near,
+    playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
     sunSource: engine.sky.light,
   });
   scene.add(

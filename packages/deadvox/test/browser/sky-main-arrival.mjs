@@ -112,6 +112,12 @@ export function adaptMainSeedPool(source) {
   );
 }
 
+// The base Mood caller predates content-owned optic-lens tuning. Keep its presentation overlay while supplying
+// the branch core API's required tuning from the graphics object it already holds.
+export function adaptMainOpticLensPass(source) {
+  return source.replace('opticLensPass()', 'opticLensPass(this.graphicsTuning.opticLens)');
+}
+
 const VALUE_DECLARATION =
   /^export\s+(?:declare\s+)?(?:async\s+)?(?:const|let|var|function\*?|(?:abstract\s+)?class|enum)\s+([\w$]+)/gm;
 const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm;
@@ -271,6 +277,7 @@ const OVERLAY_ADAPTERS = {
   'render/playView.ts': contentLookView,
   'game/play.ts': adaptMainInteractionPick,
   'render/mobActors.ts': adaptMainSeedPool,
+  'render/mood.ts': adaptMainOpticLensPass,
   'game/engine.ts': (source) =>
     source.replace(
       '  return {\n    ...worldSetup,',

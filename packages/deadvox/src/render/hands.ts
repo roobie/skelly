@@ -24,7 +24,6 @@ import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { type OpticLensFrame, presentedOptic, projectLensAperture, projectOpticReticle } from '../core/opticView.ts';
-import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -63,10 +62,14 @@ export class HeldItems {
     inventory: Inventory,
     models: ModelLibrary | undefined,
     figure: FigureDef,
-    { nearPlaneMetres, sunSource }: { nearPlaneMetres: number; sunSource?: DirectionalLight },
+    {
+      nearPlaneMetres,
+      playerViewFovDegrees,
+      sunSource,
+    }: { nearPlaneMetres: number; playerViewFovDegrees: number; sunSource?: DirectionalLight },
   ) {
     this.inventory = inventory;
-    this.camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, nearPlaneMetres, 10);
+    this.camera = new PerspectiveCamera(playerViewFovDegrees, 1, nearPlaneMetres, 10);
     this.models = models;
     this.figure = figure;
     this.sunSource = sunSource;

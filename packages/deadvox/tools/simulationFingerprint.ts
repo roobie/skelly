@@ -83,7 +83,6 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/graphicsTuning.ts',
   // Camera field of view and optic lens projection affect rendered presentation, not simulation or saves.
   'src/core/opticView.ts',
-  'src/core/opticWindow.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
   'src/core/weather.ts',
   'src/core/mesher.ts',

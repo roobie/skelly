@@ -25,7 +25,7 @@ export const scopeDiscPixels = ({ engine, view }) => {
   const image = new WebGLRenderTarget(size.x, size.y);
   const output = new WebGLRenderTarget(size.x, size.y);
   const silhouette = new OpticHousingMask();
-  const pass = opticLensPass();
+  const pass = opticLensPass(engine.registry.graphics.get('core').opticLens);
   const previous = renderer.getRenderTarget();
   const clear = renderer.getClearColor(new Color());
   const alpha = renderer.getClearAlpha();

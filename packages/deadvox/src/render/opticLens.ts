@@ -15,6 +15,11 @@ import { opticFieldOfView, opticRendersWorld } from '../core/opticView.ts';
 import { OpticHousingMask } from './opticHousingMask.ts';
 import { OPTIC_BODY_LAYER } from './shadowFlags.ts';
 
+export interface OpticLensTuning {
+  readonly rimSoftness: number;
+  readonly reticleAntiAliasWidth: number;
+}
+
 const OPTIC_LENS_SHADER = {
   name: 'OpticLensShader',
   uniforms: {
@@ -27,6 +32,8 @@ const OPTIC_LENS_SHADER = {
     uReticleCenter: { value: new Vector2(0.5, 0.5) },
     uLensRadius: { value: new Vector2(0.25, 0.4) },
     uLensShape: { value: new Vector2() },
+    uRimSoftness: { value: 0 },
+    uReticleAntiAliasWidth: { value: 0 },
     uReticleCount: { value: 0 },
     uReticleScale: { value: 1 },
     uReticleGeometry: { value: Array.from({ length: MAX_RETICLE_PRIMITIVES }, () => new Vector4()) },
@@ -49,6 +56,8 @@ uniform vec2 uLensCenter;
 uniform vec2 uReticleCenter;
 uniform vec2 uLensRadius;
 uniform vec2 uLensShape;
+uniform float uRimSoftness;
+uniform float uReticleAntiAliasWidth;
 uniform int uReticleCount;
 uniform float uReticleScale;
 uniform vec4 uReticleGeometry[${MAX_RETICLE_PRIMITIVES}];
@@ -58,7 +67,7 @@ varying vec2 vUv;
 
 vec3 reticle(vec2 p, vec3 color, float aperture) {
   p /= uReticleScale;
-  float aa = max(length(fwidth(p)) * 0.5, 0.0001);
+  float aa = max(length(fwidth(p)) * uReticleAntiAliasWidth, 0.0001);
   for (int i = 0; i < ${MAX_RETICLE_PRIMITIVES}; i++) {
     if (i >= uReticleCount) break;
     vec4 g = uReticleGeometry[i];
@@ -85,7 +94,7 @@ void main() {
   vec2 profile = abs(local) / vec2(uLensShape.x, 1.0);
   float radius = pow(pow(profile.x, uLensShape.y) + pow(profile.y, uLensShape.y), 1.0 / uLensShape.y);
   float housing = texture2D(uHousingTexture, vUv).r * uHousingActive;
-  float aperture = (1.0 - smoothstep(0.96, 1.0, radius)) * (1.0 - housing);
+  float aperture = (1.0 - smoothstep(1.0 - uRimSoftness, 1.0, radius)) * (1.0 - housing);
   vec3 lens = mix(source.rgb, texture2D(uZoomTexture, vUv).rgb, uZoomActive);
   vec3 color = mix(source.rgb, lens, aperture);
   color = reticle((vUv - uReticleCenter) / uLensRadius, color, aperture);
@@ -145,7 +154,12 @@ export class OpticLensRenderer {
   }
 }
 
-export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER);
+export const opticLensPass = (tuning: OpticLensTuning): ShaderPass => {
+  const pass = new ShaderPass(OPTIC_LENS_SHADER);
+  pass.uniforms.uRimSoftness!.value = tuning.rimSoftness;
+  pass.uniforms.uReticleAntiAliasWidth!.value = tuning.reticleAntiAliasWidth;
+  return pass;
+};
 
 export const setOpticLensUniforms = (pass: ShaderPass, frame: OpticLensFrame): void => {
   const { reticle, aperture } = frame;

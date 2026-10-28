@@ -412,23 +412,13 @@ describe('certified firearm fitting', () => {
     expect(fixture.firearm.slots?.[slot]).toBeUndefined();
   });
 
-  it('keeps an unconfigured variable-power optic out of fitting', () => {
+  it('keeps an optic with an unavailable view out of fitting with its own refusal', () => {
     const fixture = makeFixture();
-    const optic = [...fixture.registry.items.values()].find((item) => {
-      const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
-      const range = model?.gun?.attachment?.properties.magnification;
-      return (
-        model?.gun?.attachment?.kind === 'optic' &&
-        range !== undefined &&
-        range.min < range.max &&
-        Object.values(fixture.model.compatibility ?? {}).some((ids) => ids.includes(model.gun!.attachment!.id))
-      );
-    });
-    if (!optic) {
-      throw new Error('Fixture registry needs a variable-power optic');
+    const optic = [...fixture.registry.items.values()].find((item) => item.opticView === 'unavailable');
+    if (!optic?.model) {
+      throw new Error('Fixture registry needs an optic with an unavailable view');
     }
-    fixture.registry.items.set(optic.id, { ...optic, opticMagnification: undefined });
-    const opticModel = fixture.registry.models.get(optic.model!)!;
+    const opticModel = fixture.registry.models.get(optic.model)!;
     const firearmSlot = fixture.model.attachmentSlots!.find(({ id }) =>
       fixture.model.compatibility?.[id]?.includes(opticModel.gun!.attachment!.id),
     );
@@ -451,7 +441,9 @@ describe('certified firearm fitting', () => {
     }
 
     expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(thermal);
-    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBeDefined();
+    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBe(
+      fixture.registry.ui.get('core')!.actionText.attachments.viewUnavailable,
+    );
     expect(queue.jobs).toHaveLength(0);
   });
 

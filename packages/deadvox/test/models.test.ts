@@ -154,7 +154,7 @@ it.each(['right', 'left'] as const)('keeps the %s arm out of every sight line to
     has: (id: string) => id === definition.id || figureModels.has(id),
     heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01 });
+  const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
   held.update(new PerspectiveCamera(), undefined, 0, { firearms: [] });
   const { scene: view } = held.warmUpTarget;
   view.updateMatrixWorld(true);
@@ -194,7 +194,7 @@ it.each(['right', 'left'] as const)('keeps the held oil lamp flame visible beyon
     has: (id: string) => id === definition.id || figureModels.has(id),
     heldLook: () => ({ root: prepareModel(definition, scene.clone()).held, parts: [], slots: {} }),
   } as unknown as ModelLibrary;
-  const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01 });
+  const held = new HeldItems(inventory, models, playerFigure, { nearPlaneMetres: 0.01, playerViewFovDegrees: 75 });
   try {
     held.update(new PerspectiveCamera());
     const { scene: view, camera } = held.warmUpTarget;

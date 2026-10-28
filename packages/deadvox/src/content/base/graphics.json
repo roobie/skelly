@@ -52,6 +52,11 @@
       },
       "modelLoadConcurrency": 8,
       "nearPlaneMetres": 0.01,
+      "opticLens": {
+        "reticleAntiAliasWidth": 0.5,
+        "rimSoftness": 0.040000000000000001
+      },
+      "playerViewFovDegrees": 75,
       "readyRadiusM": 64,
       "renderScale": {
         "adaptive": {
