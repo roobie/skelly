@@ -183,7 +183,7 @@ local yard(block) = { role: 'trim', block: block };
     ] },
     { id: 'gauntlet_ammunition', rolls: [1, 2], entries: [
       { item: 'cartridge_357_h_magnum', weight: 2, count: [2, 6] },
-      { item: 'cartridge_box_357_h_magnum', weight: 1 },
+      { item: 'cartridge_box_357_h_magnum', weight: 1 }, { item: 'cartridge_box_9x19', weight: 1 },
       { item: 'shell_12_gauge_00_buck', weight: 3, count: [2, 5] },
       { item: 'shotshell_box', weight: 1 }, { nothing: true, weight: 4 },
     ] },
@@ -199,7 +199,7 @@ local yard(block) = { role: 'trim', block: block };
     // about as many rounds as it offers .357, several thirty-round magazines' worth (#1089).
     { id: 'armoury_ammunition', rolls: [1, 2], entries: [
       { item: 'cartridge_357_h_magnum', weight: 3, count: [3, 12] },
-      { item: 'cartridge_box_357_h_magnum', weight: 2 },
+      { item: 'cartridge_box_357_h_magnum', weight: 2 }, { item: 'cartridge_box_9x19', weight: 2 },
       { item: 'shotshell_box', weight: 1 },
       { item: 'cartridge_5_d_56x45', weight: 3, count: [60, 150] },
       { item: 'cartridge_box_5_d_56x45', weight: 2, count: [3, 6] },

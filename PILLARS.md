@@ -24,6 +24,12 @@ Content identity is not a code selector: a new mechanism needs code, a new entry
 
 Actor, body and action values use actor-carried modifiers; see `packages/deadvox/src/core/modifiers.ts`, `modified`. An actor is the source whose effect is being resolved, including an attacking zombie. Apply each modifier once, at the owner resolving the effect; decide subjects, conditions, bounds and persistence with their first consumer rather than building speculative machinery. Tune for the core pack, but never assume a modified value cannot cross a threshold the core numbers do not cross.
 
+## Moddability
+
+Modding is flexible, extensible and ergonomic. Safety bounds all three: every change is typed, checked at load and attributed, and clashes fail closed.
+
+A mod states only what it changes. Restating content in order to change part of it is a defect in the mechanism, not in the mod: the restated copy freezes the base as of its writing, so a later base change is lost without an error, and two mods touching one entry collide whole. Flexible means a mod reaches any value the engine does not own, so refusal is the exception set by the code-and-content split above, not a default each field has to be opened from. One rule for every kind of content, not one exception per field and per operation, keeps the mechanism small enough that safety, reach and ergonomics follow from it together. The mechanism, not the authoring language, carries the pillar; see `docs/decisions/0007-typed-field-patches.md`, "Decision".
+
 ## Zero drift
 
 A doc sentence that a code change can make false, without anyone touching the doc, will eventually be false, and readers (people and agents) act on it. So code owns what and how, where tests and types keep it true, and docs hold only what code can't show: why, and when. Issues and PRs show what and how too, but they end, so code is the lasting record.

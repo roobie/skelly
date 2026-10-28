@@ -1163,6 +1163,8 @@ same admission without becoming optional. Source-point identity owns the random
 stream, keeping generation independent of chunk request order. See `src/core/loot.ts`,
 `selectLootType`, `rollLoot` and `lootPointStream`.
 
+A story item is `notLoot`, and in the two playtest scenarios every key is story.
+
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
@@ -1358,9 +1360,12 @@ A flame hidden inside the palm cannot communicate ignition, even when its world
 source is working. The lamp's authored grip must leave the flame visible; see
 `src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
-En-garde raises both hands close to the chin with elbows in, whether they are
-empty or holding items, so it reads as a guard whatever the player carries. A
-firearm on aim is not a melee guard: a free off hand supports the gun, an
+Holding right mouse with empty hands must read as a boxer guard, ready to
+punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
+must not hide that readiness merely because there is no held item to draw.
+See `src/core/meleePose.ts`, `readyMeleePose`, and
+`src/render/actorAnimator.ts`, `ActorAnimator.update`.
+A firearm on aim is not a melee guard: a free off hand supports the gun, an
 off-hand item in use stays raised and forward, and any other off-hand item rests.
 The off-hand state makes it clear whether the player is aiming with a free hand
 or still using what it holds. The rule is shared by first person, third person and
@@ -2754,6 +2759,16 @@ The crawler is a prone ground-crawler with amputated legs, a grounded pose, and 
 low profile that limits its bite to the player's legs. Its posture determines
 posed hit regions, so gait and flinches follow those regions. Keep other short or
 hunched forms as distinct future types, not crawler variants.
+
+A type's body is a content choice: its `model` names a mobgen figure the renderer
+can build, and the renderer draws each type with the model and figure seeds its
+content selects, so a model left out of that list cannot be selected. A figure
+seed must realize a valid body by itself. One that fell through to the next valid
+seed would draw two seeds as one body and quietly shrink the variety content
+authored, so it is refused, and a model whose template rejects some shared seeds
+authors its own. See `src/core/zombieModels.ts`, `ZOMBIE_MODELS`;
+`src/render/mobActors.ts`, `figureSeedsByModel`; and
+`packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
 
 All mobs look toward the player only when they perceive the player. Hearing and
 noticed lights can also draw gaze; hearing direction uses deterministic jitter,

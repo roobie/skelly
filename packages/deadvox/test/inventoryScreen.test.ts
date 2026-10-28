@@ -29,6 +29,7 @@ import { PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import {
   applyReplayActionPayload,
+  isReplayActionPayload,
   type ReplayActionPayload,
   type ReplayCommandOwners,
 } from '../src/game/replayCommands.ts';
@@ -72,6 +73,10 @@ Object.defineProperty(globalThis, 'addEventListener', {
 Object.defineProperty(globalThis, 'removeEventListener', {
   configurable: true,
   value: dom.removeEventListener.bind(dom),
+});
+Object.defineProperty(globalThis, 'dispatchEvent', {
+  configurable: true,
+  value: dom.dispatchEvent.bind(dom),
 });
 // Happy DOM has no layout and omits this API; a moved cursor in these controls hits no drop zone.
 Object.defineProperty(document, 'elementsFromPoint', { configurable: true, value: () => [] });
@@ -600,7 +605,135 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
-  it('dims the listed items a typed query misses, and Escape in the field clears it', () => {
+  it('keeps a find filter while blurred and routes inventory keys to its items', () => {
+    const { screen, root, beans, lastPayload } = setup();
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        screen.onAction(action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      screen.onAction('inventory.find');
+      const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
+      const query = root.querySelector<HTMLElement>(`.inv-item[data-uid="${beans.uid}"] .inv-item-name`)!.textContent!;
+      const press = (code: string, key = code) => {
+        const event = new KeyboardEvent('keydown', { code, key, bubbles: true, cancelable: true });
+        field.dispatchEvent(event);
+        field.dispatchEvent(new KeyboardEvent('keyup', { code, key, bubbles: true }));
+        return event;
+      };
+      expect(press('ArrowDown').defaultPrevented).toBe(true);
+      expect(screen.selected).toBe(beans);
+      expect(press('ArrowDown').defaultPrevented).toBe(true);
+      expect(screen.selected).not.toBe(beans);
+      expect(press('ArrowUp').defaultPrevented).toBe(true);
+      expect(screen.selected).toBe(beans);
+      for (const [code, key] of [
+        ['ArrowLeft', 'ArrowLeft'],
+        ['ArrowRight', 'ArrowRight'],
+        ['Home', 'Home'],
+        ['End', 'End'],
+      ]) {
+        expect(press(code!, key!).defaultPrevented).toBe(false);
+        expect(screen.selected).toBe(beans);
+      }
+      expect(press('Enter').defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: beans.uid });
+      expect(press('ArrowDown').defaultPrevented).toBe(true);
+      expect(screen.selected).not.toBe(beans);
+
+      field.value = query;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      expect(screen.selected).toBe(beans);
+      const payloadBeforeTypingKey = lastPayload();
+      expect(press('KeyW', 'w').defaultPrevented).toBe(false);
+      expect(lastPayload()).toBe(payloadBeforeTypingKey);
+      expect(press('Escape', 'Escape').defaultPrevented).toBe(true);
+      expect(field.value).toBe(query);
+      expect(document.activeElement).not.toBe(field);
+
+      const action = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
+      globalThis.dispatchEvent(action);
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
+      expect(action.defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: beans.uid });
+
+      const dimmed = [...root.querySelectorAll<HTMLElement>('.inv-item-unmatched')][0]!;
+      const dimmedUid = Number(dimmed.dataset.uid);
+      dimmed.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+      globalThis.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, button: 0, pointerId: 1 }));
+      expect(screen.selected?.uid).toBe(dimmedUid);
+
+      const dimmedAction = new KeyboardEvent('keydown', { code: 'KeyW', key: 'w', bubbles: true, cancelable: true });
+      globalThis.dispatchEvent(dimmedAction);
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
+      expect(dimmedAction.defaultPrevented).toBe(true);
+      expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: dimmedUid });
+    } finally {
+      remove();
+      screen.close();
+    }
+  });
+
+  it('does not act on an unselected inventory item', () => {
+    const { screen, lastPayload } = setup();
+    expect(screen.selected).toBeUndefined();
+    expect(screen.onAction('inventory.hands')).toBe(true);
+    expect(lastPayload()).toBeUndefined();
+  });
+
+  it('keys body redraws by displayed values, not live recovery state', () => {
+    const { screen, hooks, body, beans } = setup();
+    body.impact(0.1, 'torso', { kind: 'blunt' });
+    screen.selected = beans;
+    const description = vi.spyOn(hooks, 'describe');
+    screen.update();
+    description.mockClear();
+    body.advance(0.000_01);
+    screen.update();
+    expect(description).not.toHaveBeenCalled();
+  });
+
+  it('records selection inspection for the next tick but never records a passive repaint', () => {
+    const { screen, hooks, beans, inv, commandOwners } = setup();
+    const pendingPlayerTickActions = new PlayerTickActions();
+    const recorder = { queueAction: vi.fn() };
+    const inspect = vi.fn();
+    const owners = { ...commandOwners, inspect };
+    hooks.dispatch = createScreenCommandDispatcher({
+      isReplaying: () => false,
+      inputRecorder: () => recorder,
+      inputContext: () => 'inventory',
+      pendingPlayerTickActions,
+      apply: (command) => applyReplayActionPayload(command, owners),
+      inventory: inv,
+      notice: hooks.notice,
+      refusal: hooks.refusal,
+    });
+    screen.selected = beans;
+    screen.update();
+    const payload = { kind: 'inventory.inspect', itemUid: beans.uid };
+    expect(isReplayActionPayload(payload)).toBe(true);
+    expect(recorder.queueAction).toHaveBeenCalledExactlyOnceWith('inventory.inspect', 'down', 'inventory', { payload });
+    expect(inspect).not.toHaveBeenCalled();
+    pendingPlayerTickActions.applyAtNextTick();
+    expect(inspect).toHaveBeenCalledExactlyOnceWith(beans.uid);
+    recorder.queueAction.mockClear();
+    inspect.mockClear();
+    screen.selectTab('items');
+    pendingPlayerTickActions.applyAtNextTick();
+    expect(recorder.queueAction).not.toHaveBeenCalled();
+    expect(inspect).not.toHaveBeenCalled();
+    screen.selected = inv.worn.torso;
+    screen.update();
+    pendingPlayerTickActions.applyAtNextTick();
+    expect(inspect).toHaveBeenCalledExactlyOnceWith(inv.worn.torso!.uid);
+  });
+
+  it('dims the listed items a typed query misses, and Escape leaves the filter applied', () => {
     const { screen, root, beans } = setup();
     const field = root.querySelector<HTMLInputElement>('[data-inventory-find]')!;
     const tiles = () => [...root.querySelectorAll<HTMLElement>('.inv-item[data-uid]')];
@@ -618,8 +751,8 @@ describe('inventory screen Lit rendering', () => {
     expect(tiles().some(dimmed)).toBe(true);
 
     field.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
-    expect(field.value).toBe('');
-    expect(tiles().some(dimmed)).toBe(false);
+    expect(field.value).not.toBe('');
+    expect(tiles().some(dimmed)).toBe(true);
     expect(document.activeElement).not.toBe(field);
   });
 

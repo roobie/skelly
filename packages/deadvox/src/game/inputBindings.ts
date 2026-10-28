@@ -86,6 +86,12 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting' },
   { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions' },
 ] as const;
+const INVENTORY_FIND_BINDINGS: ReadonlySet<string> = new Set(['inventory.best-pocket']);
+const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set([
+  ...INVENTORY_FIND_BINDINGS,
+  'inventory.previous',
+  'inventory.next',
+]);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
   ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
@@ -780,8 +786,8 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
   }
   return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
 };
-/** Whether a key clears the inventory find field (`src/ui/inventoryScreen.ts`). Like a native search field's, it is fixed. */
-export const clearsFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
+/** Whether a key leaves the inventory find field without changing its filter (`src/ui/inventoryScreen.ts`). */
+export const blursFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
 const pageControl = (target: EventTarget | null): boolean =>
@@ -789,6 +795,18 @@ const pageControl = (target: EventTarget | null): boolean =>
   Boolean(
     target.closest('button,a[href],input,select,textarea,summary,label,[role="button"],[contenteditable="true"]'),
   );
+const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | undefined => {
+  if (!(event.target instanceof HTMLElement) || typesCharacter(event)) {
+    return undefined;
+  }
+  if (event.target.matches('[data-inventory-find]')) {
+    // Vertical arrows can select an item; horizontal arrows still belong to native caret editing.
+    return event.code === 'ArrowUp' || event.code === 'ArrowDown'
+      ? INVENTORY_FIND_ARROW_BINDINGS
+      : INVENTORY_FIND_BINDINGS;
+  }
+  return event.target.matches('[role="combobox"]') ? INVENTORY_COMBO_BOX_BINDINGS : undefined;
+};
 const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
@@ -1135,15 +1153,8 @@ export class KeyboardInput {
         return;
       }
       const text = editable(event.target);
-      // A focused combo box keeps the inventory closable and its tabs reachable, but a key that types
-      // a character stays in its filter field.
-      const comboBoxGameKey =
-        text &&
-        this.context().context === 'inventory' &&
-        event.target instanceof HTMLElement &&
-        event.target.matches('[role="combobox"]') &&
-        !typesCharacter(event);
-      if (this.press(event, text, comboBoxGameKey ? INVENTORY_COMBO_BOX_BINDINGS : undefined)) {
+      const allowed = this.context().context === 'inventory' ? focusedInventoryBindings(event) : undefined;
+      if (this.press(event, text, allowed)) {
         event.preventDefault();
       }
     };

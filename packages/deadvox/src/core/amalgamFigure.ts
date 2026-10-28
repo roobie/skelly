@@ -188,7 +188,8 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
   if (!(Number.isFinite(scale) && scale > 0)) {
     throw new Error(`Invalid amalgam body scale ${scale}`);
   }
-  const generated = generateValid(consumableTemplate('amalgam'), seed);
+  // Like `zombieFigure`, a seed must be valid itself rather than fall through to another seed's body.
+  const generated = generateValid(consumableTemplate('amalgam'), seed, { maxAttempts: 1 });
   if (!generated) {
     throw new Error(`No valid amalgam realization from seed ${seed}`);
   }
