@@ -47,10 +47,29 @@ try {
     if (!baselineRef) {
       throw new Error('Bundle comparison needs a baseline git ref as fourth argument');
     }
-    const baselineSource = execFileSync(
+    const changed = execFileSync(
       'git',
-      ['-C', repository, 'show', `${baselineRef}:packages/deadvox/src/render/mobActors.ts`],
+      [
+        '-C',
+        repository,
+        'diff',
+        '--name-only',
+        '--diff-filter=M',
+        baselineRef,
+        '--',
+        'packages/deadvox/src',
+        'packages/mobgen/src',
+      ],
       { encoding: 'utf8' },
+    )
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+    const baselineSources = new Map(
+      changed.map((path) => [
+        resolve(repository, path),
+        execFileSync('git', ['-C', repository, 'show', `${baselineRef}:${path}`], { encoding: 'utf8' }),
+      ]),
     );
     const outputs = {};
     for (const variant of ['baseline', 'standard', 'deterministic']) {
@@ -59,13 +78,13 @@ try {
         configFile: resolve(root, 'vite.config.ts'),
         logLevel: 'error',
         plugins: [
-          seam(variant === 'deterministic' ? '@dimforge/rapier3d-deterministic-compat' : '@dimforge/rapier3d-compat'),
+          seam(variant === 'standard' ? '@dimforge/rapier3d-compat' : '@dimforge/rapier3d-deterministic-compat'),
           {
             name: 'measurement-baseline',
             enforce: 'pre',
             transform(_code, id) {
-              if (variant === 'baseline' && id.endsWith('/src/render/mobActors.ts')) {
-                return baselineSource;
+              if (variant === 'baseline') {
+                return baselineSources.get(id);
               }
             },
           },

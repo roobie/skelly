@@ -46,6 +46,7 @@ import { soundVariantKey } from '../core/soundSynth.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
+import { stageRagdollSweep } from '../debug/ragdollSweep.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -1047,7 +1048,10 @@ export const startPlay = (
     // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
     // them undefined.
     zombieEffects: {
-      onWound: (_id, _zombie, hit, damage) => view.gore.spray(hit, damage),
+      onWound: (id, _zombie, hit, damage) => {
+        zombieMeshes.zombieWounded?.(id, hit);
+        view.gore.spray(hit, damage);
+      },
       onSever: (id, zombie, part, hit) => {
         const launchVelocity = zombieMeshes.zombieSevered?.(id, part, hit, zombie);
         view.gore.severed(hit, launchVelocity, zombie.type.severedSpurt);
@@ -1212,6 +1216,15 @@ export const startPlay = (
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );
   const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
+  const advanceRagdollSweep = stageRagdollSweep({
+    system: zombieSystem,
+    renderer: zombieMeshes,
+    registry,
+    origin: body.pos,
+    blockSize: s,
+    seed: config.ragdollSweep,
+    restored: Boolean(options.restore),
+  });
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -4212,6 +4225,7 @@ export const startPlay = (
     options.saveController?.afterFrame();
     updateTutorial();
     observePlaytestFrame(elapsedReal, now);
+    advanceRagdollSweep(dt);
     const { sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,

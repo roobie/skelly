@@ -34,7 +34,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
+import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
@@ -325,7 +325,14 @@ const makeZombie = (
   };
 };
 
-const incapacitate = (zombie: Zombie, frozen = false) => {
+const incapacitate = (
+  zombie: Zombie,
+  frozen = false,
+  presentation: {
+    effects?: Pick<ZombieSystemOptions, 'onSever' | 'onDeath' | 'onIncapacitated' | 'onWound'>;
+    beforeDamage?: (system: ZombieSystem) => void;
+  } = {},
+) => {
   const blockSize = 0.5;
   const system = new ZombieSystem({
     isSolid: () => false,
@@ -344,8 +351,10 @@ const incapacitate = (zombie: Zombie, frozen = false) => {
     }),
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
+    ...presentation.effects,
   });
   const id = system.store.add(zombie);
+  presentation.beforeDamage?.(system);
   system.setFrozen(frozen);
   const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
   const { center } = boxes.torso.find((box) => box.bone === 'chest')!;
@@ -1326,6 +1335,47 @@ describe('MobActorMeshes reactions', () => {
     }
   });
 
+  it('finishing a downed ragdoll cuts physical subtrees into shared-world debris without leaking them', async () => {
+    const renderer = new MobActorMeshes(0.5, 8, { zombies: registry.zombies, poolSize: 1 });
+    try {
+      const { system, id } = incapacitate(makeZombie([0, 0, 0]), false, {
+        beforeDamage: (owner) => renderer.sync(owner.store, 0, 1),
+        effects: {
+          onIncapacitated: (entity, zombie) => renderer.zombieIncapacitated(entity, zombie),
+          onSever: (entity, zombie, part, hit) => {
+            renderer.zombieSevered(entity, part, hit, zombie);
+          },
+          onDeath: (entity, zombie) => renderer.zombieDied(entity, zombie),
+        },
+      });
+      await renderer.whenCorpsesReady();
+      for (let step = 0; step < ragdollContent.stepBudget; step++) {
+        renderer.sync(system.store, ragdollContent.timestep, 1);
+      }
+      const before = renderer.boneMatrix(id, 'head');
+      expect(before).toBeDefined();
+      expect(system.finishDowned(id, true)).toBeUndefined();
+      await renderer.whenCorpsesReady();
+      renderer.sync(system.store, 0, 1);
+      expect(renderer.isBoneHidden(id, 'head')).toBe(true);
+      expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
+      const physics = (renderer as unknown as { ragdolls: import('../src/render/ragdoll.ts').RagdollWorld }).ragdolls;
+      expect(physics.counts().bodies).toBeGreaterThan(0);
+      const horizon =
+        ragdollContent.stepBudget * ragdollContent.timestep +
+        CORPSE_LIFECYCLE.lieSimSeconds +
+        CORPSE_LIFECYCLE.sinkSimSeconds;
+      for (let step = 0; step <= Math.ceil(horizon / ragdollContent.timestep); step++) {
+        renderer.sync(system.store, ragdollContent.timestep, 1);
+      }
+      expect(renderer.isTracked(id)).toBe(false);
+      expect(renderer.debrisCountFor(id)).toBe(0);
+      expect(physics.counts()).toEqual({ bodies: 0, colliders: 0, joints: 0 });
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('retains an authored downed body after physics initialization fails', async () => {
     await initializeRagdollPhysics();
     const failure = new Error('Physics world unavailable');
@@ -1535,7 +1585,7 @@ describe('MobActorMeshes dismemberment', () => {
   });
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the lifecycle probe observes each debris state.
-  it('allocates a debris slot on zombieSevered and frees it after its lifetime', () => {
+  it('allocates a debris slot on zombieSevered and frees it after its lifetime', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
       renderer.setWorld((_x, y, _z) => y === -1, 0.5);
@@ -1546,11 +1596,10 @@ describe('MobActorMeshes dismemberment', () => {
 
       renderer.zombieSevered(id, 'hand.L');
       expect(renderer.debrisCountFor(id)).toBe(1);
+      await renderer.whenCorpsesReady();
 
-      const step = 0.1;
-      // Separate physics search budget: allow the launched hand to fall, bounce and sleep on the flat floor.
-      // This is a fixture settlement limit, not a corpse-lifecycle tuning value.
-      const settlementBudget = 10;
+      const step = ragdollContent.timestep;
+      const settlementBudget = ragdollContent.stepBudget * step + step;
       const horizon = settlementBudget + CORPSE_LIFECYCLE.lieSimSeconds + CORPSE_LIFECYCLE.sinkSimSeconds;
       let observedSleep = false;
       for (let frame = 0; frame <= Math.ceil(horizon / step) && renderer.debrisCountFor(id) > 0; frame++) {
@@ -1577,7 +1626,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
 
-  it('rests debris on the feet-height fallback plane when no world is supplied', () => {
+  it('rests debris on the feet-height fallback plane when no world is supplied', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
       const store = new MapEntityStore<Zombie>();
@@ -1585,8 +1634,13 @@ describe('MobActorMeshes dismemberment', () => {
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
       renderer.zombieSevered(id, 'hand.L', undefined, zombie);
-      for (let frame = 0; frame < 90; frame++) {
-        renderer.sync(store, 0.1, 1);
+      await renderer.whenCorpsesReady();
+      for (
+        let frame = 0;
+        frame < ragdollContent.stepBudget && ![...debrisEntries(renderer).values()][0]!.body.asleep;
+        frame++
+      ) {
+        renderer.sync(store, ragdollContent.timestep, 1);
       }
       const entries = debrisEntries(renderer);
       expect(entries.size).toBe(1);

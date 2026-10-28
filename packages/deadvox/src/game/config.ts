@@ -33,6 +33,7 @@ export interface GameConfig {
   debug: boolean;
   /** Debug-only resting-pose selection for inspecting deaths (`?deathPose=<pose id>`). */
   debugDeathPose?: string;
+  ragdollSweep?: number;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
   /** Debug-only walking-lune vertical/horizontal ratio (`?wobbleFlat=0..1`). */
@@ -244,6 +245,16 @@ export const applyWeatheringConfig = (
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
  * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
  */
+const sweepFromUrl = (params: URLSearchParams, config: GameConfig): Partial<GameConfig> => {
+  if (config.debug && config.site === 'testHouse' && params.has('ragdollSweep')) {
+    const seed = Number(params.get('ragdollSweep'));
+    if (Number.isSafeInteger(seed)) {
+      return { ragdollSweep: seed };
+    }
+  }
+  return {};
+};
+
 export const configFromUrl = (params: URLSearchParams, content: StartupContent): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(
@@ -257,6 +268,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   const requestedTime = params.get('time');
   config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
+  Object.assign(config, sweepFromUrl(params, config));
   if (config.debug && params.has('deathPose')) {
     config.debugDeathPose = params.get('deathPose')!;
   }

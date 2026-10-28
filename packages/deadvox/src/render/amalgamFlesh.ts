@@ -7,9 +7,10 @@ import { materialOf, shadeOf, type Voxels, worldPosition } from '@mobgen/core/vo
 import { crowdEmission } from '@mobgen/mob/crowd.ts';
 import { BufferAttribute, BufferGeometry, type Color, type Group, Mesh, MeshLambertMaterial } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import { type RigidBody, type RigidWorld, stepRigidBody } from '../core/rigidBody.ts';
+import type { RigidBody, RigidWorld } from '../core/rigidBody.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { patchHeightFog } from './heightFog.ts';
+import { type Ragdoll, type RagdollWorld, ragdollContent } from './ragdoll.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
 // The amalgam's carved flesh (core/amalgamCarving.ts, Zombie.carved), drawn two ways: the body rebuilt
@@ -172,21 +173,13 @@ export interface FleshChunkSpawn {
 interface FleshChunk {
   readonly mesh: Mesh;
   readonly body: RigidBody;
+  readonly physics: Ragdoll;
+  readonly order: number;
   ageRealSeconds: number;
   groundedAtRealSeconds: number | undefined;
 }
 
-// Presentation tuning, not gameplay.
-const MAX_FLESH_CHUNKS = 24;
-const CHUNK_LIE_S = 6;
-const CHUNK_SINK_S = 1.5;
-const CHUNK_SINK_DEPTH_M = 0.5;
-/** A chunk that never settles (no ground below it) is dropped after this long. */
-const CHUNK_MAX_AGE_S = 20;
-const LAUNCH_SPEED_MPS = 3.5;
-const LAUNCH_LIFT_MPS = 1.5;
-const LAUNCH_SPIN_RADPS = 6;
-const FLESH_DENSITY_KG_M3 = 1000;
+const tuning = ragdollContent.flesh;
 
 const rotate = (r: Mat3, p: Vec3): Vec3 => [
   r[0] * p[0] + r[1] * p[1] + r[2] * p[2],
@@ -201,7 +194,14 @@ export class FleshChunks {
   private readonly group: Group;
   private readonly onLanded: ((centre: Vec3) => void) | undefined;
 
-  constructor(group: Group, onLanded?: (centre: Vec3) => void) {
+  private readonly owner: { physics: () => RagdollWorld; ground: () => RigidWorld; reserve: () => number | undefined };
+
+  constructor(
+    group: Group,
+    owner: { physics: () => RagdollWorld; ground: () => RigidWorld; reserve: () => number | undefined },
+    onLanded?: (centre: Vec3) => void,
+  ) {
+    this.owner = owner;
     this.group = group;
     this.onLanded = onLanded;
     this.material.customProgramCacheKey = () => 'deadvox-flesh-chunk';
@@ -213,6 +213,10 @@ export class FleshChunks {
   }
 
   spawn({ realized, scale, cells, rotation, translation, direction }: FleshChunkSpawn): void {
+    const order = this.owner.reserve();
+    if (order === undefined) {
+      return;
+    }
     const { voxels, body } = realized;
     if (cells.length === 0) {
       return;
@@ -239,7 +243,7 @@ export class FleshChunks {
       Math.max(1e-3, (box.max.y - box.min.y) / 2),
       Math.max(1e-3, (box.max.z - box.min.z) / 2),
     ];
-    const mass = cells.length * (voxels.size * scale) ** 3 * FLESH_DENSITY_KG_M3;
+    const mass = cells.length * (voxels.size * scale) ** 3 * tuning.density;
     const inertia: Vec3 = [
       (mass / 3) * (half[1] ** 2 + half[2] ** 2),
       (mass / 3) * (half[0] ** 2 + half[2] ** 2),
@@ -249,7 +253,7 @@ export class FleshChunks {
     // Spin about the horizontal axis across the strike, so the chunk tumbles away from the hit.
     const across = Math.hypot(direction[0], direction[2]) > 1e-6 ? [-direction[2], 0, direction[0]] : [1, 0, 0];
     const acrossLength = Math.hypot(...across);
-    const spin = (LAUNCH_SPIN_RADPS * (inertia[0] + inertia[1] + inertia[2])) / 3 / acrossLength;
+    const spin = (tuning.launchSpin * (inertia[0] + inertia[1] + inertia[2])) / 3 / acrossLength;
     const corners: Vec3[] = [];
     for (const sx of [-1, 1]) {
       for (const sy of [-1, 1]) {
@@ -263,9 +267,9 @@ export class FleshChunks {
       center: [translation[0] + offset[0], translation[1] + offset[1], translation[2] + offset[2]],
       orientation: mat3ToQuat(rotation) as Quaternion,
       velocity: [
-        direction[0] * LAUNCH_SPEED_MPS,
-        direction[1] * LAUNCH_SPEED_MPS + LAUNCH_LIFT_MPS,
-        direction[2] * LAUNCH_SPEED_MPS,
+        direction[0] * tuning.launchSpeed,
+        direction[1] * tuning.launchSpeed + tuning.launchLift,
+        direction[2] * tuning.launchSpeed,
       ],
       angularMomentum: [across[0]! * spin, across[1]! * spin, across[2]! * spin],
       inertiaBody: [
@@ -283,21 +287,22 @@ export class FleshChunks {
     mesh.matrixAutoUpdate = false;
     castsAndReceives(mesh);
     this.group.add(mesh);
-    if (this.chunks.length >= MAX_FLESH_CHUNKS) {
-      this.remove(0);
-    }
-    this.chunks.push({ mesh, body: rigid, ageRealSeconds: 0, groundedAtRealSeconds: undefined });
+    this.chunks.push({
+      mesh,
+      body: rigid,
+      physics: this.owner.physics().spawnRigid(rigid, this.owner.ground()),
+      order,
+      ageRealSeconds: 0,
+      groundedAtRealSeconds: undefined,
+    });
     this.place(this.chunks.at(-1)!, 0);
   }
 
   /** Steps every chunk against the world; drops each once it has lain and sunk, or never settled. */
-  update(dt: number, world: RigidWorld): void {
+  update(dt: number): void {
     for (let index = this.chunks.length - 1; index >= 0; index--) {
       const chunk = this.chunks[index]!;
       chunk.ageRealSeconds += dt;
-      if (!chunk.body.asleep) {
-        stepRigidBody(chunk.body, dt, world);
-      }
       if (chunk.body.asleep && chunk.groundedAtRealSeconds === undefined) {
         chunk.groundedAtRealSeconds = chunk.ageRealSeconds;
         this.onLanded?.([...chunk.body.center]);
@@ -305,13 +310,28 @@ export class FleshChunks {
       const sinking =
         chunk.groundedAtRealSeconds === undefined
           ? 0
-          : chunk.ageRealSeconds - chunk.groundedAtRealSeconds - CHUNK_LIE_S;
-      if (sinking >= CHUNK_SINK_S || chunk.ageRealSeconds >= CHUNK_MAX_AGE_S) {
+          : chunk.ageRealSeconds - chunk.groundedAtRealSeconds - tuning.lieSeconds;
+      if (
+        sinking >= tuning.sinkSeconds ||
+        chunk.ageRealSeconds >= tuning.maxAgeSeconds ||
+        this.owner.physics().failed
+      ) {
         this.remove(index);
         continue;
       }
-      this.place(chunk, (Math.max(0, sinking) / CHUNK_SINK_S) * CHUNK_SINK_DEPTH_M);
+      if (sinking > 0) {
+        this.owner.physics().hideColliders(chunk.physics);
+      }
+      this.place(chunk, (Math.max(0, sinking) / tuning.sinkSeconds) * tuning.sinkDepthMetres);
     }
+  }
+
+  get oldestOrder(): number {
+    return this.chunks[0]?.order ?? Number.POSITIVE_INFINITY;
+  }
+
+  evictOldest(): void {
+    this.remove(0);
   }
 
   dispose(): void {
@@ -331,6 +351,7 @@ export class FleshChunks {
   private remove(index: number): void {
     const [chunk] = this.chunks.splice(index, 1);
     if (chunk) {
+      this.owner.physics().remove(chunk.physics);
       this.group.remove(chunk.mesh);
       chunk.mesh.geometry.dispose();
     }

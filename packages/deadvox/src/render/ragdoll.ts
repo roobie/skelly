@@ -15,12 +15,13 @@ import {
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import content from '@mobgen/mob/ragdoll.json' with { type: 'json' };
 import { hash3 } from '../core/random.ts';
-import type { RigidWorld } from '../core/rigidBody.ts';
+import { angularVelocity, type RigidBody, type RigidWorld } from '../core/rigidBody.ts';
 import RAPIER from './ragdollRapier.ts';
 
 export const ragdollContent = content;
 const vector = (v: Vec3) => ({ x: v[0], y: v[1], z: v[2] });
-const array = (v: { x: number; y: number; z: number }): Vec3 => [v.x, v.y, v.z];
+const array = (v: { x: number; y: number; z: number }): [number, number, number] => [v.x, v.y, v.z];
+const scaled = (v: Vec3, factor: number): Vec3 => [v[0] * factor, v[1] * factor, v[2] * factor];
 const rotation = (r: Transform['r']) => {
   const q = mat3ToQuat(r);
   return { x: q[0], y: q[1], z: q[2], w: q[3] };
@@ -34,9 +35,34 @@ export interface RagdollGroup {
   readonly limits: readonly (readonly number[])[] | null;
 }
 
-export function ragdollGroups(bones: readonly Bone[]): RagdollGroup[] {
+export function ragdollGroups(
+  bones: readonly Bone[],
+  excluded: ReadonlySet<number> = new Set(),
+  authored = content.groups,
+): RagdollGroup[] {
+  const ordinary = content.shortenedLegs.absent.every((id) => !bones.some((bone) => bone.id === id))
+    ? authored.filter((group) => !group.bones.some((id) => content.shortenedLegs.omit.includes(id)))
+    : authored;
+  const definitions =
+    bones[0]?.id === content.compound.root
+      ? [
+          { bones: [content.compound.root], limits: null },
+          ...bones
+            .filter((bone) => bone.parent === content.compound.root)
+            .flatMap((root) => {
+              if (!root.id.endsWith(content.compound.memberRoot)) {
+                throw new Error('Invalid compound ragdoll root');
+              }
+              const prefix = root.id.slice(0, -content.compound.memberRoot.length);
+              return authored.map((group) => ({
+                bones: group.bones.map((id) => prefix + id),
+                limits: group.limits ?? content.compound.limits,
+              }));
+            }),
+        ]
+      : ordinary;
   const owners = new Map<string, number>();
-  content.groups.forEach((group, index) => {
+  definitions.forEach((group, index) => {
     for (const id of group.bones) {
       if (owners.has(id) || !bones.some((bone) => bone.id === id)) {
         throw new Error(`Invalid ragdoll bone ownership: ${id}`);
@@ -47,7 +73,7 @@ export function ragdollGroups(bones: readonly Bone[]): RagdollGroup[] {
   if (bones.some((bone) => !owners.has(bone.id))) {
     throw new Error('Ragdoll grouping must cover every bone');
   }
-  return content.groups.map((group, index) => {
+  const groups = definitions.map((group, index) => {
     const members = bones.filter((bone) => owners.get(bone.id) === index);
     const roots = members.filter((bone) => bone.parent === null || owners.get(bone.parent) !== index);
     if (roots.length !== 1) {
@@ -58,20 +84,31 @@ export function ragdollGroups(bones: readonly Bone[]): RagdollGroup[] {
     if ((parent === undefined) !== (group.limits === null)) {
       throw new Error('Every ragdoll group link requires limits');
     }
-    return { indices: members.map((bone) => bones.indexOf(bone)), root, parent, limits: group.limits };
+    return {
+      indices: members.map((bone) => bones.indexOf(bone)).filter((boneIndex) => !excluded.has(boneIndex)),
+      root,
+      parent,
+      limits: group.limits,
+    };
   });
+  const retained = groups.filter((group) => group.indices.length > 0);
+  return retained.map((group) => ({
+    ...group,
+    parent: group.parent === undefined ? undefined : retained.indexOf(groups[group.parent]!),
+  }));
 }
 
 interface Part {
   readonly body: InstanceType<typeof RAPIER.RigidBody>;
-  readonly sources: ReadonlyMap<number, Transform>;
+  readonly sources: Map<number, Transform>;
   readonly initial: Transform;
 }
 
 export interface Ragdoll {
   readonly transforms: Map<number, Transform>;
+  readonly excluded: Set<number>;
   readonly parts: Part[];
-  readonly ground: InstanceType<typeof RAPIER.Collider>[];
+  readonly ground: string[];
   readonly joints: InstanceType<typeof RAPIER.ImpulseJoint>[];
   steps: number;
   settled: boolean;
@@ -92,12 +129,17 @@ interface RagdollSpawn {
   direction: number;
   seed: number;
   ground: RigidWorld;
+  excluded?: ReadonlySet<number>;
+  launch?: Vec3;
+  scale?: number;
 }
 export class RagdollWorld {
   readonly ready: Promise<void>;
   failed = false;
   private world: InstanceType<typeof RAPIER.World> | undefined;
   private readonly corpses = new Set<Ragdoll>();
+  private readonly debris = new Map<Ragdoll, RigidBody>();
+  private readonly cells = new Map<string, { collider: InstanceType<typeof RAPIER.Collider>; users: number }>();
   private remainder = 0;
   private disposed = false;
 
@@ -118,18 +160,28 @@ export class RagdollWorld {
 
   spawn(input: RagdollSpawn): Ragdoll {
     const { realized, pose, position, yaw } = input;
+    const scale = input.scale ?? 1;
     const yawMatrix = rotY((yaw * 180) / Math.PI);
     const posed = boneTransforms(realized.body.bones, pose);
     const transforms = new Map<number, Transform>();
     realized.body.bones.forEach((bone, index) => {
       const source = posed.get(bone.id)!;
-      const t = mulMV(yawMatrix, source.t);
+      const t = mulMV(yawMatrix, scaled(source.t, scale));
       transforms.set(index, {
         r: mulMM(yawMatrix, source.r),
         t: [t[0] + position[0], t[1] + position[1], t[2] + position[2]],
       });
     });
-    const corpse: Ragdoll = { transforms, parts: [], ground: [], joints: [], steps: 0, settled: false, removed: false };
+    const corpse: Ragdoll = {
+      transforms,
+      excluded: new Set(input.excluded),
+      parts: [],
+      ground: [],
+      joints: [],
+      steps: 0,
+      settled: false,
+      removed: false,
+    };
     this.corpses.add(corpse);
     this.ready.then(() => {
       if (!corpse.removed && this.world) {
@@ -139,13 +191,16 @@ export class RagdollWorld {
     return corpse;
   }
 
-  private build(corpse: Ragdoll, { realized, position, direction, seed, ground }: RagdollSpawn): void {
+  private build(
+    corpse: Ragdoll,
+    { realized, position, direction, seed, ground, launch, scale = 1 }: RagdollSpawn,
+  ): void {
     const world = this.world!;
-    const groups = ragdollGroups(realized.body.bones);
+    const groups = ragdollGroups(realized.body.bones, corpse.excluded);
     for (const group of groups) {
       const source = corpse.transforms.get(group.indices[0]!)!;
       const bounds = voxelBounds(realized.voxels, group.indices);
-      const center = applyPoint(source, bounds.center);
+      const center = applyPoint(source, scaled(bounds.center, scale));
       const initial: Transform = { r: source.r, t: center };
       const body = world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
@@ -159,10 +214,13 @@ export class RagdollWorld {
         0,
         -direction * content.launchSpeed,
       ]);
-      body.setLinvel(vector(velocity), true);
+      body.setLinvel(
+        vector(launch ? [launch[0] * content.launchSpeed, 0, launch[2] * content.launchSpeed] : velocity),
+        true,
+      );
       const { mass } = massProperties(realized.voxels, group.indices, realized.voxels.size);
       world.createCollider(
-        RAPIER.ColliderDesc.cuboid(...bounds.halfExtents)
+        RAPIER.ColliderDesc.cuboid(...scaled(bounds.halfExtents, scale))
           .setMass(mass)
           .setFriction(content.friction),
         body,
@@ -179,7 +237,7 @@ export class RagdollWorld {
       }
       const parent = corpse.parts[group.parent]!;
       const child = corpse.parts[index]!;
-      const anchor = applyPoint(corpse.transforms.get(group.indices[0]!)!, group.root.head);
+      const anchor = applyPoint(corpse.transforms.get(group.indices[0]!)!, scaled(group.root.head, scale));
       const local = (part: Part) =>
         vector(
           mulMV(transpose(part.initial.r), [
@@ -200,26 +258,86 @@ export class RagdollWorld {
         true,
       );
       corpse.joints.push(joint);
+      joint.setFrameX2(rotation(mulMM(transpose(child.initial.r), parent.initial.r)));
       joint.setContactsEnabled(false);
       // The JS generic-joint wrapper lacks angular limits; Rapier's public raw set owns them.
       group.limits!.forEach((limits, axis) => {
         world.impulseJoints.raw.jointSetLimits(joint.handle, axis + 3, limits[0]!, limits[1]!);
       });
     });
+    this.buildGround(corpse, position, ground);
+  }
+
+  spawnRigid(body: RigidBody, ground: RigidWorld): Ragdoll {
+    const piece: Ragdoll = {
+      transforms: new Map(),
+      excluded: new Set(),
+      parts: [],
+      ground: [],
+      joints: [],
+      steps: 0,
+      settled: false,
+      removed: false,
+    };
+    this.corpses.add(piece);
+    this.debris.set(piece, body);
+    this.ready.then(() => {
+      if (piece.removed || !this.world) {
+        return;
+      }
+      const rigid = this.world.createRigidBody(
+        RAPIER.RigidBodyDesc.dynamic()
+          .setTranslation(...body.center)
+          .setRotation({
+            x: body.orientation[0],
+            y: body.orientation[1],
+            z: body.orientation[2],
+            w: body.orientation[3],
+          })
+          .setLinvel(...body.velocity)
+          .setAngvel(vector(angularVelocity(body)))
+          .setLinearDamping(content.linearDamping)
+          .setAngularDamping(content.angularDamping),
+      );
+      const half = [0, 1, 2].map((axis) => Math.max(...body.corners.map((corner) => Math.abs(corner[axis]!))));
+      this.world.createCollider(
+        RAPIER.ColliderDesc.cuboid(half[0]!, half[1]!, half[2]!).setMass(body.mass).setFriction(content.friction),
+        rigid,
+      );
+      piece.parts.push({
+        body: rigid,
+        sources: new Map(),
+        initial: { r: matrix(rigid.rotation()), t: [...body.center] },
+      });
+      this.buildGround(piece, body.center, ground);
+    });
+    return piece;
+  }
+
+  private buildGround(corpse: Ragdoll, position: Vec3, ground: RigidWorld): void {
+    const world = this.world!;
     const size = ground.blockSize;
-    const cell = position.map((value) => Math.floor(value / size));
+    const origin = position.map((value) => Math.floor(value / size));
     const radius = content.footprintMetres.map((value) => Math.ceil(value / size));
-    for (let x = cell[0]! - radius[0]!; x <= cell[0]! + radius[0]!; x++) {
-      for (let y = cell[1]! - radius[1]!; y <= cell[1]! + radius[1]!; y++) {
-        for (let z = cell[2]! - radius[2]!; z <= cell[2]! + radius[2]!; z++) {
+    for (let x = origin[0]! - radius[0]!; x <= origin[0]! + radius[0]!; x++) {
+      for (let y = origin[1]! - radius[1]!; y <= origin[1]! + radius[1]!; y++) {
+        for (let z = origin[2]! - radius[2]!; z <= origin[2]! + radius[2]!; z++) {
           if (ground.isSolid(x, y, z)) {
-            corpse.ground.push(
-              world.createCollider(
-                RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
-                  .setTranslation((x + 0.5) * size, (y + 0.5) * size, (z + 0.5) * size)
-                  .setFriction(content.friction),
-              ),
-            );
+            const key = `${size}:${x}:${y}:${z}`;
+            let cell = this.cells.get(key);
+            if (!cell) {
+              cell = {
+                users: 0,
+                collider: world.createCollider(
+                  RAPIER.ColliderDesc.cuboid(size / 2, size / 2, size / 2)
+                    .setTranslation((x + 0.5) * size, (y + 0.5) * size, (z + 0.5) * size)
+                    .setFriction(content.friction),
+                ),
+              };
+              this.cells.set(key, cell);
+            }
+            cell.users += 1;
+            corpse.ground.push(key);
           }
         }
       }
@@ -238,6 +356,15 @@ export class RagdollWorld {
       steps += 1;
       for (const corpse of this.corpses) {
         this.finishStep(corpse);
+        const target = this.debris.get(corpse);
+        const [part] = corpse.parts;
+        if (target && part) {
+          target.center = array(part.body.translation());
+          const q = part.body.rotation();
+          target.orientation = [q.x, q.y, q.z, q.w];
+          target.velocity = array(part.body.linvel());
+          target.asleep = corpse.settled;
+        }
       }
     }
   }
@@ -278,15 +405,68 @@ export class RagdollWorld {
     }
   }
 
+  sever(corpse: Ragdoll, realized: Realized, excluded: ReadonlySet<number>, scale = 1): void {
+    for (const index of excluded) {
+      corpse.excluded.add(index);
+    }
+    for (const part of [...corpse.parts]) {
+      if (![...excluded].some((index) => part.sources.has(index))) {
+        continue;
+      }
+      for (const index of excluded) {
+        part.sources.delete(index);
+      }
+      if (part.sources.size === 0) {
+        this.world?.removeRigidBody(part.body);
+        corpse.parts.splice(corpse.parts.indexOf(part), 1);
+        continue;
+      }
+      const indices = [...part.sources.keys()];
+      const bounds = voxelBounds(realized.voxels, indices);
+      const source = corpse.transforms.get(indices[0]!)!;
+      const center = applyPoint(source, scaled(bounds.center, scale));
+      const bodyCenter = array(part.body.translation());
+      const offset = mulMV(transpose(matrix(part.body.rotation())), [
+        center[0] - bodyCenter[0],
+        center[1] - bodyCenter[1],
+        center[2] - bodyCenter[2],
+      ]);
+      const collider = part.body.collider(0);
+      collider.setShape(new RAPIER.Cuboid(...scaled(bounds.halfExtents, scale)));
+      collider.setTranslationWrtParent(vector(offset));
+      collider.setMass(massProperties(realized.voxels, indices, realized.voxels.size).mass);
+    }
+  }
+
+  hideColliders(corpse: Ragdoll): void {
+    for (const part of corpse.parts) {
+      part.body.setEnabled(false);
+    }
+  }
+
+  counts(): { bodies: number; colliders: number; joints: number } {
+    return {
+      bodies: this.world?.bodies.len() ?? 0,
+      colliders: this.world?.colliders.len() ?? 0,
+      joints: this.world?.impulseJoints.len() ?? 0,
+    };
+  }
+
   remove(corpse: Ragdoll): void {
     corpse.removed = true;
     for (const part of corpse.parts) {
       this.world?.removeRigidBody(part.body);
     }
-    for (const collider of corpse.ground) {
-      this.world?.removeCollider(collider, false);
+    for (const key of corpse.ground) {
+      const cell = this.cells.get(key)!;
+      cell.users -= 1;
+      if (cell.users === 0) {
+        this.world?.removeCollider(cell.collider, false);
+        this.cells.delete(key);
+      }
     }
     this.corpses.delete(corpse);
+    this.debris.delete(corpse);
   }
 
   dispose(): void {
@@ -294,5 +474,7 @@ export class RagdollWorld {
     this.world?.free();
     this.world = undefined;
     this.corpses.clear();
+    this.cells.clear();
+    this.debris.clear();
   }
 }

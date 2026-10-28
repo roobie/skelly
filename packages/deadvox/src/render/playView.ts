@@ -59,6 +59,13 @@ import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
+import { ragdollContent } from './ragdoll.ts';
+
+const corpseBudget = (seed: number | undefined, maxCorpses: number) => ({
+  maxCorpses: seed === undefined ? maxCorpses : ragdollContent.sweep.capacity,
+  ragdollSeed: seed,
+});
+
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -340,7 +347,7 @@ export const createPlayView = (
       ? new MobActorMeshes(s, undefined, {
           look: look.mobActors,
           deathPoseId: config.debugDeathPose,
-          maxCorpses: graphics.mobActors.maxCorpses,
+          ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses),
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           zombies: registry.zombies,
