@@ -114,16 +114,24 @@ const blurTrial = async (context) => {
     await lock(page);
     await page.keyboard.down('AltLeft');
     await other.bringToFront();
-    await page.waitForFunction(() => globalThis.altProbe.events.some((event) => event.kind === 'blur'), null, {
-      timeout: 5000,
-    });
+    let focusSwitchError = null;
+    try {
+      await page.waitForFunction(() => globalThis.altProbe.events.some((event) => event.kind === 'blur'), null, {
+        timeout: 5000,
+      });
+    } catch (error) {
+      if (error.name !== 'TimeoutError') {
+        throw error;
+      }
+      focusSwitchError = 'bringToFront did not produce a window blur; actual desktop blur remains untested';
+    }
     const blurred = await snapshot(page);
     // Release belongs to the newly focused page; do not fabricate a release on the blurred page.
     await other.keyboard.up('AltLeft');
     const releaseRecipient = await snapshot(other);
     await page.bringToFront();
     await page.keyboard.press('KeyW');
-    return { blurred, releaseRecipient, returned: await snapshot(page) };
+    return { focusSwitchError, blurred, releaseRecipient, returned: await snapshot(page) };
   } finally {
     await other.close();
     await page.close();
@@ -139,6 +147,9 @@ try {
       const context = await browser.newContext();
       const cancelled = await trial(context, true);
       const uncancelled = await trial(context, false);
+      process.stdout.write(
+        `${JSON.stringify({ browser: name, version: browser.version(), cancelled, uncancelled })}\n`,
+      );
       const blur = await blurTrial(context);
       const result = {
         browser: name,
@@ -176,6 +187,21 @@ try {
           (event) => event.kind === 'mousemove' && event.locked && (event.x !== 0 || event.y !== 0),
         ),
         'locked mouse movement arrives',
+      );
+      process.stdout.write(
+        `${JSON.stringify({
+          summary: name,
+          version: browser.version(),
+          altEvents,
+          lockedWhileHeld: cancelled.held.locked,
+          lockedAfterRelease: cancelled.released.locked,
+          focusedAfterRelease: cancelled.released.focused,
+          spontaneousRepeats: cancelled.held.events.filter((event) => event.code === 'AltLeft' && event.repeat).length,
+          uncancelledLocked: uncancelled.released.locked,
+          uncancelledFocused: uncancelled.released.focused,
+          uncancelledOrdinaryKeyArrived: uncancelled.afterOrdinaryKey.events.some((event) => event.code === 'KeyW'),
+          blur,
+        })}\n`,
       );
       await context.close();
     } catch (error) {
