@@ -15,6 +15,11 @@ local senseHeightMetres = 1.3;
 local hordeSpacing = { innerMetres: 0.35, stepMetres: 0.38 };
 local grabBandMetres = 1.7;
 local backgroundStepMetres = 1;
+// Severed parts fly and throw blood the same way on every enemy kind that has rigid debris (see the mapper at the end).
+local severedGore = {
+  severedImpulseScale: 1.3,
+  severedSpurt: { droplets: 14, speedMetresPerRealSecond: 5, spreadFraction: 1.5, lifetimeRealSeconds: 4.5, partVelocityShare: 0.8 },
+};
 
 local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
 local content = {
@@ -718,7 +723,7 @@ local content = {
   ]
 };
 content + {
-  zombies: [zombie + {
+  zombies: [zombie + severedGore + {
     speed+: { crawlMetresPerSimSecond: 0.4 },
     severedItems: if zombie.model == 'amalgam' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
     hearingModel+: {
