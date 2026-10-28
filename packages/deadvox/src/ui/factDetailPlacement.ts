@@ -18,7 +18,10 @@ export const placeFactDetail = (owner: Element): void => {
   }
   copy.style.maxWidth = '';
   copy.style.setProperty('--fact-detail-shift', '0px');
+  // Hover reveals the copy only after its pointerover event in some browsers, so measure it shown.
+  copy.style.display = 'block';
   const { width } = copy.getBoundingClientRect();
+  copy.style.display = '';
   if (width === 0) {
     return;
   }
