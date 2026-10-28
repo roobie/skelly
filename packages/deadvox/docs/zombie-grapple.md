@@ -26,7 +26,7 @@ The code word is grapple. "Grab" already means the ladder grab, the pickup anima
 
 **Every tick, each grapple re-checks its cause.** The grabber must be alive, the gripping arm must still work by the same rule that ends attacks (`src/core/zombies.ts`, `armDisabled`), the grabber must be in reach with a clear line, and the duration must not be exceeded. A grapple also ends on damage over its break threshold, on a stagger (`docs/stagger.md`, "The rules"), and on an impulse over a threshold. One release function owns every exit, so a hold can never outlive its cause, and nothing like a killed grabber or a severed arm needs its own release path. The impulse rule is the single rule brute knockback will meet when it lands (`EPIC.md`, "5. Holding ground").
 
-**Effects are slow only, keyed by region.** Legs give a strong movement slow; the chest gives a weaker slow and slower turning. Both land where load and handling already scale pace (`src/game/player.ts`, `movementPace`) and where mouse look is scaled (`src/game/input.ts`, `lookSensitivity`). The player is never pinned: hands, stance, aim and every action stay free, so there is no lock to carve exceptions out of. This gives up the "buried under a horde" fantasy and, for the first slice, richer torso effects such as aim sway, slower swings, a locked arm or a drag toward the bite.
+**Effects are slow only, keyed by region.** Legs give a strong movement slow; the chest gives a weaker slow and slower turning. Both land where load and handling already scale pace (`src/game/player.ts`, `movementPace`) and where mouse look is scaled (`src/game/input.ts`, `lookSensitivity`). The player is never pinned: hands, movement and most actions stay free, and the few refusals a grapple adds are listed under "While held" so no other code need ask whether the player is held. This gives up the "buried under a horde" fantasy and, for the first slice, richer torso effects such as aim sway, slower swings, a locked arm or a drag toward the bite.
 
 **Several grapples compound under a cap.** Each grapple's slow fraction compounds on the speed left over, and a global cap stops the product short of zero, so movement can never drop out and a horde death stays the player's fault. A short grace period after any release blocks new grapples, so a horde cannot re-grab in the same tick it lost its grip.
 
@@ -37,6 +37,18 @@ The code word is grapple. "Grab" already means the ladder grab, the pickup anima
 **It persists in saves.** Saving and loading must neither free a held player nor invent a hold, so the records travel with the game and are validated on load like the ladder grab (`src/core/saveFormat.ts`, `grabbedLadder`).
 
 **Starting a ladder climb releases.** A climber's body is the ladder's, and a grapple that followed it up a ladder would fight the ladder owner for the body. The release is one more exit in the release function.
+
+## While held
+
+Being held is a slow, so the player keeps acting. The rules below are the whole list of what a grapple start stops or a held player is refused; everything else stays as it is for a free player.
+
+**A grapple start interrupts like a hit.** The start emits the same interrupt event a wound emits, so a long action stops under its own job's rule (`src/core/sim.ts`, `Simulation.checkInterruptions`; `DESIGN.md`, "Long actions") and a bear-trap disarm is interrupted the way a hit interrupts it (`src/game/bearTrapActions.ts`, `interruptDisarm`). Reusing the event means a zero-damage grapple still interrupts without a second interruption path, and every job that learns to handle hits handles grapples for free.
+
+**Carried items stay in hand.** A grapple costs the player nothing they hold, so a held player can still swing, shoot or use what they carried. A grabber that takes the wielded item is a different enemy, open below.
+
+**Lifted furniture drops at the start, even where placement refuses.** A piece the player lifted drops where they stand (`src/core/furnitureMove.ts`, `liftFurniture`). If placement refuses the spot, the piece drops anyway. The bypass is a known hole: placement guards reach, floor, room and landing, so a forced drop can leave a piece stuck or clipped, and every later placement fix must remember that this path skips it. A pending push job is cancelled at the start as well, because a push that finished would move the piece where the held player can no longer follow (`src/game/session.ts`, `furniture.slide`). A held player who lifts a piece again may set it down; setting down is not refused.
+
+**Sights, breath hold and stance changes are refused.** A held player fires from the hip: aiming down sights and holding breath are refused (`src/game/session.ts`, `breathHoldWanted`), and so is every stance change, crouching, going prone or standing (`src/game/player.ts`, `nextStance`). These are the only non-slow effects in the first slice. The refusal cue is player-only, like other bodily refusals (`INTERFACE.md`, "Bodily cues").
 
 ## Which types grapple
 
@@ -52,4 +64,5 @@ Tests cover release on the grabber's death, release on a severed arm, the save r
 - Torso effects beyond slower turning, such as a drag toward the grabber or a locked arm, from slice 2 on.
 - Non-player targets: zombies grappling other characters, or the player grappling or shoving a zombie. The record allows it; nothing produces it yet.
 - A balance pass on crawler encounters and the gated slow scenarios once crawlers hinder movement.
+- Whether carried items survive a grapple, if an enemy that grabs the wielded item is added. Until then they stay in hand.
 - Whether a leg grapple also damages the legs. The player's body already has leg regions (`src/core/body.ts`, `BODY_REGIONS`), so this is a content choice on the move's `hitRegions`, not a body change.
