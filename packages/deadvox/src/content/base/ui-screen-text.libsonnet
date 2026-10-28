@@ -64,6 +64,8 @@
     browserControlsLabel: 'Browser controls',
     storageLabel: 'Binding storage',
     storage: 'Bindings are preferences for this browser, not part of a saved character.',
+    keyboardLabel: 'Keyboard limit',
+    keyboardNote: 'Some keyboards cannot register certain three-key combinations. Another keyboard, or a different binding, avoids it.',
     capturing: 'Binding: {action}',
     cancel: 'Cancel',
     saved: 'Binding saved',

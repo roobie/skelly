@@ -508,6 +508,8 @@
           "fixedControl": "{code}: {action}",
           "fixedHeading": "Fixed browser controls",
           "heading": "Input bindings",
+          "keyboardLabel": "Keyboard limit",
+          "keyboardNote": "Some keyboards cannot register certain three-key combinations. Another keyboard, or a different binding, avoids it.",
           "reset": "Reset to defaults",
           "restored": "Defaults restored",
           "saved": "Binding saved",
