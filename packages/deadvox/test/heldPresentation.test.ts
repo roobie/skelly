@@ -9,6 +9,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { createAvatarMannequin } from '../src/render/avatarMannequin.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { HeldPresentation, heldItemPoses, type ItemHoldPose } from '../src/render/heldPresentation.ts';
+import { renderMeleePose } from '../src/render/meleePose.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -184,6 +185,46 @@ it('both views resolve registry item holds through one owner, including the mann
   } finally {
     mannequin.dispose();
     build.mockRestore();
+  }
+});
+
+it.each([
+  { name: 'raises both empty fists into a boxer guard', itemType: undefined },
+  { name: 'raises the empty offhand alongside a melee weapon in en-garde', itemType: 'steel_pipe' },
+])('$name', async ({ itemType }) => {
+  const registry = baseRegistry();
+  const figure = registry.figures.get('player')!;
+  const models = { version: 1, ...(await loadFigureModels(registry)) } as unknown as ModelLibrary;
+  const inventory = new Inventory(registry);
+  if (itemType) {
+    expect(inventory.add(inventory.create(itemType), { kind: 'hand', side: 'right' })).toBe(true);
+  }
+  const scale = makeScale(0.5);
+  const world = new PlayerMeshes(scale.blockSize, figure, registry.models, models);
+  try {
+    world.sync({
+      body: createPlayerBody(scale, 0, 0, 0),
+      yaw: 0,
+      stepOffset: 0,
+      gaitPhase: 0,
+      moving: false,
+      stance: 'standing',
+      dt: 0,
+      inventory,
+    });
+    const pose = (ready: boolean) => renderMeleePose(undefined, 0, ready, { holds: figure.holds });
+    const owner = world.syncHeldView(pose(true), { firearms: [] })!;
+    for (const side of ['right', 'left'] as const) {
+      expect(owner.arms.has(side), `${side} guard arm`).toBe(true);
+      expect(owner.arms.get(side)!.position.y, `${side} raised above rest`).toBeGreaterThan(
+        owner.handBases.get(side)![1],
+      );
+    }
+    world.syncHeldView(pose(false), { firearms: [] });
+    expect(owner.arms.has('left')).toBe(false);
+    expect(owner.arms.has('right')).toBe(Boolean(itemType));
+  } finally {
+    world.dispose();
   }
 });
 
