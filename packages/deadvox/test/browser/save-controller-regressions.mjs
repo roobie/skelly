@@ -1158,6 +1158,22 @@ try {
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
       await debugPage.goto(withParams({ debug: '1' }));
+      await debugPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+        timeout: 30_000,
+      });
+      // With no save, the new character choice and its start button still lead the card, above the controls list.
+      const order = await debugPage.evaluate(() => {
+        const box = (id) => document.getElementById(id).getBoundingClientRect();
+        const list = box('controls-search');
+        return ['new-character-options', 'go'].map((id) => {
+          const rect = box(id);
+          return { id, shown: rect.height > 0, beforeList: rect.bottom <= list.top };
+        });
+      });
+      assert.deepEqual(order, [
+        { id: 'new-character-options', shown: true, beforeList: true },
+        { id: 'go', shown: true, beforeList: true },
+      ]);
       const unsaved = await enterAndCheckpoint(debugPage);
       assert.deepEqual(unsaved, { namespaces: [], canSave: false });
       await debugPage.close();

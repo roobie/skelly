@@ -141,3 +141,10 @@ choice. Replacement names its destructive effect and still requires confirmation
 an empty canvas click must not choose it. Storage and build diagnostics stay secondary
 so they cannot bury the decision. Without a compatible save, the simple start remains.
 See `src/ui/saveController.ts`, `SaveController`, and `src/ui/style.css`, "#overlay.startup-ready.saved-choice".
+
+The new character choice, its start button and the save controls lead the title card in
+every state, with no save, with a save and with a refused save; the controls list follows.
+Starting is the first decision on the title, so it must be seen first, not found below a
+reference list. A refused save's notice comes before that choice, because it changes what
+starting does. See `index.html`, "title-choice", and `src/ui/style.css`,
+"#overlay.startup-ready.save-refused".

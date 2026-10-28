@@ -532,15 +532,12 @@ body.unconscious::after {
   background: #000;
 }
 #overlay.startup-ready .go {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  z-index: var(--ui-layer-startup-content);
-  transform: translate(-50%, -50%);
-  color: #b8bcc2;
-  cursor: pointer;
-  font-weight: 400;
-  white-space: nowrap;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.375rem;
+  color: var(--accent);
 }
 #overlay.startup-ready.saved-choice {
   place-items: center;
@@ -558,18 +555,6 @@ body.unconscious::after {
 }
 #overlay.startup-ready.saved-choice #new-character-options {
   margin: 0 0 0.75rem;
-}
-#overlay.startup-ready.saved-choice .go,
-#overlay.startup-ready.save-refused .go {
-  position: static;
-  transform: none;
-  white-space: normal;
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--accent);
-  border-radius: 0.375rem;
-  color: var(--accent);
 }
 :where(#overlay.startup-ready.saved-choice) #continue {
   width: 100%;
