@@ -1,6 +1,7 @@
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
@@ -30,6 +31,25 @@ describe('Gore', () => {
       gore.spray(lowHit, 100);
     }
     expect(gore.activeDroplets).toBe(GORE_TUNING_FIXTURE.dropletSpawnsPerFrame);
+    gore.dispose();
+  });
+
+  it("gives a severed part's blood the part's launch velocity", () => {
+    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const partVelocity: Vec3 = [3, 0, 0];
+    gore.severed(lowHit, partVelocity, {
+      droplets: 2,
+      speedMetresPerRealSecond: 0,
+      spreadFraction: 0,
+      lifetimeRealSeconds: 1,
+      partVelocityShare: 1,
+    });
+    const { droplets } = gore as unknown as { droplets: { active: boolean; velocity: Vector3 }[] };
+    const live = droplets.filter((droplet) => droplet.active);
+    expect(live).toHaveLength(2);
+    for (const droplet of live) {
+      expect(droplet.velocity.x).toBeCloseTo(partVelocity[0]);
+    }
     gore.dispose();
   });
 
