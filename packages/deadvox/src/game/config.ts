@@ -31,6 +31,8 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (`?debug=1`). */
   debug: boolean;
+  /** Debug-only resting-pose selection for inspecting deaths (`?deathPose=<pose id>`). */
+  debugDeathPose?: string;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
   /** Debug-only walking-lune vertical/horizontal ratio (`?wobbleFlat=0..1`). */
@@ -255,6 +257,9 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   const requestedTime = params.get('time');
   config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
+  if (config.debug && params.has('deathPose')) {
+    config.debugDeathPose = params.get('deathPose')!;
+  }
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);
   if (weatheringSplit !== undefined) {

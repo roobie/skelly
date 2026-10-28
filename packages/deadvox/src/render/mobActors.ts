@@ -357,6 +357,8 @@ interface Corpse extends SlotHolder {
   readonly worldPos: Vec3;
   readonly yaw: number;
   readonly direction: 1 | -1;
+  readonly poseSeed: number;
+  settledPose?: Pose;
   /** Frozen at the instant of death — a corpse keeps whatever was severed while it was still alive (see
    * this module's header comment); parts severed by the killing blow itself are already included, since
    * onSever fires before onDeath (src/core/zombies.ts's swing). */
@@ -418,6 +420,7 @@ interface Debris extends SlotHolder {
 }
 
 export interface MobActorMeshesOptions {
+  readonly deathPoseId?: string | undefined;
   readonly look: LookDefaults['mobActors'];
   readonly maxCorpses: number;
   readonly canvas?: HTMLCanvasElement | undefined;
@@ -1351,6 +1354,7 @@ export class MobActorMeshes implements ZombieRenderer {
       worldPos,
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, undefined),
+      poseSeed: id ^ zombie.figureSeed,
       severed: [...zombie.severed],
       bloodiness: woundSeverity(zombie),
       charge: acidCharge(zombie),
@@ -1415,6 +1419,7 @@ export class MobActorMeshes implements ZombieRenderer {
       worldPos,
       yaw: Math.atan2(-zombie.facing[0], -zombie.facing[2]),
       direction: fallDirectionAwayFromPlayer(zombie.facing, zombie.body.pos, playerPos),
+      poseSeed: id ^ zombie.figureSeed,
       severed: [...zombie.severed],
       bloodiness: woundSeverity(zombie),
       charge: acidCharge(zombie),
@@ -1944,11 +1949,26 @@ export class MobActorMeshes implements ZombieRenderer {
    * offset, no re-posing needed) once it's been lying long enough. No LOD/frustum culling — the global
    * shared corpse cap already bounds this to a small, fixed extra cost regardless of camera or distance. */
   private corpsePose(corpse: Corpse, variant: Variant): Pose {
+    if (corpse.settledPose) {
+      return corpse.settledPose;
+    }
     if (variant.model === 'acid') {
-      return acidDeathPose(variant.realized, corpse.basePose, corpse.elapsed, corpse.direction);
+      const pose = acidDeathPose(variant.realized, corpse.basePose, corpse.elapsed, corpse.direction);
+      if (corpse.elapsed >= acidTemplate.animation.deathDuration) {
+        corpse.settledPose = pose;
+      }
+      return pose;
     }
     const deathActor: DeathActor = { ...corpse.walkActor, bodyExtents: variant.bodyExtents };
-    return deathPose(deathActor, corpse.basePose, corpse.elapsed, { direction: corpse.direction });
+    const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, {
+      direction: corpse.direction,
+      seed: corpse.poseSeed,
+      ...(this.options.deathPoseId === undefined ? {} : { poseId: this.options.deathPoseId }),
+    });
+    if (corpse.elapsed >= DEATH_FALL_DURATION) {
+      corpse.settledPose = pose;
+    }
+    return pose;
   }
 
   private packCorpse(corpse: Corpse): void {

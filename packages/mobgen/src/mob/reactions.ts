@@ -2,11 +2,36 @@
 // already in — walk, standing, or mid-attack) and a death fall (a whole-body topple to lying on the
 // ground). EPIC.md asks for "animations for taking damage"; this is that, for mobgen actors.
 
-import { clamp, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep, type Vec3 } from '../core/math.ts';
-import type { Pose } from '../core/pose.ts';
+import type { Bone } from '../core/body.ts';
+import {
+  applyPoint,
+  clamp,
+  compose,
+  cross,
+  dot,
+  IDENTITY_M,
+  length,
+  type Mat3,
+  mulMM,
+  mulMV,
+  normalize,
+  rotAxis,
+  rotX,
+  rotY,
+  rotZ,
+  scale as scaleVector,
+  smoothstep,
+  sub,
+  type Transform,
+  transpose,
+  type Vec3,
+} from '../core/math.ts';
+import { blendPose, boneLocalTransform, boneTransforms, type Pose } from '../core/pose.ts';
+import { seededRng } from '../core/random.ts';
 import type { Template } from '../core/template.ts';
 import { type AttackClip, attackPose, zeroKey } from './attack.ts';
-import { type Extent, GROUND_SMOOTHING, groundOffset, type WalkActor } from './gait.ts';
+import deathContent from './deathPoses.json' with { type: 'json' };
+import { corners, type Extent, GROUND_SMOOTHING, groundOffset, type WalkActor } from './gait.ts';
 
 // ---- hit flinch: an AttackClip, played through the exact same interpolator/layering as an attack ----
 
@@ -135,8 +160,10 @@ export const flinchPose = (actor: WalkActor, time: number, walkBase: Pose, param
 // ---- death fall: whole-body motion the clip format can't express (root pitch + a ground-anchored drop) ----
 
 export interface DeathParams {
-  /** +1 topples forward (collapses face down); -1 topples backward (collapses face up). */
+  /** Biases selection away from the hit without excluding other resting poses. */
   readonly direction: 1 | -1;
+  readonly seed?: number;
+  readonly poseId?: string;
 }
 
 export interface DeathActor extends WalkActor {
@@ -146,72 +173,158 @@ export interface DeathActor extends WalkActor {
   readonly bodyExtents: ReadonlyMap<string, Extent>;
 }
 
-/** Seconds of active buckle+topple motion; deathPose holds this final pose for any `t` beyond it — the
- * caller (a renderer) drives its own "lie there, then sink" timing on top, entirely outside this pure
- * function, by just continuing to call deathPose with a saturating `t`. */
-export const DEATH_FALL_DURATION = 1.15;
-const BUCKLE_END = 0.4; // knees/torso finish buckling by here — the topple continues after
-const TOPPLE_START = 0.15; // topple begins before the buckle finishes, so it reads as one motion
-const TOPPLE_DEG = 100; // final pelvis pitch — a little past horizontal, so the smooth-min ground fit
-// (below) doesn't have to lean on the buckled limbs alone to clear the torso.
+export const DEATH_FALL_DURATION = deathContent.duration;
+const DEATH_POSES = deathContent.poses;
+const restingPoses = new WeakMap<DeathActor['bodyExtents'], Map<string, Pose>>();
 
-const rotXCompose = (base: Mat3, deg: number): Mat3 => mulMM(base, rotX(deg));
+const selectDeathPose = (seed: number, direction: 1 | -1, poseId?: string) => {
+  if (poseId !== undefined) {
+    const pose = DEATH_POSES.find((entry) => entry.id === poseId);
+    if (!pose) {
+      throw new Error(`Unknown death pose: ${poseId}`);
+    }
+    return pose;
+  }
+  const weight = (entry: (typeof DEATH_POSES)[number]): number =>
+    direction === 1 ? entry.weights.forward : entry.weights.backward;
+  let choice = seededRng(seed)() * DEATH_POSES.reduce((sum, entry) => sum + weight(entry), 0);
+  for (const entry of DEATH_POSES) {
+    choice -= weight(entry);
+    if (choice < 0) {
+      return entry;
+    }
+  }
+  throw new Error('Death pose set has no positive selection weight');
+};
 
-/**
- * A pure whole-body collapse: knees bend and the torso slumps (0 to BUCKLE_END), while the whole body
- * (the pelvis — this rig's root bone, so its own rotation carries every other bone with it) pitches from
- * upright to lying down (TOPPLE_START to DEATH_FALL_DURATION). Composed onto `basePose` (mulMM(baseR,
- * delta), never overwritten outright) so deathPose(actor, basePose, 0, params) is exactly basePose, the
- * same convention attackPose uses for its own zero-slope endpoints. Re-grounded at the end against
- * `actor.bodyExtents` (not the feet-only extents walkPose/attackPose use) via the same groundOffset
- * smooth-min everything else in mobgen uses, so the lowest point of the *whole* fallen body — whichever
- * bone that ends up being — lands within GROUND_SMOOTHING's usual few-mm/cm tolerance of y=0, regardless
- * of the exact topple angle or basePose: see this module's report for the derivation (root.y is solved
- * for, not tuned by hand).
- */
+const align = (from: Vec3, to: Vec3): Mat3 => {
+  const axis = cross(from, to);
+  if (length(axis) < 1e-10) {
+    return IDENTITY_M;
+  }
+  return rotAxis(axis, (Math.acos(clamp(dot(normalize(from), normalize(to)), -1, 1)) * 180) / Math.PI);
+};
+
+const supportedRotation = (
+  actor: DeathActor,
+  bone: Bone,
+  {
+    world,
+    flatWorlds,
+    atDrop,
+  }: {
+    world: Transform;
+    flatWorlds: ReadonlyMap<string, Transform>;
+    atDrop: (drop: number) => Mat3;
+  },
+): Mat3 => {
+  const extent = actor.bodyExtents.get(bone.id)!;
+  const constraints = corners(extent).map((point) => ({ point: sub(point, bone.head), below: 0 }));
+  // An ankle cannot settle below the foot's thickness, nor a wrist below its hand.
+  for (const child of actor.bones.filter((entry) => entry.parent === bone.id)) {
+    const childExtent = actor.bodyExtents.get(child.id);
+    if (!childExtent) {
+      continue;
+    }
+    const childR = flatWorlds.get(child.id)!.r;
+    constraints.push({
+      point: sub(child.head, bone.head),
+      below: Math.min(...corners(childExtent).map((point) => mulMV(childR, sub(point, child.head))[1])),
+    });
+  }
+  const [, headY] = applyPoint(world, bone.head);
+  let supported = 0;
+  let penetrating = length(sub(bone.tail, bone.head));
+  for (let iteration = 0; iteration < 16; iteration++) {
+    const drop = (supported + penetrating) / 2;
+    const candidate = atDrop(drop);
+    const lowest = Math.min(...constraints.map(({ point, below }) => headY + mulMV(candidate, point)[1] + below));
+    if (lowest >= 0) {
+      supported = drop;
+    } else {
+      penetrating = drop;
+    }
+  }
+  return atDrop(supported);
+};
+
+const relaxBones = (actor: DeathActor, rotations: Record<string, Mat3>, supportFit: boolean): void => {
+  const root: Vec3 = [0, groundOffset(actor.bones, actor.bodyExtents, rotations), 0];
+  const worlds = new Map<string, Transform>();
+  const flatWorlds = supportFit ? boneTransforms(actor.bones, { root, rotations }) : undefined;
+  for (const bone of actor.bones) {
+    const parent: Transform = bone.parent === null ? { r: IDENTITY_M, t: [0, 0, 0] } : worlds.get(bone.parent)!;
+    const local = boneLocalTransform(bone, { root, rotations });
+    const world = compose(parent, local);
+    const vector = mulMV(world.r, sub(bone.tail, bone.head));
+    const horizontal: Vec3 = [vector[0], 0, vector[2]];
+    if (length(horizontal) > 1e-10) {
+      const atDrop = (drop: number): Mat3 => {
+        const planar = scaleVector(normalize(horizontal), Math.sqrt(Math.max(0, dot(vector, vector) - drop * drop)));
+        return mulMM(align(vector, [planar[0], -drop, planar[2]]), world.r);
+      };
+      const settled =
+        flatWorlds && actor.bodyExtents.has(bone.id) && deathContent.settleBones.includes(bone.id)
+          ? supportedRotation(actor, bone, { world, flatWorlds, atDrop })
+          : atDrop(0);
+      rotations[bone.id] = mulMM(transpose(parent.r), settled);
+    }
+    const settledLocal = boneLocalTransform(bone, { root, rotations });
+    worlds.set(bone.id, compose(parent, settledLocal));
+  }
+};
+
+/** A root-only floor fit cannot lower a bent knee or a hand frozen in an attack. */
+const restingPose = (actor: DeathActor, rotations: Record<string, Mat3>): Pose => {
+  relaxBones(actor, rotations, false);
+  relaxBones(actor, rotations, true);
+  return { root: [0, groundOffset(actor.bones, actor.bodyExtents, rotations, GROUND_SMOOTHING), 0], rotations };
+};
+
 export const deathPose = (actor: DeathActor, basePose: Pose, t: number, params: DeathParams): Pose => {
-  const clamped = clamp(t, 0, DEATH_FALL_DURATION);
-  const buckle = smoothstep(clamp(clamped / BUCKLE_END, 0, 1));
-  const toppleU = smoothstep(clamp((clamped - TOPPLE_START) / (DEATH_FALL_DURATION - TOPPLE_START), 0, 1));
-
-  const slumpDeg = 8 * buckle; // spine/chest/neck/head curl toward the fall, on top of the topple
-  // Upright-bone convention (attack.ts's header comment, verified there against boneTransforms): +rotX
-  // tips an upright bone backward, -rotX pitches it forward. direction=+1 (forward fall) needs a negative
-  // angle; direction=-1 (backward fall) needs a positive one — hence the leading minus.
-  const pitch = -params.direction * TOPPLE_DEG * toppleU;
-  const slump = -params.direction * slumpDeg;
-  // Legs stay rigid with the pelvis (zero extra local rotation, besides a modest buckle-driven knee give)
-  // rather than counter-rotated to stay "planted": the pelvis's own ~100° topple already carries a
-  // zero-local-rotation leg from hanging straight down to trailing out roughly flat behind the fallen
-  // torso — exactly the lying-flat shape wanted (verified numerically: countering it to keep the legs
-  // near-vertical instead left the pelvis pinned near standing height, a bow at the waist, not a fall).
-  const hipFlexDeg = 15 * buckle;
-  const kneeFlexDeg = 35 * buckle;
-
-  const baseR = (id: string): Mat3 => basePose.rotations[id] ?? IDENTITY_M;
-  const rotations: Record<string, Mat3> = {
-    ...basePose.rotations,
-    pelvis: rotXCompose(baseR('pelvis'), pitch),
-    spine: rotXCompose(baseR('spine'), slump * 0.4),
-    chest: rotXCompose(baseR('chest'), slump * 0.6),
-    neck: rotXCompose(baseR('neck'), slump * 0.8),
-    head: rotXCompose(baseR('head'), slump),
-    'thigh.L': rotXCompose(baseR('thigh.L'), hipFlexDeg),
-    'thigh.R': rotXCompose(baseR('thigh.R'), hipFlexDeg),
-    'shin.L': rotXCompose(baseR('shin.L'), kneeFlexDeg),
-    'shin.R': rotXCompose(baseR('shin.R'), kneeFlexDeg),
-    // A little limb-splay as the knees/hips give, cosmetic only — hanging-limb convention (gait.ts's
-    // header comment): +rotX swings forward, rotZ splays outward (mirrored L/R).
-    'upperArm.L': mulMM(baseR('upperArm.L'), mulMM(rotX(20 * buckle), rotZ(-25 * buckle))),
-    'upperArm.R': mulMM(baseR('upperArm.R'), mulMM(rotX(20 * buckle), rotZ(25 * buckle))),
-    'forearm.L': rotXCompose(baseR('forearm.L'), 30 * buckle),
-    'forearm.R': rotXCompose(baseR('forearm.R'), 30 * buckle),
+  if (t <= 0) {
+    return basePose;
+  }
+  // Compound rigs have no humanoid root to topple; keep their member poses intact.
+  if (!actor.bones.some((bone) => bone.id === 'pelvis' && bone.parent === null)) {
+    return {
+      ...basePose,
+      root: [
+        basePose.root[0],
+        groundOffset(actor.bones, actor.bodyExtents, basePose.rotations, GROUND_SMOOTHING),
+        basePose.root[2],
+      ],
+    };
+  }
+  const entry = selectDeathPose(params.seed ?? actor.seed, params.direction, params.poseId);
+  let cache = restingPoses.get(actor.bodyExtents);
+  if (!cache) {
+    cache = new Map();
+    restingPoses.set(actor.bodyExtents, cache);
+  }
+  let rest = cache.get(entry.id);
+  if (!rest) {
+    const rotations: Record<string, Mat3> = Object.fromEntries(
+      Object.entries(entry.rotations).map(([id, angles]) => [
+        id,
+        mulMM(rotZ(angles[2]!), mulMM(rotY(angles[1]!), rotX(angles[0]!))),
+      ]),
+    );
+    rotations.pelvis = mulMM(rotX(entry.pitch), rotY(entry.roll));
+    rest = restingPose(actor, rotations);
+    cache.set(entry.id, rest);
+  }
+  const blended = blendPose(
+    basePose,
+    { ...rest, root: [basePose.root[0], rest.root[1], basePose.root[2]] },
+    smoothstep(clamp(t / DEATH_FALL_DURATION, 0, 1)),
+  );
+  return {
+    ...blended,
+    root: [
+      basePose.root[0],
+      groundOffset(actor.bones, actor.bodyExtents, blended.rotations, GROUND_SMOOTHING),
+      basePose.root[2],
+    ],
   };
-
-  const root: Vec3 = [
-    basePose.root[0],
-    groundOffset(actor.bones, actor.bodyExtents, rotations, GROUND_SMOOTHING),
-    basePose.root[2],
-  ];
-  return { root, rotations };
 };

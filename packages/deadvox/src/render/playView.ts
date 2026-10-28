@@ -326,6 +326,7 @@ export const createPlayView = (
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
           look: look.mobActors,
+          deathPoseId: config.debugDeathPose,
           maxCorpses: graphics.mobActors.maxCorpses,
           canvas: engine.renderer?.domElement,
           reveal: meshes,

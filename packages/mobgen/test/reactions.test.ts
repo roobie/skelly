@@ -7,6 +7,8 @@ import { build, generateValid } from '../src/core/generate.ts';
 import { applyPoint, IDENTITY_M } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
 import { voxelize } from '../src/core/voxelize.ts';
+import { attackPose, LUNGE_GRAB } from '../src/mob/attack.ts';
+import deathContent from '../src/mob/deathPoses.json' with { type: 'json' };
 import {
   bodyRestExtents,
   corners,
@@ -90,8 +92,7 @@ describe('flinchPose', () => {
     expect(maxPoseDiff(a, b)).toBe(0);
   });
 
-  it('layers on top of an attack pose too, not just a walk pose (mid-attack flinch)', async () => {
-    const { attackPose, LUNGE_GRAB } = await import('../src/mob/attack.ts');
+  it('layers on top of an attack pose too, not just a walk pose (mid-attack flinch)', () => {
     const found = setup('shambler');
     const actor = walkActorOf(found);
     const walkBase = walkPose(actor, INITIAL_CLOCK, 0.8);
@@ -126,6 +127,41 @@ describe('flinchPose', () => {
 });
 
 describe('deathPose', () => {
+  it.each(TEMPLATES.flatMap((template) => deathContent.poses.map((entry) => [template.name, entry.id] as const)))(
+    '%s %s settles every bone end from a raised walking leg and attacking arms',
+    (name, poseId) => {
+      const found = setup(name);
+      const actor = deathActorOf(found);
+      const walking = walkPose(actor, { ...INITIAL_CLOCK, progress: 0.3 }, 1);
+      const attacking = attackPose(actor, LUNGE_GRAB, 0.35, walking);
+      for (const base of [walking, attacking]) {
+        const pose = deathPose(actor, base, DEATH_FALL_DURATION, { direction: -1, poseId });
+        const transforms = boneTransforms(actor.bones, pose);
+        for (const bone of actor.bones) {
+          const transform = transforms.get(bone.id)!;
+          if (deathContent.settleBones.includes(bone.id)) {
+            const lowest = Math.min(
+              ...corners(actor.bodyExtents.get(bone.id)!).map((point) => applyPoint(transform, point)[1]),
+            );
+            expect.soft(lowest, `${poseId}: ${bone.id} support`).toBeLessThan(actor.params.height * 0.1);
+          }
+          for (const end of [bone.head, bone.tail]) {
+            expect
+              .soft(applyPoint(transform, end)[1], `${poseId}: ${bone.id}`)
+              .toBeLessThan(actor.params.height * 0.25);
+          }
+        }
+      }
+    },
+  );
+  it('refuses unknown resting pose selections', () => {
+    const actor = deathActorOf(setup('shambler'));
+    const base = walkPose(actor, INITIAL_CLOCK, 0);
+    expect(() =>
+      deathPose(actor, base, DEATH_FALL_DURATION, { direction: 1, poseId: 'unknown-fixture-pose' }),
+    ).toThrow();
+  });
+
   it('matches the base pose exactly at t=0', () => {
     const found = setup('shambler');
     const actor = deathActorOf(found);

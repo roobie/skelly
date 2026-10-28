@@ -1,0 +1,76 @@
+{
+  "duration": 1.1499999999999999,
+  "poses": [
+    {
+      "id": "backward",
+      "pitch": 90,
+      "roll": 0,
+      "rotations": {
+        "forearm.L": [0, 0, -25],
+        "forearm.R": [0, 0, 40],
+        "shin.L": [0, 0, 15],
+        "shin.R": [0, 0, -30],
+        "thigh.L": [0, 0, -12],
+        "thigh.R": [0, 0, 18],
+        "upperArm.L": [0, 0, -40],
+        "upperArm.R": [0, 0, 25]
+      },
+      "weights": {
+        "backward": 3,
+        "forward": 1
+      }
+    },
+    {
+      "id": "forward",
+      "pitch": -90,
+      "roll": 0,
+      "rotations": {
+        "forearm.L": [0, 0, -45],
+        "forearm.R": [0, 0, 40],
+        "shin.L": [0, 0, 15],
+        "shin.R": [0, 0, -50],
+        "thigh.L": [0, 0, -12],
+        "thigh.R": [0, 0, 30],
+        "upperArm.L": [0, 0, -100],
+        "upperArm.R": [0, 0, 25]
+      },
+      "weights": {
+        "backward": 1,
+        "forward": 3
+      }
+    },
+    {
+      "id": "sprawled",
+      "pitch": 90,
+      "roll": 0,
+      "rotations": {
+        "forearm.L": [0, 0, -25],
+        "forearm.R": [0, 0, 65],
+        "shin.L": [0, 0, 65],
+        "shin.R": [0, 0, -30],
+        "thigh.L": [0, 0, -35],
+        "thigh.R": [0, 0, 18],
+        "upperArm.L": [0, 0, -40],
+        "upperArm.R": [0, 0, 85]
+      },
+      "weights": {
+        "backward": 2,
+        "forward": 2
+      }
+    }
+  ],
+  "settleBones": [
+    "upperArm.L",
+    "upperArm.R",
+    "forearm.L",
+    "forearm.R",
+    "hand.L",
+    "hand.R",
+    "thigh.L",
+    "thigh.R",
+    "shin.L",
+    "shin.R",
+    "foot.L",
+    "foot.R"
+  ]
+}
