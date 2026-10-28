@@ -98,6 +98,7 @@ if (menuCard && scrollUpCue && scrollDownCue) {
   window.addEventListener('resize', updateScrollCues);
   new ResizeObserver(updateScrollCues).observe(menuCard);
   new MutationObserver(updateScrollCues).observe(menuCard, { attributes: true, childList: true, subtree: true });
+  new MutationObserver(updateScrollCues).observe(overlay, { attributes: true, attributeFilter: ['hidden'] });
   updateScrollCues();
 }
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');

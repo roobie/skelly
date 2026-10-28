@@ -869,6 +869,26 @@ try {
     assert.equal(masked.positionUnchanged, true);
     await page.evaluate(() => globalThis.releaseWorldMeshes());
     await page.waitForFunction(() => globalThis.worldLoadWitness.worldLoading.ready);
+    await page.setViewportSize({ width: 800, height: 200 });
+    await page.evaluate(async () => {
+      const filler = document.createElement('div');
+      filler.id = 'scroll-cue-filler';
+      filler.style.minHeight = '1000px';
+      document.querySelector('#overlay .card').append(filler);
+      await Promise.resolve();
+    });
+    await page.waitForFunction(
+      () => document.querySelector('#overlay')?.hidden && document.querySelector('#card-scroll-down')?.hidden,
+    );
+    await page.evaluate(() => {
+      document.querySelector('#overlay').hidden = false;
+    });
+    await page.waitForFunction(() => document.querySelector('#card-scroll-down')?.hidden === false);
+    await page.evaluate(() => {
+      document.querySelector('#overlay').hidden = true;
+      document.querySelector('#scroll-cue-filler').remove();
+    });
+    await page.setViewportSize({ width: 800, height: 600 });
     assert.equal(
       await page.locator('#world-loading').isVisible(),
       false,
