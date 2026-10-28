@@ -630,13 +630,16 @@ const opticZoomCheck = async (chromium, port) => {
     ['optic_high_mag_5_25x', 'rifle_assault', 'max'],
   ]) {
     const { page, capture } = await enterTestHouse(chromium, port);
-    await timePhase('optic-zoom-world-only', async () => {
+    await timePhase('optic-disc-endpoint', async () => {
       const record = await page.evaluate(opticZoomRecord, { opticType, gunType, endpoint });
       await writeFile(
         resolve(projectRoot, `test-results/primary-action/${opticType}-${endpoint}.png`),
         await capture(),
       );
-      process.stdout.write(`OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify(record)}\n`);
+      const { drawnObjects, ...summary } = record;
+      process.stdout.write(
+        `OPTIC_ZOOM_DIAGNOSTIC ${JSON.stringify({ ...summary, drawnObjectCount: drawnObjects.length })}\n`,
+      );
       assert.equal(record.magnification, record.targetPower, 'the optic reaches its authored endpoint');
       assert.ok(record.opticMeshCount > 0, 'a physical optic is present');
       assert.deepEqual(record.opticObjects, [], 'the image excludes its own fitted optic');
