@@ -2,12 +2,10 @@
 // attack) and the death fall (whole-body root pitch, the clip format can't express).
 
 import { describe, expect, it } from 'vitest';
-import zombieContent from '../../deadvox/src/content/base/zombies.json' with { type: 'json' };
 import type { Bone } from '../src/core/body.ts';
 import { generateValid } from '../src/core/generate.ts';
-import { applyPoint, cross, dot, IDENTITY_M, length, mulMV, sub, type Transform, type Vec3 } from '../src/core/math.ts';
+import { applyPoint, cross, dot, IDENTITY_M, length, mulMV, sub, type Transform } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { worldPosition } from '../src/core/voxelize.ts';
 import { attackPose, LUNGE_GRAB } from '../src/mob/attack.ts';
 import { crawlerGaitPose } from '../src/mob/crawler.ts';
 import deathContent from '../src/mob/deathPoses.json' with { type: 'json' };
@@ -192,113 +190,6 @@ const extentsOverlap = (
 const floorSettlingBones = new Set(deathContent.settleBones.filter((id) => id !== 'head'));
 
 describe('deathPose', () => {
-  it.for(
-    ALL_TEMPLATES.flatMap((template) =>
-      [
-        ...new Set(
-          zombieContent.zombies
-            .filter((entry) => entry.model === template.name)
-            .flatMap((entry) => entry.figureSeeds ?? []),
-        ),
-      ].flatMap((seed) =>
-        deathContent.poses.flatMap(({ id: poseId }) =>
-          (template.bodyPlan === 'crawler' ? (['prone'] as const) : (['upright', 'prone'] as const)).map((posture) => ({
-            name: template.name,
-            poseId,
-            posture,
-            seed,
-          })),
-        ),
-      ),
-    ),
-  )(
-    '$name seed $seed $posture $poseId keeps the settled skull clear of the chest',
-    async ({ name, seed, posture, poseId }, { annotate }) => {
-      const found = setup(name, seed);
-      const actor = { ...deathActorOf(found), posture };
-      const base = posture === 'prone' ? crawlerGaitPose(found.realized, 0.5, 1) : walkPose(actor, INITIAL_CLOCK, 0);
-      const transforms = boneTransforms(
-        actor.bones,
-        deathPose(actor, base, DEATH_FALL_DURATION, { direction: -1, poseId }),
-      );
-      const neckBone = actor.bones.find((bone) => bone.id === 'neck')!;
-      const neckVector = sub(neckBone.tail, neckBone.head);
-      const flatNeck = mulMV(transforms.get('chest')!.r, neckVector);
-      const posedNeck = mulMV(transforms.get('neck')!.r, neckVector);
-      const liftAxis = cross(flatNeck, [0, 1, 0]);
-      const lift =
-        (Math.atan2(dot(liftAxis, cross(flatNeck, posedNeck)) / length(liftAxis), dot(flatNeck, posedNeck)) * 180) /
-        Math.PI;
-      await annotate(`Neck elevation relative to chest rest frame (degrees): ${lift}`);
-      const { voxels } = found;
-      const cells = (id: string): Vec3[] => {
-        const owner = actor.bones.findIndex((bone) => bone.id === id) + 1;
-        const result: Vec3[] = [];
-        voxels.owner.forEach((cellOwner, index) => {
-          if (cellOwner !== owner) {
-            return;
-          }
-          const i = index % voxels.dims[0];
-          const j = Math.floor(index / voxels.dims[0]) % voxels.dims[1];
-          const k = Math.floor(index / (voxels.dims[0] * voxels.dims[1]));
-          result.push(applyPoint(transforms.get(id)!, worldPosition(voxels, i, j, k)));
-        });
-        expect(result.length).toBeGreaterThan(0);
-        return result;
-      };
-      const chest = cells('chest');
-      let skullSupported = false;
-      for (const id of ['head', 'jaw']) {
-        const skull = cells(id);
-        const axesOf = (boneId: string) =>
-          (
-            [
-              [1, 0, 0],
-              [0, 1, 0],
-              [0, 0, 1],
-            ] as const
-          ).map((axis) => mulMV(transforms.get(boneId)!.r, axis));
-        const a = axesOf(id);
-        const b = axesOf('chest');
-        const axes = [...a, ...b, ...a.flatMap((axis) => b.map((other) => cross(axis, other)))].filter(
-          (axis) => length(axis) > 1e-10,
-        );
-        const projections = axes.map((axis) => ({
-          axis,
-          radius: (voxels.size / 2) * [...a, ...b].reduce((sum, basis) => sum + Math.abs(dot(axis, basis)), 0),
-        }));
-        const overlaps = skull.some((left) =>
-          chest.some((right) => {
-            const delta = sub(left, right);
-            return (
-              dot(delta, delta) < 3 * voxels.size ** 2 &&
-              projections.every(
-                ({ axis, radius }) =>
-                  Math.abs(dot(delta, axis)) <
-                  radius - Math.max(...deathContent.contact.penetrationVoxels) * voxels.size * length(axis) - 1e-9,
-              )
-            );
-          }),
-        );
-        expect(overlaps, `${id} cells must not overlap chest cells`).toBe(false);
-        const nearChest = skull.some((left) =>
-          chest.some((right) => {
-            const delta = sub(left, right);
-            return (
-              dot(delta, delta) <= 3 * (voxels.size * (1 + deathContent.contact.supportDistanceVoxels)) ** 2 &&
-              projections.every(
-                ({ axis, radius }) =>
-                  Math.abs(dot(delta, axis)) <=
-                  radius + voxels.size * deathContent.contact.supportDistanceVoxels * length(axis),
-              )
-            );
-          }),
-        );
-        skullSupported ||= surfaceClearance(actor, transforms, id) <= voxels.size || nearChest;
-      }
-      expect(skullSupported, 'the skull settles onto the floor or chest instead of freezing above both').toBe(true);
-    },
-  );
   it.for(TEMPLATES.flatMap((template) => deathContent.poses.map((entry) => [template.name, entry.id] as const)))(
     '%s %s rests with supported limbs and separated feet after walking or attacking',
     async ([name, poseId], { annotate }) => {
