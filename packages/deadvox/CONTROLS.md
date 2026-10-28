@@ -2,7 +2,7 @@
 read_if:
   - you change player or debug input bindings, their default keys or their labels
   - you change input ownership, browser-native behavior or pointer actions
-  - you change stances, firearm handling, throwing, treatment or long-action controls
+  - you change stances, lateral lean, firearm handling, throwing, treatment or long-action controls
   - you change how the HUD toggle or quickbar gestures work
   - you change optic zoom or its wheel ownership
   - you change free look, head/body input separation or its action refusals
@@ -36,7 +36,7 @@ Default keys are content, and only the base pack's: the game reads them from the
 - **Debug authoring** uses the held debug gate. The review map and freeze action use debug bindings; the gate is itself a binding, not a browser modifier. Noclip flight is ungated only while noclip is active so flight can be controlled without occupying another hand. Spawn-menu navigation is modal navigation, not authoring. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `toggleReviewMap`.
 - **Review map height slice** keys belong to the map page, so no game action is lost while the map has focus. The reason for the slice is in `docs/review-map.md`. See `src/game/mapSliceInput.ts`, `mapSliceKeys`, and `src/siteMapPage.ts`, `sliceKey`.
 - **Spectator camera** shows the world as others would see it: the avatar is drawn whole, head included, and the player's own view attachments (first-person arms, held item, held light beam, damage, drug and night-vision effects) stay behind with the avatar. The avatar is fully inert while the camera flies, so looking around changes nothing in the simulation: every avatar-bound command and input is refused, and a throw charge held at the toggle is cancelled, not released. Only the command families that drive the view and the debug tools still work; see `src/game/spectatorCamera.ts`, `DETACHED_COMMAND_PREFIXES`. Flight speed is noclip's. The teleport action moves the avatar under the camera, refuses a spot inside solid terrain and lets a spot in the air fall. See `src/game/spectatorCamera.ts`, `SpectatorCamera`, and `src/render/playView.ts`, `updateCamera`.
-- **Q and E** are reserved in world contexts for lean; inventory may use them for selection, keeping selection keys under the left hand next to WASD. Do not add placeholder lean actions.
+- **Q and E** hold left and right lean in world contexts; inventory uses them for selection in its own context, keeping its keys under the left hand next to WASD without leaning the player. Opposing lean keys cancel. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/input.ts`, `Input.intent`. The cover, stance and sprint rules are in `DESIGN.md`, "Character".
 - **Inventory quick action** is a rebindable hold-and-click shortcut for moving an item; it saves clicks, not handling time, and never activates the item. See `src/game/inputBindings.ts`, "inventory.quick-action-gate", and `src/ui/inventoryScreen.ts`, `quickMove`.
 - **Item viewer** follows the view-item binding whether it is a pointer button or a key, so any rebind still opens and closes it, and a left drag on the model always turns it. The reason is in `DESIGN.md`, "Inventory screen". See `src/ui/itemViewer.ts`, `isViewItemPress`, and `src/ui/menuPointer.ts`, `mountMenuPointer`.
 - **Loose-item pickup** uses the world-interaction action: tap wears a back-wearable or slings a suitable long gun when its slot is free, otherwise pockets it; holding wields it. Doors and containers retain tap interaction. A shared reach/target choice routes the action through ordinary inventory handling, so pickup retains its handling time. See `src/game/play.ts`, `interactionTargetAt` and `completeWorldInteraction`.
@@ -64,7 +64,7 @@ Default keys are content, and only the base pack's: the game reads them from the
 
 - Press-and-hold for every long use remains a direction, not a universal cancellation rule. Do not redesign mouse use as part of rebinding.
 - BR decides the default best-pocket destination; the binding registry is authoritative for the configured choice and its displayed behavior.
-- Add lean and magazine-check inputs only when their mechanics exist and the full conflict model has been checked.
+- Add magazine-check inputs only when their mechanics exist and the full conflict model has been checked.
 - Whether matches strike alone remains open for BR.
 
 ## Native key diagnostics

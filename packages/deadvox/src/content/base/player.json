@@ -25,6 +25,14 @@
       "id": "player",
       "jog": 4.2999999999999998,
       "jump": 7.9000000000000004,
+      "lean": {
+        "enterSimSeconds": 0.22,
+        "movementSpeedScale": 0.65000000000000002,
+        "offsetMetres": 0.10000000000000001,
+        "returnSimSeconds": 0.17999999999999999,
+        "rollDegrees": 12,
+        "wallMarginMetres": 0.02
+      },
       "load": {
         "handlingScale": 0.5,
         "heavy": 40000,

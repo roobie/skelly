@@ -1012,7 +1012,16 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     );
     assert(irons.shoulderError <= irons.shoulderLimit + 1e-6, `ADS retains shoulder contact: ${irons.shoulderError} m`);
     assert(Math.abs(irons.roll) < 1e-6, 'head cant does not roll the camera');
-    await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+    await page.keyboard.down('KeyQ');
+    await page.waitForFunction(() => {
+      const r = globalThis.primaryActionTest;
+      return r.session.leanAmount < 0 && Math.abs(r.engine.camera.rotation.z) > 1e-6;
+    });
+    const recordedLean = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.startInputReplayRecording();
+      return r.session.leanAmount;
+    });
     const replayPreludeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
     await waitForSimulation(
       page,
@@ -1033,6 +1042,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
         .reduce((sum, { item }) => sum + item.count, 0);
       return count === cases + 1 && r.inputRecorder.copyInputs().frames.length > 0;
     }, firearm);
+    await page.keyboard.up('KeyQ');
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() =>
       globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some(({ action }) => action === 'aim.ads-toggle'),
@@ -1086,6 +1096,7 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
       { id: 'debug.input-replay-export', moduleUrl: inputBindingsModule, uid: firearm.uid },
     );
     assert.deepEqual(liveEnd.startState, {
+      leanAmount: recordedLean,
       throwingStance: false,
       readyHeld: true,
       aimingDownSights: true,
@@ -1796,6 +1807,20 @@ try {
       gestures: [{ trusted: true, actorExists: false }],
       creationHidden: true,
     });
+    const leanFeet = await page.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
+    await page.keyboard.down('KeyQ');
+    await page.waitForFunction(() => globalThis.primaryActionTest.session.leanAmount < 0);
+    await page.keyboard.up('KeyQ');
+    await page.waitForFunction(() => globalThis.primaryActionTest.session.leanAmount === 0);
+    await page.keyboard.down('KeyE');
+    await page.waitForFunction(() => globalThis.primaryActionTest.session.leanAmount > 0);
+    await page.keyboard.up('KeyE');
+    await page.waitForFunction(() => globalThis.primaryActionTest.session.leanAmount === 0);
+    assert.deepEqual(
+      await page.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]),
+      leanFeet,
+      'held world lean leaves the feet in place',
+    );
     const canOpening = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);

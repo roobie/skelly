@@ -221,6 +221,26 @@ describe('keyboard registry', () => {
       }
     }
   });
+  it.each([
+    ['KeyQ', 'player.lean-left', 'inventory.previous'],
+    ['KeyE', 'player.lean-right', 'inventory.next'],
+  ])('routes %s to held lean only in play and to selection in inventory', (key, lean, selection) => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    expect(keyboard.press(event(key))).toBe(true);
+    expect(keyboard.held(lean)).toBe(true);
+    context = 'inventory';
+    keyboard.sync();
+    expect(keyboard.held(lean)).toBe(false);
+    keyboard.release(event(key));
+    commands.length = 0;
+    expect(keyboard.press(event(key))).toBe(true);
+    expect(commands).toEqual([{ action: selection, phase: 'down', at: 0 }]);
+    expect(keyboard.held(lean)).toBe(false);
+  });
   it('dispatches the crouch action in play but not in menus or text entry', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.rebind('player.crouch-toggle', [{ code: 'KeyY' }])).toBeUndefined();

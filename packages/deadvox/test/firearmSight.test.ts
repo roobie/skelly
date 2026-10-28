@@ -5,7 +5,9 @@ import { aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { sightedFirearmModel } from '../src/core/firearmSight.ts';
 import { heldButtOffset, heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { leanFrame } from '../src/core/lean.ts';
 import { playerLookPose } from '../src/core/playerLookPose.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { itemLook } from '../src/render/itemLook.ts';
 import { fittedPartFrame } from '../src/render/models.ts';
@@ -14,6 +16,67 @@ import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 
 const baseRegistry = loadBaseRegistry();
 
+it('cants the ADS gun, bore and sight camera as one physical frame in either lean direction', () => {
+  const figure = baseRegistry.figures.get('player')!;
+  const model = [...baseRegistry.models.values()].find((entry) => entry.hands && entry.gun?.sight?.kind === 'iron')!;
+  expect(model).toBeDefined();
+  const aimFrame = { yaw: 0.02, pitch: -0.03 };
+  for (const [stance, pitch, amount] of [
+    ['standing', 0.3, -0.7],
+    ['crouching', -0.3, 0.7],
+  ] as const) {
+    const lean = leanFrame(amount, baseRegistry.player.get('player')!.lean);
+    const ads = { model, side: 'right' as const, aimFrame };
+    const pose = playerLookPose({ figure, models: baseRegistry.models, stance, pitch, ads, lean });
+    const common = {
+      holds: figure.holds,
+      model,
+      side: 'right' as const,
+      leadingSide: 'right' as const,
+      twoHanded: true,
+      progress: 1,
+      aimingDownSights: true,
+      aimFrame,
+      loweredPitchRadians: 0,
+      stockSeat: pose.stockSeats.right,
+      adsEyes: pose.eyes,
+      leanRollRadians: lean.rollRadians,
+    };
+    const gun = heldFirearmTransform({ ...common, lookPitchRadians: pitch });
+    const unrolled = heldFirearmTransform({ ...common, lookPitchRadians: pitch, leanRollRadians: 0 });
+    expect(new Vector3(...gun.sightUp!).angleTo(new Vector3(...unrolled.sightUp!))).toBeGreaterThan(0);
+    const cant = (point: readonly number[]) =>
+      new Vector3(...point).applyAxisAngle(new Vector3(0, 0, 1), lean.rollRadians);
+    expect(new Vector3(...gun.muzzleDirection).distanceTo(cant(unrolled.muzzleDirection))).toBeLessThan(1e-12);
+    const camera = adsCameraEye({ figure, pose, ads, pitch });
+    expect(camera.fits).toBe(true);
+    const offset = new Vector3(...camera.eye)
+      .sub(new Vector3(...pose.eye))
+      .applyAxisAngle(new Vector3(1, 0, 0), -pitch);
+    const line = new Vector3(...gun.rootOffset).add(new Vector3(...gun.sightEyeOffset!));
+    expect(
+      offset
+        .sub(line)
+        .cross(new Vector3(...gun.sightDirection!))
+        .length(),
+    ).toBeLessThan(1e-9);
+    const eye = pose.eye.map((v) => v / BLOCK_SIZE) as [number, number, number];
+    const ray = firearmBoreRay({ ...common, eye, yaw: 0, pitch, blockSize: BLOCK_SIZE });
+    const muzzle = new Vector3(...gun.rootOffset)
+      .add(new Vector3(...gun.muzzleOffset))
+      .applyAxisAngle(new Vector3(1, 0, 0), pitch)
+      .divideScalar(BLOCK_SIZE)
+      .add(new Vector3(...eye));
+    expect(new Vector3(...ray.origin).distanceTo(muzzle)).toBeLessThan(1e-9);
+    const worldDirection = new Vector3(...gun.muzzleDirection).applyAxisAngle(new Vector3(1, 0, 0), pitch);
+    expect(new Vector3(...ray.direction).distanceTo(worldDirection)).toBeLessThan(1e-12);
+    expect(
+      new Vector3(...ray.up).distanceTo(new Vector3(...gun.muzzleUp).applyAxisAngle(new Vector3(1, 0, 0), pitch)),
+    ).toBeLessThan(1e-12);
+  }
+});
+
+const BLOCK_SIZE = 0.5;
 const adsCases = () =>
   [...baseRegistry.models.values()]
     .filter((model) => model.hands && model.gun?.sight)

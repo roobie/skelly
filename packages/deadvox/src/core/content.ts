@@ -623,6 +623,13 @@ const checkFirearmHandling = (
   }
 };
 
+const hasDrawnCollision = (model: ModelDef): boolean => {
+  const parts = Object.values(model.parts ?? {});
+  return (
+    Boolean(model.collision?.length) || (parts.length > 0 && parts.every((part) => Boolean(part.collision?.length)))
+  );
+};
+
 const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): void => {
   if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
@@ -632,6 +639,12 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
     report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  if (item.firearm && model?.grip && model.anchors?.muzzle && !hasDrawnCollision(model)) {
+    report('items', item.id, '.model', 'a firearm needs drawn collision for every body part to guard lean');
+  }
+  if ((model?.gun?.attachment || model?.gun?.rounds) && !model.collision?.length) {
+    report('items', item.id, '.model', 'a firearm attachment or magazine needs drawn collision to guard lean');
+  }
   if (item.firearm) {
     checkFirearmSounds(item, model, registry, report);
     checkFirearmHandling(item, item.firearm, registry, report);

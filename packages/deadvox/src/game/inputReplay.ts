@@ -9,7 +9,7 @@ import { isReplayActionPayload, type ReplayActionPayload } from './replayCommand
 import { PHYSICS_RATE } from './session.ts';
 
 // Recordings from older schemas don't resolve identically.
-export const INPUT_REPLAY_SCHEMA_VERSION = 23;
+export const INPUT_REPLAY_SCHEMA_VERSION = 24;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -127,7 +127,9 @@ const FRAME_FLAGS = {
   useOff: 1 << 7,
   descending: 1 << 8,
   worldReady: 1 << 9,
-  freeLooking: 1 << 10,
+  leanLeft: 1 << 10,
+  leanRight: 1 << 11,
+  freeLooking: 1 << 12,
 } as const;
 
 export interface ReplayControlSample {
@@ -177,6 +179,7 @@ export interface ReplayInputData {
 }
 
 export interface ReplayStartState {
+  readonly leanAmount: number;
   readonly throwingStance: boolean;
   readonly readyHeld: boolean;
   readonly aimingDownSights: boolean;
@@ -184,6 +187,7 @@ export interface ReplayStartState {
 }
 
 export const DEFAULT_REPLAY_START_STATE: ReplayStartState = {
+  leanAmount: 0,
   throwingStance: false,
   readyHeld: false,
   aimingDownSights: false,
@@ -319,6 +323,8 @@ const flagOf = (sample: Omit<ReplayControlSample, 'compression'>): number =>
   (sample.intent.useOff ? FRAME_FLAGS.useOff : 0) |
   (sample.descending ? FRAME_FLAGS.descending : 0) |
   (sample.worldReady ? FRAME_FLAGS.worldReady : 0) |
+  ((sample.intent.lean ?? 0) < 0 ? FRAME_FLAGS.leanLeft : 0) |
+  ((sample.intent.lean ?? 0) > 0 ? FRAME_FLAGS.leanRight : 0) |
   (sample.freeLooking ? FRAME_FLAGS.freeLooking : 0);
 
 export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample => {
@@ -329,6 +335,9 @@ export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample =
     intent: {
       forward,
       right,
+      ...(flags & (FRAME_FLAGS.leanLeft | FRAME_FLAGS.leanRight)
+        ? { lean: (flags & FRAME_FLAGS.leanRight ? 1 : 0) - (flags & FRAME_FLAGS.leanLeft ? 1 : 0) }
+        : {}),
       jump: Boolean(flags & FRAME_FLAGS.jump),
       sprint: Boolean(flags & FRAME_FLAGS.sprint),
       walk: Boolean(flags & FRAME_FLAGS.walk),
@@ -837,7 +846,9 @@ export async function decodeInputReplay(
     typeof value.startState.readyHeld !== 'boolean' ||
     typeof value.startState.aimingDownSights !== 'boolean' ||
     typeof value.startState.inventoryOpen !== 'boolean' ||
-    Object.keys(value.startState).length !== 4 ||
+    !Number.isFinite(value.startState.leanAmount) ||
+    Math.abs(value.startState.leanAmount as number) > 1 ||
+    Object.keys(value.startState).length !== 5 ||
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
     !Array.isArray(value.generatedColumns) ||
@@ -876,7 +887,7 @@ export async function decodeInputReplay(
       Math.abs(candidate[3]) > 1 ||
       !Number.isSafeInteger(candidate[4]) ||
       candidate[4] < 0 ||
-      candidate[4] > 0x7_ff ||
+      candidate[4] > Object.values(FRAME_FLAGS).reduce((mask, flag) => mask | flag, 0) ||
       candidate[5] < 1 ||
       candidate[5] > 1_000_000
     ) {
@@ -940,6 +951,7 @@ export async function decodeInputReplay(
     worldOptions: decoded.worldOptions,
     inputs: { frames, actions, generatedColumns, columnChanges },
     startState: {
+      leanAmount: value.startState.leanAmount as number,
       throwingStance: value.startState.throwingStance,
       readyHeld: value.startState.readyHeld,
       aimingDownSights: value.startState.aimingDownSights,

@@ -4,6 +4,7 @@ import type { FigureDef, ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type HeldSeatFrame, heldAdsEye, heldFirearmTransform } from './heldPose.ts';
 import type { HandSide } from './inventory.ts';
+import type { LeanFrame } from './lean.ts';
 import type { PlayerStance } from './playerStance.ts';
 import {
   add,
@@ -60,6 +61,9 @@ export interface PlayerAdsPose {
 }
 
 export interface PlayerLookPose {
+  /** Seats stay in the undeviated look frame; the held transform applies the same outer cant once. */
+  readonly unleaned?: PlayerLookPose;
+  readonly lateralLean?: { readonly frame: LeanFrame; readonly rotation: Quaternion; readonly pivot: Vec3 };
   readonly hip: Vec3;
   readonly spine: Vec3;
   readonly neck: Vec3;
@@ -84,6 +88,9 @@ export interface PlayerLookPose {
 }
 
 export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso' | 'neck' | 'head'): Vec3 => {
+  if (pose.unleaned) {
+    return playerLeanPoint(pose, playerPosePoint(pose.unleaned, point, part));
+  }
   let at = point;
   if (part === 'head') {
     at = about(at, pose.head, pose.headRotation);
@@ -99,7 +106,18 @@ export const playerPosePoint = (pose: PlayerLookPose, point: Vec3, part: 'torso'
   return [at[0], at[1] - pose.hipDrop, at[2]];
 };
 
+export const playerLeanPoint = (pose: PlayerLookPose, point: Vec3): Vec3 => {
+  const lean = pose.lateralLean;
+  if (!lean) {
+    return point;
+  }
+  return add(about(point, lean.pivot, lean.rotation), [lean.frame.offsetMetres, 0, 0]);
+};
+
 export const playerHeldSeatFrame = (pose: PlayerLookPose, pitch: number): HeldSeatFrame => {
+  if (pose.unleaned) {
+    return playerHeldSeatFrame(pose.unleaned, pitch);
+  }
   const torso = multiplyRotation(turnX(-pitch), multiplyRotation(turnX(pose.hipTurn), pose.spineRotation));
   const restEye = add(pose.head, pose.eyeFromHead);
   return {
@@ -165,6 +183,7 @@ export const playerLookPose = ({
   pitch,
   stance,
   ads,
+  lean,
   stancePose = figureStancePose(figure, stance, ads !== undefined),
 }: {
   figure: FigureDef;
@@ -172,6 +191,7 @@ export const playerLookPose = ({
   pitch: number;
   stance: PlayerStance;
   stancePose?: FigureStancePose;
+  lean?: LeanFrame | undefined;
   ads?: PlayerAdsPose | undefined;
 }): PlayerLookPose => {
   const anchors = models.get(figure.body.model)?.anchors;
@@ -262,7 +282,27 @@ export const playerLookPose = ({
     pose = adsLookPose(pose, ads, figure, pitch);
   }
   const posedEye = playerPosePoint(pose, eyeAnchor, 'head');
-  return { ...pose, eye: posedEye, stockSeats: stockSeats(posedEye) };
+  const solved = { ...pose, eye: posedEye, stockSeats: stockSeats(posedEye) };
+  if (!lean || stance === 'prone' || (lean.rollRadians === 0 && lean.offsetMetres === 0)) {
+    return solved;
+  }
+  const leaned: PlayerLookPose = {
+    ...solved,
+    unleaned: solved,
+    lateralLean: {
+      frame: lean,
+      rotation: multiplyRotation(turnX(pitch), multiplyRotation(turnZ(lean.rollRadians), turnX(-pitch))),
+      pivot: [pose.hip[0], pose.hip[1] - pose.hipDrop, pose.hip[2]],
+    },
+  };
+  return {
+    ...leaned,
+    eye: playerLeanPoint(leaned, solved.eye),
+    shoulders: {
+      left: playerLeanPoint(leaned, solved.shoulders.left),
+      right: playerLeanPoint(leaned, solved.shoulders.right),
+    },
+  };
 };
 
 export const playerEyePosition = ({
@@ -274,6 +314,7 @@ export const playerEyePosition = ({
   figure,
   models,
   ads,
+  lean,
 }: {
   feet: Readonly<Vec3>;
   blockSize: number;
@@ -283,8 +324,9 @@ export const playerEyePosition = ({
   figure: FigureDef;
   models: Models;
   ads?: PlayerAdsPose | undefined;
+  lean?: LeanFrame | undefined;
 }): Vec3 => {
-  const { eye } = playerLookPose({ figure, models, pitch, stance, ads });
+  const { eye } = playerLookPose({ figure, models, pitch, stance, ads, lean });
   return [
     feet[0] + (eye[0] * Math.cos(yaw) + eye[2] * Math.sin(yaw)) / blockSize,
     feet[1] + eye[1] / blockSize,

@@ -93,5 +93,8 @@ export const gunModelParts = (
   if (unknown.length > 0) {
     throw new PartMassError(`Item references name no built part: ${unknown.join(', ')}`);
   }
-  return modelParts(body, physicalInputs(resolved, { catalogue, items }), drawn ? { drawn } : {});
+  return modelParts(body, physicalInputs(resolved, { catalogue, items }), {
+    collision: true,
+    ...(drawn ? { drawn } : {}),
+  });
 };

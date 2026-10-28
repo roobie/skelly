@@ -90,6 +90,7 @@ export class HeldPresentation {
   private proneAdsOn = false;
   private readonly supportBases = new Map<HandSide, { readonly normal: Vec3; readonly prone: Vec3 }>();
   seatFrame: HeldSeatFrame | undefined;
+  leanRollRadians = 0;
   adsEyes: Readonly<Record<HandSide, Vec3>> | undefined;
   readonly frame: Object3D;
   readonly torso: Object3D;
@@ -159,6 +160,7 @@ export class HeldPresentation {
       holds: this.figure.holds,
       stockSeat: input.stockSeat ?? this.stockSeats?.[input.side],
       seatFrame: input.seatFrame ?? this.seatFrame,
+      leanRollRadians: input.leanRollRadians ?? this.leanRollRadians,
       adsEyes: input.adsEyes ?? this.adsEyes,
     });
   }

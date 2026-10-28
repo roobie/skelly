@@ -64,6 +64,8 @@ import { Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
+import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
+import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
 import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
@@ -1144,6 +1146,8 @@ export const createSession = (options: SessionOptions) => {
     handlingPausedForKnockout: restoredHandlingPause,
   } = restorePlayerSessionLatches(restoredPlayer);
   let sprinting = restoredSprinting;
+  let leanAmount = 0;
+  const currentLean = () => leanFrame(leanAmount, Player.lean);
   let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
@@ -1159,6 +1163,7 @@ export const createSession = (options: SessionOptions) => {
       yaw: sampledInput().yaw,
       pitch: sampledInput().pitch,
       stance: playerStance,
+      lean: currentLean(),
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
       ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
@@ -1316,6 +1321,7 @@ export const createSession = (options: SessionOptions) => {
       models: registry.models,
       pitch,
       stance: playerStance,
+      lean: currentLean(),
       ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
     });
     return {
@@ -1323,6 +1329,7 @@ export const createSession = (options: SessionOptions) => {
       eye: playerEye(),
       stockSeat: look.stockSeats[inventory.hands.right?.uid === uid ? 'right' : 'left'],
       seatFrame: playerHeldSeatFrame(look, pitch),
+      leanRollRadians: currentLean().rollRadians,
       adsEyes: look.eyes,
       yaw,
       pitch,
@@ -1947,6 +1954,69 @@ export const createSession = (options: SessionOptions) => {
     return readyGait;
   };
 
+  const guardPlayerLean = createLeanGuard();
+  const limitLean = (amount: number): number => {
+    if (amount === 0) {
+      return 0;
+    }
+    const { yaw, pitch } = sampledInput();
+    const progress = Object.values(inventory.hands).map((item) => (item ? firearms.readyProgress(item.uid) : 0));
+    const ads = playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame);
+    const aiming = ads !== undefined || progress.some((value) => value >= 1);
+    const { loweredPitchRadians } = currentFirearmsCombatTuning();
+    return guardPlayerLean({
+      poseKey: [
+        yaw,
+        pitch,
+        playerStance,
+        inventory.version,
+        dominantSide(character),
+        ...progress,
+        ads !== undefined,
+        aiming ? aim.frame.yaw : 0,
+        aiming ? aim.frame.pitch : 0,
+        loweredPitchRadians,
+      ],
+      spaceKey: [...body.pos, world.version, entities.version, inventory.vehicles.version],
+      offset: body.pos,
+      amount,
+      rollRadians: leanFrame(amount, Player.lean).rollRadians,
+      boxesAt: (at) =>
+        playerLeanBoxes({
+          inventory,
+          pose: playerLookPose({
+            figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+            models: registry.models,
+            pitch,
+            stance: playerStance,
+            ads,
+            lean: leanFrame(at, Player.lean),
+          }),
+          feet: [0, 0, 0],
+          blockSize: s,
+          yaw,
+          pitch,
+          aimFrame: aim.frame,
+          ads: ads !== undefined,
+          progress: (uid) => firearms.readyProgress(uid),
+          loweredPitchRadians,
+        }),
+      isSolid: physicalSolid,
+      marginBlocks: Player.lean.wallMarginMetres / s,
+    });
+  };
+
+  const updateSprinting = (intent: MoveIntent, handling: boolean, readyGait: boolean): void => {
+    const carrying = entities.carrying() !== undefined;
+    sprinting =
+      !(playerStance !== 'standing' || ladderHold.on || carrying) &&
+      intent.sprint &&
+      (intent.forward !== 0 || intent.right !== 0) &&
+      !handling &&
+      !readyGait &&
+      canSprint(sim.needs, sprinting, sim.body.staminaRules);
+  };
+
   const preparePlayerStep = (dt: number, time: number) => {
     const live: PlayerInputSample = {
       freeLooking: controls.freeLooking?.() ?? false,
@@ -1974,9 +2044,20 @@ export const createSession = (options: SessionOptions) => {
     }
     const handling = queue.busy || firearms.busy;
     const readyGait = advancePlayerReadiness(dt, intent, moving);
+    updateSprinting(intent, handling, readyGait);
     controls.consumeDominantUse?.();
     controls.consumeOffUse?.();
     updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()), breathHoldWanted(intent, readyGait));
+    leanAmount = limitLean(
+      advanceLean({
+        amount: leanAmount,
+        wanted: intent.lean ?? 0,
+        stance: playerStance,
+        sprinting,
+        dt,
+        tuning: Player.lean,
+      }),
+    );
     // Losing control or another hands action drops a held charge rather than releasing a free strike.
     if (
       !moving ||
@@ -2021,13 +2102,6 @@ export const createSession = (options: SessionOptions) => {
     { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
   ): void => {
     const carrying = entities.carrying() !== undefined;
-    sprinting =
-      !(playerStance !== 'standing' || ladderHold.on || carrying) &&
-      intent.sprint &&
-      (intent.forward !== 0 || intent.right !== 0) &&
-      !handling &&
-      !readyGait &&
-      canSprint(sim.needs, sprinting, sim.body.staminaRules);
     survival.setSprinting(sprinting);
     if (carrying) {
       advanceCarriedFurnitureStamina(dt, intent);
@@ -2052,7 +2126,8 @@ export const createSession = (options: SessionOptions) => {
         grams: inventory.carriedWeight(),
         handling,
         readyMovementFactor,
-        movementSpeed: sim.body.consequences.movementSpeed,
+        movementSpeed:
+          sim.body.consequences.movementSpeed * (1 - Math.abs(leanAmount) * (1 - Player.lean.movementSpeedScale)),
         stanceSpeed: loweredStance()?.speedMetresPerSimSecond,
         directionalSpeed: {
           sideways: Player.movement.sidewaysSpeedScale,
@@ -2079,6 +2154,7 @@ export const createSession = (options: SessionOptions) => {
       return;
     }
     advancePlayerBody(dt, time, pacedIntent);
+    leanAmount = limitLean(leanAmount);
     advanceFloorLockedDrag();
     cancelUnreachableDrag();
   };
@@ -2512,6 +2588,18 @@ export const createSession = (options: SessionOptions) => {
     },
     get stance() {
       return playerStance;
+    },
+    get lean() {
+      return currentLean();
+    },
+    get leanAmount() {
+      return leanAmount;
+    },
+    restoreLean(amount: number) {
+      if (!Number.isFinite(amount) || Math.abs(amount) > 1) {
+        throw new Error('Invalid replay lean');
+      }
+      leanAmount = playerStance === 'prone' ? 0 : amount;
     },
     /** Whether the player climbs a ladder, so the pick reaches through it, and which hand is on it. */
     ladderHold,

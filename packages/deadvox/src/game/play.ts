@@ -1477,6 +1477,8 @@ export const startPlay = (
     screen.close();
   };
   const replayPlayState = createReplayPlayStateBinding({
+    getLeanAmount: () => session.leanAmount,
+    setLeanAmount: (value) => session.restoreLean(value),
     getThrowingStance: () => throwingStance,
     setThrowingStance: (value) => {
       throwingStance = value;
@@ -2608,6 +2610,7 @@ export const startPlay = (
       yaw: spectator.avatarYaw(input.yaw),
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
+      lean: session.lean,
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
       ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
@@ -2619,6 +2622,7 @@ export const startPlay = (
       models: registry.models,
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
+      lean: session.lean,
       ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
     });
   /** The body's seats and eyes a held firearm is placed from, so the shot leaves the drawn gun. */
@@ -2627,6 +2631,7 @@ export const startPlay = (
     return {
       stockSeat: pose.stockSeats[side],
       seatFrame: playerHeldSeatFrame(pose, input.pitch),
+      leanRollRadians: session.lean.rollRadians,
       adsEyes: pose.eyes,
     };
   };
@@ -3641,6 +3646,7 @@ export const startPlay = (
         headPitch: spectator.enabled ? 0 : input.viewPitch - input.pitch,
         stridePhase: session.playerStridePhase,
         stance: session.stance,
+        lean: session.lean,
         ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
         eye: eye(),
         ...(spectator.body

@@ -78,6 +78,7 @@ export interface PlayCameraFrame {
   readonly headPitch?: number;
   readonly ads?: PlayerAdsPose | undefined;
   readonly stance: PlayerStance;
+  readonly lean?: import('../core/lean.ts').LeanFrame | undefined;
   readonly eye: Vec3;
   readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly thirdPerson?: boolean;
@@ -92,6 +93,13 @@ export interface PlayCameraFrame {
 }
 
 /** The hurt vignette and the sight-impairment dimming belong to the player's eyes, so a detached view has none. */
+const leanCameraRoll = (frame: PlayCameraFrame, feedbackRoll: number): number => {
+  if (frame.spectator || frame.thirdPerson) {
+    return 0;
+  }
+  return (frame.lean?.rollRadians ?? 0) + (frame.ads ? 0 : feedbackRoll);
+};
+
 const damageOpacity = (detached: boolean, vignette: number, sightImpaired: boolean): string =>
   detached ? '0' : String(Math.max(vignette, sightImpaired ? 0.2 : 0));
 
@@ -402,7 +410,14 @@ export const createPlayView = (
     if (!ads || frame.spectator || frame.thirdPerson) {
       return target;
     }
-    const pose = playerLookPose({ figure: playerFigure, models: registry.models, pitch, stance, ads });
+    const pose = playerLookPose({
+      figure: playerFigure,
+      models: registry.models,
+      pitch,
+      stance,
+      ads,
+      lean: frame.lean,
+    });
     const placed = adsCameraEye({ figure: playerFigure, pose, ads, pitch });
     const delta = placed.eye.map((value, axis) => value - pose.eye[axis]!) as Vec3;
     const bodyEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
@@ -575,6 +590,7 @@ export const createPlayView = (
         stance,
         stancePose: figureStancePose(playerFigure, stance, frame.ads !== undefined),
         ads: frame.ads,
+        lean: frame.lean,
         dt,
         inventory,
         eye,
@@ -588,7 +604,7 @@ export const createPlayView = (
       const [ex, ey, ez] = spectator?.position ?? eye;
       sourceEyeMetres = [eye[0] * s, eye[1] * s + offset, eye[2] * s];
       const feedback = stepBodyCues(dt, paused, spectator !== undefined, frame.painTier);
-      cameraRoll = spectator || thirdPerson || frame.ads ? 0 : feedback.roll;
+      cameraRoll = leanCameraRoll(frame, feedback.roll);
       const target = adsCameraTarget(frame, [ex, ey, ez], offset);
       if (thirdPerson) {
         updateThirdPersonCamera({

@@ -57,6 +57,8 @@ export const NeutralModelSchema = strictObject({
       check((parts) => Object.keys(parts).length > 0, 'assembly needs physical parts'),
     ),
   ),
+  /** Drawn collision for atomic models, whose mass belongs to the item rather than body parts. */
+  collision: optional(pipe(array(ModelBoxSchema), nonEmpty('baked collision needs a box'))),
   emissiveMaterial: optional(pipe(string(), nonEmpty('must not be empty'))),
   grip: optional(strictObject({ at: ModelPointSchema, turn: optional(ModelPointSchema) })),
   hold: optional(picklist(['forward', 'upright'])),

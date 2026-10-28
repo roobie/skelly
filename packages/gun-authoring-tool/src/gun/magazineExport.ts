@@ -8,6 +8,7 @@ import type {
   GlbExportResult,
   VoxelGrains,
 } from '@skelly/thing-export/exportTypes.ts';
+import { modelCollision } from '@skelly/thing-export/physical.ts';
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import { gunDomain } from './domain.ts';
@@ -61,6 +62,7 @@ export const exportMagazineGlb = (input: MagazineExportInput): MagazineExportRes
     modelEntry: {
       id: input.asset.id,
       file: input.asset.file as DeadvoxModelFile,
+      collision: modelCollision(resolved, drawn),
       gun: {
         calibre: input.cartridge.id,
         capacity: column.capacity,

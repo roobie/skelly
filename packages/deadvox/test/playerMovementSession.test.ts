@@ -4,6 +4,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
+// biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
+import * as leanCollision from '../src/core/leanCollision.ts';
+import { playerEyePosition } from '../src/core/playerLookPose.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
@@ -106,6 +109,118 @@ const makeRuntime = ({
     },
   };
 };
+
+describe('held lateral lean', () => {
+  const eye = (runtime: ReturnType<typeof makeRuntime>): Vec3 =>
+    playerEyePosition({
+      feet: runtime.session.body.pos,
+      blockSize: BLOCK_SIZE,
+      yaw: 0,
+      pitch: 0,
+      stance: runtime.session.stance,
+      figure: registry.figures.get('player')!,
+      models: registry.models,
+      lean: runtime.session.lean,
+    });
+
+  it.each(['standing', 'crouching'] as const)(
+    'held Q/E shifts the eye in opposite directions in %s and release returns',
+    (stance) => {
+      const runtime = makeRuntime();
+      runtime.advance(2);
+      if (stance === 'crouching') {
+        runtime.toggleCrouch();
+        runtime.advance(2);
+      }
+      expect(runtime.session.stance).toBe(stance);
+      const base = eye(runtime);
+      const feet = [...runtime.session.body.pos];
+      runtime.setIntent({ ...IDLE, lean: -1 });
+      runtime.advance(60);
+      expect(eye(runtime)[0]).toBeLessThan(base[0]);
+      runtime.setIntent({ ...IDLE, lean: 1 });
+      runtime.advance(60);
+      expect(eye(runtime)[0]).toBeGreaterThan(base[0]);
+      expect(runtime.session.body.pos).toEqual(feet);
+      runtime.setIntent(IDLE);
+      runtime.advance(60);
+      expect(eye(runtime)).toEqual(base);
+    },
+  );
+
+  it('sprint clears lean immediately and refuses held lean while sprinting', () => {
+    const runtime = makeRuntime();
+    runtime.advance(2);
+    runtime.setIntent({ ...IDLE, lean: 1 });
+    runtime.advance(60);
+    expect(runtime.session.leanAmount).toBeGreaterThan(0);
+    runtime.setIntent({ ...IDLE, lean: 1, forward: 1, sprint: true });
+    runtime.advance(1);
+    expect(runtime.session.sprinting).toBe(true);
+    expect(runtime.session.leanAmount).toBe(0);
+    runtime.advance(10);
+    expect(runtime.session.sprinting).toBe(true);
+    expect(runtime.session.leanAmount).toBe(0);
+  });
+
+  it('prone refuses held lean', () => {
+    const runtime = makeRuntime();
+    runtime.advance(2);
+    runtime.setIntent({ ...IDLE, lean: 1 });
+    runtime.toggleProne();
+    runtime.advance(60);
+    expect(runtime.session.stance).toBe('prone');
+    expect(runtime.session.leanAmount).toBe(0);
+  });
+
+  it('does not solve an unchanged settled armed lean pose again', () => {
+    const runtime = makeRuntime();
+    const { inventory } = runtime.session;
+    expect(inventory.add(inventory.create(FIREARM_TYPE), { kind: 'hand', side: 'right' })).toBe(true);
+    const solve = vi.spyOn(leanCollision, 'playerLeanBoxes');
+    try {
+      runtime.advance(2);
+      runtime.setIntent({ ...IDLE, lean: 1 });
+      runtime.advance(Math.ceil(registry.player.get('player')!.lean.enterSimSeconds * 60) + 2);
+      expect(runtime.session.leanAmount).toBeGreaterThan(0);
+      solve.mockClear();
+      runtime.advance(10);
+      expect(solve.mock.calls.length).toBe(0);
+    } finally {
+      solve.mockRestore();
+    }
+  });
+
+  it('keeps forward and strafe velocity while leaning diagonally', () => {
+    const runtime = makeRuntime();
+    runtime.setIntent({ ...IDLE, forward: 1, right: 1, lean: 1 });
+    runtime.advance(30);
+    expect(runtime.session.leanAmount).toBeGreaterThan(0);
+    expect(runtime.session.body.vel[0]).toBeGreaterThan(0);
+    expect(runtime.session.body.vel[2]).toBeLessThan(0);
+    expect(runtime.session.body.vel[0]).toBeCloseTo(-runtime.session.body.vel[2]!);
+  });
+
+  it('slows moving lean by its content speed factor', () => {
+    const normal = makeRuntime();
+    const leaned = makeRuntime();
+    for (const runtime of [normal, leaned]) {
+      runtime.advance(2);
+    }
+    leaned.setIntent({ ...IDLE, lean: -1 });
+    leaned.advance(60);
+    normal.advance(60);
+    normal.setIntent({ ...IDLE, forward: 1 });
+    leaned.setIntent({ ...IDLE, forward: 1, lean: -1 });
+    for (const runtime of [normal, leaned]) {
+      runtime.advance(10);
+    }
+    expect(Math.abs(leaned.session.body.vel[2])).toBeLessThan(Math.abs(normal.session.body.vel[2]));
+    expect(Math.abs(leaned.session.body.vel[2] / normal.session.body.vel[2])).toBeCloseTo(
+      registry.player.get('player')!.lean.movementSpeedScale,
+    );
+  });
+});
 
 type Runtime = ReturnType<typeof makeRuntime>;
 type Session = Runtime['session'];

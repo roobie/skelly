@@ -19,7 +19,7 @@ read_if:
   - you decide how sunlight, shadows or interior sky should read during discovery and edit revalidation
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance, performance targets or the default render scale
-  - you change player movement, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
+  - you change player movement, lateral lean, load or aim tuning, saved aim admission, or what crouching or lying prone lets the player fit through
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
@@ -1660,6 +1660,21 @@ attached rather than moving to suit the observing camera. See
 `src/render/actorAnimator.ts`, `ActorAnimator`; and
 `src/render/shadowFlags.ts`, `PLAYER_SELF_MASK_LAYER`.
 
+Held lateral lean peeks round cover while keeping the feet back. Standing and
+crouching permit it; lying prone does not. Cover limits the eye and physical gun
+sweep rather than letting the view enter a wall. Moving lean trades speed for
+exposure through content tuning. Sprint ends lean before actions resolve, and
+refuses it while sprinting, so held keys resolve in one fixed order for replay.
+The pose is transient, not character-save state; replay segments carry the
+starting lean and held input because they must reproduce the same shot origin.
+Looking round cover is the purpose of lean, so performance must not depend on
+a still view or change which exposure clears cover.
+See `src/core/lean.ts`, `advanceLean` and `guardLean`;
+`src/core/leanGeometry.ts`, `prepareLeanGeometry`;
+`src/core/leanCollision.ts`, `playerLeanBoxes`; `src/content/base/player.jsonnet`,
+`lean`; `src/game/session.ts`, `preparePlayerStep`; and
+`src/game/inputReplay.ts`, `ReplayStartState`.
+
 Aim belongs to the anatomical torso, neck and head, because the arms alone
 cannot plausibly carry an extreme aim while the face stays level. The gameplay
 eye is the posed head's eye. Interaction rays and held-item simulation retain
@@ -1681,10 +1696,13 @@ content-owned camera offset bound. Irons use the nearest point in their exported
 physical eye-distance range. Optics use their unswayed fixed eye: tracking every
 movement of the instrument would cancel eye-to-optic misalignment. Neither
 camera position nor FOV may relocate the shared firearm. The camera stays level
-rather than inheriting head cant. Per-gun camera and stock-contact limits override
-the figure defaults because gun dimensions and sight heights differ; anatomy
-remains independent of the gun. See `src/core/adsView.ts`, `adsCameraEye` and
-`adsLimits`; `src/content/base/models-firearms.libsonnet`, `longGunHands`; and
+rather than inheriting head cant, except that intentional lateral lean cants the
+gun, bore and sight camera together: peeking must still permit a shot along the
+same sight line. See `src/core/heldPose.ts`, `heldFirearmTransform`.
+Per-gun camera and stock-contact limits override the figure defaults because gun
+dimensions and sight heights differ; anatomy remains independent of the gun.
+See `src/core/adsView.ts`, `adsCameraEye` and `adsLimits`;
+`src/content/base/models-firearms.libsonnet`, `longGunHands`; and
 `test/firearmSight.test.ts`.
 
 Only the owning view may suppress camera-enclosing flesh during ADS in any

@@ -76,6 +76,22 @@
       ]
     },
     {
+      "id": "player.lean-left",
+      "keys": [
+        {
+          "code": "KeyQ"
+        }
+      ]
+    },
+    {
+      "id": "player.lean-right",
+      "keys": [
+        {
+          "code": "KeyE"
+        }
+      ]
+    },
+    {
       "id": "player.crouch-toggle",
       "keys": [
         {

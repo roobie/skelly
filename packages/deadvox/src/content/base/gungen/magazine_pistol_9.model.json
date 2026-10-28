@@ -1,6 +1,7 @@
 {
   "id": "magazine_pistol_9",
   "file": "assets/models/magazine_pistol_9.glb",
+  "collision": [{ "min": [-0.02, -0.004, -0.012], "max": [0.02, 0.068, 0.012] }],
   "gun": {
     "calibre": "9x19",
     "capacity": 12,

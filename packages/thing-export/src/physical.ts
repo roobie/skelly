@@ -56,6 +56,16 @@ const collisionBoxes = (
     return { min: scale(low, metresPerUnit), max: scale(high, metresPerUnit) };
   });
 
+/** Drawn collision without part masses, for atomic models weighed by their owning item. */
+export const modelCollision = (resolved: Resolved, drawn = drawnGeometry(resolved)): ModelBox[] =>
+  [...resolved.defs].flatMap(([id, part]) => {
+    const placed = resolved.placed.get(id);
+    if (!placed) {
+      throw new Error(`No physical placement for ${id}`);
+    }
+    return collisionBoxes(part, placed, resolved.domain.units.metresPerUnit, (solid) => drawn.measure(id, solid));
+  });
+
 /**
  * Physical data per part. `drawn` is the export's drawn geometry (see `drawn.ts`), so collision boxes and centres of
  * mass follow the voxels in the file; by default they follow the authored solids, as an unvoxelized file draws them.

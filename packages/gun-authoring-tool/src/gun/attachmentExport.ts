@@ -1,6 +1,8 @@
 import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly, PartAppearance, PartFamily } from '@skelly/engine/assembly/schema.ts';
+import { drawnGeometry } from '@skelly/thing-export/drawn.ts';
 import type { GlbAssetIdentity, GlbExportError, VoxelGrains } from '@skelly/thing-export/exportTypes.ts';
+import { modelCollision } from '@skelly/thing-export/physical.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { attachmentInstanceForId, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';
@@ -61,6 +63,7 @@ export const exportAttachmentGlb = (
     modelEntry: {
       id: asset.id,
       file: asset.file as DeadvoxModelFile,
+      collision: modelCollision(resolved, drawnGeometry(resolved, voxel)),
       gun: { attachment: metadata },
     },
   };

@@ -2,6 +2,8 @@ import type { InputContext } from './inputBindings.ts';
 import { type InputReplayRecorder, type ReplayStartState, restoreReplayStartState } from './inputReplay.ts';
 
 export interface ReplayPlayStateAccessors {
+  getLeanAmount: () => number;
+  setLeanAmount: (value: number) => void;
   getThrowingStance: () => boolean;
   setThrowingStance: (value: boolean) => void;
   getReadyHeld: () => boolean;
@@ -14,6 +16,7 @@ export interface ReplayPlayStateAccessors {
 
 export const createReplayPlayStateBinding = (accessors: ReplayPlayStateAccessors) => ({
   capture: (): ReplayStartState => ({
+    leanAmount: accessors.getLeanAmount(),
     throwingStance: accessors.getThrowingStance(),
     readyHeld: accessors.getReadyHeld(),
     aimingDownSights: accessors.getAimingDownSights(),
@@ -21,6 +24,7 @@ export const createReplayPlayStateBinding = (accessors: ReplayPlayStateAccessors
   }),
   restore: (state?: ReplayStartState): void => {
     const restored = restoreReplayStartState(state);
+    accessors.setLeanAmount(restored.leanAmount);
     accessors.setThrowingStance(restored.throwingStance);
     accessors.setReadyHeld(restored.readyHeld);
     accessors.setAimingDownSights(restored.aimingDownSights);
