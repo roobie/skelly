@@ -254,7 +254,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     });
     await replayNavigation;
     await page.waitForFunction(
-      () => document.querySelector('#input-replay-status') || document.querySelector('#errors')?.textContent,
+      () => document.querySelector('#input-replay-status') || document.querySelector('#errors')?.textContent?.trim(),
     );
     assert.equal(
       await page.locator('#input-replay-status').count(),
