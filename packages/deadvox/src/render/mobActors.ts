@@ -8,7 +8,7 @@
 // import. three.js itself is `import`ed here directly; mobgen only reaches three from packages/mobgen/src/viewer,
 // which this file — and everything under @mobgen/ — must never import; see test/mobgenBoundary.test.ts. The draw strategy mirrors mobgen's own stress-page 'crowd'
 // mode (packages/mobgen/src/viewer/stressActors.ts's buildCrowdRender): one shared bone-matrix DataTexture for
-// every zombie (one GPU upload/frame, not one per zombie) and one InstancedMesh per body variant, each
+// every zombie so shadow and colour passes consume the same pose, and one InstancedMesh per body variant, each
 // vertex fetching its own bone's matrix with a single texelFetch — see packages/mobgen/src/mob/crowd.ts for the
 // packing/layout and the GLSL, patched into MeshLambertMaterial here via onBeforeCompile exactly as
 // stressActors.ts patches MeshStandardMaterial (checked against three r186's meshlambert.glsl.js: same
@@ -119,6 +119,7 @@ import {
   Sphere,
   SphereGeometry,
   Vector3,
+  type WebGLRenderer,
 } from 'three';
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -158,6 +159,7 @@ export interface ZombieRenderer {
     simulationTime?: number,
   ) => void;
   dispose?: () => void;
+  uploadPoses?: (renderer: WebGLRenderer) => void;
   setCamera?: (camera: Camera) => void;
   setPlayerEyePosition?: (position: Vec3, maxSpeed: number) => void;
   setPlayerChestPosition?: (position: Vec3) => void;
@@ -2471,6 +2473,10 @@ export class MobActorMeshes implements ZombieRenderer {
     this.fleshChunks.update(realDt);
     this.applyReveal();
     this.textureUpdates.flush();
+  }
+
+  uploadPoses(renderer: WebGLRenderer): void {
+    this.textureUpdates.upload(renderer);
   }
 
   private advanceCrawlFalls(realDt: number): void {

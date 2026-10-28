@@ -467,7 +467,7 @@ describe('MobActorMeshes', () => {
     let version = -1;
     let partialUploads = 0;
     const upload = (): void => {
-      if (version !== texture.version) {
+      if (version !== texture.version || texture.updateRanges.length > 0) {
         if (texture.updateRanges.length === 0) {
           uploaded.set(bits);
         } else {
