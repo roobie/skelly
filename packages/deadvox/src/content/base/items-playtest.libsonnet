@@ -2,6 +2,7 @@
   "items": [
     {
       "id": "dad_cabin_key",
+      "notLoot": true,
       "name": "Dad's cabin key",
       "category": "tool",
       "size": [1, 1],
@@ -20,6 +21,7 @@
     },
     {
       "id": "evacuation_note",
+      "notLoot": true,
       "name": "Folded evacuation note",
       "category": "note",
       "model": "folded_note",
@@ -33,6 +35,7 @@
     },
     {
       "id": "hunter_logbook",
+      "notLoot": true,
       "name": "Hunter's logbook",
       "category": "book",
       "weight": 350,
@@ -45,6 +48,7 @@
     },
     {
       "id": "pharmacy_key",
+      "notLoot": true,
       "name": "Medical pharmacy key",
       "category": "tool",
       "size": [1, 1],
@@ -54,6 +58,7 @@
     },
     {
       "id": "medical_research_log",
+      "notLoot": true,
       "name": "Medical sampling log",
       "category": "book",
       "weight": 5,

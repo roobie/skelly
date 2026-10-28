@@ -31,6 +31,7 @@ export interface HandPose {
 }
 
 export interface MeleePoseFrame {
+  guarding?: boolean;
   right: HandPose;
   left: HandPose;
   /** First-person upper-torso yaw in radians; camera orientation remains aim-locked. */
@@ -173,7 +174,7 @@ export const readyMeleePose = (
   if (!holds) {
     throw new Error('Ready pose requires figure hold tuning');
   }
-  return readyHandPair(holds.guardPrimary, holds.guardSupport, leading);
+  return { ...readyHandPair(holds.guardPrimary, holds.guardSupport, leading), guarding: true };
 };
 
 export const interpolateHandPose = (base: Vec3, pose: HandPose): { offset: Vec3; rotation: Vec3 } => ({
