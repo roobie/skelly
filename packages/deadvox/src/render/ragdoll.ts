@@ -109,7 +109,9 @@ export class RagdollWorld {
           this.world.timestep = content.timestep;
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        // biome-ignore lint/suspicious/noConsole: a failed presentation solver must not disappear without diagnostic evidence.
+        console.warn('Ragdoll physics initialization failed; corpses will not be drawn.', error);
         this.failed = true;
       });
   }
