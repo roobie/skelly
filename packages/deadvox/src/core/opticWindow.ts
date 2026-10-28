@@ -1,1 +1,0 @@
-export const PLAYER_VIEW_FOV_DEGREES = 75;

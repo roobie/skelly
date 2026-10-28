@@ -139,7 +139,7 @@ export class FirearmAttachmentHandling {
   private exportedAttachmentReason(attachment: Item): string | undefined {
     const attachmentId = attachmentIdFor(this.inventory.registry, attachment);
     if (!attachmentId) {
-      return 'Item is not an exported firearm attachment';
+      return this.text.attachments.notExported;
     }
     const attachmentDefinition = defOf(this.inventory.registry, attachment.type);
     const attachmentModel = attachmentDefinition.model
@@ -153,11 +153,13 @@ export class FirearmAttachmentHandling {
     ) {
       return effects.fitRefusal;
     }
-    if (
-      attachmentModel?.gun?.attachment?.kind === 'optic' &&
-      !opticViewSettings(attachmentDefinition, attachmentModel)
-    ) {
-      return 'This optic has no supported view';
+    if (attachmentModel?.gun?.attachment?.kind === 'optic') {
+      if (attachmentDefinition.opticView === 'unavailable') {
+        return this.text.attachments.viewUnavailable;
+      }
+      if (!opticViewSettings(attachmentDefinition, attachmentModel)) {
+        return this.text.attachments.unsupportedView;
+      }
     }
     return undefined;
   }

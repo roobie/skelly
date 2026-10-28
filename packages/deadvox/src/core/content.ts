@@ -714,7 +714,8 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   const model = item.model === undefined ? undefined : registry.models.get(item.model);
   const attachment = model?.gun?.attachment;
   const range = attachment?.properties.magnification;
-  const variable = attachment?.kind === 'optic' && range !== undefined && range.min < range.max;
+  const variable =
+    attachment?.kind === 'optic' && item.opticView !== 'unavailable' && range !== undefined && range.min < range.max;
   if (attachment?.kind === 'optic' && attachment.properties.aperture && item.opticUnityImage === undefined) {
     report('items', item.id, '.opticUnityImage', 'an optic window needs an authored unity image policy');
   }

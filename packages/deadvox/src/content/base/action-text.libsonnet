@@ -56,8 +56,11 @@
   },
   attachments: {
     gone: "The attachment isn't there any more",
+    notExported: 'Item is not an exported firearm attachment',
     noSuchSlot: 'Firearm has no such attachment slot',
     slotTaken: 'That slot is occupied',
+    unsupportedView: 'This optic has no supported view',
+    viewUnavailable: 'This thermal optic has no view yet',
     slingOnly: 'Only a sling fits the sling mount',
     slotEmpty: 'That slot is empty',
     onShoulder: "It's on my shoulder",

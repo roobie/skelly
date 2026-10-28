@@ -7,12 +7,15 @@
           "gone": "The attachment isn't there any more",
           "noLongerFits": "Attachment no longer fits",
           "noSuchSlot": "Firearm has no such attachment slot",
+          "notExported": "Item is not an exported firearm attachment",
           "nowhereToPut": "There is nowhere to put the attachment",
           "onShoulder": "It's on my shoulder",
           "remove": "Remove {item}",
           "slingOnly": "Only a sling fits the sling mount",
           "slotEmpty": "That slot is empty",
-          "slotTaken": "That slot is occupied"
+          "slotTaken": "That slot is occupied",
+          "unsupportedView": "This optic has no supported view",
+          "viewUnavailable": "This thermal optic has no view yet"
         },
         "causes": {
           "bearTrap": "a bear trap",

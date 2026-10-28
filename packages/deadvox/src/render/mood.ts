@@ -53,7 +53,7 @@ import {
   VIGNETTE,
 } from '../core/mood.ts';
 import type { OpticLensFrame } from '../core/opticView.ts';
-import type { NightVision } from '../core/schema.ts';
+import type { GraphicsTuningDef, NightVision } from '../core/schema.ts';
 import type { Sky } from '../core/sky.ts';
 import { AdaptiveScale } from './adaptiveScale.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
@@ -94,7 +94,7 @@ export class Mood {
   externalGpuTiming = false;
   private contextLost = false;
   private bloomScaleValue: number;
-  private readonly graphicsTuning: GraphicsOptions;
+  private readonly graphicsTuning: GraphicsOptions & Partial<Pick<GraphicsTuningDef, 'opticLens'>>;
   private frame = 0;
   private skyBloom = 0;
   private skyMist = 0;
@@ -113,7 +113,12 @@ export class Mood {
   private bloomPass: UnrealBloomPass | undefined;
   private outputPass: OutputPass | undefined;
 
-  constructor(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, graphicsTuning: GraphicsOptions) {
+  constructor(
+    renderer: WebGLRenderer,
+    scene: Scene,
+    camera: PerspectiveCamera,
+    graphicsTuning: GraphicsOptions & Partial<Pick<GraphicsTuningDef, 'opticLens'>>,
+  ) {
     this.graphicsTuning = graphicsTuning;
     this.adaptiveScale = new AdaptiveScale(graphicsTuning.renderScale);
     this.renderScaleValue = this.adaptiveScale.scale;
@@ -560,7 +565,7 @@ export class Mood {
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(new RenderPass(this.scene, this.camera));
     composer.addPass(this.drawPass);
-    this.opticPass = opticLensPass();
+    this.opticPass = opticLensPass(this.graphicsTuning.opticLens);
     this.opticPass.enabled = false;
     composer.addPass(this.opticPass);
     // UnrealBloomPass runs its blur chain from half of this resolution down.

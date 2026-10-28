@@ -97,8 +97,11 @@ export const ActionTextSchema = strictObject({
   }),
   attachments: strictObject({
     gone: Line,
+    notExported: Line,
     noSuchSlot: Line,
     slotTaken: Line,
+    unsupportedView: Line,
+    viewUnavailable: Line,
     slingOnly: Line,
     slotEmpty: Line,
     onShoulder: Line,

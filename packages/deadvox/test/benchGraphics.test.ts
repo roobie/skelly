@@ -47,6 +47,8 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
           {
             id: CORE_CONTENT_IDS.coreGraphics,
             nearPlaneMetres: 0.01,
+            playerViewFovDegrees: 70,
+            opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
             readyRadiusM: 16,
             streamHysteresisM: 16,
             fogFarPlaneScale: 1.5,
@@ -93,7 +95,9 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);
-  expect(player.camera.near).toBe(content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.nearPlaneMetres);
+  const graphics = content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  expect(player.camera.near).toBe(graphics.nearPlaneMetres);
+  expect(player.camera.fov).toBe(graphics.playerViewFovDegrees);
   storage.getItem.mockClear();
   const benchmark = createEngine(config, view, undefined, { render: false, graphicsSource: 'mod' });
   expect(benchmark.graphics.values).toEqual(resolveGraphics(tuning));

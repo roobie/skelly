@@ -80,7 +80,7 @@ export const opticFieldOfView = (verticalFovDegrees: number, magnification: numb
 /** Resolves authored view tuning against the optic model's exported physical magnification data. */
 export const opticViewSettings = (item: ItemDef, { gun }: ModelDef): OpticViewSettings | undefined => {
   const attachment = gun?.attachment;
-  if (attachment?.kind !== 'optic') {
+  if (attachment?.kind !== 'optic' || item.opticView === 'unavailable') {
     return undefined;
   }
   const { aperture } = attachment.properties;

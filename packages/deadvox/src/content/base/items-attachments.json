@@ -43,8 +43,9 @@
       "id": "optic_digital_thermal",
       "model": "optic_digital_thermal",
       "name": "Digital thermal optic",
-      "notLoot": false,
+      "notLoot": true,
       "opticUnityImage": "world",
+      "opticView": "unavailable",
       "size": [2, 2],
       "weight": 750,
       "workInProgress": false
