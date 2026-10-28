@@ -883,6 +883,7 @@ const applyDeathFrame = (loaded: Loaded, dt: number): void => {
   const actor = {
     ...loaded.walkActor,
     bodyExtents: loaded.bodyExtents,
+    voxels: loaded.realized.voxels,
     posture: loaded.template.bodyPlan === 'crawler' ? ('prone' as const) : ('upright' as const),
   };
   loaded.actor.applyPose(deathPose(actor, deathBasePose!, deathTime, { direction: deathDirection }));

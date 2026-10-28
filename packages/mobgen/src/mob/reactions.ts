@@ -29,7 +29,9 @@ import {
 import { blendPose, boneLocalTransform, boneTransforms, type Pose } from '../core/pose.ts';
 import { seededRng } from '../core/random.ts';
 import type { Template } from '../core/template.ts';
+import type { Voxels } from '../core/voxelize.ts';
 import { type AttackClip, attackPose, zeroKey } from './attack.ts';
+import { fitSkullContact } from './corpseContact.ts';
 import deathContent from './deathPoses.json' with { type: 'json' };
 import { corners, type Extent, GROUND_SMOOTHING, groundOffset, type WalkActor } from './gait.ts';
 
@@ -168,6 +170,7 @@ export interface DeathParams {
 
 export interface DeathActor extends WalkActor {
   readonly posture: 'upright' | 'prone';
+  readonly voxels: Voxels;
   /** Every bone's rest-pose extents (gait.ts's bodyRestExtents), not just the feet: a fallen body's
    * lowest point is rarely a foot, so re-grounding needs the whole body, not just what walkPose/attackPose
    * ground against. */
@@ -301,9 +304,10 @@ const relaxBones = (actor: DeathActor, rotations: Record<string, Mat3>, supportF
 };
 
 /** A root-only floor fit cannot lower a bent knee or a hand frozen in an attack. */
-const restingPose = (actor: DeathActor, rotations: Record<string, Mat3>): Pose => {
+const restingPose = (actor: DeathActor, rotations: Record<string, Mat3>, headRolls: readonly number[]): Pose => {
   relaxBones(actor, rotations, false);
   relaxBones(actor, rotations, true);
+  fitSkullContact(actor, rotations, [0, groundOffset(actor.bones, actor.bodyExtents, rotations), 0], headRolls);
   return { root: [0, groundOffset(actor.bones, actor.bodyExtents, rotations, GROUND_SMOOTHING), 0], rotations };
 };
 
@@ -340,7 +344,7 @@ export const deathPose = (actor: DeathActor, basePose: Pose, t: number, params: 
       ]),
     );
     rotations.pelvis = mulMM(rotX(target.pitch), rotY(target.roll));
-    rest = restingPose(actor, rotations);
+    rest = restingPose(actor, rotations, target.contactHeadRolls);
     cache.set(cacheKey, rest);
   }
   const blended = blendPose(

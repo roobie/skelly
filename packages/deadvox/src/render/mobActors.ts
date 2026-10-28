@@ -1972,6 +1972,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const deathActor: DeathActor = {
       ...corpse.walkActor,
       bodyExtents: variant.bodyExtents,
+      voxels: variant.realized.voxels,
       posture: corpse.posture,
     };
     const pose = deathPose(deathActor, corpse.basePose, corpse.elapsed, {
