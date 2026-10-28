@@ -2,9 +2,9 @@ import type { PlayerDef } from '../core/schema.ts';
 
 export type FreeLookTuning = PlayerDef['aim']['freeLook'];
 
-const towardsZero = (value: number, step: number): number => Math.sign(value) * Math.max(0, Math.abs(value) - step);
+const towardsZero = (value: number, step: number): number =>
+  Math.abs(value) <= step ? 0 : value - Math.sign(value) * step;
 
-/** Transient head offsets never become the body's movement or ballistic heading. */
 export class FreeLook {
   yaw = 0;
   pitch = 0;

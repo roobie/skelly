@@ -131,6 +131,8 @@ describe('pointer input', () => {
     expect(input.freeLooking).toBe(false);
     expect(input.viewYaw).toBe(input.yaw);
     expect(input.viewPitch).toBe(input.pitch);
+    expect(input.freeLook.yaw).toBe(0);
+    expect(input.freeLook.pitch).toBe(0);
     keyboardInput.release(key('KeyW'));
   });
   it('ignores free look while sights are toggled on', () => {
