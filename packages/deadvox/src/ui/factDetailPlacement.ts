@@ -39,7 +39,7 @@ let listening = false;
 
 // One shared set of listeners, registered by the first fact rendered in a real window.
 export const listenForFactDetailPlacement = (): void => {
-  if (listening || typeof window === 'undefined') {
+  if (listening || typeof globalThis.window === 'undefined') {
     return;
   }
   listening = true;
