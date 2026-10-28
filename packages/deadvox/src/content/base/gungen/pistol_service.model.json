@@ -29,7 +29,7 @@
       "eye": [-0.071875, 0.0345, 0],
       "direction": [1, 0, 0],
       "up": [0, 1, -2.4492935982947064e-16],
-      "eyeReliefMetres": 0.02875,
+      "eyeReliefMetres": 0.161,
       "ocularDiameterMetres": 0.02875
     },
     "muzzleDirection": [1, 1.4997597826618576e-32, 1.2246467991473532e-16],
@@ -82,7 +82,7 @@
           "eye": [-0.025875, 0.01725, 0],
           "direction": [1, 0, 0],
           "up": [0, 1, 0],
-          "eyeReliefMetres": 0.028749999999999998,
+          "eyeReliefMetres": 0.161,
           "ocularDiameterMetres": 0.028749999999999998
         },
         "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },

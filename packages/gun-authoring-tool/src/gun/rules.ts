@@ -681,27 +681,17 @@ export const opticLoadingClearance: Rule = {
 
 export const opticEyeRelief: Rule = {
   id: 'optic-eye-relief',
-  title: 'Long optics have a stock cheek datum at eye relief',
+  title: 'Magnifying optics have a stock cheek datum at eye relief',
   check(r) {
     const issues: Issue[] = [];
     for (const [sight] of placedOptics(r)) {
       const params = r.params.get(sight);
       const optic = getOptic(params?.type?.value, params?.mountSection?.value);
-      if (optic.eyeReliefU === undefined) {
+      // A red dot's default relief is not a constraint on the gun's hold.
+      if (optic.magnification === undefined || optic.eyeReliefU === undefined) {
         continue;
       }
       const stocks = placedParts(r, 'stock');
-      // Compact optics can serve stockless designs; long-eye-relief optics need a cheek datum.
-      if (stocks.length === 0) {
-        if (optic.eyeReliefU > 4) {
-          issues.push({
-            rule: 'optic-eye-relief',
-            message: `${sight} (${optic.id}) needs a stock with a named cheek datum.`,
-            parts: [sight],
-          });
-        }
-        continue;
-      }
       const stock = stocks.find(([part, def]) => def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part));
       const sightTransform = r.placed.get(sight)!;
       if (!stock) {

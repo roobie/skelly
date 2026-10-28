@@ -34,6 +34,7 @@ import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.
 import { getOptic, LENS_SLOT, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
+import { opticEyeRelief } from '../src/gun/rules.ts';
 import {
   antiMateriel,
   ar,
@@ -84,6 +85,13 @@ describe('optic catalog', () => {
       (axis) => Math.max(...bounds.map(([, max]) => max[axis]!)) - Math.min(...bounds.map(([min]) => min[axis]!)),
     );
     expect(actual).toEqual(optic.envelopeU);
+  });
+
+  it('shares a positive default eye relief across non-magnifying optics', () => {
+    const optics = Object.values(OPTIC_CATALOG).filter((optic) => optic.magnification === undefined);
+    expect(optics.length).toBeGreaterThan(1);
+    expect(optics[0]!.eyeReliefU).toBeGreaterThan(0);
+    expect(new Set(optics.map((optic) => optic.eyeReliefU)).size).toBe(1);
   });
 
   it('preserves authored prism solids at the content validation boundary', () => {
@@ -897,6 +905,18 @@ describe('optic incompatibility validation', () => {
       connection.to === 'sight.base' ? { ...connection, from: 'handguard.rail', slot: 3 } : connection,
     );
     expect(validate(assembly, gunDomain).issues.map(({ rule }) => rule)).toContain('optic-mount-fit');
+  });
+
+  it('allows a stockless hold for every non-magnifying optic regardless of default relief', () => {
+    const optics = Object.values(OPTIC_CATALOG).filter((optic) => optic.magnification === undefined);
+    expect(optics.length).toBeGreaterThan(0);
+    for (const optic of optics) {
+      const assembly = fitOptic(pistol, 0, 'mini-reflex');
+      assembly.parts.sight!.params = { ...assembly.parts.sight!.params, type: optic.id };
+      const resolved = resolve(assembly, gunDomain);
+      expect([...resolved.defs.values()].some((def) => def.family === 'stock')).toBe(false);
+      expect(opticEyeRelief.check(resolved), optic.id).toEqual([]);
+    }
   });
 
   it('rejects a 12u scope on the pistol slide rail and a long optic without a cheek datum', () => {

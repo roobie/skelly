@@ -8,7 +8,7 @@
     "nearFrameThicknessU": 0.25
   },
   "miniReflex": {
-    "eyeReliefU": 2.5,
+    "eyeReliefU": 14,
     "windowBottomY": 0.75,
     "windowHalfWidthU": 1,
     "windowTopY": 2.5
@@ -26,6 +26,6 @@
     }
   },
   "tubeDot": {
-    "eyeReliefU": 3
+    "eyeReliefU": 14
   }
 }
