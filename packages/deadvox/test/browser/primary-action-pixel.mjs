@@ -148,35 +148,38 @@ const heldCompassCardChange = (page) =>
     });
   }, 12 * 3600);
 
-// Exercises the optic's authored power endpoints and records which geometry reaches its image and mask.
-const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
+// Endpoint selection catches a variable scope mistaken for a fixed-unity sight at its lowest power.
+const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) => {
   const r = globalThis.primaryActionTest;
   const { inventory, engine } = r;
   r.input.pitch = 0;
   const { sim } = r.session;
   sim.setDebugCalendarTime(r.nextTimeOfDay(sim.calendar, 12 * 3600));
-  for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
-    inventory.add(inventory.create(wear), { kind: 'worn' });
+  if (withGear) {
+    for (const wear of ['riot_helmet', 'night_vision_goggles', 'utility_vest']) {
+      inventory.add(inventory.create(wear), { kind: 'worn' });
+    }
   }
-  const rifle = inventory.create(gunType);
+  const rifle = rifleUid === undefined ? inventory.create(gunType) : inventory.itemByUid(rifleUid);
   const scope = inventory.create(opticType);
   const definition = inventory.registry.items.get(gunType);
   const stations = inventory.registry.models.get(definition.model).gun.attachmentSlots.map(({ id }) => id);
-  let fitted = false;
-  for (const slot of stations) {
-    try {
-      inventory.fitSlot(rifle, slot, scope);
-      fitted = true;
-      break;
-    } catch {
-      // another station may fit
+  const fitOptic = () => {
+    for (const slot of stations) {
+      try {
+        inventory.fitSlot(rifle, slot, scope);
+        return;
+      } catch {
+        // Another station may fit.
+      }
     }
-  }
-  if (!fitted) {
     throw new Error(`Could not fit ${opticType}`);
-  }
+  };
+  fitOptic();
   r.setHand(r.dominant, rifle);
-  r.debugGunPose.toggle('ads');
+  if (r.debugGunPose.mode !== 'ads') {
+    r.debugGunPose.toggle('ads');
+  }
   const opticModel = inventory.registry.models.get(inventory.registry.items.get(opticType).model);
   const range = opticModel.gun.attachment.properties.magnification;
   const targetPower = range?.[endpoint] ?? 1;
@@ -327,6 +330,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
         opticMeshCount += Number(object.isMesh === true);
       });
       drawn = {
+        rifleUid: rifle.uid,
         opticType,
         endpoint,
         targetPower,
@@ -360,6 +364,7 @@ const opticZoomRecord = ({ opticType, gunType, endpoint }) => {
       const frame = held.opticLensFrame;
       if (frame?.magnification === 1 && frame.worldAtUnity === false && sourceDraws.length > 0) {
         drawn = {
+          rifleUid: rifle.uid,
           opticType,
           endpoint,
           targetPower,
@@ -659,18 +664,28 @@ const heldItemChecks = async (chromium, port) => {
 
 const opticZoomCheck = async (chromium, port) => {
   await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
+  // One session also exercises clearing masks when switching between optic presentations.
+  const { page, capture } = await enterTestHouse(chromium, port);
+  const rifleUids = new Map();
   for (const [opticType, gunType, endpoint, physicalWindow = false] of [
     ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
     ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
     ['optic_mini_reflex', 'rifle_assault', 'min'],
+    ['optic_tube_dot', 'rifle_assault', 'min'],
     ['optic_holographic', 'rifle_assault', 'min', true],
     ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
-    ['optic_hunting_3_9x', 'rifle_hunting', 'max'],
     ['optic_high_mag_5_25x', 'rifle_assault', 'max'],
+    ['optic_hunting_3_9x', 'rifle_hunting', 'max'],
   ]) {
-    const { page, capture } = await enterTestHouse(chromium, port);
     await timePhase('optic-disc-endpoint', async () => {
-      const record = await page.evaluate(opticZoomRecord, { opticType, gunType, endpoint });
+      const record = await page.evaluate(opticZoomRecord, {
+        opticType,
+        gunType,
+        endpoint,
+        rifleUid: rifleUids.get(gunType),
+        withGear: rifleUids.size === 0,
+      });
+      rifleUids.set(gunType, record.rifleUid);
       await writeFile(
         resolve(projectRoot, `test-results/primary-action/${opticType}-${endpoint}.png`),
         await capture(),
@@ -716,8 +731,8 @@ const opticZoomCheck = async (chromium, port) => {
         `the zoom target shows the lit world at the disc centre: ${JSON.stringify(record.targetCentreRgba)}`,
       );
     });
-    await page.close();
   }
+  await page.close();
 };
 
 // The lake's surface is drawn from both sides. The debug crack check paints wherever no geometry covers

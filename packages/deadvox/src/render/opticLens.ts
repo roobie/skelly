@@ -111,10 +111,6 @@ export class OpticLensRenderer {
     return this.housingPrepared;
   }
 
-  /**
-   * Unity images retain nearby gun features, but exclude the optic itself. A source-window presentation needs
-   * neither a replacement image nor its housing mask. Magnified images remain the far world alone.
-   */
   prepare(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, frame: OpticLensFrame): void {
     const pass = renderer.getDrawingBufferSize(new Vector2());
     if (this.target.width !== pass.x || this.target.height !== pass.y) {
@@ -124,6 +120,7 @@ export class OpticLensRenderer {
     if (!opticRendersWorld(frame)) {
       return;
     }
+    // Fixed-sight frame masks restore a scope's inner tube, even when that scope is dialled down to unity.
     this.housingPrepared = !frame.magnifying && this.housing.prepare(renderer, scene, camera);
     const previous = renderer.getRenderTarget();
     this.zoomCamera.copy(camera);
