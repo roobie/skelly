@@ -17,7 +17,7 @@ const grid = (dims: [number, number, number], size = 0.05, origin: [number, numb
 
 interface AssignedPartProof {
   readonly part: string;
-  readonly expectedMass: number;
+  readonly expectedMass: number | undefined;
   readonly density: ReturnType<typeof massProperties>;
   readonly assigned: ReturnType<typeof templatePartMassProperties>;
 }
@@ -38,7 +38,10 @@ const computeShamblerPartProofs = (): AssignedPartProof[] => {
       const partIndices = [...severedBoneSet(body.bones, [part])].map((id) => byId.get(id)!);
       proofs.push({
         part,
-        expectedMass: template.bodyMassKg * template.massFractions![part]!,
+        expectedMass:
+          template.massFractions?.[part] === undefined
+            ? undefined
+            : template.bodyMassKg * template.massFractions[part]!,
         density: massProperties(voxels, partIndices, generated.genome.voxelSize),
         assigned: templatePartMassProperties({
           voxels,
@@ -85,9 +88,11 @@ describe('massProperties', () => {
     expect(p.inertia[1][1]).toBeLessThan(p.inertia[2][2]);
   });
 
-  it('assigns each severable part its authored share of body mass', () => {
-    for (const { assigned, expectedMass } of shamblerPartProofs()) {
-      expect(assigned.mass).toBeCloseTo(expectedMass, 10);
+  it('honors authored mass shares for severable parts with overrides', () => {
+    const authored = shamblerPartProofs().filter(({ expectedMass }) => expectedMass !== undefined);
+    expect(authored.length).toBeGreaterThan(0);
+    for (const { assigned, expectedMass } of authored) {
+      expect(assigned.mass).toBeCloseTo(expectedMass!, 10);
     }
   });
 

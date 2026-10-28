@@ -719,6 +719,7 @@ local content = {
 };
 content + {
   zombies: [zombie + {
+    speed+: { crawlMetresPerSimSecond: 0.4 },
     severedItems: if zombie.model == 'amalgam' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
     hearingModel+: {
       loudNoiseRadiusMetres: 30,

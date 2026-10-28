@@ -11,11 +11,13 @@ const shamblerBones = () => {
 };
 
 describe('regionSeverableParts', () => {
-  it('keeps the shambler cuttable at its arms and head only', () => {
+  it('keeps the shambler limbs and head cuttable but not its torso', () => {
     const parts = regionSeverableParts(shamblerBones(), planOf('humanoid').regionBones!);
     expect(parts.leftArm).toEqual(['upperArm.L', 'forearm.L', 'hand.L']);
     expect(parts.head).toEqual(['head']);
-    expect([...parts.torso, ...parts.leftLeg, ...parts.rightLeg]).toEqual([]);
+    expect(parts.torso).toEqual([]);
+    expect(parts.leftLeg.length).toBeGreaterThan(0);
+    expect(parts.rightLeg.length).toBeGreaterThan(0);
   });
 
   it('follows the acid dispositions: limbs and skull cut, the sac bursts under the torso', () => {
