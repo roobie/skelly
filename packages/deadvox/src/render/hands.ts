@@ -172,7 +172,7 @@ export class HeldItems {
       modelDefinition?.hands?.adsViewEyeReliefMetres ??
       (modelDefinition?.hands?.adsStandoffByPitch
         ? heldAdsStandoffMetres(modelDefinition, main.rotation.x)
-        : modelDefinition!.gun!.sight!.eyeReliefMetres);
+        : (modelDefinition!.gun!.adsStandoffMetres ?? modelDefinition!.gun!.sight!.eyeReliefMetres));
     const matrix = new Matrix4().makeBasis(
       ...(firearmPose.rootRotation.map((axis) => new Vector3(...axis)) as [Vector3, Vector3, Vector3]),
     );

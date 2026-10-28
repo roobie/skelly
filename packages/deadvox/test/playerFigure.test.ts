@@ -442,6 +442,36 @@ describe('held light presentation', () => {
 });
 
 describe('optic lens presentation', () => {
+  it('projects the optic ocular at the authored hold standoff rather than optical relief', () => {
+    const item = registry.items.get('rifle_assault')!;
+    const source = registry.models.get(item.model!)!;
+    const { adsStandoffByPitch, adsViewEyeReliefMetres, ...hands } = source.hands!;
+    const standoffs = [0.3, 0.6] as const;
+    const radii = standoffs.map((adsStandoffMetres) => {
+      const model = { ...source, hands, gun: { ...source.gun!, adsStandoffMetres } };
+      const content = { ...registry, models: new Map(registry.models).set(model.id, model) };
+      const inventory = new Inventory(content);
+      const firearm = inventory.create(item.id);
+      expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
+      const held = new HeldItems(inventory, undefined, playerFigure, { nearPlaneMetres: 0.01 });
+      try {
+        held.update(new PerspectiveCamera(75, 16 / 9, 0.05, 128), undefined, 0, {
+          firearms: [],
+          readiness: { uid: firearm.uid, progress: 1, aimingDownSights: true },
+        });
+        const frame = held.opticLensFrame;
+        expect(frame).toBeDefined();
+        expect(frame!.radius.every((radius) => radius > 0)).toBe(true);
+        return frame!.radius;
+      } finally {
+        held.dispose();
+      }
+    });
+    for (const axis of [0, 1] as const) {
+      expect(radii[0]![axis] * standoffs[0]).toBeCloseTo(radii[1]![axis] * standoffs[1], 8);
+    }
+  });
+
   it('carries the mounted optic export into the ADS lens frame', () => {
     const inventory = new Inventory(registry);
     const firearm = inventory.create('rifle_assault');
