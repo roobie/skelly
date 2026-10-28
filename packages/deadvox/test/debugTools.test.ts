@@ -276,6 +276,12 @@ describe('debug starting equipment', () => {
     }
   });
 
+  it('wears sneakers in an ordinary starting loadout', () => {
+    const inventory = new Inventory(registry);
+    startingLoadout(inventory);
+    expect(inventory.worn.feet?.type).toBe('sneakers');
+  });
+
   it('keeps ordinary starting hands empty', () => {
     const inventory = new Inventory(registry);
     startingLoadout(inventory);

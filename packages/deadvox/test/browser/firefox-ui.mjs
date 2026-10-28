@@ -298,22 +298,32 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
-  // Zombies of each mobgen body are drawn as their own model. The debug spawn ring finds no clear ground in sight of
-  // this stage's start, so these check zombies the world already holds.
-  const drawnAsItsModel = (typeId) => {
+  // Zombies of each mobgen body are drawn as their own model, so no two of these types share one. The debug spawn
+  // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
+  const drawnModel = (typeId) => {
     const { session, view } = globalThis.firefoxUiTest;
-    return [...session.zombies.store.entries()].some(([id, zombie]) => {
+    for (const [id, zombie] of session.zombies.store.entries()) {
       const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
       const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
-      return variant?.model === zombie.type.model && variant.mesh.count > 0;
-    });
+      if (variant?.model === zombie.type.model && variant.mesh.count > 0) {
+        return variant.model;
+      }
+    }
+    return false;
   };
-  await Promise.all(
-    ['runner', 'crawler', 'shambler'].map((typeId) =>
+  const bodyTypes = ['runner', 'crawler', 'shambler'];
+  const drawnModels = await Promise.all(
+    bodyTypes.map((typeId) =>
       page
-        .waitForFunction(drawnAsItsModel, typeId, { timeout: 10_000 })
-        .catch(() => assert.fail(`a world ${typeId} is drawn as its own model`)),
+        .waitForFunction(drawnModel, typeId, { timeout: 10_000 })
+        .then((handle) => handle.jsonValue())
+        .catch(() => assert.fail(`a world ${typeId} is drawn as its content model`)),
     ),
+  );
+  assert.equal(
+    new Set(drawnModels).size,
+    bodyTypes.length,
+    `each of ${bodyTypes.join(', ')} is drawn as its own model, not another's: ${drawnModels.join(', ')}`,
   );
   // The acid body: drawn as its own model, dripping and lighting a shared slot, and on death losing its sac to a
   // splash that leaves the world as the death left it. Like the bodies above, it is one the world holds: the nearest

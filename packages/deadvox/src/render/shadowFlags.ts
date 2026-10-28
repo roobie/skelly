@@ -8,6 +8,11 @@ import type { Mesh, Object3D } from 'three';
 export const PLAYER_FIGURE_LAYER = 1;
 /** Own-head colour exclusion; external views and the sun still see these surfaces. */
 export const PLAYER_SELF_MASK_LAYER = 2;
+/**
+ * The optic the player aims through. A unity optic image keeps the gun but must not copy this optic into its own
+ * window, and the image must yield to this optic's opaque housing (render/opticLens.ts).
+ */
+export const OPTIC_BODY_LAYER = 3;
 
 /**
  * Makes every node added anywhere under `root`, now or later, take its new parent's layers, so a mesh added late

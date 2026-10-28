@@ -53,6 +53,8 @@ read_if:
   - you change quickbar assignment feedback
   - you add or change a first-person handling animation (what it may read its timing from)
   - you change optic magnification, its input ownership or its persistence policy
+  - you change HUD crosshair visibility while an optic reticle is presented
+  - you change what the optic window image shows, the optic housing mask or the ADS optic hood
   - you tune body infection or unconsciousness through content packs
   - you're changing the HUD defaults or why players can turn HUD elements off
   - you're changing timed-action progress presentation or its relationship to HUD scale
@@ -1781,14 +1783,15 @@ extremes; restrict aim only as far as a plausible arm pose requires. See
 `src/render/armRig.ts`, `solveArmRig`; and `src/render/heldPresentation.ts`,
 `HeldPresentation.solve`.
 
-A free-held firearm's hip seat stays in the posed torso's frame while its barrel
-follows aim. Orbiting that seat with the view pitch, or attaching it to a head
-that moves independently of the torso, sends a down-aim grip beyond fixed arm
-reach. ADS standoff belongs to a content curve: the pistol comes closer along the
-sight line as aim rises, letting the elbows bend rather than lengthening arms or
-changing stance. The curve also compresses down-aim holds. Camera framing must
-not supply anatomical reach. See `src/core/heldPose.ts`, `heldFirearmTransform` and
-`heldAdsStandoffMetres`; `src/core/playerLookPose.ts`, `playerHeldSeatFrame`; and
+Free-held hip seats belong to the posed torso rather than the independently
+moving head: orbiting the seat with view pitch sends a down-aim grip beyond fixed
+arm reach. Pitch-dependent ADS standoff lets elbows bend without lengthening arms
+or changing stance. Physical standoff is independent of optical eye relief:
+changing an optic must not pull a handgun back into the shooter's face. Camera
+framing must not supply anatomical reach. See `src/core/heldPose.ts`,
+`heldFirearmTransform` and `heldAdsStandoffMetres`; `src/core/playerLookPose.ts`,
+`playerHeldSeatFrame`; `src/core/schema.ts`, `GunModelSchema`;
+`src/content/base/models-firearms.libsonnet`; and
 `src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
 Third person remains a debug inspection aid, not a player-facing camera. The
@@ -2097,18 +2100,16 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
-  than its shot ray. Aim state is saved because it can change hit outcomes. The
-  crosshair follows the projected muzzle point, including while the firearm is
-  unready or turned for handling; it is hidden only when outside the view or
-  behind the camera. With no firearm wielded, the main-game center crosshair
-  remains. Handling turns affect the drawn muzzle and crosshair, not the shot
-  ray; firing is refused during handling or a cycle.
-  Shots leave along the visible firearm's bore, plus firearm-owned spread.
-  `src/game/firearmAim.ts`, `firearmBoreRay`, supplies that shared line to both
-  shot resolution and the held-firearm crosshair; `src/game/play.ts`,
-  `heldFirearmBore`, supplies its current raise progress. `src/ui/playHud.ts`,
-  `projectCrosshairScreenPosition` and `playCrosshairFrame`, hide it outside the
-  viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
+  than its shot ray. Aim state is saved because it can change hit outcomes.
+  Shots and the held-firearm crosshair share the visible bore, so the mark never
+  shows an aim the shot does not take. Handling turns may move the drawn muzzle
+  and crosshair off the shot ray only because firing is refused during handling
+  or a cycle. The HUD crosshair and the debug X yield to a presented
+  first-person optic reticle, because the diegetic mark already shows aim and a
+  duplicate can hide a small dot. See `src/game/firearmAim.ts`,
+  `firearmBoreRay`; `src/game/play.ts`, `heldFirearmBore`; and
+  `src/ui/playHud.ts`, `projectCrosshairScreenPosition` and
+  `playCrosshairFrame`. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
   separate from the optional crosshair. In ADS, recoil, sway, and handling
   move the firearm pose and bore while the view direction stays fixed; only the intentional
@@ -2760,6 +2761,16 @@ low profile that limits its bite to the player's legs. Its posture determines
 posed hit regions, so gait and flinches follow those regions. Keep other short or
 hunched forms as distinct future types, not crawler variants.
 
+A type's body is a content choice: its `model` names a mobgen figure the renderer
+can build, and the renderer draws each type with the model and figure seeds its
+content selects, so a model left out of that list cannot be selected. A figure
+seed must realize a valid body by itself. One that fell through to the next valid
+seed would draw two seeds as one body and quietly shrink the variety content
+authored, so it is refused, and a model whose template rejects some shared seeds
+authors its own. See `src/core/zombieModels.ts`, `ZOMBIE_MODELS`;
+`src/render/mobActors.ts`, `figureSeedsByModel`; and
+`packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+
 All mobs look toward the player only when they perceive the player. Hearing and
 noticed lights can also draw gaze; hearing direction uses deterministic jitter,
 and a noticed light uses the same near-perception presentation as noise. Gaze,
@@ -3227,12 +3238,22 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
-- **Carry and optics:** carried furniture is physical and depth-tests with world camera planes; the optical ring and visor are effects closer than the world camera's near plane, so they retain their own planes without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
+- **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor is an effect closer than the world camera's near plane, so it keeps its own planes without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
+- **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
+  hides more of the scene. At unity the window keeps nearby gun features, as a real 1× sight does, but never the
+  optic itself, which would fill its own window. See `src/render/playerFigure.ts`, `PlayerMeshes`, and
+  `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
 - **Zoom shows the environment only:** the magnified image is the world seen through the lens, so the zoom camera
   sets the world layer alone instead of copying the main camera's mask, and the player's figure, held and worn items
   and own-head layers never enter it. three.js layers do not inherit, so a node added under the figure takes its
   parent's layers at add time; without that a late child would land on the world layer and be magnified. See
   `src/render/opticLens.ts`, `OpticLensRenderer.prepare`; `src/render/shadowFlags.ts`, `inheritLayersOnAdd`.
+- **The housing stays in front of the window:** compositing the window image must not erase optic housing that
+  crosses the disc. See `src/render/opticHousingMask.ts`, `OpticHousingMask`.
+- **The ADS hood is hidden only in own view:** at eye relief it obstructs the player's eye, while other viewers and
+  the sun should still see it. See `src/render/playerFigure.ts`, `PlayerMeshes`.
+- **The reticle sits on the sight line:** the glass sits a finite distance from the eye, so a reticle tied to the
+  disc would show parallax. See `src/core/opticView.ts`, `projectOpticReticle`.
 - **Day and night** follow one sun model derived from the base pack's latitude,
   fixed date and nautical twilight. The sky and fog follow the resulting phases;
   light and night looks blend through dusk and dawn, and a flashlight matters

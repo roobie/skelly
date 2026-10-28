@@ -13,6 +13,10 @@
           "weight": 2
         },
         {
+          "item": "cartridge_box_9x19",
+          "weight": 1
+        },
+        {
           "nothing": true,
           "weight": 30
         }
@@ -119,6 +123,11 @@
           "condition": [0.5, 1],
           "item": "rubber_boots",
           "weight": 1
+        },
+        {
+          "condition": [0.5, 1],
+          "item": "sneakers",
+          "weight": 4
         },
         {
           "condition": [0.5, 1],

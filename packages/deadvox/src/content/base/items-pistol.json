@@ -81,6 +81,24 @@
       "workInProgress": false
     },
     {
+      "category": "ammo",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "cartridge_box_9x19",
+      "name": "9×19 mm box",
+      "notLoot": false,
+      "size": [2, 2],
+      "unpack": {
+        "count": 50,
+        "item": "cartridge_9x19",
+        "simSeconds": 1.5
+      },
+      "weight": 625,
+      "workInProgress": false
+    },
+    {
       "category": "material",
       "economy": {
         "tiers": [],

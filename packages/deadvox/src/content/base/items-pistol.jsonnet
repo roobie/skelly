@@ -25,6 +25,10 @@ local pistol = import 'gungen/pistol_service.model.json';
       ammo: { calibre: '9x19', pellets: 1, spreadDegrees: 0, diameterMm: 9.03, damage: 40, impulse: 2.68, rangeMetres: 100, loadSimSeconds: 0.6, stripSimSeconds: 0.5 },
     },
     {
+      id: 'cartridge_box_9x19', name: '9×19 mm box', category: 'ammo',
+      weight: 625, size: [2, 2], unpack: { item: 'cartridge_9x19', count: 50, simSeconds: 1.5 },
+    },
+    {
       id: 'spent_case_9x19', name: '9×19 mm case', category: 'material',
       weight: 4, size: [1, 1], stack: 10000, pileDisplay: 'scatter', model: 'case_9x19', notLoot: true,
     },

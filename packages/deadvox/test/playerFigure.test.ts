@@ -25,7 +25,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
-import { opticViewSettings } from '../src/core/opticView.ts';
+import { insideLensAperture, opticViewSettings } from '../src/core/opticView.ts';
 import { playerAdsPose } from '../src/core/playerAdsPose.ts';
 import { playerLookLean } from '../src/core/playerLookPose.ts';
 import type { PlayerStance } from '../src/core/playerStance.ts';
@@ -464,46 +464,12 @@ describe('optic lens presentation', () => {
     const handling = { firearms: [], readiness: { uid: firearm.uid, progress: 1, aimingDownSights: true } } as const;
     held.update(camera, undefined, 0, handling);
     const settled = held.opticLensFrame;
-    const ring = (held as unknown as { opticWindow: Mesh }).opticWindow;
-    expect(ring.visible).toBe(true);
-    let seen = 0;
-    held.render(
-      {
-        autoClear: true,
-        render: (scene: Scene, adapter: PerspectiveCamera) => {
-          if (!ring.visible) {
-            return;
-          }
-          scene.updateMatrixWorld(true);
-          adapter.updateMatrixWorld(true);
-          const frustum = new Frustum().setFromProjectionMatrix(
-            new Matrix4().multiplyMatrices(adapter.projectionMatrix, adapter.matrixWorldInverse),
-          );
-          const positions = ring.geometry.getAttribute('position');
-          for (let index = 0; index < positions.count; index += 1) {
-            const at = new Vector3().fromBufferAttribute(positions, index).applyMatrix4(ring.matrixWorld);
-            if (frustum.containsPoint(at)) {
-              seen += 1;
-            }
-          }
-        },
-      } as unknown as Parameters<typeof held.render>[0],
-      camera,
-      {
-        scene: new Scene(),
-        light: new DirectionalLight(),
-        ambient: new HemisphereLight(),
-        camera,
-        radiusM: 1,
-        farPlaneScale: 1,
-      },
-    );
-    expect(seen, 'the retained optical ring must survive carry-camera depth changes').toBeGreaterThan(0);
     held.update(camera, undefined, 0.5, handling);
     const recoiling = held.opticLensFrame;
 
     expect(settled).toMatchObject(expected);
     expect(settled?.radius.every((radius) => radius > 0)).toBe(true);
+    expect(insideLensAperture(settled!.reticleCenter, settled!, settled!.aperture)).toBe(true);
     expect(recoiling?.center).not.toEqual(settled?.center);
     held.dispose();
   });

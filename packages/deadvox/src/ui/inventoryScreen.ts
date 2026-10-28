@@ -35,7 +35,7 @@ import {
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { clearsFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { blursFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
@@ -892,12 +892,14 @@ export class InventoryScreen {
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
+  private inspectedUid: number | undefined;
   /** The player's chosen split; a narrow window clamps only what it applies, so widening restores the choice. */
   private splitRatio = 0.5;
   private splitDrag: { startX: number; startRatio: number; bounds: SplitBounds } | undefined;
   private drag: Drag | undefined;
   /** What the player typed into the find field; items it doesn't match are dimmed, not hidden. */
   private findQuery = '';
+  private matchSelectionToFind = false;
   private readonly viewer: ItemViewer;
 
   constructor(
@@ -967,6 +969,7 @@ export class InventoryScreen {
   close(): void {
     this.tabs.close();
     this.revealedSelectionUid = undefined;
+    this.inspectedUid = undefined;
     this.findQuery = '';
     this.root.hidden = true;
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
@@ -1018,7 +1021,7 @@ export class InventoryScreen {
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
     const view = this.hooks.reach();
-    const bodyKey = JSON.stringify(this.hooks.body());
+    const bodyKey = JSON.stringify(this.bodyViewModel());
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
@@ -1081,7 +1084,7 @@ export class InventoryScreen {
       return true;
     }
     const digit = this.quickbarDigit(action);
-    const item = this.selected;
+    const item = this.actionItem();
     if (action === 'handling.stop') {
       this.report(this.hooks.dispatch({ kind: 'inventory.cancel-handling' }));
       return true;
@@ -1113,6 +1116,10 @@ export class InventoryScreen {
       return true;
     }
     return this.selectedAction(action, item);
+  }
+
+  private actionItem(): Item | undefined {
+    return this.selected && this.byUid.has(this.selected.uid) ? this.selected : undefined;
   }
 
   private selectedAction(action: string, item: Item): boolean {
@@ -1265,13 +1272,6 @@ export class InventoryScreen {
     }
   }
 
-  private clearFind(): void {
-    this.findQuery = '';
-    this.drawn = '';
-    this.update();
-    this.root.querySelector<HTMLInputElement>('[data-inventory-find]')?.blur();
-  }
-
   private step(dir: number): void {
     if (this.order.length === 0) {
       return;
@@ -1287,7 +1287,14 @@ export class InventoryScreen {
     this.entityByUid.clear();
     this.vehicleOptionsByUid.clear();
     this.order = [];
-    const vm = this.viewModel();
+    let vm = this.viewModel();
+    if (this.selectFirstMatchingItem()) {
+      this.byUid.clear();
+      this.entityByUid.clear();
+      this.vehicleOptionsByUid.clear();
+      this.order = [];
+      vm = this.viewModel();
+    }
     render(
       inventoryTemplate(
         vm,
@@ -1298,12 +1305,13 @@ export class InventoryScreen {
             query: this.findQuery,
             change: (query) => {
               this.findQuery = query;
+              this.matchSelectionToFind = true;
               this.drawn = '';
               this.update();
             },
             key: (e) => {
-              if (clearsFindField(e)) {
-                this.clearFind();
+              if (blursFindField(e)) {
+                (e.target as HTMLInputElement).blur();
                 e.preventDefault();
                 e.stopPropagation();
               }
@@ -1413,12 +1421,9 @@ export class InventoryScreen {
     return true;
   }
 
-  private viewModel(): InventoryScreenViewModel {
-    const text = this.text();
+  private bodyViewModel(): InventoryScreenViewModel['body'] {
     const body = this.hooks.body();
-    const character = this.hooks.character();
-    const alarm = this.hooks.wakeGameHour?.();
-    const bodyView = {
+    return {
       health: percentText(body.health),
       blood: percentText(body.blood),
       shock: percentText(body.shock),
@@ -1429,6 +1434,13 @@ export class InventoryScreen {
         infection: body.wounds[region]?.infection ?? 'none',
       })),
     };
+  }
+
+  private viewModel(): InventoryScreenViewModel {
+    const text = this.text();
+    const character = this.hooks.character();
+    const alarm = this.hooks.wakeGameHour?.();
+    const bodyView = this.bodyViewModel();
     const hands = (['right', 'left'] as const).map(
       (side): SlotViewModel => ({
         target: `hand:${side}`,
@@ -1598,14 +1610,28 @@ export class InventoryScreen {
     };
   }
 
+  private selectFirstMatchingItem(): boolean {
+    if (!this.matchSelectionToFind) {
+      return false;
+    }
+    this.matchSelectionToFind = false;
+    if (!this.selected || this.order.includes(this.selected)) {
+      return false;
+    }
+    this.selected = this.order[0];
+    return true;
+  }
+
   private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
     const text = this.text();
     const itemStyle = style ?? {};
     this.byUid.set(item.uid, item);
-    this.order.push(item);
     const words = queryWords(this.findQuery);
     const unmatched = !matchesFind(words, [workName(this.inv.registry, item), def.name, ...(def.keywords ?? [])]);
+    if (!unmatched) {
+      this.order.push(item);
+    }
     return {
       item,
       uid: String(item.uid),
@@ -1629,6 +1655,13 @@ export class InventoryScreen {
   private detailsViewModel(): DetailsViewModel {
     const shown = this.drag ? this.drag.card : this.selected;
     const item = shown && this.inv.locate(shown) ? shown : undefined;
+    if (item?.uid !== this.inspectedUid) {
+      this.inspectedUid = item?.uid;
+      // Inspection belongs to selection, not passive repaints of the same details.
+      if (item) {
+        this.hooks.dispatch({ kind: 'inventory.inspect', itemUid: item.uid });
+      }
+    }
     if (!item) {
       return { empty: true, lines: [], options: [] };
     }

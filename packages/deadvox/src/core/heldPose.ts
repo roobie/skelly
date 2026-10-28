@@ -247,7 +247,7 @@ const sightEyeBehind = (model: ModelDef, distance?: number): Vec3 | undefined =>
 const heldSightEyes = (model: ModelDef, pitch: number) => {
   const sightEye = sightEyeBehind(
     model,
-    model.hands?.adsStandoffByPitch ? heldAdsStandoffMetres(model, pitch) : undefined,
+    model.hands?.adsStandoffByPitch ? heldAdsStandoffMetres(model, pitch) : model.gun?.adsStandoffMetres,
   );
   const viewEye =
     model.hands?.adsViewEyeReliefMetres === undefined

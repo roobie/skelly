@@ -23,7 +23,7 @@ local notSpawnable = [
 + [entry.id for entry in (import 'packages/gun-authoring-tool/src/gun/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
 local commonItems = [
   'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x',
-  'revolver_357', 'cartridge_357_h_magnum', 'cartridge_box_357_h_magnum',
+  'revolver_357', 'cartridge_357_h_magnum', 'cartridge_box_357_h_magnum', 'cartridge_box_9x19',
   'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note',
   'optic_digital_thermal', 'optic_fixed_prism_4x', 'optic_high_mag_5_25x', 'optic_holographic',
   'optic_lpvo_1_6x', 'optic_mini_reflex', 'optic_tube_dot', 'rail_front_sight', 'real_suppressor',
@@ -39,7 +39,7 @@ local commonItems = [
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
   'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'scissor_jack', 'bottle_jack', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
   'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
-  'jeans', 'cargo_pants', 'rubber_boots', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
+  'jeans', 'cargo_pants', 'rubber_boots', 'sneakers', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'regional_map', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
 ];
 local residential = [

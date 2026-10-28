@@ -3042,6 +3042,10 @@
           "weight": 1
         },
         {
+          "item": "cartridge_box_9x19",
+          "weight": 1
+        },
+        {
           "count": [2, 5],
           "item": "shell_12_gauge_00_buck",
           "weight": 3
@@ -3097,6 +3101,10 @@
         },
         {
           "item": "cartridge_box_357_h_magnum",
+          "weight": 2
+        },
+        {
+          "item": "cartridge_box_9x19",
           "weight": 2
         },
         {
