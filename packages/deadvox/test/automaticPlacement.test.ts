@@ -64,6 +64,15 @@ describe('automatic grid orientation', () => {
     expect(w).toBeGreaterThan(h);
   });
 
+  it('keeps wide beside a corner cell rather than rewarding the pile aspect ratio', () => {
+    const { registry, item } = fixture([3, 2], base.inventory.get('player')!.autoPlacementTallMinFreeAreaGainCells);
+    registry.items.set('corner_cell', { ...registry.items.get(item.type)!, id: 'corner_cell', size: [1, 1] });
+    const cell = new ItemFactory(item.uid + 1).create(registry, 'corner_cell');
+    const grid = { size: PILE_GRID, placed: [{ item: cell, x: 0, y: 0, rotated: false }] };
+    const [w, h] = shape(registry, item, findSpot(registry, grid, item));
+    expect(w).toBeGreaterThan(h);
+  });
+
   it('chooses tall only when packing beside existing items gains more than the content threshold', () => {
     const { registry, item } = fixture([3, 2]);
     registry.items.set('packing_bar', { ...registry.items.get(item.type)!, id: 'packing_bar', size: [5, 1] });

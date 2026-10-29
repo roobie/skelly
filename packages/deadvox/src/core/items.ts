@@ -796,16 +796,19 @@ export const findSpot = (
   if (!(wide && tall)) {
     return wide ?? tall;
   }
-  if (!grid.placed.some((placed) => placed.item !== ignore)) {
-    return wide;
-  }
+  const emptyRemaining = (rotated: boolean) => {
+    const [w, h] = footprint(def, rotated);
+    return Math.max((grid.size.w - w) * grid.size.h, grid.size.w * (grid.size.h - h));
+  };
   const remaining = (spot: NonNullable<typeof wide>) =>
     largestFreeRectangleArea(registry, {
       size: grid.size,
       placed: [...grid.placed.filter((placed) => placed.item !== ignore), { item, ...spot }],
     });
   const threshold = registry.inventory.get(CORE_CONTENT_IDS.player)!.autoPlacementTallMinFreeAreaGainCells;
-  return remaining(tall) - remaining(wide) > threshold ? tall : wide;
+  // Remove the empty-grid aspect-ratio bias before crediting packing beside other items.
+  const gain = remaining(tall) - remaining(wide) - (emptyRemaining(tall.rotated) - emptyRemaining(wide.rotated));
+  return gain > threshold ? tall : wide;
 };
 
 /** Whether a footprint fits an empty grid of this size, either way round. */
