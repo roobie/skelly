@@ -280,6 +280,7 @@ export const createPlayView = (
   const held = new HeldItems(inventory, models, playerFigure, {
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
+    opticParallaxGain: graphicsTuningOf(registry).opticParallaxGain,
     sunSource: engine.sky.light,
   });
   scene.add(

@@ -124,6 +124,19 @@ export const projectOpticReticle = (
   return ndc ? [(ndc[0] + 1) / 2, (ndc[1] + 1) / 2] : undefined;
 };
 
+/**
+ * Scales the dot's displacement from its window centre. The true eye-to-axis offset is millimetres, which the dot
+ * shows as a fraction of a pixel, so presentation exaggerates it; a gain of 1 is the physical picture.
+ */
+export const exaggerateReticleDrift = (
+  reticle: readonly [number, number],
+  windowCenter: readonly [number, number],
+  gain: number,
+): readonly [number, number] => [
+  windowCenter[0] + (reticle[0] - windowCenter[0]) * gain,
+  windowCenter[1] + (reticle[1] - windowCenter[1]) * gain,
+];
+
 /** Projects the exported ocular circle from the same camera-local frame as the held optic window. */
 export interface ProjectLensApertureInput {
   readonly center: Vec3;
