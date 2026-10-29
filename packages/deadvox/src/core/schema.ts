@@ -326,6 +326,8 @@ const InventoryTuningSchema = strictObject({
   keyHoldRealSeconds: Positive,
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
+  /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
+  autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
   reachMetres: Positive,
   /** Metres above the feet at which reach is measured. */
@@ -4600,6 +4602,8 @@ const GraphicsTuningSchema = strictObject({
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
+  skyJobsInFlight: pipe(number(), integer(), minValue(2)),
+  skyPreloadRings: Count,
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */

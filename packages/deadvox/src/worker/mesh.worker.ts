@@ -23,7 +23,7 @@ globalThis.onmessage = ({ data: msg }: MessageEvent<ToMesher>) => {
   if (msg.type === 'sky') {
     const start = performance.now();
     const result = buildSkyResult(msg.input);
-    const reply: FromMesher = { type: 'sky', result, workerRealMs: performance.now() - start };
+    const reply: FromMesher = { type: 'sky', id: msg.id, result, workerRealMs: performance.now() - start };
     postMessage(reply, {
       transfer: [
         result.heights.buffer,

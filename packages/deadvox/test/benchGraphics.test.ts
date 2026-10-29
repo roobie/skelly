@@ -55,6 +55,8 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
             itemPictureCacheCapacity: 2,
             modelLoadConcurrency: 2,
             unbuiltSkyCap: 0.5,
+            skyJobsInFlight: 2,
+            skyPreloadRings: 1,
             itemViewer: {
               framing: 1,
               startYawDegrees: 0,

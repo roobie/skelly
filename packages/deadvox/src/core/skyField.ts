@@ -116,6 +116,21 @@ export class SkyFields {
     return entry.built?.result;
   }
 
+  /** Last-resort reveal finish; unavailable neighbours remain the admission policy's responsibility. */
+  finishColumn(cx: number, cz: number): void {
+    this.entries.forEach((entry, index) => {
+      if (
+        entry.bounds.min[0] < (cx + 1) * CHUNK &&
+        entry.bounds.max[0] > cx * CHUNK &&
+        entry.bounds.min[2] < (cz + 1) * CHUNK &&
+        entry.bounds.max[2] > cz * CHUNK &&
+        this.loaded(index)
+      ) {
+        this.build(entry);
+      }
+    });
+  }
+
   /** A field's last complete result, current or not. */
   latest(index: number): SkyResult | undefined {
     return this.entries[index]!.latest;
