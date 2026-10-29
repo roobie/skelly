@@ -3460,6 +3460,7 @@ const ZombieSchema = strictObject({
   footstepSound: optional(picklist(['shambler'])),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
+  jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
   /**
    * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
    * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.

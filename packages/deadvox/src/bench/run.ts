@@ -339,7 +339,6 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         blockSize: s,
         tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
         physics: physicsFor(config.scale, Player),
-        jumpSpeed: Player.jump,
         player: () => ({
           pos: [...playerBody!.pos] as [number, number, number],
           body: playerBody!,

@@ -339,7 +339,6 @@ const incapacitate = (
     isOpaque: () => false,
     blockSize,
     physics: physicsFor(makeScale(blockSize)),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => ({
       pos: [1000, 0, 1000],

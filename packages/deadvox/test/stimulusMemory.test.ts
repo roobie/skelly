@@ -6,7 +6,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { PlayerSense, VocalNoise } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -31,7 +31,6 @@ const senses = (playerFn: () => PlayerSense, isSolid: SolidAt = FLOOR, hour = 12
   dayPhase: () => dayStateAtHour(hour),
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
-  jumpSpeed: PLAYER.jump,
   tuning: TEST_SENSE_TUNING,
   hurtPlayer: () => undefined,
 });

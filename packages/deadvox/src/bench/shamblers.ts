@@ -157,7 +157,6 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
       physics: physicsFor(scale, Player),
-      jumpSpeed: Player.jump,
       player: () => ({
         pos: [...playerBody.pos] as [number, number, number],
         body: playerBody,

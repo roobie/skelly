@@ -161,6 +161,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
         "head": {

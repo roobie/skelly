@@ -7,7 +7,7 @@
     walk: 1.8,
     jog: 4.3,
     sprint: 6.5,
-    jump: 7.9,
+    jump: 4.6761,
     gravityMetresPerSimSecondSquared: 9.81,
     reach: 4,
     stepHeight: 0.5,

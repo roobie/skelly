@@ -5,7 +5,7 @@ import { type CrosshairTarget, crosshairTarget } from '../src/core/crosshairTarg
 import { makeScale } from '../src/core/scale.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -43,7 +43,6 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     isOpaque: () => false,
     blockSize,
     physics: physicsFor(scale),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => ({
       pos: origin,

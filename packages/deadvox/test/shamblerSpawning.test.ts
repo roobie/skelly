@@ -7,7 +7,7 @@ import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.t
 import type { Engine } from '../src/game/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
+import { createPlayerBody, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -39,7 +39,6 @@ const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: num
     isOpaque: isSolid,
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => ({
       pos: body.pos,

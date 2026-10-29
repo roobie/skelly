@@ -623,8 +623,6 @@ export interface ZombieSystemOptions {
   isOpaque: SolidAt;
   blockSize: number;
   physics: PhysicsParams;
-  /** Take-off speed in metres per second; the system divides by `blockSize` itself. */
-  jumpSpeed: number;
   tuning: SenseDef;
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
@@ -3133,11 +3131,11 @@ export class ZombieSystem {
         direction,
         isSolid,
         physics: this.options.physics,
-        jumpSpeed: this.options.jumpSpeed,
+        jumpSpeed: zombie.type.jumpMetresPerSimSecond,
         blockSize,
       });
     if (scratch.jumpAttempted) {
-      zombie.body.vel[1] = this.options.jumpSpeed / blockSize;
+      zombie.body.vel[1] = zombie.type.jumpMetresPerSimSecond / blockSize;
     }
     scratch.beforeStep = copy(scratch.pos);
     this.settleTurn(zombie);
