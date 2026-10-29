@@ -53,7 +53,7 @@ import {
   TOUCHES,
   type Touch,
 } from './body.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from './coreText.ts';
@@ -4549,6 +4549,12 @@ const RecipeSchema = strictObject({
   activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
+  skillUnlock: optional(
+    strictObject({
+      skill: Id,
+      level: pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_LEGENDARY)),
+    }),
+  ),
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),

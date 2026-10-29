@@ -1625,6 +1625,9 @@ const checkRecipe = ({
     }
   };
   checkItem(recipe.result.item, '.result.item');
+  if (recipe.skillUnlock && !registry.skills.has(recipe.skillUnlock.skill)) {
+    report('recipes', recipe.id, '.skillUnlock.skill', `no skill "${recipe.skillUnlock.skill}"`);
+  }
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
