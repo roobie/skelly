@@ -223,6 +223,7 @@ local spentCase(id, name, weight, description, model) = {
         'trim_wood_offcut',
         'assemble_fastener_pack',
         'make_scrap_foregrip',
+        'make_weapon_sling',
       ],
       'Notes on making simple light and shelter from things found nearby.',
     ),
@@ -267,8 +268,9 @@ local spentCase(id, name, weight, description, model) = {
         'make_taped_flashlight_mount',
         'make_improvised_suppressor',
         'make_scrap_foregrip',
+        'make_weapon_sling',
       ],
-      'Handwritten notes on careful repairs and using salvaged wire.',
+      'Handwritten notes on careful repairs and using salvaged wire.'
     ),
     {
       id: 'paperback',

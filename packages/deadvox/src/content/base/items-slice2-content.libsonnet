@@ -139,6 +139,20 @@ local lights = import 'lights.libsonnet';
       "model": "cord_coil"
     },
     {
+      "id": "rope",
+      "name": "Rope",
+      "category": "material",
+      "size": [1, 2],
+      "stack": 5,
+      "model": "cord_coil",
+      "description": "A coil of sturdy braided cord.",
+      "disassembly": {
+        "timeGameMinutes": 4,
+        "skill": "crafting",
+        "yields": [{ "item": "cloth_strip", "count": 4, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
       "id": "wire_strippers",
       "name": "Wire strippers",
       "category": "tool",
@@ -400,6 +414,25 @@ local lights = import 'lights.libsonnet';
       "skills": { "crafting": 0 },
       "qualities": { "cutting": 1 },
       "components": [[{ "item": "rag", "count": 1 }]]
+    },
+    {
+      "id": "make_rope",
+      "result": { "item": "rope", "count": 1 },
+      "timeGameMinutes": 4,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [[{ "item": "cloth_strip", "count": 4 }]]
+    },
+    {
+      "id": "make_weapon_sling",
+      "result": { "item": "weapon_sling", "count": 1 },
+      "timeGameMinutes": 4,
+      "skills": { "crafting": 2 },
+      "qualities": { "cutting": 1 },
+      "components": [
+        [{ "item": "rope", "count": 1 }, { "item": "nylon_cord", "count": 1 }],
+        [{ "item": "fastener_pack", "count": 1 }]
+      ]
     },
     {
       "id": "trim_wood_offcut",

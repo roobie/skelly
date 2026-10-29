@@ -245,6 +245,33 @@
       "workInProgress": false
     },
     {
+      "category": "material",
+      "description": "A coil of sturdy braided cord.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 4,
+        "yields": [
+          {
+            "count": 4,
+            "fractions": [0.5, 1],
+            "item": "cloth_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "rope",
+      "model": "cord_coil",
+      "name": "Rope",
+      "notLoot": false,
+      "size": [1, 2],
+      "stack": 5,
+      "workInProgress": false
+    },
+    {
       "category": "tool",
       "disassembly": {
         "skill": "mechanics",
@@ -852,6 +879,58 @@
       },
       "skills": {
         "crafting": 0
+      },
+      "timeGameMinutes": 4
+    },
+    {
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "cloth_strip"
+          }
+        ]
+      ],
+      "id": "make_rope",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "rope"
+      },
+      "skills": {
+        "crafting": 0
+      },
+      "timeGameMinutes": 4
+    },
+    {
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "rope"
+          },
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_weapon_sling",
+      "qualities": {
+        "cutting": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "weapon_sling"
+      },
+      "skills": {
+        "crafting": 2
       },
       "timeGameMinutes": 4
     },

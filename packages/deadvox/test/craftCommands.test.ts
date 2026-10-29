@@ -10,10 +10,12 @@ import { coreMessage } from '../src/core/coreText.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -95,6 +97,38 @@ describe('live craft commands', () => {
         amount: recipe.timeGameMinutes / 60,
       })),
     );
+  });
+
+  it('crafts a sling at its skill gate that fits a long gun', () => {
+    const r = make();
+    const recipe = registry.recipes.get('make_weapon_sling')!;
+    r.character.learnRecipes([recipe.id]);
+
+    expect(r.commands.start(recipe.id)).toBe(coreMessage(registry, 'skillTooLow'));
+
+    while (r.character.skills.crafting! < recipe.skills.crafting!) {
+      r.character.awardPractice(
+        'crafting',
+        practiceForNextLevel(registry, r.character.skills.crafting!),
+        SKILL_LEVEL_LEGENDARY,
+      );
+    }
+    for (const [type, count] of stockFor(recipe.id)) {
+      expect(r.inventory.add(r.inventory.create(type, count), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    expect(r.commands.start(recipe.id)).toBeUndefined();
+    const work = workOf(r);
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+    const sling = r.inventory.hands.right!;
+    expect(sling.type).toBe(recipe.result.item);
+    expect(r.inventory.move(sling, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+
+    const shotgun = r.inventory.create('pump_shotgun');
+    expect(r.inventory.add(shotgun, { kind: 'hand', side: 'right' })).toBe(true);
+    const handling = new FirearmAttachmentHandling(r.inventory, r.queue, () => [0, 0, 0]);
+    expect(handling.fit(shotgun.uid, SLING_SLOT, sling.uid)).toBeUndefined();
+    r.queue.tick(10);
+    expect(shotgun.slots?.[SLING_SLOT]).toBe(sling);
   });
 
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
