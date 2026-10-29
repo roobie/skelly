@@ -2,7 +2,7 @@ local metadata = import 'presentation/item-materials.json';
 local prefixes = {
   steel: 'metal', alu: 'metal', brass: 'metal', copper: 'metal', scrap: 'metal', paint: 'metal',
   cloth: 'cloth', cord: 'cloth', wood: 'wood', rubber: 'polymer', plastic: 'polymer', polymer: 'polymer',
-  glass: 'glass', paperboard: 'paper', body: 'organic', wax: 'wax', tape: 'polymer', stone: 'mineral',
+  glass: 'glass', paperboard: 'paper', body: 'organic', wax: 'wax', tape: 'polymer', stone: 'mineral', fuel: 'fuel',
 };
 local overrides = {
   broken_clock: ['polymer', 'metal', 'paper', 'glass'],
@@ -15,7 +15,6 @@ local overrides = {
   glass_lens: ['glass', 'glass'],
   glass_shards: ['glass'],
   lamp_oil_bottle: ['glass', 'metal', 'paper', 'fuel'],
-  lighter: ['polymer', 'metal', 'fuel'],
   riot_helmet_view: ['glass', 'polymer'],
   rubber_strip: ['polymer', 'polymer'],
   sewing_kit: ['polymer', 'cloth', 'metal', 'polymer'],

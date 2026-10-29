@@ -4758,7 +4758,7 @@
       "hold": "upright",
       "id": "lighter",
       "itemPresentation": {
-        "materials": ["polymer", "metal", "fuel"],
+        "materials": ["fuel", "polymer", "metal"],
         "supply": {
           "axis": "y",
           "bands": [
