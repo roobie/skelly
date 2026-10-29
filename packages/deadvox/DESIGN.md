@@ -2229,10 +2229,11 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `createSession`, and `src/core/skillTraining.ts`, `firearmShotPracticeSkill`.
 
   Independent progression permits either skill to exceed the other; no inherited
-  level or shared XP pool can express that distinction. Tiered practice must not
-  erase progress from harder activity. New saves retain both skills and the
-  acquisition latch so Continue cannot award acquisition again. Missing skill
-  sets are rejected rather than migrated at this project stage. See
+  level or shared XP pool can express that distinction. Above-tier practice is
+  dropped. Persisting the acquisition latch keeps replay continuation deterministic:
+  a segment whose start state restores ADS must not award acquisition absent from
+  the recorded run. Missing skill sets are rejected rather than migrated at this
+  project stage. See
   `src/core/character.ts`, `Character.awardPractice` and `Character.restoreState`,
   `src/game/player.ts`, `snapshotPlayer`, and `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
   Opened skill details explain the independent effects because feel alone cannot
