@@ -103,7 +103,7 @@ export const steppedItemFlight = ({
   from,
   direction,
   distanceMetres,
-  arcHeightMetres,
+  gravityMetresPerSimSecondSquared,
   flightSimSeconds,
   drag,
   blockSize,
@@ -113,7 +113,7 @@ export const steppedItemFlight = ({
   from: Vec3;
   direction: Vec3;
   distanceMetres: number;
-  arcHeightMetres: number;
+  gravityMetresPerSimSecondSquared: number;
   flightSimSeconds: number;
   drag: number;
   blockSize: number;
@@ -123,8 +123,7 @@ export const steppedItemFlight = ({
   const magnitude = Math.hypot(...direction);
   const unit = magnitude > 0 ? direction.map((axis) => axis / magnitude) : [0, 0, 1];
   let velocity = unit.map((axis) => (axis * distanceMetres) / flightSimSeconds) as Vec3;
-  velocity[1] += (4 * arcHeightMetres) / flightSimSeconds;
-  const gravity = (8 * arcHeightMetres) / flightSimSeconds ** 2;
+  const gravity = gravityMetresPerSimSecondSquared;
   const dt = Math.min(flightSimSeconds / DRAG_FLIGHT_STEPS, (blockSize * 0.2) / Math.max(1, Math.hypot(...velocity)));
   // Above this bound explicit drag steps can reverse velocity and diverge instead of landing.
   const stableDrag = Math.min(drag, 0.5 / (dt * Math.max(Math.hypot(...velocity), Math.sqrt(gravity))));
@@ -152,11 +151,14 @@ export const steppedItemFlight = ({
 export const flightForItem = (
   item: Item,
   registry: Registry,
-  options: Omit<Parameters<typeof steppedItemFlight>[0], 'drag' | 'arcHeightMetres' | 'flightSimSeconds'>,
+  options: Omit<
+    Parameters<typeof steppedItemFlight>[0],
+    'drag' | 'gravityMetresPerSimSecondSquared' | 'flightSimSeconds'
+  >,
 ): ItemFlight =>
   steppedItemFlight({
     ...options,
     drag: dragPerMetre(item, registry, weightOf(registry, item) / 1000),
-    arcHeightMetres: reachTuning(registry).throwArcHeightMetres,
+    gravityMetresPerSimSecondSquared: reachTuning(registry).throwGravityMetresPerSimSecondSquared,
     flightSimSeconds: reachTuning(registry).throwFlightSimSeconds,
   });

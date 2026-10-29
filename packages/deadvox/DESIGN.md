@@ -2650,11 +2650,13 @@ grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `PileMeshes.sync`.
 
 Landing, presentation and duration share a stepped flight so drag cannot shorten
-the range while leaving a light item floating through an undragged arc. The launch
-follows the player's pitch, rather than borrowing the range of a different angle.
-Replay records launch strength rather than a drag-adjusted distance so it can
-reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
-`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+the range while leaving a light item floating through an undragged path. A throw
+leaves along the player's look direction without added lift; gravity alone makes
+the arc. For #1466, this makes the item go where the player aimed, because a
+climbing throw feels unpredictable. Replay records launch strength rather than a
+drag-adjusted distance so it can reproduce the same flight with the recorded aim.
+See `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
+`steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
 footprint is a cell-rounded outline, not the face that meets the air, so one

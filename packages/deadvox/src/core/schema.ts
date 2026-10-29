@@ -335,8 +335,8 @@ const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
-  throwArcHeightMetres: NonNegative,
+  /** Downward acceleration on a thrown item. */
+  throwGravityMetresPerSimSecondSquared: NonNegative,
   /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
