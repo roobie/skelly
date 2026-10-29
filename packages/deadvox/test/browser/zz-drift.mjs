@@ -23,7 +23,11 @@ const vite = await createServer({
 });
 await vite.listen();
 const port = vite.httpServer.address().port;
-const browser = await launchChromium('primary-action-pixel', { headless: !process.env.DISPLAY || process.env.ZZ_HEADLESS === '1', args: ['--enable-webgl'], renderMode: 'pixel' });
+const browser = await launchChromium('primary-action-pixel', {
+  headless: !process.env.DISPLAY || process.env.ZZ_HEADLESS === '1',
+  args: ['--enable-webgl'],
+  renderMode: 'pixel',
+});
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   page.on('pageerror', (e) => process.stdout.write(`PAGE_ERROR ${e.stack}\n`));
@@ -51,7 +55,10 @@ try {
   await page.waitForFunction(() => document.querySelector('#world-loading')?.dataset.state === 'ready');
   const info = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
-    return { hands: Object.keys(r.inventory.hands).map((k) => [k, r.inventory.hands[k]?.type]), ads: r.input.aimingDownSights };
+    return {
+      hands: Object.keys(r.inventory.hands).map((k) => [k, r.inventory.hands[k]?.type]),
+      ads: r.input.aimingDownSights,
+    };
   });
   process.stdout.write(`INFO ${JSON.stringify(info)}\n`);
   await page.mouse.move(640, 360);
@@ -73,7 +80,9 @@ try {
     for (let i = 0; i < 12; i++) {
       const s = await page.evaluate(() => {
         const f = globalThis.primaryActionTest.view.held.opticLensFrame;
-        return f ? { c: f.center, r: f.radius, d: f.reticleCenter, ads: globalThis.primaryActionTest.input.aimingDownSights } : null;
+        return f
+          ? { c: f.center, r: f.radius, d: f.reticleCenter, ads: globalThis.primaryActionTest.input.aimingDownSights }
+          : null;
       });
       samples.push(s);
       if (i % 4 === 0) {
