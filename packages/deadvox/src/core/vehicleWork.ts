@@ -3,6 +3,12 @@
 import { coreMessage } from './coreText.ts';
 import type { Inventory, Location, Target } from './inventory.ts';
 import type { VehicleWorkHooks } from './longAction.ts';
+import {
+  sameVehiclePlacement,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
+} from './vehicleInstances.ts';
 
 export interface VehicleWorkOptions {
   /** Resolves the ordinary output owner when a removal completes. */
@@ -13,6 +19,7 @@ export interface VehicleWorkOptions {
 
 type WorkKind = 'install' | 'remove';
 interface WorkTarget {
+  placement: VehicleWorkPlacement;
   vehicleId: number;
   fittingId: string;
   itemUid: number;
@@ -50,7 +57,10 @@ const reachableSource = (inventory: Inventory, location: Location): boolean => {
 };
 
 /** Why the selected site cannot take or give up this exact part, before tools are considered. */
-const siteRefusal = (inventory: Inventory, { vehicleId, fittingId, itemUid }: WorkTarget): string | undefined => {
+const siteRefusal = (
+  inventory: Inventory,
+  { vehicleId, fittingId, itemUid, placement }: WorkTarget,
+): string | undefined => {
   const vehicle = inventory.vehicles.get(vehicleId);
   const site = vehicle?.sites.find(({ id }) => id === fittingId);
   const item = inventory.itemByUid(itemUid);
@@ -60,10 +70,13 @@ const siteRefusal = (inventory: Inventory, { vehicleId, fittingId, itemUid }: Wo
   if (!inventory.canReachVehicle(vehicleId)) {
     return coreMessage(inventory.registry, 'tooFar');
   }
-  if (inventory.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount) {
+  if (
+    !(validVehicleWorkPlacement(placement) && sameVehiclePlacement(site, placement)) ||
+    inventory.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount
+  ) {
     return coreMessage(inventory.registry, 'partDoesNotFit');
   }
-  return inventory.vehicleService(vehicleId, fittingId, itemUid)
+  return inventory.vehiclePlacementService(vehicleId, { ...placement, id: fittingId }, itemUid)
     ? undefined
     : coreMessage(inventory.registry, 'partNeedsSupport');
 };
@@ -73,7 +86,11 @@ const serviceRefusal = (inventory: Inventory, options: VehicleWorkOptions, targe
   if (refusal) {
     return refusal;
   }
-  const service = inventory.vehicleService(target.vehicleId, target.fittingId, target.itemUid)!;
+  const service = inventory.vehiclePlacementService(
+    target.vehicleId,
+    { ...target.placement, id: target.fittingId },
+    target.itemUid,
+  )!;
   const missing = Object.entries(service.qualities).find(([quality, level]) => options.quality(quality) < level);
   return missing ? coreMessage(inventory.registry, 'toolNotInReach', { quality: missing[0] }) : undefined;
 };
@@ -83,19 +100,20 @@ const serviceRefusal = (inventory: Inventory, options: VehicleWorkOptions, targe
  * contains no output object or closure; see `longAction.ts`, `VehicleWorkHooks`.
  */
 export const vehicleWorkHooks = (inventory: Inventory, options: VehicleWorkOptions): VehicleWorkHooks => {
-  const validate = (kind: WorkKind, vehicleId: number, fittingId: string, itemUid: number) => {
-    const target = { vehicleId, fittingId, itemUid };
+  const validate = (kind: WorkKind, vehicleId: number, placement: VehicleWorkTarget, itemUid: number) => {
+    const target = { vehicleId, fittingId: placement.id, itemUid, placement };
     return serviceRefusal(inventory, options, target) ?? sourceRefusal(inventory, kind, target);
   };
   return {
     validate,
-    finish: (kind, vehicleId, fittingId, itemUid) =>
-      validate(kind, vehicleId, fittingId, itemUid) ??
+    finish: (kind, vehicleId, placement, itemUid) =>
+      validate(kind, vehicleId, placement, itemUid) ??
       inventory.vehicleTransfer({
         kind,
         vehicleId,
-        fittingId,
+        fittingId: placement.id,
         itemUid,
+        placement,
         ...(kind === 'remove' ? { output: options.output() } : {}),
       }),
   };

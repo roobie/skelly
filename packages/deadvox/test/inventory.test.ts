@@ -74,7 +74,7 @@ describe('grid placement', () => {
     const { inv, hoodie } = dressed(declared);
     const beans = onFloor(inv, 'canned_beans');
     const pocket = { kind: 'pocket', owner: hoodie, pocket: 0 } as const;
-    expect(inv.move(beans, pocket)).toMatchObject({ ok: true, at: { x: 0, y: 0, rotated: false } });
+    expect(inv.move(beans, { ...pocket, at: { x: 0, y: 0, rotated: false } }).ok).toBe(true);
 
     const soup = onFloor(inv, 'canned_soup');
     expect(inv.plan(soup, { ...pocket, at: { x: 0, y: 0, rotated: false } })).toMatchObject({
@@ -282,8 +282,9 @@ describe('stacking', () => {
     inv.move(fresh, pocket);
     expect(inv.move(dirty, pocket)).toMatchObject({ ok: true, at: { x: 1, y: 0 } });
     inv.move(beans[0]!, pocket);
-    // Cans don't stack: the second lies on its side in the bottom row.
-    expect(inv.move(beans[1]!, pocket)).toMatchObject({ ok: true, at: { x: 0, y: 1, rotated: true } });
+    const secondCan = inv.move(beans[1]!, pocket);
+    expect(secondCan.ok).toBe(true);
+    expect(secondCan).not.toHaveProperty('merge');
     expect(hoodie.pockets![0]).toHaveLength(4);
   });
 

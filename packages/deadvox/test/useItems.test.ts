@@ -183,6 +183,21 @@ describe('a paused craft in the held-item list', () => {
 });
 
 describe('using what you hold', () => {
+  it('inventory activation refuses a pocket item until it is held', () => {
+    const t = setup(painkillers);
+    const trousers = t.inventory.create('pocketed_trousers');
+    const pill = t.inventory.create('material_pill', 2);
+    expect(t.inventory.add(trousers, { kind: 'worn' })).toBe(true);
+    expect(t.inventory.add(pill, { kind: 'pocket', owner: trousers, pocket: 0 })).toBe(true);
+    expect(t.survival.activateHeld(pill)).toBeTruthy();
+    expect(t.queue.jobs).toEqual([]);
+    expect(t.inventory.move(pill, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(t.survival.activateHeld(pill)).toBeUndefined();
+    expect(t.queue.busy).toBe(true);
+    t.queue.tick(t.queue.remaining);
+    expect(pill.count).toBe(1);
+  });
+
   it('describes a reservoir lamp by its switch state, not a second battery balance', () => {
     const t = setup();
     const lamp = t.hold('oil_lamp', 'right');

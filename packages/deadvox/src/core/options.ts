@@ -6,7 +6,7 @@ import { dominantSide, offSide } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage } from './coreText.ts';
-import type { HandlingQueue, MoveJob } from './handling.ts';
+import { HandlingQueue, type MoveJob } from './handling.ts';
 import { dropSpots, type HandSide, Inventory, type Plan, type Target, wornSlotOf } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { chargeOf, fitsLight, lightInHands } from './lights.ts';
@@ -228,7 +228,7 @@ export const pocketGroundItem = (inv: Inventory, queue: HandlingQueue, item: Ite
 };
 
 /** Quick move uses worn inventory only: back, other containers, then clothing pockets. */
-const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
+export const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
   const priority = (owner: Item): number => {
     const def = defOf(inv.registry, owner.type);
     if (def.wearable?.slot === 'back') {
@@ -606,6 +606,12 @@ const liveTargetFor = (inv: Inventory, target: Target): Target | undefined => {
 const planningCopy = (inv: Inventory): Inventory => {
   const copy = Inventory.restoreState(inv.registry, inv.snapshotState());
   copy.landing = inv.landing;
+  copy.dropFeet = inv.dropFeet;
+  copy.actorPosition = inv.actorPosition;
+  copy.canReach = inv.canReach;
+  copy.canReachEntity = inv.canReachEntity;
+  copy.canReachVehicle = inv.canReachVehicle;
+  copy.handHold = inv.handHold;
   return copy;
 };
 
@@ -805,6 +811,22 @@ const wieldTwoHanded = (inv: Inventory, queue: HandlingQueue, item: Item, feet: 
     }
   }
   return stowTwoHandDisplacements({ inv, queue, item, feet, displaced, target });
+};
+
+/** Probe without queuing displacements: a failed wield must not move anything before the pocket fallback. */
+export const wieldOrPocket = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+  const planned = planningCopy(inv);
+  const candidate = planned.itemByUid(item.uid)!;
+  const wieldRefusal = toHands(planned, new HandlingQueue(planned), candidate, feet);
+  if (wieldRefusal === undefined) {
+    return toHands(inv, queue, item, feet);
+  }
+  const target = inventoryPocket(inv, item);
+  if (!target) {
+    return wieldRefusal;
+  }
+  const take = queue.enqueue(item, target);
+  return take.ok ? undefined : take.reason;
 };
 
 /** Ordinary to-hands behavior, including moving an occupied hand away first. */

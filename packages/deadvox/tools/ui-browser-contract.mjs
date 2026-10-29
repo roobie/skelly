@@ -1107,19 +1107,33 @@ try {
       !node.querySelector('[data-uid]'));
     let item, grid;
     for (const source of sources) {
+      const moving = items.get(source.dataset.uid);
+      const from = moving && inventory.locate(moving);
+      if (!(from && 'placed' in from)) continue;
       for (const destination of destinations) {
         const [, ownerUid, pocket] = destination.dataset.target.split(':');
         const owner = items.get(ownerUid);
-        const plan = owner && inventory.plan(items.get(source.dataset.uid), {
-          kind: 'pocket', owner, pocket: Number(pocket), at: { x: 0, y: 0, rotated: false },
+        const plan = owner && inventory.plan(moving, {
+          kind: 'pocket', owner, pocket: Number(pocket), at: { x: 0, y: 0, rotated: from.placed.rotated },
         });
-        if (plan?.ok) { item = source; grid = destination; break; }
+        if (!plan?.ok) continue;
+        source.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        destination.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        const sourceRect = source.getBoundingClientRect();
+        const destinationRect = destination.getBoundingClientRect();
+        const sourceHit = document.elementFromPoint(
+          sourceRect.left + sourceRect.width / 2, sourceRect.top + sourceRect.height / 2,
+        )?.closest('.inv-item');
+        const destinationHit = document.elementFromPoint(
+          destinationRect.left + 16, destinationRect.top + 16,
+        )?.closest('.inv-grid');
+        if (sourceHit !== source || destinationHit !== destination) continue;
+        item = source; grid = destination; break;
       }
       if (item) break;
     }
     const around = document.querySelector('#inventory [data-pane="around"]');
     if (!(item && grid && around)) throw new Error('no admitted container-to-inventory transfer is available');
-    item.scrollIntoView({ block: 'nearest', inline: 'nearest' });
     const itemRect = item.getBoundingClientRect();
     const gridRect = grid.getBoundingClientRect();
     const source = { x: itemRect.left + itemRect.width / 2, y: itemRect.top + itemRect.height / 2 };
@@ -1186,7 +1200,10 @@ try {
     Math.abs(ghostAfterMove.left - ghostAtDestination.left - 4) < 0.5,
     'drag ghost follows horizontal movement',
   );
-  assert.ok(Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5, 'drag ghost follows vertical movement');
+  assert.ok(
+    Math.abs(ghostAfterMove.top - ghostAtDestination.top - 6) < 0.5,
+    `drag ghost follows vertical movement: ${JSON.stringify({ transfer, ghostAtDestination, ghostAfterMove, movedPointer })}`,
+  );
   const outside = { x: 4, y: 4 };
   await moveCursorTo(outside);
   await dispatchPointerAt('pointermove', -1, 1, outside);

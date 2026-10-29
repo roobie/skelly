@@ -64,6 +64,9 @@ const discountedCraftRegistry = baseRegistryWith([
       recipes: [
         {
           id: 'discounted_craft_fixture',
+          category: 'fixture_category',
+          tags: [],
+          searchTerms: [],
           result: { item: 'torch', count: 1 },
           timeGameMinutes: 20,
           skills: {},

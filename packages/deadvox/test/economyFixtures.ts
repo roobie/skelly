@@ -45,7 +45,12 @@ export const fixtureMaterialSource = (): ContentSource => {
   const { ui, sound } = fixtureUi();
   return {
     source: 'fixture-materials.json',
-    data: { furnitureMaterials: fixtureMaterials(), sounds: [...fixtureSounds(), sound], ui },
+    data: {
+      furnitureMaterials: fixtureMaterials(),
+      sounds: [...fixtureSounds(), sound],
+      ui,
+      recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],
+    },
   };
 };
 
@@ -68,6 +73,9 @@ const object = (value: unknown): value is Record<string, unknown> =>
 const fixtureEntry = (entry: unknown, section: string): unknown => {
   if (!object(entry)) {
     return entry;
+  }
+  if (section === 'recipes') {
+    return { category: 'fixture_category', tags: [], searchTerms: [], ...entry };
   }
   if (section === 'items') {
     return { economy: fixtureEconomy(), workInProgress: false, notLoot: false, ...entry };
@@ -100,7 +108,7 @@ export const fixtureSources = (sources: readonly ContentSource[]): ContentSource
       return source;
     }
     const data = { ...source.data };
-    for (const section of ['items', 'templates', 'layouts', 'furniture']) {
+    for (const section of ['items', 'templates', 'layouts', 'furniture', 'recipes']) {
       const entries = data[section];
       if (Array.isArray(entries)) {
         data[section] = entries.map((entry: unknown) => fixtureEntry(entry, section));

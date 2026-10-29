@@ -12,6 +12,37 @@ import { placeFitting } from './vehicleBlueprint.ts';
 
 /** A site's saved service rules; its player-visible name stays in content, read through `vehicleSiteName`. */
 type VehicleService = Omit<NonNullable<VehicleFittingDef['service']>, 'name'>;
+export type VehicleWorkPlacement = Pick<VehicleFittingDef, 'at' | 'mirror' | 'supportedBy'>;
+export type VehicleWorkTarget = VehicleWorkPlacement & { id: string };
+
+export const sameVehiclePlacement = (a: VehicleWorkPlacement, b: VehicleWorkPlacement): boolean =>
+  a.at.every((value, axis) => value === b.at[axis]) &&
+  Boolean(a.mirror) === Boolean(b.mirror) &&
+  a.supportedBy.length === b.supportedBy.length &&
+  a.supportedBy.every((id) => b.supportedBy.includes(id));
+
+export const validVehicleWorkPlacement = (value: unknown): value is VehicleWorkPlacement => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const placement = value as VehicleWorkPlacement;
+  return (
+    Array.isArray(placement.at) &&
+    placement.at.length === 3 &&
+    placement.at.every(Number.isFinite) &&
+    (placement.mirror === undefined || placement.mirror === true) &&
+    Array.isArray(placement.supportedBy) &&
+    placement.supportedBy.every((id) => typeof id === 'string' && id !== '') &&
+    new Set(placement.supportedBy).size === placement.supportedBy.length
+  );
+};
+
+export const copyVehicleWorkPlacement = ({ at, mirror, supportedBy }: VehicleWorkPlacement): VehicleWorkPlacement => ({
+  at: [...at],
+  supportedBy: [...supportedBy],
+  ...(mirror === undefined ? {} : { mirror }),
+});
+
 export type VehiclePlacement = Pick<VehicleFittingDef, 'id' | 'at' | 'mirror' | 'supportedBy'> & {
   service?: VehicleService | undefined;
 };
