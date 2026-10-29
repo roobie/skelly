@@ -48,6 +48,14 @@ must not reuse an obstructed probe's memoized geometry. See `test/scenarioStart.
 `certificate`; and `src/core/scenarioCertificate.ts`, `scenarioStartCertificate` and
 `scenarioCertificate`.
 
+Queued lock operations exercise runtime placement and key ownership, not whole-pack
+admission. Their fixture patches an admitted registry so unrelated scenario certification
+cannot consume the test's deadline; content admission stays at its own boundary. See
+`test/locks.test.ts`, "carries independent locks through explicit bedroom and cellar placements into native queued door operations".
+Origin-map equality uses native deep comparison so diagnostic matcher traversal does not
+dominate a rejected-mod check. See `test/browserMods.test.ts`,
+"refuses a missing mod id without admitting its definitions".
+
 A test that needs which authored definitions a Jsonnet source contributes reads them
 from the base registry by id rather than manifesting the source again: the base build
 already admitted them, and a full manifest of a large source can outweigh the test's
