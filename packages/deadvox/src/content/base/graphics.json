@@ -36,6 +36,9 @@
         "splatCap": 256
       },
       "id": "core",
+      "itemPicture": {
+        "framing": 1.1000000000000001
+      },
       "itemPictureCacheCapacity": 128,
       "itemViewer": {
         "degreesPerPixel": 0.5,

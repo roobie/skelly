@@ -106,6 +106,7 @@ import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
+import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
@@ -2542,19 +2543,20 @@ export const createSession = (options: SessionOptions) => {
     /** Metres from the chest to the vehicle's nearest part, the distance its reach is judged by. */
     vehicleDistance: (vehicleId: number) => vehicleDistance(reachPlayer, vehicleParts.boxesOf(vehicleId)),
     /** Why the selected part can't be fitted at or removed from the selected site now. */
-    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) =>
-      sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid),
+    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, target: VehicleWorkTarget, itemUid: number) =>
+      sim.actions.vehicleWork?.validate(kind, vehicleId, target, itemUid),
     /** Starts, or resumes, service work on one selected site and part; returns why not. */
-    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => {
-      const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
+    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, target: VehicleWorkTarget, itemUid: number) => {
+      const service = inventory.vehiclePlacementService(vehicleId, target, itemUid);
       return (
-        sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid) ??
+        sim.actions.vehicleWork?.validate(kind, vehicleId, target, itemUid) ??
         sim.actions.beginVehicleWork({
           kind,
           vehicleId,
-          fittingId,
+          fittingId: target.id,
           itemUid,
           durationSimSeconds: service?.durationSimSeconds ?? 0,
+          placement: target,
         })
       );
     },

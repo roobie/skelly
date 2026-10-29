@@ -44,6 +44,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'mapPieces.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'items.container.pockets[].handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.vehicle.cargoSpace.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'items.vehicle.service.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
     path: 'vehicleBlueprints[].fittings[].service.durationSimSeconds',
     clock: 'Sim',

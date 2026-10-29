@@ -1478,9 +1478,13 @@ pocket space, but its full weight counts toward carried encumbrance. Slinging
 is an ordinary worn-item move, and a displaced long gun prefers a free shoulder
 over a pocket or the ground. Every long gun may take the Deadvox sling mount;
 the sling has no handling effect. Rare loot and authored fitted guns make this
-carrying option discoverable. A slung gun hangs at the wearer's side on a fixed
-sling path, not across the back, so it clears a pack; it is drawn with whatever
-is fitted to it, and its sling's strap over the shoulder
+carrying option discoverable. Crafting gives a path to shoulder carry when loot
+is rare, its skill gate keeps it earned, and the crafted sling is the same item
+as a looted sling, so it fits the same way. Rope or nylon cord both serve as
+the strap, so a sling is easy to make from looted cord and rope need not be
+found or made first. A slung gun hangs at the wearer's side on a fixed sling
+path, not across the back, so it clears a pack; it is drawn with whatever is
+fitted to it, and its sling's strap over the shoulder
 (`DESIGN.md`, "Worn items seen"). See `src/core/firearmFitting.ts`, `SLING_SLOT`;
 `src/core/inventory.ts`, `Inventory.carriedWeight`; and
 `src/content/base/models-firearms.libsonnet`, `slung`.
@@ -3059,27 +3063,40 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
-**Parked service.** Factory service sites use a content mount identity and content-owned
-quality and duration requirements. `src/core/vehicleWork.ts`, `vehicleWorkHooks`, keeps
-the exact UID with its original owner until `src/core/inventory.ts`, `Inventory.vehicleTransfer`
-preflights and commits the transfer, so a stopped or refused action cannot orphan it.
-`src/core/longAction.ts`, `LongActions.beginVehicleWork`, saves references rather than a
-copied part or an interaction closure. Removing a part another part rests on is refused
-before work starts, so no work time is spent on a part that cannot come off.
-Interacting with a parked vehicle part opens the vehicle in the inventory screen's
-surroundings, because exact service requirements and which loose parts fit an empty site
-are facts the world geometry cannot show. Fitted parts are ordinary items with their usual
-details; empty service sites show their content names; each operation names the exact
-vehicle, site and part the player selected and shows the core's own refusal, so the surface
-never promises work the action would refuse. Vehicle reach is measured from the chest to the
-nearest occupied part box, as furniture reach is, and one predicate decides opening, keeping the
-section open and service admission; measuring to the origin would leave a part the player can
-pick and touch out of reach. The reach also needs a clear line to a part box, the same rule as
-furniture, so a wall can't be worked through; the line ignores vehicle cells because the car's
-own body would otherwise hide every part. See `src/core/reach.ts`, `vehicleInReach`, `src/ui/vehicleInspection.ts`,
-`vehicleInspectionViewModel`, and `src/core/interactionPick.ts`, `pickInteractionTarget`.
-Site names stay in content rather than in the saved build, so a reworded pack relabels saved
-vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
+**Part work.** Work requirements belong to the part's item so mods author work
+with the part; an authored site's service wins so a vehicle can override that work.
+Geometry and cargo pocket handling time cannot establish installation cost. See
+`src/core/schema.ts`, `VehicleServiceFields`, and `src/core/inventory.ts`,
+`Inventory.vehiclePlacementService`. Further add-on content follows #1124.
+
+**Add-on regions.** A capability word opens a face by a code rule so mods offer a
+face without authoring geometry. A later narrowing field need not change the word.
+One region function shares lattice and fitted-collision rules, taking clearance from
+the add-on item, so another word does not need another region implementation. See
+`src/core/schema.ts`, `VEHICLE_ADDON_FACES`, and `src/core/cargoSpace.ts`,
+`placementRegion` and `fitIssue`. Sub-cell clearance matters because an add-on
+resting on a thin plate must not invalidate the plate below it.
+
+Every named support must carry the add-on's required word: adding that word is enough
+to make a part a support, without giving `structure` a second meaning. See
+`src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
+belongs with add-ons because it proves support chains without bringing scratch-building
+forward. See `src/content/base/vehicles.jsonnet`, `mounting_plate`, and
+`packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
+
+A stopped or refused action must not orphan or duplicate the selected item; see
+`src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,
+`vehicleWorkHooks`. Saved work describes the target rather than copying the part or
+an interaction closure; see `src/core/longAction.ts`, `LongActions.beginVehicleWork`.
+Admission must reject a supporting part before spending work time on its removal.
+
+Inspection needs the core's own refusal because geometry cannot show service
+requirements; see `src/ui/vehicleInspection.ts`, `vehicleInspectionViewModel`.
+Reach uses occupied part boxes rather than the vehicle origin so a touchable part
+stays reachable, and a clear line prevents working through walls without letting the
+vehicle hide its own parts; see `src/core/reach.ts`, `vehicleInReach`, and
+`src/core/interactionPick.ts`, `pickInteractionTarget`. Site names stay in content so
+a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
 
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing
@@ -3146,27 +3163,21 @@ follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a movin
 vehicle is allowed: coasting, collision and bystander consequences must not vanish
 when a column unloads. Parked vehicles retain their derived world collision.
 
-**Cargo space.** A body's storage and its contents belong to a cargo space: a separate
-part resting on a load floor whose own shape is the hold, so storage travels with the
-part and losing a wall does not lose the load. The game reads the pocket grid from that
-shape rather than from authored numbers; a part's capabilities are names and its sizes
-live in its own data, so each size has one source. Only the floor area counts toward
-capacity, so open beds and flatbeds hold cargo the same way boxes do; the block's height
-only has to clear what is above it. A player sizes a cargo space while placing it by
-dragging out a rectangle, which stops at the edge of the free floor the game works out
-from the load floor and the parts standing on it. Dragging is the complete form of
-choosing a size, so a proposed size can be added on top later without redoing it. The
-floor is a rectangle because storage is a rectangle of pockets, as in a backpack: an odd
-floor takes several spaces, and a rectangle stays valid if shaped spaces ever come, so
-nothing fitted or saved is redone. A space grown to fill walls and roof was not chosen
-because open beds have neither. The block then keeps its size, and a part can't be
-fitted into it. Players build cargo spaces on load floors the vehicle already has; load
-floors and walls built from nothing wait for scratch-built frames, which add to the
-cargo space rather than replace it. Player placement arrives with #1124. A cargo
-space is a datum, so it fits the drawn vehicle the way grips and anchors do: its block
-is its cells, and the block and each free-floor cell snap onto the voxel lattice the
-load floor is drawn on. A space that fills a drawn bed then fits it at any vehicle grain,
-with no tolerance tuned to that grain. See `src/core/cargoSpace.ts`, `freeFloor`.
+**Cargo space.** Storage travels with its part so losing a wall does not lose the
+load. Its shape owns its capacity rather than a second authored size; floor area alone
+counts so open beds and enclosed boxes hold cargo alike. See `src/core/cargoSpace.ts`,
+`cargoGrid` and `cargoSpaceItem`.
+
+Creation and drag sizing follow #1124: a rectangle bounded by the free region is the
+complete form of choosing a size, leaving a suggested size additive. Rectangles match
+inventory pockets and remain valid if shaped spaces arrive; an odd floor can take
+several spaces. Growing a space to walls and roof would exclude open beds. Retaining
+its chosen size lets salvage and refitting preserve the same item. Existing load
+floors bound this work; building floors and walls from nothing belongs to #322.
+
+Cargo is a datum so a space that fills a drawn bed fits at any vehicle grain, without
+a tolerance tuned to that grain. See `src/core/cargoSpace.ts`, `snapBox` and
+`placementRegion`, and `src/core/vehicleBlueprint.ts`, `legalAddonPlacements`.
 
 Entry is seated through animated usable doors for the first loop. Walking through
 plausible interiors is an important long-term requirement for the #322 trucks, RVs

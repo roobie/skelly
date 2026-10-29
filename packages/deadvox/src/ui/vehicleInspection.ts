@@ -3,7 +3,12 @@ import type { Inventory } from '../core/inventory.ts';
 import { conditionWord, type Item } from '../core/items.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { vehicleSiteName } from '../core/vehicleInstances.ts';
+import {
+  copyVehicleWorkPlacement,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  vehicleSiteName,
+} from '../core/vehicleInstances.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 
 export type VehicleWorkPayload = Extract<ReplayActionPayload, { kind: 'vehicle.work' }>;
@@ -44,7 +49,7 @@ export interface VehicleInspectionSource {
   readonly refusal: (
     kind: VehicleWorkKind,
     vehicleId: number,
-    fittingId: string,
+    target: VehicleWorkTarget,
     itemUid: number,
   ) => string | undefined;
 }
@@ -66,12 +71,24 @@ export const vehicleInspectionViewModel = (
   const action = (
     work: VehicleWorkKind,
     label: string,
-    { fittingId, item, durationSimSeconds }: { fittingId: string; item: Item; durationSimSeconds: number },
+    {
+      fittingId,
+      item,
+      durationSimSeconds,
+      placement,
+    }: { fittingId: string; item: Item; durationSimSeconds: number; placement: VehicleWorkPlacement },
   ): VehicleServiceAction => ({
     label,
     durationSimSeconds,
-    payload: { kind: 'vehicle.work', work, vehicleId, fittingId, itemUid: item.uid },
-    refusal: refusal(work, vehicleId, fittingId, item.uid),
+    payload: {
+      kind: 'vehicle.work',
+      work,
+      vehicleId,
+      fittingId,
+      itemUid: item.uid,
+      ...copyVehicleWorkPlacement(placement),
+    },
+    refusal: refusal(work, vehicleId, { id: fittingId, ...copyVehicleWorkPlacement(placement) }, item.uid),
   });
   const sites: VehicleInspectionSiteViewModel[] = [];
   for (const site of vehicle.sites) {
@@ -89,6 +106,7 @@ export const vehicleInspectionViewModel = (
           ? [
               action('remove', text.remove, {
                 fittingId: site.id,
+                placement: site,
                 item: fitted,
                 durationSimSeconds: service.durationSimSeconds,
               }),
@@ -114,6 +132,7 @@ export const vehicleInspectionViewModel = (
       actions: candidates.map((item) =>
         action('install', fillText(text.install, { part: inventory.name(item) }), {
           fittingId: site.id,
+          placement: site,
           item,
           durationSimSeconds: service.durationSimSeconds,
         }),
