@@ -529,11 +529,13 @@ intentional opportunities to fight from above.
   if the ladder takes that hand, and a released throw is admitted on the tick
   that carries it out. See `freeHand` and `refusal` in `src/core/ladders.ts`,
   and `refuseForLadder` in `src/game/throwCharge.ts`.
-- **Top and fall.** Moving toward a ladder at its top steps off onto the surface
-  it serves. A roof-edge ladder reaches roof level; one beneath a hatch ends
-  below the hatch and steps through it when open. Climbing down is not a fall;
-  any hard landing is measured from where the climber releases. See `braced` in
-  `src/core/physics.ts`.
+- **Top and fall.** Roof-edge and hatch ladders must provide a usable transition
+  rather than ending in blocked space. Releasing preserves climb momentum: an
+  upward climber drifts a little before gravity brings them down, because
+  letting go is not an abrupt stop. Climbing down is not a fall, so landing
+  harm begins with release rather than the climb above it. See
+  `src/core/ladders.ts`, `climb` and `LadderHold.piece`, and
+  `src/core/physics.ts`, `stepBody`.
 - **Shamblers.** They do not climb and remain on the ground.
 - **Hatches and placement.** A hatch is a roof or floor door: shut blocks,
   open permits passage from either side, and its state is saved. It takes no
