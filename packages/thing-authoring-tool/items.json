@@ -2105,6 +2105,28 @@
       "anchors": {},
       "connections": [],
       "exportMass": "parts",
+      "id": "mounting_plate",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 12,
+          "params": {
+            "depth": "0.5",
+            "height": "0.0060000000000000001",
+            "width": "0.5"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
       "id": "pickup_bed_floor",
       "parts": [
         {

@@ -606,6 +606,20 @@
     "anchors": {}
   },
   {
+    "id": "mounting_plate",
+    "file": "assets/models/mounting_plate.glb",
+    "parts": {
+      "body": {
+        "node": "body:block",
+        "massKg": 12,
+        "centreOfMass": [0, 0.015625, 0],
+        "collision": [{ "min": [-0.25, 0, -0.25], "max": [0.25, 0.03125, 0.25] }],
+        "voxelGrain": 0.03125
+      }
+    },
+    "anchors": {}
+  },
+  {
     "id": "pickup_bed_floor",
     "file": "assets/models/pickup_bed_floor.glb",
     "parts": {

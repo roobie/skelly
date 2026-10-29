@@ -14,7 +14,7 @@ export interface TutorialPresentation {
 
 // The actions each stage's hint names: ids, not search words, so a topic cannot match an unrelated row by wording.
 const wieldTopic = ['ui.inventory-toggle', 'inventory.hands'];
-const handTopic = [...wieldTopic, 'hand.use-dominant', 'hand.use-off'];
+const handTopic = [...wieldTopic, 'inventory.activate', 'hand.use-dominant', 'hand.use-off'];
 const menuTopic = ['ui.main-menu-toggle'];
 const gunTopic = [
   ...handTopic,
@@ -31,12 +31,12 @@ export const stageTopics: Record<Tutorial['stage'], readonly string[]> = {
     'ui.inventory-toggle',
     'inventory.previous',
     'inventory.next',
-    'inventory.best-pocket',
+    'inventory.take',
     'inventory.hands',
     'inventory.wear',
     'inventory.search',
-    'inventory.quick-action-gate',
-    'hand.use-dominant',
+    'inventory.find',
+    'inventory.wield-or-pocket',
   ],
   hands: wieldTopic,
   open: handTopic,
@@ -63,12 +63,6 @@ const stageHint = (
   const { stage, lightKit: kit } = tutorial;
   const action = (id: string, label: string) => html`<span data-tutorial-action=${id}>${label} ${keyCap(id)}</span>`;
   const inventoryAction = action('ui.inventory-toggle', inventoryOpen ? text.closeInventory : text.inventory);
-  const quickAction = html`
-    <span data-tutorial-action="inventory.quick-action-gate">
-      ${text.quickAction} ${keyCap('inventory.quick-action-gate')} +
-      <span data-tutorial-action="hand.use-dominant">${keyCap('hand.use-dominant')}</span>
-    </span>
-  `;
   const wield = (label: string) =>
     inventoryOpen
       ? html`${label}: ${action('inventory.hands', text.wieldSelectedItem)}`
@@ -77,7 +71,7 @@ const stageHint = (
   const nameOf = (type: string) => inventory.registry.items.get(type)?.name ?? type;
   const use = (type: string, label: string) =>
     inventoryOpen
-      ? inventoryAction
+      ? action('inventory.activate', label)
       : action(
           inventory.hands[dominantSide(inventory.character)]?.type === type ? 'hand.use-dominant' : 'hand.use-off',
           label,
@@ -122,10 +116,10 @@ const stageHint = (
     loot: inventoryOpen
       ? html`
           ${action('inventory.previous', text.selectPrevious)} · ${action('inventory.next', text.selectNext)} ·
-          ${action('inventory.best-pocket', text.takeSelected)} · ${action('inventory.hands', text.wieldSelected)} ·
+          ${action('inventory.take', text.takeSelected)} · ${action('inventory.hands', text.wieldSelected)} ·
           ${action('inventory.wear', text.wearOrRemove)}
           <br />
-          ${action('inventory.search', text.searchSupplies)} · ${quickAction}
+          ${action('inventory.search', text.searchSupplies)} · ${action('inventory.find', text.findItems)} · ${action('inventory.wield-or-pocket', text.wieldOrStow)}
         `
       : inventoryAction,
     hands: wield(text.beansAndOpener),

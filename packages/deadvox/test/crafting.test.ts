@@ -71,6 +71,9 @@ const benchmarkEntries = (source: Registry): BenchmarkEntry[] => {
 
 const recipe = (components: RecipeDef['components'], qualities: RecipeDef['qualities'] = {}): RecipeDef => ({
   id: 'fixture',
+  category: 'fixture_category',
+  tags: [],
+  searchTerms: [],
   result: { item: 'torch', count: 1 },
   timeGameMinutes: gameMinutes(20),
   skills: {},
@@ -190,6 +193,9 @@ describe('pure craft planner', () => {
           recipes: [
             {
               id: 'fixture_instant',
+              category: 'fixture_category',
+              tags: [],
+              searchTerms: [],
               result: { item: 'fixture_result', count: 1 },
               timeGameMinutes: gameMinutes(1),
               skills: {},

@@ -409,6 +409,7 @@ local lights = import 'lights.libsonnet';
   "recipes": [
     {
       "id": "rag_to_cloth_strip",
+      category: 'materials', tags: ['textile'], searchTerms: [],
       "result": { "item": "cloth_strip", "count": 2 },
       "timeGameMinutes": 4,
       "skills": { "crafting": 0 },
@@ -436,6 +437,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "trim_wood_offcut",
+      category: 'materials', tags: ['wood'], searchTerms: [],
       "result": { "item": "wood_offcut", "count": 2 },
       "timeGameMinutes": 5,
       "skills": { "crafting": 0 },
@@ -445,6 +447,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_sewing_kit",
+      category: 'tools', tags: ['textile'], searchTerms: [],
       "result": { "item": "sewing_kit", "count": 1 },
       "timeGameMinutes": 12,
       "skills": { "crafting": 0 },
@@ -457,6 +460,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_sewing_repair_kit",
+      category: 'tools', tags: ['textile'], searchTerms: [],
       "result": { "item": "sewing_repair_kit", "count": 1 },
       "timeGameMinutes": 15,
       "skills": { "crafting": 0 },
@@ -469,6 +473,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_electrical_repair_kit",
+      category: 'tools', tags: ['electrical'], searchTerms: [],
       "result": { "item": "electrical_repair_kit", "count": 1 },
       "timeGameMinutes": 20,
       "skills": { "mechanics": 0 },
@@ -482,6 +487,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_wire_strippers",
+      category: 'tools', tags: ['metal', 'electrical'], searchTerms: [],
       "result": { "item": "wire_strippers", "count": 1 },
       "timeGameMinutes": 18,
       "skills": { "mechanics": 0 },
@@ -495,6 +501,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "assemble_fastener_pack",
+      category: 'materials', tags: ['metal'], searchTerms: [],
       "result": { "item": "fastener_pack", "count": 2 },
       "timeGameMinutes": 6,
       "skills": { "crafting": 0 },
@@ -503,6 +510,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_improvised_suppressor",
+      category: 'attachments', tags: ['metal'], searchTerms: [],
       "result": { "item": "improvised_suppressor", "count": 1 },
       "timeGameMinutes": 35,
       "skills": { "mechanics": 0 },
@@ -516,6 +524,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_taped_flashlight_mount",
+      category: 'attachments', tags: ['electrical', 'metal'], searchTerms: [],
       "consumeFitted": true,
       "result": { "item": "taped_flashlight_mount", "count": 1 },
       "timeGameMinutes": 18,
@@ -531,6 +540,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_scrap_foregrip",
+      category: 'attachments', tags: ['wood'], searchTerms: [],
       "result": { "item": "scrap_foregrip", "count": 1 },
       "timeGameMinutes": 15,
       "skills": { "mechanics": 0 },
@@ -544,6 +554,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_hammer",
+      category: 'repair_tools', tags: ['metal'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "hammer", "count": 1 },
       "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
@@ -554,6 +565,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_machete",
+      category: 'repair_tools', tags: ['metal'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "machete", "count": 1 },
       "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
@@ -564,6 +576,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_kabar",
+      category: 'repair_tools', tags: ['metal'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "kabar", "count": 1 },
       "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
@@ -574,6 +587,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_baseball_bat",
+      category: 'repair_tools', tags: ['wood'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "baseball_bat", "count": 1 },
       "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
@@ -584,6 +598,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_steel_pipe",
+      category: 'repair_tools', tags: ['metal'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "steel_pipe", "count": 1 },
       "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
@@ -594,6 +609,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_jeans",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "jeans", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -604,6 +620,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_cargo_pants",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "cargo_pants", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -614,6 +631,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_hoodie",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "hoodie", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -624,6 +642,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_jacket",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "jacket", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -634,6 +653,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_utility_vest",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "utility_vest", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -644,6 +664,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_stab_vest",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "stab_vest", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -654,6 +675,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_riot_helmet",
+      category: 'repair_clothing', tags: [], searchTerms: [],
       "kind": "repair",
       "result": { "item": "riot_helmet", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -664,6 +686,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_hiking_backpack",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "hiking_backpack", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -674,6 +697,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_fanny_pack",
+      category: 'repair_clothing', tags: ['textile'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "fanny_pack", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -684,6 +708,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "repair_flashlight",
+      category: 'repair_electrical', tags: ['electrical'], searchTerms: [],
       "kind": "repair",
       "result": { "item": "flashlight", "count": 1 },
       "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },

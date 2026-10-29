@@ -39,15 +39,18 @@ const distance = (key: string, [pcx, pcz]: readonly [number, number]) => {
   return Math.hypot(cx - pcx, cz - pcz);
 };
 
-const liveStreamer = () => {
+const liveStreamer = (preloadRings = 0) => {
   vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
   vi.stubGlobal('Worker', AnsweringWorker);
   const drawn = new Map<string, unknown>();
+  const reveal = { columns: new Set<string>() };
   const meshes = {
     keys: () => drawn.keys(),
     set: (key: string, _at: unknown, mesh: unknown) => drawn.set(key, mesh),
     remove: (key: string) => drawn.delete(key),
-    setRevealedColumns: () => undefined,
+    setRevealedColumns: (columns: Set<string>) => {
+      reveal.columns = columns;
+    },
   };
   const streamer = new Streamer({
     world: new World(),
@@ -61,6 +64,7 @@ const liveStreamer = () => {
     scale: { ...makeScale(0.5), minCy: 0, maxCy: 0 },
     structures: [],
     radius: RADIUS,
+    preloadRings,
     hysteresis: HYSTERESIS,
     surface: { height: () => 4, top: () => undefined },
   });
@@ -73,11 +77,11 @@ const liveStreamer = () => {
       }
     }
   };
-  return { streamer, drawn, settle };
+  return { streamer, drawn, reveal, settle };
 };
 
-it('draws every column within the view radius and none beyond it, corners included', () => {
-  const { streamer, drawn, settle } = liveStreamer();
+it.each([0, 1, 2])('keeps view-edge terrain revealed while loading %i extra sky rings', (preloadRings) => {
+  const { streamer, drawn, reveal, settle } = liveStreamer(preloadRings);
   settle(0, 0);
   expect(streamer.unmeshedColumns(0.5 * CHUNK, 0.5 * CHUNK, RADIUS)).toBe(0);
   const outside = [...drawn.keys()].filter((key) => distance(key, [0, 0]) > RADIUS);
@@ -86,12 +90,33 @@ it('draws every column within the view radius and none beyond it, corners includ
   const generated = streamer.generatedColumns().map(([cx, cz]) => `${cx},0,${cz}`);
   const inside = generated.filter((key) => distance(key, [0, 0]) <= RADIUS);
   expect(new Set(drawn.keys())).toEqual(new Set(inside));
-  // Chunk data reaches only the neighbours meshing needs.
-  expect(generated.filter((key) => distance(key, [0, 0]) > RADIUS + Math.SQRT2)).toEqual([]);
+  expect(inside.length).toBeGreaterThan(0);
+  for (const key of inside) {
+    const [cx, , cz] = key.split(',');
+    expect(reveal.columns.has(`${cx},${cz}`)).toBe(true);
+  }
+  const loadedRadius = RADIUS + preloadRings;
+  expect(generated.filter((key) => distance(key, [0, 0]) > loadedRadius + Math.SQRT2)).toEqual([]);
+  const loaded = new Set(generated);
+  for (let z = -loadedRadius; z <= loadedRadius; z++) {
+    for (let x = -loadedRadius; x <= loadedRadius; x++) {
+      if (Math.hypot(x, z) <= loadedRadius) {
+        expect(loaded.has(`${x},0,${z}`)).toBe(true);
+      }
+    }
+  }
+  const ahead = generated.filter((key) => distance(key, [0, 0]) > RADIUS + Math.SQRT2);
+  if (preloadRings > 0) {
+    expect(ahead.length).toBeGreaterThan(0);
+  }
+  for (const key of ahead) {
+    const [cx, , cz] = key.split(',');
+    expect(reveal.columns.has(`${cx},${cz}`)).toBe(false);
+  }
 });
 
-it('keeps an edge column loaded and drawn when the player steps back across a column border', () => {
-  const { streamer, drawn, settle } = liveStreamer();
+it.each([0, 1, 2])('keeps the sky margin resident across a border step with %i extra rings', (preloadRings) => {
+  const { streamer, drawn, settle } = liveStreamer(preloadRings);
   settle(0, 0);
   settle(1, 0);
   const loaded = new Set(streamer.generatedColumns().map(([cx, cz]) => `${cx},${cz}`));

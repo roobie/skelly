@@ -3,7 +3,7 @@
 // handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import { cargoGrid, cargoSpaceItem } from './cargoSpace.ts';
+import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
@@ -68,11 +68,17 @@ import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { placeFitting } from './vehicleBlueprint.ts';
 import {
   copyVehiclePlacement,
+  copyVehicleWorkPlacement,
+  sameVehiclePlacement,
   type VehicleInstance,
   VehicleInstances,
   type VehicleInstancesState,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
 } from './vehicleInstances.ts';
 
 /** Handling tunables in seconds, authored in content beside the skill that scales them. */
@@ -143,7 +149,7 @@ export interface Spot {
 export type Location = TreeLocation<Item, Pile, BlockEntity>;
 
 /**
- * Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. A spot asks to swap
+ * Where to put an item. Without a spot, it joins a stack with room or uses automatic grid placement. A spot asks to swap
  * with its occupant unless it is `reserved`: a batch's reservation, which fails once something else has taken it.
  */
 export type TargetState =
@@ -171,6 +177,7 @@ export type Target =
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot; reserved?: true };
 
 export interface VehicleTransfer {
+  placement: VehicleWorkPlacement;
   kind: 'install' | 'remove';
   vehicleId: number;
   fittingId: string;
@@ -387,18 +394,15 @@ export class Inventory {
    * is completely admitted before either owner changes; see `vehicleTransfer`.
    */
   vehicleTransfer(request: VehicleTransfer): string | undefined {
-    const { kind, vehicleId, fittingId, itemUid } = request;
-    const vehicle = this.vehicles.get(vehicleId);
-    const site = vehicle?.sites.find(({ id }) => id === fittingId);
-    const item = this.itemByUid(itemUid);
-    if (!(vehicle && site?.service && item)) {
-      return coreMessage(this.registry, 'gone');
+    const { kind, vehicleId, fittingId, itemUid, placement } = request;
+    const refusal = this.vehiclePlacementRefusal(vehicleId, { id: fittingId, ...placement }, itemUid);
+    if (refusal) {
+      return refusal;
     }
-    if (this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount || item.count !== 1) {
-      return coreMessage(this.registry, 'partDoesNotFit');
-    }
+    const vehicle = this.vehicles.get(vehicleId)!;
+    const item = this.itemByUid(itemUid)!;
     return kind === 'install'
-      ? this.installVehiclePart(vehicle, site, item, vehicleId)
+      ? this.installVehiclePart(vehicle, { id: fittingId, ...copyVehicleWorkPlacement(placement) }, item, vehicleId)
       : this.removeVehiclePart(vehicle, item, request);
   }
 
@@ -427,17 +431,17 @@ export class Inventory {
 
   private installVehiclePart(
     vehicle: VehicleInstance,
-    site: VehicleInstance['sites'][number],
+    placement: VehicleInstance['sites'][number],
     item: Item,
     vehicleId: number,
   ): string | undefined {
     const from = this.locate(item);
-    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === site.id)) {
+    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === placement.id)) {
       return coreMessage(this.registry, 'gone');
     }
     const refusal = this.replaceVehicle(
       vehicleId,
-      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(site), item }]),
+      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(placement), item }]),
       'partDoesNotFit',
     );
     if (refusal) {
@@ -488,13 +492,86 @@ export class Inventory {
     itemUid: number,
   ): Readonly<{ durationSimSeconds: number; qualities: Readonly<Record<string, number>> }> | undefined {
     const vehicle = this.vehicles.get(vehicleId);
-    const site = vehicle?.sites.find(({ id }) => id === fittingId);
+    const target =
+      vehicle?.fittings.find(({ id }) => id === fittingId) ?? vehicle?.sites.find(({ id }) => id === fittingId);
+    return target ? this.vehiclePlacementService(vehicleId, target, itemUid) : undefined;
+  }
+
+  vehiclePlacementService(
+    vehicleId: number,
+    target: VehicleWorkTarget,
+    itemUid: number,
+  ): ReturnType<Inventory['vehicleService']> {
+    if (this.vehiclePlacementRefusal(vehicleId, target, itemUid)) {
+      return undefined;
+    }
+    const site = this.vehicles.get(vehicleId)!.sites.find(({ id }) => id === target.id);
+    const part = this.registry.items.get(this.itemByUid(itemUid)!.type)!.vehicle!;
+    return site?.service ?? part.service;
+  }
+
+  private supportsVehiclePlacement(
+    vehicle: VehicleInstance,
+    target: VehicleWorkPlacement,
+    part: NonNullable<ItemDef['vehicle']>,
+  ): boolean {
+    return (
+      (!part.addon || target.supportedBy.length > 0) &&
+      target.supportedBy.every((support) =>
+        vehicle.fittings.some(
+          ({ id, item }) =>
+            id === support &&
+            (!part.addon || this.registry.items.get(item.type)?.vehicle?.capabilities.includes(part.addon.requires)),
+        ),
+      )
+    );
+  }
+
+  vehiclePlacementRefusal(vehicleId: number, target: VehicleWorkTarget, itemUid: number): string | undefined {
+    const vehicle = this.vehicles.get(vehicleId);
     const item = this.itemByUid(itemUid);
-    return site?.service &&
-      item &&
-      site.supportedBy.every((support) => vehicle?.fittings.some(({ id }) => id === support)) &&
-      this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
-      ? site.service
+    const part = item && this.registry.items.get(item.type)?.vehicle;
+    const site = vehicle?.sites.find(({ id }) => id === target.id);
+    const service = site?.service ?? part?.service;
+    if (!(vehicle && item && service)) {
+      return coreMessage(this.registry, 'gone');
+    }
+    if (
+      !validVehicleWorkPlacement(target) ||
+      item.count !== 1 ||
+      part?.mount !== service.mount ||
+      vehicle.fittings.some(({ id, item: owned }) => id === target.id && owned.uid !== itemUid) ||
+      (site?.service && !sameVehiclePlacement(site, target))
+    ) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    if (!this.supportsVehiclePlacement(vehicle, target, part)) {
+      return coreMessage(this.registry, 'partNeedsSupport');
+    }
+    const fitted = vehicle.fittings.find(({ item: owned }) => owned.uid === itemUid);
+    if (fitted && (fitted.id !== target.id || !sameVehiclePlacement(fitted, target))) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    if (!(site?.service || part.addon)) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    const present = vehicle.fittings
+      .filter(({ item: owned }) => owned.uid !== itemUid)
+      .map((entry) =>
+        placeFitting(this.registry, {
+          id: entry.id,
+          ...copyVehicleWorkPlacement(entry),
+          part: entry.item.type,
+          ...(entry.item.cargo ? { cargo: [...entry.item.cargo] } : {}),
+        }),
+      );
+    const candidate = placeFitting(this.registry, {
+      ...target,
+      part: item.type,
+      ...(item.cargo ? { cargo: [...item.cargo] } : {}),
+    });
+    return fitIssue(present, candidate, this.registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres)
+      ? coreMessage(this.registry, 'partDoesNotFit')
       : undefined;
   }
 
@@ -1099,22 +1176,14 @@ export class Inventory {
 
   private validCraftPlan(
     plan: Extract<WorkPlan, { kind: 'craft' }>,
-    repair?: { targetUid: number; amount: number },
+    repair?: import('./longAction.ts').CraftRepair,
   ): boolean {
     const recipe = this.registry.recipes.get(plan.recipe);
     if (!recipe) {
       return false;
     }
-    if (repair) {
-      const target = this.itemByUid(repair.targetUid);
-      if (
-        !target ||
-        plan.components.some(({ item }) => item.uid === target.uid) ||
-        target.type !== recipe.result.item ||
-        target.count !== 1
-      ) {
-        return false;
-      }
+    if (repair && !this.validRepairPlan(plan, repair)) {
+      return false;
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
@@ -1124,6 +1193,30 @@ export class Inventory {
       seen.add(item.uid);
     }
     return !plan.tools.some((tool) => seen.has(tool.item.uid));
+  }
+
+  private validRepairPlan(
+    plan: Extract<WorkPlan, { kind: 'craft' }>,
+    repair: import('./longAction.ts').CraftRepair,
+  ): boolean {
+    const recipe = this.registry.recipes.get(plan.recipe)!;
+    if (repair.target.kind === 'entity') {
+      const entity = this.entities.byUid(repair.target.uid);
+      return Boolean(
+        entity &&
+          entity.type === recipe.repair?.entity &&
+          !this.entities.useRefusal(entity) &&
+          this.canReachEntity(entity) &&
+          this.entities.canRepair(entity, repair.amount),
+      );
+    }
+    const target = this.itemByUid(repair.target.uid);
+    return Boolean(
+      target &&
+        !plan.components.some(({ item }) => item.uid === target.uid) &&
+        target.type === recipe.result.item &&
+        target.count === 1,
+    );
   }
 
   private validCraftComponent(item: Item, count: number, consumeFitted = false): boolean {
@@ -1156,7 +1249,7 @@ export class Inventory {
   private workPayload(
     plan: WorkPlan,
     components: Item[],
-    repair?: { targetUid: number; amount: number },
+    repair?: import('./longAction.ts').CraftRepair,
   ): NonNullable<Item['work']> {
     if (plan.kind === 'disassembly') {
       return {
@@ -1177,12 +1270,12 @@ export class Inventory {
       elapsed: 0,
       duration: plan.gather + plan.work,
       components,
-      ...(repair ? { repairTargetUid: repair.targetUid, repairAmount: repair.amount } : {}),
+      ...(repair ? { repairTarget: { ...repair.target }, repairAmount: repair.amount } : {}),
     };
   }
 
   /** Whether restore would accept the work item this plan makes, judged before any input moves. */
-  private restorableWork(plan: WorkPlan, repair?: { targetUid: number; amount: number }): boolean {
+  private restorableWork(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): boolean {
     const components =
       plan.kind === 'craft'
         ? plan.components.map(({ item, count }) => ({ ...item, count }))
@@ -1205,7 +1298,7 @@ export class Inventory {
   private escrowCraft(
     plan: Extract<WorkPlan, { kind: 'craft' }>,
     work: Item,
-    repair?: { targetUid: number; amount: number },
+    repair?: import('./longAction.ts').CraftRepair,
   ): void {
     const components = plan.components.map(({ item, count }) => {
       const from = this.locate(item)!;
@@ -1237,7 +1330,7 @@ export class Inventory {
   }
 
   /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
-  beginWork(plan: WorkPlan, repair?: { targetUid: number; amount: number }): Item | undefined {
+  beginWork(plan: WorkPlan, repair?: import('./longAction.ts').CraftRepair): Item | undefined {
     if (this.hands.left || this.hands.right) {
       return undefined;
     }
@@ -1352,7 +1445,7 @@ export class Inventory {
     if (payload.kind === 'disassembly') {
       return payload.outputs.map(({ item, count }) => this.create(item, count, 1, calendar));
     }
-    if (payload.repairTargetUid !== undefined) {
+    if (payload.repairTarget !== undefined) {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
@@ -1360,24 +1453,38 @@ export class Inventory {
   }
 
   private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
-    if (payload.kind !== 'craft' || payload.repairTargetUid === undefined) {
+    if (payload.kind !== 'craft' || payload.repairTarget?.kind !== 'item') {
       return undefined;
     }
-    const target = this.itemByUid(payload.repairTargetUid);
+    const target = this.itemByUid(payload.repairTarget.uid);
     if (finish && (!target || payload.repairAmount === undefined)) {
       throw new Error('The repair target is missing');
     }
     return target;
   }
 
+  private completeEntityRepair(payload: NonNullable<Item['work']>): boolean {
+    if (payload.kind !== 'craft' || payload.repairTarget?.kind !== 'entity') {
+      return true;
+    }
+    const entity = this.entities.byUid(payload.repairTarget.uid);
+    return Boolean(
+      entity &&
+        !this.entities.useRefusal(entity) &&
+        this.canReachEntity(entity) &&
+        this.entities.repair(entity, payload.repairAmount!),
+    );
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
-  releaseWork(work: Item, finish: boolean, feet: Vec3, calendar = 0): void {
+  releaseWork(work: Item, complete: boolean, feet: Vec3, calendar = 0): void {
     const payload = work.work;
     const at = this.locate(work);
     if (!(payload && at)) {
       return;
     }
-    const repairing = payload.kind === 'craft' && payload.repairTargetUid !== undefined;
+    const finish = complete && this.completeEntityRepair(payload);
+    const repairing = payload.kind === 'craft' && payload.repairTarget !== undefined;
     const target = this.repairTargetForWork(payload, finish);
     const outputs = this.workOutputs(payload, finish, calendar);
     const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
@@ -2058,7 +2165,7 @@ const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemSt
   const byUid = new Map(tree.map(({ item }) => [item.uid, item]));
   for (const { item } of tree) {
     const { work } = item;
-    const targetUid = work?.repairTargetUid;
+    const targetUid = work?.repairTarget?.kind === 'item' ? work.repairTarget.uid : undefined;
     if (!work || targetUid === undefined) {
       continue;
     }
@@ -2157,11 +2264,16 @@ const validateCraftWorkItem = (
   const recipe = registry.recipes.get(work.recipe);
   if (
     !recipe ||
-    (recipe.kind === 'repair') !== (work.repairTargetUid !== undefined && work.repairAmount !== undefined) ||
-    (work.repairTargetUid === undefined) !== (work.repairAmount === undefined) ||
-    (work.repairTargetUid !== undefined && (!Number.isSafeInteger(work.repairTargetUid) || work.repairTargetUid < 1)) ||
+    (recipe.kind === 'repair') !== (work.repairTarget !== undefined && work.repairAmount !== undefined) ||
+    (work.repairTarget === undefined) !== (work.repairAmount === undefined) ||
+    (work.repairTarget !== undefined &&
+      (!(['item', 'entity'].includes(work.repairTarget.kind) && Number.isSafeInteger(work.repairTarget.uid)) ||
+        work.repairTarget.uid < 1 ||
+        (work.repairTarget.kind === 'entity') !== (recipe.repair?.entity !== undefined))) ||
     (work.repairAmount !== undefined &&
-      (!Number.isFinite(work.repairAmount) || work.repairAmount <= 0 || work.repairAmount > 1))
+      (!Number.isFinite(work.repairAmount) ||
+        work.repairAmount <= 0 ||
+        (work.repairTarget?.kind === 'item' && work.repairAmount > 1)))
   ) {
     throw new Error('Invalid craft work payload');
   }

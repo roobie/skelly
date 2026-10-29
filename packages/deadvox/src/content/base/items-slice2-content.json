@@ -861,6 +861,7 @@
   ],
   "recipes": [
     {
+      "category": "materials",
       "components": [
         [
           {
@@ -877,12 +878,15 @@
         "count": 2,
         "item": "cloth_strip"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 4
     },
     {
+      "category": "materials",
       "components": [
         [
           {
@@ -951,13 +955,16 @@
         "count": 2,
         "item": "wood_offcut"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["wood"],
       "timeGameMinutes": 5,
       "workstation": "workbench"
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -986,12 +993,15 @@
         "count": 1,
         "item": "sewing_kit"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 12
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -1020,12 +1030,15 @@
         "count": 1,
         "item": "sewing_repair_kit"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 15
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -1054,13 +1067,16 @@
         "count": 1,
         "item": "electrical_repair_kit"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["electrical"],
       "timeGameMinutes": 20,
       "workstation": "workbench"
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -1089,13 +1105,16 @@
         "count": 1,
         "item": "wire_strippers"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["metal", "electrical"],
       "timeGameMinutes": 18,
       "workstation": "workbench"
     },
     {
+      "category": "materials",
       "components": [
         [
           {
@@ -1118,12 +1137,15 @@
         "count": 2,
         "item": "fastener_pack"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 6
     },
     {
+      "category": "attachments",
       "components": [
         [
           {
@@ -1153,13 +1175,16 @@
         "count": 1,
         "item": "improvised_suppressor"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 35,
       "workstation": "workbench"
     },
     {
+      "category": "attachments",
       "components": [
         [
           {
@@ -1195,13 +1220,16 @@
         "count": 1,
         "item": "taped_flashlight_mount"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["electrical", "metal"],
       "timeGameMinutes": 18,
       "workstation": "workbench"
     },
     {
+      "category": "attachments",
       "components": [
         [
           {
@@ -1231,13 +1259,16 @@
         "count": 1,
         "item": "scrap_foregrip"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["wood"],
       "timeGameMinutes": 15,
       "workstation": "workbench"
     },
     {
+      "category": "repair_tools",
       "components": [
         [
           {
@@ -1266,12 +1297,15 @@
         "count": 1,
         "item": "hammer"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 12
     },
     {
+      "category": "repair_tools",
       "components": [
         [
           {
@@ -1300,12 +1334,15 @@
         "count": 1,
         "item": "machete"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 15
     },
     {
+      "category": "repair_tools",
       "components": [
         [
           {
@@ -1334,12 +1371,15 @@
         "count": 1,
         "item": "kabar"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 12
     },
     {
+      "category": "repair_tools",
       "components": [
         [
           {
@@ -1369,12 +1409,15 @@
         "count": 1,
         "item": "baseball_bat"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["wood"],
       "timeGameMinutes": 14
     },
     {
+      "category": "repair_tools",
       "components": [
         [
           {
@@ -1403,12 +1446,15 @@
         "count": 1,
         "item": "steel_pipe"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 14
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1437,12 +1483,15 @@
         "count": 1,
         "item": "jeans"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 10
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1471,12 +1520,15 @@
         "count": 1,
         "item": "cargo_pants"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 12
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1505,12 +1557,15 @@
         "count": 1,
         "item": "hoodie"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 12
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1539,12 +1594,15 @@
         "count": 1,
         "item": "jacket"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 15
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1573,12 +1631,15 @@
         "count": 1,
         "item": "utility_vest"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 15
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1607,12 +1668,15 @@
         "count": 1,
         "item": "stab_vest"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 15
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1633,12 +1697,15 @@
         "count": 1,
         "item": "riot_helmet"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": [],
       "timeGameMinutes": 15
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1667,12 +1734,15 @@
         "count": 1,
         "item": "hiking_backpack"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 16
     },
     {
+      "category": "repair_clothing",
       "components": [
         [
           {
@@ -1701,12 +1771,15 @@
         "count": 1,
         "item": "fanny_pack"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 10
     },
     {
+      "category": "repair_electrical",
       "components": [
         [
           {
@@ -1735,9 +1808,11 @@
         "count": 1,
         "item": "flashlight"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["electrical"],
       "timeGameMinutes": 14
     }
   ]

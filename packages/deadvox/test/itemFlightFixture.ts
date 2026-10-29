@@ -4,7 +4,7 @@ export const presentationFlight = steppedItemFlight({
   from: [0, 1, 0],
   direction: [1, 0, 0],
   distanceMetres: 2,
-  arcHeightMetres: 1,
+  gravityMetresPerSimSecondSquared: 1,
   flightSimSeconds: 1,
   drag: 0.1,
   blockSize: 1,

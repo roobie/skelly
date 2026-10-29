@@ -11,7 +11,7 @@ import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
-import { logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
+import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -95,7 +95,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=replay_fixture&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=replay_fixture&radius=${cleanReplayRadiusM}&time=12:00&post=0&sunshadow=0&torchshadow=0`,
         renderOverride,
       ),
     );

@@ -238,39 +238,42 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   let forwardingClick = false;
   let hoveredElement: Element | null = null;
   let hoveredFact: Element | null = null;
-  document.addEventListener(
-    'click',
-    (e) => {
-      if (forwardingClick || !input.locked || !input.menuPointer) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      const target = document.elementFromPoint(input.cursorX, input.cursorY);
-      if (target && target !== canvas && target.id !== 'game-cursor') {
-        forwardingClick = true;
-        try {
-          if (isInputElement(target)) {
-            target.focus();
-          }
-          target.dispatchEvent(
-            new MouseEvent('click', {
-              bubbles: true,
-              cancelable: true,
-              clientX: input.cursorX,
-              clientY: input.cursorY,
-              button: (e as MouseEvent).button,
-              shiftKey: (e as MouseEvent).shiftKey,
-              altKey: (e as MouseEvent).altKey,
-            }),
-          );
-        } finally {
-          forwardingClick = false;
+  for (const type of ['click', 'dblclick'] as const) {
+    document.addEventListener(
+      type,
+      (e) => {
+        if (forwardingClick || !input.locked || !input.menuPointer) {
+          return;
         }
-      }
-    },
-    true,
-  );
+        e.preventDefault();
+        e.stopPropagation();
+        const target = document.elementFromPoint(input.cursorX, input.cursorY);
+        if (target && target !== canvas && target.id !== 'game-cursor') {
+          forwardingClick = true;
+          try {
+            if (isInputElement(target)) {
+              target.focus();
+            }
+            target.dispatchEvent(
+              new MouseEvent(type, {
+                detail: (e as MouseEvent).detail,
+                bubbles: true,
+                cancelable: true,
+                clientX: input.cursorX,
+                clientY: input.cursorY,
+                button: (e as MouseEvent).button,
+                shiftKey: (e as MouseEvent).shiftKey,
+                altKey: (e as MouseEvent).altKey,
+              }),
+            );
+          } finally {
+            forwardingClick = false;
+          }
+        }
+      },
+      true,
+    );
+  }
 
   return {
     update: () => {

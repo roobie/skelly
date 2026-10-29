@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { ItemPictures, referencePainter } from '../src/render/itemPictures.ts';
+import { fittedPictureExtent, ItemPictures, pictureSurfaceSize, referencePainter } from '../src/render/itemPictures.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 
 const fixture = () => {
@@ -32,11 +32,28 @@ const fixture = () => {
   return { registry, inv: new Inventory(registry) };
 };
 
+it.each([
+  ['square', { w: 1, h: 1 }],
+  ['upright tall', { w: 1, h: 4 }],
+  ['rotated tall', { w: 4, h: 1 }],
+])('preserves the %s grid footprint aspect in its picture surface', (_name, footprint) => {
+  const surface = pictureSurfaceSize(footprint);
+  expect(surface.width / surface.height).toBe(footprint.w / footprint.h);
+});
+
+it('fits projected bounds to the framing margin on their binding axis', () => {
+  const framing = 1.1;
+  const aspect = 1 / 4;
+  const extent = fittedPictureExtent(2, 1, aspect, framing);
+  const coverage = Math.max(2 / (extent * aspect), 1 / extent);
+  expect(coverage).toBeCloseTo(1 / framing);
+});
+
 it('does not cache missing pictures while models load, and reuses completed stills', () => {
   const { registry, inv } = fixture();
   const models = { version: 0, has: () => models.version > 0, groundLook: vi.fn(() => new Group()) };
   const paint = vi.fn(() => 'still');
-  const pictures = new ItemPictures(registry, models, 2, { paint, view: vi.fn(), dispose: vi.fn() });
+  const pictures = new ItemPictures(registry, models, 2, { painter: { paint, view: vi.fn(), dispose: vi.fn() } });
   expect(pictures.picture(inv.create('text_only'))).toBeUndefined();
   const item = inv.create('pictured');
   expect(pictures.picture(item)).toBeUndefined();
@@ -48,11 +65,31 @@ it('does not cache missing pictures while models load, and reuses completed stil
   expect(paint).toHaveBeenCalledTimes(1);
 });
 
+it('caches each item picture by its grid footprint', () => {
+  const { registry, inv } = fixture();
+  const paint = vi.fn((_model: unknown, _pose: unknown, _width: number, _height: number) => 'still');
+  const pictures = new ItemPictures(registry, { version: 1, has: () => true, groundLook: () => new Group() }, 3, {
+    painter: { paint, view: vi.fn(), dispose: vi.fn() },
+  });
+  const item = inv.create('pictured');
+  const upright = pictureSurfaceSize({ w: 1, h: 4 });
+  const rotated = pictureSurfaceSize({ w: 4, h: 1 });
+  pictures.picture(item, { w: 1, h: 4 });
+  pictures.picture(item, { w: 4, h: 1 });
+  pictures.picture(item, { w: 1, h: 4 });
+  expect(upright).not.toEqual(rotated);
+  expect(paint).toHaveBeenCalledTimes(2);
+  expect(paint.mock.calls.map(([, , width, height]) => [width, height])).toEqual([
+    [upright.width, upright.height],
+    [rotated.width, rotated.height],
+  ]);
+});
+
 it('evicts the least recently used still and regenerates it on demand within capacity', () => {
   const { registry, inv } = fixture();
   const models = { version: 1, has: () => true, groundLook: () => new Group() };
   const paint = vi.fn(() => `still-${paint.mock.calls.length}`);
-  const pictures = new ItemPictures(registry, models, 2, { paint, view: vi.fn(), dispose: vi.fn() });
+  const pictures = new ItemPictures(registry, models, 2, { painter: { paint, view: vi.fn(), dispose: vi.fn() } });
   const [a, b, c] = ['pictured', 'other', 'third'].map((id) => inv.create(id));
   const first = pictures.picture(a!);
   pictures.picture(b!);
@@ -68,12 +105,9 @@ it('evicts the least recently used still and regenerates it on demand within cap
 it('clears pictures and disposes its painter exactly once without restarting it', () => {
   const { registry, inv } = fixture();
   const painter = { paint: vi.fn(() => 'still'), view: vi.fn(), dispose: vi.fn() };
-  const pictures = new ItemPictures(
-    registry,
-    { version: 1, has: () => true, groundLook: () => new Group() },
-    1,
+  const pictures = new ItemPictures(registry, { version: 1, has: () => true, groundLook: () => new Group() }, 1, {
     painter,
-  );
+  });
   const item = inv.create('pictured');
   expect(pictures.picture(item)).toBe('still');
   pictures.dispose();
@@ -102,8 +136,8 @@ it('lazily owns and releases the renderer and context without disposing shared m
   unused.dispose();
   expect(create).not.toHaveBeenCalled();
   const painter = referencePainter(create);
-  expect(painter.paint(model)).toBe('still');
-  expect(painter.paint(model)).toBe('still');
+  expect(painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toBe('still');
+  expect(painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toBe('still');
   painter.dispose();
   painter.dispose();
   expect(create).toHaveBeenCalledTimes(1);
@@ -111,9 +145,28 @@ it('lazily owns and releases the renderer and context without disposing shared m
   expect(renderer.forceContextLoss).toHaveBeenCalledTimes(1);
   expect(geometryDispose).not.toHaveBeenCalled();
   expect(materialDispose).not.toHaveBeenCalled();
-  expect(() => painter.paint(model)).toThrow('disposed');
+  expect(() => painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toThrow('disposed');
   geometry.dispose();
   material.dispose();
+});
+
+it('keeps viewer framing stable while the model turns', () => {
+  const model = new Mesh(new BoxGeometry(2, 1, 0.5), new MeshBasicMaterial());
+  const cameras: OrthographicCamera[] = [];
+  const renderer = {
+    setSize: vi.fn(),
+    setClearColor: vi.fn(),
+    render: vi.fn((_scene: unknown, camera: OrthographicCamera) => cameras.push(camera.clone())),
+    domElement: {} as HTMLCanvasElement,
+    dispose: vi.fn(),
+    forceContextLoss: vi.fn(),
+  };
+  const painter = referencePainter(() => renderer);
+  painter.view(model, { yaw: 0, pitch: 0, framing: 1.1 }, 400, 200);
+  painter.view(model, { yaw: Math.PI / 2, pitch: 0, framing: 1.1 }, 400, 200);
+  expect(cameras).toHaveLength(2);
+  expect(cameras[0]!.top).toBe(cameras[1]!.top);
+  expect(cameras[0]!.right).toBe(cameras[1]!.right);
 });
 
 it.each([

@@ -138,7 +138,7 @@ describe('live craft commands', () => {
     expect(r.commands.start(REPAIR)).toBeUndefined();
     const work = workOf(r);
     const effect = registry.recipes.get(REPAIR)!.repair!;
-    expect(work.repairTargetUid).toBe(target.uid);
+    expect(work.repairTarget).toEqual({ kind: 'item', uid: target.uid });
     expect(work.repairAmount).toBe(effect.amount + effect.perSkill * r.character.skills[effect.skill]!);
     expect(r.sim.actions.job?.jobType).toBe('craft');
   });
