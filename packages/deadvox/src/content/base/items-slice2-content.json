@@ -901,12 +901,15 @@
         "count": 1,
         "item": "rope"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 4
     },
     {
+      "category": "attachments",
       "components": [
         [
           {
@@ -933,12 +936,15 @@
         "count": 1,
         "item": "weapon_sling"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 2
       },
+      "tags": ["textile"],
       "timeGameMinutes": 4
     },
     {
+      "category": "materials",
       "components": [
         [
           {

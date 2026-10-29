@@ -418,6 +418,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_rope",
+      category: 'materials', tags: ['textile'], searchTerms: [],
       "result": { "item": "rope", "count": 1 },
       "timeGameMinutes": 4,
       "skills": { "crafting": 0 },
@@ -426,6 +427,7 @@ local lights = import 'lights.libsonnet';
     },
     {
       "id": "make_weapon_sling",
+      category: 'attachments', tags: ['textile'], searchTerms: [],
       "result": { "item": "weapon_sling", "count": 1 },
       "timeGameMinutes": 4,
       "skills": { "crafting": 2 },
