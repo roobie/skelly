@@ -2,13 +2,13 @@
   "holographic": {
     "batteryRearX": -3,
     "batteryTopY": 1,
-    "eyeReliefU": 14,
+    "eyeReliefU": 22,
     "hoodFrontX": 0.25,
     "nearFrameDepthU": 0.25,
     "nearFrameThicknessU": 0.25
   },
   "miniReflex": {
-    "eyeReliefU": 14,
+    "eyeReliefU": 24,
     "windowBottomY": 0.75,
     "windowHalfWidthU": 1,
     "windowTopY": 2.5
@@ -26,6 +26,6 @@
     }
   },
   "tubeDot": {
-    "eyeReliefU": 14
+    "eyeReliefU": 25
   }
 }
