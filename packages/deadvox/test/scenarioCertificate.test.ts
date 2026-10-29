@@ -599,7 +599,7 @@ describe('final composed body-route certificate', () => {
       };
       const result = scenarioCertificate(cyclicSite(registry, plan, scale), ROUTED_PHASES.concat('resources'));
       expect(result.issues.some(([path]) => path === '.portal')).toBe(true);
-      expect(result.issues.some(([path]) => path.startsWith('.composition.resources'))).toBe(true);
+      expect(result.issues.some(([path]) => path === '.composition.resources[0]')).toBe(true);
     });
   });
 
