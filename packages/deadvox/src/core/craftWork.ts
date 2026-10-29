@@ -21,14 +21,14 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
   }
 };
 
-const entityRepairRefusal = (inventory: Inventory, item: Item, uid: number): string | undefined => {
+export const entityRepairRefusal = (
+  inventory: Inventory,
+  uid: number,
+  entityType: string | undefined,
+  amount: number,
+): string | undefined => {
   const entity = inventory.entities.byUid(uid);
-  const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
-  if (
-    !entity ||
-    entity.type !== recipe?.repair?.entity ||
-    !inventory.entities.canRepair(entity, item.work?.repairAmount ?? 0)
-  ) {
+  if (!entity || entity.type !== entityType || !inventory.entities.canRepair(entity, amount)) {
     return coreMessage(inventory.registry, 'repairTargetGone');
   }
   return (
@@ -43,7 +43,8 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
     return undefined;
   }
   if (destination.kind === 'entity') {
-    return entityRepairRefusal(inventory, item, destination.uid);
+    const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
+    return entityRepairRefusal(inventory, destination.uid, recipe?.repair?.entity, item.work?.repairAmount ?? 0);
   }
   const target = inventory.itemByUid(destination.uid);
   const { work } = item;
