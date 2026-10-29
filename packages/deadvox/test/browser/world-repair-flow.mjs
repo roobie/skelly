@@ -1,6 +1,70 @@
 // biome-ignore-all lint/correctness/noNodejsModules: browser assertions run in Node.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser flow.
 import assert from 'node:assert/strict';
+import { pressAction } from './input-actions.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
+
+export const worldRepairInGameFlow = async (page, origin) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(
+    browserStageUrl(
+      'pump-handling',
+      `${origin}/?debug=1&site=testHouse&repairLook=1&focus=crate&time=12%3A00&radius=64`,
+    ),
+    { waitUntil: 'domcontentloaded' },
+  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
+  await page.waitForFunction(
+    () =>
+      document.pointerLockElement &&
+      document.querySelector('#overlay').hidden &&
+      document.querySelector('#world-loading')?.dataset.state === 'ready',
+  );
+  await pressAction(page, 'world.interact');
+  assert.equal(await page.locator('#world-repair').isVisible(), true, 'in-game action opens repair targeting');
+  const initial = await page.evaluate(() => {
+    const f = globalThis.pumpHandlingTest;
+    return { name: f.engine.registry.furniture.get(f.debugRepairTarget.type).name, yaw: f.input.yaw };
+  });
+  assert.ok(
+    (await page.locator('#world-repair h3').textContent()).includes(initial.name),
+    'spawn faces damaged target',
+  );
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  await page.keyboard.down('ArrowRight');
+  const aimed = await page.evaluate(
+    (yaw) => globalThis.pumpManualFrames.until(() => globalThis.pumpHandlingTest.input.yaw !== yaw),
+    initial.yaw,
+  );
+  await page.keyboard.up('ArrowRight');
+  assert.equal(aimed.reached, true, 'the game loop advances keyboard aim without direct surface updates');
+  const before = await page.evaluate(() => globalThis.pumpHandlingTest.session.inventory.snapshotState());
+  await page.keyboard.press('Enter');
+  assert.equal(await page.locator('[data-world-action="details"]').count(), 1);
+  await page.keyboard.press('Enter');
+  assert.ok((await page.locator('.craft-components').count()) > 0, 'live details reuse requirement presentation');
+  assert.equal(await page.locator('[data-world-action="confirm"]').getAttribute('aria-disabled'), 'false');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Backspace');
+  await page.keyboard.press('Backspace');
+  assert.equal(await page.locator('#world-repair').isHidden(), true, 'Back returns to live play');
+  assert.deepEqual(await page.evaluate(() => globalThis.pumpHandlingTest.debugRepairIntents), []);
+  await pressAction(page, 'world.interact');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  const result = await page.evaluate(() => {
+    const f = globalThis.pumpHandlingTest;
+    return { intents: f.debugRepairIntents, target: f.debugRepairTarget.uid, job: f.session.sim.actions.job };
+  });
+  assert.equal(result.intents.length, 1);
+  assert.equal(result.intents[0].kind, 'craft.repair-entity');
+  assert.equal(result.intents[0].entityUid, result.target);
+  assert.equal(result.job, undefined, 'debug confirmation does not dispatch repair work');
+  assert.deepEqual(await page.evaluate(() => globalThis.pumpHandlingTest.session.inventory.snapshotState()), before);
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
+};
 
 export const worldRepairFlow = async (page, origin) => {
   await page.goto(`${origin}/test/browser/world-repair.html`);

@@ -74,7 +74,7 @@ export class WorldRepairSurface {
       this.close();
     }
   }
-  private close(): void {
+  close(): void {
     if (this.state === 'closed') {
       return;
     }

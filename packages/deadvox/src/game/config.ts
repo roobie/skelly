@@ -14,6 +14,13 @@ export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
 const MAX_RADIUS_M = 256;
 
+// The mod chooser owns admission, so it must not stage a recipe its later selection could discard.
+export const repairLookEnabled = (params: URLSearchParams): boolean =>
+  params.get('debug') === '1' &&
+  params.get('site') === 'testHouse' &&
+  params.get('repairLook') === '1' &&
+  params.get('mods') !== '1';
+
 export interface GameConfig {
   content: StartupContent;
   seed: number;
@@ -32,6 +39,7 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (`?debug=1`). */
   debug: boolean;
+  debugRepairLook?: boolean;
   ragdollSweep?: number;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
@@ -257,6 +265,7 @@ export const configFromUrl = (params: URLSearchParams, content: StartupContent):
   const requestedTime = params.get('time');
   config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
+  config.debugRepairLook = repairLookEnabled(params);
   Object.assign(config, sweepFromUrl(params, config));
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);

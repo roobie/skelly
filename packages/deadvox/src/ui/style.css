@@ -1865,8 +1865,10 @@ body.inventory-open.inventory-tab-crafting #crafting {
 }
 .world-service {
   position: fixed;
-  inset: 5rem 2.5rem;
+  inset: 5rem 1rem auto auto;
   z-index: var(--ui-layer-crafting);
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 10rem);
   min-width: 0;
   overflow-wrap: anywhere;
 }
