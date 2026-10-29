@@ -571,6 +571,7 @@
           "light": "Lights {radius} m · seen from {seenFrom} m",
           "melee": "Melee {damage} {type} · reach {reach} m beyond hand · {recovery} s a swing",
           "needsLabel": "Needs",
+          "noPutTarget": "No container in reach",
           "noRoom": "No room on you",
           "noSelection": "No item selected",
           "noneToTake": "No {category} items to take",
@@ -666,6 +667,7 @@
         "pointerButtonLabels": {
           "hand.off-instant": "Mouse 5",
           "hand.use-dominant": "Left click",
+          "inventory.wield-or-pocket": "Double-click",
           "pointer.look": "Mouse"
         },
         "powerControl": {
@@ -808,6 +810,7 @@
           "enGarde": "En garde",
           "exit": "Exit practice",
           "exitPath": "Reach the dirt path bend north-west of the station",
+          "findItems": "Find items",
           "finishPractice": "Finish practice",
           "fireDominant": "Fire dominant hand",
           "fireOff": "Fire off hand",
@@ -829,7 +832,6 @@
           "pumpingDetail": "Pumping chambers a shell from the tube; unloading ejects live rounds. Ammunition is finite; Restart practice replaces the whole attempt.",
           "punch": "Punch",
           "putDownSelected": "Put down selected item",
-          "quickAction": "Quick action",
           "rangeSupplies": "Range — north-west dirt path · Range supplies — Backpack / boxed ammunition",
           "ready": "Ready",
           "readyFire": "Ready fire",
@@ -858,6 +860,7 @@
           "wearBackpack": "Wear backpack",
           "wearOrRemove": "Wear or remove",
           "wieldAmmunitionBox": "Wield ammunition box",
+          "wieldOrStow": "Wield or stow",
           "wieldSelected": "Wield selected",
           "wieldSelectedItem": "Wield selected item"
         },

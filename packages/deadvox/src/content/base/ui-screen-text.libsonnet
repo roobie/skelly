@@ -37,7 +37,7 @@
     messages: 'Messages and interruptions',
   },
   audioVolumeLabels: { master: 'Master', world: 'World', body: 'Body', ui: 'UI' },
-  pointerButtonLabels: { 'hand.use-dominant': 'Left click', 'hand.off-instant': 'Mouse 5', 'pointer.look': 'Mouse' },
+  pointerButtonLabels: { 'hand.use-dominant': 'Left click', 'hand.off-instant': 'Mouse 5', 'pointer.look': 'Mouse', 'inventory.wield-or-pocket': 'Double-click' },
   winCheckpointMessages: {
     saved: 'The completed attempt is saved.',
     pending: 'Saving the completed attempt…',
@@ -220,7 +220,8 @@
   tutorial: {
     inventory: 'Inventory',
     closeInventory: 'Close inventory',
-    quickAction: 'Quick action',
+    findItems: 'Find items',
+    wieldOrStow: 'Wield or stow',
     wieldSelectedItem: 'Wield selected item',
     eatBeans: 'Eat beans',
     openedBeans: 'Opened beans — Take / wield',
@@ -429,6 +430,7 @@
     nothingQueued: 'Nothing queued',
     nothingToSearch: 'Nothing here to search',
     noRoom: 'No room on you',
+    noPutTarget: 'No container in reach',
     taking: 'Taking {count} {category} items',
     noneToTake: 'No {category} items to take',
     secs: '{value} s',

@@ -7,7 +7,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -1346,6 +1346,30 @@ try {
     await spawn('rifle_assault');
     await pressAction(page, 'ui.inventory-toggle');
     await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    const beforeFind = await page.evaluate(() =>
+      JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState()),
+    );
+    await pressAction(page, 'inventory.find');
+    const findField = page.locator('#inventory [data-inventory-find]');
+    await findField.fill('fixture-filter-no-match');
+    await findField.press('Enter');
+    assert.equal(await findField.evaluate((field) => document.activeElement === field), false, 'Enter leaves find');
+    assert.equal(
+      await page.evaluate(() => JSON.stringify(globalThis.foregripFitTest.session.inventory.snapshotState())),
+      beforeFind,
+      'Enter in find does not pocket an item',
+    );
+    const releaseClear = await holdAction(page, 'inventory.find');
+    try {
+      await page.waitForFunction(() => document.querySelector('#inventory [data-inventory-find]').value === '');
+      assert.equal(
+        await findField.evaluate((field) => document.activeElement === field),
+        false,
+        'hold clears without also focusing find',
+      );
+    } finally {
+      await releaseClear();
+    }
     const uidFor = (type) =>
       page.evaluate(
         (itemType) =>

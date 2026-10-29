@@ -519,7 +519,7 @@ try {
     screen.selected = stowed;
     return stowed.uid;
   }, routeLockerUid);
-  await pressAction(page, 'inventory.cycle-target');
+  await page.locator(`[data-put-target="furniture:${routeLockerUid}"]`).evaluate((input) => input.click());
   await pressAction(page, 'inventory.put-target');
   await page.waitForFunction(
     (uid) => {
