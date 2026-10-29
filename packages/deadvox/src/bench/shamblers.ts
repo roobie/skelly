@@ -6,6 +6,7 @@ import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
+import { worldGravity } from '../core/gravity.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import { type Body, stepBody } from '../core/physics.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -156,7 +157,6 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
       physics: physicsFor(scale, Player),
-      jumpSpeed: Player.jump,
       player: () => ({
         pos: [...playerBody.pos] as [number, number, number],
         body: playerBody,
@@ -198,6 +198,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
             look: lookDefaultsOf(engine.registry).mobActors,
             maxCorpses: graphics.mobActors.maxCorpses,
             handlingReachMetres: reachTuning(engine.registry).reachMetres,
+            gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
           })
         : new ZombieMeshes(s, count);
     scene.add(zombieMeshes.group);

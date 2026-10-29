@@ -52,7 +52,6 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });

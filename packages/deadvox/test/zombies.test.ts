@@ -109,7 +109,6 @@ const senses = (
   dayPhase: () => dayStateAtHour(hourFn()),
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
-  jumpSpeed: PLAYER.jump,
   tuning: SENSE_TUNING,
   hurtPlayer,
 });
@@ -1380,6 +1379,25 @@ describe('shambler scenarios', () => {
     expect(zombie.mode).toBe('investigate');
     expect(zombie.lastPerceived).toEqual([300, 1, 0]);
     expect(zombie.obstacleWanderRemaining).toBe(0);
+  });
+
+  it("takes off with each type's own jump speed", () => {
+    const obstacle: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 6 && y >= 1 && y <= 2);
+    for (const factor of [1, 1.25]) {
+      const type = { ...SHAMBLER, jumpMetresPerSimSecond: simRate(SHAMBLER.jumpMetresPerSimSecond * factor) };
+      const system = new ZombieSystem(senses(() => player([24, 1, 0], [-1, 0, 0]), obstacle));
+      const zombie = system.store.get(system.add(type, [0, 1, 0], [1, 0, 0]))!;
+      let takeoffSpeed: number | undefined;
+      for (let frame = 0; frame < 8 * 60 && takeoffSpeed === undefined; frame++) {
+        const grounded = zombie.body.onGround;
+        system.tick(1 / 60);
+        if (grounded && zombie.body.vel[1] > 0) {
+          [, takeoffSpeed] = zombie.body.vel;
+        }
+      }
+      expect(takeoffSpeed).toBeDefined();
+      expect(takeoffSpeed).toBeCloseTo(type.jumpMetresPerSimSecond / BLOCK_SIZE - PHYSICS.gravity / 60);
+    }
   });
 
   it('jumps a low obstacle and keeps beelining past it', () => {

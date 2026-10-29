@@ -9,6 +9,7 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
+import { worldGravity } from '../core/gravity.ts';
 import { lookDefaultsOf } from '../core/lookDefaults.ts';
 import type { Body } from '../core/physics.ts';
 import { reachTuning } from '../core/reach.ts';
@@ -338,7 +339,6 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         blockSize: s,
         tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
         physics: physicsFor(config.scale, Player),
-        jumpSpeed: Player.jump,
         player: () => ({
           pos: [...playerBody!.pos] as [number, number, number],
           body: playerBody!,
@@ -365,6 +365,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
         handlingReachMetres: reachTuning(engine.registry).reachMetres,
+        gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
       });
       engine.scene.add(zombieMeshes.group);
     } catch (error) {

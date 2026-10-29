@@ -10,7 +10,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -25,7 +25,6 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isOpaque: isSolid,
   blockSize: BLOCK,
   physics: physicsFor(makeScale(BLOCK)),
-  jumpSpeed: PLAYER.jump,
   tuning: TEST_SENSE_TUNING,
   player: () => ({
     pos: [100, 2, 100] as Vec3,

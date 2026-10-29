@@ -50,6 +50,7 @@ read_if:
   - you're changing worn layers, empty-slot body appearance, armour protection or item wear
   - you're changing bleeding cues
   - you change landing injuries or their content tuning
+  - you change shared world gravity, player jump height, zombie hops or acid flight balance
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
@@ -184,11 +185,10 @@ not split between sensory tuning and code, so mods can retune the player without
 changing mechanisms. See `src/content/base/player.jsonnet`, `player`;
 `src/core/schema.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
 `movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
-Gravity remains physics rather than player tuning. Saved look offsets must obey
-the geometric ceiling shared by all valid player tuning, not the core pack's
-chosen tuning: impossible offsets can overflow on advancement even when the
-saved numbers are finite. See `src/core/aim.ts`, `assertAimState`, and
-`src/core/schema.ts`, `PlayerSchema`.
+Saved look offsets must obey the geometric ceiling shared by all valid player
+tuning, not the core pack's chosen tuning: impossible offsets can overflow on
+advancement even when the saved numbers are finite. See `src/core/aim.ts`,
+`assertAimState`, and `src/core/schema.ts`, `PlayerSchema`.
 
 ### Crouching and lying prone
 
@@ -529,11 +529,13 @@ intentional opportunities to fight from above.
   if the ladder takes that hand, and a released throw is admitted on the tick
   that carries it out. See `freeHand` and `refusal` in `src/core/ladders.ts`,
   and `refuseForLadder` in `src/game/throwCharge.ts`.
-- **Top and fall.** Moving toward a ladder at its top steps off onto the surface
-  it serves. A roof-edge ladder reaches roof level; one beneath a hatch ends
-  below the hatch and steps through it when open. Climbing down is not a fall;
-  any hard landing is measured from where the climber releases. See `braced` in
-  `src/core/physics.ts`.
+- **Top and fall.** Roof-edge and hatch ladders must provide a usable transition
+  rather than ending in blocked space. Releasing preserves climb momentum: an
+  upward climber drifts a little before gravity brings them down, because
+  letting go is not an abrupt stop. Climbing down is not a fall, so landing
+  harm begins with release rather than the climb above it. See
+  `src/core/ladders.ts`, `climb` and `LadderHold.piece`, and
+  `src/core/physics.ts`, `stepBody`.
 - **Shamblers.** They do not climb and remain on the ground.
 - **Hatches and placement.** A hatch is a roof or floor door: shut blocks,
   open permits passage from either side, and its state is saved. It takes no
@@ -1889,6 +1891,14 @@ in `src/core/inventory.ts`.
 
 ### Moving in the air
 
+Bodies and falling presentation share content-owned real-world gravity so living
+actors, corpses and loose objects read as parts of one world. Player takeoff speed
+keeps a modest obstacle-clearing apex rather than compensating for gravity with a
+higher jump. Longer airtime and horizontal carry are accepted consequences, not
+reasons to split body gravity from the world. See
+`src/content/base/player.jsonnet`, `player`, and `src/game/player.ts`, `physicsFor`
+and `steer`.
+
 Movement input steers only a body on the ground. A body in the air has nothing to push against, so input cannot
 change its horizontal velocity: the momentum it had at takeoff carries until it lands, and only collisions alter
 it. A ladder climber is held by the ladder, not airborne. See `steer` in `src/game/player.ts` and
@@ -1917,12 +1927,12 @@ Speed squared represents impact energy; removing the safe-speed energy gives
 a continuous onset without punishing an ordinary jump. One seeded damage
 multiplier per fall gives a wide range of outcomes before distributing the hit
 across regions: a tall roof remains a gamble instead of a deterministic death
-boundary. The shared roll keeps both legs part of the same impact. Gravity is
-deliberately heavier than Earth's, so calibration uses in-game speeds rather
-than real-world free-fall speeds. Content owns the threshold, scale and spread
-so balance can change without changing the injury mechanism. See
-`src/content/base/body.jsonnet`, `landing`, `src/core/sim.ts`, `Simulation.land`,
-and `src/game/player.ts`, `physicsFor`.
+boundary. The shared roll keeps both legs part of the same impact. Preserve the
+hurt-by-height curve under shared world gravity by tuning safe impact energy and
+damage scale together, without narrowing the spread: real gravity must not make
+roofs harmless or ordinary jumps injurious. Content owns that balance so it can
+change without changing the injury mechanism. See
+`src/content/base/body.jsonnet`, `landing`, and `src/core/sim.ts`, `Simulation.land`.
 
 ### Bleeding
 
@@ -2660,13 +2670,14 @@ grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `src/render/itemThrows.ts`, `ItemThrows.update`; and `src/render/piles.ts`,
 `PileMeshes.sync`.
 
-Landing, presentation and duration share a stepped flight so drag cannot shorten
-the range while leaving a light item floating through an undragged path. A throw
-leaves along the player's look direction without added lift; gravity alone makes
-the arc. For #1466, this makes the item go where the player aimed, because a
-climbing throw feels unpredictable. Replay records launch strength rather than a
-drag-adjusted distance so it can reproduce the same flight with the recorded aim.
-See `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
+A throw should go where the player aimed without unpredictable added lift.
+Keep the content flight-time choice under shared world gravity and accept the
+flatter arc rather than extending flight to preserve curvature. Drag must not
+shorten range while presentation leaves an item floating through an undragged
+path. Replay records launch strength rather than a drag-adjusted distance so it
+can reproduce flight with the recorded aim. See
+`src/content/base/inventory.jsonnet`, `throwFlightSimSeconds`, and
+`src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
 `steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
@@ -2723,6 +2734,27 @@ Zombie types are content definitions used by shared systems; choose behavior thr
 A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Military loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
 The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
+
+### Obstacle hops
+
+Zombie takeoff speed belongs to each type, independently of the player's jump,
+so tuning player movement does not also choose enemy obstacle reach. Keep a
+modest hop apex under shared world gravity rather than letting enemies clear
+containment walls. Longer airtime is accepted; a separate enemy gravity would
+make the same world read differently for different bodies. See
+`src/content/base/zombies.jsonnet`, `jumpMetresPerSimSecond`,
+`src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`,
+`ZombieSystem.stepZombieBody` and `canJumpObstacle`.
+
+### Acid flight
+
+Use shared world gravity for the glob, with faster content launch speed to keep
+a shallow level-shot curve rather than lofting it above intervening bodies and
+cover. Earlier impact and less dodge time are accepted costs of that curve;
+elevated shots and spread need not reproduce a different gravity's trajectory.
+See `src/content/base/zombies.jsonnet`, `globMetresPerSimSecond`,
+`src/core/zombies.ts`, `ZombieSystem.resolveAcidSpit`, and
+`docs/acid-zombie.md`, "The spit".
 
 ### Spawning
 

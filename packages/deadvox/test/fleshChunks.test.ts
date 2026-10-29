@@ -3,9 +3,10 @@ import { expect, it } from 'vitest';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { FleshChunks } from '../src/render/amalgamFlesh.ts';
 import { RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
+import { WORLD_GRAVITY } from './playerFixture.ts';
 
 it('bounds carved flesh independently and removes evicted physics', async () => {
-  const world = new RagdollWorld();
+  const world = new RagdollWorld(WORLD_GRAVITY);
   const group = new Group();
   const chunks = new FleshChunks(group, {
     physics: () => world,

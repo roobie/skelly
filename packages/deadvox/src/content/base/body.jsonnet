@@ -29,8 +29,8 @@ local normalSleep = 100 / normalSleepGameHours;
     exposureRefusal: "You're burning",
     linger: { acid: { simSeconds: 5 } },
     landing: {
-      safeSpeedMetresPerSimSecond: 11.5,
-      damagePerSquaredSpeed: 0.129,
+      safeSpeedMetresPerSimSecond: 6.8070,
+      damagePerSquaredSpeed: 0.368196,
       damageSpread: { min: 0.2, max: 2 },
       kind: 'blunt',
       cause: 'a fall',
