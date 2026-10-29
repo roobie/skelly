@@ -6,9 +6,10 @@ import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
 import * as selection from '../src/core/loot.ts';
+import { placementLootIssues } from '../src/core/placementLoot.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { Site } from '../src/core/site.ts';
-import { type Placement, placedPieces } from '../src/core/templates.ts';
+import { lootSourcesOf, type Site } from '../src/core/site.ts';
+import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -87,6 +88,51 @@ const expectRoutedColumn = (site: Site, placements: readonly Placement[]) => {
 };
 
 describe('loot source routing', () => {
+  it('keeps exact anchor tiers local and gives fixed-loot tiers precedence in rolls and admission', () => {
+    const registry = fixtureRegistry();
+    registry.items.set(stock, {
+      ...registry.items.get(stock)!,
+      economy: { usage: ['Hunting'], tiers: ['Tier2'] },
+    });
+    const template = compileTemplate(registry, {
+      id: 'fixture_tiers',
+      size: [3, 1, 1],
+      lootContext: { usage: ['Hunting'], tier: 'Tier1', lowerTiers: true },
+      palette: {
+        A: { furniture: 'fixture_container', loot: 'fixture_source', lootTier: 'Tier2', items: [{ item: stock }] },
+        B: { furniture: 'fixture_container', loot: 'fixture_source' },
+        C: { furniture: 'fixture_container', loot: 'fixture_source', lootTier: 'Tier3' },
+      },
+      layers: [['ABC']],
+    });
+    const placement: Placement = { template, origin: [0, 0, 0], turn: 0 };
+    const sources = lootSourcesOf(registry, 'fixture_site', placement);
+    expect(sources.map(({ context }) => context.tier)).toEqual(['Tier2', 'Tier1', 'Tier3']);
+    expect(sources[0]!.context.lowerTiers).toBeUndefined();
+    expect(
+      sources.map((source) => selection.economyEligible(registry.items.get(stock)!.economy, source.context)),
+    ).toEqual([true, false, false]);
+    const override = {
+      at: [2, 0, 0] as [number, number, number],
+      lootTier: 'Tier2' as const,
+      items: [{ item: stock }],
+    };
+    const overridden = lootSourcesOf(registry, 'fixture_site', placement, [override]);
+    expect(overridden[2]!.context).toEqual({ usage: ['Hunting'], tier: 'Tier2' });
+    expect(selection.economyEligible(registry.items.get(stock)!.economy, overridden[2]!.context)).toBe(true);
+    const input = { registry, context: template.lootContext };
+    expect(placementLootIssues(input, template, [override], 'fixture')).toEqual([]);
+    const { lootTier: _tier, ...withoutTier } = override;
+    expect(placementLootIssues(input, template, [withoutTier], 'fixture').length).toBeGreaterThan(0);
+    const refused = placementLootIssues(
+      input,
+      template,
+      [{ ...override, at: [0, 0, 0], lootTier: 'Tier1' }],
+      'fixture',
+    );
+    expect(refused.some(([path]) => path.includes('.pieces[0].items'))).toBe(true);
+  });
+
   it('routes city and authored-layout sources through their enumerated points', () => {
     const registry = fixtureRegistry();
     const scale = makeScale(0.5);

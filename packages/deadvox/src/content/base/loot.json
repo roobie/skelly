@@ -3,6 +3,34 @@
     {
       "entries": [
         {
+          "condition": [0.40000000000000002, 0.90000000000000002],
+          "item": "rifle_hunting",
+          "weight": 1
+        },
+        {
+          "item": "cartridge_box_308_h_winchester",
+          "weight": 2
+        },
+        {
+          "count": [3, 8],
+          "item": "cartridge_308_h_winchester",
+          "weight": 4
+        },
+        {
+          "item": "optic_hunting_3_9x",
+          "weight": 1
+        },
+        {
+          "nothing": true,
+          "weight": 4
+        }
+      ],
+      "id": "hunting_cache",
+      "rolls": [1, 2]
+    },
+    {
+      "entries": [
+        {
           "condition": [0.29999999999999999, 0.80000000000000004],
           "item": "revolver_357",
           "weight": 1

@@ -61,7 +61,7 @@ import { DAY_PHASES } from './dayPhase.ts';
 import { DECAL_KINDS, type DecalKind } from './decalKinds.ts';
 import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { GraphicsOptionsSchema } from './graphics.ts';
-import { ItemEconomySchema, LootContextSchema, UsageSchema } from './loot.ts';
+import { ItemEconomySchema, LootContextSchema, LootTierSchema, UsageSchema } from './loot.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from './mood.ts';
 import { POWER_UNITS, PowerDeviceSchema, PowerTuningSchema, unitCount } from './powerContent.ts';
@@ -2551,6 +2551,8 @@ const PaletteThingSchema = pipe(
     /** The table this container placement rolls. */
     loot: optional(Id),
     lootUsage: optional(UsageSchema),
+    /** Exact tier for this point alone, rather than the building's tier range. */
+    lootTier: optional(LootTierSchema),
     facing: optional(picklist(['n', 'e', 's', 'w'])),
     /** The face this furniture lies on, when it is not standing on its bottom. */
     tip: optional(picklist(['back', 'front', 'left', 'right', 'top'])),
@@ -2876,6 +2878,8 @@ const TerrainPrimitive = union([
 ]);
 const FixedLootOverride = strictObject({
   lootUsage: optional(UsageSchema),
+  /** Exact tier, taking precedence over the anchor and building. */
+  lootTier: optional(LootTierSchema),
   /** Template-local furniture anchor in half-metre block cells. */
   at: tuple([Count, Count, Count]),
   items: pipe(array(FixedLootItem), nonEmpty('needs at least one fixed item')),

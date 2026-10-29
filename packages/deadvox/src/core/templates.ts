@@ -218,6 +218,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
           pos,
           supply: entry.groundLoot,
           ...(entry.lootUsage === undefined ? {} : { lootUsage: entry.lootUsage }),
+          ...(entry.lootTier === undefined ? {} : { lootDepth: { tier: entry.lootTier } }),
         });
       }
       continue;
@@ -246,6 +247,7 @@ const compileMarkers = (registry: Registry, template: TemplateDef) => {
         furniture: def.id,
         loot: entry.loot,
         ...(entry.lootUsage === undefined ? {} : { lootUsage: entry.lootUsage }),
+        ...(entry.lootTier === undefined ? {} : { lootDepth: { tier: entry.lootTier } }),
         facing,
         ...(entry.tip ? { tip: entry.tip } : {}),
         pos,

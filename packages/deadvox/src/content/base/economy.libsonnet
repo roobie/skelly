@@ -9,7 +9,7 @@ local militaryItems = [
 ];
 local medicalItems = ['codeine', 'morphine'];
 local policeItems = ['stab_vest', 'riot_helmet'];
-local huntingItems = ['bear_trap'];
+local huntingItems = ['bear_trap', 'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x'];
 local notSpawnable = [
   'pistol_service', 'magazine_pistol_9', 'cartridge_9x19', 'spent_case_9x19',
   'work_in_progress', 'debug_shotgun_pump', 'spent_case_308_h_winchester', 'spent_case_357_h_magnum',
@@ -22,7 +22,6 @@ local notSpawnable = [
 // A loose gun part has no use until players can assemble guns, so none spawns as loot (`things/WORK.md`, "Decisions").
 + [entry.id for entry in (import 'packages/gun-authoring-tool/src/gun/catalogue.jsonnet').parts if std.objectHas(entry, 'params')];
 local commonItems = [
-  'rifle_hunting', 'cartridge_308_h_winchester', 'cartridge_box_308_h_winchester', 'optic_hunting_3_9x',
   'revolver_357', 'cartridge_357_h_magnum', 'cartridge_box_357_h_magnum', 'cartridge_box_9x19',
   'camp_armoury_key', 'camp_supply_manifest', 'camp_hq_safe_key', 'camp_hq_safe_note',
   'optic_digital_thermal', 'optic_fixed_prism_4x', 'optic_high_mag_5_25x', 'optic_holographic',
@@ -76,6 +75,9 @@ local authorTemplate(template) = template + {
       local entry = template.palette[char];
       local override = if std.type(entry) == 'object' then anchorUsage(template.id, char, entry) else null;
       if override == null then entry else entry + { lootUsage: override }
+        + (if override == ['Hunting'] then { loot: 'hunting_cache' }
+           + (if std.member(['hunter_cabin', 'playtest_hunter_cabin'], template.id) then { furniture: 'hunting_crate' } else {})
+           else {})
     for char in std.objectFields(template.palette)
   },
 };
@@ -90,7 +92,7 @@ local authorItem(item) =
       else if std.member(militaryItems, item.id) then { usage: ['Military'], tiers: ['Tier2', 'Tier3'] }
       else if std.member(medicalItems, item.id) then { usage: ['Medical'], tiers: tiers }
       else if std.member(policeItems, item.id) then { usage: ['Police'], tiers: tiers }
-      else if std.member(huntingItems, item.id) then { usage: ['Hunting'], tiers: tiers }
+      else if std.member(huntingItems, item.id) then { usage: ['Hunting'], tiers: if item.id == 'optic_hunting_3_9x' then ['Tier2'] else tiers }
       else { usage: usages, tiers: tiers },
   };
 {

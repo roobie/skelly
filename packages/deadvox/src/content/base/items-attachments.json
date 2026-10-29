@@ -17,8 +17,8 @@
     {
       "category": "misc",
       "economy": {
-        "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "tiers": ["Tier2"],
+        "usage": ["Hunting"]
       },
       "id": "optic_hunting_3_9x",
       "model": "optic_hunting_3_9x",

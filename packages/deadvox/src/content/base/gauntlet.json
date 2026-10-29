@@ -18871,6 +18871,43 @@
     },
     {
       "anchors": {},
+      "id": "gauntlet_roof_hunting",
+      "layers": [
+        ["HHH.", "HHH.", "....", "...."],
+        ["HHH.", "HHH.", "....", "...."],
+        ["....", "....", "....", "...."],
+        ["....", "....", "....", "...."]
+      ],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": []
+      },
+      "ownership": {
+        "layers": [
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["SSSA", "SSSA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"],
+          ["AAAA", "AAAA", "AAAA", "AAAA"]
+        ]
+      },
+      "palette": {
+        ".": {
+          "material": "opening",
+          "role": "opening"
+        },
+        "H": {
+          "furniture": "hunting_crate",
+          "loot": "hunting_cache",
+          "lootTier": "Tier2",
+          "lootUsage": ["Hunting"]
+        }
+      },
+      "ports": [],
+      "size": [4, 4, 4],
+      "style": "brick_townhouse"
+    },
+    {
+      "anchors": {},
       "id": "gauntlet_roof_ac",
       "layers": [
         ["FFFF", "FFFF", "FFFF", "FFFF"],
@@ -38751,6 +38788,13 @@
         {
           "ref": {
             "id": "gauntlet_roof_vent",
+            "kind": "piece"
+          },
+          "weight": 1
+        },
+        {
+          "ref": {
+            "id": "gauntlet_roof_hunting",
             "kind": "piece"
           },
           "weight": 1
