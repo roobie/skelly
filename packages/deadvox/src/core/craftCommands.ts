@@ -87,6 +87,9 @@ export class CraftCommands {
     if (recipe.kind !== 'repair') {
       return this.sim.actions.beginCraft(result.plan);
     }
+    if (recipe.repair?.entity !== undefined) {
+      return coreMessage(this.inventory.registry, 'noRepairTarget');
+    }
     const target = this.repairTarget(recipe.result.item);
     if (!target) {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
@@ -94,7 +97,27 @@ export class CraftCommands {
     const repair = recipe.repair!;
     const skill = skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN);
     const amount = Math.min(1, repair.amount + repair.perSkill * skill);
-    return this.sim.actions.beginCraft(result.plan, { targetUid: target.uid, amount });
+    return this.sim.actions.beginCraft(result.plan, { target: { kind: 'item', uid: target.uid }, amount });
+  }
+  repairEntity(recipeId: string, entityUid: number, prefer?: CraftPreference): string | undefined {
+    const reason = this.startReason();
+    if (reason) {
+      return reason;
+    }
+    const recipe = this.inventory.registry.recipes.get(recipeId);
+    const entity = this.inventory.entities.byUid(entityUid);
+    if (recipe?.kind !== 'repair' || !recipe.repair?.entity || !entity || entity.type !== recipe.repair.entity) {
+      return coreMessage(this.inventory.registry, 'noRepairTarget');
+    }
+    const result = this.preview(recipeId, prefer);
+    if (!result || 'missing' in result) {
+      return result && 'missing' in result
+        ? result.missing.reason
+        : coreMessage(this.inventory.registry, 'noRepairTarget');
+    }
+    const skill = skillEffectLevel(this.character.skills[recipe.repair.skill] ?? SKILL_LEVEL_MIN);
+    const amount = recipe.repair.amount + recipe.repair.perSkill * skill;
+    return this.sim.actions.beginCraft(result.plan, { target: { kind: 'entity', uid: entityUid }, amount });
   }
   private repairTarget(type: string): Item | undefined {
     return this.reach()

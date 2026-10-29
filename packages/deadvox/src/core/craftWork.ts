@@ -21,12 +21,31 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
   }
 };
 
+const entityRepairRefusal = (inventory: Inventory, item: Item, uid: number): string | undefined => {
+  const entity = inventory.entities.byUid(uid);
+  const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
+  if (
+    !entity ||
+    entity.type !== recipe?.repair?.entity ||
+    !inventory.entities.canRepair(entity, item.work?.repairAmount ?? 0)
+  ) {
+    return coreMessage(inventory.registry, 'repairTargetGone');
+  }
+  return (
+    inventory.entities.useRefusal(entity) ??
+    (inventory.canReachEntity(entity) ? undefined : coreMessage(inventory.registry, 'repairTargetOutOfReach'))
+  );
+};
+
 const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnapshot): string | undefined => {
-  const targetUid = item.work?.repairTargetUid;
-  if (targetUid === undefined) {
+  const destination = item.work?.repairTarget;
+  if (destination === undefined) {
     return undefined;
   }
-  const target = inventory.itemByUid(targetUid);
+  if (destination.kind === 'entity') {
+    return entityRepairRefusal(inventory, item, destination.uid);
+  }
+  const target = inventory.itemByUid(destination.uid);
   const { work } = item;
   const { registry } = inventory;
   if (work?.kind !== 'craft') {
@@ -99,25 +118,30 @@ export const craftActionHooks = (
   finish: (uid) => {
     const item = inventory.itemByUid(uid);
     const work = item?.work;
-    if (item && work) {
-      const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
-      const offset = inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset;
-      const practice = recipe
-        ? Object.entries(recipe.skills).map(([skill, level]) => {
-            if (offset === undefined) {
-              throw new Error('Missing crafting practice tier offset');
-            }
-            return {
-              skill,
-              amount: gameSecondsToMinutes(recipe.timeGameMinutes),
-              tier: craftingActivityTier(level, offset),
-            };
-          })
-        : [];
-      inventory.releaseWork(item, true, feet(), calendar());
-      for (const entry of practice) {
-        character.awardPractice(entry.skill, entry.amount, entry.tier);
-      }
+    if (!(item && work)) {
+      return;
+    }
+    if (repairTargetRefusal(inventory, item, reach())) {
+      inventory.releaseWork(item, false, feet());
+      return;
+    }
+    const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
+    const offset = inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset;
+    const practice = recipe
+      ? Object.entries(recipe.skills).map(([skill, level]) => {
+          if (offset === undefined) {
+            throw new Error('Missing crafting practice tier offset');
+          }
+          return {
+            skill,
+            amount: gameSecondsToMinutes(recipe.timeGameMinutes),
+            tier: craftingActivityTier(level, offset),
+          };
+        })
+      : [];
+    inventory.releaseWork(item, true, feet(), calendar());
+    for (const entry of practice) {
+      character.awardPractice(entry.skill, entry.amount, entry.tier);
     }
   },
   cancel: (uid) => {
