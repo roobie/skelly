@@ -55,7 +55,12 @@ local bays = [
           furniture: 'crate',
           items: [
             { item: item, count: 1, placement: 'surface' }
-            for item in ['hand_saw', 'screwdriver', 'copper_wire', 'small_spring', 'hinge_set', 'fastener_pack', 'taped_flashlight_mount', 'scrap_foregrip']
+            for item in [
+              'hand_saw', 'screwdriver', 'copper_wire', 'small_spring', 'hinge_set', 'fastener_pack', 'taped_flashlight_mount', 'scrap_foregrip',
+              'camp_craft_book', 'workshop_notes', 'cloth_strip', 'cloth_strip', 'flashlight', 'aa_battery', 'baseball_bat', 'hammer',
+              'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails',
+              'stick', 'kitchen_knife', 'nylon_cord', 'paperback', 'paperback', 'paperback', 'paperback', 'duct_tape', 'duct_tape',
+            ]
           ],
         },
       ],

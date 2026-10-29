@@ -163,6 +163,151 @@
                 "count": 1,
                 "item": "scrap_foregrip",
                 "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "camp_craft_book",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "workshop_notes",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "cloth_strip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "cloth_strip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "flashlight",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "aa_battery",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "baseball_bat",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hammer",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "stick",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "kitchen_knife",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nylon_cord",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "paperback",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "paperback",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "paperback",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "paperback",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "duct_tape",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "duct_tape",
+                "placement": "surface"
               }
             ]
           }

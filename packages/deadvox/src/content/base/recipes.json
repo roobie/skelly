@@ -278,7 +278,7 @@
       "timeGameMinutes": 20
     },
     {
-      "category": "lighting",
+      "category": "supplies",
       "components": [
         [
           {
@@ -293,12 +293,15 @@
         "count": 1,
         "item": "bandage"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 5
     },
     {
+      "category": "lighting",
       "components": [
         [
           {
@@ -326,12 +329,15 @@
         "count": 1,
         "item": "headlamp"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 10
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -354,12 +360,15 @@
         "count": 1,
         "item": "nail_bat"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["wood", "metal"],
       "timeGameMinutes": 15
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -398,12 +407,15 @@
         "count": 1,
         "item": "spear"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["wood", "textile"],
       "timeGameMinutes": 20
     },
     {
+      "category": "supplies",
       "components": [
         [
           {
@@ -424,12 +436,15 @@
         "count": 1,
         "item": "taped_armour"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["textile"],
       "timeGameMinutes": 30
     },
     {
+      "category": "lighting",
       "components": [
         [
           {
