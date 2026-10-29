@@ -737,7 +737,40 @@ export const fitsAt = (registry: Registry, grid: GridState, item: Item, at: Spot
   });
 };
 
-/** The first free spot, scanning rows from the top: as it is first, then rotated. */
+const largestHistogramRectangleArea = (heights: readonly number[]): number => {
+  const stack: number[] = [];
+  let largest = 0;
+  for (let x = 0; x < heights.length; x++) {
+    while (stack.length > 0 && heights[stack.at(-1)!]! > heights[x]!) {
+      const height = heights[stack.pop()!]!;
+      const left = stack.at(-1) ?? -1;
+      largest = Math.max(largest, height * (x - left - 1));
+    }
+    stack.push(x);
+  }
+  return largest;
+};
+
+const largestFreeRectangleArea = (registry: Registry, grid: GridState): number => {
+  const occupied = new Uint8Array(grid.size.w * grid.size.h);
+  for (const { item, x, y, rotated } of grid.placed) {
+    const [w, h] = footprint(defOf(registry, item.type), rotated);
+    for (let row = y; row < y + h; row++) {
+      occupied.fill(1, row * grid.size.w + x, row * grid.size.w + x + w);
+    }
+  }
+  const heights = new Array<number>(grid.size.w + 1).fill(0);
+  let largest = 0;
+  for (let y = 0; y < grid.size.h; y++) {
+    for (let x = 0; x < grid.size.w; x++) {
+      heights[x] = occupied[y * grid.size.w + x] ? 0 : heights[x]! + 1;
+    }
+    largest = Math.max(largest, largestHistogramRectangleArea(heights));
+  }
+  return largest;
+};
+
+/** Row-first within each orientation; prefer wide unless tall preserves noticeably more usable space. */
 export const findSpot = (
   registry: Registry,
   grid: GridState,
@@ -745,8 +778,7 @@ export const findSpot = (
   ignore?: Item,
 ): { x: number; y: number; rotated: boolean } | undefined => {
   const def = defOf(registry, item.type);
-  const turns = def.size[0] === def.size[1] ? [false] : [false, true];
-  for (const rotated of turns) {
+  const first = (rotated: boolean) => {
     for (let y = 0; y < grid.size.h; y++) {
       for (let x = 0; x < grid.size.w; x++) {
         if (fitsAt(registry, grid, item, { x, y, rotated, ignore })) {
@@ -754,8 +786,22 @@ export const findSpot = (
         }
       }
     }
+  };
+  if (def.size[0] === def.size[1]) {
+    return first(false);
   }
-  return undefined;
+  const wide = first(def.size[0] < def.size[1]);
+  const tall = first(def.size[0] > def.size[1]);
+  if (!(wide && tall)) {
+    return wide ?? tall;
+  }
+  const remaining = (spot: NonNullable<typeof wide>) =>
+    largestFreeRectangleArea(registry, {
+      size: grid.size,
+      placed: [...grid.placed.filter((placed) => placed.item !== ignore), { item, ...spot }],
+    });
+  const threshold = registry.inventory.get(CORE_CONTENT_IDS.player)!.autoPlacementTallMinFreeAreaGainCells;
+  return remaining(tall) - remaining(wide) > threshold ? tall : wide;
 };
 
 /** Whether a footprint fits an empty grid of this size, either way round. */

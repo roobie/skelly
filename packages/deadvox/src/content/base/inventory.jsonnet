@@ -12,6 +12,7 @@
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
       groundPileStateCap: 65536,
+      autoPlacementTallMinFreeAreaGainCells: 4,
       reachMetres: 2,
       chestHeightMetres: 1,
       useReachMetres: 2,

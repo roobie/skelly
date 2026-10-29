@@ -325,6 +325,8 @@ const InventoryTuningSchema = strictObject({
   containerMaxWidthCells: Cells,
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
+  /** Tall automatic placement must gain more than this many cells in the largest remaining free rectangle. */
+  autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
   reachMetres: Positive,
   /** Metres above the feet at which reach is measured. */
