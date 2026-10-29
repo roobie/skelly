@@ -119,6 +119,7 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
       'packages/deadvox',
       'packages/mobgen',
       'packages/thing-authoring-tool',
+      'packages/vehicle-authoring-tool',
     ]) {
       const dist = join(temp, project, 'dist');
       mkdirSync(dist, { recursive: true });
@@ -127,7 +128,13 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
 
     execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
 
-    for (const project of ['gun-authoring-tool', 'deadvox', 'mobgen', 'thing-authoring-tool']) {
+    for (const project of [
+      'gun-authoring-tool',
+      'deadvox',
+      'mobgen',
+      'thing-authoring-tool',
+      'vehicle-authoring-tool',
+    ]) {
       assert.ok(existsSync(join(temp, '_site', project, 'index.html')), `${project} index is at its Pages path`);
     }
     assert.ok(
