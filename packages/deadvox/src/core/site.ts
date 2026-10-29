@@ -138,7 +138,7 @@ export const lootSourcesOf = (
       building,
       anchor: piece.pos,
       destination: world.pos,
-      context: withLootDepth(context, world.lootDepth),
+      context: withLootDepth(context, world.lootDepth, override?.lootTier),
       ...(usage === undefined ? {} : { usage }),
     };
     const sources: LootPointSource[] = [];

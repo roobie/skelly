@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { type BrowserMod, evaluateMods, MAX_MOD_BYTES } from '../src/game/browserMods.ts';
 // biome-ignore lint/performance/noNamespaceImport: the malformed-input test spies on the content-build boundary
@@ -33,7 +34,7 @@ describe('browser mod admission', () => {
     expect(result.issues.get('fixture.json')).toEqual([
       expect.objectContaining({ path: 'id', message: expect.stringContaining('required') }),
     ]);
-    expect(result.content.origins).toEqual(base.origins);
+    expect(isDeepStrictEqual(result.content.origins, base.origins)).toBe(true);
   });
 
   it('refuses a duplicate mod id across sources without replacing admitted definitions', () => {

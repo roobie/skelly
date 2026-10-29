@@ -18,7 +18,7 @@ export const UsageSchema = pipe(
   check(distinct, 'usage tags must be unique'),
 );
 export const LOOT_TIERS = ['Tier1', 'Tier2', 'Tier3', 'Tier4'] as const;
-const LootTierSchema = picklist(LOOT_TIERS);
+export const LootTierSchema = picklist(LOOT_TIERS);
 export const ItemEconomySchema = strictObject({
   usage: UsageSchema,
   tiers: pipe(array(LootTierSchema), check(distinct, 'tiers must be unique')),
@@ -41,9 +41,15 @@ export const lootDepthOf = ({ tier, lowerTiers }: LootContext): LootDepth => ({
   ...(lowerTiers === true ? { lowerTiers } : {}),
 });
 
-/** The context with a piece's own depth in place of the placement's, if it has one. */
-export const withLootDepth = (context: LootContext, depth: LootDepth | undefined): LootContext =>
-  depth === undefined ? context : { usage: context.usage, ...depth };
+// An exact point tier must not inherit a building's lower-tier range.
+export const withLootDepth = (
+  context: LootContext,
+  depth: LootDepth | undefined,
+  tier?: LootContext['tier'],
+): LootContext => {
+  const resolved = tier === undefined ? depth : { tier };
+  return resolved === undefined ? context : { usage: context.usage, ...resolved };
+};
 
 const tierReaches = (context: LootContext, tier: (typeof LOOT_TIERS)[number]): boolean =>
   context.lowerTiers === true ? LOOT_TIERS.indexOf(tier) <= LOOT_TIERS.indexOf(context.tier) : tier === context.tier;

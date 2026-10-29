@@ -282,7 +282,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[1,1,11],\"items\":[{\"item\":\"hunter_logbook\",\"count\":1,\"key\":true},{\"item\":\"machete\",\"count\":1}]},{\"at\":[5,1,10],\"items\":[{\"item\":\"hiking_backpack\",\"count\":1}]}]"
+              "value": "[{\"at\":[1,1,11],\"items\":[{\"item\":\"hunter_logbook\",\"count\":1,\"key\":true},{\"item\":\"machete\",\"count\":1}]},{\"at\":[6,1,10],\"items\":[{\"item\":\"hiking_backpack\",\"count\":1}]}]"
             }
           ]
         },

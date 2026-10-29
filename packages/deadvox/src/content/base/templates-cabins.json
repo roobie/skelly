@@ -328,6 +328,7 @@
         },
         "G": {
           "furniture": "gun_cabinet",
+          "loot": "hunting_cache",
           "lootUsage": ["Hunting"]
         },
         "S": {
@@ -382,8 +383,8 @@
           "ppppppppDDpp",
           "p..........p",
           "p..........p",
-          "pCC........p",
-          "pCC........p",
+          "pCCC.......p",
+          "pCCC.......p",
           "pppppppppppp"
         ],
         [
@@ -398,8 +399,8 @@
           "ppppppppDDpp",
           "p..........p",
           "p..........p",
-          "pCC........p",
-          "pCC........p",
+          "pCCC.......p",
+          "pCCC.......p",
           "pppppppppppp"
         ],
         [
@@ -414,8 +415,8 @@
           "ppppppppDDpp",
           "p..........p",
           "p..........p",
-          "pCC........p",
-          "pCC........p",
+          "pCCC.......p",
+          "pCCC.......p",
           "pppppppppppp"
         ],
         [
@@ -430,8 +431,8 @@
           "ppppppppDDpp",
           "p..........p",
           "p..........p",
-          "pCC........p",
-          "pCC........p",
+          "pCCC.......p",
+          "pCCC.......p",
           "pppppppppppp"
         ],
         [
@@ -541,8 +542,8 @@
           "furniture": "bed"
         },
         "C": {
-          "furniture": "crate",
-          "loot": "d41_empty",
+          "furniture": "hunting_crate",
+          "loot": "hunting_cache",
           "lootUsage": ["Hunting"]
         },
         "D": {

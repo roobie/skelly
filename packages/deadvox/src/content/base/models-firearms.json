@@ -5,7 +5,7 @@
       "description": ".308 Winchester bolt-action rifle with an internal magazine.",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
-        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+        "usage": ["Hunting"]
       },
       "figureModels": [
         {

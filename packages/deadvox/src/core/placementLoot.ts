@@ -82,10 +82,12 @@ export const pieceItemIssues = (
   registry: Registry,
   compiled: CompiledTemplate,
   context: LootContext = compiled.lootContext,
+  overrides: readonly FixedLootOverrideDef[] = [],
 ): [string, string][] => {
   const issues: [string, string][] = [];
   for (const [index, piece] of compiled.pieces.entries()) {
     const path = `.pieces[${index}].items`;
+    const override = overrides.find((entry) => entry.at.join(',') === piece.pos.join(','));
     const items = piece.items ?? [];
     if (items.some((item) => item.placement !== 'surface') && !registry.furniture.get(piece.furniture)?.container) {
       issues.push([path, `furniture "${piece.furniture}" at ${piece.pos.join(',')} has no container`]);
@@ -94,7 +96,11 @@ export const pieceItemIssues = (
       const issue = fixedItemIssue(
         registry,
         fixed,
-        withLootDepth({ ...context, usage: piece.lootUsage ?? context.usage }, piece.lootDepth),
+        withLootDepth(
+          { ...context, usage: override?.lootUsage ?? piece.lootUsage ?? context.usage },
+          piece.lootDepth,
+          override?.lootTier,
+        ),
       );
       if (issue !== undefined) {
         issues.push([`${path}[${itemIndex}].item`, issue]);
@@ -140,7 +146,7 @@ export const placementLootIssues = (
 ): [string, string][] => {
   const issues = [
     ...groundLootSupplyIssues(registry, compiled, context),
-    ...pieceItemIssues(registry, compiled, context),
+    ...pieceItemIssues(registry, compiled, context, overrides),
   ];
   const anchors = new Set<string>();
   for (const [index, override] of overrides.entries()) {
@@ -164,7 +170,11 @@ export const placementLootIssues = (
         fixedItemIssue(
           registry,
           fixed,
-          withLootDepth({ ...context, usage: override.lootUsage ?? piece.lootUsage ?? context.usage }, piece.lootDepth),
+          withLootDepth(
+            { ...context, usage: override.lootUsage ?? piece.lootUsage ?? context.usage },
+            piece.lootDepth,
+            override.lootTier,
+          ),
         ) ?? pocketFitIssue(registry, fixed, piece.furniture, pockets);
       if (issue !== undefined) {
         issues.push([`${at}.items[${itemIndex}].item`, issue]);

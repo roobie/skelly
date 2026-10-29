@@ -1171,10 +1171,24 @@ A story item is `notLoot`, and in the two playtest scenarios every key is story.
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
-An item's usages and tiers alone make it eligible for loot; no item gets a special
-admission rule. Ordinary loot admission needs no per-item exception, so the hunting
-rifle and its .308 ammunition carry the same usages and tiers as the revolver and its
-cartridges. See `src/content/base/economy.libsonnet`, `commonItems`.
+Hunting supplies belong at hunting places, rather than wherever a common gun can roll.
+The rifle and .308 ammunition therefore narrow their usage without changing their tiers;
+the hunting scope is Tier2 so a cabin does not give away the roof reward. Cabins and roofs
+share one table so their odds have one owner; admission, not a second table, keeps the
+scope out of Tier1 cabins. See `src/content/base/economy.libsonnet`, `huntingItems`,
+and `src/content/base/loot.jsonnet`, `hunting_cache`.
+Hunting crates are long enough to hold the rifle: increasing a pocket alone would
+misrepresent the furniture's capacity. See `src/content/base/furniture-hunting.jsonnet`,
+`hunting_crate`.
+
+Both playtest rounds offer a roof hunting place as a reason to climb: the workshop roof
+and a weighted townhouse roof choice. The townhouse crate is not guaranteed, preserving
+variation. Each roof point takes exact Tier2 without retagging the building or admitting
+lower-tier-only items. A point-level tier beside usage states that exception directly,
+without splitting the building into artificial placements. See
+`src/content/base/templates-workshop.libsonnet`, `workshop_hall`;
+`src/content/base/gauntlet-city-decor.libsonnet`, `gauntlet_roof_hunting`; and
+`src/core/site.ts`, `lootSourcesOf`.
 
 Furniture has no loot table of its own; only a placed container has one, named by the place it stands in, and later by its loot unit's plan. What a container holds follows from where it stands, not from what it is, so a bunker's wardrobe and a bedroom's can hold different things, and no container rolls a table its author never chose.
 

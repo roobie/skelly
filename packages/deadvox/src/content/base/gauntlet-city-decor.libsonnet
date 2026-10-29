@@ -57,6 +57,7 @@ local rooftop = function(id, deck, walls) {
       { ref: { kind: 'piece', id: 'gauntlet_roof_empty' }, weight: 3 },
       { ref: { kind: 'piece', id: 'gauntlet_roof_ac' }, weight: 2 },
       { ref: { kind: 'piece', id: 'gauntlet_roof_vent' }, weight: 1 },
+      { ref: { kind: 'piece', id: 'gauntlet_roof_hunting' }, weight: 1 },
     ],
   }],
   furniture: [
@@ -86,6 +87,14 @@ local rooftop = function(id, deck, walls) {
   ],
   mapPieces: [
     equipment,
+    equipment + {
+      id: 'gauntlet_roof_hunting',
+      palette: equipment.palette + {
+        H: { furniture: 'hunting_crate', loot: 'hunting_cache', lootUsage: ['Hunting'], lootTier: 'Tier2' },
+      },
+      layers: [['HHH.', 'HHH.', '....', '....'], ['HHH.', 'HHH.', '....', '....'], air, air],
+      ownership: { layers: [['SSSA', 'SSSA', 'AAAA', 'AAAA'], ['SSSA', 'SSSA', 'AAAA', 'AAAA'], emptyClaims, emptyClaims] },
+    },
     equipment + {
       id: 'gauntlet_roof_ac', palette: equipment.palette + { F: { furniture: 'gauntlet_roof_ac' } },
       layers: [machine, machine, machine, air],
