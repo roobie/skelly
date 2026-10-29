@@ -1,5 +1,5 @@
-import { buildBundledContent } from '../../deadvox/src/game/bundledContent.ts';
 import { vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
+import { buildBundledContent } from '../../deadvox/src/game/bundledContent.ts';
 import { exportVehicleBlueprint } from './export.ts';
 
 const select = document.querySelector<HTMLSelectElement>('#blueprint')!;
