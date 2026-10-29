@@ -26,6 +26,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you change furniture repair admission or the boundary between repair and replacement
+  - you change world-target inspection or keyboard targeting ownership
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -3483,6 +3484,10 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 `ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
 `ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
 `src/core/saveFormat.ts`, `itemSchema`.
+
+## World service inspection
+
+Inspecting a piece must not acquire it or its supplies: reviewing a repair is not consent to start work. Details pin an identity rather than following the crosshair, so looking away cannot silently change the job. Keyboard aim shares the mouse ray rather than granting remote selection, and focus loss discards transient inspection because a returning held press is not fresh consent. The confirmation owner receives an identity and copied choices, never a preview's permission to execute. See `src/ui/worldRepairSurface.ts`, `WorldRepairSurface`, and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
 ## UI principles
 

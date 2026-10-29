@@ -88,6 +88,33 @@ const recipeStartReason = (
   return undefined;
 };
 
+export const craftRequirementRows = (
+  registry: Registry,
+  status: ReturnType<typeof requirementStatus>,
+  prefer: CraftPreference | undefined,
+): Pick<CraftRow, 'components' | 'qualities' | 'skills'> => ({
+  components: status.components.map(({ alternatives, group }) => ({
+    group,
+    preferred: prefer?.[group] ?? '',
+    alternatives: alternatives.map((a) => ({
+      id: a.item,
+      name: registry.items.get(a.item)!.name,
+      needed: a.needed,
+      found: a.available,
+    })),
+  })),
+  qualities: status.qualities.map(({ quality, required, available }) => ({
+    name: quality,
+    required,
+    best: available,
+  })),
+  skills: status.skills.map(({ skill, required, available }) => ({
+    name: registry.skills.get(skill)!.name,
+    required,
+    available,
+  })),
+});
+
 export const craftRows = ({
   registry,
   character,
@@ -118,26 +145,7 @@ export const craftRows = ({
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
         reason: recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
-        components: status.components.map(({ alternatives, group }) => ({
-          group,
-          preferred: prefer?.[group] ?? '',
-          alternatives: alternatives.map((a) => ({
-            id: a.item,
-            name: registry.items.get(a.item)!.name,
-            needed: a.needed,
-            found: a.available,
-          })),
-        })),
-        qualities: status.qualities.map(({ quality, required, available }) => ({
-          name: quality,
-          required,
-          best: available,
-        })),
-        skills: status.skills.map(({ skill, required, available }) => ({
-          name: registry.skills.get(skill)!.name,
-          required,
-          available,
-        })),
+        ...craftRequirementRows(registry, status, prefer),
         workstation: recipe.workstation ?? null,
       };
     });

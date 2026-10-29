@@ -14,6 +14,7 @@ import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { worldRepairFlow } from './world-repair-flow.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -1200,6 +1201,7 @@ try {
   await releaseRevolverTopUp();
   assert.equal(revolverReloaded.reached, true, 'native top-up clears the fired case');
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
+  await worldRepairFlow(page, `http://127.0.0.1:${address.port}`);
   assert.deepEqual(errors, []);
   process.stdout.write(
     `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, revolverLoaded, revolverClosed, revolverFired, revolverReloaded, errors })}\n`,

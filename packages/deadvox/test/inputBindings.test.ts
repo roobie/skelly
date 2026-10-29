@@ -97,6 +97,35 @@ const storage = () => {
 };
 
 describe('keyboard registry', () => {
+  it('consumes native button activation from a held key after transfer into world service', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(undefined, storage()));
+    let context: InputContext = 'world-targeting';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => {
+      commands.push(command);
+      if (command.action === 'world.actions' && command.phase === 'down') {
+        context = 'world-service';
+      }
+    };
+    const remove = keyboard.install();
+    const button = document.createElement('button');
+    document.body.append(button);
+    button.focus();
+    try {
+      button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true, cancelable: true }));
+      const repeated = new KeyboardEvent('keydown', { code: 'Enter', repeat: true, bubbles: true, cancelable: true });
+      button.dispatchEvent(repeated);
+      expect(repeated.defaultPrevented).toBe(true);
+      expect(commands.filter(({ phase }) => phase === 'down').map(({ action }) => action)).toEqual(['world.actions']);
+      button.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', bubbles: true }));
+      button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true, cancelable: true }));
+      expect(commands.at(-1)?.action).toBe('world.service-activate');
+    } finally {
+      remove();
+      button.remove();
+    }
+  });
   it('accepts a physical Shift down with a false Shift flag so strafe remains available', () => {
     const keyboard = new KeyboardInput(
       new BindingRegistry(

@@ -78,6 +78,20 @@ body {
     0.875rem / 1.4 system-ui,
     sans-serif;
 }
+.world-service button {
+  margin: calc(var(--ui-spacing) * 0.5rem);
+}
+.world-service button[aria-disabled="true"] {
+  border-style: dashed;
+}
+.world-service button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.world-service h2 {
+  margin: 0 0 calc(var(--ui-spacing) * 0.5rem);
+  font-size: 1.25rem;
+}
 .fact-detail {
   position: relative;
   display: inline-block;
@@ -1821,7 +1835,8 @@ body.bench #quickbar {
 }
 
 /* ---- crafting tab ---- */
-#crafting {
+#crafting,
+.world-service {
   padding: calc(var(--ui-spacing) * 1rem);
   overflow-y: auto;
   border: 1px solid var(--line);
@@ -1846,6 +1861,16 @@ body.inventory-open.inventory-tab-crafting #crafting {
   overscroll-behavior: contain;
 }
 #crafting[hidden] {
+  display: none;
+}
+.world-service {
+  position: fixed;
+  inset: 5rem 2.5rem;
+  z-index: var(--ui-layer-crafting);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.world-service[hidden] {
   display: none;
 }
 #crafting h2 {

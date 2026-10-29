@@ -892,6 +892,14 @@
           "failed": "Unable to load the world: {error}",
           "loading": "Loading world…",
           "reload": "Reload game"
+        },
+        "worldService": {
+          "actions": "Actions ({key})",
+          "back": "Back",
+          "details": "Details",
+          "heading": "World actions",
+          "start": "Start",
+          "target": "{name} · {damage}"
         }
       },
       "spacing": 1,
