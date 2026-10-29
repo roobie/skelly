@@ -9,8 +9,18 @@ read_if:
 This is an isolated feasibility experiment, not an adoption decision. The bench
 boundary keeps the shipped collision rule unchanged while comparing query costs;
 see `vehicleRapier.ts`, `VehicleRapierQueries`, and `vehicle-queries-cpu.mjs`.
-The source is exported fitted collision boxes, not rendered triangles. Keeping
-separate convex pieces avoids filling empty space with a whole-vehicle hull.
+The baseline source is exported fitted collision boxes. Keeping separate convex
+pieces avoids filling empty space with a whole-vehicle hull.
+
+## Collider tiers
+
+`ColliderTier` in `vehicleRapier.ts` prices richer shapes per part: fitted boxes,
+a compound of convex hulls, or one static triangle mesh. The hull and mesh tiers
+read each part's drawn triangles from its model file (`vehicleShapes.ts`,
+`readGlbMesh`), because the export carries only boxes; adoption would bake pieces
+into the export instead. `convexPieces` splits shells and cuts concave ones, and
+pieces still concave at its depth cap close their hollow. A static triangle mesh
+answers only on its surface, so a body fully inside it overlaps nothing.
 
 ## Temporary shortcuts
 
@@ -46,5 +56,8 @@ amalgam traversal, sight or channel policy. Serialized world size is a storage
 proxy, not resident WASM memory; process deltas include allocator growth and garbage.
 Fixture agreement across runtimes is a necessary gate, not proof of integrated
 simulation determinism; see `packages/deadvox/test/browser/vehicle-rapier.mjs`.
+Its fixture probes Rapier with oblique off-grid rays (distance and normal), queries
+straddling faces and edges, and a body sliding along a panel, for every tier; see
+`packages/deadvox/test/fixtures/vehicleRapierReplay.ts`, `probe`.
 These gaps must remain visible so query feasibility is not mistaken for gameplay
 readiness.

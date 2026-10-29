@@ -2,36 +2,87 @@ import RAPIER from '@dimforge/rapier3d-deterministic-compat';
 import type { ModelBox } from '@skelly/thing-core/schema';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { projectVehicleParts, transformPoint } from '../core/vehicleProjection.ts';
 import type { VehicleInstances } from '../core/vehicleInstances.ts';
-import { projectVehicleParts } from '../core/vehicleProjection.ts';
+import { type ConvexPieces, type PartMesh, placeMesh } from './vehicleShapes.ts';
+
+/** Fitted boxes (as exported), compound convex hulls per part, or one static triangle mesh per part. */
+export type ColliderTier = 'boxes' | 'hulls' | 'mesh';
+
+export interface PartShape {
+  /** Names the model and its placement, so an unchanged part is not rebuilt. */
+  signature: string;
+  /** World-metre points of each convex piece. */
+  pieces?: readonly Float32Array[];
+  /** World-metre drawn triangles. */
+  mesh?: PartMesh;
+}
 
 export interface PartSnapshot {
   version: number;
-  parts: readonly { key: string; boxes: readonly ModelBox[] }[];
+  parts: readonly { key: string; boxes: readonly ModelBox[]; shape?: PartShape }[];
+}
+
+/** A model's drawn triangles and convex pieces in its own frame; built once per model, as an export would bake them. */
+export interface ModelShapes {
+  readonly mesh: PartMesh;
+  readonly convex: ConvexPieces;
 }
 
 const vector = ([x, y, z]: Vec3) => ({ x, y, z });
 const rotation = { x: 0, y: 0, z: 0, w: 1 };
 
-export const vehicleSnapshot = (registry: Registry, vehicles: VehicleInstances, blockSize: number): PartSnapshot => ({
+export const vehicleSnapshot = (
+  registry: Registry,
+  vehicles: VehicleInstances,
+  blockSize: number,
+  shapesOf?: (model: string) => ModelShapes | undefined,
+): PartSnapshot => ({
   version: vehicles.version,
   parts: [...vehicles.records].flatMap(([id, vehicle]) =>
-    projectVehicleParts(registry, id, vehicle, blockSize).map((part) => ({
-      key: `${id}/${part.fittingId}`,
-      boxes: part.boxes,
-    })),
+    projectVehicleParts(registry, id, vehicle, blockSize).map((part) => {
+      const shapes =
+        shapesOf && part.model !== undefined && !registry.items.get(part.item.type)?.vehicle?.cargoSpace
+          ? shapesOf(part.model)
+          : undefined;
+      const place = (point: Vec3) => transformPoint(part.transform, point);
+      const placePieces = (pieces: readonly Float32Array[]) =>
+        pieces.map((points) => placeMesh({ positions: points, indices: new Uint32Array() }, place, false).positions);
+      return {
+        key: `${id}/${part.fittingId}`,
+        boxes: part.boxes,
+        ...(shapes
+          ? {
+              shape: {
+                signature: `${part.model}@${JSON.stringify(part.transform)}`,
+                pieces: placePieces(shapes.convex.pieces),
+                mesh: placeMesh(shapes.mesh, place, part.transform.mirror),
+              },
+            }
+          : {}),
+      };
+    }),
   ),
 });
+
+export interface ColliderCounts {
+  colliders: number;
+  /** Hull points handed to Rapier, or mesh vertices. */
+  vertices: number;
+  triangles: number;
+}
 
 /** Bench-only owner; no presentation-world state or cell vehicle layer enters its queries. */
 export class VehicleRapierQueries {
   private readonly world;
-  private readonly parts = new Map<string, { signature: string; handles: number[] }>();
+  private readonly parts = new Map<string, { signature: string; handles: number[]; counts: ColliderCounts }>();
   private version = -1;
   private readonly rapier: typeof RAPIER;
+  private readonly tier: ColliderTier;
 
-  constructor(rapier: typeof RAPIER = RAPIER) {
+  constructor(rapier: typeof RAPIER = RAPIER, tier: ColliderTier = 'boxes') {
     this.rapier = rapier;
+    this.tier = tier;
     this.world = new rapier.World({ x: 0, y: 0, z: 0 });
   }
 
@@ -42,18 +93,15 @@ export class VehicleRapierQueries {
     const remaining = new Set(this.parts.keys());
     for (const part of snapshot.parts) {
       remaining.delete(part.key);
-      const signature = JSON.stringify(part.boxes);
+      const shape = this.tier === 'boxes' ? undefined : part.shape;
+      const signature = shape?.signature ?? JSON.stringify(part.boxes);
       if (this.parts.get(part.key)?.signature === signature) {
         continue;
       }
       this.remove(part.key);
-      const handles = part.boxes.map(({ min, max }) => {
-        const half = max.map((value, axis) => (value - min[axis]!) / 2) as Vec3;
-        const center = max.map((value, axis) => (value + min[axis]!) / 2) as Vec3;
-        const desc = this.rapier.ColliderDesc.cuboid(...half).setTranslation(...center);
-        return this.world.createCollider(desc).handle;
-      });
-      this.parts.set(part.key, { signature, handles });
+      const { descs, counts } = this.describe(part, shape);
+      const handles = descs.map((desc) => this.world.createCollider(desc).handle);
+      this.parts.set(part.key, { signature, handles, counts });
     }
     for (const key of remaining) {
       this.remove(key);
@@ -63,11 +111,53 @@ export class VehicleRapierQueries {
     this.version = snapshot.version;
   }
 
+  private describe(
+    part: PartSnapshot['parts'][number],
+    shape: PartShape | undefined,
+  ): { descs: RAPIER.ColliderDesc[]; counts: ColliderCounts } {
+    const counts: ColliderCounts = { colliders: 0, vertices: 0, triangles: 0 };
+    const descs: RAPIER.ColliderDesc[] = [];
+    if (shape?.pieces && this.tier === 'hulls') {
+      for (const points of shape.pieces) {
+        const desc = this.rapier.ColliderDesc.convexHull(points);
+        if (!desc) {
+          throw new Error(`Part ${part.key} has a convex piece that is flat or degenerate`);
+        }
+        descs.push(desc);
+        counts.vertices += points.length / 3;
+      }
+    } else if (shape?.mesh && this.tier === 'mesh') {
+      descs.push(this.rapier.ColliderDesc.trimesh(shape.mesh.positions, shape.mesh.indices));
+      counts.vertices += shape.mesh.positions.length / 3;
+      counts.triangles += shape.mesh.indices.length / 3;
+    } else {
+      for (const { min, max } of part.boxes) {
+        const half = max.map((value, axis) => (value - min[axis]!) / 2) as Vec3;
+        const center = max.map((value, axis) => (value + min[axis]!) / 2) as Vec3;
+        descs.push(this.rapier.ColliderDesc.cuboid(...half).setTranslation(...center));
+      }
+      counts.vertices += part.boxes.length * 8;
+      counts.triangles += part.boxes.length * 12;
+    }
+    counts.colliders = descs.length;
+    return { descs, counts };
+  }
+
   private remove(key: string): void {
     for (const handle of this.parts.get(key)?.handles ?? []) {
       this.world.removeCollider(this.world.getCollider(handle), false);
     }
     this.parts.delete(key);
+  }
+
+  counts(): ColliderCounts {
+    const total: ColliderCounts = { colliders: 0, vertices: 0, triangles: 0 };
+    for (const { counts } of this.parts.values()) {
+      total.colliders += counts.colliders;
+      total.vertices += counts.vertices;
+      total.triangles += counts.triangles;
+    }
+    return total;
   }
 
   overlapsBox(min: Vec3, max: Vec3): boolean {
@@ -87,6 +177,15 @@ export class VehicleRapierQueries {
 
   ray(origin: Vec3, direction: Vec3, distance: number): number | undefined {
     return this.world.castRay(new this.rapier.Ray(vector(origin), vector(direction)), distance, true)?.timeOfImpact;
+  }
+
+  rayHit(origin: Vec3, direction: Vec3, distance: number): { distance: number; normal: Vec3 } | undefined {
+    const hit = this.world.castRayAndGetNormal(
+      new this.rapier.Ray(vector(origin), vector(direction)),
+      distance,
+      true,
+    );
+    return hit ? { distance: hit.timeOfImpact, normal: [hit.normal.x, hit.normal.y, hit.normal.z] } : undefined;
   }
 
   snapshotBytes(): number {

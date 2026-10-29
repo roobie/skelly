@@ -1,5 +1,6 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone cross-runtime browser contract
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +17,10 @@ const vite = await createServer({
   server: { host: '127.0.0.1', port: 0 },
 });
 const repeats = 2;
-const summary = { node: process.version, repeats, runs: [], divergence: null };
+const summary = { node: process.version, repeats, runs: [], divergence: null, rapierFloats: {}, colliders: {} };
+const model = readFileSync(
+  fileURLToPath(new URL('../../src/content/base/assets/models/hatchback_shell.glb', import.meta.url)),
+);
 let baseline;
 const compare = async (runtime, version, repeat, encoded) => {
   assert.ok(encoded.length > 0, 'Replay must not be empty');
@@ -43,13 +47,20 @@ const compare = async (runtime, version, repeat, encoded) => {
   assert.equal(summary.divergence, null, `NO-GO: first divergence ${JSON.stringify(summary.divergence)}`);
 };
 try {
-  await vite.listen();
   await mkdir(artifacts, { recursive: true });
+  await vite.listen();
   const reference = await vite.ssrLoadModule('/test/fixtures/vehicleRapierReplay.ts');
   await reference.initializeVehicleReplay();
   for (let repeat = 0; repeat < repeats; repeat++) {
-    const output = reference.replayVehicleQueries();
-    assert.ok(output.poses.length > 0 && output.flight.points.length > 0 && output.rays.some((v) => v !== undefined));
+    const output = reference.replayVehicleQueries(undefined, new Uint8Array(model));
+    for (const [tier, result] of Object.entries(output)) {
+      assert.ok(result.poses.length > 0 && result.flight.points.length > 0 && result.rays.some((v) => v !== undefined));
+      for (const [name, probe] of [['panel', result.panel], ['part', result.part]]) {
+        assert.ok(probe.rapierFloats > 0, `${tier}/${name}: no Rapier float answers`);
+        summary.rapierFloats[`${tier}/${name}`] = probe.rapierFloats;
+      }
+      summary.colliders[tier] = result.counts;
+    }
     // biome-ignore lint/performance/noAwaitInLoops: serialize repeats and retain diagnostics before a possible disagreement
     await compare('node', process.version, repeat, reference.encodeReplay(output));
   }
@@ -66,12 +77,13 @@ try {
         const page = await browser.newPage();
         try {
           await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-rapier.html`);
-          const encoded = await page.evaluate(async () => {
+          const encoded = await page.evaluate(async (base64) => {
             // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root TypeScript fixture URL
             const fixture = await import('/test/fixtures/vehicleRapierReplay.ts');
             await fixture.initializeVehicleReplay();
-            return fixture.encodeReplay(fixture.replayVehicleQueries());
-          });
+            const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+            return fixture.encodeReplay(fixture.replayVehicleQueries(undefined, bytes));
+          }, model.toString('base64'));
           await compare(runtime, browser.version(), repeat, encoded);
         } finally {
           await page.close();

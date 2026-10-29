@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import standard from '@dimforge/rapier3d-compat';
 import deterministic from '@dimforge/rapier3d-deterministic-compat';
 import { beforeAll, expect, it } from 'vitest';
@@ -6,6 +7,7 @@ import { VehicleRapierQueries, vehicleSnapshot } from '../src/bench/vehicleRapie
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
+import { convexPieces, readGlbMesh } from '../src/bench/vehicleShapes.ts';
 import { VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import {
@@ -105,10 +107,109 @@ it('preserves signed zero and undefined output fields in the browser replay enco
   expect(encodeReplay({ rays: undefined })).not.toEqual(encodeReplay({}));
 });
 
-it('replays movement, terrain contact, rays and throws identically in repeated and standard/deterministic runs', () => {
-  const first = replay(deterministic);
-  expect(first.poses.length).toBeGreaterThan(0);
-  expect(first.rays.some((hit) => hit !== undefined)).toBe(true);
-  expect(encodeReplay(replay(deterministic))).toEqual(encodeReplay(first));
-  expect(replay(standard as unknown as typeof deterministic)).toEqual(first);
+it('replays movement, contact, oblique rays, edge probes and throws identically in repeated runs of every tier', () => {
+  const first = replay(deterministic, shellBytes);
+  for (const tier of ['boxes', 'hulls', 'mesh'] as const) {
+    expect(first[tier]!.poses.length).toBeGreaterThan(0);
+    expect(first[tier]!.panel.rapierFloats).toBeGreaterThan(0);
+    expect(first[tier]!.part!.rapierFloats).toBeGreaterThan(0);
+  }
+  expect(encodeReplay(replay(deterministic, shellBytes))).toEqual(encodeReplay(first));
+  expect(replay(standard as unknown as typeof deterministic).boxes).toEqual(replay(deterministic).boxes);
+});
+
+const modelDir = new URL('../src/content/base/assets/models/', import.meta.url);
+const shellBytes = new Uint8Array(readFileSync(new URL('hatchback_shell.glb', modelDir)));
+
+const tiersOf = (model: string) => {
+  const registry = baseRegistry();
+  const boxes = Object.values(registry.models.get(model)!.parts!).flatMap((part) => part.collision!);
+  const mesh = readGlbMesh(new Uint8Array(readFileSync(new URL(`${model}.glb`, modelDir))));
+  const shape = { signature: model, pieces: convexPieces(mesh).pieces, mesh };
+  const snapshot = { version: 0, parts: [{ key: model, boxes, shape }] };
+  const bounds = {
+    min: [0, 1, 2].map((a) => Math.min(...boxes.map((b) => b.min[a]!))) as Vec3,
+    max: [0, 1, 2].map((a) => Math.max(...boxes.map((b) => b.max[a]!))) as Vec3,
+  };
+  const queries = Object.fromEntries(
+    (['boxes', 'hulls', 'mesh'] as const).map((tier) => {
+      const q = new VehicleRapierQueries(deterministic, tier);
+      q.sync(snapshot);
+      return [tier, q];
+    }),
+  ) as Record<'boxes' | 'hulls' | 'mesh', VehicleRapierQueries>;
+  return { queries, bounds, free: () => Object.values(queries).forEach((q) => q.free()) };
+};
+
+const downRays = (min: Vec3, max: Vec3): Vec3[] =>
+  Array.from({ length: 17 * 17 }, (_, n): Vec3 => [
+    min[0] + ((max[0] - min[0]) * ((n % 17) + 0.37)) / 17,
+    max[1] + 1,
+    min[2] + ((max[2] - min[2]) * (Math.floor(n / 17) + 0.61)) / 17,
+  ]);
+
+it.each(['hatchback_windscreen', 'hatchback_shell'])(
+  'lets rays from above through hollows of the fitted boxes of %s (a single-box part also never stops short)',
+  (model) => {
+    const { queries, bounds, free } = tiersOf(model);
+    try {
+      const miss = Number.POSITIVE_INFINITY;
+      for (const tier of ['hulls', 'mesh'] as const) {
+        let longer = 0;
+        for (const origin of downRays(bounds.min, bounds.max)) {
+          const fitted = queries.boxes.ray(origin, [0, -1, 0], 10) ?? miss;
+          const drawn = queries[tier].ray(origin, [0, -1, 0], 10) ?? miss;
+          if (model === 'hatchback_windscreen') {
+            // Rapier's convex ray cast is approximate to a few millimetres, so "never short" allows a centimetre.
+            expect(drawn).toBeGreaterThanOrEqual(fitted - 0.01);
+          }
+          longer += drawn > fitted + 1e-3 ? 1 : 0;
+        }
+        expect(longer, tier).toBeGreaterThan(0);
+      }
+    } finally {
+      free();
+    }
+  },
+);
+
+it('keeps a body out of the empty corner of a sloped panel only when the collider follows the drawn panel', () => {
+  const { queries, bounds, free } = tiersOf('hatchback_windscreen');
+  try {
+    const size = 0.04;
+    const cornerBoxes = [0, 1, 2, 3, 4, 5, 6, 7].map((c): [Vec3, Vec3] => {
+      const low: Vec3 = [0, 1, 2].map((a) =>
+        c >> a & 1 ? bounds.max[a]! - size : bounds.min[a]!,
+      ) as Vec3;
+      return [low, low.map((v) => v + size) as Vec3];
+    });
+    const touches = (tier: 'boxes' | 'hulls' | 'mesh') => cornerBoxes.map(([lo, hi]) => queries[tier].overlapsBox(lo, hi));
+    const fitted = touches('boxes');
+    expect(fitted.every(Boolean)).toBe(true);
+    expect(touches('hulls').some((hit) => !hit)).toBe(true);
+    expect(touches('mesh').some((hit) => !hit)).toBe(true);
+  } finally {
+    free();
+  }
+});
+
+it('answers a static triangle mesh only on its surface, while a convex piece also fills its inside', () => {
+  const { queries, free } = tiersOf('hatchback_engine');
+  try {
+    const [piece] = convexPieces(
+      readGlbMesh(new Uint8Array(readFileSync(new URL('hatchback_engine.glb', modelDir)))),
+    ).pieces.toSorted((a, b) => b.length - a.length);
+    const inside = [0, 1, 2].map((a) => {
+      let sum = 0;
+      for (let i = a; i < piece!.length; i += 3) {
+        sum += piece![i]!;
+      }
+      return sum / (piece!.length / 3);
+    }) as Vec3;
+    const tiny = (centre: Vec3): [Vec3, Vec3] => [centre.map((v) => v - 1e-3) as Vec3, centre.map((v) => v + 1e-3) as Vec3];
+    expect(queries.hulls.overlapsBox(...tiny(inside))).toBe(true);
+    expect(queries.mesh.overlapsBox(...tiny(inside))).toBe(false);
+  } finally {
+    free();
+  }
 });

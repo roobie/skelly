@@ -1,18 +1,41 @@
+import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { cpus, hostname } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import RAPIER from '@dimforge/rapier3d-deterministic-compat';
-import { buildRegistry } from '../core/content.ts';
-import { Inventory } from '../core/inventory.ts';
-import { bodyOverlapsTerrain, stepBody } from '../core/physics.ts';
-import { raycast } from '../core/raycast.ts';
-import { VehicleOccupancy } from '../core/vehicleProjection.ts';
-import { VehicleQuerySeam } from './vehicleQuerySeam.ts';
-import { VehicleRapierQueries, vehicleSnapshot } from './vehicleRapier.ts';
+
+// One process per tier, so WASM memory (which only grows) is attributable to that tier's colliders.
+const tierFlag = process.argv.indexOf('--tier');
+if (tierFlag < 0) {
+  for (const tier of ['boxes', 'hulls', 'mesh']) {
+    execFileSync(process.execPath, [...process.execArgv, fileURLToPath(import.meta.url), '--tier', tier], {
+      stdio: 'inherit',
+    });
+  }
+  process.exit(0);
+}
+const tier = process.argv[tierFlag + 1];
+
+let wasmMemory;
+const instantiate = WebAssembly.instantiate;
+WebAssembly.instantiate = async (...args) => {
+  const result = await instantiate.apply(WebAssembly, args);
+  wasmMemory ??= (result.instance ?? result).exports.memory;
+  return result;
+};
+const { default: RAPIER } = await import('@dimforge/rapier3d-deterministic-compat');
+const { buildRegistry } = await import('../core/content.ts');
+const { Inventory } = await import('../core/inventory.ts');
+const { bodyOverlapsTerrain, stepBody } = await import('../core/physics.ts');
+const { raycast } = await import('../core/raycast.ts');
+const { VehicleOccupancy } = await import('../core/vehicleProjection.ts');
+const { VehicleQuerySeam } = await import('./vehicleQuerySeam.ts');
+const { VehicleRapierQueries, vehicleSnapshot } = await import('./vehicleRapier.ts');
+const { convexPieces, readGlbMesh } = await import('./vehicleShapes.ts');
 
 await RAPIER.init();
+const wasmBytes = () => wasmMemory?.buffer.byteLength;
 const base = resolve(dirname(fileURLToPath(import.meta.url)), '../content/base');
 const { registry } = buildRegistry(
   readdirSync(base)
@@ -21,6 +44,22 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
 const blockSize = 0.5;
+const bake = { models: 0, ms: 0 };
+const baked = new Map();
+/** Stands in for shapes an export would bake: read once per model, never inside a timed query or sync. */
+const shapesOf = (model) => {
+  let shapes = baked.get(model);
+  if (!shapes) {
+    const start = performance.now();
+    const mesh = readGlbMesh(readFileSync(join(base, registry.models.get(model).file)));
+    shapes = { mesh, convex: convexPieces(mesh) };
+    baked.set(model, shapes);
+    bake.models += 1;
+    bake.ms += performance.now() - start;
+  }
+  return shapes;
+};
+const shapeSource = tier === 'boxes' ? undefined : shapesOf;
 const batches = 9;
 const repetitions = 2000;
 let sink = 0;
@@ -62,6 +101,8 @@ console.log(
     detachSamples: batches,
     units: 'microseconds per operation; frames include 1 player + 20 box zombie/probe bodies, not AI',
     scenario: 'hatchbacks facing north, 12-block X spacing; 0.5m cells; floor y<0; 21 actors distributed beside cars',
+    tier,
+    wasmMemoryBytesAfterInit: wasmBytes() ?? 'not measured',
   }),
 );
 for (const count of [1, 10, 50]) {
@@ -77,15 +118,17 @@ for (const count of [1, 10, 50]) {
       }),
     );
   }
-  const snapshot = () => vehicleSnapshot(registry, inventory.vehicles, blockSize);
-  const rapier = new VehicleRapierQueries();
+  const snapshot = () => vehicleSnapshot(registry, inventory.vehicles, blockSize, shapeSource);
+  snapshot();
+  const wasmBefore = wasmBytes();
+  const rapier = new VehicleRapierQueries(RAPIER, tier);
   const coarse = new VehicleOccupancy(registry, inventory.vehicles, blockSize);
   const solid = (x, y, z) => terrain(x, y, z) || coarse.isSolid(x, y, z);
   const seam = new VehicleQuerySeam(rapier, terrain, blockSize);
   const before = process.memoryUsage();
   const build = { rapier: [], cells: [] };
   for (let batch = 0; batch < batches; batch++) {
-    const q = new VehicleRapierQueries();
+    const q = new VehicleRapierQueries(RAPIER, tier);
     let start = performance.now();
     q.sync(snapshot());
     build.rapier.push((performance.now() - start) * 1000);
@@ -97,6 +140,7 @@ for (const count of [1, 10, 50]) {
   }
   rapier.sync(snapshot());
   coarse.isSolid(0, 0, 0);
+  const wasmAfter = wasmBytes();
   const after = process.memoryUsage();
   const queryPoint = (i) => [(i % count) * 6 + (i % 8) * 0.2 - 1, 0.5, (i % 7) * 0.2 - 1];
   const rows = {};
@@ -171,7 +215,11 @@ for (const count of [1, 10, 50]) {
           rss: after.rss - before.rss,
         },
       },
-      colliders: snapshot().parts.reduce((n, part) => n + part.boxes.length, 0),
+      wasmMemory:
+        wasmBefore === undefined ? 'not measured' : { before: wasmBefore, after: wasmAfter, growth: wasmAfter - wasmBefore },
+      counts: rapier.counts(),
+      perCar: Object.fromEntries(Object.entries(rapier.counts()).map(([k, v]) => [k, v / count])),
+      bake: { ...bake },
     }),
   );
   rapier.free();
