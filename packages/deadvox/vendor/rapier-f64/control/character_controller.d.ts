@@ -51,7 +51,7 @@ export declare class KinematicCharacterController {
     disableSnapToGround(): void;
     snapToGroundEnabled(): boolean;
     computeColliderMovement(collider: Collider, desiredTranslationDelta: Vector, filterFlags?: QueryFilterFlags, filterGroups?: InteractionGroups, filterPredicate?: (collider: Collider) => boolean): void;
-    computedMovement(): Vector;
+    computedMovement(target?: Vector): Vector;
     computedGrounded(): boolean;
     numComputedCollisions(): number;
     computedCollision(i: number, out?: CharacterCollision): CharacterCollision | null;

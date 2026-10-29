@@ -1,4 +1,5 @@
 import { RawIntegrationParameters } from "../raw";
+import { SoftRecoverySettings } from "./soft_body";
 export declare class IntegrationParameters {
     raw: RawIntegrationParameters;
     constructor(raw?: RawIntegrationParameters);
@@ -10,15 +11,27 @@ export declare class IntegrationParameters {
     get normalizedPredictionDistance(): number;
     get numSolverIterations(): number;
     get numInternalPgsIterations(): number;
-    get minIslandSize(): number;
     get maxCcdSubsteps(): number;
+    get softBodiesResweepStrain(): number;
+    get softBodiesMaxExtraSubsteps(): number;
+    get softBodiesContactStiffening(): number;
+    get softBodiesRecovery(): SoftRecoverySettings;
+    get softBodiesFemLinearTolerance(): number;
+    get softBodiesFemMaxLinearIterations(): number;
+    get softBodiesFemMaxDenseDofs(): number;
     set dt(value: number);
+    set softBodiesResweepStrain(value: number);
+    set softBodiesMaxExtraSubsteps(value: number);
+    set softBodiesContactStiffening(value: number);
+    set softBodiesRecovery(value: SoftRecoverySettings);
+    set softBodiesFemLinearTolerance(value: number);
+    set softBodiesFemMaxLinearIterations(value: number);
+    set softBodiesFemMaxDenseDofs(value: number);
     set contact_natural_frequency(value: number);
     set lengthUnit(value: number);
     set normalizedAllowedLinearError(value: number);
     set normalizedPredictionDistance(value: number);
     set numSolverIterations(value: number);
     set numInternalPgsIterations(value: number);
-    set minIslandSize(value: number);
     set maxCcdSubsteps(value: number);
 }

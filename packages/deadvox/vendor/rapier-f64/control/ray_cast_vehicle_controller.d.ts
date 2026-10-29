@@ -20,7 +20,7 @@ export declare class DynamicRayCastVehicleController {
     set setIndexForwardAxis(axis: number);
     addWheel(chassisConnectionCs: Vector, directionCs: Vector, axleCs: Vector, suspensionRestLength: number, radius: number): void;
     numWheels(): number;
-    wheelChassisConnectionPointCs(i: number): Vector | null;
+    wheelChassisConnectionPointCs(i: number, target?: Vector): Vector | null;
     setWheelChassisConnectionPointCs(i: number, value: Vector): void;
     wheelSuspensionRestLength(i: number): number | null;
     setWheelSuspensionRestLength(i: number, value: number): void;
@@ -42,9 +42,9 @@ export declare class DynamicRayCastVehicleController {
     setWheelSteering(i: number, value: number): void;
     wheelEngineForce(i: number): number | null;
     setWheelEngineForce(i: number, value: number): void;
-    wheelDirectionCs(i: number): Vector | null;
+    wheelDirectionCs(i: number, target?: Vector): Vector | null;
     setWheelDirectionCs(i: number, value: Vector): void;
-    wheelAxleCs(i: number): Vector | null;
+    wheelAxleCs(i: number, target?: Vector): Vector | null;
     setWheelAxleCs(i: number, value: Vector): void;
     wheelFrictionSlip(i: number): number | null;
     setWheelFrictionSlip(i: number, value: number): void;
@@ -54,10 +54,10 @@ export declare class DynamicRayCastVehicleController {
     wheelForwardImpulse(i: number): number | null;
     wheelSideImpulse(i: number): number | null;
     wheelSuspensionForce(i: number): number | null;
-    wheelContactNormal(i: number): Vector | null;
-    wheelContactPoint(i: number): Vector | null;
+    wheelContactNormal(i: number, target?: Vector): Vector | null;
+    wheelContactPoint(i: number, target?: Vector): Vector | null;
     wheelSuspensionLength(i: number): number | null;
-    wheelHardPoint(i: number): Vector | null;
+    wheelHardPoint(i: number, target?: Vector): Vector | null;
     wheelIsInContact(i: number): boolean;
     wheelGroundObject(i: number): Collider | null;
 }

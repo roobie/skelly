@@ -7,7 +7,8 @@ export declare enum RigidBodyType {
     Dynamic = 0,
     Fixed = 1,
     KinematicPositionBased = 2,
-    KinematicVelocityBased = 3
+    KinematicVelocityBased = 3,
+    SoftFrame = 4
 }
 export declare class RigidBody {
     private rawSet;
@@ -26,14 +27,19 @@ export declare class RigidBody {
     dominanceGroup(): number;
     setDominanceGroup(group: number): void;
     additionalSolverIterations(): number;
+    additionalPgsIterations(): number;
+    setAdditionalPgsIterations(iterations: number): void;
+    isSoftFrame(): boolean;
+    softBody(): number | null;
+    softCluster(): number | null;
     setAdditionalSolverIterations(iters: number): void;
     enableCcd(enabled: boolean): void;
     setSoftCcdPrediction(distance: number): void;
     softCcdPrediction(): number;
-    translation(): Vector;
-    rotation(): Rotation;
-    nextTranslation(): Vector;
-    nextRotation(): Rotation;
+    translation(target?: Vector): Vector;
+    rotation(target?: Rotation): Rotation;
+    nextTranslation(target?: Vector): Vector;
+    nextRotation(target?: Rotation): Rotation;
     setTranslation(tra: Vector, wakeUp: boolean): void;
     setLinvel(vel: Vector, wakeUp: boolean): void;
     gravityScale(): number;
@@ -42,19 +48,19 @@ export declare class RigidBody {
     setAngvel(vel: Vector, wakeUp: boolean): void;
     setNextKinematicTranslation(t: Vector): void;
     setNextKinematicRotation(rot: Rotation): void;
-    linvel(): Vector;
-    velocityAtPoint(point: Vector): Vector;
-    angvel(): Vector;
+    linvel(target?: Vector): Vector;
+    velocityAtPoint(point: Vector, target?: Vector): Vector;
+    angvel(target?: Vector): Vector;
     mass(): number;
-    effectiveInvMass(): Vector;
+    effectiveInvMass(target?: Vector): Vector;
     invMass(): number;
-    localCom(): Vector;
-    worldCom(): Vector;
-    invPrincipalInertia(): Vector;
-    principalInertia(): Vector;
-    principalInertiaLocalFrame(): Rotation;
-    effectiveWorldInvInertia(): SdpMatrix3;
-    effectiveAngularInertia(): SdpMatrix3;
+    localCom(target?: Vector): Vector;
+    worldCom(target?: Vector): Vector;
+    invPrincipalInertia(target?: Vector): Vector;
+    principalInertia(target?: Vector): Vector;
+    principalInertiaLocalFrame(target?: Rotation): Rotation;
+    effectiveWorldInvInertia(target?: SdpMatrix3): SdpMatrix3;
+    effectiveAngularInertia(target?: SdpMatrix3): SdpMatrix3;
     sleep(): void;
     wakeUp(): void;
     isCcdEnabled(): boolean;
@@ -84,8 +90,8 @@ export declare class RigidBody {
     applyTorqueImpulse(torqueImpulse: Vector, wakeUp: boolean): void;
     addForceAtPoint(force: Vector, point: Vector, wakeUp: boolean): void;
     applyImpulseAtPoint(impulse: Vector, point: Vector, wakeUp: boolean): void;
-    userForce(): Vector;
-    userTorque(): Vector;
+    userForce(target?: Vector): Vector;
+    userTorque(target?: Vector): Vector;
 }
 export declare class RigidBodyDesc {
     enabled: boolean;
@@ -114,6 +120,7 @@ export declare class RigidBodyDesc {
     softCcdPrediction: number;
     dominanceGroup: number;
     additionalSolverIterations: number;
+    additionalPgsIterations: number;
     userData?: unknown;
     constructor(status: RigidBodyType);
     static dynamic(): RigidBodyDesc;
@@ -126,6 +133,7 @@ export declare class RigidBodyDesc {
     static newStatic(): RigidBodyDesc;
     setDominanceGroup(group: number): RigidBodyDesc;
     setAdditionalSolverIterations(iters: number): RigidBodyDesc;
+    setAdditionalPgsIterations(iters: number): RigidBodyDesc;
     setEnabled(enabled: boolean): RigidBodyDesc;
     setTranslation(x: number, y: number, z: number): RigidBodyDesc;
     setRotation(rot: Rotation): RigidBodyDesc;

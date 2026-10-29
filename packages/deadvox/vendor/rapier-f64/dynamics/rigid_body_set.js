@@ -33,7 +33,7 @@ export class RigidBodySet {
         let rawAv = VectorOps.intoRaw(desc.angvel);
         let rawPrincipalInertia = VectorOps.intoRaw(desc.principalAngularInertia);
         let rawInertiaFrame = RotationOps.intoRaw(desc.angularInertiaLocalFrame);
-        let handle = this.raw.createRigidBody(desc.enabled, rawTra, rawRot, desc.gravityScale, desc.mass, desc.massOnly, rawCom, rawLv, rawAv, rawPrincipalInertia, rawInertiaFrame, desc.translationsEnabledX, desc.translationsEnabledY, desc.translationsEnabledZ, desc.rotationsEnabledX, desc.rotationsEnabledY, desc.rotationsEnabledZ, desc.linearDamping, desc.angularDamping, desc.status, desc.canSleep, desc.sleeping, desc.softCcdPrediction, desc.ccdEnabled, desc.dominanceGroup, desc.additionalSolverIterations);
+        let handle = this.raw.createRigidBody(desc.enabled, rawTra, rawRot, desc.gravityScale, desc.mass, desc.massOnly, rawCom, rawLv, rawAv, rawPrincipalInertia, rawInertiaFrame, desc.translationsEnabledX, desc.translationsEnabledY, desc.translationsEnabledZ, desc.rotationsEnabledX, desc.rotationsEnabledY, desc.rotationsEnabledZ, desc.linearDamping, desc.angularDamping, desc.status, desc.canSleep, desc.sleeping, desc.softCcdPrediction, desc.ccdEnabled, desc.dominanceGroup, desc.additionalSolverIterations, desc.additionalPgsIterations);
         rawTra.free();
         rawRot.free();
         rawLv.free();
@@ -46,14 +46,29 @@ export class RigidBodySet {
         this.map.set(handle, body);
         return body;
     }
-    remove(handle, islands, colliders, impulseJoints, multibodyJoints) {
+    remove(handle, islands, colliders, softBodies, impulseJoints, multibodyJoints) {
         for (let i = 0; i < this.raw.rbNumColliders(handle); i += 1) {
             colliders.unmap(this.raw.rbCollider(handle, i));
         }
         impulseJoints.forEachJointHandleAttachedToRigidBody(handle, (handle) => impulseJoints.unmap(handle));
         multibodyJoints.forEachJointHandleAttachedToRigidBody(handle, (handle) => multibodyJoints.unmap(handle));
-        this.raw.remove(handle, islands.raw, colliders.raw, impulseJoints.raw, multibodyJoints.raw);
+        this.raw.remove(handle, islands.raw, colliders.raw, softBodies.raw, impulseJoints.raw, multibodyJoints.raw);
         this.map.delete(handle);
+        colliders.unmapRemovedColliders();
+    }
+    mapNewBodies(colliders) {
+        this.raw.forEachRigidBodyHandle((handle) => {
+            if (!this.map.get(handle)) {
+                this.map.set(handle, new RigidBody(this.raw, colliders, handle));
+            }
+        });
+    }
+    unmapRemovedBodies() {
+        for (let body of this.map.getAll()) {
+            if (!this.raw.contains(body.handle)) {
+                this.map.delete(body.handle);
+            }
+        }
     }
     len() {
         return this.map.len();

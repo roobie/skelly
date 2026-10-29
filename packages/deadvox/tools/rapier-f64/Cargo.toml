@@ -13,15 +13,15 @@ name = "rapier_wasm3d"
 crate-type = ["cdylib"]
 
 [dependencies]
-rapier3d = { package = "rapier3d-f64", version = "=0.30.1", features = ["serde-serialize", "debug-render", "profiler", "enhanced-determinism"] }
-parry3d = { package = "parry3d-f64", version = "=0.25.3" }
+rapier3d = { package = "rapier3d-f64", version = "=0.36.0", features = ["serde-serialize", "debug-render", "profiler", "fem", "enhanced-determinism"] }
+parry3d = { package = "parry3d-f64", version = "=0.31.1", default-features = false, features = ["required-features"] }
 ref-cast = "=1.0.25"
-wasm-bindgen = "=0.2.100"
-js-sys = "=0.3.77"
-nalgebra = "=0.34.1"
-serde = { version = "=1.0.219", features = ["derive", "rc"] }
+wasm-bindgen = "=0.2.112"
+js-sys = "=0.3.89"
+nalgebra = "=0.35.0"
+serde = { version = "=1.0.228", features = ["derive", "rc"] }
 bincode = "=1.3.3"
-palette = "=0.7.6"
+palette = "=0.7.7"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("dim2"))'] }

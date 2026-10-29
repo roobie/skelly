@@ -1,4 +1,4 @@
-import { VectorOps, RotationOps } from "../math";
+import { VectorOps, RotationOps, scratchBuffer } from "../math";
 import { RawGenericJoint, RawJointAxis, RawJointType, } from "../raw";
 export var JointType;
 (function (JointType) {
@@ -15,6 +15,15 @@ export var MotorModel;
     MotorModel[MotorModel["AccelerationBased"] = 0] = "AccelerationBased";
     MotorModel[MotorModel["ForceBased"] = 1] = "ForceBased";
 })(MotorModel || (MotorModel = {}));
+export var JointAxis;
+(function (JointAxis) {
+    JointAxis[JointAxis["LinX"] = 0] = "LinX";
+    JointAxis[JointAxis["LinY"] = 1] = "LinY";
+    JointAxis[JointAxis["LinZ"] = 2] = "LinZ";
+    JointAxis[JointAxis["AngX"] = 3] = "AngX";
+    JointAxis[JointAxis["AngY"] = 4] = "AngY";
+    JointAxis[JointAxis["AngZ"] = 5] = "AngZ";
+})(JointAxis || (JointAxis = {}));
 export var JointAxesMask;
 (function (JointAxesMask) {
     JointAxesMask[JointAxesMask["LinX"] = 1] = "LinX";
@@ -65,17 +74,21 @@ export class ImpulseJoint {
     type() {
         return this.rawSet.jointType(this.handle);
     }
-    frameX1() {
-        return RotationOps.fromRaw(this.rawSet.jointFrameX1(this.handle));
+    frameX1(target) {
+        this.rawSet.jointFrameX1(this.handle, scratchBuffer);
+        return RotationOps.fromBuffer(scratchBuffer, target);
     }
-    frameX2() {
-        return RotationOps.fromRaw(this.rawSet.jointFrameX2(this.handle));
+    frameX2(target) {
+        this.rawSet.jointFrameX2(this.handle, scratchBuffer);
+        return RotationOps.fromBuffer(scratchBuffer, target);
     }
-    anchor1() {
-        return VectorOps.fromRaw(this.rawSet.jointAnchor1(this.handle));
+    anchor1(target) {
+        this.rawSet.jointAnchor1(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    anchor2() {
-        return VectorOps.fromRaw(this.rawSet.jointAnchor2(this.handle));
+    anchor2(target) {
+        this.rawSet.jointAnchor2(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
     setAnchor1(newPos) {
         const rawPoint = VectorOps.intoRaw(newPos);
@@ -86,6 +99,30 @@ export class ImpulseJoint {
         const rawPoint = VectorOps.intoRaw(newPos);
         this.rawSet.jointSetAnchor2(this.handle, rawPoint);
         rawPoint.free();
+    }
+    setFrameX1(rot) {
+        const rawRot = RotationOps.intoRaw(rot);
+        this.rawSet.jointSetFrameX1(this.handle, rawRot);
+        rawRot.free();
+    }
+    setFrameX2(rot) {
+        const rawRot = RotationOps.intoRaw(rot);
+        this.rawSet.jointSetFrameX2(this.handle, rawRot);
+        rawRot.free();
+    }
+    setLocalFrame1(anchor, rot) {
+        const rawAnchor = VectorOps.intoRaw(anchor);
+        const rawRot = RotationOps.intoRaw(rot);
+        this.rawSet.jointSetLocalFrame1(this.handle, rawAnchor, rawRot);
+        rawAnchor.free();
+        rawRot.free();
+    }
+    setLocalFrame2(anchor, rot) {
+        const rawAnchor = VectorOps.intoRaw(anchor);
+        const rawRot = RotationOps.intoRaw(rot);
+        this.rawSet.jointSetLocalFrame2(this.handle, rawAnchor, rawRot);
+        rawAnchor.free();
+        rawRot.free();
     }
     setContactsEnabled(enabled) {
         this.rawSet.jointSetContactsEnabled(this.handle, enabled);
@@ -109,6 +146,9 @@ export class UnitImpulseJoint extends ImpulseJoint {
     }
     configureMotorModel(model) {
         this.rawSet.jointConfigureMotorModel(this.handle, this.rawAxis(), model);
+    }
+    setMotorMaxForce(maxForce) {
+        this.rawSet.jointSetMotorMaxForce(this.handle, this.rawAxis(), maxForce);
     }
     configureMotorVelocity(targetVel, factor) {
         this.rawSet.jointConfigureMotorVelocity(this.handle, this.rawAxis(), targetVel, factor);
@@ -139,6 +179,21 @@ export class RevoluteImpulseJoint extends UnitImpulseJoint {
 export class GenericImpulseJoint extends ImpulseJoint {
 }
 export class SphericalImpulseJoint extends ImpulseJoint {
+    configureMotorModel(axis, model) {
+        this.rawSet.jointConfigureMotorModel(this.handle, axis, model);
+    }
+    setMotorMaxForce(axis, maxForce) {
+        this.rawSet.jointSetMotorMaxForce(this.handle, axis, maxForce);
+    }
+    configureMotorVelocity(axis, targetVel, factor) {
+        this.rawSet.jointConfigureMotorVelocity(this.handle, axis, targetVel, factor);
+    }
+    configureMotorPosition(axis, targetPos, stiffness, damping) {
+        this.rawSet.jointConfigureMotorPosition(this.handle, axis, targetPos, stiffness, damping);
+    }
+    configureMotor(axis, targetPos, targetVel, stiffness, damping) {
+        this.rawSet.jointConfigureMotor(this.handle, axis, targetPos, targetVel, stiffness, damping);
+    }
 }
 export class JointData {
     constructor() { }
@@ -201,6 +256,16 @@ export class JointData {
         res.jointType = JointType.Revolute;
         return res;
     }
+    static revoluteWithAxes(anchor1, anchor2, axis1, axis2) {
+        let res = new JointData();
+        res.anchor1 = anchor1;
+        res.anchor2 = anchor2;
+        res.axis = axis1;
+        res.axis1 = axis1;
+        res.axis2 = axis2;
+        res.jointType = JointType.Revolute;
+        return res;
+    }
     intoRaw() {
         let rawA1 = VectorOps.intoRaw(this.anchor1);
         let rawA2 = VectorOps.intoRaw(this.anchor2);
@@ -242,9 +307,18 @@ export class JointData {
                 result = RawGenericJoint.spherical(rawA1, rawA2);
                 break;
             case JointType.Revolute:
-                rawAx = VectorOps.intoRaw(this.axis);
-                result = RawGenericJoint.revolute(rawA1, rawA2, rawAx);
-                rawAx.free();
+                if (!!this.axis1 && !!this.axis2) {
+                    let rawAx1 = VectorOps.intoRaw(this.axis1);
+                    let rawAx2 = VectorOps.intoRaw(this.axis2);
+                    result = RawGenericJoint.revoluteWithAxes(rawA1, rawA2, rawAx1, rawAx2);
+                    rawAx1.free();
+                    rawAx2.free();
+                }
+                else {
+                    rawAx = VectorOps.intoRaw(this.axis);
+                    result = RawGenericJoint.revolute(rawA1, rawA2, rawAx);
+                    rawAx.free();
+                }
                 break;
         }
         rawA1.free();
