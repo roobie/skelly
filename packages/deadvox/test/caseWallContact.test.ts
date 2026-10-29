@@ -8,7 +8,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
-import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
+import { type Body, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
@@ -32,6 +32,12 @@ const { registry } = BUNDLED_CONTENT;
 const CASE_LANDING_LIFT = firearmsCombatTuning(registry).caseEjection.landingLiftMetres;
 const scale = makeScale(0.5);
 const pitch = (-20 * Math.PI) / 180;
+
+const groundBody = (body: Body, isSolid: Parameters<typeof stepBody>[2]): void => {
+  for (let frame = 0; frame < 30 && !body.onGround; frame++) {
+    stepBody(body, 1 / 60, isSolid, physicsFor(scale));
+  }
+};
 
 const makeWallShot = (yaw: number, wallX: number | undefined, startX: number, side: 'left' | 'right' = 'right') => {
   const world = new World();
@@ -358,9 +364,7 @@ describe('firearm case wall contact', () => {
     const faceEyeX = (wallX + 1) * scale.blockSize - portOffsetX;
     const firstStep = (PLAYER.walk / scale.blockSize / 60) * Math.sin(yaw);
     const body = createPlayerBody(scale, faceEyeX / scale.blockSize + firstStep, 1.01, 0);
-    for (let frame = 0; frame < 30 && !body.onGround; frame++) {
-      stepBody(body, 1 / 60, isSolid, physicsFor(scale));
-    }
+    groundBody(body, isSolid);
     expect(body.onGround).toBe(true);
     steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
     stepBody(body, 1 / 60, isSolid, physicsFor(scale));
