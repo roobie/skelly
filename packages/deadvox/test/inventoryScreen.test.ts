@@ -192,7 +192,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
-    attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
+    attachmentCandidates: (_firearmUid: number, _slotId: string) => [{ item: beans }],
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
@@ -1196,7 +1196,7 @@ describe('inventory screen Lit rendering', () => {
       throw new Error('Fixture could not place the AR in hand and foregrip in an inventory pocket');
     }
     const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
-    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.candidates(firearmUid, slotId);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
     test.hooks.dispatch = (payload) =>
       applyReplayActionPayload(payload, {
         inventory: test.inv,
@@ -1345,6 +1345,42 @@ describe('inventory screen Lit rendering', () => {
     expect(test.refusals).toEqual([reason]);
     expect(test.notices).toEqual([]);
     expect(test.queue.jobs).toHaveLength(0);
+  });
+
+  it('offers a suppressor below its fit level as a refused row with the reason, and as a button once trained', () => {
+    const test = setup();
+    const firearm = test.inv.create('rifle_assault');
+    const suppressor = test.inv.create('real_suppressor');
+    const gun = registry.models.get('rifle_assault')!.gun!;
+    const suppressorId = registry.models.get('real_suppressor')!.gun!.attachment!.id;
+    const slot = gun.attachmentSlots!.find((candidate) => gun.compatibility?.[candidate.id]?.includes(suppressorId));
+    if (!(slot && test.inv.consume(test.beans))) {
+      throw new Error('Fixture AR needs a suppressor mount and a free hand');
+    }
+    if (
+      !(
+        test.inv.add(firearm, { kind: 'hand', side: 'right' }) &&
+        test.inv.add(suppressor, { kind: 'pile', pos: [0, 0, 0] })
+      )
+    ) {
+      throw new Error('Fixture could not place the AR and suppressor');
+    }
+    const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
+    test.character.skills.firearms_combat = 3;
+    test.screen.selected = firearm;
+    test.screen.update();
+
+    const row = `[data-attachment-slot="${slot.id}"]`;
+    expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
+    expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(
+      "I can't fit this suppressor yet",
+    );
+
+    test.character.skills.firearms_combat = 4;
+    test.screen.update();
+    expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
+    expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
   });
 
   it('refuses inventory actions while unconscious and permits them after waking', () => {
