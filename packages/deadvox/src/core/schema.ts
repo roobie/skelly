@@ -266,7 +266,7 @@ const VEHICLE_CAPABILITIES = [
   'lift',
   /** Braces a lifting vehicle against the ground; a vehicle that lifts needs one. */
   'stabiliser',
-  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `freeFloor`). */
+  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `placementRegion`). */
   'load_floor',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
@@ -1486,6 +1486,17 @@ const VesselSchema = strictObject({
 
 export type LiquidContents = InferOutput<typeof LiquidContentsSchema>;
 
+export const VEHICLE_ADDON_FACES = {
+  // biome-ignore lint/style/useNamingConvention: keys are content capability words.
+  load_floor: { normal: 1, tangents: [0, 2] },
+} as const;
+
+const VehicleServiceFields = {
+  mount: Id,
+  durationSimSeconds: PositiveSimSeconds,
+  qualities: record(Id, QualityLevel),
+};
+
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
@@ -1598,6 +1609,14 @@ const ItemSchema = strictObject({
     strictObject({
       /** Content identity of the service interface this loose part can occupy. */
       mount: optional(Id),
+      service: optional(strictObject(VehicleServiceFields)),
+      addon: optional(
+        strictObject({
+          requires: picklist(Object.keys(VEHICLE_ADDON_FACES) as (keyof typeof VEHICLE_ADDON_FACES)[]),
+          /** An omitted clearance leaves open sky unbounded; fitted collision still limits height. */
+          openClearanceCells: optional(Cells),
+        }),
+      ),
       capabilities: pipe(
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
@@ -1619,8 +1638,6 @@ const ItemSchema = strictObject({
         strictObject({
           /** Sim seconds to take an item out or put one in, before the per-cell part. */
           handlingSimSeconds: SimSeconds,
-          /** The clearance above a free-floor cell with nothing over it, in cells. */
-          openClearanceCells: Cells,
           /** Why its pocket may be wider than the inventory width tuning allows. */
           wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
         }),
@@ -1641,14 +1658,12 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
   cargo: optional(tuple([Cells, Cells, Cells])),
-  /** Requirements for servicing this site; omitted sites are not player-serviceable. */
+  /** Overrides the part's work requirements at this authored site. */
   service: optional(
     strictObject({
       /** What the opened vehicle calls this site while it is empty. */
       name: Name,
-      mount: Id,
-      durationSimSeconds: PositiveSimSeconds,
-      qualities: record(Id, QualityLevel),
+      ...VehicleServiceFields,
     }),
   ),
 });

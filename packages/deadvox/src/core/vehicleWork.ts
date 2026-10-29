@@ -3,12 +3,7 @@
 import { coreMessage } from './coreText.ts';
 import type { Inventory, Location, Target } from './inventory.ts';
 import type { VehicleWorkHooks } from './longAction.ts';
-import {
-  sameVehiclePlacement,
-  type VehicleWorkPlacement,
-  type VehicleWorkTarget,
-  validVehicleWorkPlacement,
-} from './vehicleInstances.ts';
+import type { VehicleWorkPlacement, VehicleWorkTarget } from './vehicleInstances.ts';
 
 export interface VehicleWorkOptions {
   /** Resolves the ordinary output owner when a removal completes. */
@@ -61,24 +56,11 @@ const siteRefusal = (
   inventory: Inventory,
   { vehicleId, fittingId, itemUid, placement }: WorkTarget,
 ): string | undefined => {
-  const vehicle = inventory.vehicles.get(vehicleId);
-  const site = vehicle?.sites.find(({ id }) => id === fittingId);
-  const item = inventory.itemByUid(itemUid);
-  if (!(vehicle && site?.service && item)) {
-    return coreMessage(inventory.registry, 'gone');
+  const refusal = inventory.vehiclePlacementRefusal(vehicleId, { ...placement, id: fittingId }, itemUid);
+  if (refusal) {
+    return refusal;
   }
-  if (!inventory.canReachVehicle(vehicleId)) {
-    return coreMessage(inventory.registry, 'tooFar');
-  }
-  if (
-    !(validVehicleWorkPlacement(placement) && sameVehiclePlacement(site, placement)) ||
-    inventory.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount
-  ) {
-    return coreMessage(inventory.registry, 'partDoesNotFit');
-  }
-  return inventory.vehiclePlacementService(vehicleId, { ...placement, id: fittingId }, itemUid)
-    ? undefined
-    : coreMessage(inventory.registry, 'partNeedsSupport');
+  return inventory.canReachVehicle(vehicleId) ? undefined : coreMessage(inventory.registry, 'tooFar');
 };
 
 const serviceRefusal = (inventory: Inventory, options: VehicleWorkOptions, target: WorkTarget): string | undefined => {

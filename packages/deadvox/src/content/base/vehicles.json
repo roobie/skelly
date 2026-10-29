@@ -1451,17 +1451,57 @@
       "notLoot": false,
       "size": [1, 1],
       "vehicle": {
+        "addon": {
+          "openClearanceCells": 20,
+          "requires": "load_floor"
+        },
         "capabilities": ["storage"],
         "cargoSpace": {
           "handlingSimSeconds": 1.2,
-          "openClearanceCells": 20,
           "wideReason": "A cargo space is as wide as the floor it covers, not a carried bag."
         },
+        "mount": "cargo_space",
         "obstruction": {
           "combat": true,
           "light": true,
           "sight": true,
           "sound": true
+        },
+        "service": {
+          "durationSimSeconds": 10,
+          "mount": "cargo_space",
+          "qualities": {}
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "mounting_plate",
+      "model": "mounting_plate",
+      "name": "Mounting plate",
+      "notLoot": false,
+      "size": [5, 5],
+      "vehicle": {
+        "addon": {
+          "requires": "load_floor"
+        },
+        "capabilities": ["structure", "load_floor"],
+        "mount": "mounting_plate",
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        },
+        "service": {
+          "durationSimSeconds": 10,
+          "mount": "mounting_plate",
+          "qualities": {}
         }
       },
       "workInProgress": false
@@ -3619,6 +3659,25 @@
             }
           ],
           "massKg": 0.20000000000000001,
+          "node": "body:block",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/mounting_plate.glb",
+      "id": "mounting_plate",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.015625, 0],
+          "collision": [
+            {
+              "max": [0.25, 0.03125, 0.25],
+              "min": [-0.25, 0, -0.25]
+            }
+          ],
+          "massKg": 12,
           "node": "body:block",
           "voxelGrain": 0.03125
         }

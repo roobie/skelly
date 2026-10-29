@@ -3,7 +3,7 @@
 // handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import { cargoGrid, cargoSpaceItem } from './cargoSpace.ts';
+import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
@@ -68,6 +68,7 @@ import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { placeFitting } from './vehicleBlueprint.ts';
 import {
   copyVehiclePlacement,
   copyVehicleWorkPlacement,
@@ -394,21 +395,14 @@ export class Inventory {
    */
   vehicleTransfer(request: VehicleTransfer): string | undefined {
     const { kind, vehicleId, fittingId, itemUid, placement } = request;
-    const vehicle = this.vehicles.get(vehicleId);
-    const site = vehicle?.sites.find(({ id }) => id === fittingId);
-    const item = this.itemByUid(itemUid);
-    if (!(vehicle && site?.service && item)) {
-      return coreMessage(this.registry, 'gone');
+    const refusal = this.vehiclePlacementRefusal(vehicleId, { id: fittingId, ...placement }, itemUid);
+    if (refusal) {
+      return refusal;
     }
-    if (
-      !(validVehicleWorkPlacement(placement) && sameVehiclePlacement(site, placement)) ||
-      this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount ||
-      item.count !== 1
-    ) {
-      return coreMessage(this.registry, 'partDoesNotFit');
-    }
+    const vehicle = this.vehicles.get(vehicleId)!;
+    const item = this.itemByUid(itemUid)!;
     return kind === 'install'
-      ? this.installVehiclePart(vehicle, { ...site, ...copyVehicleWorkPlacement(placement) }, item, vehicleId)
+      ? this.installVehiclePart(vehicle, { id: fittingId, ...copyVehicleWorkPlacement(placement) }, item, vehicleId)
       : this.removeVehiclePart(vehicle, item, request);
   }
 
@@ -498,14 +492,9 @@ export class Inventory {
     itemUid: number,
   ): Readonly<{ durationSimSeconds: number; qualities: Readonly<Record<string, number>> }> | undefined {
     const vehicle = this.vehicles.get(vehicleId);
-    const site = vehicle?.sites.find(({ id }) => id === fittingId);
-    const item = this.itemByUid(itemUid);
-    return site?.service &&
-      item &&
-      site.supportedBy.every((support) => vehicle?.fittings.some(({ id }) => id === support)) &&
-      this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
-      ? site.service
-      : undefined;
+    const target =
+      vehicle?.fittings.find(({ id }) => id === fittingId) ?? vehicle?.sites.find(({ id }) => id === fittingId);
+    return target ? this.vehiclePlacementService(vehicleId, target, itemUid) : undefined;
   }
 
   vehiclePlacementService(
@@ -513,9 +502,76 @@ export class Inventory {
     target: VehicleWorkTarget,
     itemUid: number,
   ): ReturnType<Inventory['vehicleService']> {
-    const site = this.vehicles.get(vehicleId)?.sites.find(({ id }) => id === target.id);
-    return site && validVehicleWorkPlacement(target) && sameVehiclePlacement(site, target)
-      ? this.vehicleService(vehicleId, target.id, itemUid)
+    if (this.vehiclePlacementRefusal(vehicleId, target, itemUid)) {
+      return undefined;
+    }
+    const site = this.vehicles.get(vehicleId)!.sites.find(({ id }) => id === target.id);
+    const part = this.registry.items.get(this.itemByUid(itemUid)!.type)!.vehicle!;
+    return site?.service ?? part.service;
+  }
+
+  private supportsVehiclePlacement(
+    vehicle: VehicleInstance,
+    target: VehicleWorkPlacement,
+    part: NonNullable<ItemDef['vehicle']>,
+  ): boolean {
+    return (
+      (!part.addon || target.supportedBy.length > 0) &&
+      target.supportedBy.every((support) =>
+        vehicle.fittings.some(
+          ({ id, item }) =>
+            id === support &&
+            (!part.addon || this.registry.items.get(item.type)?.vehicle?.capabilities.includes(part.addon.requires)),
+        ),
+      )
+    );
+  }
+
+  vehiclePlacementRefusal(vehicleId: number, target: VehicleWorkTarget, itemUid: number): string | undefined {
+    const vehicle = this.vehicles.get(vehicleId);
+    const item = this.itemByUid(itemUid);
+    const part = item && this.registry.items.get(item.type)?.vehicle;
+    const site = vehicle?.sites.find(({ id }) => id === target.id);
+    const service = site?.service ?? part?.service;
+    if (!(vehicle && item && service)) {
+      return coreMessage(this.registry, 'gone');
+    }
+    if (
+      !validVehicleWorkPlacement(target) ||
+      item.count !== 1 ||
+      part?.mount !== service.mount ||
+      vehicle.fittings.some(({ id, item: owned }) => id === target.id && owned.uid !== itemUid) ||
+      (site?.service && !sameVehiclePlacement(site, target))
+    ) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    if (!this.supportsVehiclePlacement(vehicle, target, part)) {
+      return coreMessage(this.registry, 'partNeedsSupport');
+    }
+    const fitted = vehicle.fittings.find(({ item: owned }) => owned.uid === itemUid);
+    if (fitted && (fitted.id !== target.id || !sameVehiclePlacement(fitted, target))) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    if (!(site?.service || part.addon)) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    const present = vehicle.fittings
+      .filter(({ item: owned }) => owned.uid !== itemUid)
+      .map((entry) =>
+        placeFitting(this.registry, {
+          id: entry.id,
+          ...copyVehicleWorkPlacement(entry),
+          part: entry.item.type,
+          ...(entry.item.cargo ? { cargo: [...entry.item.cargo] } : {}),
+        }),
+      );
+    const candidate = placeFitting(this.registry, {
+      ...target,
+      part: item.type,
+      ...(item.cargo ? { cargo: [...item.cargo] } : {}),
+    });
+    return fitIssue(present, candidate, this.registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres)
+      ? coreMessage(this.registry, 'partDoesNotFit')
       : undefined;
   }
 
