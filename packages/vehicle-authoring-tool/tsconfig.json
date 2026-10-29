@@ -1,0 +1,4 @@
+{
+  "extends": "../deadvox/tsconfig.json",
+  "include": ["src/**/*.ts", "test/**/*.ts", "vite.config.ts", "../deadvox/src/core/jfxr.d.ts"]
+}
