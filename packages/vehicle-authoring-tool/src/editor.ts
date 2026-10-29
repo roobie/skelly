@@ -12,10 +12,10 @@ export type Vec3 = Fitting['at'];
 export type Service = NonNullable<Fitting['service']>;
 
 /** Which side's fitting a reference to a replaced fitting moves to. */
-type Side ='near' | 'far' | 'both';
+type Side = 'near' | 'far' | 'both';
 
 /** What a pair does with one reference of the original: kept on both twins, or the far twin rests on another id. */
-type PairSupport ={ readonly kind: 'shared' } | { readonly kind: 'paired'; readonly far: string };
+type PairSupport = { readonly kind: 'shared' } | { readonly kind: 'paired'; readonly far: string };
 
 export interface PairChoices {
   readonly base: string;
