@@ -1,6 +1,7 @@
 import { vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import { buildBundledContent } from '../../deadvox/src/game/bundledContent.ts';
 import { exportVehicleBlueprint } from './export.ts';
+import { registryIssueText } from './issues.ts';
 
 const select = document.querySelector<HTMLSelectElement>('#blueprint')!;
 const fittings = document.querySelector<HTMLUListElement>('#fittings')!;
@@ -22,16 +23,11 @@ for (const blueprint of blueprints) {
 const selectedBlueprint = () => content.registry.vehicleBlueprints.get(select.value)!;
 
 const issueText = () => {
-  const blueprint = selectedBlueprint();
-  const origin = content.registry.contentOrigins.get(`vehicleBlueprints:${blueprint.id}`)!;
-  const registryIssues = content.issues.filter(
-    (issue) => issue.source === origin.source && issue.path.startsWith(origin.path),
-  );
-  const vehicleIssues = vehicleContentIssues(content.registry).filter((issue) => issue.id === blueprint.id);
-  return [
-    ...registryIssues.map(({ source, path, message }) => `${source}: ${path}: ${message}`),
-    ...vehicleIssues.map(({ path, message }) => `${path}: ${message}`),
-  ].join('\n');
+  const vehicleIssues = vehicleContentIssues(content.registry)
+    .filter((issue) => issue.id === selectedBlueprint().id)
+    .map(({ path, message }) => `${path}: ${message}`)
+    .join('\n');
+  return [registryIssueText(content.issues), vehicleIssues].filter((text) => text !== '').join('\n');
 };
 
 const show = () => {
@@ -55,7 +51,7 @@ if (initial) {
   show();
 } else {
   download.disabled = true;
-  issues.textContent = 'No vehicle blueprints loaded.';
+  issues.textContent = registryIssueText(content.issues);
 }
 
 select.addEventListener('change', show);

@@ -4,6 +4,7 @@ import battery from '../../deadvox/src/content/base/things/car_battery.model.jso
 import { buildRegistry, type ContentSource } from '../../deadvox/src/core/content.ts';
 import { loadVehicleBlueprint, vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import { exportVehicleBlueprint, type VehicleBlueprintInput } from '../src/export.ts';
+import { registryIssueText } from '../src/issues.ts';
 
 const PART = 'vat_round_trip_part';
 const HOST = 'vat_round_trip_host';
@@ -50,21 +51,18 @@ describe('vehicle blueprint export', () => {
     expect(loadVehicleBlueprint(registry, HOST).fittings).toHaveLength(1);
   });
 
-  it('leaves malformed output for Deadvox vehicleContentIssues to report', () => {
+  it('reports the registry issue after a malformed vehicle source is dropped', () => {
     const malformed = exportVehicleBlueprint({
       ...input,
       id: 'vat_malformed_host',
       fittings: [{ ...input.fittings[0]!, part: 'vat_missing_part' }],
     });
-    const { issues } = buildRegistry([
+    const { issues, registry } = buildRegistry([
       { source: 'inventory.json', data: inventory },
       sourceFor(malformed.vehicleBlueprints[0]!),
     ]);
 
-    expect(issues).toContainEqual({
-      source: 'vat/round-trip.json',
-      path: 'vehicleBlueprints[0].fittings[0].part',
-      message: 'no item "vat_missing_part"',
-    });
+    expect(registry.vehicleBlueprints.has('vat_malformed_host')).toBe(false);
+    expect(registryIssueText(issues)).toContain('vehicleBlueprints[0].fittings[0].part: no item "vat_missing_part"');
   });
 });
