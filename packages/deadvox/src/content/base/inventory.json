@@ -54,6 +54,7 @@
       },
       "groundPileStateCap": 65536,
       "id": "player",
+      "keyHoldRealSeconds": 0.34999999999999998,
       "reachMetres": 2,
       "search": {
         "cellsForMax": 160,
