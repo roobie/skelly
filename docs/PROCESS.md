@@ -52,9 +52,12 @@ because that is local and changes on its own schedule.
    and waiting for the maintainer's merge stalled work that was otherwise done. It covers docs
    PRs. Docs-only PRs get the zero-drift workflow too, so green CI on the head commit applies
    to them as well.
-7. **After the merge:** mark the PR's work items done, and close each issue it completed with
-   a comment, since PRs cite issues without closing keywords. Tick the slice checklist where its
-   workflow could not (below). Check main's push-only workflows, such as the pages deploy,
+7. **Closing keywords and after the merge:** the PR body names each issue it completes with a
+   closing keyword, `Closes #N`, one keyword per issue, so GitHub closes it on merge and a solved
+   issue never stays open waiting for a manual close. A PR that only advances an issue cites it
+   as `Part of #N`, without a keyword. Close by hand, with a comment, only an issue the PR
+   completed without a keyword. After the merge, mark the PR's work items done. Tick the slice
+   checklist where its workflow could not (below). Check main's push-only workflows, such as the pages deploy,
    because no PR run covers them. Remove the worktree, stop its dev server, and delete the
    remote branch.
 
@@ -77,8 +80,8 @@ check below catches a failure it misses.
   file the PR touches, list main's added lines that `git diff main..<head>` deletes and main's
   deleted lines the head restores. A hit in JSON or a Tiled map is often formatting; confirm
   it with a semantic compare before calling it a loss.
-- **Closing keywords** (`Closes`, `Fixes`, `Resolves`) in the PR body name only issues the PR
-  completes, never another open PR. GitHub closes each target on merge, so a wrong target
+- **Closing keywords:** before merge, each keyword in the PR body must target an issue the PR
+  completes, never another open PR. GitHub closes every target on merge, so a wrong target
   closes open work.
 - **Save envelope version:** when a deadvox PR bumps `SAVE_SCHEMA_VERSION`, its value must
   exceed main's at merge. Two PRs bumping to the same number would otherwise give two
