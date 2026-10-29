@@ -7,12 +7,19 @@ import { Inventory } from '../src/core/inventory.ts';
 import { snapshotItem } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
+import {
+  applyReplayActionPayload,
+  isReplayActionPayload,
+  type ReplayActionPayload,
+} from '../src/game/replayCommands.ts';
+import { workName } from '../src/ui/craftReadout.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
-import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
+import { capture, createRuntime, encodeFixture, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const STOCK = 'world_repair_stock';
 const PIECE = 'world_repair_piece';
@@ -76,7 +83,7 @@ const make = (saved?: Saved) => {
   const commands = new CraftCommands({ inventory, character, sim, queue: new HandlingQueue(inventory), reach });
   return { inventory, sim, commands, hooks, position };
 };
-const start = () => {
+const prepare = () => {
   const r = make();
   const target = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 0], size: [1, 1, 1], facing: 'n' })!;
   if (r.inventory.entities.bash(target, DURABILITY / 2) !== 'damaged') {
@@ -89,12 +96,16 @@ const start = () => {
     }
   }
   const exact = inputs.map((item) => snapshotItem(item));
-  const refusal = r.commands.repairEntity(RECIPE, target.uid);
+  return { ...r, target, exact };
+};
+const start = () => {
+  const r = prepare();
+  const refusal = r.commands.repairEntity(RECIPE, r.target.uid);
   if (refusal) {
     throw new Error(refusal);
   }
   const work = r.inventory.hands.right!;
-  return { ...r, target, work, exact };
+  return { ...r, work };
 };
 const finish = (r: ReturnType<typeof make>, uid: number) => {
   const work = r.inventory.itemByUid(uid)!.work!;
@@ -151,6 +162,14 @@ it.each(['gone', 'out of reach', 'reserved', 'intact', 'carried', 'ruined'] as c
     const r = start();
     if (change === 'gone') {
       r.inventory.entities.destroy(r.target);
+      const replacement = r.inventory.entities.add({
+        type: PIECE,
+        pos: [...r.target.pos],
+        size: [1, 1, 1],
+        facing: 'n',
+      })!;
+      r.inventory.entities.bash(replacement, DURABILITY / 2);
+      expect(replacement.uid).not.toBe(r.target.uid);
     }
     if (change === 'out of reach') {
       r.position[0] += 100;
@@ -188,12 +207,150 @@ it('cancels paused entity work returning exact input identities and condition wi
   expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
 });
 
-it('refuses a reserved target before taking any inputs', () => {
-  const r = start();
-  r.sim.actions.stop();
-  expect(r.commands.act(r.work.uid, 'apart')).toBeUndefined();
-  r.inventory.entities.reserve(r.target);
+const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
+  const unused = (): never => {
+    throw new Error('Unexpected replay owner');
+  };
+  return applyReplayActionPayload(payload, {
+    inventory: r.inventory,
+    queue: new HandlingQueue(r.inventory),
+    quickbar: { assign: unused },
+    craftRepairEntity: (recipe, uid, preference) => r.commands.repairEntity(recipe, uid, preference),
+    search: unused,
+    work: unused,
+    vehicleWork: unused,
+    loadBattery: unused,
+    toHands: unused,
+    pickup: unused,
+    interact: unused,
+    lift: unused,
+    useFurniture: unused,
+    slide: unused,
+    place: unused,
+    turn: unused,
+    tip: unused,
+    clearDownedBody: unused,
+    craftStart: unused,
+    craftContinue: unused,
+    craftStop: unused,
+    wait: unused,
+    setWakeGameHour: unused,
+    cancelItemThrow: unused,
+    throwItem: unused,
+  });
+};
+const intent = (uid: number): ReplayActionPayload => ({
+  kind: 'craft.repair-entity',
+  recipeId: RECIPE,
+  entityUid: uid,
+  preference: { 0: STOCK },
+});
+
+it('projects the entity name, damage and requirements without owning inputs', () => {
+  const r = prepare();
   const before = r.inventory.snapshotState();
-  expect(r.commands.repairEntity(RECIPE, r.target.uid)).toBeDefined();
+  const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid, { 0: STOCK });
+  expect(projection.targetName).toBe(registry.furniture.get(PIECE)!.name);
+  expect(projection.targetName).not.toBe(registry.items.get(STOCK)!.name);
+  expect(projection.damage).toBeDefined();
+  expect(projection.requirements?.components[0]?.alternatives[0]?.available).toBeGreaterThanOrEqual(2);
+  expect(projection.refusal).toBeUndefined();
   expect(r.inventory.snapshotState()).toEqual(before);
+  expect(dispatch(r, intent(r.target.uid))).toBeUndefined();
+  expect(workName(registry, r.inventory.hands.right!)).toContain(projection.targetName);
+});
+
+it.each(['gone', 'reserved', 'out of reach'] as const)(
+  'revalidates a selected target that became %s without spending or retargeting',
+  (change) => {
+    const r = prepare();
+    const payload = intent(r.target.uid);
+    expect(r.commands.previewEntityRepair(RECIPE, r.target.uid).refusal).toBeUndefined();
+    if (change === 'gone') {
+      r.inventory.entities.destroy(r.target);
+    }
+    if (change === 'reserved') {
+      r.inventory.entities.reserve(r.target);
+    }
+    if (change === 'out of reach') {
+      r.position[0] += 100;
+    }
+    const other = r.inventory.entities.add({
+      type: PIECE,
+      pos: [r.position[0] + 1, 1, 1],
+      size: [1, 1, 1],
+      facing: 'n',
+    })!;
+    r.inventory.entities.bash(other, DURABILITY / 2);
+    const before = r.inventory.snapshotState();
+    const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid);
+    expect(projection.refusal).toBeDefined();
+    expect(dispatch(r, payload)).toBe(projection.refusal);
+    expect(r.inventory.snapshotState()).toEqual(before);
+  },
+);
+
+it('recorded repair intent keeps its selected UID and exact escrow instead of the first matching piece', async () => {
+  const r = prepare();
+  const selected = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
+  r.inventory.entities.bash(selected, DURABILITY / 2);
+  const template = capture(createRuntime());
+  const snapshot = { ...template, character: { ...template.character, inventory: r.inventory.snapshotState() } };
+  const recorder = new InputReplayRecorder(snapshot);
+  const command = intent(selected.uid);
+  recorder.queueAction(command.kind, 'down', 'play', { payload: command });
+  recorder.recordTick({
+    active: true,
+    inputLocked: false,
+    intent: {
+      forward: 0,
+      right: 0,
+      jump: false,
+      sprint: false,
+      walk: false,
+      useDominant: false,
+      useDominantHeld: false,
+      useOff: false,
+    },
+    yaw: 0,
+    pitch: 0,
+    headYaw: 0,
+    headPitch: 0,
+    freeLooking: false,
+    walking: false,
+    descending: false,
+    worldReady: true,
+  });
+  const decoded = await decodeInputReplay(
+    await encodeInputReplay(snapshot, recorder.copyInputs(), formatWorldOptions, snapshot),
+    { contentLookup: (kind, id) => contentLookup(registry, kind, id) },
+  );
+  const payload = decoded.inputs.actions[0]?.payload;
+  if (!(payload && isReplayActionPayload(payload))) {
+    throw new Error('Repair intent did not validate');
+  }
+  expect(payload).toEqual(command);
+  const replay = make({
+    inventory: decoded.snapshot.character.inventory,
+    simulation: r.sim.snapshotState(),
+    action: r.sim.actions.snapshotState(),
+  });
+  expect(dispatch(r, command)).toBeUndefined();
+  expect(dispatch(replay, payload)).toBeUndefined();
+  const work = replay.inventory.hands.right!;
+  expect(work.work).toEqual(r.inventory.hands.right!.work);
+  expect(work.work?.repairTarget).toEqual({ kind: 'entity', uid: selected.uid });
+  expect(work.work?.components.map((item) => snapshotItem(item)).sort((a, b) => a.uid - b.uid)).toEqual(r.exact);
+  finish(replay, work.uid);
+  expect(replay.inventory.entities.byUid(selected.uid)!.damage).toBe(DURABILITY / 2 - AMOUNT);
+  expect(replay.inventory.entities.byUid(r.target.uid)!.damage).toBe(DURABILITY / 2);
+});
+
+it('rejects entity repair payloads without explicit preferences or a valid UID and with cached plans', () => {
+  const payload = intent(1);
+  expect(isReplayActionPayload(payload)).toBe(true);
+  expect(isReplayActionPayload({ ...payload, entityUid: 0 })).toBe(false);
+  expect(isReplayActionPayload({ ...payload, preference: undefined })).toBe(false);
+  expect(isReplayActionPayload({ ...payload, preference: { 0: 7 } })).toBe(false);
+  expect(isReplayActionPayload({ ...payload, plan: {} })).toBe(false);
 });

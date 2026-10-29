@@ -2026,6 +2026,8 @@ export const startPlay = (
     tip: () => session.tipFurniture(),
     clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
+    craftRepairEntity: (recipeId, entityUid, preference) =>
+      session.crafting.repairEntity(recipeId, entityUid, preference),
     craftContinue: () => {
       continueAction();
     },

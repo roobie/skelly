@@ -1,11 +1,12 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
 import { type CraftCharacter, dominantSide, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
-import { type CraftPreference, type CraftResult, planCraft } from './crafting.ts';
+import { type CraftPreference, type CraftResult, planCraft, requirementStatus } from './crafting.ts';
+import { entityRepairRefusal } from './craftWork.ts';
 import { planDisassembly } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { Inventory, Plan } from './inventory.ts';
-import type { Item } from './items.ts';
+import { damageWord, type Item } from './items.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Simulation } from './sim.ts';
 
@@ -16,6 +17,14 @@ export interface WorkOption {
   plan: Plan;
   /** Game seconds for a long action; ordinary plan time remains handling seconds. */
   duration?: number;
+}
+
+export interface EntityRepairProjection {
+  targetUid: number;
+  targetName: string | undefined;
+  damage: string | undefined;
+  requirements: ReturnType<typeof requirementStatus> | undefined;
+  refusal: string | undefined;
 }
 
 export class CraftCommands {
@@ -99,8 +108,28 @@ export class CraftCommands {
     const amount = Math.min(1, repair.amount + repair.perSkill * skill);
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'item', uid: target.uid }, amount });
   }
+  previewEntityRepair(recipeId: string, entityUid: number, prefer?: CraftPreference): EntityRepairProjection {
+    const { registry, entities } = this.inventory;
+    const entity = entities.byUid(entityUid);
+    const recipe = registry.recipes.get(recipeId);
+    const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
+    const snapshot = this.reach();
+    const result = repair?.entity ? planCraft(recipe!, snapshot, this.character, prefer) : undefined;
+    const skill = repair ? skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN) : 0;
+    const targetRefusal = repair?.entity
+      ? entityRepairRefusal(this.inventory, entityUid, repair.entity, repair.amount + repair.perSkill * skill)
+      : coreMessage(registry, 'noRepairTarget');
+    return {
+      targetUid: entityUid,
+      targetName: entity ? registry.furniture.get(entity.type)!.name : undefined,
+      damage: entity ? damageWord(registry, entities.conditionOf(entity)) : undefined,
+      requirements: repair?.entity ? requirementStatus(recipe!, snapshot, this.character) : undefined,
+      refusal:
+        this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
+    };
+  }
   repairEntity(recipeId: string, entityUid: number, prefer?: CraftPreference): string | undefined {
-    const reason = this.startReason();
+    const reason = this.previewEntityRepair(recipeId, entityUid, prefer).refusal;
     if (reason) {
       return reason;
     }
@@ -176,7 +205,10 @@ export class CraftCommands {
       this.sim.actions.craft?.validate(uid);
     const name =
       work.kind === 'craft'
-        ? registry.items.get(registry.recipes.get(work.recipe)!.result.item)!.name.toLowerCase()
+        ? (registry.recipes.get(work.recipe)!.repair?.entity
+            ? registry.furniture.get(registry.recipes.get(work.recipe)!.repair!.entity!)!.name
+            : registry.items.get(registry.recipes.get(work.recipe)!.result.item)!.name
+          ).toLowerCase()
         : registry.items.get(work.source)!.name.toLowerCase();
     const apart = this.reachable(uid);
     return [

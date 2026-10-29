@@ -34,6 +34,7 @@ export type ReplayActionPayload =
   | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
+  | { kind: 'craft.repair-entity'; recipeId: string; entityUid: number; preference: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -204,6 +205,13 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'craft.start':
       return isCraftStartPayload(payload);
+    case 'craft.repair-entity':
+      return (
+        isUid(payload.entityUid) &&
+        payload.preference !== undefined &&
+        isCraftStartPayload(payload) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference'].includes(key))
+      );
     default:
       return false;
   }
@@ -245,6 +253,7 @@ export interface ReplayCommandOwners {
   tip: () => string | undefined;
   clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
+  craftRepairEntity: (recipeId: string, entityUid: number, preference: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -340,6 +349,8 @@ export const applyReplayActionPayload = (
       return undefined;
     case 'craft.start':
       return owners.craftStart(payload.recipeId, payload.preference);
+    case 'craft.repair-entity':
+      return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference);
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':
