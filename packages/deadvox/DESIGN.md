@@ -24,6 +24,7 @@ read_if:
   - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
+  - you change furniture repair admission or the boundary between repair and replacement
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -482,9 +483,10 @@ piece only when its damage crosses into a different step, not on every blow. See
 `BlockEntities.wearOf`, `src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
 `src/core/items.ts`, `damageWord`.
 
-Ruin is final: a destroyed piece or a broken door is never repaired, only replaced,
-because a ruined thing is mostly fragments; mending partial damage belongs to
-construction.
+Repair preserves a surviving piece rather than replacing it, so mending does not
+lose its identity or contents. Ruin is final: a destroyed piece or a broken door
+must be replaced because a ruined thing is mostly fragments. See
+`src/core/blockEntities.ts`, `BlockEntities.repair`.
 
 ### Dead humans
 

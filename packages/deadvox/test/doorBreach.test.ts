@@ -218,12 +218,15 @@ const throughSaveFile = async (entities: BlockEntities): Promise<BlockEntities> 
   return BlockEntities.restoreState(registry, decoded.snapshot.character.inventory.entities);
 };
 
-it('keeps partial and broken damage through a save file and load of the block entities', async () => {
+it('keeps repaired partial and broken damage through a save file and load of the block entities', async () => {
   const { entities, door } = doorway();
   entities.bash(door, MINIMUM);
+  expect(entities.repair(door, MINIMUM / 2)).toBe(true);
+  const repairedCondition = entities.conditionOf(door);
   const restored = await throughSaveFile(entities);
   const reloaded = restored.byUid(door.uid)!;
-  expect(reloaded.damage).toBe(MINIMUM);
+  expect(reloaded.damage).toBe(MINIMUM / 2);
+  expect(restored.conditionOf(reloaded)).toBe(repairedCondition);
   expect(blowsToBreak(restored, reloaded, MINIMUM)).toBe(blowsToBreak(entities, door, MINIMUM));
   const broken = await throughSaveFile(restored);
   expect(broken.byUid(door.uid)).toMatchObject({ broken: true, open: true });
