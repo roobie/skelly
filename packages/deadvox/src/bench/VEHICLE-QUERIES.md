@@ -44,5 +44,7 @@ implied by the query experiment. See `packages/deadvox/src/core/itemThrow.ts`,
 Box zombie/probe bodies in the benchmark measure the movement seam, not zombie AI,
 amalgam traversal, sight or channel policy. Serialized world size is a storage
 proxy, not resident WASM memory; process deltas include allocator growth and garbage.
-A replay within one runtime does not prove cross-browser determinism. These gaps
-must remain visible so query feasibility is not mistaken for gameplay readiness.
+Fixture agreement across runtimes is a necessary gate, not proof of integrated
+simulation determinism; see `packages/deadvox/test/browser/vehicle-rapier.mjs`.
+These gaps must remain visible so query feasibility is not mistaken for gameplay
+readiness.

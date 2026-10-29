@@ -2,38 +2,25 @@ import standard from '@dimforge/rapier3d-compat';
 import deterministic from '@dimforge/rapier3d-deterministic-compat';
 import { beforeAll, expect, it } from 'vitest';
 import { VehicleQuerySeam } from '../src/bench/vehicleQuerySeam.ts';
-import { type PartSnapshot, VehicleRapierQueries, vehicleSnapshot } from '../src/bench/vehicleRapier.ts';
+import { VehicleRapierQueries, vehicleSnapshot } from '../src/bench/vehicleRapier.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { steppedItemFlight } from '../src/core/itemThrow.ts';
-import { type Body, stepBody } from '../src/core/physics.ts';
+import { stepBody } from '../src/core/physics.ts';
 import { VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import {
+  panelBody as body,
+  panelCells as cells,
+  encodeReplay,
+  panelSnapshot as fixture,
+  panelFlight as flight,
+  replayVehicleQueries as replay,
+} from './fixtures/vehicleRapierReplay.ts';
 
 beforeAll(async () => {
   await deterministic.init();
   await standard.init();
 });
-
-const fixture: PartSnapshot = {
-  version: 0,
-  parts: [{ key: 'parked/panel', boxes: [{ min: [0.8, 0, 0], max: [0.9, 2, 3] }] }],
-};
-const cells = (x: number, y: number, z: number): boolean => x === 0 && y >= 0 && y < 2 && z >= 0 && z < 3;
-const body = (): Body => ({ pos: [0.25, 0, -0.5], vel: [0, 0, 1], halfWidth: 0.1, height: 1, onGround: false });
-const flight = (hitsPoint?: (p: Vec3) => boolean) =>
-  steppedItemFlight({
-    from: [0.25, 1, -0.5],
-    direction: [0, 0, 1],
-    distanceMetres: 4,
-    gravityMetresPerSimSecondSquared: 1,
-    flightSimSeconds: 1,
-    drag: 0,
-    blockSize: 1,
-    minY: -1,
-    isSolid: cells,
-    ...(hitsPoint ? { hitsPoint } : {}),
-  });
 
 it('keeps the thin-panel side gap open for body movement, aim rays and throw samples that cells block', () => {
   const queries = new VehicleRapierQueries();
@@ -110,27 +97,18 @@ it('rebuilds exported fitting geometry from the vehicle owner revision after det
   }
 });
 
-const replay = (rapier: typeof deterministic) => {
-  const queries = new VehicleRapierQueries(rapier);
-  try {
-    queries.sync(fixture);
-    const seam = new VehicleQuerySeam(queries, (_x, y) => y < 0, 1);
-    const actor = body();
-    const poses: Vec3[] = [];
-    for (let frame = 0; frame < 180; frame++) {
-      stepBody(actor, 1 / 60, seam.terrain, { gravity: 9.8, stepHeight: 0, shapeOf: seam.shapeOf });
-      poses.push([...actor.pos]);
-    }
-    return { poses, flight: flight(seam.point), rays: [0.25, 0.85].map((x) => seam.ray([x, 1, -1], [0, 0, 1], 5)) };
-  } finally {
-    queries.free();
-  }
-};
+it('preserves signed zero and undefined output fields in the browser replay encoding', () => {
+  expect(encodeReplay({ poses: [[0]], rays: [undefined] })).not.toEqual(
+    encodeReplay({ poses: [[-0]], rays: [undefined] }),
+  );
+  expect(encodeReplay({ rays: [undefined] })).not.toEqual(encodeReplay({ rays: [null] }));
+  expect(encodeReplay({ rays: undefined })).not.toEqual(encodeReplay({}));
+});
 
 it('replays movement, terrain contact, rays and throws identically in repeated and standard/deterministic runs', () => {
   const first = replay(deterministic);
   expect(first.poses.length).toBeGreaterThan(0);
   expect(first.rays.some((hit) => hit !== undefined)).toBe(true);
-  expect(replay(deterministic)).toEqual(first);
+  expect(encodeReplay(replay(deterministic))).toEqual(encodeReplay(first));
   expect(replay(standard as unknown as typeof deterministic)).toEqual(first);
 });
