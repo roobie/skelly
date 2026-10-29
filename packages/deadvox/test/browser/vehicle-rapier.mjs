@@ -55,7 +55,10 @@ try {
     const output = reference.replayVehicleQueries(undefined, new Uint8Array(model));
     for (const [tier, result] of Object.entries(output)) {
       assert.ok(result.poses.length > 0 && result.flight.points.length > 0 && result.rays.some((v) => v !== undefined));
-      for (const [name, probe] of [['panel', result.panel], ['part', result.part]]) {
+      for (const [name, probe] of [
+        ['panel', result.panel],
+        ['part', result.part],
+      ]) {
         assert.ok(probe.rapierFloats > 0, `${tier}/${name}: no Rapier float answers`);
         summary.rapierFloats[`${tier}/${name}`] = probe.rapierFloats;
       }

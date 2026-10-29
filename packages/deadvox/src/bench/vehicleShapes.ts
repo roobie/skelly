@@ -7,6 +7,7 @@ export interface PartMesh {
 }
 
 interface GlbJson {
+  // biome-ignore lint/style/useNamingConvention: glTF attribute semantic
   meshes: { primitives: { attributes: { POSITION: number }; indices?: number }[] }[];
   accessors: { bufferView: number; byteOffset?: number; componentType: number; count: number }[];
   bufferViews: { byteOffset?: number; byteStride?: number }[];
@@ -23,41 +24,32 @@ export const readGlbMesh = (bytes: Uint8Array): PartMesh => {
   const jsonLength = view.getUint32(12, true);
   const json = JSON.parse(new TextDecoder().decode(bytes.subarray(20, 20 + jsonLength))) as GlbJson;
   const binary = 20 + jsonLength + 8;
+  const offsetOf = ({ bufferView, byteOffset }: GlbJson['accessors'][number]): number =>
+    binary + (json.bufferViews[bufferView]!.byteOffset ?? 0) + (byteOffset ?? 0);
+  const readers: Record<number, [size: number, read: (at: number) => number]> = {
+    [FLOAT]: [4, (at) => view.getFloat32(at, true)],
+    [UNSIGNED_SHORT]: [2, (at) => view.getUint16(at, true)],
+    [UNSIGNED_INT]: [4, (at) => view.getUint32(at, true)],
+  };
+  const read = (accessor: GlbJson['accessors'][number], width: number): number[] => {
+    const [size, get] = readers[accessor.componentType] ?? [0, () => Number.NaN];
+    if (size === 0 || json.bufferViews[accessor.bufferView]!.byteStride !== undefined) {
+      throw new Error('Model accessor is not a tightly packed float32, uint16 or uint32 array');
+    }
+    return Array.from({ length: accessor.count * width }, (_, i) => get(offsetOf(accessor) + i * size));
+  };
   const positions: number[] = [];
   const indices: number[] = [];
-  for (const node of json.nodes) {
-    if (node.mesh === undefined) {
-      continue;
-    }
-    if (node.rotation || node.scale || node.matrix || node.translation?.some((value) => value !== 0)) {
-      throw new Error('Model mesh node is not at identity; the spike reads exports as written');
-    }
-    for (const primitive of json.meshes[node.mesh]!.primitives) {
-      const position = json.accessors[primitive.attributes.POSITION]!;
-      const index = json.accessors[primitive.indices!]!;
-      if (position.componentType !== FLOAT || json.bufferViews[position.bufferView]!.byteStride !== undefined) {
-        throw new Error('Model positions are not tightly packed float32');
-      }
-      const base = positions.length / 3;
-      const positionAt = binary + (json.bufferViews[position.bufferView]!.byteOffset ?? 0) + (position.byteOffset ?? 0);
-      for (let i = 0; i < position.count * 3; i++) {
-        positions.push(view.getFloat32(positionAt + i * 4, true));
-      }
-      const indexAt = binary + (json.bufferViews[index.bufferView]!.byteOffset ?? 0) + (index.byteOffset ?? 0);
-      for (let i = 0; i < index.count; i++) {
-        indices.push(
-          base +
-            (index.componentType === UNSIGNED_SHORT
-              ? view.getUint16(indexAt + i * 2, true)
-              : index.componentType === UNSIGNED_INT
-                ? view.getUint32(indexAt + i * 4, true)
-                : Number.NaN),
-        );
-      }
-    }
+  const meshNodes = json.nodes.filter((node) => node.mesh !== undefined);
+  if (meshNodes.some((node) => node.rotation || node.scale || node.matrix || node.translation?.some((v) => v !== 0))) {
+    throw new Error('Model mesh node is not at identity; the spike reads exports as written');
   }
-  if (indices.some(Number.isNaN)) {
-    throw new Error('Model indices are neither uint16 nor uint32');
+  for (const node of meshNodes) {
+    for (const primitive of json.meshes[node.mesh!]!.primitives) {
+      const base = positions.length / 3;
+      positions.push(...read(json.accessors[primitive.attributes.POSITION]!, 3));
+      indices.push(...read(json.accessors[primitive.indices!]!, 1).map((i) => base + i));
+    }
   }
   return { positions: new Float32Array(positions), indices: new Uint32Array(indices) };
 };
@@ -87,7 +79,7 @@ const MAX_SPLIT_DEPTH = 6;
 /** Candidate cut positions tried per axis, evenly spread over the piece's face centres. */
 const CUTS_PER_AXIS = 24;
 
-type Triangle =readonly [number, number, number];
+type Triangle = readonly [number, number, number];
 
 const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const cross = (a: Vec3, b: Vec3): Vec3 => [
@@ -124,7 +116,11 @@ export const convexPieces = (mesh: PartMesh): ConvexPieces => {
   };
   const triangles: Triangle[] = [];
   for (let i = 0; i < mesh.indices.length; i += 3) {
-    const triangle: Triangle = [identity(mesh.indices[i]!), identity(mesh.indices[i + 1]!), identity(mesh.indices[i + 2]!)];
+    const triangle: Triangle = [
+      identity(mesh.indices[i]!),
+      identity(mesh.indices[i + 1]!),
+      identity(mesh.indices[i + 2]!),
+    ];
     if (new Set(triangle).size === 3) {
       triangles.push(triangle);
     }
@@ -176,13 +172,11 @@ export const convexPieces = (mesh: PartMesh): ConvexPieces => {
 
   const pieces: Float32Array[] = [];
   let residual = 0;
-  const split = (list: readonly Triangle[], depth: number): void => {
-    const concave = hollows(list);
-    if (concave === 0 || list.length <= 4 || depth >= MAX_SPLIT_DEPTH) {
-      residual += concave === 0 ? 0 : 1;
-      pieces.push(Float32Array.from(verticesOf(list).flatMap((v) => points[v]!)));
-      return;
-    }
+  const keep = (list: readonly Triangle[], concave: number): void => {
+    residual += concave === 0 ? 0 : 1;
+    pieces.push(Float32Array.from(verticesOf(list).flatMap((v) => points[v]!)));
+  };
+  const bestCut = (list: readonly Triangle[]): { score: number; low: Triangle[]; high: Triangle[] } | undefined => {
     let best: { score: number; low: Triangle[]; high: Triangle[] } | undefined;
     for (let axis = 0; axis < 3; axis++) {
       const cuts = [...new Set(list.map((triangle) => centre(triangle, axis)))].sort((a, b) => a - b);
@@ -196,13 +190,17 @@ export const convexPieces = (mesh: PartMesh): ConvexPieces => {
         }
       }
     }
-    if (!best || best.low.length === 0 || best.high.length === 0) {
-      residual += 1;
-      pieces.push(Float32Array.from(verticesOf(list).flatMap((v) => points[v]!)));
+    return best;
+  };
+  const split = (list: readonly Triangle[], depth: number): void => {
+    const concave = hollows(list);
+    const cut = concave === 0 || list.length <= 4 || depth >= MAX_SPLIT_DEPTH ? undefined : bestCut(list);
+    if (!cut || cut.low.length === 0 || cut.high.length === 0) {
+      keep(list, concave);
       return;
     }
-    split(best.low, depth + 1);
-    split(best.high, depth + 1);
+    split(cut.low, depth + 1);
+    split(cut.high, depth + 1);
   };
   for (const root of [...shells.keys()].sort((a, b) => a - b)) {
     split(shells.get(root)!, 0);

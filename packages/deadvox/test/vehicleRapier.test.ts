@@ -4,10 +4,10 @@ import deterministic from '@dimforge/rapier3d-deterministic-compat';
 import { beforeAll, expect, it } from 'vitest';
 import { VehicleQuerySeam } from '../src/bench/vehicleQuerySeam.ts';
 import { VehicleRapierQueries, vehicleSnapshot } from '../src/bench/vehicleRapier.ts';
+import { convexPieces, readGlbMesh } from '../src/bench/vehicleShapes.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
-import { convexPieces, readGlbMesh } from '../src/bench/vehicleShapes.ts';
 import { VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import {
@@ -138,15 +138,23 @@ const tiersOf = (model: string) => {
       return [tier, q];
     }),
   ) as Record<'boxes' | 'hulls' | 'mesh', VehicleRapierQueries>;
-  return { queries, bounds, free: () => Object.values(queries).forEach((q) => q.free()) };
+  const free = (): void => {
+    for (const q of Object.values(queries)) {
+      q.free();
+    }
+  };
+  return { queries, bounds, free };
 };
 
 const downRays = (min: Vec3, max: Vec3): Vec3[] =>
-  Array.from({ length: 17 * 17 }, (_, n): Vec3 => [
-    min[0] + ((max[0] - min[0]) * ((n % 17) + 0.37)) / 17,
-    max[1] + 1,
-    min[2] + ((max[2] - min[2]) * (Math.floor(n / 17) + 0.61)) / 17,
-  ]);
+  Array.from(
+    { length: 17 * 17 },
+    (_, n): Vec3 => [
+      min[0] + ((max[0] - min[0]) * ((n % 17) + 0.37)) / 17,
+      max[1] + 1,
+      min[2] + ((max[2] - min[2]) * (Math.floor(n / 17) + 0.61)) / 17,
+    ],
+  );
 
 it.each(['hatchback_windscreen', 'hatchback_shell'])(
   'lets rays from above through hollows of the fitted boxes of %s (a single-box part also never stops short)',
@@ -178,12 +186,11 @@ it('keeps a body out of the empty corner of a sloped panel only when the collide
   try {
     const size = 0.04;
     const cornerBoxes = [0, 1, 2, 3, 4, 5, 6, 7].map((c): [Vec3, Vec3] => {
-      const low: Vec3 = [0, 1, 2].map((a) =>
-        c >> a & 1 ? bounds.max[a]! - size : bounds.min[a]!,
-      ) as Vec3;
+      const low: Vec3 = [0, 1, 2].map((a) => ((c >> a) & 1 ? bounds.max[a]! - size : bounds.min[a]!)) as Vec3;
       return [low, low.map((v) => v + size) as Vec3];
     });
-    const touches = (tier: 'boxes' | 'hulls' | 'mesh') => cornerBoxes.map(([lo, hi]) => queries[tier].overlapsBox(lo, hi));
+    const touches = (tier: 'boxes' | 'hulls' | 'mesh') =>
+      cornerBoxes.map(([lo, hi]) => queries[tier].overlapsBox(lo, hi));
     const fitted = touches('boxes');
     expect(fitted.every(Boolean)).toBe(true);
     expect(touches('hulls').some((hit) => !hit)).toBe(true);
@@ -206,7 +213,10 @@ it('answers a static triangle mesh only on its surface, while a convex piece als
       }
       return sum / (piece!.length / 3);
     }) as Vec3;
-    const tiny = (centre: Vec3): [Vec3, Vec3] => [centre.map((v) => v - 1e-3) as Vec3, centre.map((v) => v + 1e-3) as Vec3];
+    const tiny = (centre: Vec3): [Vec3, Vec3] => [
+      centre.map((v) => v - 1e-3) as Vec3,
+      centre.map((v) => v + 1e-3) as Vec3,
+    ];
     expect(queries.hulls.overlapsBox(...tiny(inside))).toBe(true);
     expect(queries.mesh.overlapsBox(...tiny(inside))).toBe(false);
   } finally {

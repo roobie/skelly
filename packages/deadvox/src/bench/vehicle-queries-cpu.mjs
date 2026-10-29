@@ -18,7 +18,7 @@ if (tierFlag < 0) {
 const tier = process.argv[tierFlag + 1];
 
 let wasmMemory;
-const instantiate = WebAssembly.instantiate;
+const { instantiate } = WebAssembly;
 WebAssembly.instantiate = async (...args) => {
   const result = await instantiate.apply(WebAssembly, args);
   wasmMemory ??= (result.instance ?? result).exports.memory;
@@ -216,7 +216,9 @@ for (const count of [1, 10, 50]) {
         },
       },
       wasmMemory:
-        wasmBefore === undefined ? 'not measured' : { before: wasmBefore, after: wasmAfter, growth: wasmAfter - wasmBefore },
+        wasmBefore === undefined
+          ? 'not measured'
+          : { before: wasmBefore, after: wasmAfter, growth: wasmAfter - wasmBefore },
       counts: rapier.counts(),
       perCar: Object.fromEntries(Object.entries(rapier.counts()).map(([k, v]) => [k, v / count])),
       bake: { ...bake },

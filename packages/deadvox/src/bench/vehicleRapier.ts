@@ -2,8 +2,8 @@ import RAPIER from '@dimforge/rapier3d-deterministic-compat';
 import type { ModelBox } from '@skelly/thing-core/schema';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { projectVehicleParts, transformPoint } from '../core/vehicleProjection.ts';
 import type { VehicleInstances } from '../core/vehicleInstances.ts';
+import { projectVehicleParts, transformPoint } from '../core/vehicleProjection.ts';
 import { type ConvexPieces, type PartMesh, placeMesh } from './vehicleShapes.ts';
 
 /** Fitted boxes (as exported), compound convex hulls per part, or one static triangle mesh per part. */
@@ -180,11 +180,7 @@ export class VehicleRapierQueries {
   }
 
   rayHit(origin: Vec3, direction: Vec3, distance: number): { distance: number; normal: Vec3 } | undefined {
-    const hit = this.world.castRayAndGetNormal(
-      new this.rapier.Ray(vector(origin), vector(direction)),
-      distance,
-      true,
-    );
+    const hit = this.world.castRayAndGetNormal(new this.rapier.Ray(vector(origin), vector(direction)), distance, true);
     return hit ? { distance: hit.timeOfImpact, normal: [hit.normal.x, hit.normal.y, hit.normal.z] } : undefined;
   }
 
