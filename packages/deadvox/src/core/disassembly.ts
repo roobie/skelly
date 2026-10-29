@@ -11,7 +11,7 @@ export type RecoveryTarget =
   | { kind: 'definition'; definition: ItemDef }
   | { kind: 'item'; source: Item; reach: ReachSnapshot };
 
-export type RecoveryOutcome =
+type RecoveryOutcome =
   | { operation: 'salvage'; outputs: NonNullable<ItemDef['salvage']>; timeGameMinutes: number }
   | { operation: 'disassembly'; capability: NonNullable<ItemDef['disassembly']> };
 
