@@ -1,18 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { cpus, hostname } from 'node:os';
 import process from 'node:process';
-import { buildRegistry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
-import { dayPhaseAt } from '../core/dayPhase.ts';
+import { buildRegistry } from '../core/content.ts';
 import { Inventory } from '../core/inventory.ts';
 import { stepBody } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import { makeScale } from '../core/scale.ts';
-import { siteGenerationOf } from '../core/sitePalette.ts';
 import { VehicleBoxes } from '../core/vehicleBoxes.ts';
 import { projectVehicleParts, VehicleOccupancy } from '../core/vehicleProjection.ts';
-import { probeHeading, ZombieSystem } from '../core/zombies.ts';
-import { physicsFor, playerTuning } from '../game/player.ts';
+import { probeHeading } from '../core/zombies.ts';
 
 const base = new URL('../content/base/', import.meta.url);
 const { registry } = buildRegistry(
@@ -24,30 +19,31 @@ const { registry } = buildRegistry(
       data: JSON.parse(readFileSync(new URL(file, base), 'utf8')),
     })),
 );
-const scale = makeScale(0.5);
-const tuning = playerTuning(registry);
-const physics = physicsFor(scale, tuning);
+const scenario = {
+  blockSize: 0.5,
+  counts: [1, 10, 50],
+  actors: 21,
+  batches: 9,
+  queriesPerBatch: 2000,
+  framesPerBatch: 200,
+  spacing: [16, 24],
+  columns: 10,
+  dt: 1 / 60,
+  body: { halfWidth: 0.6, height: 3.4 },
+  physics: { gravity: 20, stepHeight: 0.5 },
+};
 const terrain = (_x, y, _z) => y < 0;
-const batches = 31;
-const queriesPerBatch = 2000;
-const frameCount = 600;
 let checksum = 0;
 const summary = (samples) => {
   const sorted = [...samples].sort((a, b) => a - b);
-  return {
-    n: samples.length,
-    min: sorted[0],
-    median: sorted[Math.floor(sorted.length / 2)],
-    p95: sorted[Math.ceil(sorted.length * 0.95) - 1],
-    max: sorted.at(-1),
-  };
+  return { n: samples.length, min: sorted[0], median: sorted[Math.floor(sorted.length / 2)], max: sorted.at(-1) };
 };
-const measure = (fn, count = queriesPerBatch) => {
+const measure = (fn, count) => {
   const start = performance.now();
   for (let i = 0; i < count; i++) {
     checksum += Number(fn(i) ?? 0);
   }
-  return (performance.now() - start) / count;
+  return ((performance.now() - start) * 1000) / count;
 };
 const create = (count, mode) => {
   const inventory = new Inventory(registry);
@@ -57,13 +53,17 @@ const create = (count, mode) => {
       inventory.registerVehicle({
         blueprint: 'hatchback',
         placementKey: `bench-${i}`,
-        origin: [(i % 10) * 16, 0, Math.floor(i / 10) * 24],
+        origin: [
+          (i % scenario.columns) * scenario.spacing[0],
+          0,
+          Math.floor(i / scenario.columns) * scenario.spacing[1],
+        ],
         facing: 'n',
       }),
     );
   }
-  const cells = new VehicleOccupancy(registry, inventory.vehicles, scale.blockSize);
-  const boxes = new VehicleBoxes(registry, inventory.vehicles, scale.blockSize);
+  const cells = new VehicleOccupancy(registry, inventory.vehicles, scenario.blockSize);
+  const boxes = new VehicleBoxes(registry, inventory.vehicles, scenario.blockSize);
   const coarse = (x, y, z) => terrain(x, y, z) || cells.isSolid(x, y, z);
   const solid = mode === 'cells' ? coarse : terrain;
   const point =
@@ -71,129 +71,110 @@ const create = (count, mode) => {
   const ray =
     mode === 'cells' ? (o, d, range) => raycast(o, d, range, coarse) : (o, d, range) => boxes.ray(o, d, range, terrain);
   const shapeOf = mode === 'cells' ? undefined : (body) => boxes.shape(body, terrain);
-  return { inventory, ids, cells, boxes, solid, point, ray, shapeOf };
+  return { inventory, ids, solid, point, ray, shapeOf };
 };
-const samplesFor = ({ inventory }) =>
+const pointsFor = ({ inventory }) =>
   [...inventory.vehicles.records].flatMap(([id, vehicle]) =>
-    projectVehicleParts(registry, id, vehicle, scale.blockSize).flatMap((part) =>
+    projectVehicleParts(registry, id, vehicle, scenario.blockSize).flatMap((part) =>
       part.boxes.flatMap((box) => {
-        const centre = box.min.map((v, axis) => (v + box.max[axis]) / 2 / scale.blockSize);
+        const centre = box.min.map((v, axis) => (v + box.max[axis]) / 2 / scenario.blockSize);
         return [centre, centre.map((v, axis) => v + (axis === 0 ? 0.6 : 0))];
       }),
     ),
   );
-const runQueries = (count, mode) => {
-  const query = create(count, mode);
-  const points = samplesFor(query);
+const runQueries = (q) => {
+  const points = pointsFor(q);
   const at = (i) => points[i % points.length];
   const tests = {
-    solid: (i) => query.point(at(i)),
+    solid: (i) => q.point(at(i)),
     ray: (i) => {
       const p = at(i);
-      return query.ray([p[0], p[1], p[2] - 8], [0, 0, 1], 16)?.distance;
+      return q.ray([p[0], p[1], p[2] - 8], [0, 0, 1], 16)?.distance;
     },
     throwSample: (i) => {
-      const metres = at(i).map((v) => v * scale.blockSize);
-      return query.point(metres.map((v) => v / scale.blockSize));
+      const metres = at(i).map((v) => v * scenario.blockSize);
+      return q.point(metres.map((v) => v / scenario.blockSize));
     },
   };
   const result = {};
   for (const [name, fn] of Object.entries(tests)) {
-    measure(fn, 10_000);
-    result[name] = summary(Array.from({ length: batches }, () => measure(fn)));
+    measure(fn, scenario.queriesPerBatch);
+    result[name] = summary(Array.from({ length: scenario.batches }, () => measure(fn, scenario.queriesPerBatch)));
   }
-  const original = query.inventory.vehicles.get(query.ids[0]);
+  const original = q.inventory.vehicles.get(q.ids[0]);
   const leaf = original.fittings.find((f) => !original.fittings.some((other) => other.supportedBy.includes(f.id)));
   const update = [];
-  for (let i = 0; i < batches; i++) {
-    query.inventory.vehicles.replace(registry, query.ids[0], original);
-    query.point(at(0));
-    query.inventory.vehicles.replace(registry, query.ids[0], {
+  for (let i = 0; i < scenario.batches; i++) {
+    q.inventory.vehicles.replace(registry, q.ids[0], original);
+    q.point(at(0));
+    q.inventory.vehicles.replace(registry, q.ids[0], {
       ...original,
       fittings: original.fittings.filter((f) => f !== leaf),
     });
-    const start = performance.now();
-    query.point(at(0));
-    update.push(performance.now() - start);
+    update.push(measure(() => q.point(at(0)), 1));
   }
   result.detachRebuild = summary(update);
+  q.inventory.vehicles.replace(registry, q.ids[0], original);
   return result;
 };
-const runFrames = (count, mode) => {
-  const q = create(count, mode);
-  const player = { pos: [4, 0, -6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.4, onGround: true };
-  const system = new ZombieSystem({
-    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
-    seed: 1,
-    isSolid: q.solid,
-    isOpaque: terrain,
-    blockSize: scale.blockSize,
-    physics,
-    vehicleBoxSpike: mode === 'boxes' ? q.boxes : undefined,
-    jumpSpeed: tuning.jump,
-    tuning: registry.senses.get(CORE_CONTENT_IDS.player),
-    player: () => ({
-      pos: player.pos,
-      body: player,
-      facing: [0, 0, 1],
-      movement: 'still',
-      lit: true,
-      lightSeenFrom: 40,
-      eyeHeightMetres: tuning.eye,
-    }),
-    dayPhase: () => dayPhaseAt(requireDayCycle(registry), 43_200),
-    hurtPlayer: () => undefined,
-  });
-  const type = registry.zombies.get('shambler');
-  for (let i = 0; i < 20; i++) {
-    const angle = (i * 2 * Math.PI) / 20;
-    system.add(type, [Math.cos(angle) * 8, 0, Math.sin(angle) * 8], [0, 0, 1]);
-  }
-  let frame = 0;
-  const samples = [];
-  for (; frame < frameCount + 120; frame++) {
-    const start = performance.now();
-    player.vel[0] = frame % 120 < 60 ? 1 : -1;
-    stepBody(player, 1 / 60, q.solid, { ...physics, shapeOf: q.shapeOf });
-    system.tickActive(1 / 60, frame / 60);
-    for (const [, zombie] of system.store.entries()) {
-      const probe = probeHeading(
-        {
-          body: zombie.body,
-          intent: [0, 0, 1],
-          isSolid: q.solid,
-          physics: { ...physics, shapeOf: q.shapeOf },
-          blockSize: scale.blockSize,
-        },
-        [0, 0, 1],
-        0.75,
-      );
-      checksum += probe[0];
-    }
-    if (frame >= 120) {
-      samples.push(performance.now() - start);
+const runFrames = (q) => {
+  const vehicles = [...q.inventory.vehicles.records].map(([, vehicle]) => vehicle);
+  const frameBatches = [];
+  for (let batch = -1; batch < scenario.batches; batch++) {
+    const actors = Array.from({ length: scenario.actors }, (_, i) => {
+      const { origin } = vehicles[i % vehicles.length];
+      return {
+        ...scenario.body,
+        pos: [origin[0] + 4 + (i % 3), 0, origin[2] - 5 - Math.floor(i / vehicles.length) * 0.1],
+        vel: [0, 0, 0],
+        onGround: true,
+      };
+    });
+    const perFrame = measure((frame) => {
+      for (const actor of actors) {
+        actor.vel[2] = frame % 100 < 50 ? 2 : -2;
+        stepBody(actor, scenario.dt, q.solid, { ...scenario.physics, shapeOf: q.shapeOf });
+        checksum += actor.pos[2];
+        checksum += probeHeading(
+          {
+            body: actor,
+            intent: [0, 0, 1],
+            isSolid: q.solid,
+            physics: { ...scenario.physics, shapeOf: q.shapeOf },
+            blockSize: scenario.blockSize,
+          },
+          [0, 0, 1],
+          0.75,
+        )[2];
+      }
+      return 0;
+    }, scenario.framesPerBatch);
+    if (batch >= 0) {
+      frameBatches.push(perFrame);
     }
   }
-  return summary(samples);
+  return summary(frameBatches);
 };
 console.log(
   JSON.stringify({
     machine: hostname(),
     cpu: cpus()[0]?.model,
     node: process.version,
-    units: 'milliseconds',
-    batches,
-    queriesPerBatch,
-    frameCount,
-    warmFrames: 120,
-    zombies: 20,
-    scenario:
-      'cardinal hatchback street; flat terrain; one moving player, 20 active shamblers and one explicit heading probe per zombie per frame; base content; seed 1',
+    units: 'microseconds; query/frame rows are per-operation batch means',
+    scenario,
+    scope:
+      '21 box actors: player plus zombie movement envelopes and one heading probe each; no perception, rendering, streaming or actor-pair separation',
   }),
 );
-for (const count of [1, 10, 50]) {
+for (const count of scenario.counts) {
   for (const mode of ['cells', 'boxes']) {
-    console.log(JSON.stringify({ count, mode, queries: runQueries(count, mode), frame: runFrames(count, mode) }));
+    const build = [];
+    for (let i = 0; i < scenario.batches; i++) {
+      const cold = create(count, mode);
+      build.push(measure(() => cold.point([0, 1, 0]), 1));
+    }
+    const q = create(count, mode);
+    console.log(JSON.stringify({ count, mode, build: summary(build), queries: runQueries(q), frame: runFrames(q) }));
   }
 }
 console.log(JSON.stringify({ checksum }));

@@ -34,6 +34,7 @@ arbitrary simulation steps. Shape search also uses the actor solver's sideways c
 tolerance rather than exact face snapping. Compare that error before accepting contact
 feel. Throw settling and placement destinations remain cell-owned; changing those is a
 separate gameplay contract, not permission for this experiment to invent sub-cell piles.
+BR must choose between cell piles and vehicle-surface piles before surface landing is adopted.
 
 Rebuilding the entire derived index after any collection revision saves implementation
 work but redoes unrelated vehicles. Retaining it creates update-cost debt; adoption
@@ -47,7 +48,7 @@ box channel filter is available at its query owner, but the experiment does not 
 all channel consumers. Existing actor shapes remain in use for movement; copied local
 probes use body envelopes, so exact amalgam probe fidelity still needs a dedicated seam.
 
-The benchmark includes active zombie ticks and explicit local heading probes but not
-rendering, streaming or a city simulation. It is a bounded comparison workload, not a
-frame-rate guarantee. Broad-phase tuning and solver alternatives must reuse that workload
+The benchmark uses box actor movement envelopes and explicit local heading probes,
+not zombie perception, actor-pair separation, rendering, streaming or a city simulation.
+It is a bounded collision-frame comparison workload, not a frame-rate guarantee. Broad-phase tuning and solver alternatives must reuse that workload
 before comparing timings. Build cost itself is not tech debt; see `GLOSSARY.md`, "Tech debt".
