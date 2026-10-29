@@ -55,7 +55,7 @@ class OwnedWorker {
               weatherable: this.weatherable,
             }),
           }
-        : { type: 'sky', result: buildSkyResult(message.input), workerRealMs: 0 };
+        : { type: 'sky', id: message.id, result: buildSkyResult(message.input), workerRealMs: 0 };
     this.onmessage?.({ data });
   }
 }
@@ -85,6 +85,11 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
+  const beforeReveal = vi.fn((cx: number, cz: number) => {
+    const published = meshes.setRevealedColumns.mock.calls.at(-1)![0] as Set<string>;
+    expect(published.has(`${cx},${cz}`)).toBe(false);
+  });
+  streamer.onBeforeReveal = beforeReveal;
   streamer.setReplayControlled();
   streamer.update(0, 0);
   expect(streamer.generateForReplay(0, 0)).toBe(true);
@@ -94,6 +99,10 @@ it('meshes a partial recorded ring without generating extra columns and repairs 
   expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
   worker.replyNext();
   expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(0);
+  expect(beforeReveal).toHaveBeenCalledWith(0, 0);
+  const admissions = beforeReveal.mock.calls.length;
+  streamer.update(0, 0);
+  expect(beforeReveal).toHaveBeenCalledTimes(admissions);
   expect(streamer.generatedColumns()).toEqual([[0, 0]]);
   expect(streamer.generateForReplay(1, 0)).toBe(true);
   expect(streamer.unmeshedRecordedColumns(0, 0, [[0, 0]])).toBe(1);
@@ -240,8 +249,8 @@ it.each([0, 1])('blocks sight past an incomplete column (height %i), even after 
   expect(visible()).toEqual([]);
 });
 
-it('delivers the first mesh before sky and admits queued sky at the next completion despite mesh backlog', () => {
-  vi.stubGlobal('navigator', { hardwareConcurrency: 2 });
+function skyStreamer(hardwareConcurrency: number) {
+  vi.stubGlobal('navigator', { hardwareConcurrency });
   vi.stubGlobal('Worker', OwnedWorker);
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 0 };
   const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
@@ -260,8 +269,15 @@ it('delivers the first mesh before sky and admits queued sky at the next complet
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
+  return { streamer, meshes };
+}
+
+it('delivers the first mesh before sky and admits queued sky at the next completion despite mesh backlog', () => {
+  const { streamer, meshes } = skyStreamer(2);
   const receive = vi.fn();
+  const secondReceive = vi.fn();
   expect(streamer.requestSky(skyFixture().capture().input, receive)).toBe(true);
+  expect(streamer.requestSky(skyFixture().capture().input, secondReceive)).toBe(true);
   const worker = OwnedWorker.instances[0]!;
   expect(worker.posted).toEqual([]);
   for (let step = 0; step < 32 && worker.waiting.length < 2; step++) {
@@ -279,9 +295,41 @@ it('delivers the first mesh before sky and admits queued sky at the next complet
   expect(worker.posted).toEqual(['mesh', 'mesh', 'sky']);
   worker.replyNext();
   streamer.update(0, 0);
-  expect(worker.waiting.map((message) => message.type)).toEqual(['sky', 'mesh']);
+  expect(worker.waiting.map((message) => message.type)).toEqual(['sky', 'sky']);
   worker.replyNext();
   expect(receive).toHaveBeenCalledTimes(1);
+  expect(secondReceive).not.toHaveBeenCalled();
+  worker.replyNext();
+  expect(secondReceive).toHaveBeenCalledTimes(1);
+  streamer.update(0, 0);
   worker.replyNext();
   expect(meshes.set.mock.calls.length).toBeGreaterThan(1);
+});
+
+it('routes concurrent sky replies to their owners when different workers finish in reverse order', () => {
+  const { streamer } = skyStreamer(8);
+  for (let step = 0; step < 32; step++) {
+    streamer.update(0, 0);
+  }
+  const [firstWorker, secondWorker] = OwnedWorker.instances;
+  expect(firstWorker!.waiting.some((message) => message.type === 'mesh')).toBe(true);
+  expect(secondWorker!.waiting.some((message) => message.type === 'mesh')).toBe(true);
+  const first = vi.fn();
+  const second = vi.fn();
+  expect(streamer.requestSky(skyFixture().capture().input, first)).toBe(true);
+  expect(streamer.requestSky(skyFixture().capture().input, second)).toBe(true);
+  firstWorker!.replyNext();
+  secondWorker!.replyNext();
+  expect(firstWorker!.waiting.some((message) => message.type === 'sky')).toBe(true);
+  expect(secondWorker!.waiting.some((message) => message.type === 'sky')).toBe(true);
+  while (secondWorker!.waiting.length > 0) {
+    secondWorker!.replyNext();
+  }
+  expect(second).toHaveBeenCalledTimes(1);
+  expect(first).not.toHaveBeenCalled();
+  while (firstWorker!.waiting.length > 0) {
+    firstWorker!.replyNext();
+  }
+  expect(first).toHaveBeenCalledTimes(1);
+  expect(second).toHaveBeenCalledTimes(1);
 });

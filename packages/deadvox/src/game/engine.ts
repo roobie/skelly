@@ -107,10 +107,19 @@ export function createEngine(
     skyFields.fields.length > 0
       ? new Skylight(
           skyFields,
-          { blockSize: scale.blockSize, viewRadiusM: radiusM, unbuiltCap: graphicsTuning.unbuiltSkyCap },
+          {
+            blockSize: scale.blockSize,
+            viewRadiusM: radiusM,
+            unbuiltCap: graphicsTuning.unbuiltSkyCap,
+            skyJobsInFlight: graphicsTuning.skyJobsInFlight,
+          },
           { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
         )
       : undefined;
+  if (skylight) {
+    worldSetup.streamer.onTerrainReady = (x, z) => skylight.prepare([x, 0, z]);
+    worldSetup.streamer.onBeforeReveal = (cx, cz) => skyFields.finishColumn(cx, cz);
+  }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
     skylight?.update(scene, [
       camera.position.x / scale.blockSize,

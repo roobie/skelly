@@ -12,10 +12,10 @@ export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0) {
   const owner = skyWorldFixture(boxes);
   const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields(owner, { bottom: 0, top: 31 }, boxes);
-  const { unbuiltSkyCap } = graphicsTuningOf(owner.registry);
+  const { unbuiltSkyCap, skyJobsInFlight } = graphicsTuningOf(owner.registry);
   const sky = new Skylight(
     fields,
-    { blockSize: 1, viewRadiusM: 160, unbuiltCap: unbuiltSkyCap },
+    { blockSize: 1, viewRadiusM: 160, unbuiltCap: unbuiltSkyCap, skyJobsInFlight },
     {
       clock,
       submit: (input, receive) => {

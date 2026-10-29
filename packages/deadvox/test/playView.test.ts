@@ -199,7 +199,12 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
   camera.lookAt(camera.position.clone().add(new Vector3(...aim)));
   const sky = new Skylight(
     new SkyFields(owner, { bottom: 0, top: 31 }, [box]),
-    { blockSize: 0.5, viewRadiusM: 64, unbuiltCap: graphicsTuningOf(owner.registry).unbuiltSkyCap },
+    {
+      blockSize: 0.5,
+      viewRadiusM: 64,
+      unbuiltCap: graphicsTuningOf(owner.registry).unbuiltSkyCap,
+      skyJobsInFlight: graphicsTuningOf(owner.registry).skyJobsInFlight,
+    },
     {
       clock: () => 0,
       submit: (input, receive) => {

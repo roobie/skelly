@@ -123,41 +123,48 @@ export class Streamer {
   private readonly meshOffsets: [number, number][];
   private readonly discs = new Map<number, [number, number][]>();
   private nextWorker = 0;
-  private skyReply: ((result: SkyResult, ms: number) => void) | undefined;
-  private pendingSky: SkySnapshot | undefined;
+  private nextSkyId = 0;
+  private readonly skyReplies = new Map<number, (result: SkyResult, ms: number) => void>();
+  private readonly pendingSky: { id: number; input: SkySnapshot }[] = [];
+  /** Prebuild after terrain arrives, before refilling the mesh queue. */
+  onTerrainReady: ((x: number, z: number) => void) | undefined;
+  /** Admission seam for lighting; neighbour residency policy is separate. */
+  onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
+  private revealed = new Set<string>();
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<Worker, number>();
   onSkyService: ((realMs: number) => void) | undefined;
 
-  /** One copied request can await admission without occupying a startup mesh slot. */
+  /** Copied requests await admission without occupying startup mesh slots. */
   requestSky(input: SkySnapshot, receive: (result: SkyResult, ms: number) => void): boolean {
-    if (this.skyReply) {
+    if (this.skyReplies.size >= this.maxInFlight) {
       return false;
     }
-    this.skyReply = receive;
-    this.pendingSky = input;
+    const id = this.nextSkyId;
+    this.nextSkyId += 1;
+    this.skyReplies.set(id, receive);
+    this.pendingSky.push({ id, input });
     this.dispatchSky();
     return true;
   }
 
   private dispatchSky(): void {
-    if (!(this.pendingSky && this.firstMeshDelivered) || this.inFlight.size >= this.maxInFlight) {
+    if (!(this.pendingSky.length > 0 && this.firstMeshDelivered) || this.occupied >= this.maxInFlight) {
       return;
     }
     const worker = this.workers.reduce((least, candidate) =>
       (this.workerLoads.get(candidate) ?? 0) < (this.workerLoads.get(least) ?? 0) ? candidate : least,
     );
-    const input = this.pendingSky;
-    this.pendingSky = undefined;
+    const { id, input } = this.pendingSky.shift()!;
     const startedRealMs = this.onSkyService ? performance.now() : undefined;
-    this.send(worker, { type: 'sky', input });
+    this.send(worker, { type: 'sky', id, input });
     if (startedRealMs !== undefined) {
       this.onSkyService?.(performance.now() - startedRealMs);
     }
   }
 
   private get occupied(): number {
-    return this.inFlight.size + Number(Boolean(this.skyReply) && !this.pendingSky);
+    return this.inFlight.size + this.skyReplies.size - this.pendingSky.length;
   }
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
@@ -351,6 +358,8 @@ export class Streamer {
     if (this.generationFailed) {
       return;
     }
+    this.onTerrainReady?.(x, z);
+    this.dispatchSky();
     for (const [dx, dz] of this.meshOffsets) {
       if (this.occupied >= this.maxInFlight) {
         break;
@@ -394,9 +403,15 @@ export class Streamer {
         this.completeColumns.add(key);
       }
     }
-    this.opts.meshes.setRevealedColumns(
-      revealedColumns(this.center, this.offsets, (cx, cz) => this.completeColumns.has(`${cx},${cz}`)),
-    );
+    const columns = revealedColumns(this.center, this.offsets, (cx, cz) => this.completeColumns.has(`${cx},${cz}`));
+    for (const key of columns) {
+      if (!this.revealed.has(key)) {
+        const [cx, cz] = key.split(',').map(Number);
+        this.onBeforeReveal?.(cx!, cz!);
+      }
+    }
+    this.revealed = columns;
+    this.opts.meshes.setRevealedColumns(columns);
   }
 
   /**
@@ -526,9 +541,10 @@ export class Streamer {
   private receive(worker: Worker, msg: FromMesher): void {
     this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
     if (msg.type === 'sky') {
-      const callback = this.skyReply;
-      this.skyReply = undefined;
+      const callback = this.skyReplies.get(msg.id);
+      this.skyReplies.delete(msg.id);
       callback?.(msg.result, msg.workerRealMs);
+      this.dispatchSky();
       return;
     }
     if (msg.type === 'vehicle') {

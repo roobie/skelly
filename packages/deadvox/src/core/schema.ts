@@ -4569,6 +4569,7 @@ const GraphicsTuningSchema = strictObject({
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
+  skyJobsInFlight: pipe(number(), integer(), minValue(2)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
