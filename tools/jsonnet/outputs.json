@@ -345,6 +345,18 @@
       "output": "packages/deadvox/src/content/base/zombies.json"
     },
     {
+      "source": "packages/deadvox/test/fixtures/content/reachability-unfound.jsonnet",
+      "output": "packages/deadvox/test/fixtures/content/reachability-unfound.json"
+    },
+    {
+      "source": "packages/deadvox/test/fixtures/content/recipe-missing-item.jsonnet",
+      "output": "packages/deadvox/test/fixtures/content/recipe-missing-item.json"
+    },
+    {
+      "source": "packages/deadvox/test/fixtures/content/recipe-too-many-combinations.jsonnet",
+      "output": "packages/deadvox/test/fixtures/content/recipe-too-many-combinations.json"
+    },
+    {
       "source": "packages/deadvox/test/fixtures/mods/browser-mod.jsonnet",
       "output": "packages/deadvox/test/fixtures/mods/browser-mod.json"
     },

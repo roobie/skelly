@@ -326,6 +326,8 @@ const InventoryTuningSchema = strictObject({
   keyHoldRealSeconds: Positive,
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
+  /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
+  autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
   reachMetres: Positive,
   /** Metres above the feet at which reach is measured. */
@@ -336,8 +338,8 @@ const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
-  throwArcHeightMetres: NonNegative,
+  /** Downward acceleration on a thrown item. */
+  throwGravityMetresPerSimSecondSquared: NonNegative,
   /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
@@ -522,6 +524,11 @@ const UiScreenTextSchema = strictObject({
   }),
   crafting: slottedTable({
     heading: [],
+    all: [],
+    categories: [],
+    find: [],
+    tags: [],
+    clearFind: [],
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
@@ -4548,8 +4555,23 @@ const BodyTuningSchema = pipe(
   }),
 );
 
+const RecipeCategorySchema = strictObject({
+  id: Id,
+  label: Name,
+  parent: optional(Id),
+  order: pipe(number(), finite()),
+});
+const RecipeTagSchema = strictObject({
+  id: Id,
+  label: Name,
+  searchTerms: array(Name),
+});
+
 const RecipeSchema = strictObject({
   id: Id,
+  category: Id,
+  tags: array(Id),
+  searchTerms: array(Name),
   result: RecipeItemSchema,
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type. */
   kind: optional(picklist(['craft', 'repair'])),
@@ -4589,7 +4611,11 @@ const GraphicsTuningSchema = strictObject({
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** The inventory picture camera's margin around a model's fitted bounds. */
+  itemPicture: strictObject({ framing: Positive }),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
+  skyJobsInFlight: pipe(number(), integer(), minValue(2)),
+  skyPreloadRings: Count,
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
@@ -4722,6 +4748,8 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+  recipeCategories: { schema: optional(array(RecipeCategorySchema)), label: 'recipe categories', order: 10.1 },
+  recipeTags: { schema: optional(array(RecipeTagSchema)), label: 'recipe tags', order: 10.2 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
@@ -4786,6 +4814,7 @@ export type VehicleFittingDef = InferOutput<typeof VehicleBlueprintSchema>['fitt
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type RecipeCategoryDef = InferOutput<typeof RecipeCategorySchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;

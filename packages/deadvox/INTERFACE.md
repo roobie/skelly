@@ -84,11 +84,11 @@ World-target service details are opened meta controls because shape cannot expre
 
 ## Item pictures
 
-The goal is for anyone to identify an item at a glance. Start with pictures in
-inventory tiles alongside names and counts, with a larger picture for the selected
-item, and refine the approach incrementally toward that goal. Pictures connect
-shape and fitted equipment to the object seen in hand or on the ground; names
-still distinguish items that share a model, and text carries exact facts and
+The goal is for anyone to identify an item at a glance. A grid tile's still fills
+its footprint while keeping its aspect, with the item name over it, so the item is
+recognisable at its real size. A larger picture serves the selected item. Pictures
+connect shape and fitted equipment to the object seen in hand or on the ground;
+names still distinguish items that share a model, and text carries exact facts and
 condition that geometry cannot show. Useful grids and their pointer access take
 precedence over a larger illustration. See `src/ui/inventoryScreen.ts`,
 `itemTemplate` and `detailsTemplate`, and `docs/inventory-layout.md`,

@@ -188,8 +188,9 @@ it('plans where the old cartridge lands with the fill it comes out with', () => 
 it('a cartridge swap into full piles refuses rather than losing the old one', () => {
   const { inventory, torch, old, fresh } = fittedTorch();
   const pile: Target = { kind: 'pile', pos: [0, 0, 0] };
-  while (inventory.add(inventory.create('blowtorch'), pile)) {
-    // Fill the pile until it refuses.
+  const filler = () => Object.assign(inventory.create('gas_canister'), { charges: old.charges });
+  while (inventory.add(filler(), pile)) {
+    // Fill with the displaced footprint, without merging partly used cartridges.
   }
   expect(swapCanister(inventory, torch, fresh, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
   expect(torch.slots!.canister).toBe(old);

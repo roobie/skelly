@@ -6,6 +6,7 @@ import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { GauntletSite } from '../core/gauntlet.ts';
+import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
 import { blockLiquids, blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
@@ -231,6 +232,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     surface: built?.surface,
     stamp: built ? (chunk) => built.stamp(chunk) : undefined,
     radius: config.radiusChunks,
+    preloadRings: graphicsTuningOf(registry).skyPreloadRings,
     hysteresis: config.streamHysteresisChunks,
     ...(stats ? { stats } : {}),
   });
