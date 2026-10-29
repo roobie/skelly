@@ -16,7 +16,7 @@ import { countText, decimalText } from '../src/core/numberText.ts';
 import { toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { ATTACHMENT_WORK_SKILL, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
   INPUT_BINDINGS,
@@ -1367,17 +1367,19 @@ describe('inventory screen Lit rendering', () => {
     }
     const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
     test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
-    test.character.skills.firearms_combat = 3;
+    const effects = registry.items.get('real_suppressor')?.firearmAttachmentEffects;
+    if (effects?.kind !== 'suppressor' || effects.fitSkillLevel < 1) {
+      throw new Error('Fixture suppressor needs a readable fit level above the minimum');
+    }
+    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel - 1;
     test.screen.selected = firearm;
     test.screen.update();
 
     const row = `[data-attachment-slot="${slot.id}"]`;
     expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
-    expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(
-      "I can't fit this suppressor yet",
-    );
+    expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(effects.fitRefusal);
 
-    test.character.skills.firearms_combat = 4;
+    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel;
     test.screen.update();
     expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
     expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
