@@ -34,7 +34,7 @@ Food and drink use their food capability; painkillers use their analgesic capabi
 
 ## Crafting
 
-A craft requires both hands empty; stowing items is the player's choice. The core plans from reachable components and tools, then escrows inputs in one owned work item. Tools and workstation remain live requirements and are rechecked while the action runs. Losing one stops work without losing progress. The work item owns progress and exact input subtrees, so a stopped craft can travel and resume without a reservation table.
+Craft work owns progress and exact input subtrees so interruption cannot lose materials or duplicate spending. Hands, tools and workstation remain live requirements rather than promises made by a preview. See `src/core/craftWork.ts`, `craftActionHooks`, and `src/core/inventory.ts`, `Inventory.beginWork`.
 
 Recipes are content. Alternatives may compete for the same stock, so planning must find a feasible allocation rather than choose each group independently. Tools stay where they are and cannot also be consumed as components. A player's preference may choose among alternatives, but it never silently falls back. Filled containers are not component stock.
 
@@ -42,7 +42,7 @@ The planner is a disposable view. Commands obtain current reach and plan again; 
 
 Reading a recipe book is a long action only while its page is open. Closing it pauses work and retains progress; moving closes the page and lets movement proceed. Progress belongs to the action, not to the authored text. Readable-only notes and signs have no timed job. See `src/game/play.ts`, `stopReadingOnClose`, and `src/core/bookReading.ts`, `bookReadingHooks`.
 
-Finishing a craft consumes escrow once and creates the result; cancellation returns the exact input identities. Disassembly snapshots its yield when work begins, so stopping and resuming cannot change the promised output after a skill or tool change. Repair recipes improve an existing target and are not disassembly results. See `src/core/disassembly.ts`, `planDisassembly`.
+Disassembly snapshots its yield so stopping and resuming cannot change the promised output after a skill or tool change; see `src/core/disassembly.ts`, `planDisassembly`. Repair addresses an existing owner, not a new result. World repair needs an entity identity because a replacement at the same position is not the piece the player began mending. A target reference does not reserve the piece: live reach, repairability and pending-work reservations must still admit completion, or escrow returns unchanged. See `src/core/items.ts`, `WorkTarget`, `src/core/craftCommands.ts`, `CraftCommands.repairEntity`, and `src/core/inventory.ts`, `Inventory.releaseWork`.
 
 Craft completion awards practice; take-apart work does not. Recipe knowledge is explicit, and books add knowledge without changing item ownership. Practice is source-agnostic. A tiered activity trains a skill only up to its tier, and practice at or above that tier is dropped, so repeating easy work cannot carry a skill upward; see `src/core/character.ts`, `Character.awardPractice`, and `src/content/base/recipes.libsonnet`, `training`.
 

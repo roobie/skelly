@@ -1572,6 +1572,19 @@ const checkZombies = (registry: Registry, report: Report) => {
   }
 };
 
+const checkRepairDestination = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  const repair = recipe.repair!;
+  if (repair.entity !== undefined && !registry.furniture.has(repair.entity)) {
+    report('recipes', recipe.id, '.repair.entity', `no furniture "${repair.entity}"`);
+  }
+  if (repair.entity === undefined && repair.amount > 1) {
+    report('recipes', recipe.id, '.repair.amount', 'item repair must be at most 1');
+  }
+  if (recipe.activation && repair.entity !== undefined) {
+    report('recipes', recipe.id, '.activation', 'held sharpening needs an item target');
+  }
+};
+
 const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
   if (recipe.activation && (recipe.kind !== 'repair' || recipe.components.length > 0)) {
     report('recipes', recipe.id, '.activation', 'held sharpening needs a repair effect and no components');
@@ -1581,6 +1594,7 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');
       return;
     }
+    checkRepairDestination(registry, recipe, report);
     if (!registry.skills.has(recipe.repair.skill)) {
       report('recipes', recipe.id, '.repair.skill', `no skill "${recipe.repair.skill}"`);
     }
