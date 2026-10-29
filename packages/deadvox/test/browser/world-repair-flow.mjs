@@ -11,9 +11,16 @@ export const worldRepairFlow = async (page, origin) => {
   await page.locator('[data-enter-world]').click();
   assert.equal(await page.evaluate(() => globalThis.worldRepairTest.aimedEntity()), undefined);
   await page.locator('[data-fixture-text]').focus();
-  await page.keyboard.press('ArrowRight');
+  const beforeTyping = await page.evaluate(() => globalThis.worldRepairTest.look.yaw);
+  await page.keyboard.down('ArrowRight');
+  await page.evaluate(() => globalThis.worldRepairTest.surface.update(2));
+  await page.keyboard.up('ArrowRight');
   await page.keyboard.press('Enter');
-  assert.equal(await page.evaluate(() => globalThis.worldRepairTest.look.yaw), 0, 'text focus keeps world aim');
+  assert.equal(
+    await page.evaluate(() => globalThis.worldRepairTest.look.yaw),
+    beforeTyping,
+    'text focus keeps world aim',
+  );
   await page.locator('[data-world-action="inspect"]').focus();
   await page.keyboard.down('ArrowRight');
   await page.evaluate(() => globalThis.worldRepairTest.surface.update(2));
@@ -37,7 +44,17 @@ export const worldRepairFlow = async (page, origin) => {
     await page.locator('[data-world-action="back"]').evaluate((button) => button === document.activeElement),
     true,
   );
-  await page.keyboard.press('ArrowUp');
+  await page.keyboard.down('Enter');
+  assert.equal(await page.evaluate(() => globalThis.worldRepairTest.surface.context), 'world-targeting');
+  await page.keyboard.down('Enter');
+  assert.equal(
+    await page.evaluate(() => globalThis.worldRepairTest.surface.context),
+    'world-targeting',
+    'held Enter on Back cannot re-enter service',
+  );
+  await page.keyboard.up('Enter');
+  await page.keyboard.press('Enter');
+  assert.equal(await details.evaluate((button) => button === document.activeElement), true);
   await page.keyboard.press('Enter');
   assert.ok((await page.locator('.craft-components').count()) > 0, 'details reuse requirement rows');
   const confirm = page.locator('[data-world-action="confirm"]');

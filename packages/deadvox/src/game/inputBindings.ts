@@ -57,6 +57,8 @@ const entered: readonly InputContext[] = [
   'spawn',
   'debug-panel',
   ...moving,
+  'world-targeting',
+  'world-service',
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
@@ -1076,7 +1078,11 @@ export class KeyboardInput {
     const blocked = this.blocked.has(event.code);
     // Refusing a semantic edge must also prevent the browser clicking the newly focused service button.
     const blockNativeActivation =
-      blocked && this.state.context === 'world-service' && !browserModifier && !text && nativeActivation(event);
+      blocked &&
+      (this.state.context === 'world-service' || this.state.context === 'world-targeting') &&
+      !browserModifier &&
+      !text &&
+      nativeActivation(event);
     return this.traceDown(event, blockNativeActivation, blocked ? 'blocked' : 'browser-modifier');
   }
   press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {

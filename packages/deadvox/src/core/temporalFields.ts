@@ -195,6 +195,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'player.crouch.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'player.prone.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'player.aim.freeLook.returnRadiansPerRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'player[].aim.keyboardTargetRadiansPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'player.aim.lookSettleSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'player.aim.recoilRecoverySimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'player.lean.enterSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
