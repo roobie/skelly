@@ -41,6 +41,7 @@
         "/src/core/ladders.ts",
         "/test/fixtures/descentLid.ts",
         "/test/fixtures/scenarioStart.ts",
+        "/test/fixtures/vehicleRapierReplay.ts",
         "/test/browser/sky-selection.ts",
         "/test/browser/interaction-marker-lighting.ts",
         "/test/browser/water-depth.ts",

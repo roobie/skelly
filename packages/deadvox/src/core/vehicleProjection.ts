@@ -5,7 +5,7 @@ import type { Item } from './items.ts';
 import { type PlacedFitting, placeFitting } from './vehicleBlueprint.ts';
 import type { VehicleInstance, VehicleInstances } from './vehicleInstances.ts';
 
-interface VehicleFittingTransform {
+export interface VehicleFittingTransform {
   /** The fitting model's origin in world metres. */
   readonly position: Vec3;
   /** Rotation about world up, from the content vehicle frame. */
@@ -27,7 +27,7 @@ export interface VehiclePartProjection {
 const yawForFacing = (facing: VehicleInstance['facing']): number =>
   ({ n: 0, e: Math.PI / 2, s: Math.PI, w: -Math.PI / 2 })[facing];
 
-const transformPoint = ({ position, yaw, mirror }: VehicleFittingTransform, [x, y, z]: Vec3): Vec3 => {
+export const transformPoint = ({ position, yaw, mirror }: VehicleFittingTransform, [x, y, z]: Vec3): Vec3 => {
   const localZ = mirror ? -z : z;
   return [
     position[0] + Math.cos(yaw) * x + Math.sin(yaw) * localZ,
