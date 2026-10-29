@@ -87,7 +87,7 @@ export interface ScreenHooks {
   chargerRevision?: () => number;
   /** The vehicle the player opened by interacting with it, while it stays in reach. */
   openedVehicle?: () => { readonly view: VehicleInspectionViewModel; readonly distanceMetres: number } | undefined;
-  pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
+  pictures?: { readonly version: number; picture: (item: Item, size?: GridSize) => string | undefined } | undefined;
   /** Draws an item's model for the item viewer; without it the viewer does not open. */
   itemView?: ItemViewSource | undefined;
   /** What each wear slot is called; from the core ui content. */
@@ -1751,6 +1751,7 @@ export class InventoryScreen {
                 width: `calc(${w * CELL_REM}rem - 2px)`,
                 height: `calc(${h * CELL_REM}rem - 2px)`,
               },
+          { w, h },
         );
       }),
     };
@@ -1768,7 +1769,12 @@ export class InventoryScreen {
     return true;
   }
 
-  private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
+  private itemViewModel(
+    item: Item,
+    className: string,
+    style?: Record<string, string>,
+    pictureSize?: GridSize,
+  ): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
     const text = this.text();
     const itemStyle = style ?? {};
@@ -1787,7 +1793,7 @@ export class InventoryScreen {
         condition: conditionWord(this.inv.registry, item.condition),
       }),
       name: workName(this.inv.registry, item),
-      picture: this.hooks.pictures?.picture(item),
+      picture: this.hooks.pictures?.picture(item, pictureSize),
       count: item.count > 1 ? fillText(text.countBadge, { count: countText(item.count) }) : undefined,
       style:
         Object.keys(itemStyle).length > 0
