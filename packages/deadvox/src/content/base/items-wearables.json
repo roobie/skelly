@@ -466,6 +466,45 @@
     },
     {
       "category": "clothing",
+      "description": "Paperbacks held together with tape.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "figureModels": [
+        {
+          "at": [0, 0, 0],
+          "frame": "torso",
+          "model": "stab_vest_worn",
+          "overTorso": {
+            "jacket": "stab_vest_worn_jacket"
+          },
+          "pivot": [0, 0, 0],
+          "turn": [0, 0, 0]
+        }
+      ],
+      "id": "taped_armour",
+      "model": "stab_vest",
+      "name": "Taped armour",
+      "notLoot": false,
+      "size": [3, 3],
+      "wearable": {
+        "encumbrance": 10,
+        "protects": {
+          "acid": 0,
+          "blunt": 0.050000000000000003,
+          "cut": 0.34999999999999998,
+          "pierce": 0.25
+        },
+        "slot": "vest",
+        "warmth": 2,
+        "wearPerDamage": 0.0030000000000000001
+      },
+      "weight": 1300,
+      "workInProgress": false
+    },
+    {
+      "category": "clothing",
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Police"]

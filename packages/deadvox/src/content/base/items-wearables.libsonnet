@@ -163,6 +163,23 @@ local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }
       }
     },
     {
+      "id": "taped_armour",
+      "name": "Taped armour",
+      "model": "stab_vest",
+      "figureModels": onTorso('stab_vest_worn'),
+      "category": "clothing",
+      "weight": 1300,
+      "size": [3, 3],
+      "description": "Paperbacks held together with tape.",
+      "wearable": {
+        "slot": "vest",
+        "encumbrance": 10,
+        "warmth": 2,
+        "wearPerDamage": 0.003,
+        "protects": { "cut": 0.35, "pierce": 0.25, "blunt": 0.05, "acid": 0 }
+      }
+    },
+    {
       "id": "riot_helmet",
       "name": "Riot helmet",
       "model": "riot_helmet",

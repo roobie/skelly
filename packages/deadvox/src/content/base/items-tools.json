@@ -497,6 +497,80 @@
       "workInProgress": false
     },
     {
+      "category": "weapon",
+      "description": "A baseball bat reinforced with nails.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "nail_bat",
+      "model": "baseball_bat",
+      "name": "Nail bat",
+      "notLoot": false,
+      "size": [1, 9],
+      "twoHanded": true,
+      "weapon": {
+        "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 10
+          },
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 1.3,
+          "damage": 17,
+          "impulse": 9,
+          "motion": "swing",
+          "reach": 0.80000000000000004,
+          "stamina": 10,
+          "swingSound": "melee_swing_heavy",
+          "type": "pierce",
+          "wearPerHit": 0.014999999999999999,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "weapon",
+      "description": "A sharpened wooden shaft bound at the tip.",
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "spear",
+      "model": "stick",
+      "name": "Sharpened spear",
+      "notLoot": false,
+      "size": [1, 10],
+      "twoHanded": true,
+      "weapon": {
+        "melee": {
+          "charge": {
+            "curveExponent": 1,
+            "damageMultiplier": 1.6000000000000001,
+            "fullSimSeconds": 1,
+            "impulseMultiplier": 2,
+            "stamina": 7
+          },
+          "contactFraction": 0.40000000000000002,
+          "cooldownSimSeconds": 1,
+          "damage": 14,
+          "impulse": 6,
+          "motion": "thrust",
+          "reach": 1.1000000000000001,
+          "stamina": 7,
+          "swingSound": "melee_swing_light",
+          "type": "pierce",
+          "wearPerHit": 0.02,
+          "windupCapSimSeconds": 0.25
+        }
+      },
+      "workInProgress": false
+    },
+    {
       "category": "light",
       "description": "A battery-powered flashlight. Its light is visible to nearby zombies.",
       "economy": {

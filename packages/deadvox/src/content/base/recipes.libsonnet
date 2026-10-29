@@ -207,6 +207,72 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       ]
     },
     {
+      "id": "make_bandage",
+      "result": { "item": "bandage", "count": 1 },
+      "timeGameMinutes": 5,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [[{ "item": "cloth_strip", "count": 2 }]]
+    },
+    {
+      "id": "make_headlamp_strap",
+      "result": { "item": "headlamp", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [
+        [{ "item": "flashlight", "count": 1 }],
+        [{ "item": "cloth_strip", "count": 1 }],
+        [{ "item": "duct_tape", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_torch_bundle",
+      "result": { "item": "torch", "count": 3 },
+      "timeGameMinutes": 30,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [
+        [{ "item": "stick", "count": 3 }],
+        [{ "item": "rag", "count": 3 }],
+        [{ "item": "lamp_oil", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_nail_bat",
+      "result": { "item": "nail_bat", "count": 1 },
+      "timeGameMinutes": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "hammering": 1 },
+      "components": [
+        [{ "item": "baseball_bat", "count": 1 }],
+        [{ "item": "nails", "count": 12 }]
+      ]
+    },
+    {
+      "id": "make_spear",
+      "result": { "item": "spear", "count": 1 },
+      "timeGameMinutes": 20,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [
+        [{ "item": "stick", "count": 1 }, { "item": "wooden_plank", "count": 1 }],
+        [{ "item": "kitchen_knife", "count": 1 }, { "item": "glass_shards", "count": 2 }],
+        [{ "item": "nylon_cord", "count": 1 }, { "item": "duct_tape", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_taped_armour",
+      "result": { "item": "taped_armour", "count": 1 },
+      "timeGameMinutes": 30,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [
+        [{ "item": "paperback", "count": 4 }],
+        [{ "item": "duct_tape", "count": 2 }]
+      ]
+    },
+    {
       "id": "candle",
       "result": { "item": "candle", "count": 1 },
       "timeGameMinutes": 10,

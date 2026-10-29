@@ -309,7 +309,10 @@
           "rag_to_cloth_strip",
           "trim_wood_offcut",
           "assemble_fastener_pack",
-          "make_scrap_foregrip"
+          "make_scrap_foregrip",
+          "make_bandage",
+          "make_headlamp_strap",
+          "make_torch_bundle"
         ],
         "title": "Camp Craft"
       },
@@ -383,7 +386,10 @@
           "assemble_fastener_pack",
           "make_taped_flashlight_mount",
           "make_improvised_suppressor",
-          "make_scrap_foregrip"
+          "make_scrap_foregrip",
+          "make_nail_bat",
+          "make_spear",
+          "make_taped_armour"
         ],
         "title": "Workshop Notes"
       },
