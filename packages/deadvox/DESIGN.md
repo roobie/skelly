@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
@@ -1643,17 +1644,23 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
 
 ## Crafting
 
-Recipes combine reachable materials with skill, quality, and optional
-workstation requirements. A reachable workbench can provide its qualities and
-speed bonus. Disassembly uses an authored yield or salvage list specific to the
-item; it is not inferred by reversing all recipes that could produce it. See
-`planDisassembly` in `src/core/disassembly.ts` and `docs/crafting.md`.
+Disassembly uses an authored yield rather than reversing recipes: several
+recipes may produce the same item, so reversing one would make salvage depend
+on an arbitrary production route. See `src/core/disassembly.ts`,
+`planDisassembly`, and `docs/crafting.md`.
 
-Crafting is a compressed long action that can be interrupted and resumed. An
-in-progress item retains its components. Bleeding can refuse compression, but
-treatment, crafting, and reading remain available at real-time pace so the
-player can still respond. Skills improve through relevant activity and books;
-books and schematics teach recipes beyond the simple recipes known at the start.
+Recipe knowledge may come from a book, a skill level, either, or the starting
+set. A book shortcuts the skill grind; a skilled character does not need the
+book. Knowledge does not waive crafting requirements. See `src/core/schema.ts`,
+`RecipeSchema`, and `src/core/crafting.ts`, `requirementStatus`.
+
+Skill discovery writes to existing recipe knowledge on level-up rather than
+being derived by the readout, so learned recipes remain self-describing in a
+save just like book-taught recipes. See `src/core/character.ts`,
+`Character.awardPractice`, and `src/core/bookReading.ts`, `bookReadingHooks`.
+
+Treatment, crafting, and reading remain available at real-time pace when
+bleeding refuses compression so the player can still respond.
 
 ## Character
 

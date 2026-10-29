@@ -86,6 +86,9 @@ export class Character implements HandedCharacter {
     this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MIN]));
     this.practice = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
     this.knownRecipes = new Set(startingKnownRecipes(registry));
+    for (const skill of registry.skills.keys()) {
+      this.learnSkillRecipes(skill, SKILL_LEVEL_MIN);
+    }
   }
 
   snapshotState(): Readonly<CharacterState> {
@@ -117,8 +120,19 @@ export class Character implements HandedCharacter {
       remaining -= practiceForNextLevel(this.registry, level);
       level += 1;
     }
+    if (level > this.skills[skill]!) {
+      this.learnSkillRecipes(skill, level);
+    }
     this.skills[skill] = level;
     this.practice[skill] = level >= tier ? 0 : remaining;
+  }
+
+  private learnSkillRecipes(skill: string, level: number): void {
+    for (const recipe of this.registry.recipes.values()) {
+      if (recipe.skillUnlock?.skill === skill && recipe.skillUnlock.level <= level) {
+        this.learnRecipes([recipe.id]);
+      }
+    }
   }
 
   learnRecipes(recipes: readonly string[]): void {
