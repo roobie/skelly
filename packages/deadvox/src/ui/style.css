@@ -1089,18 +1089,18 @@ body.unconscious::after {
 .inv-item-picture {
   pointer-events: none;
 }
-.inv-item:not(.inv-item-slot) > .inv-item-picture {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
 .inv-item-slot > .inv-item-picture {
   float: left;
   width: 1.125rem;
   height: 1.125rem;
   object-fit: contain;
   margin-right: calc(var(--ui-spacing) * 0.125rem);
+}
+.inv-item:not(.inv-item-slot) > .inv-item-picture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 .inv-item-name {
   position: relative;

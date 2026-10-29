@@ -53,7 +53,7 @@ it('does not cache missing pictures while models load, and reuses completed stil
   const { registry, inv } = fixture();
   const models = { version: 0, has: () => models.version > 0, groundLook: vi.fn(() => new Group()) };
   const paint = vi.fn(() => 'still');
-  const pictures = new ItemPictures(registry, models, 2, { paint, view: vi.fn(), dispose: vi.fn() });
+  const pictures = new ItemPictures(registry, models, 2, { painter: { paint, view: vi.fn(), dispose: vi.fn() } });
   expect(pictures.picture(inv.create('text_only'))).toBeUndefined();
   const item = inv.create('pictured');
   expect(pictures.picture(item)).toBeUndefined();
@@ -68,12 +68,9 @@ it('does not cache missing pictures while models load, and reuses completed stil
 it('caches each item picture by its grid footprint', () => {
   const { registry, inv } = fixture();
   const paint = vi.fn((_model: unknown, _pose: unknown, _width: number, _height: number) => 'still');
-  const pictures = new ItemPictures(
-    registry,
-    { version: 1, has: () => true, groundLook: () => new Group() },
-    3,
-    { paint, view: vi.fn(), dispose: vi.fn() },
-  );
+  const pictures = new ItemPictures(registry, { version: 1, has: () => true, groundLook: () => new Group() }, 3, {
+    painter: { paint, view: vi.fn(), dispose: vi.fn() },
+  });
   const item = inv.create('pictured');
   const upright = pictureSurfaceSize({ w: 1, h: 4 });
   const rotated = pictureSurfaceSize({ w: 4, h: 1 });
@@ -92,7 +89,7 @@ it('evicts the least recently used still and regenerates it on demand within cap
   const { registry, inv } = fixture();
   const models = { version: 1, has: () => true, groundLook: () => new Group() };
   const paint = vi.fn(() => `still-${paint.mock.calls.length}`);
-  const pictures = new ItemPictures(registry, models, 2, { paint, view: vi.fn(), dispose: vi.fn() });
+  const pictures = new ItemPictures(registry, models, 2, { painter: { paint, view: vi.fn(), dispose: vi.fn() } });
   const [a, b, c] = ['pictured', 'other', 'third'].map((id) => inv.create(id));
   const first = pictures.picture(a!);
   pictures.picture(b!);
@@ -108,12 +105,9 @@ it('evicts the least recently used still and regenerates it on demand within cap
 it('clears pictures and disposes its painter exactly once without restarting it', () => {
   const { registry, inv } = fixture();
   const painter = { paint: vi.fn(() => 'still'), view: vi.fn(), dispose: vi.fn() };
-  const pictures = new ItemPictures(
-    registry,
-    { version: 1, has: () => true, groundLook: () => new Group() },
-    1,
+  const pictures = new ItemPictures(registry, { version: 1, has: () => true, groundLook: () => new Group() }, 1, {
     painter,
-  );
+  });
   const item = inv.create('pictured');
   expect(pictures.picture(item)).toBe('still');
   pictures.dispose();

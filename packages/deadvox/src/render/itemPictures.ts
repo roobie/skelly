@@ -24,6 +24,18 @@ type PictureRenderer = Pick<
   'setSize' | 'setClearColor' | 'render' | 'domElement' | 'dispose' | 'forceContextLoss'
 >;
 
+interface DrawOptions {
+  readonly pose: ReferencePose;
+  readonly width: number;
+  readonly height: number;
+  readonly fit: 'projected' | 'radius';
+}
+
+interface ItemPicturesOptions {
+  readonly painter?: PicturePainter;
+  readonly framing?: number;
+}
+
 /** The inventory still's pose: three-quarter view from the front right, slightly above. */
 const PICTURE_POSE: ReferencePose = {
   yaw: Math.PI / 4,
@@ -40,12 +52,8 @@ export const pictureSurfaceSize = ({ w, h }: GridSize): { readonly width: number
 });
 
 /** The orthographic half-height that contains projected bounds while using as much of the surface as possible. */
-export const fittedPictureExtent = (
-  halfWidth: number,
-  halfHeight: number,
-  aspect: number,
-  framing: number,
-): number => Math.max(halfHeight, halfWidth / aspect) * framing;
+export const fittedPictureExtent = (halfWidth: number, halfHeight: number, aspect: number, framing: number): number =>
+  Math.max(halfHeight, halfWidth / aspect) * framing;
 
 /** A separate reference scene keeps pictures independent of world light and handling motion. */
 export const referencePainter = (
@@ -53,13 +61,7 @@ export const referencePainter = (
 ): PicturePainter => {
   let renderer: PictureRenderer | undefined;
   let disposed = false;
-  const draw = (
-    model: Object3D,
-    pose: ReferencePose,
-    width: number,
-    height: number,
-    fit: 'projected' | 'radius',
-  ): PictureRenderer => {
+  const draw = (model: Object3D, { pose, width, height, fit }: DrawOptions): PictureRenderer => {
     if (disposed) {
       throw new Error('Picture painter is disposed');
     }
@@ -110,10 +112,10 @@ export const referencePainter = (
   };
   return {
     paint(model, pose, width, height) {
-      return draw(model, pose, width, height, 'projected').domElement.toDataURL();
+      return draw(model, { pose, width, height, fit: 'projected' }).domElement.toDataURL();
     },
     view(model, pose, width, height) {
-      return draw(model, pose, width, height, 'radius').domElement;
+      return draw(model, { pose, width, height, fit: 'radius' }).domElement;
     },
     dispose() {
       if (disposed) {
@@ -141,8 +143,7 @@ export class ItemPictures {
     registry: Registry,
     models: Pick<ModelLibrary, 'version' | 'has' | 'groundLook'>,
     capacity: number,
-    painter: PicturePainter = referencePainter(),
-    framing = PICTURE_POSE.framing,
+    { painter = referencePainter(), framing = PICTURE_POSE.framing }: ItemPicturesOptions = {},
   ) {
     this.registry = registry;
     this.models = models;
