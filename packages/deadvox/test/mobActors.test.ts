@@ -54,7 +54,7 @@ import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { PLAYER, physicsFor, WORLD_GRAVITY } from './playerFixture.ts';
 import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -658,7 +658,7 @@ describe('MobActorMeshes', () => {
 
   it('drips from the acid mouth and bursts the sac at death without changing the zombie', () => {
     const acid = registry.zombies.get('acid_zombie')!;
-    const effects = new AcidEffects(0.5, 1);
+    const effects = new AcidEffects(0.5, WORLD_GRAVITY, 1);
     const bursts: Vec3[] = [];
     const renderer = new MobActorMeshes(0.5, 2, {
       zombies: registry.zombies,
@@ -1228,8 +1228,9 @@ describe('MobActorMeshes reactions', () => {
       look: LOOK_FIXTURE.mobActors,
       maxCorpses: row.mobActors.maxCorpses,
       handlingReachMetres: reachTuning(registry).reachMetres,
+      gravityMetresPerSimSecondSquared: WORLD_GRAVITY,
     });
-    const gore = new Gore(0.5, row.gore);
+    const gore = new Gore(0.5, WORLD_GRAVITY, row.gore);
     try {
       const store = new MapEntityStore<Zombie>();
       const zombie = makeZombie([0, 0, 0]);
@@ -1761,7 +1762,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('launches a manifest-owned amalgam part with blood from its shared severing presentation', () => {
     const type = registry.zombies.get('amalgam')!;
     const renderer = new MobActorMeshes(0.5, 4, { zombies: new Map([[type.id, type]]), poolSize: 1 });
-    const gore = new Gore(0.5, GORE_TUNING_FIXTURE);
+    const gore = new Gore(0.5, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     try {
       const store = new MapEntityStore<Zombie>();
       const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type });

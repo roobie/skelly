@@ -38,6 +38,16 @@ describe('lever props', () => {
     expect(flying(props)).toHaveLength(0);
   });
 
+  it('uses supplied gravity while a lever is airborne', () => {
+    const light = new LeverProps(BLOCK, GRAVITY, FLOOR);
+    const heavy = new LeverProps(BLOCK, GRAVITY * 2, FLOOR);
+    light.spawn(throwable(), lever);
+    heavy.spawn(throwable(), lever);
+    light.update(1 / 60);
+    heavy.update(1 / 60);
+    expect(flying(heavy)[0]!.position.y).toBeLessThan(flying(light)[0]!.position.y);
+  });
+
   it('comes to rest on the floor it falls onto', () => {
     const props = new LeverProps(BLOCK, GRAVITY, FLOOR);
     // Long-lived, so it is still drawn when it has landed whatever the content lifetime.

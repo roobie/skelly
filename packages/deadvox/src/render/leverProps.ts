@@ -1,6 +1,5 @@
 import { Box3, Group, Mesh, type Object3D, Quaternion, Vector3 } from 'three';
 import type { ModelDef } from '../core/content.ts';
-import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 
 // Presentation only: how many shed levers can fly at once.
 const LEVERS = 4;
@@ -33,12 +32,12 @@ export class LeverProps {
 
   constructor(
     blockSize: number,
-    gravityOrSolid: number | ((x: number, y: number, z: number) => boolean),
-    isSolid?: (x: number, y: number, z: number) => boolean,
+    gravityMetresPerSimSecondSquared: number,
+    isSolid: (x: number, y: number, z: number) => boolean,
   ) {
     this.blockSize = blockSize;
-    this.gravityMetresPerSimSecondSquared = typeof gravityOrSolid === 'number' ? gravityOrSolid : DEFAULT_WORLD_GRAVITY;
-    this.isSolid = typeof gravityOrSolid === 'function' ? gravityOrSolid : isSolid!;
+    this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
+    this.isSolid = isSolid;
     this.props = Array.from({ length: LEVERS }, (): Prop => {
       const holder = new Group();
       holder.visible = false;

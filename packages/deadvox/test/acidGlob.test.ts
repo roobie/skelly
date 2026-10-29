@@ -64,17 +64,25 @@ const content = {
 const scale = makeScale(0.5);
 const ORIGIN: Vec3 = [12, 1, 0];
 
-const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false, woundFixture = false) => {
+const runtime = (
+  restore?: Readonly<SaveSnapshot>,
+  seed = 71,
+  blocking = false,
+  {
+    woundFixture = false,
+    gravityMetresPerSimSecondSquared,
+  }: { woundFixture?: boolean; gravityMetresPerSimSecondSquared?: number } = {},
+) => {
   let wall = false;
   let moving = false;
   let yaw = 0;
   const impacts: Vec3[] = [];
   const ground: AcidGroundImpact[] = [];
   const solid = (x: number, y: number) => y === 0 || (wall && x === 6 && y > 0);
-  const session = createSession({
-    registry: woundFixture
+  const registry = {
+    ...content,
+    ...(woundFixture
       ? {
-          ...content,
           body: new Map(
             [...content.body].map(([id, body]) => [
               id,
@@ -91,7 +99,17 @@ const runtime = (restore?: Readonly<SaveSnapshot>, seed = 71, blocking = false, 
             ]),
           ),
         }
-      : content,
+      : {}),
+    ...(gravityMetresPerSimSecondSquared === undefined
+      ? {}
+      : {
+          player: new Map(
+            [...content.player].map(([id, player]) => [id, { ...player, gravityMetresPerSimSecondSquared }]),
+          ),
+        }),
+  };
+  const session = createSession({
+    registry,
     world: new World(),
     scale,
     seed,
@@ -193,7 +211,7 @@ describe('acid glob', () => {
       const zombie = h.session.zombieStore.get(id)!;
       const before = { ...zombie.regions };
       h.land();
-      expect(h.hits.mock.calls.filter(([, , , hit]) => hit.kind === 'acid')).toHaveLength(0);
+      expect(h.hits.mock.calls.filter(([, , , hit]) => hit?.kind === 'acid')).toHaveLength(0);
       const lost = Object.entries(before).reduce((sum, [region, health]) => sum + health - zombie.regions[region]!, 0);
       if (type.acidResistance === 1) {
         expect(lost).toBe(0);
@@ -202,6 +220,22 @@ describe('acid glob', () => {
       }
     },
   );
+
+  it('uses changed fixture gravity for an in-flight glob', () => {
+    const light = runtime();
+    const heavy = runtime(undefined, 71, false, {
+      gravityMetresPerSimSecondSquared: base.player.get('player')!.gravityMetresPerSimSecondSquared * 2,
+    });
+    light.release();
+    heavy.release();
+    const [, lightVelocity] = light.session.zombies.acidGlobs[0]!.velocity;
+    const [, heavyVelocity] = heavy.session.zombies.acidGlobs[0]!.velocity;
+    light.frames(10);
+    heavy.frames(10);
+    expect(heavy.session.zombies.acidGlobs[0]!.velocity[1] - heavyVelocity).toBeLessThan(
+      light.session.zombies.acidGlobs[0]!.velocity[1] - lightVelocity,
+    );
+  });
 
   it('routes a glob through localized player damage and wear even while blocking', () => {
     const h = runtime(undefined, 71, true);
@@ -289,7 +323,7 @@ describe('acid glob', () => {
 });
 
 const missedSpit = (woundFixture = false) => {
-  const h = runtime(undefined, 71, false, woundFixture);
+  const h = runtime(undefined, 71, false, { woundFixture });
   h.release();
   h.sidestep();
   h.land();

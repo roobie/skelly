@@ -43,7 +43,10 @@ export const PLAYER: PlayerDef = {
     maxOffsetRadians: 0.12,
   },
 };
-export const physicsFor = (scale: Parameters<typeof paramsFor>[0]) => paramsFor(scale, PLAYER);
+export const WORLD_GRAVITY = PLAYER.gravityMetresPerSimSecondSquared;
+
+export const physicsFor = (scale: Parameters<typeof paramsFor>[0], player: PlayerDef = PLAYER) =>
+  paramsFor(scale, player);
 export const createPlayerBody = (scale: Parameters<typeof bodyFor>[0], x: number, y: number, z: number) =>
   bodyFor(scale, [x, y, z], PLAYER);
 export const steer = (

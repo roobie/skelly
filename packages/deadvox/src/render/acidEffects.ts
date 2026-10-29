@@ -3,7 +3,6 @@ import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
 import type { ZombieDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 import { Rng } from '../core/random.ts';
 import type { Zombie } from '../core/zombies.ts';
 import type { DrawnAnchors } from './mobActors.ts';
@@ -42,7 +41,7 @@ export class AcidEffects {
   private readonly blockSize: number;
   private readonly gravityMetresPerSimSecondSquared: number;
 
-  constructor(blockSize: number, gravityMetresPerSimSecondSquared = DEFAULT_WORLD_GRAVITY, seed = 1) {
+  constructor(blockSize: number, gravityMetresPerSimSecondSquared: number, seed = 1) {
     this.blockSize = blockSize;
     this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
     this.rng = Rng.stream(seed, 'acid-effects');

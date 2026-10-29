@@ -25,7 +25,7 @@ import {
 } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
-import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from './playerFixture.ts';
+import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer, WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;
@@ -227,7 +227,7 @@ interface SessionScene {
 const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = false }: SessionScene) => {
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
-  const renderer = new CaseEffects(scale.blockSize);
+  const renderer = new CaseEffects(scale.blockSize, WORLD_GRAVITY);
   const effects: FirearmShotEffect[] = [];
   const spawnResults: boolean[] = [];
   const yaw = (-80 * Math.PI) / 180;
@@ -467,6 +467,7 @@ describe('firearm case wall contact', () => {
       const point = caseFlightPoint(effect.origin, landing, sample / 64, {
         durationSimSeconds: duration,
         initialVelocity,
+        gravityMetresPerSimSecondSquared: WORLD_GRAVITY,
       });
       expect(shot.isSolid(...(point.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
     }
@@ -520,6 +521,7 @@ describe('firearm case wall contact', () => {
       const point = caseFlightPoint(blockedEffect.origin, landing, sample / 64, {
         durationSimSeconds: duration,
         initialVelocity,
+        gravityMetresPerSimSecondSquared: WORLD_GRAVITY,
       });
       expect(shot.isSolid(...(point.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
     }

@@ -2,7 +2,6 @@
 
 import { Group, type Object3D, Vector3 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 import { Rng } from '../core/random.ts';
 import type { FirearmShotEffect } from '../game/firearmHandling.ts';
 import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
@@ -17,8 +16,8 @@ export const caseFlightPoint = (
   {
     durationSimSeconds,
     initialVelocity,
-    gravityMetresPerSimSecondSquared = DEFAULT_WORLD_GRAVITY,
-  }: { durationSimSeconds: number; initialVelocity: Vec3; gravityMetresPerSimSecondSquared?: number },
+    gravityMetresPerSimSecondSquared,
+  }: { durationSimSeconds: number; initialVelocity: Vec3; gravityMetresPerSimSecondSquared: number },
 ): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
   if (t === 1 || !(durationSimSeconds > 0)) {
@@ -85,10 +84,9 @@ export class CaseEffects {
     fallbackModels: new Set(),
   }));
 
-  constructor(_blockSize: number, gravityOrModels?: number | ModelLibrary, models?: ModelLibrary) {
-    this.gravityMetresPerSimSecondSquared =
-      typeof gravityOrModels === 'number' ? gravityOrModels : DEFAULT_WORLD_GRAVITY;
-    this.models = typeof gravityOrModels === 'number' ? models : gravityOrModels;
+  constructor(_blockSize: number, gravityMetresPerSimSecondSquared: number, models?: ModelLibrary) {
+    this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
+    this.models = models;
   }
 
   get activeCount(): number {

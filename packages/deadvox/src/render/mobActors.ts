@@ -427,7 +427,7 @@ export interface MobActorMeshesOptions {
   readonly look: LookDefaults['mobActors'];
   readonly maxCorpses: number;
   readonly handlingReachMetres: number;
-  readonly gravityMetresPerSimSecondSquared?: number;
+  readonly gravityMetresPerSimSecondSquared: number;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */

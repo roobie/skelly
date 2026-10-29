@@ -184,11 +184,10 @@ not split between sensory tuning and code, so mods can retune the player without
 changing mechanisms. See `src/content/base/player.jsonnet`, `player`;
 `src/core/schema.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
 `movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
-Gravity remains physics rather than player tuning. Saved look offsets must obey
-the geometric ceiling shared by all valid player tuning, not the core pack's
-chosen tuning: impossible offsets can overflow on advancement even when the
-saved numbers are finite. See `src/core/aim.ts`, `assertAimState`, and
-`src/core/schema.ts`, `PlayerSchema`.
+Saved look offsets must obey the geometric ceiling shared by all valid player
+tuning, not the core pack's chosen tuning: impossible offsets can overflow on
+advancement even when the saved numbers are finite. See `src/core/aim.ts`,
+`assertAimState`, and `src/core/schema.ts`, `PlayerSchema`.
 
 ### Crouching and lying prone
 

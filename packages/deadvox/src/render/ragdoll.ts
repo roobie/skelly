@@ -14,7 +14,6 @@ import {
 } from '@mobgen/core/math.ts';
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import content from '@mobgen/mob/ragdoll.json' with { type: 'json' };
-import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 import { hash3 } from '../core/random.ts';
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
@@ -163,7 +162,10 @@ export class RagdollWorld {
   private remainder = 0;
   private disposed = false;
 
-  constructor(gravityMetresPerSimSecondSquared = DEFAULT_WORLD_GRAVITY) {
+  constructor(gravityMetresPerSimSecondSquared: number) {
+    if (!Number.isFinite(gravityMetresPerSimSecondSquared)) {
+      throw new Error('RagdollWorld requires world gravity');
+    }
     this.ready = initializeRagdollPhysics()
       .then(() => {
         if (!this.disposed) {

@@ -17,7 +17,6 @@ import {
 } from 'three';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
@@ -175,16 +174,11 @@ export class Gore {
   private dripperCount = 0;
   private updates = 0;
 
-  constructor(blockSize: number, gravityOrTuning: number | GoreTuning, tuningOrSeed?: GoreTuning | number, seed = 1) {
+  constructor(blockSize: number, gravityMetresPerSimSecondSquared: number, tuning: GoreTuning, seed = 1) {
     this.blockSize = blockSize;
-    this.gravityMetresPerSimSecondSquared =
-      typeof gravityOrTuning === 'number' ? gravityOrTuning : DEFAULT_WORLD_GRAVITY;
-    this.tuning = (typeof gravityOrTuning === 'number' ? tuningOrSeed : gravityOrTuning) as GoreTuning;
-    const { tuning } = this;
-    this.rng = Rng.stream(
-      typeof gravityOrTuning === 'number' ? seed : ((tuningOrSeed as number | undefined) ?? 1),
-      'gore',
-    );
+    this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
+    this.tuning = tuning;
+    this.rng = Rng.stream(seed, 'gore');
     this.droplets = Array.from({ length: tuning.dropletCap }, () => ({
       active: false,
       position: new Vector3(),
