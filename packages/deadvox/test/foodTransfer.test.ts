@@ -25,6 +25,9 @@ const container = (id: string, grid: [number, number], rigid = false) => ({
 /** A test-owned recipe that consumes the fixture food, so escrow follows a plan a player could start. */
 const FOOD_RECIPE: RecipeDef = {
   id: 'transfer_recipe',
+  category: 'fixture_category',
+  tags: [],
+  searchTerms: [],
   result: { item: 'fixture_keeps', count: 1 },
   timeGameMinutes: gameMinutes(1),
   skills: {},

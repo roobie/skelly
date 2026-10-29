@@ -46,6 +46,9 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('fixture_recipe', {
       id: 'fixture_recipe',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'wooden_plank', count: 1 },
       timeGameMinutes: gameMinutes(1),
       components: [[{ item: 'stick', count: 1 }]],
@@ -97,6 +100,9 @@ describe('static reachability', () => {
     ] as const) {
       registry.recipes.set(id, {
         id,
+        category: 'fixture_category',
+        tags: [],
+        searchTerms: [],
         result: { item: result, count: 1 },
         timeGameMinutes: gameMinutes(1),
         components: [[{ item: input, count: 1 }]],
@@ -128,6 +134,9 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('fixture_practice', {
       id: 'fixture_practice',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'wooden_plank', count: 1 },
       timeGameMinutes: gameMinutes(1),
       components: [[{ item: 'stick', count: 1 }]],
@@ -158,6 +167,9 @@ describe('static reachability', () => {
     });
     const supplier = {
       id: 'unlearned',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'unlearned_tool', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -199,6 +211,9 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('learned_from_book', {
       id: 'learned_from_book',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'torch', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -542,6 +557,9 @@ describe('static reachability', () => {
     });
     registry.recipes.set('fixture_make_package', {
       id: 'fixture_make_package',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'fixture_crafted_package', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -600,6 +618,9 @@ describe('static reachability', () => {
     registry.items.get('hammer')!.tool = { qualities: { fixturePounding: 2 } };
     registry.recipes.set('candle', {
       id: 'candle',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'hammer', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -644,6 +665,9 @@ describe('static reachability', () => {
     }
     const recipe = (id: string, product: string, input: string, quality?: string) => ({
       id,
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: product, count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},

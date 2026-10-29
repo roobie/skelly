@@ -110,6 +110,11 @@
   reading: { putAway: 'Put away', putAwayLabel: 'Put away reading', progress: 'Reading progress', text: 'Text' },
   crafting: {
     heading: 'Crafting',
+    all: 'All',
+    categories: 'Categories',
+    find: 'Find',
+    tags: 'Tags',
+    clearFind: 'Clear find',
     headingFact: 'Starting a recipe requires both hands free.',
     length: '{span} game time',
     found: '{item}: {found} found / {needed} needed',
