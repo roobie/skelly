@@ -4593,8 +4593,8 @@ const GraphicsTuningSchema = strictObject({
     reticleAntiAliasWidth: pipe(Positive, maxValue(2)),
   }),
   /**
-   * How far a non-magnifying optic's dot drifts in its window per unit of true eye-to-axis offset. The true offset is
-   * a few millimetres at rest, below a pixel on screen, so the shown drift is a multiple of it; 1 is physical.
+   * How far a non-magnifying optic's window drifts from its dot per unit of true eye-to-axis offset. The true offset
+   * is below a pixel on screen, so the shown drift is a multiple of it; 1 is physical.
    */
   opticParallaxGain: pipe(number(), finite(), minValue(1), maxValue(50)),
   readyRadiusM: pipe(number(), finite(), minValue(0)),

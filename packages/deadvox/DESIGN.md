@@ -3307,7 +3307,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
 - **Optic presentation tuning is content:** the player view, lens-edge controls and the 1x dot-drift gain remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
-- **A 1x dot drifts in its window by a multiple of the true offset:** the true eye-to-axis offset at skill 0 is millimetres, under a pixel of dot travel, so a physical gain of 1 reads as a perfectly steady shooter. The gain scales the existing skill-scaled sway and breath offset, so drift still fades to nothing at skill 10 at rest, and it leaves magnifying optics alone. See `src/core/opticView.ts`, `exaggerateReticleDrift`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
+- **A 1x optic exaggerates the window's drift, never the dot:** physical eye misalignment is too subtle to show imperfect alignment, but the dot marks the shot direction and must not move off it. See `src/core/opticView.ts`, `exaggerateWindowDrift`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical

@@ -735,7 +735,10 @@ it.each(unityOpticTypes())(
   },
 );
 
-const reticleDriftUnderSway = async (opticType: string, opticParallaxGain: number): Promise<number> => {
+const reticleDriftUnderSway = async (
+  opticType: string,
+  opticParallaxGain: number,
+): Promise<{ drift: number; swayedReticle: readonly [number, number] }> => {
   const geometry = new BoxGeometry();
   const material = new MeshBasicMaterial();
   const f = await fixture(true, undefined, {
@@ -762,7 +765,10 @@ const reticleDriftUnderSway = async (opticType: string, opticParallaxGain: numbe
     const figure = f.registry.figures.get('player')!;
     const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
     const camera = new PerspectiveCamera(75, 16 / 9, 0.05);
-    const offsetFrom = (aimFrame: { yaw: number; pitch: number }): [number, number] => {
+    const offsetFrom = (aimFrame: {
+      yaw: number;
+      pitch: number;
+    }): { offset: [number, number]; reticle: readonly [number, number] } => {
       const ads = { model, side: 'right' as const, aimFrame };
       const body = playerLookPose({ figure, models: f.registry.models, pitch: 0, stance: 'standing', ads });
       camera.position.set(...adsCameraEye({ figure, pose: body, ads, pitch: 0 }).eye);
@@ -774,22 +780,31 @@ const reticleDriftUnderSway = async (opticType: string, opticParallaxGain: numbe
         aim: aimFrame,
       });
       const frame = f.view.opticLensFrame!;
-      return [frame.reticleCenter[0] - frame.center[0], frame.reticleCenter[1] - frame.center[1]];
+      return {
+        offset: [frame.reticleCenter[0] - frame.center[0], frame.reticleCenter[1] - frame.center[1]],
+        reticle: frame.reticleCenter,
+      };
     };
-    const rest = offsetFrom(NEUTRAL_AIM);
+    const rest = offsetFrom(NEUTRAL_AIM).offset;
     const swayed = offsetFrom({ yaw: 0.01, pitch: 0.01 });
-    return Math.hypot(swayed[0] - rest[0], swayed[1] - rest[1]);
+    return {
+      drift: Math.hypot(swayed.offset[0] - rest[0], swayed.offset[1] - rest[1]),
+      swayedReticle: swayed.reticle,
+    };
   } finally {
     f.dispose();
   }
 };
 
-it('exaggerates a 1x optic dot drifting in its window by the content gain, and leaves a magnifying optic alone', async () => {
+it('exaggerates a 1x optic window drift by the content gain while the dot stays on the shot direction, and leaves a magnifying optic alone', async () => {
   const gain = 7;
-  const unityTrue = await reticleDriftUnderSway('optic_holographic', 1);
-  const unityShown = await reticleDriftUnderSway('optic_holographic', gain);
-  expect(unityTrue).toBeGreaterThan(0);
-  expect(unityShown / unityTrue).toBeCloseTo(gain, 3);
-  const magnifyingTrue = await reticleDriftUnderSway('optic_fixed_prism_4x', 1);
-  expect(await reticleDriftUnderSway('optic_fixed_prism_4x', gain)).toBeCloseTo(magnifyingTrue, 9);
+  const physical = await reticleDriftUnderSway('optic_holographic', 1);
+  const shown = await reticleDriftUnderSway('optic_holographic', gain);
+  expect(physical.drift).toBeGreaterThan(0);
+  expect(shown.drift / physical.drift).toBeCloseTo(gain, 3);
+  expect(shown.swayedReticle[0]).toBeCloseTo(physical.swayedReticle[0], 9);
+  expect(shown.swayedReticle[1]).toBeCloseTo(physical.swayedReticle[1], 9);
+  const magnifying = await reticleDriftUnderSway('optic_fixed_prism_4x', 1);
+  const magnifyingGained = await reticleDriftUnderSway('optic_fixed_prism_4x', gain);
+  expect(magnifyingGained.drift).toBeCloseTo(magnifying.drift, 9);
 });

@@ -24,7 +24,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import {
-  exaggerateReticleDrift,
+  exaggerateWindowDrift,
   type OpticLensFrame,
   presentedOptic,
   projectLensAperture,
@@ -223,9 +223,10 @@ export class HeldItems {
       this.opticViewFrame = {
         ...settings,
         ...aperture,
-        reticleCenter: settings.magnifying
-          ? reticleCenter
-          : exaggerateReticleDrift(reticleCenter, aperture.center, this.opticParallaxGain),
+        center: settings.magnifying
+          ? aperture.center
+          : exaggerateWindowDrift(reticleCenter, aperture.center, this.opticParallaxGain),
+        reticleCenter,
       };
     }
   }

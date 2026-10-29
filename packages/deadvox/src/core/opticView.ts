@@ -125,16 +125,16 @@ export const projectOpticReticle = (
 };
 
 /**
- * Scales the dot's displacement from its window centre. The true eye-to-axis offset is millimetres, which the dot
- * shows as a fraction of a pixel, so presentation exaggerates it; a gain of 1 is the physical picture.
+ * Scales the window's displacement from the dot, leaving the dot on the shot direction. The true eye-to-axis offset is
+ * millimetres, which shows as a fraction of a pixel, so presentation exaggerates it; a gain of 1 is the physical picture.
  */
-export const exaggerateReticleDrift = (
+export const exaggerateWindowDrift = (
   reticle: readonly [number, number],
   windowCenter: readonly [number, number],
   gain: number,
 ): readonly [number, number] => [
-  windowCenter[0] + (reticle[0] - windowCenter[0]) * gain,
-  windowCenter[1] + (reticle[1] - windowCenter[1]) * gain,
+  reticle[0] + (windowCenter[0] - reticle[0]) * gain,
+  reticle[1] + (windowCenter[1] - reticle[1]) * gain,
 ];
 
 /** Projects the exported ocular circle from the same camera-local frame as the held optic window. */
