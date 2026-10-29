@@ -141,7 +141,7 @@ local boxVan = [
   fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
   cargoSpace('box_cargo', [-0.9, 1, 0], [42, 20, 20], 'box_floor'),
 ] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
-(import 'economy.libsonnet').pack({
+(import 'item-presentation.libsonnet').pack((import 'economy.libsonnet').pack({
   models: [
     import 'things/car_battery.model.json',
     import 'things/car_headlamp.model.json',
@@ -318,4 +318,4 @@ local boxVan = [
     { id: 'box_van', name: 'Box van', fittings: boxVan },
     { id: 'hoist', name: 'Crane truck', fittings: hoist },
   ],
-})
+}))

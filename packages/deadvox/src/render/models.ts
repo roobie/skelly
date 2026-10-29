@@ -17,12 +17,13 @@ import {
   SkinnedMesh,
   Vector3,
 } from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { type GLTF, GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { attachmentFrame } from '../core/attachmentFrame.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 import type { ItemLook, ItemLookSlot } from './itemLook.ts';
+import { fittedStateGroup } from './itemStateLook.ts';
 import { applyModelMaterials } from './modelMaterials.ts';
 
 /** The base pack's model files, by their path within the pack. */
@@ -126,6 +127,23 @@ const hideShed = (root: Object3D, hidden: ItemLook['hidden']): void => {
       child.visible = false;
     }
   });
+};
+
+/** Keep glTF's material identity through palette application and scene cloning, including its implicit default. */
+export const indexModelMaterials = (gltf: GLTF): GLTF => {
+  gltf.scene.traverse((node) => {
+    const nodeIndex = gltf.parser.associations.get(node)?.nodes;
+    if (nodeIndex !== undefined) {
+      node.userData.itemNodeName = gltf.parser.json.nodes[nodeIndex]?.name;
+    }
+    if (node instanceof Mesh) {
+      for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+        material.userData.itemMaterialIndex =
+          gltf.parser.associations.get(material)?.materials ?? gltf.parser.json.materials?.length ?? 0;
+      }
+    }
+  });
+  return gltf;
 };
 
 /** Both forms of a loaded model. */
@@ -264,6 +282,7 @@ export class ModelLibrary {
         url,
         (gltf) => {
           try {
+            indexModelMaterials(gltf);
             let skinned = false;
             gltf.scene.traverse((node) => {
               if (node instanceof SkinnedMesh) {
@@ -412,6 +431,7 @@ export class ModelLibrary {
     const slots: ComposedHeld['slots'] = {};
     for (const slot of look.slots) {
       const group = fittedPartFrame(slot);
+      group.name = fittedStateGroup(slot.slot);
       const model = slot.model === undefined ? undefined : this.part(slot.model);
       if (model) {
         group.add(model);

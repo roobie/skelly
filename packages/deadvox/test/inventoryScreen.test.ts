@@ -497,7 +497,9 @@ describe('inventory screen Lit rendering', () => {
     const test = setup();
     const { root, screen, inv, queue, beans } = test;
     const model = vi.fn(() => new Group());
-    Object.assign(test.hooks, { itemView: { model, view: vi.fn() } });
+    const disposeModel = vi.fn();
+    const pictures = { version: 0, picture: () => undefined };
+    Object.assign(test.hooks, { pictures, itemView: { model, view: vi.fn(), disposeModel } });
     // Selected, so a drop that leaked past the viewer would move it.
     screen.selected = beans;
     screen.update();
@@ -522,6 +524,7 @@ describe('inventory screen Lit rendering', () => {
     expect(viewer).not.toBeNull();
     // Focus leaves the covered button, which stays out of reach through a redraw.
     expect(document.activeElement).toBe(viewer);
+    pictures.version += 1;
     screen.update();
     expect(covered.closest('[inert]')).not.toBeNull();
     expect(viewer!.closest('[inert]')).toBeNull();
@@ -537,6 +540,8 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector('[inert]')).toBeNull();
     expect(document.activeElement).toBe(covered);
     expect({ state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length }).toEqual(before);
+    expect(model.mock.results.length).toBeGreaterThan(1);
+    expect(disposeModel.mock.calls.map(([disposed]) => disposed)).toEqual(model.mock.results.map(({ value }) => value));
     screen.close();
   });
 
@@ -544,7 +549,7 @@ describe('inventory screen Lit rendering', () => {
     const test = setup();
     const { root, screen, beans } = test;
     const view = vi.fn();
-    Object.assign(test.hooks, { itemView: { model: () => new Group(), view } });
+    Object.assign(test.hooks, { itemView: { model: () => new Group(), view, disposeModel: vi.fn() } });
     screen.update();
     const issue = inputBindings.rebind('inventory.view-item', [{ code: 'Mouse0' }]);
     try {

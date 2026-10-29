@@ -8,6 +8,13 @@
       },
       "hold": "upright",
       "id": "canned_beans",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -18,6 +25,13 @@
       },
       "hold": "upright",
       "id": "canned_soup",
+      "itemPresentation": {
+        "materials": ["metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -28,6 +42,13 @@
       },
       "hold": "upright",
       "id": "opened_beans",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -38,6 +59,13 @@
       },
       "hold": "upright",
       "id": "opened_soup",
+      "itemPresentation": {
+        "materials": ["metal", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -48,6 +76,13 @@
       },
       "hold": "upright",
       "id": "empty_can",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -58,6 +93,13 @@
       },
       "hold": "upright",
       "id": "opened_soda",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -68,6 +110,13 @@
       },
       "hold": "upright",
       "id": "soda",
+      "itemPresentation": {
+        "materials": ["glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -78,6 +127,13 @@
       },
       "hold": "upright",
       "id": "can_opener",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.026315789473684199, 0.0078070175438596477, 0.0011403508771929824],
@@ -95,6 +151,13 @@
       },
       "hold": "upright",
       "id": "beans",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -105,6 +168,13 @@
       },
       "hold": "upright",
       "id": "soup",
+      "itemPresentation": {
+        "materials": ["organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -115,6 +185,13 @@
       },
       "hold": "upright",
       "id": "apple",
+      "itemPresentation": {
+        "materials": ["organic", "wood", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-3.4722222222222168e-5, 0.03979166666666667, -0.00031250000000000001],
@@ -132,6 +209,13 @@
       },
       "hold": "upright",
       "id": "bandage",
+      "itemPresentation": {
+        "materials": ["cloth", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.0017763157894736838, 0.030263157894736832, 0],
@@ -149,6 +233,13 @@
       },
       "hold": "upright",
       "id": "antiseptic",
+      "itemPresentation": {
+        "materials": ["paper", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -159,6 +250,13 @@
       },
       "hold": "upright",
       "id": "antibiotics",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -169,6 +267,13 @@
       },
       "hold": "upright",
       "id": "painkillers",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -179,6 +284,13 @@
       },
       "hold": "upright",
       "id": "codeine",
+      "itemPresentation": {
+        "materials": ["paper", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -189,6 +301,13 @@
       },
       "hold": "upright",
       "id": "morphine",
+      "itemPresentation": {
+        "materials": ["glass", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -199,6 +318,13 @@
       },
       "hold": "upright",
       "id": "crackers",
+      "itemPresentation": {
+        "materials": ["paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [0, 0.10166666666666667, 0],
@@ -216,6 +342,13 @@
       },
       "hold": "upright",
       "id": "chocolate_bar",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-0.0016666666666666666, 0.005000000000000001, -0.0015555555555555555],
@@ -233,6 +366,13 @@
       },
       "hold": "upright",
       "id": "soda_can",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -243,6 +383,13 @@
       },
       "hold": "upright",
       "id": "empty_soda_can",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "roll": 0
     },
     {
@@ -253,6 +400,13 @@
       },
       "hold": "upright",
       "id": "water_bottle",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-0.00038275193798449587, 0.10025193798449612, -0.00095930232558139484],
@@ -270,6 +424,13 @@
       },
       "hold": "upright",
       "id": "juice_carton",
+      "itemPresentation": {
+        "materials": ["paper", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [0, 0.09844827586206896, 0],
@@ -287,6 +448,13 @@
       },
       "hold": "upright",
       "id": "cartridge_box_308_h_winchester",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-0.0003623188405797101, 0.042536231884057966, 0],
@@ -304,6 +472,13 @@
       },
       "hold": "upright",
       "id": "cartridge_box_5_d_56x45",
+      "itemPresentation": {
+        "materials": ["paper", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [0, 0.034999999999999996, 0],
@@ -321,6 +496,13 @@
       },
       "hold": "upright",
       "id": "cartridge_box_7_d_62x39",
+      "itemPresentation": {
+        "materials": ["paper", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-0.0034070796460176989, 0.035000000000000003, 0],
@@ -338,6 +520,13 @@
       },
       "hold": "upright",
       "id": "cartridge_box_357_h_magnum",
+      "itemPresentation": {
+        "materials": ["paper", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-0.0032500000000000003, 0.028250000000000001, 0],
@@ -355,6 +544,13 @@
       },
       "hold": "upright",
       "id": "shotshell_box",
+      "itemPresentation": {
+        "materials": ["paper", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [0, 0.041666666666666664, 0],
@@ -372,6 +568,13 @@
       },
       "hold": "upright",
       "id": "ammo_can",
+      "itemPresentation": {
+        "materials": ["polymer", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-1.3307524800387127e-5, 0.089773772078393432, 0],
@@ -389,6 +592,13 @@
       },
       "hold": "upright",
       "id": "jerry_can",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [0, 0.21406402196050647, -9.9619233153280763e-5],
@@ -406,6 +616,13 @@
       },
       "hold": "upright",
       "id": "gas_canister",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "package": {
           "centreOfMass": [-0.0006468023255813951, 0.05941860465116279, -0.00073401162790697632],
@@ -423,6 +640,13 @@
       },
       "hold": "upright",
       "id": "frag_grenade",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "lever": {
         "launchMetresPerRealSecond": 3,
         "lifetimeRealSeconds": 1.5,
@@ -453,6 +677,13 @@
       },
       "hold": "upright",
       "id": "torch",
+      "itemPresentation": {
+        "materials": ["wood", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "rest": "upright",
       "roll": 0
     },
@@ -465,6 +696,13 @@
         "at": [0.085000000000000006, 0, 0]
       },
       "id": "flashlight",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "flashlight": {
           "centreOfMass": [0.11609390178089583, -0.00016945493793847795, -0.00013707501349163534],
@@ -484,12 +722,26 @@
       },
       "hold": "upright",
       "id": "candle",
+      "itemPresentation": {
+        "materials": ["wax", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "rest": "upright",
       "roll": 0
     },
     {
       "file": "assets/models/bear_trap.glb",
       "id": "bear_trap",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bear_trap": {
           "centreOfMass": [-0.013005427408412469, 0.0093419267299864189, 0.0003052917232021689],
@@ -525,6 +777,13 @@
       },
       "hold": "upright",
       "id": "compass",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "compass": {
           "centreOfMass": [0, 0.0055882352941176465, -0.001764705882352941],
@@ -536,15 +795,56 @@
     },
     {
       "file": "assets/models/lamp_oil_bottle.glb",
-      "id": "lamp_oil_bottle"
+      "id": "lamp_oil_bottle",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "paper", "fuel"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel-fill"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/glass_shards.glb",
-      "id": "glass_shards"
+      "id": "glass_shards",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/tape_roll.glb",
       "id": "tape_roll",
+      "itemPresentation": {
+        "materials": ["metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "electrical_tape": {
           "centreOfMass": [0.00057692307692307698, 0.010000000000000002, 0.00057692307692307698],
@@ -555,35 +855,91 @@
     },
     {
       "file": "assets/models/wood_offcut.glb",
-      "id": "wood_offcut"
+      "id": "wood_offcut",
+      "itemPresentation": {
+        "materials": ["wood", "wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/rubber_strip.glb",
-      "id": "rubber_strip"
+      "id": "rubber_strip",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/circuit_board.glb",
-      "id": "circuit_board"
+      "id": "circuit_board",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/glass_lens.glb",
-      "id": "glass_lens"
+      "id": "glass_lens",
+      "itemPresentation": {
+        "materials": ["glass", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/cloth_bundle.glb",
-      "id": "cloth_bundle"
+      "id": "cloth_bundle",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/stab_vest.glb",
-      "id": "stab_vest"
+      "id": "stab_vest",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/riot_helmet_view.glb",
-      "id": "riot_helmet_view"
+      "id": "riot_helmet_view",
+      "itemPresentation": {
+        "materials": ["glass", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/thread_spool.glb",
       "id": "thread_spool",
+      "itemPresentation": {
+        "materials": ["paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "sewing_thread": {
           "centreOfMass": [0, 0.025000000000000001, 0],
@@ -595,6 +951,13 @@
     {
       "file": "assets/models/fuse.glb",
       "id": "fuse",
+      "itemPresentation": {
+        "materials": ["glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "fuse": {
           "centreOfMass": [0, 0.0099999999999999985, 0],
@@ -606,6 +969,13 @@
     {
       "file": "assets/models/cord_coil.glb",
       "id": "cord_coil",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "nylon_cord": {
           "centreOfMass": [0.0017857142857142857, 0.010714285714285714, 0.0017857142857142857],
@@ -616,15 +986,36 @@
     },
     {
       "file": "assets/models/sewing_kit.glb",
-      "id": "sewing_kit"
+      "id": "sewing_kit",
+      "itemPresentation": {
+        "materials": ["polymer", "cloth", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/broken_toaster.glb",
-      "id": "broken_toaster"
+      "id": "broken_toaster",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/dead_desk_lamp.glb",
       "id": "dead_desk_lamp",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "arm": {
           "centreOfMass": [0.00099999999999999937, 0.077499999999999986, -9.7561600103919698e-18],
@@ -653,6 +1044,13 @@
         "turn": [0, 0, 0]
       },
       "id": "oil_lamp",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "arm": {
           "centreOfMass": [0.00099999999999999937, 0.077499999999999986, -9.7561600103919698e-18],
@@ -673,35 +1071,91 @@
     },
     {
       "file": "assets/models/table_fan.glb",
-      "id": "table_fan"
+      "id": "table_fan",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/cracked_phone.glb",
-      "id": "cracked_phone"
+      "id": "cracked_phone",
+      "itemPresentation": {
+        "materials": ["polymer", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/broken_clock.glb",
-      "id": "broken_clock"
+      "id": "broken_clock",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "paper", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/electrical_repair_kit.glb",
-      "id": "electrical_repair_kit"
+      "id": "electrical_repair_kit",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/glass_bulb.glb",
-      "id": "glass_bulb"
+      "id": "glass_bulb",
+      "itemPresentation": {
+        "materials": ["glass", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/paper_sheet.glb",
-      "id": "paper_sheet"
+      "id": "paper_sheet",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/folded_note.glb",
-      "id": "folded_note"
+      "id": "folded_note",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/notebook.glb",
-      "id": "notebook"
+      "id": "notebook",
+      "itemPresentation": {
+        "materials": ["paper", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/shambler_torso.glb",
@@ -711,6 +1165,13 @@
       },
       "hold": "upright",
       "id": "shambler_torso",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth", "organic", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "part": {
           "centreOfMass": [-1.0470865087760951e-5, 0.28300319523305756, 0.0005853969213497701],
@@ -728,6 +1189,13 @@
       },
       "hold": "upright",
       "id": "shambler_head",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "organic", "organic", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "part": {
           "centreOfMass": [0, 0.1429883062305865, -0.010154394299287411],
@@ -745,6 +1213,13 @@
       },
       "hold": "forward",
       "id": "shambler_left_arm",
+      "itemPresentation": {
+        "materials": ["organic", "cloth", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "part": {
           "centreOfMass": [0, 0.40269491525423723, 0],
@@ -762,6 +1237,13 @@
       },
       "hold": "forward",
       "id": "shambler_right_arm",
+      "itemPresentation": {
+        "materials": ["organic", "cloth", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "part": {
           "centreOfMass": [0, 0.40269491525423723, 0],
@@ -779,6 +1261,13 @@
       },
       "hold": "forward",
       "id": "shambler_left_leg",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "part": {
           "centreOfMass": [0, 0.45882863649302591, 0.0074010816965556512],
@@ -796,6 +1285,13 @@
       },
       "hold": "forward",
       "id": "shambler_right_leg",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "organic", "organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "part": {
           "centreOfMass": [0, 0.45882863649302591, 0.0074010816965556512],
@@ -813,6 +1309,13 @@
       },
       "hold": "upright",
       "id": "aa_battery",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [-0.0002631578947368421, 0.026052631578947369, 0],
@@ -830,6 +1333,13 @@
       },
       "hold": "upright",
       "id": "rag",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [0.002461538461538459, 0.01507692307692308, 0.00017948717948718207],
@@ -847,6 +1357,13 @@
       },
       "hold": "upright",
       "id": "duct_tape",
+      "itemPresentation": {
+        "materials": ["polymer", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [0, 0.025000000000000001, 0],
@@ -864,6 +1381,13 @@
       },
       "hold": "upright",
       "id": "nails",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [0.040783783783783785, -1.3513513513513596e-5, -1.3513513513513596e-5],
@@ -881,6 +1405,13 @@
       },
       "hold": "upright",
       "id": "scrap_metal",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [-0.0011999999999999969, 0.010933333333333335, -0.00033333333333333506],
@@ -898,6 +1429,13 @@
       },
       "hold": "upright",
       "id": "stick",
+      "itemPresentation": {
+        "materials": ["wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [0.1919512195121951, 0, 6.0975609756097608e-5],
@@ -915,6 +1453,13 @@
       },
       "hold": "upright",
       "id": "wax",
+      "itemPresentation": {
+        "materials": ["wax"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [0, 0.012058823529411764, 0],
@@ -932,6 +1477,13 @@
       },
       "hold": "upright",
       "id": "wooden_plank",
+      "itemPresentation": {
+        "materials": ["wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [-0.0031353591160220989, 0.01, 0.0045994475138121547],
@@ -949,6 +1501,13 @@
       },
       "hold": "upright",
       "id": "whetstone",
+      "itemPresentation": {
+        "materials": ["mineral"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [0, 0.01478723404255319, -0.0015957446808510633],
@@ -966,6 +1525,13 @@
       },
       "hold": "upright",
       "id": "field_patch",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "material": {
           "centreOfMass": [-0.00018181818181818007, 0.0050000000000000001, -0.000181818181818182],
@@ -982,6 +1548,13 @@
       },
       "file": "assets/models/car_battery.glb",
       "id": "car_battery",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.09375, 0],
@@ -1012,6 +1585,13 @@
       },
       "file": "assets/models/car_headlamp.glb",
       "id": "car_headlamp",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.078125, 0],
@@ -1033,6 +1613,13 @@
       },
       "file": "assets/models/hatchback_battery_tray.glb",
       "id": "hatchback_battery_tray",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.015625, 0.015625, 0],
@@ -1054,6 +1641,13 @@
       },
       "file": "assets/models/pickup_battery_tray.glb",
       "id": "pickup_battery_tray",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.015625, 0],
@@ -1073,6 +1667,13 @@
       "anchors": {},
       "file": "assets/models/cargo_space.glb",
       "id": "cargo_space",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.046875, 0],
@@ -1092,6 +1693,13 @@
       "anchors": {},
       "file": "assets/models/mounting_plate.glb",
       "id": "mounting_plate",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.015625, 0],
@@ -1111,6 +1719,13 @@
       "anchors": {},
       "file": "assets/models/pickup_bed_floor.glb",
       "id": "pickup_bed_floor",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.140625, 0.71399456521739135, 0],
@@ -1134,6 +1749,13 @@
       "anchors": {},
       "file": "assets/models/pickup_bed_side.glb",
       "id": "pickup_bed_side",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.1646983664501338, 0.83360598968284294, 0.77152990064959881],
@@ -1157,6 +1779,13 @@
       "anchors": {},
       "file": "assets/models/pickup_bed_front.glb",
       "id": "pickup_bed_front",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.0625, 1.015625, 0],
@@ -1176,6 +1805,13 @@
       "anchors": {},
       "file": "assets/models/box_van_floor.glb",
       "id": "box_van_floor",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.90625, 0.875, 0],
@@ -1199,6 +1835,13 @@
       "anchors": {},
       "file": "assets/models/box_van_side.glb",
       "id": "box_van_side",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.90625, 1.953125, 1.03125],
@@ -1218,6 +1861,13 @@
       "anchors": {},
       "file": "assets/models/box_van_front.glb",
       "id": "box_van_front",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.21875, 2, 0],
@@ -1237,6 +1887,13 @@
       "anchors": {},
       "file": "assets/models/box_van_roof.glb",
       "id": "box_van_roof",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.875, 3.03125, 0],
@@ -1258,6 +1915,13 @@
       },
       "file": "assets/models/wheel_205_55r16.glb",
       "id": "wheel_205_55r16",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.00092132972322502926, -0.0015230144404332125, 0],
@@ -1283,6 +1947,13 @@
       },
       "file": "assets/models/front_seat.glb",
       "id": "front_seat",
+      "itemPresentation": {
+        "materials": ["metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.12729357798165139, 0.30239392201834864, 0],
@@ -1316,6 +1987,13 @@
       },
       "file": "assets/models/door_mirror.glb",
       "id": "door_mirror",
+      "itemPresentation": {
+        "materials": ["polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.014423076923076924, 0.061298076923076927, 0.11778846153846155],
@@ -1345,6 +2023,13 @@
       },
       "file": "assets/models/steering_wheel.glb",
       "id": "steering_wheel",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.021306818181818184, -0.011837121212121212, 0],
@@ -1372,6 +2057,13 @@
       "anchors": {},
       "file": "assets/models/gear_lever.glb",
       "id": "gear_lever",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.00026483050847457616, 0.097192796610169496, -0.00026483050847457616],
@@ -1399,6 +2091,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_shell.glb",
       "id": "hatchback_shell",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.4474143693527568, 0.61026674580490503, 0],
@@ -1549,6 +2248,13 @@
       },
       "file": "assets/models/hatchback_front_door.glb",
       "id": "hatchback_front_door",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.20264061766087366, 0.69860409816815405, 0.82473432362611554],
@@ -1583,6 +2289,13 @@
       },
       "file": "assets/models/hatchback_rear_door.glb",
       "id": "hatchback_rear_door",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.7129830441640379, 0.74003351735015777, 0.82240733438485814],
@@ -1621,6 +2334,13 @@
       },
       "file": "assets/models/hatchback_tailgate.glb",
       "id": "hatchback_tailgate",
+      "itemPresentation": {
+        "materials": ["metal", "glass", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.9205230222496907, 0.96552456736711978, 0],
@@ -1648,6 +2368,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_windscreen.glb",
       "id": "hatchback_windscreen",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.38308189655172414, 1.1945043103448276, 0],
@@ -1667,6 +2394,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_bonnet.glb",
       "id": "hatchback_bonnet",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.40625, 0.86595394736842102, 0],
@@ -1686,6 +2420,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_front_wing.glb",
       "id": "hatchback_front_wing",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.4742994332493702, 0.67124527707808568, 0.84375],
@@ -1713,6 +2454,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_front_bumper.glb",
       "id": "hatchback_front_bumper",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.002389705882353, 0.43922794117647057, 0],
@@ -1740,6 +2488,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_rear_bumper.glb",
       "id": "hatchback_rear_bumper",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2, 0.40625, 0],
@@ -1759,6 +2514,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_tail_lamp.glb",
       "id": "hatchback_tail_lamp",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2, 0.75, 0.734375],
@@ -1780,6 +2542,13 @@
       },
       "file": "assets/models/hatchback_front_strut.glb",
       "id": "hatchback_front_strut",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.2484631147540983, 0.32402663934426229, 0.52254098360655743],
@@ -1807,6 +2576,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_rear_axle.glb",
       "id": "hatchback_rear_axle",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.1019736842105263, 0.30448190789473684, 0],
@@ -1850,6 +2626,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_engine.glb",
       "id": "hatchback_engine",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.4559157580477675, 0.57481503115264798, -0.030682113187954312],
@@ -1885,6 +2668,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_gearbox.glb",
       "id": "hatchback_gearbox",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.359375, 0.484375, -0.421875],
@@ -1904,6 +2694,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_radiator.glb",
       "id": "hatchback_radiator",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.875, 0.578125, 0],
@@ -1923,6 +2720,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_fuel_tank.glb",
       "id": "hatchback_fuel_tank",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.703125, 0.15625, -0.40625],
@@ -1942,6 +2746,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_exhaust.glb",
       "id": "hatchback_exhaust",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.3226474719101124, 0.21882022471910115, 0.022261235955056181],
@@ -1969,6 +2780,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_dashboard.glb",
       "id": "hatchback_dashboard",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.54629062778272486, 0.67105409617097056, 0.0023374888691006235],
@@ -2000,6 +2818,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_rear_seat.glb",
       "id": "hatchback_rear_seat",
+      "itemPresentation": {
+        "materials": ["metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.88585805084745761, 0.60531426553672318, 0],
@@ -2027,6 +2852,13 @@
       "anchors": {},
       "file": "assets/models/hoist_frame_rail.glb",
       "id": "hoist_frame_rail",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.46875, 0.5],
@@ -2046,6 +2878,13 @@
       "anchors": {},
       "file": "assets/models/hoist_crossmember.glb",
       "id": "hoist_crossmember",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.0625, 0.046875, 0.4375],
@@ -2067,6 +2906,13 @@
       },
       "file": "assets/models/hoist_wheel.glb",
       "id": "hoist_wheel",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.0011666530811868267, -0.0011462748614281043, -0.01052025595044017],
@@ -2090,6 +2936,13 @@
       "anchors": {},
       "file": "assets/models/hoist_front_axle.glb",
       "id": "hoist_front_axle",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.9143391652613826, 0.32759801854974702, -0.03319983136593592],
@@ -2121,6 +2974,13 @@
       "anchors": {},
       "file": "assets/models/hoist_rear_axle.glb",
       "id": "hoist_rear_axle",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.4919108347386172, 0.32759801854974702, -0.03319983136593592],
@@ -2152,6 +3012,13 @@
       "anchors": {},
       "file": "assets/models/hoist_engine.glb",
       "id": "hoist_engine",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.8224394846434149, 0.69492614523685581, -4.0668922436231143e-5],
@@ -2207,6 +3074,13 @@
       "anchors": {},
       "file": "assets/models/hoist_gearbox.glb",
       "id": "hoist_gearbox",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.0428240740740742, 0.6186342592592593, 0],
@@ -2230,6 +3104,13 @@
       "anchors": {},
       "file": "assets/models/hoist_prop_shaft.glb",
       "id": "hoist_prop_shaft",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.33032349246231157, 0.48358982412060303, 0.015625],
@@ -2249,6 +3130,13 @@
       "anchors": {},
       "file": "assets/models/hoist_fuel_tank.glb",
       "id": "hoist_fuel_tank",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.34375, 0.390625, -0.71875],
@@ -2268,6 +3156,13 @@
       "anchors": {},
       "file": "assets/models/hoist_exhaust.glb",
       "id": "hoist_exhaust",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.014300847457627119, 0.40889830508474578, 0.67478813559322037],
@@ -2295,6 +3190,13 @@
       "anchors": {},
       "file": "assets/models/hoist_radiator.glb",
       "id": "hoist_radiator",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.75, 0.703125, 0],
@@ -2314,6 +3216,13 @@
       "anchors": {},
       "file": "assets/models/hoist_cab_floor.glb",
       "id": "hoist_cab_floor",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.9704269591141397, 0.95828896933560481, 0],
@@ -2353,6 +3262,13 @@
       "anchors": {},
       "file": "assets/models/hoist_cab_skirt.glb",
       "id": "hoist_cab_skirt",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.0198092749110321, 0.76832184163701067, 0.84690558274021344],
@@ -2480,6 +3396,13 @@
       "anchors": {},
       "file": "assets/models/hoist_cab_back.glb",
       "id": "hoist_cab_back",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.1832386363636365, 1.546875, 0],
@@ -2523,6 +3446,13 @@
       "anchors": {},
       "file": "assets/models/hoist_front_panel.glb",
       "id": "hoist_front_panel",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.8247306034482755, 1.217198275862069, 0],
@@ -2558,6 +3488,13 @@
       "anchors": {},
       "file": "assets/models/hoist_a_post.glb",
       "id": "hoist_a_post",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.7968750000000004, 1.7656250000000002, 0.84375000000000011],
@@ -2577,6 +3514,13 @@
       "anchors": {},
       "file": "assets/models/hoist_windscreen.glb",
       "id": "hoist_windscreen",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.828125, 1.765625, 0],
@@ -2596,6 +3540,13 @@
       "anchors": {},
       "file": "assets/models/hoist_roof.glb",
       "id": "hoist_roof",
+      "itemPresentation": {
+        "materials": ["metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.9732974357883992, 2.1279155681238304, 0],
@@ -2622,6 +3573,13 @@
       },
       "file": "assets/models/hoist_door.glb",
       "id": "hoist_door",
+      "itemPresentation": {
+        "materials": ["metal", "cloth", "polymer", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.015219448449892, 1.5168641852919973, 0.83670917447728921],
@@ -2669,6 +3627,13 @@
       "anchors": {},
       "file": "assets/models/hoist_front_bumper.glb",
       "id": "hoist_front_bumper",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.9230263157894738, 0.67680921052631582, 0],
@@ -2700,6 +3665,13 @@
       "anchors": {},
       "file": "assets/models/hoist_dashboard.glb",
       "id": "hoist_dashboard",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.6688458813758063, 1.2454105188587061, 0.0415984707836623],
@@ -2727,6 +3699,13 @@
       "anchors": {},
       "file": "assets/models/hoist_engine_cover.glb",
       "id": "hoist_engine_cover",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.09375, 1.140625, 0],
@@ -2748,6 +3727,13 @@
       },
       "file": "assets/models/hoist_bench.glb",
       "id": "hoist_bench",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.4319556451612905, 1.3346774193548387, 0],
@@ -2771,6 +3757,13 @@
       "anchors": {},
       "file": "assets/models/hoist_deck_floor.glb",
       "id": "hoist_deck_floor",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.21875, 0.81862745098039214, 0],
@@ -2798,6 +3791,13 @@
       "anchors": {},
       "file": "assets/models/hoist_headboard.glb",
       "id": "hoist_headboard",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.40625, 1.09375, 0],
@@ -2817,6 +3817,13 @@
       "anchors": {},
       "file": "assets/models/hoist_mudguard.glb",
       "id": "hoist_mudguard",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.5069867886178863, 0.72370426829268297, 0.71875000000000011],
@@ -2864,6 +3871,13 @@
       "anchors": {},
       "file": "assets/models/hoist_rear_underrun.glb",
       "id": "hoist_rear_underrun",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.9528409090909089, 0.35767045454545454, 0],
@@ -2903,6 +3917,13 @@
       "anchors": {},
       "file": "assets/models/hoist_tail_lamp.glb",
       "id": "hoist_tail_lamp",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.96875, 0.640625, 0.6875],
@@ -2926,6 +3947,13 @@
       "anchors": {},
       "file": "assets/models/hoist_crane_base.glb",
       "id": "hoist_crane_base",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.78125000000000011, 0.80729166666666674, 0],
@@ -2953,6 +3981,13 @@
       "anchors": {},
       "file": "assets/models/hoist_stabiliser.glb",
       "id": "hoist_stabiliser",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.78125, 0.61677631578947367, 0.76315789473684204],
@@ -2980,6 +4015,13 @@
       "anchors": {},
       "file": "assets/models/hoist_crane_column.glb",
       "id": "hoist_crane_column",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.78125, 1.4243515850144091, 0],
@@ -3019,6 +4061,13 @@
       "anchors": {},
       "file": "assets/models/hoist_boom.glb",
       "id": "hoist_boom",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.031818181818181815, 1.7493371212121211, 0],
@@ -3038,6 +4087,13 @@
       "anchors": {},
       "file": "assets/models/hoist_boom_extension.glb",
       "id": "hoist_boom_extension",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.6059027777777777, 1.515625, 0],
@@ -3057,6 +4113,13 @@
       "anchors": {},
       "file": "assets/models/hoist_luff_ram.glb",
       "id": "hoist_luff_ram",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.26181402439024398, 1.4142530487804879, 0],
@@ -3076,6 +4139,13 @@
       "anchors": {},
       "file": "assets/models/hoist_winch.glb",
       "id": "hoist_winch",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.99676724137931028, 1.3724407327586208, 0],
@@ -3103,6 +4173,13 @@
       "anchors": {},
       "file": "assets/models/hoist_hook_block.glb",
       "id": "hoist_hook_block",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.53125, 1.2230113636363638, 0],
@@ -3126,6 +4203,13 @@
       "anchors": {},
       "file": "assets/models/hoist_boom_rest.glb",
       "id": "hoist_boom_rest",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.25, 1.125, 0],
@@ -3149,6 +4233,13 @@
       },
       "hold": "upright",
       "id": "jeans",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "jeans": {
           "centreOfMass": [0, 0.025000000000000001, 0],
@@ -3166,6 +4257,13 @@
       },
       "hold": "upright",
       "id": "rubber_boots",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "rubber_boots": {
           "centreOfMass": [2.3738880988034334e-18, 0.076198108250131361, 0.023497109826589591],
@@ -3183,6 +4281,13 @@
       },
       "hold": "upright",
       "id": "sneakers",
+      "itemPresentation": {
+        "materials": ["polymer", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "sneakers": {
           "centreOfMass": [6.356720054441276e-18, 0.045037523452157592, 0.029577861163227016],
@@ -3200,6 +4305,13 @@
       },
       "hold": "upright",
       "id": "cargo_pants",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "cargo_pants": {
           "centreOfMass": [0, 0.024999999999999994, 0],
@@ -3217,6 +4329,13 @@
       },
       "hold": "upright",
       "id": "hoodie",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "hoodie": {
           "centreOfMass": [0, 0.032460179554011009, 0.002856935997683174],
@@ -3234,6 +4353,13 @@
       },
       "hold": "upright",
       "id": "jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "jacket": {
           "centreOfMass": [0, 0.034819277108433737, -0.0022289156626506025],
@@ -3251,6 +4377,13 @@
       },
       "hold": "upright",
       "id": "utility_vest",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "utility_vest": {
           "centreOfMass": [0, 0.030000000000000002, -0.0079734219269102981],
@@ -3268,6 +4401,13 @@
       },
       "hold": "upright",
       "id": "fanny_pack",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "fanny_pack": {
           "centreOfMass": [0, 0.06670046801872076, -0.0065990639625585013],
@@ -3285,6 +4425,13 @@
       },
       "hold": "upright",
       "id": "school_backpack",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "school_backpack": {
           "centreOfMass": [0, 0.2249778538353131, -0.003026978055164083],
@@ -3302,6 +4449,13 @@
       },
       "hold": "upright",
       "id": "hiking_backpack",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "hiking_backpack": {
           "centreOfMass": [0, 0.28675334178944278, -0.0089906332325104914],
@@ -3319,6 +4473,13 @@
       },
       "hold": "upright",
       "id": "baseball_cap",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "baseball_cap": {
           "centreOfMass": [-0.0017582350424738742, 0.038684348835788064, -0.0063476135183034906],
@@ -3336,6 +4497,13 @@
       },
       "hold": "forward",
       "id": "blowtorch",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [0.0038624338624338628, 0.080502645502645506, 2.645502645502646e-5],
@@ -3367,6 +4535,13 @@
       },
       "hold": "forward",
       "id": "headlamp",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "metal", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [0.0044439937001861307, 0.015323963155634042, -0.051891519114207987],
@@ -3384,6 +4559,13 @@
       },
       "hold": "forward",
       "id": "weapon_sling",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [-0.00069696969696969992, 0.0049696969696969703, -0.0002121212121212127],
@@ -3401,6 +4583,13 @@
       },
       "hold": "forward",
       "id": "repair_kit",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [-0.0039068825910931176, 0.01373144399460189, -0.0033265856950067479],
@@ -3418,6 +4607,13 @@
       },
       "hold": "upright",
       "id": "wire_strippers",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [0.1142079207920792, 0.0014356435643564356, -0.00014851485148514865],
@@ -3435,6 +4631,13 @@
       },
       "hold": "upright",
       "id": "adjustable_pliers",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [0.10369565217391309, 0.0016086956521739141, 4.3478260869564062e-5],
@@ -3452,6 +4655,13 @@
       },
       "hold": "forward",
       "id": "sewing_repair_kit",
+      "itemPresentation": {
+        "materials": ["metal", "cloth", "polymer", "paper", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [-0.0012921348314606743, 0.013258426966292139, -0.0026029962546816484],
@@ -3469,6 +4679,13 @@
       },
       "hold": "forward",
       "id": "portable_radio",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "metal", "glass", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "equipment": {
           "centreOfMass": [-0.00068518518518518494, 0.066833333333333286, -0.0039444444444444431],
@@ -3481,6 +4698,13 @@
     {
       "file": "assets/models/scissor_jack.glb",
       "id": "scissor_jack",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "jack": {
           "centreOfMass": [0.0034969939879759527, 0.038587174348697399, 0.00015030060120240483],
@@ -3492,6 +4716,13 @@
     {
       "file": "assets/models/bottle_jack.glb",
       "id": "bottle_jack",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "jack": {
           "centreOfMass": [0.0003823743627093955, 0.077250546249089613, -4.7341587764020424e-5],
@@ -3503,6 +4734,13 @@
     {
       "file": "assets/models/engine_hoist.glb",
       "id": "engine_hoist",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "jack": {
           "centreOfMass": [0.30281202384452949, 0.73938530834825855, -6.8165414739811427e-6],
@@ -3514,15 +4752,47 @@
     {
       "file": "assets/models/lighter.glb",
       "grip": {
-        "at": [0, 0.025000000000000001, 0],
+        "at": [0, 0.027, 0],
         "turn": [0, 0, -90]
       },
       "hold": "upright",
       "id": "lighter",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "fuel"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel_fill:fuel_fill"
+        },
+        "wear": "core"
+      },
       "parts": {
+        "fuel_fill": {
+          "centreOfMass": [-4.1916167664670657e-5, 0.024880239520958088, -2.8683080385566047e-18],
+          "massKg": 0.001,
+          "node": "fuel_fill:fuel_fill"
+        },
         "lighter": {
-          "centreOfMass": [0, 0.030833333333333334, 0],
-          "massKg": 0.02,
+          "centreOfMass": [0, 0.029564393939393935, -1.1363636363636363e-5],
+          "massKg": 0.019,
           "node": "lighter:lighter"
         }
       },
@@ -3536,6 +4806,13 @@
       },
       "hold": "upright",
       "id": "matches",
+      "itemPresentation": {
+        "materials": ["paper", "metal", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "matches": {
           "centreOfMass": [0, 0.0096153846153846142, 0.0011538461538461537],
@@ -3553,6 +4830,13 @@
       },
       "hold": "upright",
       "id": "dad_cabin_key",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "dad_cabin_key": {
           "centreOfMass": [0.028000000000000001, 0.0029999999999999996, 0.0039999999999999992],
@@ -3570,6 +4854,13 @@
       },
       "hold": "upright",
       "id": "pharmacy_key",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "pharmacy_key": {
           "centreOfMass": [0.028000000000000001, 0.0029999999999999996, 0.0039999999999999992],
@@ -3587,6 +4878,13 @@
       },
       "hold": "upright",
       "id": "camp_armoury_key",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "camp_armoury_key": {
           "centreOfMass": [0.035666666666666673, 0.0023333333333333335, 0.0053333333333333332],
@@ -3604,6 +4902,13 @@
       },
       "hold": "upright",
       "id": "camp_hq_safe_key",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "camp_hq_safe_key": {
           "centreOfMass": [0.028000000000000001, 0.0029999999999999996, 0.0039999999999999992],
@@ -3621,6 +4926,13 @@
       },
       "hold": "upright",
       "id": "shed_key",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shed_key": {
           "centreOfMass": [0.028000000000000001, 0.0029999999999999996, 0.0039999999999999992],
@@ -3638,6 +4950,13 @@
       },
       "hold": "upright",
       "id": "gauntlet_police_armoury_key",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "gauntlet_police_armoury_key": {
           "centreOfMass": [0.035666666666666673, 0.0023333333333333335, 0.0053333333333333332],
@@ -3655,6 +4974,13 @@
       },
       "hold": "upright",
       "id": "gauntlet_lab_entry_card",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "gauntlet_lab_entry_card": {
           "centreOfMass": [-0.0011290322580645158, 0.0049999999999999992, 0],
@@ -3672,6 +4998,13 @@
       },
       "hold": "upright",
       "id": "hand_saw",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "hand_saw": {
           "centreOfMass": [0.14426835443037972, 0, -9.1139240506329027e-5],
@@ -3689,6 +5022,13 @@
       },
       "hold": "upright",
       "id": "screwdriver",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "screwdriver": {
           "centreOfMass": [0.063305322405450781, -3.9399624765478433e-5, -3.1104966920114464e-5],
@@ -3701,6 +5041,13 @@
     {
       "file": "assets/models/copper_wire.glb",
       "id": "copper_wire",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "copper_wire": {
           "centreOfMass": [-4.4618395303326685e-5, 0.027850489236790604, -9.1585127201565604e-5],
@@ -3712,6 +5059,13 @@
     {
       "file": "assets/models/small_spring.glb",
       "id": "small_spring",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "small_spring": {
           "centreOfMass": [-5.0397877984084848e-5, 0.019222811671087532, -6.9849690539345718e-5],
@@ -3723,6 +5077,13 @@
     {
       "file": "assets/models/hinge_set.glb",
       "id": "hinge_set",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "hinge_set": {
           "centreOfMass": [0, 0.0016666666666666668, 9.0699628569410935e-19],
@@ -3734,6 +5095,13 @@
     {
       "file": "assets/models/fastener_pack.glb",
       "id": "fastener_pack",
+      "itemPresentation": {
+        "materials": ["paper", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "fastener_pack": {
           "centreOfMass": [-4.5273316689644891e-5, 0.019450422923575666, -0.00010623393076722432],
@@ -3745,6 +5113,13 @@
     {
       "file": "assets/models/taped_flashlight_mount.glb",
       "id": "taped_flashlight_mount",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "taped_flashlight_mount": {
           "centreOfMass": [0.0044588505747126424, 0.018196781609195401, -0.00016091954022988511],
@@ -3756,6 +5131,13 @@
     {
       "file": "assets/models/scrap_foregrip.glb",
       "id": "scrap_foregrip",
+      "itemPresentation": {
+        "materials": ["metal", "wood", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "scrap_foregrip": {
           "centreOfMass": [-9.5011876484560619e-5, 0.043762470308788604, -0.00011401425178147265],
@@ -3778,6 +5160,13 @@
       },
       "file": "assets/models/player_bust.glb",
       "id": "player_bust",
+      "itemPresentation": {
+        "materials": ["organic", "organic", "organic", "organic", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "head": {
           "centreOfMass": [2.0408347653397456e-16, 0.83341319444444451, -0.0073888888888888875],
@@ -3812,6 +5201,13 @@
       },
       "file": "assets/models/player_arm.glb",
       "id": "player_arm",
+      "itemPresentation": {
+        "materials": ["organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "fingers": {
           "centreOfMass": [-2.5368555600494065e-16, -0.69000000000000006, 0],
@@ -3848,6 +5244,13 @@
       },
       "file": "assets/models/player_leg.glb",
       "id": "player_leg",
+      "itemPresentation": {
+        "materials": ["organic"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "foot": {
           "centreOfMass": [-1.8949847352001549e-16, -0.77500000000000002, 0.070000000000000007],
@@ -3874,6 +5277,13 @@
       },
       "hold": "upright",
       "id": "riot_helmet",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "helmet": {
           "centreOfMass": [0.00038613505747126556, 0.042740660919540305, 0.003491379310344836],
@@ -3907,6 +5317,13 @@
       },
       "hold": "upright",
       "id": "night_vision_goggles",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "goggles": {
           "centreOfMass": [0.0016821575141684579, 0.011779910103576315, 0.10374571037717413],
@@ -3918,55 +5335,146 @@
     },
     {
       "file": "assets/models/worn_jacket_body.glb",
-      "id": "worn_jacket_body"
+      "id": "worn_jacket_body",
+      "itemPresentation": {
+        "materials": ["cloth", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_jacket_upper.glb",
-      "id": "worn_jacket_upper"
+      "id": "worn_jacket_upper",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_jacket_fore.glb",
-      "id": "worn_jacket_fore"
+      "id": "worn_jacket_fore",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_hoodie_body.glb",
-      "id": "worn_hoodie_body"
+      "id": "worn_hoodie_body",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_hoodie_upper.glb",
-      "id": "worn_hoodie_upper"
+      "id": "worn_hoodie_upper",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_hoodie_fore.glb",
-      "id": "worn_hoodie_fore"
+      "id": "worn_hoodie_fore",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_trousers_pelvis.glb",
-      "id": "worn_trousers_pelvis"
+      "id": "worn_trousers_pelvis",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_trousers_thigh.glb",
-      "id": "worn_trousers_thigh"
+      "id": "worn_trousers_thigh",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_trousers_shin.glb",
-      "id": "worn_trousers_shin"
+      "id": "worn_trousers_shin",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_boot_shaft.glb",
-      "id": "worn_boot_shaft"
+      "id": "worn_boot_shaft",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_boot_foot.glb",
-      "id": "worn_boot_foot"
+      "id": "worn_boot_foot",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/worn_sneaker_foot.glb",
-      "id": "worn_sneaker_foot"
+      "id": "worn_sneaker_foot",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/utility_vest_worn.glb",
       "id": "utility_vest_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shell": {
           "centreOfMass": [0.0031677156844046009, 0.43289363595905656, 0.024436200648483682],
@@ -3978,6 +5486,13 @@
     {
       "file": "assets/models/stab_vest_worn.glb",
       "id": "stab_vest_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shell": {
           "centreOfMass": [0.0019683822326272203, 0.47175982076552253, 0.0058561089503958571],
@@ -3989,6 +5504,13 @@
     {
       "file": "assets/models/school_backpack_worn.glb",
       "id": "school_backpack_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bag": {
           "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.24779172793626178],
@@ -4005,6 +5527,13 @@
     {
       "file": "assets/models/hiking_backpack_worn.glb",
       "id": "hiking_backpack_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bag": {
           "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.29055790462864456],
@@ -4021,6 +5550,13 @@
     {
       "file": "assets/models/fanny_pack_worn.glb",
       "id": "fanny_pack_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bag": {
           "centreOfMass": [1.924312414439925e-17, 0.15526326635754767, 0.17494693456980939],
@@ -4037,6 +5573,13 @@
     {
       "file": "assets/models/weapon_sling_worn.glb",
       "id": "weapon_sling_worn",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shell": {
           "centreOfMass": [-0.23200000000000001, 0.51902801461632164, -0.068635809987819735],
@@ -4048,6 +5591,13 @@
     {
       "file": "assets/models/utility_vest_worn_jacket.glb",
       "id": "utility_vest_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shell": {
           "centreOfMass": [0.00017977528089887604, 0.44398901373283406, 0.038466716604244694],
@@ -4059,6 +5609,13 @@
     {
       "file": "assets/models/stab_vest_worn_jacket.glb",
       "id": "stab_vest_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shell": {
           "centreOfMass": [0.0002245390560029198, 0.46766966187298414, 0.011311900367132515],
@@ -4070,6 +5627,13 @@
     {
       "file": "assets/models/school_backpack_worn_jacket.glb",
       "id": "school_backpack_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bag": {
           "centreOfMass": [7.7213057776159976e-5, 0.3735526027324011, -0.27979172793626184],
@@ -4086,6 +5650,13 @@
     {
       "file": "assets/models/hiking_backpack_worn_jacket.glb",
       "id": "hiking_backpack_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bag": {
           "centreOfMass": [4.2424128322903646e-17, 0.34674104677493467, -0.32255790462864453],
@@ -4102,6 +5673,13 @@
     {
       "file": "assets/models/fanny_pack_worn_jacket.glb",
       "id": "fanny_pack_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "bag": {
           "centreOfMass": [1.9331839858186666e-17, 0.15538492063492065, 0.21280853174603176],
@@ -4118,6 +5696,13 @@
     {
       "file": "assets/models/weapon_sling_worn_jacket.glb",
       "id": "weapon_sling_worn_jacket",
+      "itemPresentation": {
+        "materials": ["cloth", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "shell": {
           "centreOfMass": [-0.19999999999999998, 0.57424324324324316, -0.080945945945945938],

@@ -1,4 +1,4 @@
-{
+(import 'item-presentation.libsonnet').pack({
   models: [
     import 'gungen/barrel_ak_medium.model.json',
     import 'gungen/barrel_ar_large_long.model.json',
@@ -61,4 +61,4 @@
     import 'gungen/stock_tapered_medium.model.json',
     import 'gungen/tube_magazine.model.json',
   ],
-}
+})

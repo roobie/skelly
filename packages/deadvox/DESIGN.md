@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change shared item-instance presentation, fuel visibility or material wear
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -1598,11 +1599,30 @@ duplicate the can that owns it. See
 `packages/thing-authoring-tool/food-medical.libsonnet`, `atom`, and
 `src/content/base/items-food.libsonnet`, `beansGrams` and `soupGrams`.
 
-Use one item look derived from that instance's own state in every view. A
-firearm with its magazine removed must not appear loaded in a hand or pile; a
-fitted part keeps its own model. This makes the displayed item agree with the
-item the player actually owns. See `itemLook` in `src/render/itemLook.ts` and
-`heldLook` / `groundLook` in `src/render/models.ts`.
+Use one instance look and one state applier across world models, stills and the
+viewer, including each fitted part's own state. Otherwise inspection can claim
+an appearance the owned item does not have. See `src/render/itemLook.ts`,
+`itemLook`, and `src/render/itemStateLook.ts`, `applyItemStateLook`.
+
+Battery level stays text-only because hidden charge has no visible indicator.
+Fuel fill is visible only through authored clear geometry, never through an
+opaque vessel. Material-class wear distinguishes rust, fading and greying
+rather than treating every surface as the same substance. Content bands bound
+appearance variants and cold still renders without quantizing simulation state.
+See `src/core/lights.ts`, `supplyShare`, `src/content/base/item-presentation.libsonnet`,
+`decorate`, and `src/content/base/item-wear.jsonnet`, `classes`.
+
+Model material indices preserve coverage even for unnamed glTF materials. The
+export refresh owns asset metadata; validation rejects incomplete class coverage
+and nonexistent selected pieces or materials, so a new model cannot silently
+lose its presentation. Copies belong to the rendered instance, not the library;
+replacing a viewer model or painting a still must release them without disposing
+shared geometry. Recipe-owned geometry must stay in its recipe so refresh and
+export checks agree; hand-authored assets retain a separate preparation owner.
+See `packages/thing-authoring-tool/handhelds.libsonnet`, `carrier`,
+`tools/item-fuel-models.mjs`, `recipes`, `tools/item-model-metadata.mjs`, `metadata`,
+`src/core/itemPresentation.ts`, `modelPresentationAssetIssues`, and
+`src/render/itemStateLook.ts`, `disposeItemStateMaterials`.
 
 Model loading is bounded by content so an asset-heavy pack does not exhaust the
 browser's request capacity. A view that needs an unloaded model moves it ahead

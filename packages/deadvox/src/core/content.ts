@@ -20,6 +20,7 @@ import {
   rigidPocketScaleIssue,
   rolledFitIssue,
 } from './inventoryScale.ts';
+import { itemPresentationIssues } from './itemPresentation.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
@@ -2042,6 +2043,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  for (const issue of itemPresentationIssues(registry)) {
+    report(issue.section, issue.id, '.itemPresentation', issue.message);
+  }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
   for (const block of registry.blocks) {

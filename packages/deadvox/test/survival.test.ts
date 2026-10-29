@@ -32,6 +32,7 @@ const base = (file: string): ContentSource => {
 const { registry } = buildRegistry(
   [
     'ui.json',
+    'item-wear.json',
     'inventory.json',
     'sounds.json',
     'sounds-pump.json',

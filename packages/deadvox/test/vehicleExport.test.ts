@@ -11,7 +11,7 @@ const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
 // content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json'];
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
