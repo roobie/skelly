@@ -1,6 +1,7 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
+import { worldGravity } from '../src/core/gravity.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import {
@@ -12,13 +13,12 @@ import {
 } from '../src/core/itemThrow.ts';
 import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
-import { reachTuning } from '../src/core/reach.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
 
 const base = baseRegistry();
-const { throwGravityMetresPerSimSecondSquared: gravityMetresPerSimSecondSquared } = reachTuning(base);
+const gravityMetresPerSimSecondSquared = worldGravity(base);
 
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
@@ -26,6 +26,7 @@ const testRegistry = (weights: Record<string, number>): Registry =>
     items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight, size: [1, 1] }])),
     models: new Map(),
     inventory: base.inventory,
+    player: base.player,
   }) as unknown as Registry;
 const presentationInventory = (item: Item): Inventory => {
   const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
@@ -324,6 +325,30 @@ describe('held-item throws', () => {
 
     expect(throws.group.children.some((child) => child instanceof PointLight)).toBe(false);
     throws.dispose();
+  });
+
+  it('uses the shared content gravity for an item flight', () => {
+    const stronger = {
+      ...base,
+      player: new Map(
+        [...base.player].map(([id, player]) => [
+          id,
+          { ...player, gravityMetresPerSimSecondSquared: player.gravityMetresPerSimSecondSquared * 2 },
+        ]),
+      ),
+    };
+    const options = {
+      from: [0, 8, 0] as [number, number, number],
+      direction: [1, 0, 0] as [number, number, number],
+      distanceMetres: 4,
+      blockSize: 1,
+      minY: -8,
+      isSolid: () => false,
+    };
+
+    expect(flightForItem(testItem('rag'), stronger, options).points[1]![1]).toBeLessThan(
+      flightForItem(testItem('rag'), base, options).points[1]![1],
+    );
   });
 
   it('settles an elevated throw onto the first solid surface below instead of retaining release height', () => {

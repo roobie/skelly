@@ -623,8 +623,6 @@ export interface ZombieSystemOptions {
   isOpaque: SolidAt;
   blockSize: number;
   physics: PhysicsParams;
-  /** Take-off speed in metres per second; the system divides by `blockSize` itself. */
-  jumpSpeed: number;
   tuning: SenseDef;
   player: () => PlayerSense;
   dayPhase: () => DayPhaseState;
@@ -3133,11 +3131,11 @@ export class ZombieSystem {
         direction,
         isSolid,
         physics: this.options.physics,
-        jumpSpeed: this.options.jumpSpeed,
+        jumpSpeed: zombie.type.jumpMetresPerSimSecond,
         blockSize,
       });
     if (scratch.jumpAttempted) {
-      zombie.body.vel[1] = this.options.jumpSpeed / blockSize;
+      zombie.body.vel[1] = zombie.type.jumpMetresPerSimSecond / blockSize;
     }
     scratch.beforeStep = copy(scratch.pos);
     this.settleTurn(zombie);
@@ -3424,7 +3422,7 @@ export class ZombieSystem {
       const release = { source: scratch.id, origin, aim, moves: spit.moves };
       const move = pickZombieMove(spit.moves, zombie.spitRng.next());
       const speed = spit.globMetresPerSimSecond / blockSize;
-      const gravity = spit.globGravityMetresPerSimSecondSquared / blockSize;
+      const { gravity } = this.options.physics;
       const flightSeconds = Math.hypot(...toPlayer) / speed;
       this.globs.push({
         type,
@@ -3664,7 +3662,7 @@ export class ZombieSystem {
       const impact = advanceAcidGlob<GlobContact>(
         state,
         dt,
-        type.acidSpit!.globGravityMetresPerSimSecondSquared / this.options.blockSize,
+        this.options.physics.gravity,
         (origin, direction, distance) =>
           this.acidGlobContact({ origin, direction, distance, source: state.source, player, poseCache }),
       );

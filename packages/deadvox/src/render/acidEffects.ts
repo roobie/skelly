@@ -9,8 +9,6 @@ import type { DrawnAnchors } from './mobActors.ts';
 
 type Appearance = NonNullable<ZombieDef['acidSpit']>['presentation'];
 
-const GRAVITY_METRES_PER_SECOND_SQUARED = 9.81;
-
 /** A falling acid droplet; it vanishes once it drops below the floor its body stood on. Metres. */
 interface Droplet {
   readonly mesh: Mesh<SphereGeometry, MeshBasicMaterial>;
@@ -41,9 +39,11 @@ export class AcidEffects {
   private readonly rng: Rng;
 
   private readonly blockSize: number;
+  private readonly gravityMetresPerSimSecondSquared: number;
 
-  constructor(blockSize: number, seed = 1) {
+  constructor(blockSize: number, gravityMetresPerSimSecondSquared: number, seed = 1) {
     this.blockSize = blockSize;
+    this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
     this.rng = Rng.stream(seed, 'acid-effects');
   }
 
@@ -108,7 +108,7 @@ export class AcidEffects {
   private fall(dt: number): void {
     for (let index = this.droplets.length - 1; index >= 0; index--) {
       const { mesh, velocity, floor } = this.droplets[index]!;
-      velocity[1] -= GRAVITY_METRES_PER_SECOND_SQUARED * dt;
+      velocity[1] -= this.gravityMetresPerSimSecondSquared * dt;
       mesh.position.x += velocity[0] * dt;
       mesh.position.y += velocity[1] * dt;
       mesh.position.z += velocity[2] * dt;

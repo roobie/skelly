@@ -137,7 +137,7 @@
       "knockoutSimSeconds": 20,
       "landing": {
         "cause": "a fall",
-        "damagePerSquaredSpeed": 0.129,
+        "damagePerSquaredSpeed": 0.36819600000000002,
         "damageSpread": {
           "max": 2,
           "min": 0.20000000000000001
@@ -153,7 +153,7 @@
             "weight": 1
           }
         ],
-        "safeSpeedMetresPerSimSecond": 11.5
+        "safeSpeedMetresPerSimSecond": 6.8070000000000004
       },
       "linger": {
         "acid": {

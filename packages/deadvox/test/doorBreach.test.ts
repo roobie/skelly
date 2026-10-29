@@ -14,7 +14,7 @@ import type { PlayerSense } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
@@ -96,7 +96,6 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
     bashObstacle: (ahead, bash) => {

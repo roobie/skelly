@@ -11,6 +11,7 @@ import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../s
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { WORLD_GRAVITY } from './playerFixture.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const fixtureFigure = zombieFigure({ model: 'shambler' }, 17).realized;
@@ -27,7 +28,7 @@ describe('render ragdoll', () => {
       const indices = groups.flatMap((group) => group.indices);
       expect(indices.length).toBe(figure.body.bones.length);
       expect(new Set(indices).size).toBe(indices.length);
-      const world = new RagdollWorld();
+      const world = new RagdollWorld(WORLD_GRAVITY);
       try {
         const corpse = world.spawn({
           realized: figure,
@@ -73,7 +74,7 @@ describe('render ragdoll', () => {
     const excluded = new Set(
       [...severedBoneSet(figure.body.bones, cuts)].map((id) => figure.body.bones.findIndex((bone) => bone.id === id)),
     );
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(WORLD_GRAVITY);
     try {
       const corpse = world.spawn({
         realized: figure,
@@ -131,7 +132,7 @@ describe('render ragdoll', () => {
   });
 
   it('keeps a downed brute trunk within handling reach and removes its tether with the body', async () => {
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(WORLD_GRAVITY);
     try {
       const reach = reachTuning(baseRegistry()).reachMetres;
       const corpse = world.spawn({
@@ -158,7 +159,7 @@ describe('render ragdoll', () => {
   });
 
   it('launches along the world-space hit direction regardless of body yaw', async () => {
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(WORLD_GRAVITY);
     try {
       const corpse = world.spawn({
         realized: fixtureFigure,
@@ -193,7 +194,7 @@ describe('render ragdoll', () => {
   });
 
   it('keeps seed spread with full hit-direction weight', async () => {
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(WORLD_GRAVITY);
     try {
       const spawn = (seed: number) =>
         world.spawn({
@@ -221,7 +222,7 @@ describe('render ragdoll', () => {
   });
 
   it('refreshes corpse terrain after a launch beyond its initial footprint', async () => {
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(WORLD_GRAVITY);
     try {
       const corpse = world.spawn({
         realized: fixtureFigure,
@@ -251,7 +252,7 @@ describe('render ragdoll', () => {
 
   it('shares ground cells until the last overlapping owner is removed, including debris', async () => {
     const figure = fixtureFigure;
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(WORLD_GRAVITY);
     try {
       const spawn = () =>
         world.spawn({ realized: figure, pose, position: [0, 0, 0], yaw: 0, direction: -1, seed: 17, ground });
@@ -308,7 +309,7 @@ describe('render ragdoll', () => {
   ])(
     'keeps debris above ground when it $label and releases its travelled cells',
     async ({ center, velocity, travels }) => {
-      const world = new RagdollWorld();
+      const world = new RagdollWorld(WORLD_GRAVITY);
       try {
         const body: RigidBody = {
           mass: 1,
@@ -347,8 +348,8 @@ describe('render ragdoll', () => {
 
   it('repeats the same seeded fall in independent worlds with identical step sequences', async () => {
     const figure = fixtureFigure;
-    const a = new RagdollWorld();
-    const b = new RagdollWorld();
+    const a = new RagdollWorld(WORLD_GRAVITY);
+    const b = new RagdollWorld(WORLD_GRAVITY);
     try {
       const first = a.spawn({ realized: figure, pose, position: [0, 0, 0], yaw: 0, direction: -1, seed: 17, ground });
       const second = b.spawn({ realized: figure, pose, position: [0, 0, 0], yaw: 0, direction: -1, seed: 17, ground });

@@ -18,11 +18,8 @@ export const playerTuning = (registry: Registry): PlayerDef => {
   return tuning;
 };
 
-/** m/s². Heavier than Earth's; it makes jumps feel snappy. */
-const GRAVITY = 28;
-
 export const physicsFor = (scale: Scale, tuning: PlayerDef): PhysicsParams => ({
-  gravity: GRAVITY / scale.blockSize,
+  gravity: tuning.gravityMetresPerSimSecondSquared / scale.blockSize,
   stepHeight: tuning.stepHeight / scale.blockSize,
 });
 

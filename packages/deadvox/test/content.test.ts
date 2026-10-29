@@ -93,6 +93,14 @@ describe('content-owned item and world policies', () => {
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(false);
   });
 
+  it('requires a positive finite takeoff speed on each zombie type', () => {
+    const zombie = [...baseRegistry.zombies.values()][0]!;
+    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(true);
+    for (const jumpMetresPerSimSecond of [undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(safeParse(ContentFileSchema, { zombies: [{ ...zombie, jumpMetresPerSimSecond }] }).success).toBe(false);
+    }
+  });
+
   it('validates severed-item references and complete region policy', () => {
     const zombie = { ...structuredClone(baseRegistry.zombies.get('shambler')!), loot: undefined };
     zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
@@ -2605,6 +2613,7 @@ describe('content references', () => {
             figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
+            jumpMetresPerSimSecond: 3,
             strength: 1,
             idleSound: baseRegistry.zombies.get('shambler')!.idleSound,
             sounds: zombieSounds,

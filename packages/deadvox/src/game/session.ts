@@ -1409,7 +1409,6 @@ export const createSession = (options: SessionOptions) => {
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
     physics,
-    jumpSpeed: Player.jump,
     tuning: senseTuning,
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),

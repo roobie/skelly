@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import player from '../../deadvox/src/content/base/player.json' with { type: 'json' };
 import { RagdollWorld, ragdollContent } from '../../deadvox/src/render/ragdoll.ts';
 import { generateValid } from '../src/core/generate.ts';
 import { dogPose } from '../src/mob/dog.ts';
@@ -30,7 +31,7 @@ describe('viewer ragdoll transforms', () => {
               0,
             );
       const actor = buildActor(realized, genome.voxelSize);
-      const world = new RagdollWorld();
+      const world = new RagdollWorld(player.player[0]!.gravityMetresPerSimSecondSquared);
       try {
         actor.applyPose(pose);
         const before = actor.flesh.children[0]!.matrix.clone();

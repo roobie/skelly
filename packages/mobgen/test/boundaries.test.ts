@@ -29,14 +29,15 @@ describe('import boundaries', () => {
     expect(files.length).toBeGreaterThan(coreFiles.length);
   });
 
-  it('keeps mobgen standalone except the viewer and its tests sharing the game ragdoll owner', () => {
+  it('keeps mobgen standalone except the viewer and its tests sharing game ragdoll physics and gravity', () => {
     for (const file of files) {
       for (const spec of specifiers(file)) {
         if (spec.startsWith('.')) {
           const target = resolve(file, '..', spec);
           const path = relative(ROOT, file);
           const sharedRagdoll =
-            target === resolve(ROOT, '../deadvox/src/render/ragdoll.ts') &&
+            (target === resolve(ROOT, '../deadvox/src/render/ragdoll.ts') ||
+              target === resolve(ROOT, '../deadvox/src/content/base/player.json')) &&
             (path.startsWith('src/viewer/') || path.startsWith('test/'));
           expect(relative(ROOT, target).startsWith('..') && !sharedRagdoll, `${relative(REPO, file)} -> ${spec}`).toBe(
             false,

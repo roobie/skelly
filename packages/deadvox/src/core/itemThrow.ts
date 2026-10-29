@@ -1,6 +1,7 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
+import { worldGravity } from './gravity.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { defOf, type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
@@ -159,6 +160,6 @@ export const flightForItem = (
   steppedItemFlight({
     ...options,
     drag: dragPerMetre(item, registry, weightOf(registry, item) / 1000),
-    gravityMetresPerSimSecondSquared: reachTuning(registry).throwGravityMetresPerSimSecondSquared,
+    gravityMetresPerSimSecondSquared: worldGravity(registry),
     flightSimSeconds: reachTuning(registry).throwFlightSimSeconds,
   });
