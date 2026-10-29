@@ -68,7 +68,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'inventory[].search.maxSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].throwFlightSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
-    path: 'inventory[].throwGravityMetresPerSimSecondSquared',
+    path: 'player[].gravityMetresPerSimSecondSquared',
     clock: 'Sim',
     unit: 'PerSecondSquared',
     dimension: 'acceleration',
@@ -299,12 +299,6 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.acidSpit.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.globMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
-  {
-    path: 'zombies.acidSpit.globGravityMetresPerSimSecondSquared',
-    clock: 'Sim',
-    unit: 'PerSecondSquared',
-    dimension: 'acceleration',
-  },
   { path: 'zombies.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidBody.drips.perRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
   {

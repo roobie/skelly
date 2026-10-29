@@ -336,8 +336,6 @@ const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Downward acceleration on a thrown item. */
-  throwGravityMetresPerSimSecondSquared: NonNegative,
   /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
@@ -3371,7 +3369,6 @@ const AcidSpitSchema = pipe(
     cancelPenaltyFraction: Fraction,
     spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
     globMetresPerSimSecond: SimRate,
-    globGravityMetresPerSimSecondSquared: SimAcceleration,
     presentation: strictObject({
       color: Color,
       radiusMetres: Positive,
@@ -4116,6 +4113,8 @@ const PlayerSchema = strictObject({
   jog: SimRate,
   sprint: SimRate,
   jump: SimRate,
+  /** Downward acceleration shared by every falling body and effect. */
+  gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),

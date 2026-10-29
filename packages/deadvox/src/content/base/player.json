@@ -20,6 +20,7 @@
         "speedMetresPerSimSecond": 1
       },
       "eye": 1.6200000000000001,
+      "gravityMetresPerSimSecondSquared": 9.8100000000000005,
       "halfWidth": 0.29999999999999999,
       "height": 1.8,
       "id": "player",

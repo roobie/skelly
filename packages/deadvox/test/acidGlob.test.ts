@@ -6,7 +6,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFor
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
-import { simAcceleration, simRate, simSeconds } from '../src/core/time.ts';
+import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import type { AcidGroundImpact } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -24,7 +24,6 @@ const spitter: ZombieDef = {
     rangeBand: { nearMetres: 1, farMetres: 20 },
     spreadDegrees: 0,
     globMetresPerSimSecond: simRate(8),
-    globGravityMetresPerSimSecondSquared: simAcceleration(4),
     moves: [
       {
         id: 'fixture_burn',
@@ -190,11 +189,11 @@ describe('acid glob', () => {
     (type) => {
       const h = runtime();
       h.release();
-      const id = h.session.zombies.add(type, [6, 1, 0], [-1, 0, 0]);
+      const id = h.session.zombies.add(type, [2, 1, 0], [-1, 0, 0]);
       const zombie = h.session.zombieStore.get(id)!;
       const before = { ...zombie.regions };
       h.land();
-      expect(h.hits).not.toHaveBeenCalled();
+      expect(h.hits.mock.calls.filter(([, , , hit]) => hit.kind === 'acid')).toHaveLength(0);
       const lost = Object.entries(before).reduce((sum, [region, health]) => sum + health - zombie.regions[region]!, 0);
       if (type.acidResistance === 1) {
         expect(lost).toBe(0);

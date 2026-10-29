@@ -1,9 +1,9 @@
 import { Box3, Group, Mesh, type Object3D, Quaternion, Vector3 } from 'three';
 import type { ModelDef } from '../core/content.ts';
+import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 
 // Presentation only: how many shed levers can fly at once.
 const LEVERS = 4;
-const GRAVITY_MPS2 = 9.81;
 const UP = new Vector3(0, 1, 0);
 
 type Lever = NonNullable<ModelDef['lever']>;
@@ -25,14 +25,20 @@ export class LeverProps {
   private next = 0;
   private readonly pending: { readonly uid: number; readonly lever: Lever }[] = [];
   private readonly blockSize: number;
+  private readonly gravityMetresPerSimSecondSquared: number;
   private readonly isSolid: (x: number, y: number, z: number) => boolean;
   private readonly centre = new Vector3();
   private readonly from = new Vector3();
   private readonly turn = new Quaternion();
 
-  constructor(blockSize: number, isSolid: (x: number, y: number, z: number) => boolean) {
+  constructor(
+    blockSize: number,
+    gravityOrSolid: number | ((x: number, y: number, z: number) => boolean),
+    isSolid?: (x: number, y: number, z: number) => boolean,
+  ) {
     this.blockSize = blockSize;
-    this.isSolid = isSolid;
+    this.gravityMetresPerSimSecondSquared = typeof gravityOrSolid === 'number' ? gravityOrSolid : DEFAULT_WORLD_GRAVITY;
+    this.isSolid = typeof gravityOrSolid === 'function' ? gravityOrSolid : isSolid!;
     this.props = Array.from({ length: LEVERS }, (): Prop => {
       const holder = new Group();
       holder.visible = false;
@@ -134,7 +140,7 @@ export class LeverProps {
     const { holder, velocity } = prop;
     const { position } = holder;
     const s = this.blockSize;
-    velocity.y -= GRAVITY_MPS2 * dt;
+    velocity.y -= this.gravityMetresPerSimSecondSquared * dt;
     holder.quaternion.premultiply(this.turn.setFromAxisAngle(prop.axis, prop.spinRadiansPerRealSecond * dt));
     for (const axis of [0, 1, 2] as const) {
       const speed = velocity.getComponent(axis);

@@ -3424,7 +3424,7 @@ export class ZombieSystem {
       const release = { source: scratch.id, origin, aim, moves: spit.moves };
       const move = pickZombieMove(spit.moves, zombie.spitRng.next());
       const speed = spit.globMetresPerSimSecond / blockSize;
-      const gravity = spit.globGravityMetresPerSimSecondSquared / blockSize;
+      const { gravity } = this.options.physics;
       const flightSeconds = Math.hypot(...toPlayer) / speed;
       this.globs.push({
         type,
@@ -3664,7 +3664,7 @@ export class ZombieSystem {
       const impact = advanceAcidGlob<GlobContact>(
         state,
         dt,
-        type.acidSpit!.globGravityMetresPerSimSecondSquared / this.options.blockSize,
+        this.options.physics.gravity,
         (origin, direction, distance) =>
           this.acidGlobContact({ origin, direction, distance, source: state.source, player, poseCache }),
       );

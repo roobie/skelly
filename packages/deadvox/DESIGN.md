@@ -1903,12 +1903,12 @@ Speed squared represents impact energy; removing the safe-speed energy gives
 a continuous onset without punishing an ordinary jump. One seeded damage
 multiplier per fall gives a wide range of outcomes before distributing the hit
 across regions: a tall roof remains a gamble instead of a deterministic death
-boundary. The shared roll keeps both legs part of the same impact. Gravity is
-deliberately heavier than Earth's, so calibration uses in-game speeds rather
-than real-world free-fall speeds. Content owns the threshold, scale and spread
-so balance can change without changing the injury mechanism. See
-`src/content/base/body.jsonnet`, `landing`, `src/core/sim.ts`, `Simulation.land`,
-and `src/game/player.ts`, `physicsFor`.
+boundary. The shared roll keeps both legs part of the same impact. One
+content-owned real-world gravity governs bodies and falling presentation, so
+every fall reads as part of the same world. Content owns the threshold, scale
+and spread so balance can change without changing the injury mechanism. See
+`src/content/base/player.jsonnet`, `player`, `src/game/player.ts`, `physicsFor`,
+and `src/core/sim.ts`, `Simulation.land`.
 
 ### Bleeding
 

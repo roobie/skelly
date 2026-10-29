@@ -427,6 +427,7 @@ export interface MobActorMeshesOptions {
   readonly look: LookDefaults['mobActors'];
   readonly maxCorpses: number;
   readonly handlingReachMetres: number;
+  readonly gravityMetresPerSimSecondSquared?: number;
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
@@ -698,7 +699,7 @@ export class MobActorMeshes implements ZombieRenderer {
       this.group,
       {
         physics: () => {
-          this.ragdolls ??= new RagdollWorld();
+          this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
           return this.ragdolls;
         },
         ground: () => this.rigidWorld(),
@@ -1483,7 +1484,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     const variant = this.variants[corpse.variantIndex]!;
     if (ragdollContent.models.includes(variant.model)) {
-      this.ragdolls ??= new RagdollWorld();
+      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       corpse.ragdoll = this.ragdolls.spawn({
         realized: variant.realized,
         model: variant.model,
@@ -1828,7 +1829,7 @@ export class MobActorMeshes implements ZombieRenderer {
     variant.crowdSlotAttr.setX(instanceIndex, globalRow);
     variant.crowdSlotAttr.needsUpdate = true;
     variant.mesh.count = variant.liveIds.length;
-    this.ragdolls ??= new RagdollWorld();
+    this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
     this.debris.set(key, {
       physics: this.ragdolls.spawnRigid(body, this.rigidWorld()),
       variantIndex: state.variantIndex,
@@ -2083,7 +2084,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private beginCrawlFall(state: ZombieRenderState, variant: Variant, zombie: Zombie): void {
     const crawling = zombieCrawls(zombie);
     if (crawling && !state.crawling && state.lastPose && state.lastPlacement && !this.ragdolls?.failed) {
-      this.ragdolls ??= new RagdollWorld();
+      this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       const placement = state.lastPlacement;
       state.crawlFall = {
         elapsedRealSeconds: 0,

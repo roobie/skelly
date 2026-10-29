@@ -17,6 +17,7 @@ import {
 } from 'three';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { DEFAULT_WORLD_GRAVITY } from '../core/defaultGravity.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
@@ -26,7 +27,6 @@ import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePositio
 export type GoreTuning = GraphicsTuningDef['gore'];
 
 // Presentation tuning, not gameplay.
-const GRAVITY_MPS2 = 9.81;
 const DROPLET_MAX_AGE_S = 3;
 const SPRAY_DROPLETS_MIN = 2;
 const SPRAY_DROPLETS_MAX = 14;
@@ -146,6 +146,7 @@ const patchSplatOpacity = (material: MeshLambertMaterial): void => {
 export class Gore {
   readonly group = new Group();
   private readonly blockSize: number;
+  private readonly gravityMetresPerSimSecondSquared: number;
   private readonly tuning: GoreTuning;
   private readonly rng: Rng;
   private readonly droplets: Droplet[];
@@ -174,10 +175,16 @@ export class Gore {
   private dripperCount = 0;
   private updates = 0;
 
-  constructor(blockSize: number, tuning: GoreTuning, seed = 1) {
+  constructor(blockSize: number, gravityOrTuning: number | GoreTuning, tuningOrSeed?: GoreTuning | number, seed = 1) {
     this.blockSize = blockSize;
-    this.tuning = tuning;
-    this.rng = Rng.stream(seed, 'gore');
+    this.gravityMetresPerSimSecondSquared =
+      typeof gravityOrTuning === 'number' ? gravityOrTuning : DEFAULT_WORLD_GRAVITY;
+    this.tuning = (typeof gravityOrTuning === 'number' ? tuningOrSeed : gravityOrTuning) as GoreTuning;
+    const { tuning } = this;
+    this.rng = Rng.stream(
+      typeof gravityOrTuning === 'number' ? seed : ((tuningOrSeed as number | undefined) ?? 1),
+      'gore',
+    );
     this.droplets = Array.from({ length: tuning.dropletCap }, () => ({
       active: false,
       position: new Vector3(),
@@ -456,7 +463,7 @@ export class Gore {
   private advance(droplet: Droplet, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
     const { position, velocity } = droplet;
     const s = this.blockSize;
-    velocity.y -= GRAVITY_MPS2 * dt;
+    velocity.y -= this.gravityMetresPerSimSecondSquared * dt;
     for (const axis of AXES) {
       const speed = velocity.getComponent(axis);
       const next = position.getComponent(axis) + speed * dt;

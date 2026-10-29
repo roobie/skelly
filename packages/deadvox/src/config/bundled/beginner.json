@@ -2168,7 +2168,6 @@
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
         "cooldownSimSeconds": 5,
-        "globGravityMetresPerSimSecondSquared": 4,
         "globMetresPerSimSecond": 14,
         "moves": [
           {

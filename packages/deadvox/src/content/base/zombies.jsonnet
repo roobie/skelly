@@ -696,7 +696,6 @@ local content = {
         "cancelPenaltyFraction": 0.5,
         "spreadDegrees": 4,
         "globMetresPerSimSecond": 14,
-        "globGravityMetresPerSimSecondSquared": 4,
         "presentation": {
           "color": "#8bff32",
           "radiusMetres": 0.08,

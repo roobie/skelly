@@ -8,6 +8,7 @@
     jog: 4.3,
     sprint: 6.5,
     jump: 7.9,
+    gravityMetresPerSimSecondSquared: 9.81,
     reach: 4,
     stepHeight: 0.5,
     movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
