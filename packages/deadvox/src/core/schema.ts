@@ -1549,7 +1549,7 @@ const ItemSchema = strictObject({
   ),
   /** An authored yield for a finished item; never inferred from recipe alternatives. */
   disassembly: optional(DisassemblySchema),
-  /** Fixed outputs for found items with no recipe. */
+  /** Destructive recovery outputs, independent of recipes and disassembly support. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),

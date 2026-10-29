@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -1174,6 +1175,15 @@ A story item is `notLoot`, and in the two playtest scenarios every key is story.
 Usage tags and tiers decide which items a source admits, so what a place holds matches
 what it is. See `src/core/loot.ts`, `economyEligible`.
 
+Military-only admission protects progression without inferring it from calibre or
+furniture type. Shared supplies remain craftable even when military sources carry
+them; ordinary crafting, destructive salvage, non-destructive disassembly and
+unpacking must not manufacture Military-only supplies. The recovery verbs retain
+their shared meaning under `DESIGN.md`, "Crafting"; changing a verb cannot open a
+supply bypass. Fixed stock and installed descendants must match their source
+context. See `src/core/content.ts`, `checkMilitaryLoot`, and
+`src/core/magazine.ts`, `militaryLootItems`.
+
 Hunting supplies belong at hunting places, rather than wherever a common gun can roll.
 The rifle and .308 ammunition therefore narrow their usage without changing their tiers;
 the hunting scope is Tier2 so a cabin does not give away the roof reward. Cabins and roofs
@@ -1658,10 +1668,22 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
 
 ## Crafting
 
-Disassembly uses an authored yield rather than reversing recipes: several
-recipes may produce the same item, so reversing one would make salvage depend
-on an arbitrary production route. See `src/core/disassembly.ts`,
-`planDisassembly`, and `docs/crafting.md`.
+Salvage destroys the source assembly to recover materials or components;
+disassembly undoes connections to recover intact parts without destroying or
+losing them. These meanings apply to items, furniture and vehicles alike: the
+chosen tool must not silently decide which thing survives. Supporting one
+operation does not require supporting the other, and a refused disassembly must
+never become salvage. See `src/core/disassembly.ts`, `selectRecoveryOperation`
+and `RecoverySelection`.
+
+Recovery capabilities are authored independently of recipes: several recipes may
+produce the same item, and manufacture alone proves neither intact composition
+nor a playable reverse route. Capability selection is separate from execution so
+an unaudited yield table cannot promise intact recovery or a recovery-quality
+policy. The item yield/work projection is `src/core/disassembly.ts`,
+`planDisassembly`; selecting a capability does not authorize that projection to
+replace retained parts with generated copies. See `src/core/content.ts`,
+`checkDisassembly` and `checkRecipes`, and `docs/crafting.md`.
 
 Recipe knowledge may come from a book, a skill level, either, or the starting
 set. A book shortcuts the skill grind; a skilled character does not need the
@@ -2272,7 +2294,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
-- **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
+- **Military loot (3.2):** Progression admission has one owner under `DESIGN.md`, "Loot", so recovery cannot bypass source restrictions.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
   supported landing cells, including spill destinations. If none is available,
   discard the case rather than jam the firearm for a cosmetic item. When an
@@ -2980,8 +3002,11 @@ cannot be authored, blended or added to without a code change per animation.
 ## Base building and electricity
 
 - **Construction is crafting that places blocks and block entities:** walls,
-  doors, barricades, furniture, workbenches, machines. Deconstruction is
-  disassembly.
+  doors, barricades, furniture, workbenches, machines. Non-destructive
+  deconstruction is disassembly; destructive recovery is salvage under
+  `DESIGN.md`, "Crafting". Deliberate work must respect safe removal rather than
+  bypass support through destruction cascades. See `src/core/furnitureMove.ts`,
+  `removalRefusal`.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
 - **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
 - **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `src/core/options.ts`, `heldDoorBar`, and `src/core/schema.ts`, `ItemSchema`.
@@ -3089,10 +3114,13 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
    fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
    Engine noise is the source, with the chassis/hull damping it. See `measure` and
    `noiseRadius` in `src/vehicles/model.ts`.
-6. **Parts are items.** Salvage and refitting retain condition, appearance, resources
-   and contents, rather than copying them into a second vehicle item universe. Parts
-   are unhanded to keep salvage reusable across sides, without closing later handed
-   content. Shared identity starts at `src/vehicles/catalogue.ts`, `CATALOGUE`.
+6. **Parts are items.** Intact removal is disassembly, not salvage, under
+   `DESIGN.md`, "Crafting". Disassembly and refitting retain condition, appearance,
+   resources and contents: changing connection or location must not mint a second
+   identity or erase earned state. Parts are unhanded to keep recovered parts
+   reusable across sides, without closing later handed content. See
+   `src/core/inventory.ts`, `Inventory.vehicleTransfer`, and
+   `src/core/vehicleWork.ts`, `vehicleWorkHooks`.
    Heavy recovery uses a heavy-part-hoist vehicle built and driven through the vehicle
    systems, not an equipment exception or an engine carried in a pocket.
 7. **Data-driven and moddable.** VAT assembles things whose shapes the thing tool
@@ -3101,7 +3129,7 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
    authority. See `packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
    `things/WORK.md`, "Decisions". Game capabilities remain schema-validated content
    so a mod adds compatible parts without code.
-8. **The grain is a useful salvage action.** Factory welded structure is one
+8. **The grain is a useful disassembly action.** Factory welded structure is one
    player-facing assembly with component fittings retained for damage and shape.
    Factory structures plus compatible parts and capability-matched add-ons come
    before scratch-building, without reducing mounting to fixed sockets. Keep the grain
@@ -3142,7 +3170,7 @@ Creation and drag sizing follow #1124: a rectangle bounded by the free region is
 complete form of choosing a size, leaving a suggested size additive. Rectangles match
 inventory pockets and remain valid if shaped spaces arrive; an odd floor can take
 several spaces. Growing a space to walls and roof would exclude open beds. Retaining
-its chosen size lets salvage and refitting preserve the same item. Existing load
+its chosen size lets disassembly and refitting preserve the same item. Existing load
 floors bound this work; building floors and walls from nothing belongs to #322.
 
 Cargo is a datum so a space that fills a drawn bed fits at any vehicle grain, without

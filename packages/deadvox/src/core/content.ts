@@ -421,9 +421,6 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
   if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
     report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
   }
-  if (disassembly && item.salvage) {
-    report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
-  }
 };
 
 const checkBook = (item: ItemDef, registry: Registry, report: Report) => {
@@ -1700,20 +1697,6 @@ const checkRecipes = (registry: Registry, report: Report) => {
   );
   for (const recipe of registry.recipes.values()) {
     checkRecipe({ registry, recipe, qualities, workstations, report });
-  }
-  for (const id of new Set(
-    [...registry.recipes.values()].filter((recipe) => recipe.kind !== 'repair').map((recipe) => recipe.result.item),
-  )) {
-    const item = registry.items.get(id);
-    if (!item) {
-      continue;
-    }
-    if (!item.disassembly) {
-      report('items', id, '.disassembly', 'recipe result needs an explicit disassembly yield');
-    }
-    if (item.salvage) {
-      report('items', id, '.salvage', 'recipe results use a disassembly yield, not a salvage list');
-    }
   }
 };
 
