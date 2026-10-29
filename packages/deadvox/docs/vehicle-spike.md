@@ -94,7 +94,7 @@ The first loop builds from factory structures, uses welded assemblies as player-
 
 A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so salvage, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
 
-Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`. They stay bare words until slice item 4, which decides what numbers each needs; the rows are reshaped then rather than guessed now. The exception is lifting: a lift rating is required for a crane to mean anything, so a lifting part carries its rated load.
+Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. Each capability carries only the numbers the game code that reads it needs, added when that reader lands. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`.
 
 Driven and steered belong to the part type, not the fitting. Converting a vehicle's drive then means swapping a part, which is also a gameplay hook: finding a driven axle.
 
