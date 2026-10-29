@@ -119,7 +119,7 @@ export class Skylight {
     this.recordedTerrain = true;
   }
 
-  private inFlight = false;
+  private inFlight = 0;
   private metadataDirty = true;
   private atlasDirty = false;
   readonly stats = { requested: 0, completed: 0, accepted: 0, discarded: 0, volumes: 0, roofFree: 0 };
@@ -129,10 +129,24 @@ export class Skylight {
 
   private readonly blockSize: number;
   private readonly viewRadiusM: number;
+  private readonly buildRadiusM: number;
   private readonly unbuiltCap: number;
+  private readonly maxJobs: number;
   constructor(
     sky: SkyFields,
-    { blockSize, viewRadiusM, unbuiltCap }: { blockSize: number; viewRadiusM: number; unbuiltCap: number },
+    {
+      blockSize,
+      viewRadiusM,
+      unbuiltCap,
+      skyJobsInFlight,
+      buildRadiusM,
+    }: {
+      blockSize: number;
+      viewRadiusM: number;
+      unbuiltCap: number;
+      skyJobsInFlight: number;
+      buildRadiusM: number;
+    },
     runtime: SkyRuntime,
   ) {
     this.sky = sky;
@@ -140,7 +154,9 @@ export class Skylight {
     this.shown = this.fields.map(() => undefined);
     this.blockSize = blockSize;
     this.viewRadiusM = viewRadiusM;
+    this.buildRadiusM = buildRadiusM;
     this.unbuiltCap = unbuiltCap;
+    this.maxJobs = skyJobsInFlight;
     this.jobs = runtime;
     this.clock = runtime.clock ?? (() => performance.now());
     let heightOffset = 0;
@@ -239,32 +255,55 @@ export class Skylight {
     };
   }
 
-  /** Asks the cache for the nearest demanded field it lacks, one off-thread build at a time. */
-  private prepare(position: Vec3): void {
-    const index = this.demanded(position).find((field) => !(this.sky.current(field) || this.sky.submitted(field)));
-    if (index === undefined) {
-      return;
+  /** Loaded fields across the preloaded disc, closest to the reveal edge first. */
+  prepare(position: Vec3): void {
+    const revealRadius = this.viewRadiusM / this.blockSize;
+    const candidates = this.fields
+      .map(({ bounds }, index) => ({
+        index,
+        distance: [0, 2].reduce(
+          (sum, axis) =>
+            sum + Math.max(bounds.min[axis]! - position[axis]!, 0, position[axis]! - bounds.max[axis]!) ** 2,
+          0,
+        ),
+      }))
+      .filter(({ distance }) => distance <= (this.buildRadiusM / this.blockSize) ** 2)
+      .sort(
+        (a, b) =>
+          Math.abs(Math.sqrt(a.distance) - revealRadius) - Math.abs(Math.sqrt(b.distance) - revealRadius) ||
+          a.index - b.index,
+      );
+    for (const { index } of candidates) {
+      if (this.inFlight >= this.maxJobs) {
+        break;
+      }
+      if (this.sky.current(index) || this.sky.submitted(index) || !this.sky.loaded(index)) {
+        continue;
+      }
+      if (!this.request(index)) {
+        break;
+      }
     }
+  }
+
+  private request(index: number): boolean {
     const start = this.clock();
-    const sent = this.sky.request(
-      index,
-      (input, receive) => !this.inFlight && this.jobs.submit(input, receive),
-      ({ accepted, result, workerRealMs }) => {
-        this.inFlight = false;
-        this.stats.completed += 1;
-        if (!accepted) {
-          this.stats.discarded += 1;
-        } else if (result.complete) {
-          this.stats.accepted += 1;
-          this.stats[result.volume ? 'volumes' : 'roofFree'] += 1;
-        }
-        this.onJob?.(workerRealMs, this.clock() - start);
-      },
-    );
+    const sent = this.sky.request(index, this.jobs.submit, ({ accepted, result, workerRealMs }) => {
+      this.inFlight -= 1;
+      this.stats.completed += 1;
+      if (!accepted) {
+        this.stats.discarded += 1;
+      } else if (result.complete) {
+        this.stats.accepted += 1;
+        this.stats[result.volume ? 'volumes' : 'roofFree'] += 1;
+      }
+      this.onJob?.(workerRealMs, this.clock() - start);
+    });
     if (sent) {
-      this.inFlight = true;
+      this.inFlight += 1;
       this.stats.requested += 1;
     }
+    return sent;
   }
   update(scene: Scene, position: Vec3): void {
     const start = this.clock();

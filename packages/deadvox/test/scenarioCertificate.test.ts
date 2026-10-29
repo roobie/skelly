@@ -31,6 +31,7 @@ import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { cyclicSite, traverseScenario } from './fixtures/scenarioCertificate.ts';
+import { sweepGroup } from './sweeps.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()].find((scenario) => scenario.composition)!;
@@ -237,28 +238,32 @@ describe('final composed body-route certificate', () => {
     expect(issue).toBeUndefined();
   });
 
-  it.each(base.composition!.seals.map((_, index) => index))(
-    'rejects missing seal %i keycard instead of admitting its bulkheads',
-    (index) => {
-      const site = siteOf();
-      const seal = site.plan.composition!.seals[index]!;
-      const atKey = (at: Readonly<Vec3>) => at.every((value, axis) => value === seal.key[axis]);
-      if (seal.held) {
-        const original = site.furnitureIn.bind(site);
-        vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
-          original(cx, cz).map((spawn) => (atKey(spawn.spec.pos) ? { ...spawn, loot: [], surfaceLoot: [] } : spawn)),
+  sweepGroup('each seal keycard source', () => {
+    it.each(base.composition!.seals.map((_, index) => index))(
+      'rejects missing seal %i keycard instead of admitting its bulkheads',
+      (index) => {
+        // Later seals do not contribute to whether this seal admits its matching card.
+        const seals = base.composition!.seals.slice(0, index + 1);
+        const site = siteOf({ ...base, composition: { ...base.composition!, seals } });
+        const seal = site.plan.composition!.seals[index]!;
+        const atKey = (at: Readonly<Vec3>) => at.every((value, axis) => value === seal.key[axis]);
+        if (seal.held) {
+          const original = site.furnitureIn.bind(site);
+          vi.spyOn(site, 'furnitureIn').mockImplementation((cx, cz) =>
+            original(cx, cz).map((spawn) => (atKey(spawn.spec.pos) ? { ...spawn, loot: [], surfaceLoot: [] } : spawn)),
+          );
+        } else {
+          const original = site.lootPointsIn.bind(site);
+          vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
+            original(cx, cz).filter((point) => !atKey(point.destination)),
+          );
+        }
+        expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(
+          `.composition.seals[${index}]`,
         );
-      } else {
-        const original = site.lootPointsIn.bind(site);
-        vi.spyOn(site, 'lootPointsIn').mockImplementation((cx, cz) =>
-          original(cx, cz).filter((point) => !atKey(point.destination)),
-        );
-      }
-      expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(
-        `.composition.seals[${index}]`,
-      );
-    },
-  );
+      },
+    );
+  });
 
   it('rejects a keycard container that lies behind the seal it opens', () => {
     expectQuietWhenHealthy(['seals'], (path) => path.startsWith('.composition.seals'));
@@ -283,14 +288,20 @@ describe('final composed body-route certificate', () => {
     expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain('.composition.seals[0]');
   });
 
-  it('rejects a keycard container out of reach of where its taker stands', () => {
-    // The desk's taker is sent to level one's card spot, which the way in reaches but which is far from the desk.
-    const composition = base.composition!;
-    const held = composition.seals.findIndex((seal) => seal.held);
-    const { standing } = composition.seals[held - 1]!;
-    const seals = composition.seals.map((seal, index) => (index === held ? { ...seal, standing } : seal));
-    const site = siteOf({ ...base, composition: { ...composition, seals } });
-    expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(`.composition.seals[${held}]`);
+  sweepGroup('a held seal keycard', () => {
+    it('rejects a keycard container out of reach of where its taker stands', () => {
+      // The desk's taker is sent to level one's card spot, which the way in reaches but which is far from the desk.
+      const composition = base.composition!;
+      const held = composition.seals.findIndex((seal) => seal.held);
+      const { standing } = composition.seals[held - 1]!;
+      const seals = composition.seals
+        .slice(0, held + 1)
+        .map((seal, index) => (index === held ? { ...seal, standing } : seal));
+      const site = siteOf({ ...base, composition: { ...composition, seals } });
+      expect(scenarioCertificate(site, ['seals']).issues.map(([path]) => path)).toContain(
+        `.composition.seals[${held}]`,
+      );
+    });
   });
 
   it("keeps each level's ways down behind its bulkheads until its card, reached through the seals above, is admitted", () => {
@@ -566,24 +577,54 @@ describe('final composed body-route certificate', () => {
     expect(result.issues.some(([path]) => path === '.composition.resources[0]')).toBe(true);
   });
 
-  it('rejects cyclic fixed keys behind their mutually dependent locked portals', () => {
-    expectQuietWhenHealthy(
-      ROUTED_PHASES.concat('resources'),
-      (path) => path === '.portal' || path.startsWith('.composition.resources'),
-    );
-    const result = scenarioCertificate(cyclicSite(registry, base, scale), ROUTED_PHASES.concat('resources'));
-    expect(result.issues.some(([path]) => path === '.portal')).toBe(true);
-    expect(result.issues.some(([path]) => path.startsWith('.composition.resources'))).toBe(true);
+  sweepGroup('a cyclic fixed-key route', () => {
+    it('rejects cyclic fixed keys behind their mutually dependent locked portals', () => {
+      expectQuietWhenHealthy(
+        ROUTED_PHASES.concat('resources'),
+        (path) => path === '.portal' || path.startsWith('.composition.resources'),
+      );
+      const composition = base.composition!;
+      const storeys = composition.storeys.slice(0, 2);
+      const floors = new Set([base.portal!.upper[1], ...storeys.map((storey) => storey.standing[1])]);
+      const joinsSelectedFloors = ({ upper, lower }: { upper: Readonly<Vec3>; lower: Readonly<Vec3> }) =>
+        floors.has(upper[1]) && floors.has(lower[1]);
+      const plan = {
+        ...base,
+        composition: {
+          ...composition,
+          storeys,
+          descents: composition.descents.filter(joinsSelectedFloors),
+          stairs: composition.stairs.filter(joinsSelectedFloors),
+        },
+      };
+      const result = scenarioCertificate(cyclicSite(registry, plan, scale), ROUTED_PHASES.concat('resources'));
+      expect(result.issues.some(([path]) => path === '.portal')).toBe(true);
+      expect(result.issues.some(([path]) => path === '.composition.resources[0]')).toBe(true);
+    });
   });
 
-  it('rejects a missing clue instead of treating two copies of metadata as independent sources', () => {
-    const missing = base.composition!.leads[0]!;
-    expectQuietWhenHealthy(['start', 'leads'], (path) => path === '.composition.leads');
-    const result = scenarioCertificate(
-      siteOf({ ...base, placements: base.placements.filter((placement) => placement !== missing) }),
-      ['start', 'leads'],
-    );
-    expect(result.issues.some(([path]) => path === '.composition.leads')).toBe(true);
+  sweepGroup('independent public clues', () => {
+    it('rejects a missing clue instead of treating two copies of metadata as independent sources', () => {
+      const composition = base.composition!;
+      const [missing, independent] = composition.leads;
+      if (!(missing && independent)) {
+        throw new Error('Production scenario needs two independent public clues');
+      }
+      const narrowed = {
+        ...base,
+        composition: {
+          ...composition,
+          leads: [missing, independent],
+          ...(composition.leadFaces ? { leadFaces: composition.leadFaces.slice(0, 2) } : {}),
+        },
+      };
+      expect(scenarioCertificate(siteOf(narrowed), ['start', 'leads']).issues).toEqual([]);
+      const result = scenarioCertificate(
+        siteOf({ ...narrowed, placements: narrowed.placements.filter((placement) => placement !== missing) }),
+        ['start', 'leads'],
+      );
+      expect(result.issues.some(([path]) => path === '.composition.leads')).toBe(true);
+    });
   });
 });
 

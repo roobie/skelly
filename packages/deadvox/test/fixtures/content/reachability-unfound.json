@@ -1,55 +1,106 @@
 {
-  "skills": [{ "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 1 } }],
   "items": [
     {
+      "category": "material",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 1,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "rag",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "fixture_unfound",
-      "workInProgress": false,
-      "notLoot": false,
-      "economy": { "usage": [], "tiers": [] },
       "name": "Unfound",
-      "category": "material",
-      "weight": 1,
+      "notLoot": false,
       "size": [1, 1],
-      "disassembly": {
-        "timeGameMinutes": 1,
-        "skill": "crafting",
-        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
+      "weight": 1,
+      "workInProgress": false
     },
     {
+      "category": "material",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 1,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "rag",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "fixture_result",
-      "workInProgress": false,
-      "notLoot": false,
-      "economy": { "usage": [], "tiers": [] },
       "name": "Result",
-      "category": "material",
-      "weight": 1,
+      "notLoot": false,
       "size": [1, 1],
-      "disassembly": {
-        "timeGameMinutes": 1,
-        "skill": "crafting",
-        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
+      "weight": 1,
+      "workInProgress": false
     },
     {
-      "id": "rag",
-      "workInProgress": false,
-      "notLoot": false,
-      "economy": { "usage": [], "tiers": [] },
-      "name": "Rag",
       "category": "material",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "rag",
+      "name": "Rag",
+      "notLoot": false,
+      "size": [1, 1],
       "weight": 1,
-      "size": [1, 1]
+      "workInProgress": false
+    }
+  ],
+  "recipeCategories": [
+    {
+      "id": "fixture_category",
+      "label": "Fixture",
+      "order": 0
     }
   ],
   "recipes": [
     {
+      "category": "fixture_category",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "fixture_unfound"
+          }
+        ]
+      ],
       "id": "torch",
-      "result": { "item": "fixture_result", "count": 1 },
-      "timeGameMinutes": 1,
-      "skills": {},
       "qualities": {},
-      "components": [[{ "item": "fixture_unfound", "count": 1 }]]
+      "result": {
+        "count": 1,
+        "item": "fixture_result"
+      },
+      "searchTerms": [],
+      "skills": {},
+      "tags": [],
+      "timeGameMinutes": 1
+    }
+  ],
+  "skills": [
+    {
+      "id": "crafting",
+      "name": "Crafting",
+      "training": {
+        "craftingTierOffset": 1
+      }
     }
   ]
 }

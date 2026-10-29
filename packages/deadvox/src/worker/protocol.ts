@@ -16,13 +16,13 @@ export type ToMesher =
       fencePosts: FencePostDefs;
     }
   | { type: 'mesh'; key: string; version: number; padded: Uint16Array; wide: Uint8Array }
-  | { type: 'sky'; input: SkySnapshot }
+  | { type: 'sky'; id: number; input: SkySnapshot }
   | { type: 'vehicle'; key: string; blueprint: string; removed: readonly string[] };
 
 export type FromMesher =
   | Meshed
   | { type: 'meshFailed'; key: string; message: string }
-  | { type: 'sky'; result: SkyResult; workerRealMs: number }
+  | { type: 'sky'; id: number; result: SkyResult; workerRealMs: number }
   | { type: 'vehicle'; key: string; shape: ShapeData };
 
 interface Meshed {

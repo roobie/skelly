@@ -11,6 +11,8 @@ export type ReplayActionPayload =
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'inventory.inspect'; itemUid: number }
+  | { kind: 'inventory.activate'; itemUid: number }
+  | { kind: 'inventory.wield-or-pocket'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
   | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
@@ -32,6 +34,7 @@ export type ReplayActionPayload =
   | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
+  | { kind: 'craft.repair-entity'; recipeId: string; entityUid: number; preference: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -140,7 +143,9 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.count as number) > 0
       );
     case 'inventory.to-hands':
+    case 'inventory.wield-or-pocket':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'inventory.activate':
     case 'inventory.inspect':
       return isUid(payload.itemUid);
     case 'power.set':
@@ -200,6 +205,13 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'craft.start':
       return isCraftStartPayload(payload);
+    case 'craft.repair-entity':
+      return (
+        isUid(payload.entityUid) &&
+        payload.preference !== undefined &&
+        isCraftStartPayload(payload) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference'].includes(key))
+      );
     default:
       return false;
   }
@@ -211,6 +223,8 @@ export interface ReplayCommandOwners {
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
   inspect?: (itemUid: number) => void;
+  activate?: (itemUid: number) => string | undefined;
+  wieldOrPocket?: (itemUid: number, feet: [number, number, number]) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
@@ -239,6 +253,7 @@ export interface ReplayCommandOwners {
   tip: () => string | undefined;
   clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
+  craftRepairEntity: (recipeId: string, entityUid: number, preference: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -247,6 +262,16 @@ export interface ReplayCommandOwners {
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
+
+const applyInventoryItemAction = (
+  payload: Extract<ReplayActionPayload, { kind: 'inventory.activate' | 'inventory.wield-or-pocket' }>,
+  owners: ReplayCommandOwners,
+): string | undefined => {
+  if (payload.kind === 'inventory.activate') {
+    return owners.activate ? owners.activate(payload.itemUid) : 'Item activation is unavailable';
+  }
+  return owners.wieldOrPocket ? owners.wieldOrPocket(payload.itemUid, payload.feet) : 'Item handling is unavailable';
+};
 
 export const applyReplayActionPayload = (
   payload: ReplayActionPayload,
@@ -266,6 +291,9 @@ export const applyReplayActionPayload = (
     }
     case 'inventory.to-hands':
       return owners.toHands(payload.itemUid, payload.feet);
+    case 'inventory.activate':
+    case 'inventory.wield-or-pocket':
+      return applyInventoryItemAction(payload, owners);
     case 'inventory.inspect':
       owners.inspect?.(payload.itemUid);
       return undefined;
@@ -321,6 +349,8 @@ export const applyReplayActionPayload = (
       return undefined;
     case 'craft.start':
       return owners.craftStart(payload.recipeId, payload.preference);
+    case 'craft.repair-entity':
+      return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference);
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':

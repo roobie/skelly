@@ -29,7 +29,15 @@ import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { countText } from '../core/numberText.ts';
-import { doorOptions, doorPlan, dropTarget, heldDoorBar, pocketGroundItem, toHands } from '../core/options.ts';
+import {
+  doorOptions,
+  doorPlan,
+  dropTarget,
+  heldDoorBar,
+  pocketGroundItem,
+  toHands,
+  wieldOrPocket,
+} from '../core/options.ts';
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
@@ -299,6 +307,14 @@ const isGestureAction = (action: string): boolean =>
   action === 'light.worn-toggle' ||
   action === 'world.interact' ||
   action.startsWith('quickbar.use.');
+
+const isPayloadBackedScreenAction = (context: InputContext, action: string): boolean =>
+  (context === 'inventory' &&
+    ((action.startsWith('inventory.') && !['inventory.previous', 'inventory.next'].includes(action)) ||
+      action.startsWith('quickbar.assign.') ||
+      action === 'handling.stop')) ||
+  action === 'craft.continue' ||
+  action.startsWith('carry.');
 
 const resetOrbitOnLocomotion = (action: string, orbit: ThirdPersonOrbit): void => {
   if (isOrbitResetMovementAction(action)) {
@@ -1982,6 +1998,14 @@ export const startPlay = (
       const item = inventory.itemByUid(uid);
       return item ? toHands(inventory, queue, item, feetPosition) : lines.common.gone;
     },
+    wieldOrPocket: (uid, feetPosition) => {
+      const item = inventory.itemByUid(uid);
+      return item ? wieldOrPocket(inventory, queue, item, feetPosition) : lines.common.gone;
+    },
+    activate: (uid) => {
+      const item = inventory.itemByUid(uid);
+      return item ? survival.activateHeld(item) : lines.common.gone;
+    },
     pickup: pickupGroundItem,
     interact: interactFurniture,
     lift: (uid, floorLocked) => {
@@ -2002,6 +2026,8 @@ export const startPlay = (
     tip: () => session.tipFurniture(),
     clearDownedBody: (id, way) => session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
+    craftRepairEntity: (recipeId, entityUid, preference) =>
+      session.crafting.repairEntity(recipeId, entityUid, preference),
     craftContinue: () => {
       continueAction();
     },
@@ -2256,6 +2282,7 @@ export const startPlay = (
       return;
     }
     input.cancel(preservePointer);
+    screen.cancelInput();
     cancelBackquoteGesture(backquoteGesture);
     cancelItemThrow();
     throwStanceInput.cancel();
@@ -2438,6 +2465,7 @@ export const startPlay = (
       facingYaw: input.yaw,
     });
   const cancelHeldInput = (): void => {
+    screen.cancelInput();
     input.reload.cancel();
     crouchProneInput.cancel();
     throwStanceInput.cancel();
@@ -2495,19 +2523,16 @@ export const startPlay = (
       return;
     }
     const context = inputContext();
-    const payloadBackedScreenAction =
-      (context === 'inventory' &&
-        ((action.startsWith('inventory.') && !['inventory.previous', 'inventory.next'].includes(action)) ||
-          action.startsWith('quickbar.assign.') ||
-          action === 'handling.stop')) ||
-      action === 'craft.continue' ||
-      action.startsWith('carry.');
+    const payloadBackedScreenAction = isPayloadBackedScreenAction(context, action);
     // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
     const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
     if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
       inputRecorder?.queueAction(action, phase, context);
     }
     const slot = quickbarSlotFor(action);
+    if (context === 'inventory' && screen.onInputCommand({ action, phase, at })) {
+      return;
+    }
     if (phase === 'up') {
       releaseInputCommand(action, at, slot);
       return;

@@ -63,6 +63,7 @@ const loadedStreamer = () => {
     scale,
     structures: [],
     radius: 1,
+    preloadRings: 0,
     hysteresis: 1,
     surface: { height: () => 4, top: () => undefined },
   });

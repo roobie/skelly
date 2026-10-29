@@ -1,6 +1,15 @@
 // biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
 import assert from 'node:assert/strict';
 import process from 'node:process';
+import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
+import { CHUNK } from '../../src/core/coords.ts';
+import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
+
+export const cleanReplayRadiusM = 32;
+const columnMetres = CHUNK * BLOCK_SIZE;
+const streamEdgeColumn =
+  chunksFor(makeScale(BLOCK_SIZE), cleanReplayRadiusM) + graphicsFile.graphics[0].skyPreloadRings + 1;
+const streamEdgeZombieX = (streamEdgeColumn + 0.5) * columnMetres;
 
 export const logPhase = (phase, start) => {
   process.stdout.write(
@@ -27,14 +36,15 @@ export const observationPlugin = {
       data.layouts.push({
         id: 'replay_fixture',
         lootContext: { usage: ['Residential'], tier: 'Tier1' },
-        bounds: { x0: -64, z0: -64, x1: 64, z1: 64 },
+        bounds: { x0: -64, z0: -64, x1: Math.max(64, streamEdgeZombieX + columnMetres), z1: 64 },
         ground: 20,
         terrain: [],
         buildings: [],
         woodlands: [],
         tracks: [],
         player: { position: [8, 20.5, 8], bearing: 0 },
-        shamblers: [{ type: 'shambler', position: [56, 20.5, 8] }],
+        // Its own column is generated, but the outward neighbour is not: replay must preserve that gate.
+        shamblers: [{ type: 'shambler', position: [streamEdgeZombieX, 20.5, 8] }],
       });
       return JSON.stringify(data);
     }
