@@ -4,11 +4,11 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { launchChromium } from './chromium.mjs';
-import { observationPlugin } from './primary-action-observation.mjs';
-import { browserStageUrl } from './stage-mode.mjs';
+import { launchChromium } from '../test/browser/chromium.mjs';
+import { observationPlugin } from '../test/browser/primary-action-observation.mjs';
+import { browserStageUrl } from '../test/browser/stage-mode.mjs';
 
-const projectRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)));
+const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const out = resolve(projectRoot, 'test-results/zz-drift');
 await mkdir(out, { recursive: true });
 const optic = process.argv[2] ?? 'optic_holographic';
