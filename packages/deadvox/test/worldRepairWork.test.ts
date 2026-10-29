@@ -46,6 +46,9 @@ const registry = baseRegistryWith(
         recipes: [
           {
             id: RECIPE,
+            category: 'fixture_category',
+            tags: [],
+            searchTerms: [],
             kind: 'repair',
             result: { item: STOCK, count: 1 },
             repair: { entity: PIECE, skill: 'world_repair_skill', amount: AMOUNT, perSkill: 0 },

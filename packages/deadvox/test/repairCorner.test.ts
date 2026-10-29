@@ -25,6 +25,9 @@ const fixtureRecipe = (): RecipeDef => {
   const skill = baseRegistry.skills.keys().next().value ?? 'fixture_skill';
   return {
     id: 'fixture_repair_corner',
+    category: 'fixture_category',
+    tags: [],
+    searchTerms: [],
     kind: 'repair',
     result: { item: target.id, count: 1 },
     repair: { skill, amount: 0.2, perSkill: 0 },

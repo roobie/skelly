@@ -1229,6 +1229,9 @@ describe('content', () => {
       recipes: [
         {
           id: 'fixture_recipe',
+          category: 'fixture_category',
+          tags: [],
+          searchTerms: [],
           result: { item: 'book_reference_fixture', count: 1 },
           timeGameMinutes: gameMinutes(1),
           skills: {},
@@ -1942,6 +1945,9 @@ describe('content references', () => {
     recipes: [
       {
         id: 'fixture_recipe',
+        category: 'fixture_category',
+        tags: [],
+        searchTerms: [],
         result: { item: 'fixture_tool', count: 1 },
         timeGameMinutes: 2,
         skills: Object.fromEntries([['fixture_skill', 0]]),

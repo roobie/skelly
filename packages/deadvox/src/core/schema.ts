@@ -514,6 +514,11 @@ const UiScreenTextSchema = strictObject({
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
   crafting: slottedTable({
     heading: [],
+    all: [],
+    categories: [],
+    find: [],
+    tags: [],
+    clearFind: [],
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
@@ -4539,8 +4544,23 @@ const BodyTuningSchema = pipe(
   }),
 );
 
+const RecipeCategorySchema = strictObject({
+  id: Id,
+  label: Name,
+  parent: optional(Id),
+  order: pipe(number(), finite()),
+});
+const RecipeTagSchema = strictObject({
+  id: Id,
+  label: Name,
+  searchTerms: array(Name),
+});
+
 const RecipeSchema = strictObject({
   id: Id,
+  category: Id,
+  tags: array(Id),
+  searchTerms: array(Name),
   result: RecipeItemSchema,
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type. */
   kind: optional(picklist(['craft', 'repair'])),
@@ -4713,6 +4733,8 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+  recipeCategories: { schema: optional(array(RecipeCategorySchema)), label: 'recipe categories', order: 10.1 },
+  recipeTags: { schema: optional(array(RecipeTagSchema)), label: 'recipe tags', order: 10.2 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
@@ -4777,6 +4799,7 @@ export type VehicleFittingDef = InferOutput<typeof VehicleBlueprintSchema>['fitt
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type RecipeCategoryDef = InferOutput<typeof RecipeCategorySchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;

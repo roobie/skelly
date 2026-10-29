@@ -1,24 +1,136 @@
 {
+  "recipeCategories": [
+    {
+      "id": "fixture_category",
+      "label": "Fixture",
+      "order": 0
+    }
+  ],
   "recipes": [
     {
-      "id": "fixture_too_many_combinations",
-      "result": { "item": "rag", "count": 1 },
-      "timeGameMinutes": 1,
-      "skills": {},
-      "qualities": {},
+      "category": "fixture_category",
       "components": [
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }],
-        [{ "item": "rag", "count": 1 }, { "item": "nails", "count": 1 }]
-      ]
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "rag"
+          },
+          {
+            "count": 1,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "fixture_too_many_combinations",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "rag"
+      },
+      "searchTerms": [],
+      "skills": {},
+      "tags": [],
+      "timeGameMinutes": 1
     }
   ]
 }

@@ -17,6 +17,9 @@ const fixture = (side: HandSide = 'right') => {
   const base = baseRegistry();
   const bladeDef = { ...base.items.get('kitchen_knife')!, id: 'fixture_blade' };
   const common = {
+    category: 'fixture_category',
+    tags: [],
+    searchTerms: [],
     activation: 'sharpen' as const,
     kind: 'repair' as const,
     result: { item: bladeDef.id, count: 1 },
