@@ -1089,7 +1089,7 @@ export class BlockEntities {
     return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
   }
 
-  repair(entity: BlockEntity, amount: number): boolean {
+  canRepair(entity: BlockEntity, amount: number): boolean {
     if (
       !(Number.isFinite(amount) && amount > 0) ||
       this.byUid(entity.uid) !== entity ||
@@ -1102,10 +1102,14 @@ export class BlockEntities {
     if (!(damage > 0 && damage < this.defOf(entity).breach.durability)) {
       return false;
     }
-    const remaining = Math.max(0, damage - amount);
-    if (remaining === damage) {
+    return Math.max(0, damage - amount) !== damage;
+  }
+
+  repair(entity: BlockEntity, amount: number): boolean {
+    if (!this.canRepair(entity, amount)) {
       return false;
     }
+    const remaining = Math.max(0, entity.damage! - amount);
     const worn = this.wearOf(entity);
     entity.damage = remaining === 0 ? undefined : remaining;
     this.version += 1;

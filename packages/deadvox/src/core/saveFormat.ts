@@ -450,8 +450,8 @@ itemSchema = obj({
         recipe: str({ id: true }),
         elapsed: nonNegative,
         duration: positive,
-        repairTargetUid: opt(positiveInt),
-        repairAmount: opt(num({ min: 0, max: 1 })),
+        repairTarget: opt(obj({ kind: enumeration(['item', 'entity']), uid: positiveInt })),
+        repairAmount: opt(positive),
         components: arr(
           lazy(() => itemSchema),
           1,
@@ -1614,8 +1614,8 @@ function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: Rea
     if (item.work && item.work.elapsed > item.work.duration) {
       throw new Error('Invalid craft work payload');
     }
-    if (item.work?.repairTargetUid !== undefined) {
-      const target = itemsByUid.get(item.work.repairTargetUid);
+    if (item.work?.repairTarget?.kind === 'item') {
+      const target = itemsByUid.get(item.work.repairTarget.uid);
       if (!target || target.uid === item.uid || target.count !== 1) {
         throw new Error('Missing repair target');
       }

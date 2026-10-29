@@ -4534,12 +4534,10 @@ const BodyTuningSchema = pipe(
 const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
-  /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
+  /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type. */
   kind: optional(picklist(['craft', 'repair'])),
   /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
-  repair: optional(
-    strictObject({ skill: Id, amount: pipe(Positive, maxValue(1, 'must be at most 1')), perSkill: Fraction }),
-  ),
+  repair: optional(strictObject({ skill: Id, amount: Positive, perSkill: Fraction, entity: optional(Id) })),
   activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,

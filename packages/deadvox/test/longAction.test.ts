@@ -131,7 +131,7 @@ const startRepair = () => {
     throw new Error(plan.missing.reason);
   }
   const repairAmount = registry.recipes.get('repair_crowbar')!.repair!.amount;
-  const work = runtime.inv.beginWork(plan.plan, { targetUid: target.uid, amount: repairAmount });
+  const work = runtime.inv.beginWork(plan.plan, { target: { kind: 'item', uid: target.uid }, amount: repairAmount });
   if (!work) {
     throw new Error('Cannot gather repair inputs');
   }
@@ -715,7 +715,7 @@ describe('core long actions', () => {
     const restored = make(before);
     expect(snapshot(restored)).toEqual(before);
     const savedWork = restored.inv.itemByUid(source.work.uid)!;
-    expect(savedWork.work?.repairTargetUid).toBe(source.target.uid);
+    expect(savedWork.work?.repairTarget).toEqual({ kind: 'item', uid: source.target.uid });
     expect(savedWork.work?.repairAmount).toBe(source.work.work?.repairAmount);
     const amount = savedWork.work!.repairAmount!;
     restored.sim.scheduler.advance(

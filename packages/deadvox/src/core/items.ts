@@ -20,12 +20,16 @@ import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
 import type { LiquidContents } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
+export type WorkTarget = { kind: 'item'; uid: number } | { kind: 'entity'; uid: number };
+const repairTargetFields = ({ repairTarget }: { repairTarget?: WorkTarget }) =>
+  repairTarget ? { repairTarget: { ...repairTarget } } : {};
+
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
 interface WorkProgress<Node> {
   elapsed: number;
   duration: number;
   components: Node[];
-  repairTargetUid?: number;
+  repairTarget?: WorkTarget;
   repairAmount?: number;
 }
 type CraftWork<Node> =
@@ -176,6 +180,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
       : {
           work: {
             ...item.work,
+            ...repairTargetFields(item.work),
             ...(item.work.kind === 'disassembly'
               ? {
                   outputs: item.work.outputs.map((output) => ({ ...output })),
@@ -291,6 +296,7 @@ const restoreFirearmState = (registry: Registry, def: ItemDef, state: ItemState)
 
 const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): NonNullable<Item['work']> => ({
   ...work,
+  ...repairTargetFields(work),
   ...(work.kind === 'disassembly'
     ? {
         outputs: work.outputs.map((output) => ({ ...output })),
