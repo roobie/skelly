@@ -5,12 +5,10 @@ import {
   checkedExport,
   createMirroredPair,
   type Fitting,
-  type PairChoices,
-  type PairSupport,
+  pairChoicesFromForm,
   removeFitting,
   renameFitting,
   type Service,
-  type Side,
   saveBlueprint,
   setAt,
   setCargo,
@@ -182,8 +180,8 @@ const labelled = (text: string, control: HTMLElement): HTMLLabelElement => {
 
 const choice = (options: readonly string[]): HTMLSelectElement => {
   const element = document.createElement('select');
-  for (const option of options) {
-    element.add(new Option(option, option));
+  for (const option of ['', ...options]) {
+    element.add(new Option(option === '' ? 'Choose…' : option, option));
   }
   return element;
 };
@@ -194,7 +192,7 @@ const openPair = (fitting: Fitting) => {
   const supports = fitting.supportedBy.map((support) => ({
     support,
     kind: choice(['shared', 'paired']),
-    far: textInput(support, () => undefined),
+    far: textInput('', () => undefined),
   }));
   const resting = blueprint.fittings.filter(
     ({ id, supportedBy }) => id !== fitting.id && supportedBy.includes(fitting.id),
@@ -215,21 +213,23 @@ const openPair = (fitting: Fitting) => {
     ...outside.map(({ id, side }) => labelled(`${id} rests on the original: moves to`, side)),
     ...(names ? [labelled('Near service name', names.near), labelled('Far service name', names.far)] : []),
   );
+  const pairMessage = document.createElement('p');
+  pairMessage.setAttribute('role', 'status');
+  form.append(pairMessage);
   const buttons = document.createElement('div');
   const create = button('Create pair', () => {
-    const choices: PairChoices = {
-      base: base.value,
-      supports: Object.fromEntries(
-        supports.map(({ support, kind, far }): [string, PairSupport] => [
-          support,
-          kind.value === 'shared' ? { kind: 'shared' } : { kind: 'paired', far: far.value },
-        ]),
-      ),
-      outside: Object.fromEntries(outside.map(({ id, side }): [string, Side] => [id, side.value as Side])),
-      ...(names ? { serviceNames: { near: names.near.value, far: names.far.value } } : {}),
-    };
-    apply((current) => createMirroredPair(current, fitting.id, choices));
-    pairDialog.close();
+    try {
+      const choices = pairChoicesFromForm({
+        base: base.value,
+        supports: supports.map(({ support, kind, far }) => ({ support, kind: kind.value, far: far.value })),
+        outside: outside.map(({ id, side }) => ({ id, side: side.value })),
+        ...(names ? { serviceNames: { near: names.near.value, far: names.far.value } } : {}),
+      });
+      apply((current) => createMirroredPair(current, fitting.id, choices));
+      pairDialog.close();
+    } catch (error) {
+      pairMessage.textContent = error instanceof Error ? error.message : String(error);
+    }
   });
   buttons.append(
     create,

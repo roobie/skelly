@@ -1,4 +1,4 @@
-import type { Registry } from '../../deadvox/src/core/content.ts';
+import { type Registry, validateContent } from '../../deadvox/src/core/content.ts';
 import { vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import {
   exportVehicleBlueprint,
@@ -185,20 +185,65 @@ export const createMirroredPair = (
   );
 };
 
+/** What the pair dialog's controls hold; an empty `kind` or `side` is a control the author has not touched. */
+export interface PairForm {
+  readonly base: string;
+  readonly supports: readonly { readonly support: string; readonly kind: string; readonly far: string }[];
+  readonly outside: readonly { readonly id: string; readonly side: string }[];
+  readonly serviceNames?: { readonly near: string; readonly far: string };
+}
+
+const SIDES: readonly string[] = ['near', 'far', 'both'];
+
+/** Maps the dialog to choices, refusing any control left unset: nothing here is defaulted. */
+export const pairChoicesFromForm = ({ base, supports, outside, serviceNames }: PairForm): PairChoices => {
+  const choices: [string, PairSupport][] = supports.map(({ support, kind, far }) => {
+    if (kind === 'shared') {
+      return [support, { kind: 'shared' }];
+    }
+    if (kind === 'paired' && far.trim() !== '') {
+      return [support, { kind: 'paired', far: far.trim() }];
+    }
+    throw new Error(
+      kind === 'paired' ? `Name the far twin's support for "${support}"` : `Choose shared or paired for "${support}"`,
+    );
+  });
+  const sides: [string, Side][] = outside.map(({ id, side }) => {
+    if (!SIDES.includes(side)) {
+      throw new Error(`Choose a side for "${id}"`);
+    }
+    return [id, side as Side];
+  });
+  return {
+    base,
+    supports: Object.fromEntries(choices),
+    outside: Object.fromEntries(sides),
+    ...(serviceNames ? { serviceNames } : {}),
+  };
+};
+
 /** The form Save downloads for the author to hand-merge into the Jsonnet source. */
 export const saveBlueprint = (blueprint: VehicleBlueprintInput): string => JSON.stringify(blueprint, null, 2);
 
 export const loadSavedBlueprint = (text: string): VehicleBlueprintInput => JSON.parse(text) as VehicleBlueprintInput;
 
-/** Deadvox's content issues for the edited blueprint, in place of the one it was loaded from. */
-export const blueprintIssues = (registry: Registry, blueprint: VehicleBlueprintInput): string[] =>
-  vehicleContentIssues({
+/**
+ * Deadvox's schema issues for the edited blueprint, else its content issues in place of the one it was loaded
+ * from: the content checks assume schema-valid records, so they run only once the schema accepts them.
+ */
+export const blueprintIssues = (registry: Registry, blueprint: VehicleBlueprintInput): string[] => {
+  const schema = validateContent({ source: 'vat', data: exportVehicleBlueprint(blueprint) });
+  if (schema.length > 0) {
+    return schema.map(({ path, message }) => `${path}: ${message}`);
+  }
+  return vehicleContentIssues({
     ...registry,
     // The registry's own type brands sim seconds, which only its schema parse produces.
     vehicleBlueprints: new Map([[blueprint.id, blueprint]]) as unknown as Registry['vehicleBlueprints'],
   })
     .filter((issue) => issue.section === 'vehicleBlueprints' && issue.id === blueprint.id)
     .map(({ path, message }) => `${path}: ${message}`);
+};
 
 /** Export is refused while the blueprint has issues. */
 export const checkedExport = (registry: Registry, blueprint: VehicleBlueprintInput): VehicleBlueprintExport => {

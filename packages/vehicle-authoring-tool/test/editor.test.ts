@@ -10,6 +10,7 @@ import {
   checkedExport,
   createMirroredPair,
   loadSavedBlueprint,
+  pairChoicesFromForm,
   removeFitting,
   renameFitting,
   saveBlueprint,
@@ -189,6 +190,64 @@ describe('editor download round-trip', () => {
     ).toThrow('service');
     expect(() => createMirroredPair(host, 'wheel', { ...choices, base: 'strut' })).toThrow('twin ids are free');
     expect(() => createMirroredPair(host, 'strut_far', { ...choices, base: 'x' })).toThrow('mirror');
+  });
+});
+
+describe('pair dialog mapping', () => {
+  const untouched = {
+    base: 'wheel',
+    supports: [
+      { support: 'frame', kind: '', far: '' },
+      { support: NEAR_STRUT, kind: '', far: '' },
+    ],
+    outside: [{ id: 'cap', side: '' }],
+    serviceNames: { near: 'Near', far: 'Far' },
+  };
+
+  it('yields no mapping from untouched controls, and none until each choice is made', () => {
+    expect(() => pairChoicesFromForm(untouched)).toThrow('shared or paired');
+    const supports = untouched.supports.map((row) => ({ ...row, kind: 'shared' }));
+    expect(() => pairChoicesFromForm({ ...untouched, supports })).toThrow('Choose a side for "cap"');
+    const paired = supports.map((row) => ({ ...row, kind: 'paired' }));
+    expect(() =>
+      pairChoicesFromForm({ ...untouched, supports: paired, outside: [{ id: 'cap', side: 'both' }] }),
+    ).toThrow('Name the far twin');
+  });
+
+  it('maps the author-made choices once every control is set', () => {
+    expect(
+      pairChoicesFromForm({
+        ...untouched,
+        supports: [
+          { support: 'frame', kind: 'shared', far: '' },
+          { support: NEAR_STRUT, kind: 'paired', far: 'strut_far' },
+        ],
+        outside: [{ id: 'cap', side: 'near' }],
+      }),
+    ).toEqual({
+      base: 'wheel',
+      supports: { frame: { kind: 'shared' }, [NEAR_STRUT]: { kind: 'paired', far: 'strut_far' } },
+      outside: { cap: 'near' },
+      serviceNames: { near: 'Near', far: 'Far' },
+    });
+  });
+});
+
+describe('schema boundary', () => {
+  const { registry } = registryFor(host);
+
+  it('refuses export when every fitting is removed', () => {
+    const empty = host.fittings.reduce((blueprint, { id }) => removeFitting(blueprint, id), host);
+
+    expect(blueprintIssues(registry, empty).join('\n')).toContain('needs at least one fitting');
+    expect(() => checkedExport(registry, empty)).toThrow('needs at least one fitting');
+  });
+
+  it('refuses export of a service with a negative duration', () => {
+    const edited = setService(host, 'wheel', serviceFor('Wheel', -5));
+
+    expect(blueprintIssues(registry, edited).join('\n')).toContain('must be more than 0');
+    expect(() => checkedExport(registry, edited)).toThrow('must be more than 0');
   });
 });
 
