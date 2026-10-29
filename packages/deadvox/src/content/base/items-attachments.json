@@ -225,6 +225,24 @@
     {
       "category": "misc",
       "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 4,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "rope",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 1],
+            "item": "fastener_pack",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

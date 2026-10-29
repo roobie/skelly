@@ -121,7 +121,15 @@ local opticZoom = { step: 1, rememberPerWeapon: true };
       "figureModels": [{ model: 'weapon_sling_worn', overTorso: { jacket: 'weapon_sling_worn_jacket' }, frame: 'torso', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0] }],
       "size": [1, 1],
       "description": "A two-point carry strap. Fitted to a long gun, it lets you carry the gun on your shoulder with your hands free.",
-      "sling": true
+      "sling": true,
+      "disassembly": {
+        "timeGameMinutes": 4,
+        "skill": "crafting",
+        "yields": [
+          { "item": "rope", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "fastener_pack", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
     },
     {
       "id": "foregrip",
