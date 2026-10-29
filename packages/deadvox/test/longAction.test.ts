@@ -131,7 +131,7 @@ const startRepair = () => {
     throw new Error(plan.missing.reason);
   }
   const repairAmount = registry.recipes.get('repair_crowbar')!.repair!.amount;
-  const work = runtime.inv.beginWork(plan.plan, { targetUid: target.uid, amount: repairAmount });
+  const work = runtime.inv.beginWork(plan.plan, { target: { kind: 'item', uid: target.uid }, amount: repairAmount });
   if (!work) {
     throw new Error('Cannot gather repair inputs');
   }
@@ -157,6 +157,7 @@ describe('core long actions', () => {
         kind: 'install',
         vehicleId: 1,
         fittingId: 'fixture_site',
+        placement: { at: [0, 0, 0], supportedBy: [] },
         itemUid: 7,
         durationSimSeconds: 10,
       }),
@@ -616,13 +617,21 @@ describe('core long actions', () => {
     expect(restored.character.knownRecipes.size).toBe(new Character(fixtureRegistry).knownRecipes.size + 1);
   });
   it('insufficient bounded drop room retains all cancel inputs and a stopped descriptor', () => {
-    const runtime = start();
+    const content = { ...registry, items: new Map(registry.items) };
+    for (const [type, size] of [
+      ['kitchen_knife', [1, 1]],
+      ['rag', [1, 1]],
+      ['stick', [1, 4]],
+    ] as const) {
+      content.items.set(type, { ...defOf(registry, type), size: [...size] });
+    }
+    const runtime = start(content);
     for (const pos of dropSpots([0, 0, 0])) {
       while (runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos })) {
         /* fill without stack merging */
       }
     }
-    // One 1×3 hole admits the first rag, but not the next 1×4 stick. No partial transfer.
+    // Leave room for only part of the cancellation output to prove there is no partial transfer.
     const filler = runtime.inv.pileAt([0, 0, 0])!.items[0]!.item;
     expect(runtime.inv.consume(filler)).toBe(true);
     const before = runtime.inv.snapshotState();
@@ -715,7 +724,7 @@ describe('core long actions', () => {
     const restored = make(before);
     expect(snapshot(restored)).toEqual(before);
     const savedWork = restored.inv.itemByUid(source.work.uid)!;
-    expect(savedWork.work?.repairTargetUid).toBe(source.target.uid);
+    expect(savedWork.work?.repairTarget).toEqual({ kind: 'item', uid: source.target.uid });
     expect(savedWork.work?.repairAmount).toBe(source.work.work?.repairAmount);
     const amount = savedWork.work!.repairAmount!;
     restored.sim.scheduler.advance(

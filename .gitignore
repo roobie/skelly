@@ -1,5 +1,6 @@
 node_modules/
 test-results/
+/packages/vehicle-authoring-tool/dist/
 /tools/jsonnet/bin/
 /packages/gun-authoring-tool/designs/look-*.json
 # Agent mail (maildirs and scratch) lives in the main checkout, untracked.

@@ -37,5 +37,11 @@ export const testHouseRangeSupply = (registry: Registry): RangeSupply[] => {
     }
   }
 
-  return [...stock].sort().map((item) => ({ item, count: 1, condition: 1 }));
+  return [...stock]
+    .sort((a, b) => {
+      const first = registry.items.get(a)!.size;
+      const second = registry.items.get(b)!.size;
+      return second[0] * second[1] - first[0] * first[1] || a.localeCompare(b);
+    })
+    .map((item) => ({ item, count: 1, condition: 1 }));
 };

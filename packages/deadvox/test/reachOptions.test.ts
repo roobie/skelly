@@ -5,7 +5,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, workInProgressItem } from '../src/core/inventory.ts';
-import { options, pocketGroundItem, quickbarTake, quickMove, toHands } from '../src/core/options.ts';
+import { options, pocketGroundItem, quickbarTake, quickMove, toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/reach.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
 import type { Zombie } from '../src/core/zombies.ts';
@@ -144,6 +144,37 @@ it('nearest furniture cell is reachable without revealing unsearched nested cont
   expect(entry.handlingTime).toBeGreaterThan(0);
   expect(t.view().workstations).toEqual([]);
 });
+
+it.each(['wield', 'pocket', 'refuse'] as const)(
+  'double-click resolution: %s without an unintended destination',
+  (outcome) => {
+    const t = setup('left');
+    if (outcome === 'pocket') {
+      t.add('school_backpack', { kind: 'worn' });
+    }
+    if (outcome !== 'wield') {
+      t.inventory.handHold = {
+        moveRefusal: (_item, _from, to) => (to ? 'Hands occupied by fixture support' : undefined),
+        liftRefusal: () => 'Hands occupied by fixture support',
+      };
+    }
+    const item = t.add('chocolate_bar', { kind: 'pile', pos: [0, 0, 0] });
+    const before = t.inventory.snapshotState();
+    const reason = wieldOrPocket(t.inventory, t.queue, item, [0, 0, 0]);
+    if (outcome === 'refuse') {
+      expect(reason).toBeTruthy();
+      expect(t.queue.jobs).toEqual([]);
+      expect(t.inventory.snapshotState()).toEqual(before);
+    } else {
+      expect(reason).toBeUndefined();
+      expect(t.inventory.locate(item)?.kind).toBe('pile');
+      t.queue.tick(t.queue.remaining);
+      expect(t.inventory.locate(item)).toMatchObject(
+        outcome === 'wield' ? { kind: 'hand', side: 'left' } : { kind: 'pocket' },
+      );
+    }
+  },
+);
 
 const furnitureOf = (kind: (definition: FurnitureDef) => unknown) => [...registry.furniture.values()].find(kind)!;
 

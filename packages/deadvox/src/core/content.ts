@@ -45,6 +45,7 @@ import {
   type ItemDef,
   LEG_SEGMENTS,
   type ModelDef,
+  type RecipeCategoryDef,
   type RecipeDef,
   type ScenarioDef,
   type SiteLayoutDef,
@@ -1572,6 +1573,19 @@ const checkZombies = (registry: Registry, report: Report) => {
   }
 };
 
+const checkRepairDestination = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  const repair = recipe.repair!;
+  if (repair.entity !== undefined && !registry.furniture.has(repair.entity)) {
+    report('recipes', recipe.id, '.repair.entity', `no furniture "${repair.entity}"`);
+  }
+  if (repair.entity === undefined && repair.amount > 1) {
+    report('recipes', recipe.id, '.repair.amount', 'item repair must be at most 1');
+  }
+  if (recipe.activation && repair.entity !== undefined) {
+    report('recipes', recipe.id, '.activation', 'held sharpening needs an item target');
+  }
+};
+
 const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
   if (recipe.activation && (recipe.kind !== 'repair' || recipe.components.length > 0)) {
     report('recipes', recipe.id, '.activation', 'held sharpening needs a repair effect and no components');
@@ -1581,6 +1595,7 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');
       return;
     }
+    checkRepairDestination(registry, recipe, report);
     if (!registry.skills.has(recipe.repair.skill)) {
       report('recipes', recipe.id, '.repair.skill', `no skill "${recipe.repair.skill}"`);
     }
@@ -1610,7 +1625,18 @@ const checkRecipe = ({
       report('recipes', recipe.id, path, `no item "${id}"`);
     }
   };
+  if (!registry.recipeCategories.has(recipe.category)) {
+    report('recipes', recipe.id, '.category', `no recipe category "${recipe.category}"`);
+  }
+  recipe.tags.forEach((id, index) => {
+    if (!registry.recipeTags.has(id)) {
+      report('recipes', recipe.id, `.tags[${index}]`, `no recipe tag "${id}"`);
+    }
+  });
   checkItem(recipe.result.item, '.result.item');
+  if (recipe.skillUnlock && !registry.skills.has(recipe.skillUnlock.skill)) {
+    report('recipes', recipe.id, '.skillUnlock.skill', `no skill "${recipe.skillUnlock.skill}"`);
+  }
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
@@ -1639,7 +1665,32 @@ const checkRecipe = ({
   }
 };
 
+const checkRecipeCategories = (registry: Registry, report: Report): void => {
+  const checked = new Set<string>();
+  for (const category of registry.recipeCategories.values()) {
+    const path = new Set<string>();
+    let next: string | undefined = category.id;
+    while (next !== undefined && !checked.has(next)) {
+      if (path.has(next)) {
+        report('recipeCategories', next, '.parent', 'recipe category cycle');
+        break;
+      }
+      path.add(next);
+      const node: RecipeCategoryDef = registry.recipeCategories.get(next)!;
+      if (node.parent !== undefined && !registry.recipeCategories.has(node.parent)) {
+        report('recipeCategories', node.id, '.parent', `no recipe category "${node.parent}"`);
+        break;
+      }
+      next = node.parent;
+    }
+    for (const id of path) {
+      checked.add(id);
+    }
+  }
+};
+
 const checkRecipes = (registry: Registry, report: Report) => {
+  checkRecipeCategories(registry, report);
   const qualities = new Set([
     ...[...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})),
     ...[...registry.furniture.values()].flatMap((furniture) => Object.keys(furniture.workstation?.qualities ?? {})),

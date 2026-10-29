@@ -166,7 +166,7 @@ const page = (state) => html`  <main>
 
       <section class="card" aria-labelledby="gungen-title">
         <div class="card-heading">
-          <h2 id="gungen-title"><a href="gun-authoring-tool/">gungen</a></h2>
+          <h2 id="gungen-title"><a href="gun-authoring-tool/">gungen</a> <code>(gun authoring tool)</code></h2>
           <p>A super-low-poly firearm generator. Generate from a template, open a validation fixture, or view a curated design.</p>
         </div>
         <form id="gungen-form" @input=${onInput} @change=${onInput} @submit=${onSubmit}>
@@ -217,6 +217,22 @@ const page = (state) => html`  <main>
           <li><a href="mobgen/?template=shambler&amp;seed=7">Generated shambler</a></li>
           <li><a href="mobgen/?template=runner&amp;seed=0">Generated runner</a></li>
           <li><a href="mobgen/?template=brute&amp;seed=11">Generated brute</a></li>
+        </ul>
+      </section>
+
+      <section class="card" aria-labelledby="tat-title">
+        <h2 id="tat-title"><a href="thing-authoring-tool/">Thing authoring tool</a></h2>
+        <p>Views and exports non-gun items for deadvox.</p>
+        <ul class="links">
+          <li><a href="thing-authoring-tool/">Open the tool</a></li>
+        </ul>
+      </section>
+
+      <section class="card" aria-labelledby="vat-title">
+        <h2 id="vat-title"><a href="vehicle-authoring-tool/">Vehicle authoring tool</a></h2>
+        <p>Lists, validates and exports vehicle blueprints. No editing yet.</p>
+        <ul class="links">
+          <li><a href="vehicle-authoring-tool/">Open the tool</a></li>
         </ul>
       </section>
 

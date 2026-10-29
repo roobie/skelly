@@ -16,6 +16,7 @@ on:
       - 'packages/thing-authoring-tool/**'
       - 'packages/deadvox/**'
       - 'packages/mobgen/**'
+      - 'packages/vehicle-authoring-tool/**'
       - 'package.json'
       - 'package-lock.json'
       - 'biome.jsonc'
@@ -87,11 +88,17 @@ jobs:
           npm run typecheck
           npm test
           PAGES_ANALYTICS=1 npx vite build
+      - name: Check and build vehicle-authoring-tool
+        working-directory: packages/vehicle-authoring-tool
+        run: |
+          npm run typecheck
+          npm test
+          npm run build
       - name: Assemble the site
         run: |
           mkdir -p _site
           cp -r site/. _site/
-          for P in packages/gun-authoring-tool packages/deadvox packages/mobgen packages/thing-authoring-tool; do
+          for P in packages/gun-authoring-tool packages/deadvox packages/mobgen packages/thing-authoring-tool packages/vehicle-authoring-tool; do
             mkdir -p _site/${P#packages/}
             cp -r $P/dist/. _site/${P#packages/}/
           done

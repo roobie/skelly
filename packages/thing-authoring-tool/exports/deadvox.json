@@ -672,6 +672,18 @@
     }
   },
   {
+    "id": "mounting_plate",
+    "kind": "item",
+    "options": {
+      "collision": true,
+      "mass": "parts"
+    },
+    "source": "mounting_plate",
+    "voxel": {
+      "grain": 0.03125
+    }
+  },
+  {
     "id": "pickup_bed_floor",
     "kind": "item",
     "options": {

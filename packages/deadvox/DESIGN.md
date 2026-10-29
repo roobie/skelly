@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
@@ -24,6 +25,7 @@ read_if:
   - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
+  - you change furniture repair admission or the boundary between repair and replacement
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -482,9 +484,10 @@ piece only when its damage crosses into a different step, not on every blow. See
 `BlockEntities.wearOf`, `src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
 `src/core/items.ts`, `damageWord`.
 
-Ruin is final: a destroyed piece or a broken door is never repaired, only replaced,
-because a ruined thing is mostly fragments; mending partial damage belongs to
-construction.
+Repair preserves a surviving piece rather than replacing it, so mending does not
+lose its identity or contents. Ruin is final: a destroyed piece or a broken door
+must be replaced because a ruined thing is mostly fragments. See
+`src/core/blockEntities.ts`, `BlockEntities.repair`.
 
 ### Dead humans
 
@@ -1317,6 +1320,16 @@ that fits no pocket of the furniture rolling it is a content error. Validation
 holds content to this; see `src/core/inventoryScale.ts`. Pockets may
 restrict their contents; liquids remain measured within their container.
 
+Automatic placement favors wide footprints for readability, but may choose tall
+when packing beside existing items preserves noticeably more usable space. An
+empty grid's aspect ratio is not a reason to stand a lone item upright. The
+preference belongs to shared placement so loot, piles and automatic inventory
+moves cannot disagree; explicit player placement remains the player's choice.
+Content owns how much
+packing benefit outweighs readability, so mods can retune that trade-off. See
+`src/core/items.ts`, `findSpot` and `largestFreeRectangleArea`, and
+`src/core/schema.ts`, `InventoryTuningSchema`.
+
 A soft container such as a bag isn't rigid, so packed empty it is plausibly
 smaller than what it holds when used: its footprint may be smaller than its
 interior. A soft bag nests only when empty, because nesting it loaded would
@@ -1641,17 +1654,23 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
 
 ## Crafting
 
-Recipes combine reachable materials with skill, quality, and optional
-workstation requirements. A reachable workbench can provide its qualities and
-speed bonus. Disassembly uses an authored yield or salvage list specific to the
-item; it is not inferred by reversing all recipes that could produce it. See
-`planDisassembly` in `src/core/disassembly.ts` and `docs/crafting.md`.
+Disassembly uses an authored yield rather than reversing recipes: several
+recipes may produce the same item, so reversing one would make salvage depend
+on an arbitrary production route. See `src/core/disassembly.ts`,
+`planDisassembly`, and `docs/crafting.md`.
 
-Crafting is a compressed long action that can be interrupted and resumed. An
-in-progress item retains its components. Bleeding can refuse compression, but
-treatment, crafting, and reading remain available at real-time pace so the
-player can still respond. Skills improve through relevant activity and books;
-books and schematics teach recipes beyond the simple recipes known at the start.
+Recipe knowledge may come from a book, a skill level, either, or the starting
+set. A book shortcuts the skill grind; a skilled character does not need the
+book. Knowledge does not waive crafting requirements. See `src/core/schema.ts`,
+`RecipeSchema`, and `src/core/crafting.ts`, `requirementStatus`.
+
+Skill discovery writes to existing recipe knowledge on level-up rather than
+being derived by the readout, so learned recipes remain self-describing in a
+save just like book-taught recipes. See `src/core/character.ts`,
+`Character.awardPractice`, and `src/core/bookReading.ts`, `bookReadingHooks`.
+
+Treatment, crafting, and reading remain available at real-time pace when
+bleeding refuses compression so the player can still respond.
 
 ## Character
 
@@ -2487,40 +2506,30 @@ so it counts for nothing. A lit candle held alone is enough to read by at night.
 `src/core/illumination.ts`, `illuminationAt`, and `src/render/lightFalloff.ts`,
 `installNearFieldFalloff`.
 
-Mesh-first admission protects the first visible geometry without making it wait for
-lighting readiness. A copied sky request may wait outside the pool capacity;
-a mesh completion admits it before the next mesh refill, preventing persistent
-mesh backlog from starving lighting. Native worker FIFO remains the executor;
-its FIFO alone cannot guarantee fairness between these callers. A synchronous build
-of a large field takes far longer than a frame, so the renderer asks the cache for
-off-thread builds of the fields near the camera, one at a time, and never builds while
-drawing. The cache captures the snapshot on the main thread and installs the worker's
-result only while that snapshot is still current, so it is the result a synchronous
-build would give. Each field holds its own pending capture, waiting or out at the
-worker, until the result lands or an edit makes it stale; a capture the worker cannot
-take yet stays on its field for that field's next request, so several fields the camera
-passed can each hold one. See
-`src/game/streamer.ts`, `dispatchSky`, `src/core/skyField.ts`, `request`, and
-`src/render/skylight.ts`, `prepare`.
+Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
+transport therefore belongs ahead of reveal on workers; synchronous completion at
+reveal is a last resort, not the scheduling strategy. Edge fields need priority
+because they are the next rooms a walk discovers. Mesh-first startup admission
+protects the first geometry, while admission at completions prevents mesh backlog
+from starving lighting. Native worker FIFO alone cannot provide fairness between
+these callers. Terrain at the view edge must never be hidden while sky light
+finishes. Give sky work its lead by growing the loaded terrain radius, not by
+shrinking the visible radius or making visible chunks wait for lighting. The
+extra residency trades memory for time to build the next field before it enters
+view; it must not expand mesh or reveal admission. See
+`src/content/base/graphics.jsonnet`, `skyPreloadRings`,
+`src/render/skylight.ts`, `prepare`, `src/game/streamer.ts`, `dispatchSky`
+and `onBeforeReveal`, and `src/core/skyField.ts`, `finishColumn`.
 
-Until a field's answer lands, the view dims its diffuse sky to a content cap, during the
-load pause and in play alike. Near the player, direct sun still follows the shadow map,
-because that map is cast from real geometry; beyond the shadow map, an unbuilt receiver
-gets no direct sun. This is a presentation fallback, not the simulation's answer: a
-query builds the field synchronously, so gameplay already reads the room's real light.
-A room briefly too dark reads as "not lit yet", while open sky in a roofed room reads
-as wrong light; finishing a field before revealing its room would avoid both but stalls
-frames on walks without scheduling to spread that work. When #1261 provides that
-scheduling, finishing before reveal replaces this fallback. See
-`src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete
-result, the view keeps it while an edit is rebuilt, so opening a door cannot flash a
-dark room. The replacement
-swaps atomically, and a late result for superseded geometry cannot install. Retained
-column heights supply the nonresident estimate. CPU and shader share this policy. The
-kept result can delay a darkening edit or step visibly at replacement; that is
-presentation latency only, since gameplay's answer is already current. Results survive
-GPU eviction, so re-entry does not repeat transport. Solve halos and spatial lookup
-cells do not expand the fields. Arbitrary construction and caves remain outside them.
+The dimmed presentation cap remains until #1261 proves the full reveal guarantee
+and verifies it without hitches on the reference laptop. Extra residency is lead
+time, not proof that every dependency arrives in time on a walk. Presentation must
+not substitute its incomplete answer for gameplay's current world-state answer.
+Keep an accepted result through edit revalidation and GPU eviction so a door edit
+cannot flash a dark room and re-entry cannot repeat transport. The retained result
+may briefly delay a visible edit; that latency is preferable to a false transient
+room. See `src/content/base/graphics.jsonnet`, `unbuiltSkyCap`,
+`src/core/skyField.ts`, `SkyFields`, and `src/render/skylight.ts`, `Skylight`.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution
@@ -2648,11 +2657,13 @@ grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `PileMeshes.sync`.
 
 Landing, presentation and duration share a stepped flight so drag cannot shorten
-the range while leaving a light item floating through an undragged arc. The launch
-follows the player's pitch, rather than borrowing the range of a different angle.
-Replay records launch strength rather than a drag-adjusted distance so it can
-reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
-`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+the range while leaving a light item floating through an undragged path. A throw
+leaves along the player's look direction without added lift; gravity alone makes
+the arc. For #1466, this makes the item go where the player aimed, because a
+climbing throw feels unpredictable. Replay records launch strength rather than a
+drag-adjusted distance so it can reproduce the same flight with the recorded aim.
+See `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
+`steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
 footprint is a cell-rounded outline, not the face that meets the air, so one
@@ -3018,27 +3029,40 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
-**Parked service.** Factory service sites use a content mount identity and content-owned
-quality and duration requirements. `src/core/vehicleWork.ts`, `vehicleWorkHooks`, keeps
-the exact UID with its original owner until `src/core/inventory.ts`, `Inventory.vehicleTransfer`
-preflights and commits the transfer, so a stopped or refused action cannot orphan it.
-`src/core/longAction.ts`, `LongActions.beginVehicleWork`, saves references rather than a
-copied part or an interaction closure. Removing a part another part rests on is refused
-before work starts, so no work time is spent on a part that cannot come off.
-Interacting with a parked vehicle part opens the vehicle in the inventory screen's
-surroundings, because exact service requirements and which loose parts fit an empty site
-are facts the world geometry cannot show. Fitted parts are ordinary items with their usual
-details; empty service sites show their content names; each operation names the exact
-vehicle, site and part the player selected and shows the core's own refusal, so the surface
-never promises work the action would refuse. Vehicle reach is measured from the chest to the
-nearest occupied part box, as furniture reach is, and one predicate decides opening, keeping the
-section open and service admission; measuring to the origin would leave a part the player can
-pick and touch out of reach. The reach also needs a clear line to a part box, the same rule as
-furniture, so a wall can't be worked through; the line ignores vehicle cells because the car's
-own body would otherwise hide every part. See `src/core/reach.ts`, `vehicleInReach`, `src/ui/vehicleInspection.ts`,
-`vehicleInspectionViewModel`, and `src/core/interactionPick.ts`, `pickInteractionTarget`.
-Site names stay in content rather than in the saved build, so a reworded pack relabels saved
-vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
+**Part work.** Work requirements belong to the part's item so mods author work
+with the part; an authored site's service wins so a vehicle can override that work.
+Geometry and cargo pocket handling time cannot establish installation cost. See
+`src/core/schema.ts`, `VehicleServiceFields`, and `src/core/inventory.ts`,
+`Inventory.vehiclePlacementService`. Further add-on content follows #1124.
+
+**Add-on regions.** A capability word opens a face by a code rule so mods offer a
+face without authoring geometry. A later narrowing field need not change the word.
+One region function shares lattice and fitted-collision rules, taking clearance from
+the add-on item, so another word does not need another region implementation. See
+`src/core/schema.ts`, `VEHICLE_ADDON_FACES`, and `src/core/cargoSpace.ts`,
+`placementRegion` and `fitIssue`. Sub-cell clearance matters because an add-on
+resting on a thin plate must not invalidate the plate below it.
+
+Every named support must carry the add-on's required word: adding that word is enough
+to make a part a support, without giving `structure` a second meaning. See
+`src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
+belongs with add-ons because it proves support chains without bringing scratch-building
+forward. See `src/content/base/vehicles.jsonnet`, `mounting_plate`, and
+`packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
+
+A stopped or refused action must not orphan or duplicate the selected item; see
+`src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,
+`vehicleWorkHooks`. Saved work describes the target rather than copying the part or
+an interaction closure; see `src/core/longAction.ts`, `LongActions.beginVehicleWork`.
+Admission must reject a supporting part before spending work time on its removal.
+
+Inspection needs the core's own refusal because geometry cannot show service
+requirements; see `src/ui/vehicleInspection.ts`, `vehicleInspectionViewModel`.
+Reach uses occupied part boxes rather than the vehicle origin so a touchable part
+stays reachable, and a clear line prevents working through walls without letting the
+vehicle hide its own parts; see `src/core/reach.ts`, `vehicleInReach`, and
+`src/core/interactionPick.ts`, `pickInteractionTarget`. Site names stay in content so
+a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
 
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing
@@ -3105,27 +3129,21 @@ follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a movin
 vehicle is allowed: coasting, collision and bystander consequences must not vanish
 when a column unloads. Parked vehicles retain their derived world collision.
 
-**Cargo space.** A body's storage and its contents belong to a cargo space: a separate
-part resting on a load floor whose own shape is the hold, so storage travels with the
-part and losing a wall does not lose the load. The game reads the pocket grid from that
-shape rather than from authored numbers; a part's capabilities are names and its sizes
-live in its own data, so each size has one source. Only the floor area counts toward
-capacity, so open beds and flatbeds hold cargo the same way boxes do; the block's height
-only has to clear what is above it. A player sizes a cargo space while placing it by
-dragging out a rectangle, which stops at the edge of the free floor the game works out
-from the load floor and the parts standing on it. Dragging is the complete form of
-choosing a size, so a proposed size can be added on top later without redoing it. The
-floor is a rectangle because storage is a rectangle of pockets, as in a backpack: an odd
-floor takes several spaces, and a rectangle stays valid if shaped spaces ever come, so
-nothing fitted or saved is redone. A space grown to fill walls and roof was not chosen
-because open beds have neither. The block then keeps its size, and a part can't be
-fitted into it. Players build cargo spaces on load floors the vehicle already has; load
-floors and walls built from nothing wait for scratch-built frames, which add to the
-cargo space rather than replace it. Player placement arrives with #1124. A cargo
-space is a datum, so it fits the drawn vehicle the way grips and anchors do: its block
-is its cells, and the block and each free-floor cell snap onto the voxel lattice the
-load floor is drawn on. A space that fills a drawn bed then fits it at any vehicle grain,
-with no tolerance tuned to that grain. See `src/core/cargoSpace.ts`, `freeFloor`.
+**Cargo space.** Storage travels with its part so losing a wall does not lose the
+load. Its shape owns its capacity rather than a second authored size; floor area alone
+counts so open beds and enclosed boxes hold cargo alike. See `src/core/cargoSpace.ts`,
+`cargoGrid` and `cargoSpaceItem`.
+
+Creation and drag sizing follow #1124: a rectangle bounded by the free region is the
+complete form of choosing a size, leaving a suggested size additive. Rectangles match
+inventory pockets and remain valid if shaped spaces arrive; an odd floor can take
+several spaces. Growing a space to walls and roof would exclude open beds. Retaining
+its chosen size lets salvage and refitting preserve the same item. Existing load
+floors bound this work; building floors and walls from nothing belongs to #322.
+
+Cargo is a datum so a space that fills a drawn bed fits at any vehicle grain, without
+a tolerance tuned to that grain. See `src/core/cargoSpace.ts`, `snapBox` and
+`placementRegion`, and `src/core/vehicleBlueprint.ts`, `legalAddonPlacements`.
 
 Entry is seated through animated usable doors for the first loop. Walking through
 plausible interiors is an important long-term requirement for the #322 trucks, RVs

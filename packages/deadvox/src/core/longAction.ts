@@ -7,6 +7,13 @@ import type { WorkPlan } from './crafting.ts';
 import { SCHEDULER_TIME_EPSILON } from './scheduler.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import {
+  copyVehicleWorkPlacement,
+  sameVehiclePlacement,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
+} from './vehicleInstances.ts';
 
 export type RestKind = 'rest' | 'sleep';
 /** Doable jobs run at 1× while bleeding refuses time compression, never while action itself is refused. */
@@ -47,6 +54,7 @@ export type LongJob =
     }
   | {
       jobType: 'vehicleWork';
+      placement: VehicleWorkPlacement;
       kind: 'install' | 'remove';
       vehicleId: number;
       fittingId: string;
@@ -119,11 +127,22 @@ export interface TreatmentActionHooks {
 }
 /** Vehicle work saves only stable owner references; the effect owner retains destination policy. */
 export interface VehicleWorkHooks {
-  validate: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
-  finish: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
+  validate: (
+    kind: 'install' | 'remove',
+    vehicleId: number,
+    target: VehicleWorkTarget,
+    itemUid: number,
+  ) => string | undefined;
+  finish: (
+    kind: 'install' | 'remove',
+    vehicleId: number,
+    target: VehicleWorkTarget,
+    itemUid: number,
+  ) => string | undefined;
 }
 
 export interface VehicleWorkStart {
+  placement: VehicleWorkPlacement;
   kind: 'install' | 'remove';
   vehicleId: number;
   fittingId: string;
@@ -137,7 +156,7 @@ export interface LongActionState {
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftRepair {
-  targetUid: number;
+  target: import('./items.ts').WorkTarget;
   amount: number;
 }
 export interface CraftActionHooks {
@@ -204,6 +223,7 @@ const validateVehicleWork = (job: Extract<LongJob, { jobType: 'vehicleWork' }>):
     !Number.isSafeInteger(job.vehicleId) ||
     job.vehicleId < 1 ||
     !job.fittingId ||
+    !validVehicleWorkPlacement(job.placement) ||
     !Number.isSafeInteger(job.itemUid) ||
     job.itemUid < 1 ||
     !Number.isFinite(job.elapsed) ||
@@ -571,6 +591,7 @@ export class LongActions {
     fittingId,
     itemUid,
     durationSimSeconds: duration,
+    placement,
   }: VehicleWorkStart): string | undefined {
     const actionRefusal = this.bodyActionRefusal();
     if (actionRefusal) {
@@ -582,7 +603,15 @@ export class LongActions {
     if (this.current && !this.current.stopped) {
       return coreMessage(this.sim.registry, 'busy');
     }
-    const reason = this.vehicleWork.validate(kind, vehicleId, fittingId, itemUid);
+    if (!validVehicleWorkPlacement(placement)) {
+      return coreMessage(this.sim.registry, 'partDoesNotFit');
+    }
+    const reason = this.vehicleWork.validate(
+      kind,
+      vehicleId,
+      { id: fittingId, ...copyVehicleWorkPlacement(placement) },
+      itemUid,
+    );
     if (reason) {
       return reason;
     }
@@ -599,11 +628,13 @@ export class LongActions {
       previous.kind === kind &&
       previous.vehicleId === vehicleId &&
       previous.fittingId === fittingId &&
-      previous.itemUid === itemUid
+      previous.itemUid === itemUid &&
+      sameVehiclePlacement(previous.placement, placement)
         ? previous.elapsed
         : 0;
     this.current = {
       jobType: 'vehicleWork',
+      placement: copyVehicleWorkPlacement(placement),
       kind,
       vehicleId,
       fittingId,
@@ -867,7 +898,12 @@ export class LongActions {
           : 'Missing treatment action owner';
       case 'vehicleWork':
         return this.vehicleWork
-          ? this.vehicleWork.validate(job.kind, job.vehicleId, job.fittingId, job.itemUid)
+          ? this.vehicleWork.validate(
+              job.kind,
+              job.vehicleId,
+              { id: job.fittingId, ...copyVehicleWorkPlacement(job.placement) },
+              job.itemUid,
+            )
           : 'Missing vehicle work owner';
       default:
         return undefined;
@@ -924,7 +960,12 @@ export class LongActions {
           throw new Error(reason);
         }
       } else if (job.jobType === 'vehicleWork') {
-        const reason = this.vehicleWork!.finish(job.kind, job.vehicleId, job.fittingId, job.itemUid);
+        const reason = this.vehicleWork!.finish(
+          job.kind,
+          job.vehicleId,
+          { id: job.fittingId, ...copyVehicleWorkPlacement(job.placement) },
+          job.itemUid,
+        );
         if (reason) {
           throw new Error(reason);
         }
