@@ -114,5 +114,4 @@ Debug-only whole-frame CPU submission counters distinguish batching growth from 
 
 - Sun-shadow rendering and flashlight falloff rely on three.js internals; a three.js upgrade must fail loudly, not change them silently.
 - Wide occlusion is tuned by eye on limited indoor scenes. Recheck its strength whenever it or skylight changes.
-- #1122: Dawn/dusk tone transitions and weathering profiles need review on a real GPU.
 - Debug-only look controls must move before their reserved gameplay inputs are bound.
