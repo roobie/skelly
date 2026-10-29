@@ -216,6 +216,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "make_headlamp_strap",
+      "consumeFitted": true,
       "result": { "item": "headlamp", "count": 1 },
       "timeGameMinutes": 10,
       "skills": { "crafting": 0 },
@@ -224,18 +225,6 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
         [{ "item": "flashlight", "count": 1 }],
         [{ "item": "cloth_strip", "count": 1 }],
         [{ "item": "duct_tape", "count": 1 }]
-      ]
-    },
-    {
-      "id": "make_torch_bundle",
-      "result": { "item": "torch", "count": 3 },
-      "timeGameMinutes": 30,
-      "skills": { "crafting": 0 },
-      "qualities": { "cutting": 1 },
-      "components": [
-        [{ "item": "stick", "count": 3 }],
-        [{ "item": "rag", "count": 3 }],
-        [{ "item": "lamp_oil", "count": 1 }]
       ]
     },
     {

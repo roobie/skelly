@@ -499,6 +499,24 @@
     {
       "category": "weapon",
       "description": "A baseball bat reinforced with nails.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 10,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "baseball_bat",
+            "rounding": "floor"
+          },
+          {
+            "count": 6,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "nails",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -536,12 +554,30 @@
     {
       "category": "weapon",
       "description": "A sharpened wooden shaft bound at the tip.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 8,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "stick",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "nylon_cord",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
       },
       "id": "spear",
-      "model": "stick",
+      "model": "steel_pipe",
       "name": "Sharpened spear",
       "notLoot": false,
       "size": [1, 10],
@@ -609,6 +645,24 @@
     {
       "category": "light",
       "description": "A battery-powered beam worn on the head, leaving both hands free.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 5,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "flashlight",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "cloth_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

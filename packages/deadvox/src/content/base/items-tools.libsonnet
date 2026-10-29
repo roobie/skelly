@@ -229,6 +229,7 @@ local items = [
     model: 'baseball_bat',
     twoHanded: true,
     description: 'A baseball bat reinforced with nails.',
+    disassembly: disassembly(10, [yield('baseball_bat', 1), yield('nails', 6)]),
     weapon: melee('pierce', 'swing', damage=17, reach=0.8, cooldownSimSeconds=1.3, stamina=10, impulse=9, wearPerHit=0.015) + heavySwing,
   },
   {
@@ -236,9 +237,10 @@ local items = [
     name: 'Sharpened spear',
     category: 'weapon',
     size: [1, 10],
-    model: 'stick',
+    model: 'steel_pipe',
     twoHanded: true,
     description: 'A sharpened wooden shaft bound at the tip.',
+    disassembly: disassembly(8, [yield('stick', 1), yield('nylon_cord', 1)]),
     weapon: melee('pierce', 'thrust', damage=14, reach=1.1, cooldownSimSeconds=1, stamina=7, impulse=6, wearPerHit=0.02) + lightSwing,
   },
   {
@@ -257,6 +259,7 @@ local items = [
     model: 'headlamp',
     size: [1, 2],
     description: 'A battery-powered beam worn on the head, leaving both hands free.',
+    disassembly: disassembly(5, [yield('flashlight', 1), yield('cloth_strip', 1)]),
     wearable: { slot: 'head', encumbrance: 0 },
     figureModels: [{ model: 'headlamp', frame: 'head', pivot: [0, 0, 0], at: [0, 0.055, 0], turn: [0, 0, 0] }],
     light: batteryBeam(

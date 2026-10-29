@@ -229,6 +229,7 @@
           }
         ]
       ],
+      "consumeFitted": true,
       "id": "make_headlamp_strap",
       "qualities": {},
       "result": {
@@ -239,40 +240,6 @@
         "crafting": 0
       },
       "timeGameMinutes": 10
-    },
-    {
-      "components": [
-        [
-          {
-            "count": 3,
-            "item": "stick"
-          }
-        ],
-        [
-          {
-            "count": 3,
-            "item": "rag"
-          }
-        ],
-        [
-          {
-            "count": 1,
-            "item": "lamp_oil"
-          }
-        ]
-      ],
-      "id": "make_torch_bundle",
-      "qualities": {
-        "cutting": 1
-      },
-      "result": {
-        "count": 3,
-        "item": "torch"
-      },
-      "skills": {
-        "crafting": 0
-      },
-      "timeGameMinutes": 30
     },
     {
       "components": [

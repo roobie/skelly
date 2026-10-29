@@ -467,6 +467,24 @@
     {
       "category": "clothing",
       "description": "Paperbacks held together with tape.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 15,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "paperback",
+            "rounding": "floor"
+          },
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "duct_tape",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -475,16 +493,16 @@
         {
           "at": [0, 0, 0],
           "frame": "torso",
-          "model": "stab_vest_worn",
+          "model": "utility_vest_worn",
           "overTorso": {
-            "jacket": "stab_vest_worn_jacket"
+            "jacket": "utility_vest_worn_jacket"
           },
           "pivot": [0, 0, 0],
           "turn": [0, 0, 0]
         }
       ],
       "id": "taped_armour",
-      "model": "stab_vest",
+      "model": "utility_vest",
       "name": "Taped armour",
       "notLoot": false,
       "size": [3, 3],
@@ -500,7 +518,6 @@
         "warmth": 2,
         "wearPerDamage": 0.0030000000000000001
       },
-      "weight": 1300,
       "workInProgress": false
     },
     {
