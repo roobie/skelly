@@ -24,6 +24,9 @@ export const scopeDiscPixels = ({ engine, view }) => {
   const source = new WebGLRenderTarget(size.x, size.y);
   const image = new WebGLRenderTarget(size.x, size.y);
   const output = new WebGLRenderTarget(size.x, size.y);
+  // Keep native-resolution witnesses, but do not shade pixels the oracle never reads.
+  output.scissor.set(x0, y0, width, height);
+  output.scissorTest = true;
   const silhouette = new OpticHousingMask();
   const pass = opticLensPass(engine.registry.graphics.get('core').opticLens);
   const previous = renderer.getRenderTarget();
