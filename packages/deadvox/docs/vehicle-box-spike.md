@@ -48,7 +48,7 @@ box channel filter is available at its query owner, but the experiment does not 
 all channel consumers. Existing actor shapes remain in use for movement; copied local
 probes use body envelopes, so exact amalgam probe fidelity still needs a dedicated seam.
 
-The benchmark uses box actor movement envelopes and explicit local heading probes,
-not zombie perception, actor-pair separation, rendering, streaming or a city simulation.
+The benchmark uses box actor movement/probe envelopes, not zombie perception,
+actor-pair separation, rendering, streaming or a city simulation.
 It is a bounded collision-frame comparison workload, not a frame-rate guarantee. Broad-phase tuning and solver alternatives must reuse that workload
 before comparing timings. Build cost itself is not tech debt; see `GLOSSARY.md`, "Tech debt".
