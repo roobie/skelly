@@ -6,7 +6,7 @@ import {
   type PartSnapshot,
   VehicleRapierQueries,
 } from '../../src/bench/vehicleRapier.ts';
-import { convexPieces, placeMesh, readGlbMesh } from '../../src/bench/vehicleShapes.ts';
+import { type ConvexConfig, convexPieces, placeMesh, readGlbMesh } from '../../src/bench/vehicleShapes.ts';
 import type { Vec3 } from '../../src/core/coords.ts';
 import { steppedItemFlight } from '../../src/core/itemThrow.ts';
 import { type Body, stepBody } from '../../src/core/physics.ts';
@@ -69,6 +69,8 @@ const probe = (queries: VehicleRapierQueries, [min, max]: Box) => {
       return queries.rayHit(from, direction, 40 + span[0]);
     }),
   );
+  // Rays leaving the solid always miss, so the miss path stays covered whatever the tier's shapes do.
+  rays.push(queries.rayHit(at(-0.5, 0.4137, 0.5713), [-1, 0, 0], 40), queries.rayHit(at(0.5, 1.7, 0.5), [0, 1, 0], 40));
   const nudges = [-1e-6, -1e-9, 0, 1e-9, 1e-6];
   const faces: Vec3[] = [];
   for (const axis of [0, 1, 2]) {
@@ -102,13 +104,19 @@ const probe = (queries: VehicleRapierQueries, [min, max]: Box) => {
     height: Math.min(1, span[1] || 1),
     onGround: false,
   };
+  const free: Body = { ...body, pos: [...body.pos], vel: [...body.vel] };
   const poses: Vec3[] = [];
+  let contactFrames = 0;
   for (let frame = 0; frame < 180; frame++) {
     stepBody(body, 1 / 60, seam.terrain, { gravity: 0, stepHeight: 0, shapeOf: seam.shapeOf });
+    stepBody(free, 1 / 60, () => false, { gravity: 0, stepHeight: 0 });
     poses.push([...body.pos]);
+    contactFrames += body.pos.some((v, axis) => v !== free.pos[axis]) ? 1 : 0;
   }
   return {
     rays,
+    rayHits: rays.filter(Boolean).length,
+    contactFrames,
     points: faces.map((p) => queries.point(p)),
     overlaps,
     flush,
@@ -128,22 +136,27 @@ const boundsOf = (positions: Float32Array): Box => {
 };
 
 /** The panel, plus when `model` bytes are given a real exported part standing off-grid beside it. */
-export const replayVehicleQueries = (rapier: typeof deterministic = deterministic, model?: Uint8Array) => {
+export const replayVehicleQueries = (
+  rapier: typeof deterministic = deterministic,
+  model?: Uint8Array,
+  config?: ConvexConfig,
+) => {
   const shapes: ModelShapes | undefined =
     model &&
+    config &&
     (() => {
       const mesh = readGlbMesh(model);
-      return { mesh, convex: convexPieces(mesh) };
+      return { mesh, convex: convexPieces(mesh, config) };
     })();
   const offset: Vec3 = [3.3719, 0.1303, -0.7117];
   const place = (point: Vec3): Vec3 => [point[0] + offset[0], point[1] + offset[1], point[2] + offset[2]];
-  const placed = shapes && placeMesh(shapes.mesh, place, false);
+  const placed = shapes?.mesh && placeMesh(shapes.mesh, place, false);
   const partBounds = placed && boundsOf(placed.positions);
   const snapshot: PartSnapshot = {
     version: 0,
     parts: [
       ...panelSnapshot.parts,
-      ...(shapes && placed && partBounds
+      ...(shapes?.convex && placed && partBounds
         ? [
             {
               key: 'parked/part',

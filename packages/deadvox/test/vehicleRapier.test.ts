@@ -4,7 +4,7 @@ import deterministic from '@dimforge/rapier3d-deterministic-compat';
 import { beforeAll, expect, it } from 'vitest';
 import { VehicleQuerySeam } from '../src/bench/vehicleQuerySeam.ts';
 import { VehicleRapierQueries, vehicleSnapshot } from '../src/bench/vehicleRapier.ts';
-import { convexPieces, readGlbMesh } from '../src/bench/vehicleShapes.ts';
+import { convexPieces, parseConvexConfig, readGlbMesh } from '../src/bench/vehicleShapes.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
@@ -108,24 +108,31 @@ it('preserves signed zero and undefined output fields in the browser replay enco
 });
 
 it('replays movement, contact, oblique rays, edge probes and throws identically in repeated runs of every tier', () => {
-  const first = replay(deterministic, shellBytes);
+  const first = replay(deterministic, shellBytes, config);
   for (const tier of ['boxes', 'hulls', 'mesh'] as const) {
     expect(first[tier]!.poses.length).toBeGreaterThan(0);
-    expect(first[tier]!.panel.rapierFloats).toBeGreaterThan(0);
-    expect(first[tier]!.part!.rapierFloats).toBeGreaterThan(0);
+    for (const probe of [first[tier]!.panel, first[tier]!.part!]) {
+      expect(probe.rapierFloats).toBeGreaterThan(0);
+      expect(probe.contactFrames, `${tier}: the sliding body must leave its free path`).toBeGreaterThan(0);
+      expect(probe.rayHits, `${tier}: some rays must hit`).toBeGreaterThan(0);
+      expect(probe.rayHits, `${tier}: some rays must miss`).toBeLessThan(probe.rays.length);
+    }
   }
-  expect(encodeReplay(replay(deterministic, shellBytes))).toEqual(encodeReplay(first));
+  expect(encodeReplay(replay(deterministic, shellBytes, config))).toEqual(encodeReplay(first));
   expect(replay(standard as unknown as typeof deterministic).boxes).toEqual(replay(deterministic).boxes);
 });
 
 const modelDir = new URL('../src/content/base/assets/models/', import.meta.url);
 const shellBytes = new Uint8Array(readFileSync(new URL('hatchback_shell.glb', modelDir)));
+const config = parseConvexConfig(
+  JSON.parse(readFileSync(new URL('../src/bench/vehicleShapes.config.json', import.meta.url), 'utf8')),
+);
 
 const tiersOf = (model: string) => {
   const registry = baseRegistry();
   const boxes = Object.values(registry.models.get(model)!.parts!).flatMap((part) => part.collision!);
   const mesh = readGlbMesh(new Uint8Array(readFileSync(new URL(`${model}.glb`, modelDir))));
-  const shape = { signature: model, pieces: convexPieces(mesh).pieces, mesh };
+  const shape = { signature: model, pieces: convexPieces(mesh, config).pieces, mesh };
   const snapshot = { version: 0, parts: [{ key: model, boxes, shape }] };
   const bounds = {
     min: [0, 1, 2].map((a) => Math.min(...boxes.map((b) => b.min[a]!))) as Vec3,
@@ -205,6 +212,7 @@ it('answers a static triangle mesh only on its surface, while a convex piece als
   try {
     const [piece] = convexPieces(
       readGlbMesh(new Uint8Array(readFileSync(new URL('hatchback_engine.glb', modelDir)))),
+      config,
     ).pieces.toSorted((a, b) => b.length - a.length);
     const inside = [0, 1, 2].map((a) => {
       let sum = 0;

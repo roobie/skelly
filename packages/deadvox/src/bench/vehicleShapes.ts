@@ -71,13 +71,30 @@ export const placeMesh = (mesh: PartMesh, place: (point: Vec3) => Vec3, reflects
   return { positions, indices };
 };
 
-/** Largest distance a vertex may stand off a face plane and the piece still count as convex, in metres. */
-const CONVEX_TOLERANCE = 1e-4;
-/** Cuts per piece before its remaining hollows are closed by its hull. */
-const MAX_SPLIT_DEPTH = 6;
+/** Decomposition tunables; the caller supplies them, so each run names the configuration it measured. */
+export interface ConvexConfig {
+  /** Largest distance a vertex may stand off a face plane and the piece still count as convex, in metres. */
+  readonly tolerance: number;
+  /** Cuts per piece before its remaining hollows are closed by its hull. */
+  readonly maxDepth: number;
+  /** Candidate cut positions tried per axis, evenly spread over the piece's face centres. */
+  readonly cutsPerAxis: number;
+}
 
-/** Candidate cut positions tried per axis, evenly spread over the piece's face centres. */
-const CUTS_PER_AXIS = 24;
+export const parseConvexConfig = (data: unknown): ConvexConfig => {
+  const { tolerance, maxDepth, cutsPerAxis } = (data ?? {}) as Record<string, unknown>;
+  const positive = (value: unknown, name: string): number => {
+    if (typeof value !== 'number' || !(value > 0)) {
+      throw new Error(`Convex configuration ${name} must be a positive number`);
+    }
+    return value;
+  };
+  return {
+    tolerance: positive(tolerance, 'tolerance'),
+    maxDepth: positive(maxDepth, 'maxDepth'),
+    cutsPerAxis: positive(cutsPerAxis, 'cutsPerAxis'),
+  };
+};
 
 type Triangle = readonly [number, number, number];
 
@@ -100,7 +117,7 @@ export interface ConvexPieces {
  * Splits a part's drawn triangles into convex pieces: connected shells first, then axis cuts at the vertex coordinate
  * that leaves the fewest vertices behind a face plane. Deterministic float arithmetic only, so every runtime cuts alike.
  */
-export const convexPieces = (mesh: PartMesh): ConvexPieces => {
+export const convexPieces = (mesh: PartMesh, config: ConvexConfig): ConvexPieces => {
   const weld = new Map<string, number>();
   const points: Vec3[] = [];
   const identity = (i: number): number => {
@@ -160,8 +177,8 @@ export const convexPieces = (mesh: PartMesh): ConvexPieces => {
       let below = 0;
       for (const v of vertices) {
         const side = dot(normal, subtract(points[v]!, origin));
-        above += side > CONVEX_TOLERANCE ? 1 : 0;
-        below += side < -CONVEX_TOLERANCE ? 1 : 0;
+        above += side > config.tolerance ? 1 : 0;
+        below += side < -config.tolerance ? 1 : 0;
       }
       count += Math.min(above, below);
     }
@@ -180,7 +197,7 @@ export const convexPieces = (mesh: PartMesh): ConvexPieces => {
     let best: { score: number; low: Triangle[]; high: Triangle[] } | undefined;
     for (let axis = 0; axis < 3; axis++) {
       const cuts = [...new Set(list.map((triangle) => centre(triangle, axis)))].sort((a, b) => a - b);
-      const stride = Math.max(1, Math.ceil(cuts.length / CUTS_PER_AXIS));
+      const stride = Math.max(1, Math.ceil(cuts.length / config.cutsPerAxis));
       for (const cut of cuts.slice(0, -1).filter((_, i) => i % stride === 0)) {
         const low = list.filter((triangle) => centre(triangle, axis) <= cut);
         const high = list.filter((triangle) => centre(triangle, axis) > cut);
@@ -194,7 +211,7 @@ export const convexPieces = (mesh: PartMesh): ConvexPieces => {
   };
   const split = (list: readonly Triangle[], depth: number): void => {
     const concave = hollows(list);
-    const cut = concave === 0 || list.length <= 4 || depth >= MAX_SPLIT_DEPTH ? undefined : bestCut(list);
+    const cut = concave === 0 || list.length <= 4 || depth >= config.maxDepth ? undefined : bestCut(list);
     if (!cut || cut.low.length === 0 || cut.high.length === 0) {
       keep(list, concave);
       return;

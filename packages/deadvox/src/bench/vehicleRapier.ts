@@ -23,47 +23,62 @@ export interface PartSnapshot {
   parts: readonly { key: string; boxes: readonly ModelBox[]; shape?: PartShape }[];
 }
 
-/** A model's drawn triangles and convex pieces in its own frame; built once per model, as an export would bake them. */
+/**
+ * A model's shapes in its own frame, built once per model as an export would bake them. A tier needs only its own:
+ * `convex` for hulls, `mesh` for the triangle mesh.
+ */
 export interface ModelShapes {
-  readonly mesh: PartMesh;
-  readonly convex: ConvexPieces;
+  readonly mesh?: PartMesh;
+  readonly convex?: ConvexPieces;
 }
 
 const vector = ([x, y, z]: Vec3) => ({ x, y, z });
 const rotation = { x: 0, y: 0, z: 0, w: 1 };
 
+/** Where a tier's baked shapes come from; boxes need none. */
+export interface ShapeSource {
+  tier: ColliderTier;
+  of: (model: string) => ModelShapes | undefined;
+}
+
+type ProjectedPart = ReturnType<typeof projectVehicleParts>[number];
+
+/** Places only what the tier consumes, so its build and detach cost carries no other tier's geometry. */
+const placedShape = ({ tier }: ShapeSource, part: ProjectedPart, shapes: ModelShapes): PartShape => {
+  const place = (point: Vec3) => transformPoint(part.transform, point);
+  const placePieces = (pieces: readonly Float32Array[]) =>
+    pieces.map((points) => placeMesh({ positions: points, indices: new Uint32Array() }, place, false).positions);
+  const signature = `${part.model}@${JSON.stringify(part.transform)}`;
+  if (tier === 'hulls' && shapes.convex) {
+    return { signature, pieces: placePieces(shapes.convex.pieces) };
+  }
+  return { signature, ...(shapes.mesh ? { mesh: placeMesh(shapes.mesh, place, part.transform.mirror) } : {}) };
+};
+
 export const vehicleSnapshot = (
   registry: Registry,
   vehicles: VehicleInstances,
   blockSize: number,
-  shapesOf?: (model: string) => ModelShapes | undefined,
+  source?: ShapeSource,
 ): PartSnapshot => ({
   version: vehicles.version,
   parts: [...vehicles.records].flatMap(([id, vehicle]) =>
     projectVehicleParts(registry, id, vehicle, blockSize).map((part) => {
       const shapes =
-        shapesOf && part.model !== undefined && !registry.items.get(part.item.type)?.vehicle?.cargoSpace
-          ? shapesOf(part.model)
+        source && source.tier !== 'boxes' && part.model !== undefined && !isCargoSpace(registry, part)
+          ? source.of(part.model)
           : undefined;
-      const place = (point: Vec3) => transformPoint(part.transform, point);
-      const placePieces = (pieces: readonly Float32Array[]) =>
-        pieces.map((points) => placeMesh({ positions: points, indices: new Uint32Array() }, place, false).positions);
       return {
         key: `${id}/${part.fittingId}`,
         boxes: part.boxes,
-        ...(shapes
-          ? {
-              shape: {
-                signature: `${part.model}@${JSON.stringify(part.transform)}`,
-                pieces: placePieces(shapes.convex.pieces),
-                mesh: placeMesh(shapes.mesh, place, part.transform.mirror),
-              },
-            }
-          : {}),
+        ...(source && shapes ? { shape: placedShape(source, part, shapes) } : {}),
       };
     }),
   ),
 });
+
+const isCargoSpace = (registry: Registry, part: ProjectedPart): boolean =>
+  Boolean(registry.items.get(part.item.type)?.vehicle?.cargoSpace);
 
 export interface ColliderCounts {
   colliders: number;

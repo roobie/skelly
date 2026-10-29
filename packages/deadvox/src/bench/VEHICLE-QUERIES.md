@@ -22,6 +22,12 @@ into the export instead. `convexPieces` splits shells and cuts concave ones, and
 pieces still concave at its depth cap close their hollow. A static triangle mesh
 answers only on its surface, so a body fully inside it overlaps nothing.
 
+The decomposition tunables are fidelity, collider count and cost, so a run takes
+them as an explicit configuration (`vehicleShapes.config.json`, parsed by
+`parseConvexConfig`) and the bench prints the one it measured. Each tier prepares
+only the geometry it consumes (`vehicleRapier.ts`, `ShapeSource`), so build and
+detach prices carry no other tier's placement or decomposition.
+
 ## Temporary shortcuts
 
 The box-body adapter deliberately does not replace zombie amalgam geometry. Doing
@@ -52,7 +58,13 @@ implied by the query experiment. See `packages/deadvox/src/core/itemThrow.ts`,
 ## Evidence boundary
 
 Box zombie/probe bodies in the benchmark measure the movement seam, not zombie AI,
-amalgam traversal, sight or channel policy. Serialized world size is a storage
+amalgam traversal, sight or channel policy. The single-step rows start a fresh
+actor or probe on every repetition and advance it once, so they price a query's
+first answer and never sustained contact or sliding, where a convex or triangle
+narrow phase works hardest. Only the contact rows (shared world-space inputs
+derived from each car's fitted-box bounds) price rays that hit and miss and a
+body that walks into a car and slides along it; the bench prints their hit and
+contact counts and refuses to report a workload that never touches. Serialized world size is a storage
 proxy, not resident WASM memory; process deltas include allocator growth and garbage.
 Fixture agreement across runtimes is a necessary gate, not proof of integrated
 simulation determinism; see `packages/deadvox/test/browser/vehicle-rapier.mjs`.

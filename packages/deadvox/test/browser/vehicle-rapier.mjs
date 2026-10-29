@@ -21,6 +21,9 @@ const summary = { node: process.version, repeats, runs: [], divergence: null, ra
 const model = readFileSync(
   fileURLToPath(new URL('../../src/content/base/assets/models/hatchback_shell.glb', import.meta.url)),
 );
+const config = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../../src/bench/vehicleShapes.config.json', import.meta.url)), 'utf8'),
+);
 let baseline;
 const compare = async (runtime, version, repeat, encoded) => {
   assert.ok(encoded.length > 0, 'Replay must not be empty');
@@ -52,7 +55,7 @@ try {
   const reference = await vite.ssrLoadModule('/test/fixtures/vehicleRapierReplay.ts');
   await reference.initializeVehicleReplay();
   for (let repeat = 0; repeat < repeats; repeat++) {
-    const output = reference.replayVehicleQueries(undefined, new Uint8Array(model));
+    const output = reference.replayVehicleQueries(undefined, new Uint8Array(model), config);
     for (const [tier, result] of Object.entries(output)) {
       assert.ok(result.poses.length > 0 && result.flight.points.length > 0 && result.rays.some((v) => v !== undefined));
       for (const [name, probe] of [
@@ -60,6 +63,8 @@ try {
         ['part', result.part],
       ]) {
         assert.ok(probe.rapierFloats > 0, `${tier}/${name}: no Rapier float answers`);
+        assert.ok(probe.contactFrames > 0, `${tier}/${name}: the sliding body never left its free path`);
+        assert.ok(probe.rayHits > 0 && probe.rayHits < probe.rays.length, `${tier}/${name}: rays must hit and miss`);
         summary.rapierFloats[`${tier}/${name}`] = probe.rapierFloats;
       }
       summary.colliders[tier] = result.counts;
@@ -80,13 +85,16 @@ try {
         const page = await browser.newPage();
         try {
           await page.goto(`http://127.0.0.1:${address.port}/test/browser/vehicle-rapier.html`);
-          const encoded = await page.evaluate(async (base64) => {
-            // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root TypeScript fixture URL
-            const fixture = await import('/test/fixtures/vehicleRapierReplay.ts');
-            await fixture.initializeVehicleReplay();
-            const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
-            return fixture.encodeReplay(fixture.replayVehicleQueries(undefined, bytes));
-          }, model.toString('base64'));
+          const encoded = await page.evaluate(
+            async ({ base64, convexConfig }) => {
+              // biome-ignore lint/correctness/noUnresolvedImports: Vite serves this browser-root TypeScript fixture URL
+              const fixture = await import('/test/fixtures/vehicleRapierReplay.ts');
+              await fixture.initializeVehicleReplay();
+              const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+              return fixture.encodeReplay(fixture.replayVehicleQueries(undefined, bytes, convexConfig));
+            },
+            { base64: model.toString('base64'), convexConfig: config },
+          );
           await compare(runtime, browser.version(), repeat, encoded);
         } finally {
           await page.close();
