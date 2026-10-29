@@ -67,6 +67,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'inventory[].search.minSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].search.maxSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].throwFlightSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'inventory[].throwGravityMetresPerSimSecondSquared',
+    clock: 'Sim',
+    unit: 'PerSecondSquared',
+    dimension: 'acceleration',
+  },
   { path: 'inventory[].furnitureMove.slide.stepSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills[].inventory.handlingPerCellSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills[].inventory.handlingGroundSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

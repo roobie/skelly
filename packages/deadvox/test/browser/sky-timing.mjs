@@ -111,14 +111,14 @@ if(timingJob) {
             '  private receive(worker: Worker, msg: FromMesher): void {\nglobalThis.skyTiming?.receive(msg);',
           )
           .replace(
-            '    if (this.skyReply) {',
+            '    if (this.skyReplies.size >= this.maxInFlight) {',
             `
-globalThis.skyTiming?.record('admission',{bounds:input.bounds,mesh:[...this.inFlight],meshCapacity:this.maxInFlight,lightingBusy:Boolean(this.skyReply)});
-    if (this.skyReply) {`,
+globalThis.skyTiming?.record('admission',{bounds:input.bounds,mesh:[...this.inFlight],meshCapacity:this.maxInFlight,lightingBusy:this.skyReplies.size});
+    if (this.skyReplies.size >= this.maxInFlight) {`,
           )
           .replace(
-            '    this.pendingSky = input;',
-            '    this.pendingSky = input;\nglobalThis.skyTiming?.queue(input,[...this.inFlight],this.firstMeshDelivered);',
+            '    this.pendingSky.push({ id, input });',
+            '    this.pendingSky.push({ id, input });\nglobalThis.skyTiming?.queue(input,[...this.inFlight],this.firstMeshDelivered);',
           )
           .replace(
             '    this.receiveMesh(msg);',
@@ -164,22 +164,21 @@ if(!entry.request) {
       if (path.endsWith('/src/render/skylight.ts')) {
         return code
           .replace(
-            '    if (index === undefined) {\n      return;\n    }\n    const start = this.clock();',
+            '  private request(index: number): boolean {',
             `
-    if (index !== undefined) {
-      const timingRevision=this.sky.owner.world.version;
-      const timingField=this.fields[index];
-      globalThis.skyTiming?.once('candidate',index+':'+timingRevision,{field:index,revision:timingRevision,bounds:timingField.bounds,dependency:timingField.dependency,lightingBusy:this.inFlight,priorLighting:globalThis.skyTiming.lastSky});
-    }
-    if (index === undefined) {
-      return;
-    }
-    const start = this.clock();`,
+  private request(index: number): boolean {
+    const timingRevision=this.sky.owner.world.version;
+    const timingField=this.fields[index];
+    globalThis.skyTiming?.once('candidate',index+':'+timingRevision,{field:index,revision:timingRevision,bounds:timingField.bounds,dependency:timingField.dependency,lightingBusy:this.inFlight,priorLighting:globalThis.skyTiming.lastSky});`,
           )
           .replace(
             '      this.shown[index] = result;',
             `
-if(result) globalThis.skyTiming?.record('published',{field:index,bounds:this.fields[index].bounds,job:globalThis.skyTiming.lastSky});
+if(result) {
+  const bounds=this.fields[index].bounds;
+  const job=globalThis.skyTiming?.jobs.findLast(job=>job.type==='sky' && JSON.stringify(job.bounds)===JSON.stringify(bounds) && job.receivedAbsoluteRealMs !== undefined);
+  globalThis.skyTiming?.record('published',{field:index,bounds,job:job?.id ?? null});
+}
       this.shown[index] = result;`,
           )
           .replace(

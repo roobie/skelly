@@ -1,6 +1,9 @@
 import { BoxGeometry, Mesh, MeshLambertMaterial } from 'three';
 import { expect, it, vi } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
+import { graphicsTuningOf } from '../src/core/graphicsTuning.ts';
+// biome-ignore lint/performance/noNamespaceImport: module namespace is required to spy on the synchronous build.
+import * as skyTransport from '../src/core/skyTransport.ts';
 import { skyFixture } from './fixtures/sky.ts';
 import { fixtureBox } from './fixtures/skyWorld.ts';
 
@@ -55,24 +58,42 @@ it('draws dimmed sky, at or below the cap, for a field the cache has not built, 
   expect(data[3]).toBe(1);
 });
 
-it('certifies only current, published proximity lighting while leaving distant fields unbuilt', () => {
+it('certifies only current, published proximity lighting while prebuilding distant loaded fields', () => {
   const fixture = skyFixture([fixtureBox, { min: [80, 1, 4], max: [88, 9, 12] }]);
   const position: Vec3 = [8, 4, 8];
   expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
   fixture.update(position);
-  expect(fixture.pending).toHaveLength(1);
+  expect(fixture.pending).toHaveLength(2);
+  fixture.complete();
   fixture.complete();
   expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
   fixture.update(position);
   expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
   expect(fixture.sky.inspect()[0]!.resident).toBe(true);
-  expect(fixture.sky.inspect()[1]!.complete).toBe(false);
+  expect(fixture.sky.inspect()[1]!.complete).toBe(true);
   fixture.world.setBlock(4, 5, 8, 0);
   expect(fixture.sky.loadingReadiness(position).ready).toBe(false);
   fixture.update(position);
   fixture.complete();
   fixture.update(position);
   expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
+});
+
+it('prebuilds a loaded margin field before it enters view without expanding GPU residency', () => {
+  const boxes = [200, 240].map((x) => ({ min: [x, 1, 4] as Vec3, max: [x + 9, 10, 13] as Vec3 }));
+  const withoutMargin = skyFixture(boxes, () => 0, 160);
+  withoutMargin.update();
+  expect(withoutMargin.pending).toHaveLength(0);
+  const withMargin = skyFixture(boxes, () => 0, 256);
+  withMargin.update();
+  expect(withMargin.pending.length).toBeGreaterThan(1);
+  expect(withMargin.pending[0]!.input.bounds).toEqual(withMargin.fields.fields[0]!.bounds);
+  withMargin.complete();
+  withMargin.update();
+  expect(withMargin.sky.inspect()[0]!.complete).toBe(true);
+  expect(withMargin.sky.inspect()[0]!.resident).toBe(false);
+  withMargin.update([204, 4, 8]);
+  expect(withMargin.sky.inspect()[0]!.resident).toBe(true);
 });
 
 it('does not request unavailable lighting dependencies in a partial recorded world', () => {
@@ -122,18 +143,58 @@ it('discards a worker completion after a roof edit instead of publishing stale f
   expect(fixture.sky.at([8.5, 8.5, 8.5])).toBeLessThan(1);
 });
 
-it('prepares the next independent snapshot while the first worker request is outstanding', () => {
-  const fixture = skyFixture([fixtureBox, { min: [40, 1, 4], max: [48, 9, 12] }]);
-  const chunks = vi.spyOn(fixture.world, 'getChunk');
-  fixture.update([24, 4, 8]);
-  expect(fixture.pending).toHaveLength(1);
-  const firstSource = new Set(
-    fixture.pending[0]!.input.chunks.map((chunk) => [chunk.cx, chunk.cy, chunk.cz].join(',')),
-  );
-  fixture.update([24, 4, 8]);
-  expect(fixture.pending).toHaveLength(1);
-  expect(chunks.mock.calls.some((coords) => !firstSource.has(coords.join(',')))).toBe(true);
-  chunks.mockRestore();
+it('prebuilds loaded fields nearest the reveal edge first with concurrent jobs bounded by content', () => {
+  const boxes = Array.from({ length: 5 }, (_, index) => ({
+    min: [4 + index * 24, 1, 4] as Vec3,
+    max: [13 + index * 24, 10, 13] as Vec3,
+  }));
+  const fixture = skyFixture(boxes);
+  fixture.update();
+  expect(fixture.pending.length).toBeGreaterThan(1);
+  expect(fixture.pending.length).toBe(graphicsTuningOf(fixture.registry).skyJobsInFlight);
+  expect(fixture.pending.length).toBeLessThan(boxes.length);
+  const submitted = fixture.pending.map(({ input }) => input.bounds.min[0]);
+  expect(submitted).toEqual([...submitted].sort((a, b) => b - a));
+  expect(submitted[0]).toBe(fixture.fields.fields.at(-1)!.bounds.min[0]);
+  const outstanding = fixture.pending.length;
+  fixture.update();
+  expect(fixture.pending).toHaveLength(outstanding);
+  fixture.complete();
+  fixture.update();
+  expect(fixture.pending).toHaveLength(outstanding);
+});
+
+it.each(['ready', 'missing'] as const)('finishes at reveal only when the worker answer is %s', (state) => {
+  const fixture = skyFixture();
+  fixture.update();
+  if (state === 'ready') {
+    fixture.complete();
+  }
+  const build = vi.spyOn(skyTransport, 'buildSkyResult');
+  try {
+    fixture.fields.finishColumn(0, 0);
+    expect(build).toHaveBeenCalledTimes(Number(state === 'missing'));
+    const answer = fixture.fields.current(0);
+    expect(answer?.complete).toBe(true);
+    fixture.update();
+    expect(fixture.sky.inspect()[0]!.current).toBe(true);
+    expect(fixture.sky.at(inside)).toBe(fixture.fields.visibilityAt(inside));
+    expect(fixture.sky.at(inside)).toBeLessThan(fixture.unbuiltSkyCap);
+    if (state === 'missing') {
+      fixture.complete();
+      expect(fixture.fields.current(0)).toBe(answer);
+      expect(fixture.sky.stats.discarded).toBeGreaterThan(0);
+    }
+  } finally {
+    build.mockRestore();
+  }
+});
+
+it('leaves unavailable reveal neighbours to the residency policy without caching an incomplete answer', () => {
+  const fixture = skyFixture();
+  fixture.world.removeChunk(0, 0, 0);
+  fixture.fields.finishColumn(0, 0);
+  expect(fixture.fields.current(0)).toBeUndefined();
 });
 
 it('keeps a resident room dark during an opening edit and swaps only the accepted replacement', () => {
@@ -165,8 +226,10 @@ it('retains CPU results across GPU eviction and reentry without a bright fallbac
   for (const box of boxes) {
     const position: Vec3 = [box.min[0] + 4, 4, 8];
     fixture.update(position);
-    fixture.complete();
-    fixture.update(position);
+    while (fixture.pending.length > 0) {
+      fixture.complete();
+      fixture.update(position);
+    }
   }
   expect(fixture.sky.stats.accepted).toBe(boxes.length);
   const { requested } = fixture.sky.stats;

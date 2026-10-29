@@ -45,6 +45,7 @@ import {
   type ItemDef,
   LEG_SEGMENTS,
   type ModelDef,
+  type RecipeCategoryDef,
   type RecipeDef,
   type ScenarioDef,
   type SiteLayoutDef,
@@ -1624,6 +1625,14 @@ const checkRecipe = ({
       report('recipes', recipe.id, path, `no item "${id}"`);
     }
   };
+  if (!registry.recipeCategories.has(recipe.category)) {
+    report('recipes', recipe.id, '.category', `no recipe category "${recipe.category}"`);
+  }
+  recipe.tags.forEach((id, index) => {
+    if (!registry.recipeTags.has(id)) {
+      report('recipes', recipe.id, `.tags[${index}]`, `no recipe tag "${id}"`);
+    }
+  });
   checkItem(recipe.result.item, '.result.item');
   if (recipe.skillUnlock && !registry.skills.has(recipe.skillUnlock.skill)) {
     report('recipes', recipe.id, '.skillUnlock.skill', `no skill "${recipe.skillUnlock.skill}"`);
@@ -1656,7 +1665,32 @@ const checkRecipe = ({
   }
 };
 
+const checkRecipeCategories = (registry: Registry, report: Report): void => {
+  const checked = new Set<string>();
+  for (const category of registry.recipeCategories.values()) {
+    const path = new Set<string>();
+    let next: string | undefined = category.id;
+    while (next !== undefined && !checked.has(next)) {
+      if (path.has(next)) {
+        report('recipeCategories', next, '.parent', 'recipe category cycle');
+        break;
+      }
+      path.add(next);
+      const node: RecipeCategoryDef = registry.recipeCategories.get(next)!;
+      if (node.parent !== undefined && !registry.recipeCategories.has(node.parent)) {
+        report('recipeCategories', node.id, '.parent', `no recipe category "${node.parent}"`);
+        break;
+      }
+      next = node.parent;
+    }
+    for (const id of path) {
+      checked.add(id);
+    }
+  }
+};
+
 const checkRecipes = (registry: Registry, report: Report) => {
+  checkRecipeCategories(registry, report);
   const qualities = new Set([
     ...[...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})),
     ...[...registry.furniture.values()].flatMap((furniture) => Object.keys(furniture.workstation?.qualities ?? {})),
