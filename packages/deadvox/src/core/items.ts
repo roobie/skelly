@@ -778,7 +778,7 @@ export const findSpot = (
   ignore?: Item,
 ): { x: number; y: number; rotated: boolean } | undefined => {
   const def = defOf(registry, item.type);
-  const first = (rotated: boolean) => {
+  const first = (rotated: boolean): { x: number; y: number; rotated: boolean } | undefined => {
     for (let y = 0; y < grid.size.h; y++) {
       for (let x = 0; x < grid.size.w; x++) {
         if (fitsAt(registry, grid, item, { x, y, rotated, ignore })) {
@@ -786,6 +786,7 @@ export const findSpot = (
         }
       }
     }
+    return undefined;
   };
   if (def.size[0] === def.size[1]) {
     return first(false);
