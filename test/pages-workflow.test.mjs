@@ -128,7 +128,13 @@ test('Pages assembly puts project builds beside the Round 1 page', () => {
 
     execFileSync('bash', ['-euo', 'pipefail', '-c', assembly.run], { cwd: temp });
 
-    for (const project of ['gun-authoring-tool', 'deadvox', 'mobgen', 'thing-authoring-tool', 'vehicle-authoring-tool']) {
+    for (const project of [
+      'gun-authoring-tool',
+      'deadvox',
+      'mobgen',
+      'thing-authoring-tool',
+      'vehicle-authoring-tool',
+    ]) {
       assert.ok(existsSync(join(temp, '_site', project, 'index.html')), `${project} index is at its Pages path`);
     }
     assert.ok(
