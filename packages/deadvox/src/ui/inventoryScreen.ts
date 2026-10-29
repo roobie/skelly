@@ -493,9 +493,9 @@ const attachmentSlotTemplate = (
     ${
       slot.attachmentUid === undefined
         ? slot.candidates.map((candidate) =>
-            candidate.reason !== undefined
-              ? html`<div class="inv-option inv-option-no" data-refused><span>${fillText(text.fit, { item: candidate.name })}</span><span class="inv-reason">${candidate.reason}</span></div>`
-              : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`,
+            candidate.reason === undefined
+              ? html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`
+              : html`<div class="inv-option inv-option-no" data-refused><span>${fillText(text.fit, { item: candidate.name })}</span><span class="inv-reason">${candidate.reason}</span></div>`,
           )
         : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>${text.remove}</button>`
     }
