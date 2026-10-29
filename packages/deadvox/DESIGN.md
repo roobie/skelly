@@ -1465,9 +1465,11 @@ pocket space, but its full weight counts toward carried encumbrance. Slinging
 is an ordinary worn-item move, and a displaced long gun prefers a free shoulder
 over a pocket or the ground. Every long gun may take the Deadvox sling mount;
 the sling has no handling effect. Rare loot and authored fitted guns make this
-carrying option discoverable. A sling is craftable but gated by crafting skill so it remains the same carrying option as a looted sling. A slung gun hangs at the wearer's side on a fixed
-sling path, not across the back, so it clears a pack; it is drawn with whatever
-is fitted to it, and its sling's strap over the shoulder
+carrying option discoverable. Crafting gives a path to shoulder carry when loot
+is rare, its skill gate keeps it earned, and the crafted sling is the same item
+as a looted sling, so it fits the same way. A slung gun hangs at the wearer's
+side on a fixed sling path, not across the back, so it clears a pack; it is
+drawn with whatever is fitted to it, and its sling's strap over the shoulder
 (`DESIGN.md`, "Worn items seen"). See `src/core/firearmFitting.ts`, `SLING_SLOT`;
 `src/core/inventory.ts`, `Inventory.carriedWeight`; and
 `src/content/base/models-firearms.libsonnet`, `slung`.

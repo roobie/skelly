@@ -270,7 +270,7 @@ local spentCase(id, name, weight, description, model) = {
         'make_scrap_foregrip',
         'make_weapon_sling',
       ],
-      'Handwritten notes on careful repairs and using salvaged wire.'
+      'Handwritten notes on careful repairs and using salvaged wire.',
     ),
     {
       id: 'paperback',
