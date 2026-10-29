@@ -33,14 +33,20 @@ const fixture = () => {
 };
 
 it.each([
-  ['square', { w: 1, h: 1 }, { width: 128, height: 128 }],
-  ['upright tall', { w: 1, h: 4 }, { width: 128, height: 512 }],
-  ['rotated tall', { w: 4, h: 1 }, { width: 512, height: 128 }],
-])('fits a %s grid footprint to its picture surface', (_name, footprint, expected) => {
-  expect(pictureSurfaceSize(footprint)).toEqual(expected);
-  const extent = fittedPictureExtent(2, 1, expected.width / expected.height, 1.1);
-  expect(2 / (extent * (expected.width / expected.height))).toBeLessThanOrEqual(1 / 1.1);
-  expect(1 / extent).toBeLessThanOrEqual(1 / 1.1);
+  ['square', { w: 1, h: 1 }],
+  ['upright tall', { w: 1, h: 4 }],
+  ['rotated tall', { w: 4, h: 1 }],
+])('preserves the %s grid footprint aspect in its picture surface', (_name, footprint) => {
+  const surface = pictureSurfaceSize(footprint);
+  expect(surface.width / surface.height).toBe(footprint.w / footprint.h);
+});
+
+it('fits projected bounds to the framing margin on their binding axis', () => {
+  const framing = 1.1;
+  const aspect = 1 / 4;
+  const extent = fittedPictureExtent(2, 1, aspect, framing);
+  const coverage = Math.max(2 / (extent * aspect), 1 / extent);
+  expect(coverage).toBeCloseTo(1 / framing);
 });
 
 it('does not cache missing pictures while models load, and reuses completed stills', () => {
@@ -69,13 +75,16 @@ it('caches each item picture by its grid footprint', () => {
     { paint, view: vi.fn(), dispose: vi.fn() },
   );
   const item = inv.create('pictured');
+  const upright = pictureSurfaceSize({ w: 1, h: 4 });
+  const rotated = pictureSurfaceSize({ w: 4, h: 1 });
   pictures.picture(item, { w: 1, h: 4 });
   pictures.picture(item, { w: 4, h: 1 });
   pictures.picture(item, { w: 1, h: 4 });
+  expect(upright).not.toEqual(rotated);
   expect(paint).toHaveBeenCalledTimes(2);
   expect(paint.mock.calls.map(([, , width, height]) => [width, height])).toEqual([
-    [128, 512],
-    [512, 128],
+    [upright.width, upright.height],
+    [rotated.width, rotated.height],
   ]);
 });
 
@@ -145,6 +154,25 @@ it('lazily owns and releases the renderer and context without disposing shared m
   expect(() => painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toThrow('disposed');
   geometry.dispose();
   material.dispose();
+});
+
+it('keeps viewer framing stable while the model turns', () => {
+  const model = new Mesh(new BoxGeometry(2, 1, 0.5), new MeshBasicMaterial());
+  const cameras: OrthographicCamera[] = [];
+  const renderer = {
+    setSize: vi.fn(),
+    setClearColor: vi.fn(),
+    render: vi.fn((_scene: unknown, camera: OrthographicCamera) => cameras.push(camera.clone())),
+    domElement: {} as HTMLCanvasElement,
+    dispose: vi.fn(),
+    forceContextLoss: vi.fn(),
+  };
+  const painter = referencePainter(() => renderer);
+  painter.view(model, { yaw: 0, pitch: 0, framing: 1.1 }, 400, 200);
+  painter.view(model, { yaw: Math.PI / 2, pitch: 0, framing: 1.1 }, 400, 200);
+  expect(cameras).toHaveLength(2);
+  expect(cameras[0]!.top).toBe(cameras[1]!.top);
+  expect(cameras[0]!.right).toBe(cameras[1]!.right);
 });
 
 it.each([

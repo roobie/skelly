@@ -5,7 +5,7 @@ import type { GridSize, Item } from '../core/items.ts';
 import { itemLook } from './itemLook.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 
-/** Where the reference camera sits around a model: radians, and a framing extent per bounding radius. */
+/** Where the reference camera sits around a model: radians, and a framing extent per bounding radius for views or a margin over projected still bounds. */
 export interface ReferencePose {
   readonly yaw: number;
   readonly pitch: number;
@@ -53,7 +53,13 @@ export const referencePainter = (
 ): PicturePainter => {
   let renderer: PictureRenderer | undefined;
   let disposed = false;
-  const draw = (model: Object3D, pose: ReferencePose, width: number, height: number): PictureRenderer => {
+  const draw = (
+    model: Object3D,
+    pose: ReferencePose,
+    width: number,
+    height: number,
+    fit: 'projected' | 'radius',
+  ): PictureRenderer => {
     if (disposed) {
       throw new Error('Picture painter is disposed');
     }
@@ -89,7 +95,10 @@ export const referencePainter = (
         }
       }
     }
-    const extent = fittedPictureExtent(halfWidth, halfHeight, aspect, pose.framing);
+    const extent =
+      fit === 'projected'
+        ? fittedPictureExtent(halfWidth, halfHeight, aspect, pose.framing)
+        : (radius * pose.framing) / Math.min(aspect, 1);
     camera.left = -extent * aspect;
     camera.right = extent * aspect;
     camera.top = extent;
@@ -101,10 +110,10 @@ export const referencePainter = (
   };
   return {
     paint(model, pose, width, height) {
-      return draw(model, pose, width, height).domElement.toDataURL();
+      return draw(model, pose, width, height, 'projected').domElement.toDataURL();
     },
     view(model, pose, width, height) {
-      return draw(model, pose, width, height).domElement;
+      return draw(model, pose, width, height, 'radius').domElement;
     },
     dispose() {
       if (disposed) {
