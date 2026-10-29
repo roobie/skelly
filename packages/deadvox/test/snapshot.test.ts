@@ -64,6 +64,9 @@ const discountedCraftRegistry = baseRegistryWith([
       recipes: [
         {
           id: 'discounted_craft_fixture',
+          category: 'fixture_category',
+          tags: [],
+          searchTerms: [],
           result: { item: 'torch', count: 1 },
           timeGameMinutes: 20,
           skills: {},
@@ -851,7 +854,7 @@ describe('craft job codec and ownership', () => {
       throw new Error(planned.missing.reason);
     }
     const { amount } = recipe.repair!;
-    const work = runtime.inventory.beginWork(planned.plan, { targetUid: target.uid, amount });
+    const work = runtime.inventory.beginWork(planned.plan, { target: { kind: 'item', uid: target.uid }, amount });
     if (!work) {
       throw new Error('Cannot gather repair inputs');
     }

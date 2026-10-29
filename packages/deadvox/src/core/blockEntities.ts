@@ -1070,7 +1070,7 @@ export class BlockEntities {
 
   /**
    * Worldgen's way to place a piece already worn: sets its damage to a share of its durability. The share stays below
-   * 1 because a ruined piece is gone, and worldgen never places one; every other change to damage is a blow (`bash`).
+   * 1 because a ruined piece is gone, and worldgen never places one.
    */
   wear(entity: BlockEntity, share: number): void {
     if (!(Number.isFinite(share) && share >= 0 && share < 1)) {
@@ -1087,6 +1087,36 @@ export class BlockEntities {
   /** The share of its durability a piece has left, from 1 intact to 0 broken; derived from damage, never stored. */
   conditionOf(entity: BlockEntity): number {
     return entity.broken ? 0 : Math.max(0, 1 - (entity.damage ?? 0) / this.defOf(entity).breach.durability);
+  }
+
+  canRepair(entity: BlockEntity, amount: number): boolean {
+    if (
+      !(Number.isFinite(amount) && amount > 0) ||
+      this.byUid(entity.uid) !== entity ||
+      entity.carried ||
+      entity.broken
+    ) {
+      return false;
+    }
+    const damage = entity.damage ?? 0;
+    if (!(damage > 0 && damage < this.defOf(entity).breach.durability)) {
+      return false;
+    }
+    return Math.max(0, damage - amount) !== damage;
+  }
+
+  repair(entity: BlockEntity, amount: number): boolean {
+    if (!this.canRepair(entity, amount)) {
+      return false;
+    }
+    const remaining = Math.max(0, entity.damage! - amount);
+    const worn = this.wearOf(entity);
+    entity.damage = remaining === 0 ? undefined : remaining;
+    this.version += 1;
+    if (this.wearOf(entity) !== worn) {
+      this.standing += 1;
+    }
+    return true;
   }
 
   /**

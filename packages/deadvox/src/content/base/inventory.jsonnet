@@ -11,6 +11,7 @@
       ],
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
+      keyHoldRealSeconds: 0.35,
       groundPileStateCap: 65536,
       autoPlacementTallMinFreeAreaGainCells: 4,
       reachMetres: 2,
@@ -18,7 +19,7 @@
       useReachMetres: 2,
       search: { minSimSeconds: 1, maxSimSeconds: 3, cellsForMax: 160 },
       throwFlightSimSeconds: 0.75,
-      throwArcHeightMetres: 1.1,
+      throwGravityMetresPerSimSecondSquared: 15.644444444444444,
       throwDrag: { airDensityKgPerCubicMetre: 1.2, footprintDragCoefficient: 0.25 },
       furnitureMove: {
         maxSizeMetres: 1,

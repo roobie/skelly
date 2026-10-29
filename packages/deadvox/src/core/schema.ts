@@ -53,7 +53,7 @@ import {
   TOUCHES,
   type Touch,
 } from './body.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from './coreText.ts';
@@ -323,6 +323,7 @@ const InventoryTuningSchema = strictObject({
   cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  keyHoldRealSeconds: Positive,
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
   /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
@@ -337,8 +338,8 @@ const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
-  throwArcHeightMetres: NonNegative,
+  /** Downward acceleration on a thrown item. */
+  throwGravityMetresPerSimSecondSquared: NonNegative,
   /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
@@ -445,7 +446,12 @@ const UiScreenTextSchema = strictObject({
   /** What the audio options call each volume. */
   audioVolumeLabels: strictObject({ master: Name, world: Name, body: Name, ui: Name }),
   /** The fixed pointer input each unbindable pointer action names. */
-  pointerButtonLabels: strictObject({ 'hand.use-dominant': Name, 'hand.off-instant': Name, 'pointer.look': Name }),
+  pointerButtonLabels: strictObject({
+    'hand.use-dominant': Name,
+    'hand.off-instant': Name,
+    'pointer.look': Name,
+    'inventory.wield-or-pocket': Name,
+  }),
   /** What the win card says about saving the completed attempt. */
   winCheckpointMessages: strictObject({ saved: Name, pending: Name, failed: Name, unavailable: Name }),
   /** The HUD, audio, graphics and fullscreen options in the menu. */
@@ -510,6 +516,11 @@ const UiScreenTextSchema = strictObject({
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
   crafting: slottedTable({
     heading: [],
+    all: [],
+    categories: [],
+    find: [],
+    tags: [],
+    clearFind: [],
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
@@ -624,7 +635,8 @@ const UiScreenTextSchema = strictObject({
   tutorial: slottedTable({
     inventory: [],
     closeInventory: [],
-    quickAction: [],
+    findItems: [],
+    wieldOrStow: [],
     wieldSelectedItem: [],
     eatBeans: [],
     openedBeans: [],
@@ -834,6 +846,7 @@ const UiScreenTextSchema = strictObject({
     nothingQueued: [],
     nothingToSearch: [],
     noRoom: [],
+    noPutTarget: [],
     taking: ['count', 'category'],
     noneToTake: ['category'],
     secs: ['value'],
@@ -4533,18 +4546,37 @@ const BodyTuningSchema = pipe(
   }),
 );
 
+const RecipeCategorySchema = strictObject({
+  id: Id,
+  label: Name,
+  parent: optional(Id),
+  order: pipe(number(), finite()),
+});
+const RecipeTagSchema = strictObject({
+  id: Id,
+  label: Name,
+  searchTerms: array(Name),
+});
+
 const RecipeSchema = strictObject({
   id: Id,
+  category: Id,
+  tags: array(Id),
+  searchTerms: array(Name),
   result: RecipeItemSchema,
-  /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
+  /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type. */
   kind: optional(picklist(['craft', 'repair'])),
   /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
-  repair: optional(
-    strictObject({ skill: Id, amount: pipe(Positive, maxValue(1, 'must be at most 1')), perSkill: Fraction }),
-  ),
+  repair: optional(strictObject({ skill: Id, amount: Positive, perSkill: Fraction, entity: optional(Id) })),
   activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
+  skillUnlock: optional(
+    strictObject({
+      skill: Id,
+      level: pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_LEGENDARY)),
+    }),
+  ),
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
@@ -4703,6 +4735,8 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+  recipeCategories: { schema: optional(array(RecipeCategorySchema)), label: 'recipe categories', order: 10.1 },
+  recipeTags: { schema: optional(array(RecipeTagSchema)), label: 'recipe tags', order: 10.2 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
@@ -4767,6 +4801,7 @@ export type VehicleFittingDef = InferOutput<typeof VehicleBlueprintSchema>['fitt
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type RecipeCategoryDef = InferOutput<typeof RecipeCategorySchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;

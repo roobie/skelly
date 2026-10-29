@@ -1,12 +1,32 @@
 {
+  "recipeCategories": [
+    {
+      "id": "fixture_category",
+      "label": "Fixture",
+      "order": 0
+    }
+  ],
   "recipes": [
     {
+      "category": "fixture_category",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "golden_toilet"
+          }
+        ]
+      ],
       "id": "fixture_missing_component",
-      "result": { "item": "rag", "count": 1 },
-      "timeGameMinutes": 1,
-      "skills": {},
       "qualities": {},
-      "components": [[{ "item": "golden_toilet", "count": 1 }]],
+      "result": {
+        "count": 1,
+        "item": "rag"
+      },
+      "searchTerms": [],
+      "skills": {},
+      "tags": [],
+      "timeGameMinutes": 1,
       "workstation": null
     }
   ]

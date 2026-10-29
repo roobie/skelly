@@ -28,7 +28,9 @@ export const workName = (registry: Registry, item: Item): string => {
   if (!recipe) {
     return registry.items.get(item.type)!.name;
   }
-  const { name } = registry.items.get(recipe.result.item)!;
+  const { name } = recipe.repair?.entity
+    ? registry.furniture.get(recipe.repair.entity)!
+    : registry.items.get(recipe.result.item)!;
   return fillText(recipe.kind === 'repair' ? text.repairing : text.inProgress, { item: name });
 };
 /** A running craft is progress in the handling HUD; a paused one has none, so a dropped work item shows nothing. */

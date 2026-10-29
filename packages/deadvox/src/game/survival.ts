@@ -461,6 +461,13 @@ export class Survival {
     return undefined;
   }
 
+  activateHeld(item: Item): string | undefined {
+    if (this.inventory.locate(item)?.kind !== 'hand') {
+      return fillText(this.text.survival.itemNotInHands, { item: this.inventory.name(item).toLowerCase() });
+    }
+    return this.use(item);
+  }
+
   /** Quickbar hold uses pocket food or a painkiller as one action, without displacing either hand. */
   useFromQuickbar(item: Item): string | undefined {
     if (this.sim.body.actionRefusal) {

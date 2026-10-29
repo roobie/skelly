@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
@@ -24,6 +25,7 @@ read_if:
   - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
+  - you change furniture repair admission or the boundary between repair and replacement
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -482,9 +484,10 @@ piece only when its damage crosses into a different step, not on every blow. See
 `BlockEntities.wearOf`, `src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
 `src/core/items.ts`, `damageWord`.
 
-Ruin is final: a destroyed piece or a broken door is never repaired, only replaced,
-because a ruined thing is mostly fragments; mending partial damage belongs to
-construction.
+Repair preserves a surviving piece rather than replacing it, so mending does not
+lose its identity or contents. Ruin is final: a destroyed piece or a broken door
+must be replaced because a ruined thing is mostly fragments. See
+`src/core/blockEntities.ts`, `BlockEntities.repair`.
 
 ### Dead humans
 
@@ -1651,17 +1654,23 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
 
 ## Crafting
 
-Recipes combine reachable materials with skill, quality, and optional
-workstation requirements. A reachable workbench can provide its qualities and
-speed bonus. Disassembly uses an authored yield or salvage list specific to the
-item; it is not inferred by reversing all recipes that could produce it. See
-`planDisassembly` in `src/core/disassembly.ts` and `docs/crafting.md`.
+Disassembly uses an authored yield rather than reversing recipes: several
+recipes may produce the same item, so reversing one would make salvage depend
+on an arbitrary production route. See `src/core/disassembly.ts`,
+`planDisassembly`, and `docs/crafting.md`.
 
-Crafting is a compressed long action that can be interrupted and resumed. An
-in-progress item retains its components. Bleeding can refuse compression, but
-treatment, crafting, and reading remain available at real-time pace so the
-player can still respond. Skills improve through relevant activity and books;
-books and schematics teach recipes beyond the simple recipes known at the start.
+Recipe knowledge may come from a book, a skill level, either, or the starting
+set. A book shortcuts the skill grind; a skilled character does not need the
+book. Knowledge does not waive crafting requirements. See `src/core/schema.ts`,
+`RecipeSchema`, and `src/core/crafting.ts`, `requirementStatus`.
+
+Skill discovery writes to existing recipe knowledge on level-up rather than
+being derived by the readout, so learned recipes remain self-describing in a
+save just like book-taught recipes. See `src/core/character.ts`,
+`Character.awardPractice`, and `src/core/bookReading.ts`, `bookReadingHooks`.
+
+Treatment, crafting, and reading remain available at real-time pace when
+bleeding refuses compression so the player can still respond.
 
 ## Character
 
@@ -2658,11 +2667,13 @@ grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `PileMeshes.sync`.
 
 Landing, presentation and duration share a stepped flight so drag cannot shorten
-the range while leaving a light item floating through an undragged arc. The launch
-follows the player's pitch, rather than borrowing the range of a different angle.
-Replay records launch strength rather than a drag-adjusted distance so it can
-reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
-`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+the range while leaving a light item floating through an undragged path. A throw
+leaves along the player's look direction without added lift; gravity alone makes
+the arc. For #1466, this makes the item go where the player aimed, because a
+climbing throw feels unpredictable. Replay records launch strength rather than a
+drag-adjusted distance so it can reproduce the same flight with the recorded aim.
+See `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
+`steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
 footprint is a cell-rounded outline, not the face that meets the air, so one

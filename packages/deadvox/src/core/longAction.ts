@@ -137,7 +137,7 @@ export interface LongActionState {
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftRepair {
-  targetUid: number;
+  target: import('./items.ts').WorkTarget;
   amount: number;
 }
 export interface CraftActionHooks {

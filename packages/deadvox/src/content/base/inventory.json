@@ -55,18 +55,19 @@
       },
       "groundPileStateCap": 65536,
       "id": "player",
+      "keyHoldRealSeconds": 0.34999999999999998,
       "reachMetres": 2,
       "search": {
         "cellsForMax": 160,
         "maxSimSeconds": 3,
         "minSimSeconds": 1
       },
-      "throwArcHeightMetres": 1.1000000000000001,
       "throwDrag": {
         "airDensityKgPerCubicMetre": 1.2,
         "footprintDragCoefficient": 0.25
       },
       "throwFlightSimSeconds": 0.75,
+      "throwGravityMetresPerSimSecondSquared": 15.644444444444444,
       "useReachMetres": 2
     }
   ]
