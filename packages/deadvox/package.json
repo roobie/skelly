@@ -44,6 +44,7 @@
     "report:never-spawn": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs tools/site-never-spawn-report.mjs",
     "validate": "node --import ./tools/register-mobgen-alias.mjs src/cli/validate.ts",
     "lint:lit": "tools/lit-check/node_modules/.bin/lit-analyzer 'src/ui/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && tools/lit-check/node_modules/.bin/lit-analyzer 'src/debug/**/*.ts' --strict --rules.no-unknown-attribute error --rules.no-unknown-property error --rules.no-unknown-event error --format=list --maxWarnings 0 && vitest run test/uiLitHtml.test.ts",
+    "bench:vehicle-boxes": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs src/bench/vehicle-boxes-cpu.mjs",
     "bench:amalgam": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs src/bench/amalgam-cpu.mjs",
     "bench:shamblers": "node --experimental-strip-types --import ./tools/register-mobgen-alias.mjs src/bench/shamblers-cpu.mjs"
   },

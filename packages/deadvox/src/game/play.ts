@@ -41,7 +41,6 @@ import {
 import { playerAdsPose } from '../core/playerAdsPose.ts';
 import { playerEyePosition, playerHeldSeatFrame, playerLookPose } from '../core/playerLookPose.ts';
 import { pryPlan } from '../core/prying.ts';
-import { raycast } from '../core/raycast.ts';
 import { reachTuning } from '../core/reach.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { pileScatterPlacements } from '../core/scatterPile.ts';
@@ -53,6 +52,7 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
+import { vehicleBoxSpikeEnabled } from '../core/vehicleBoxes.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
@@ -884,6 +884,7 @@ export const startPlay = (
     objective: scenarioObjective(engine.site),
     discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
+    vehicleBoxSpike: vehicleBoxSpikeEnabled(config.debug, location.search),
     world: engine.world,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -2701,7 +2702,7 @@ export const startPlay = (
     const origin = eye();
     const direction = lookDir();
     const reach = reachTuning(registry).useReachMetres / s;
-    const hit = raycast(origin, direction, reach, session.physicalSolid);
+    const hit = session.physicalRay(origin, direction, reach);
     const cell = hit
       ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
       : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reach));
@@ -3120,6 +3121,7 @@ export const startPlay = (
       blockSize: s,
       minY: scale.minCy * CHUNK,
       isSolid: session.physicalSolid,
+      sampleSolid: session.throwSampleSolid,
     });
   }
 

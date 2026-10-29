@@ -106,6 +106,7 @@ import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
+import { vehicleBoxSpikeQueries } from '../core/vehicleBoxes.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
@@ -383,6 +384,8 @@ export interface ResolvedFirearmTrajectory extends FirearmTrajectory {
 }
 
 export interface SessionOptions {
+  /** Experimental parked collision; callers must gate this behind debug or a benchmark. */
+  vehicleBoxSpike?: boolean;
   powerDevices?: readonly PlacedPowerDevice[];
   registry: Registry;
   scenario?:
@@ -637,8 +640,13 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
 const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
 
 /** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
-const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
-  worldBricks(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize });
+const solidBricksFor = (
+  world: World,
+  registry: Registry,
+  inventory: Inventory,
+  { blockSize, boxSpike }: { blockSize: number; boxSpike: boolean | undefined },
+): SolidBricks | undefined =>
+  boxSpike ? undefined : worldBricks(world, registry, inventory.entities, { vehicles: inventory.vehicles, blockSize });
 
 const scenarioRunSnapshot = (run: ScenarioRun | undefined) => run?.snapshot() ?? null;
 const scenarioRunWon = (run: ScenarioRun | undefined): boolean => run?.won ?? false;
@@ -777,6 +785,14 @@ export const createSession = (options: SessionOptions) => {
   const vehicleSight = new VehicleOccupancy(registry, inventory.vehicles, s, 'sight');
   const vehicleLight = new VehicleOccupancy(registry, inventory.vehicles, s, 'light');
   physicalSolid = (x, y, z) => isSolid(x, y, z) || vehicleOccupancy.isSolid(x, y, z);
+  const { vehicleBoxes, movementSolid, physicalRay, throwSampleSolid } = vehicleBoxSpikeQueries({
+    enabled: options.vehicleBoxSpike,
+    registry,
+    vehicles: inventory.vehicles,
+    blockSize: s,
+    terrain: isSolid,
+    coarse: physicalSolid,
+  });
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
@@ -1395,8 +1411,9 @@ export const createSession = (options: SessionOptions) => {
     seed: sim.seed,
     isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
-    isSolid: physicalSolid,
-    solidBricks: solidBricksFor(world, registry, inventory, s),
+    isSolid: movementSolid,
+    vehicleBoxSpike: vehicleBoxes,
+    solidBricks: solidBricksFor(world, registry, inventory, { blockSize: s, boxSpike: options.vehicleBoxSpike }),
     isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, {
       entities: inventory.entities,
@@ -1790,7 +1807,7 @@ export const createSession = (options: SessionOptions) => {
     const origin = playerEye();
     const direction = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
     const reachBlocks = reachTuning(registry).useReachMetres / s;
-    const hit = raycast(origin, direction, reachBlocks, physicalSolid);
+    const hit = physicalRay(origin, direction, reachBlocks);
     const cell = hit
       ? hit.block.map((coordinate, axis) => coordinate + hit.normal[axis]!)
       : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reachBlocks));
@@ -1878,7 +1895,7 @@ export const createSession = (options: SessionOptions) => {
         dt,
         strafing: steered.right !== 0,
       });
-    const landingSpeed = stepBody(body, dt, physicalSolid, {
+    const landingSpeed = stepBody(body, dt, movementSolid, {
       ...physics,
       // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
       ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),
@@ -2472,6 +2489,8 @@ export const createSession = (options: SessionOptions) => {
     sim,
     /** Derived vehicle-aware world queries for presentation and input consumers. */
     physicalSolid,
+    physicalRay,
+    throwSampleSolid,
     isOpaque,
     isSoundBlocking: worldSoundBlocking(world, registry, {
       entities: inventory.entities,

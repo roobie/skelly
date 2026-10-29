@@ -615,6 +615,7 @@ export interface ZombieSystemOptions {
    * it the bricks are read from `isSolid` on every query: right, but slower.
    */
   solidBricks?: SolidBricks | undefined;
+  vehicleBoxSpike?: import('./vehicleBoxes.ts').VehicleBoxes | undefined;
   /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4b catch-up. */
   isLoaded?: ((x: number, z: number) => boolean) | undefined;
   /** Held where it stands, by a trap shut on its leg (core/bearTrap.ts); it can still turn and attack. */
@@ -791,7 +792,7 @@ interface ObstacleProbe {
  * Where a body stands after walking `distanceMetres` along a heading, sliding along whatever blocks it. A contact
  * zeroes the blocked axis' speed, so a probe that must get past an edge asks for the heading again each of `steps`.
  */
-const probeHeading = (
+export const probeHeading = (
   { body, isSolid, physics, blockSize }: ObstacleProbe,
   heading: Vec3,
   distanceMetres: number,
@@ -1703,7 +1704,10 @@ export class ZombieSystem {
   }
 
   /** The amalgam's flesh as its body's shape, turned to its facing; every other body moves as its box. */
-  readonly shapeOf: ShapeOf = (body) => this.colliderOf(body)?.shape;
+  readonly shapeOf: ShapeOf = (body) => {
+    const base = this.colliderOf(body)?.shape;
+    return this.options.vehicleBoxSpike?.shape(body, this.options.isSolid, base) ?? base;
+  };
 
   private colliderOf(body: Body): AmalgamCollider | undefined {
     let collider = this.shapes.get(body);
@@ -3223,7 +3227,11 @@ export class ZombieSystem {
       aimDirection &&
       rng.chance(zombie.type.wander.obstacleWanderChance)
     ) {
-      const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
+      const physics = {
+        ...this.options.physics,
+        stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
+        ...(this.options.vehicleBoxSpike ? { shapeOf: this.shapeOf } : {}),
+      };
       const headings = openWanderHeadings({
         body: zombie.body,
         intent: aimDirection,
@@ -3296,7 +3304,11 @@ export class ZombieSystem {
       body: zombie.body,
       intent: aimDirection,
       isSolid: scratch.isSolid,
-      physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
+      physics: {
+        ...this.options.physics,
+        stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
+        ...(this.options.vehicleBoxSpike ? { shapeOf: this.shapeOf } : {}),
+      },
       blockSize: scratch.blockSize,
     };
     if (
