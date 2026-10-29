@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { findSpot, footprint, type Item, ItemFactory } from '../src/core/items.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -40,23 +41,38 @@ const shape = (registry: Registry, item: Item, spot: ReturnType<typeof findSpot>
 };
 
 describe('automatic grid orientation', () => {
-  it('prefers wide independently of authored orientation, including a packing gain below the threshold', () => {
+  it('prefers wide independently of authored orientation', () => {
     for (const size of [
       [2, 3],
       [3, 2],
     ] as [number, number][]) {
-      const { registry, item } = fixture(size, 3);
+      const { registry, item } = fixture(size);
       const [w, h] = shape(registry, item, findSpot(registry, { size: { w: 5, h: 4 }, placed: [] }, item));
       expect(w).toBeGreaterThan(h);
     }
   });
 
-  it('chooses tall only when its remaining usable rectangle gains more than the content threshold', () => {
+  it.each([
+    [2, 1],
+    [3, 2],
+  ] as [number, number][])('keeps a lone %ix%i item wide on the pile grid', (width, height) => {
+    const { registry, item } = fixture(
+      [width, height],
+      base.inventory.get('player')!.autoPlacementTallMinFreeAreaGainCells,
+    );
+    const [w, h] = shape(registry, item, findSpot(registry, { size: PILE_GRID, placed: [] }, item));
+    expect(w).toBeGreaterThan(h);
+  });
+
+  it('chooses tall only when packing beside existing items gains more than the content threshold', () => {
     const { registry, item } = fixture([3, 2]);
-    const grid = { size: { w: 5, h: 4 }, placed: [] };
+    registry.items.set('packing_bar', { ...registry.items.get(item.type)!, id: 'packing_bar', size: [5, 1] });
+    const bar = new ItemFactory(item.uid + 1).create(registry, 'packing_bar');
+    const grid = { size: { w: 5, h: 5 }, placed: [{ item: bar, x: 0, y: 4, rotated: false }] };
     const [w, h] = shape(registry, item, findSpot(registry, grid, item));
     expect(h).toBeGreaterThan(w);
     const atThreshold = fixture([3, 2], 2);
+    atThreshold.registry.items.set('packing_bar', registry.items.get('packing_bar')!);
     const [wideW, wideH] = shape(
       atThreshold.registry,
       atThreshold.item,

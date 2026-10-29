@@ -143,7 +143,7 @@ export interface Spot {
 export type Location = TreeLocation<Item, Pile, BlockEntity>;
 
 /**
- * Where to put an item. Without a spot, it joins a stack with room or takes the first free spot. A spot asks to swap
+ * Where to put an item. Without a spot, it joins a stack with room or uses automatic grid placement. A spot asks to swap
  * with its occupant unless it is `reserved`: a batch's reservation, which fails once something else has taken it.
  */
 export type TargetState =

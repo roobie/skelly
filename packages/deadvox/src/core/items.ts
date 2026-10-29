@@ -796,6 +796,9 @@ export const findSpot = (
   if (!(wide && tall)) {
     return wide ?? tall;
   }
+  if (!grid.placed.some((placed) => placed.item !== ignore)) {
+    return wide;
+  }
   const remaining = (spot: NonNullable<typeof wide>) =>
     largestFreeRectangleArea(registry, {
       size: grid.size,
