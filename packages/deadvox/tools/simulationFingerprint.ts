@@ -152,6 +152,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/craftController.ts',
   'src/ui/craftReadout.ts',
   'src/ui/crafting.ts',
+  // Debug-only presentation emits into debugRepairIntents, not work dispatch; it changes neither simulation nor saves.
+  'src/ui/worldRepairSurface.ts',
   'src/ui/menuPointer.ts',
   'src/ui/menuState.ts',
   // Unsupported-item hint copy is presentation only; capability policy stays in src/game/primaryAction.ts.
