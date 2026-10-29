@@ -5,9 +5,6 @@ import { buildRegistry, type ContentSource } from '../../deadvox/src/core/conten
 import { loadVehicleBlueprint, vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import { exportVehicleBlueprint, type VehicleBlueprintInput } from '../src/export.ts';
 
-type Blueprint =
-  ReturnType<typeof buildRegistry>['registry']['vehicleBlueprints'] extends Map<string, infer Value> ? Value : never;
-
 const PART = 'vat_round_trip_part';
 const HOST = 'vat_round_trip_host';
 
@@ -54,21 +51,19 @@ describe('vehicle blueprint export', () => {
   });
 
   it('leaves malformed output for Deadvox vehicleContentIssues to report', () => {
-    const { issues, registry } = buildRegistry([{ source: 'inventory.json', data: inventory }, sourceFor(input)]);
-    expect(issues).toEqual([]);
-
     const malformed = exportVehicleBlueprint({
       ...input,
       id: 'vat_malformed_host',
       fittings: [{ ...input.fittings[0]!, part: 'vat_missing_part' }],
     });
-    const vehicleBlueprints = new Map(registry.vehicleBlueprints);
-    vehicleBlueprints.set('vat_malformed_host', malformed.vehicleBlueprints[0]! as Blueprint);
+    const { issues } = buildRegistry([
+      { source: 'inventory.json', data: inventory },
+      sourceFor(malformed.vehicleBlueprints[0]!),
+    ]);
 
-    expect(vehicleContentIssues({ ...registry, vehicleBlueprints })).toContainEqual({
-      section: 'vehicleBlueprints',
-      id: 'vat_malformed_host',
-      path: '.fittings[0].part',
+    expect(issues).toContainEqual({
+      source: 'vat/round-trip.json',
+      path: 'vehicleBlueprints[0].fittings[0].part',
       message: 'no item "vat_missing_part"',
     });
   });
