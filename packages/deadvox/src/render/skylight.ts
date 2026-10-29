@@ -129,6 +129,7 @@ export class Skylight {
 
   private readonly blockSize: number;
   private readonly viewRadiusM: number;
+  private readonly buildRadiusM: number;
   private readonly unbuiltCap: number;
   private readonly maxJobs: number;
   constructor(
@@ -138,11 +139,13 @@ export class Skylight {
       viewRadiusM,
       unbuiltCap,
       skyJobsInFlight,
+      buildRadiusM,
     }: {
       blockSize: number;
       viewRadiusM: number;
       unbuiltCap: number;
       skyJobsInFlight: number;
+      buildRadiusM: number;
     },
     runtime: SkyRuntime,
   ) {
@@ -151,6 +154,7 @@ export class Skylight {
     this.shown = this.fields.map(() => undefined);
     this.blockSize = blockSize;
     this.viewRadiusM = viewRadiusM;
+    this.buildRadiusM = buildRadiusM;
     this.unbuiltCap = unbuiltCap;
     this.maxJobs = skyJobsInFlight;
     this.jobs = runtime;
@@ -251,8 +255,9 @@ export class Skylight {
     };
   }
 
-  /** Loaded fields across the reveal disc, closest to its outer edge first. */
+  /** Loaded fields across the preloaded disc, closest to the reveal edge first. */
   prepare(position: Vec3): void {
+    const revealRadius = this.viewRadiusM / this.blockSize;
     const candidates = this.fields
       .map(({ bounds }, index) => ({
         index,
@@ -262,8 +267,12 @@ export class Skylight {
           0,
         ),
       }))
-      .filter(({ distance }) => distance <= (this.viewRadiusM / this.blockSize) ** 2)
-      .sort((a, b) => b.distance - a.distance || a.index - b.index);
+      .filter(({ distance }) => distance <= (this.buildRadiusM / this.blockSize) ** 2)
+      .sort(
+        (a, b) =>
+          Math.abs(Math.sqrt(a.distance) - revealRadius) - Math.abs(Math.sqrt(b.distance) - revealRadius) ||
+          a.index - b.index,
+      );
     for (const { index } of candidates) {
       if (this.inFlight >= this.maxJobs) {
         break;

@@ -7,6 +7,7 @@
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { CHUNK } from '../core/coords.ts';
 import { skyAt } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
@@ -112,6 +113,7 @@ export function createEngine(
             viewRadiusM: radiusM,
             unbuiltCap: graphicsTuning.unbuiltSkyCap,
             skyJobsInFlight: graphicsTuning.skyJobsInFlight,
+            buildRadiusM: (config.radiusChunks + graphicsTuning.skyPreloadRings) * CHUNK * scale.blockSize,
           },
           { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
         )

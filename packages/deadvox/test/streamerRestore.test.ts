@@ -51,6 +51,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     {
       blockSize: 0.5,
       viewRadiusM: 32,
+      buildRadiusM: 32,
       unbuiltCap: graphicsFile.graphics[0]!.unbuiltSkyCap,
       skyJobsInFlight: graphicsFile.graphics[0]!.skyJobsInFlight,
     },
@@ -81,6 +82,7 @@ it('builds a field over arriving all-air chunks and stops certifying it once its
     scale,
     structures: [],
     radius: 0,
+    preloadRings: 0,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
@@ -127,6 +129,7 @@ it('reports generated-column transitions that match the generated-column snapsho
     scale,
     structures: [],
     radius: 0,
+    preloadRings: 0,
     hysteresis: 1,
   });
   const observedGenerated = new Set<string>();
@@ -164,6 +167,7 @@ it('lets replay drive terrain generation and unloading without live streaming si
     scale,
     structures: [],
     radius: 0,
+    preloadRings: 0,
     hysteresis: 1,
     surface: { height: () => 20, top: () => undefined },
   });
@@ -208,6 +212,7 @@ describe('saved columns', () => {
       scale,
       structures: [],
       radius: 0,
+      preloadRings: 0,
       hysteresis: 1,
       stamp,
     });

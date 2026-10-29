@@ -202,6 +202,7 @@ function litWorld(geometry: 'doorway' | 'near-wall', poweredLights: () => readon
     {
       blockSize: 0.5,
       viewRadiusM: 64,
+      buildRadiusM: 64,
       unbuiltCap: graphicsTuningOf(owner.registry).unbuiltSkyCap,
       skyJobsInFlight: graphicsTuningOf(owner.registry).skyJobsInFlight,
     },

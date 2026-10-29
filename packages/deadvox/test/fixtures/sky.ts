@@ -8,14 +8,14 @@ import { buildSkyResult, type SkyResult } from '../../src/core/skyTransport.ts';
 import { Skylight } from '../../src/render/skylight.ts';
 import { fixtureBox, skyWorldFixture } from './skyWorld.ts';
 
-export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0) {
+export function skyFixture(boxes: SkyBounds[] = [fixtureBox], clock = () => 0, buildRadiusM = 160) {
   const owner = skyWorldFixture(boxes);
   const pending: { input: SkySnapshot; receive: (result: SkyResult, ms: number) => void }[] = [];
   const fields = new SkyFields(owner, { bottom: 0, top: 31 }, boxes);
   const { unbuiltSkyCap, skyJobsInFlight } = graphicsTuningOf(owner.registry);
   const sky = new Skylight(
     fields,
-    { blockSize: 1, viewRadiusM: 160, unbuiltCap: unbuiltSkyCap, skyJobsInFlight },
+    { blockSize: 1, viewRadiusM: 160, buildRadiusM, unbuiltCap: unbuiltSkyCap, skyJobsInFlight },
     {
       clock,
       submit: (input, receive) => {

@@ -2495,29 +2495,24 @@ reveal is a last resort, not the scheduling strategy. Edge fields need priority
 because they are the next rooms a walk discovers. Mesh-first startup admission
 protects the first geometry, while admission at completions prevents mesh backlog
 from starving lighting. Native worker FIFO alone cannot provide fairness between
-these callers. Neighbour residency remains a separate admission decision under
-#1261; completing loaded fields does not justify hiding edge terrain while waiting
-for unloaded neighbours. See `src/render/skylight.ts`, `prepare`,
-`src/game/streamer.ts`, `dispatchSky` and `onBeforeReveal`, and
-`src/core/skyField.ts`, `finishColumn`.
+these callers. Terrain at the view edge must never be hidden while sky light
+finishes. Give sky work its lead by growing the loaded terrain radius, not by
+shrinking the visible radius or making visible chunks wait for lighting. The
+extra residency trades memory for time to build the next field before it enters
+view; it must not expand mesh or reveal admission. See
+`src/content/base/graphics.jsonnet`, `skyPreloadRings`,
+`src/render/skylight.ts`, `prepare`, `src/game/streamer.ts`, `dispatchSky`
+and `onBeforeReveal`, and `src/core/skyField.ts`, `finishColumn`.
 
-Until a field's answer lands, the view dims its diffuse sky to a content cap, during the
-load pause and in play alike. Near the player, direct sun still follows the shadow map,
-because that map is cast from real geometry; beyond the shadow map, an unbuilt receiver
-gets no direct sun. This is a presentation fallback, not the simulation's answer: a
-query builds the field synchronously, so gameplay already reads the room's real light.
-The cap remains until #1261 settles neighbour residency and verifies reveal without
-hitches on the reference laptop; a loaded-field guarantee alone leaves fields whose
-neighbours are unavailable uncovered. See
-`src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete
-result, the view keeps it while an edit is rebuilt, so opening a door cannot flash a
-dark room. The replacement
-swaps atomically, and a late result for superseded geometry cannot install. Retained
-column heights supply the nonresident estimate. CPU and shader share this policy. The
-kept result can delay a darkening edit or step visibly at replacement; that is
-presentation latency only, since gameplay's answer is already current. Results survive
-GPU eviction, so re-entry does not repeat transport. Solve halos and spatial lookup
-cells do not expand the fields. Arbitrary construction and caves remain outside them.
+The dimmed presentation cap remains until #1261 proves the full reveal guarantee
+and verifies it without hitches on the reference laptop. Extra residency is lead
+time, not proof that every dependency arrives in time on a walk. Presentation must
+not substitute its incomplete answer for gameplay's current world-state answer.
+Keep an accepted result through edit revalidation and GPU eviction so a door edit
+cannot flash a dark room and re-entry cannot repeat transport. The retained result
+may briefly delay a visible edit; that latency is preferable to a false transient
+room. See `src/content/base/graphics.jsonnet`, `unbuiltSkyCap`,
+`src/core/skyField.ts`, `SkyFields`, and `src/render/skylight.ts`, `Skylight`.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution

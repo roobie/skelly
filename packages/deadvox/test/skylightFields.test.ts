@@ -79,6 +79,23 @@ it('certifies only current, published proximity lighting while prebuilding dista
   expect(fixture.sky.loadingReadiness(position).ready).toBe(true);
 });
 
+it('prebuilds a loaded margin field before it enters view without expanding GPU residency', () => {
+  const boxes = [200, 240].map((x) => ({ min: [x, 1, 4] as Vec3, max: [x + 9, 10, 13] as Vec3 }));
+  const withoutMargin = skyFixture(boxes, () => 0, 160);
+  withoutMargin.update();
+  expect(withoutMargin.pending).toHaveLength(0);
+  const withMargin = skyFixture(boxes, () => 0, 256);
+  withMargin.update();
+  expect(withMargin.pending.length).toBeGreaterThan(1);
+  expect(withMargin.pending[0]!.input.bounds).toEqual(withMargin.fields.fields[0]!.bounds);
+  withMargin.complete();
+  withMargin.update();
+  expect(withMargin.sky.inspect()[0]!.complete).toBe(true);
+  expect(withMargin.sky.inspect()[0]!.resident).toBe(false);
+  withMargin.update([204, 4, 8]);
+  expect(withMargin.sky.inspect()[0]!.resident).toBe(true);
+});
+
 it('does not request unavailable lighting dependencies in a partial recorded world', () => {
   const fixture = skyFixture();
   fixture.world.removeChunk(0, 0, 0);

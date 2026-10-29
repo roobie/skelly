@@ -83,6 +83,8 @@ export interface StreamerOptions {
   stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
+  /** Extra terrain rings for sky prebuilding, without expanding mesh/reveal admission. */
+  preloadRings: number;
   /** Chunks beyond the rings that meshes and chunk data stay, so a column on the edge does not churn. */
   hysteresis: number;
   /** When given, per-column and per-chunk timings are appended here. */
@@ -121,6 +123,7 @@ export class Streamer {
   private readonly offsetKeys: Set<string>;
   /** The meshed disc, nearest first. */
   private readonly meshOffsets: [number, number][];
+  private readonly revealOffsets: [number, number][];
   private readonly discs = new Map<number, [number, number][]>();
   private nextWorker = 0;
   private nextSkyId = 0;
@@ -205,7 +208,8 @@ export class Streamer {
     this.maxInFlight = count * 2;
 
     this.meshOffsets = discOffsets(opts.radius);
-    this.offsets = grownOffsets(this.meshOffsets);
+    this.revealOffsets = grownOffsets(this.meshOffsets);
+    this.offsets = grownOffsets(discOffsets(opts.radius + opts.preloadRings));
     this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
 
@@ -395,7 +399,7 @@ export class Streamer {
   }
 
   private refreshReveal(): void {
-    for (const [dx, dz] of this.offsets) {
+    for (const [dx, dz] of this.revealOffsets) {
       const cx = this.center[0] + dx;
       const cz = this.center[1] + dz;
       const key = `${cx},${cz}`;
@@ -403,7 +407,9 @@ export class Streamer {
         this.completeColumns.add(key);
       }
     }
-    const columns = revealedColumns(this.center, this.offsets, (cx, cz) => this.completeColumns.has(`${cx},${cz}`));
+    const columns = revealedColumns(this.center, this.revealOffsets, (cx, cz) =>
+      this.completeColumns.has(`${cx},${cz}`),
+    );
     for (const key of columns) {
       if (!this.revealed.has(key)) {
         const [cx, cz] = key.split(',').map(Number);
@@ -419,9 +425,9 @@ export class Streamer {
    * the player returns; touched ones stay in memory for the session (`DESIGN.md`, "Edits persist").
    */
   private unloadFar(): void {
-    const { world, scale, radius, hysteresis } = this.opts;
-    // The generated ring reaches less than a diagonal step past the mesh disc.
-    for (const col of farColumns(this.generated, this.center, radius + Math.SQRT2 + hysteresis)) {
+    const { world, scale, radius, preloadRings, hysteresis } = this.opts;
+    // The meshing dependency shell reaches less than a diagonal step past the preload disc.
+    for (const col of farColumns(this.generated, this.center, radius + preloadRings + Math.SQRT2 + hysteresis)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
       const pinned = world.isTouched(cx, cz);
       for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
