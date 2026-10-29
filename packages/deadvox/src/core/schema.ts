@@ -4580,6 +4580,8 @@ const GraphicsTuningSchema = strictObject({
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** The inventory picture camera's margin around a model's fitted bounds. */
+  itemPicture: strictObject({ framing: Positive }),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,

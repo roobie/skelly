@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { ItemPictures, referencePainter } from '../src/render/itemPictures.ts';
+import { fittedPictureExtent, ItemPictures, pictureSurfaceSize, referencePainter } from '../src/render/itemPictures.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 
 const fixture = () => {
@@ -32,6 +32,17 @@ const fixture = () => {
   return { registry, inv: new Inventory(registry) };
 };
 
+it.each([
+  ['square', { w: 1, h: 1 }, { width: 128, height: 128 }],
+  ['upright tall', { w: 1, h: 4 }, { width: 128, height: 512 }],
+  ['rotated tall', { w: 4, h: 1 }, { width: 512, height: 128 }],
+])('fits a %s grid footprint to its picture surface', (_name, footprint, expected) => {
+  expect(pictureSurfaceSize(footprint)).toEqual(expected);
+  const extent = fittedPictureExtent(2, 1, expected.width / expected.height, 1.1);
+  expect(2 / (extent * (expected.width / expected.height))).toBeLessThanOrEqual(1 / 1.1);
+  expect(1 / extent).toBeLessThanOrEqual(1 / 1.1);
+});
+
 it('does not cache missing pictures while models load, and reuses completed stills', () => {
   const { registry, inv } = fixture();
   const models = { version: 0, has: () => models.version > 0, groundLook: vi.fn(() => new Group()) };
@@ -46,6 +57,26 @@ it('does not cache missing pictures while models load, and reuses completed stil
   expect(pictures.picture(item)).toBe('still');
   expect(pictures.picture(inv.create('pictured'))).toBe('still');
   expect(paint).toHaveBeenCalledTimes(1);
+});
+
+it('caches each item picture by its grid footprint', () => {
+  const { registry, inv } = fixture();
+  const paint = vi.fn((_model: unknown, _pose: unknown, _width: number, _height: number) => 'still');
+  const pictures = new ItemPictures(
+    registry,
+    { version: 1, has: () => true, groundLook: () => new Group() },
+    3,
+    { paint, view: vi.fn(), dispose: vi.fn() },
+  );
+  const item = inv.create('pictured');
+  pictures.picture(item, { w: 1, h: 4 });
+  pictures.picture(item, { w: 4, h: 1 });
+  pictures.picture(item, { w: 1, h: 4 });
+  expect(paint).toHaveBeenCalledTimes(2);
+  expect(paint.mock.calls.map(([, , width, height]) => [width, height])).toEqual([
+    [128, 512],
+    [512, 128],
+  ]);
 });
 
 it('evicts the least recently used still and regenerates it on demand within capacity', () => {
@@ -102,8 +133,8 @@ it('lazily owns and releases the renderer and context without disposing shared m
   unused.dispose();
   expect(create).not.toHaveBeenCalled();
   const painter = referencePainter(create);
-  expect(painter.paint(model)).toBe('still');
-  expect(painter.paint(model)).toBe('still');
+  expect(painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toBe('still');
+  expect(painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toBe('still');
   painter.dispose();
   painter.dispose();
   expect(create).toHaveBeenCalledTimes(1);
@@ -111,7 +142,7 @@ it('lazily owns and releases the renderer and context without disposing shared m
   expect(renderer.forceContextLoss).toHaveBeenCalledTimes(1);
   expect(geometryDispose).not.toHaveBeenCalled();
   expect(materialDispose).not.toHaveBeenCalled();
-  expect(() => painter.paint(model)).toThrow('disposed');
+  expect(() => painter.paint(model, { yaw: 0, pitch: 0, framing: 1 }, 128, 128)).toThrow('disposed');
   geometry.dispose();
   material.dispose();
 });

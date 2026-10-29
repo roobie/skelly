@@ -235,6 +235,8 @@ export const createPlayView = (
       registry,
       models,
       registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
+      undefined,
+      graphics.itemPicture.framing,
     );
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');

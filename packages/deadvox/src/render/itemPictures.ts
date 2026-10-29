@@ -1,7 +1,7 @@
 import type { Object3D } from 'three';
 import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import type { Registry } from '../core/content.ts';
-import type { Item } from '../core/items.ts';
+import type { GridSize, Item } from '../core/items.ts';
 import { itemLook } from './itemLook.ts';
 import { type ModelLibrary, visibleBounds } from './models.ts';
 
@@ -13,7 +13,7 @@ export interface ReferencePose {
 }
 
 export interface PicturePainter {
-  paint: (model: Object3D) => string;
+  paint: (model: Object3D, pose: ReferencePose, width: number, height: number) => string;
   /** Draws the model at a pose and returns the drawn surface; read it before the next paint or view. */
   view: (model: Object3D, pose: ReferencePose, width: number, height: number) => CanvasImageSource;
   dispose: () => void;
@@ -30,6 +30,22 @@ const PICTURE_POSE: ReferencePose = {
   pitch: Math.atan2(0.7, Math.SQRT2),
   framing: 1.1,
 };
+
+const PICTURE_PIXELS_PER_CELL = 128;
+
+/** The raster dimensions preserve a grid item's footprint, including its placed rotation. */
+export const pictureSurfaceSize = ({ w, h }: GridSize): { readonly width: number; readonly height: number } => ({
+  width: w * PICTURE_PIXELS_PER_CELL,
+  height: h * PICTURE_PIXELS_PER_CELL,
+});
+
+/** The orthographic half-height that contains projected bounds while using as much of the surface as possible. */
+export const fittedPictureExtent = (
+  halfWidth: number,
+  halfHeight: number,
+  aspect: number,
+  framing: number,
+): number => Math.max(halfHeight, halfWidth / aspect) * framing;
 
 /** A separate reference scene keeps pictures independent of world light and handling motion. */
 export const referencePainter = (
@@ -53,16 +69,7 @@ export const referencePainter = (
     const centre = bounds.getCenter(new Vector3());
     const radius = Math.max(bounds.getSize(new Vector3()).length() / 2, 0.001);
     const aspect = width / height;
-    // The framing holds along the shorter side, so a tall, narrow view still shows the whole model.
-    const extent = (radius * pose.framing) / Math.min(aspect, 1);
-    const camera = new OrthographicCamera(
-      -extent * aspect,
-      extent * aspect,
-      extent,
-      -extent,
-      radius * 0.01,
-      radius * 10,
-    );
+    const camera = new OrthographicCamera(-1, 1, 1, -1, radius * 0.01, radius * 10);
     const direction = new Vector3(
       Math.cos(pose.pitch) * Math.sin(pose.yaw),
       Math.sin(pose.pitch),
@@ -70,13 +77,31 @@ export const referencePainter = (
     );
     camera.position.copy(centre).add(direction.multiplyScalar(radius * 3));
     camera.lookAt(centre);
+    camera.updateMatrixWorld();
+    let halfWidth = 0;
+    let halfHeight = 0;
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) {
+          const point = new Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse);
+          halfWidth = Math.max(halfWidth, Math.abs(point.x));
+          halfHeight = Math.max(halfHeight, Math.abs(point.y));
+        }
+      }
+    }
+    const extent = fittedPictureExtent(halfWidth, halfHeight, aspect, pose.framing);
+    camera.left = -extent * aspect;
+    camera.right = extent * aspect;
+    camera.top = extent;
+    camera.bottom = -extent;
+    camera.updateProjectionMatrix();
     renderer.render(scene, camera);
     scene.remove(model);
     return renderer;
   };
   return {
-    paint(model) {
-      return draw(model, PICTURE_POSE, 128, 128).domElement.toDataURL();
+    paint(model, pose, width, height) {
+      return draw(model, pose, width, height).domElement.toDataURL();
     },
     view(model, pose, width, height) {
       return draw(model, pose, width, height).domElement;
@@ -100,6 +125,7 @@ export class ItemPictures {
   private readonly models: Pick<ModelLibrary, 'version' | 'has' | 'groundLook'>;
   private readonly painter: PicturePainter;
   private readonly capacity: number;
+  private readonly pose: ReferencePose;
   private disposed = false;
 
   constructor(
@@ -107,6 +133,7 @@ export class ItemPictures {
     models: Pick<ModelLibrary, 'version' | 'has' | 'groundLook'>,
     capacity: number,
     painter: PicturePainter = referencePainter(),
+    framing = PICTURE_POSE.framing,
   ) {
     this.registry = registry;
     this.models = models;
@@ -115,6 +142,7 @@ export class ItemPictures {
     }
     this.capacity = capacity;
     this.painter = painter;
+    this.pose = { ...PICTURE_POSE, framing };
   }
 
   get version(): number {
@@ -130,7 +158,7 @@ export class ItemPictures {
     this.painter.dispose();
   }
 
-  picture(item: Item): string | undefined {
+  picture(item: Item, footprint: GridSize = { w: 1, h: 1 }): string | undefined {
     if (this.disposed) {
       return undefined;
     }
@@ -138,7 +166,8 @@ export class ItemPictures {
     if (!look) {
       return undefined;
     }
-    const key = JSON.stringify(look);
+    const size = pictureSurfaceSize(footprint);
+    const key = JSON.stringify([look, size]);
     const cached = this.cache.get(key);
     if (cached !== undefined) {
       this.cache.delete(key);
@@ -149,7 +178,7 @@ export class ItemPictures {
     if (!model) {
       return undefined;
     }
-    const picture = this.painter.paint(model);
+    const picture = this.painter.paint(model, this.pose, size.width, size.height);
     if (this.cache.size === this.capacity) {
       this.cache.delete(this.cache.keys().next().value!);
     }
