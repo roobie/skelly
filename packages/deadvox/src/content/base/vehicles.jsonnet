@@ -209,6 +209,7 @@ local boxVan = [
     import 'things/hoist_hook_block.model.json',
     import 'things/hoist_boom_rest.model.json',
     import 'things/cargo_space.model.json',
+    import 'things/mounting_plate.model.json',
     import 'things/pickup_bed_floor.model.json',
     import 'things/pickup_bed_side.model.json',
     import 'things/pickup_bed_front.model.json',
@@ -294,6 +295,13 @@ local boxVan = [
           handlingSimSeconds: 1.2,
           wideReason: 'A cargo space is as wide as the floor it covers, not a carried bag.',
         },
+      },
+    },
+    part('mounting_plate', 'Mounting plate', [5, 5], ['structure', 'load_floor']) + {
+      vehicle+: {
+        mount: 'mounting_plate',
+        service: { mount: 'mounting_plate', durationSimSeconds: 10, qualities: {} },
+        addon: { requires: 'load_floor' },
       },
     },
     part('pickup_bed_floor', 'Pickup bed floor', pileSize, ['structure', 'load_floor']),

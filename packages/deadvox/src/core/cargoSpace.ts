@@ -115,13 +115,13 @@ export const placementRegion = (
   return { support, plane, face, clearance, lattice };
 };
 
-/** Takes a box above the floor out of the cells under it: whole where it stands in the first cell's layer. */
+/** A thin add-on may fit below an obstruction within the first cell, so keep its actual clearance. */
 const narrow = (clearance: Map<string, number>, box: ModelBox, plane: number, cells: FaceCells): void => {
   const axis = cells.face.normal;
   if (box.max[axis] <= plane + EPSILON) {
     return;
   }
-  const standing = box.min[axis] < snap(cells.lattice, plane + cells.metres, axis) - EPSILON;
+  const standing = box.min[axis] <= plane + EPSILON;
   for (const key of planCells(cells, box, false).filter((at) => clearance.has(at))) {
     if (standing) {
       clearance.delete(key);

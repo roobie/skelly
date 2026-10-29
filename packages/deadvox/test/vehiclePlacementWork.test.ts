@@ -3,6 +3,7 @@ import type { Registry } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
+import type { Item } from '../src/core/items.ts';
 import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { simSeconds } from '../src/core/time.ts';
@@ -135,6 +136,104 @@ const fixture = (registry = fixtureRegistry()) => {
 };
 
 describe('placement-carrying vehicle commands', () => {
+  it('keeps one owner through a player-installed plate chain and refuses removing its occupied support', () => {
+    const registry = fixtureRegistry();
+    const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+    const items = new Map(registry.items);
+    const plate = items.get('mounting_plate')!;
+    items.set(plate.id, {
+      ...plate,
+      vehicle: {
+        ...plate.vehicle!,
+        service: {
+          mount: plate.vehicle!.mount!,
+          durationSimSeconds: simSeconds(duration),
+          qualities: {},
+        },
+      },
+    });
+    const models = new Map(registry.models);
+    const model = models.get(plate.model!)!;
+    const collision = Object.values(model.parts!).flatMap((body) => body.collision!);
+    const span = (axis: 0 | 2) =>
+      Math.max(...collision.map(({ max }) => max[axis])) - Math.min(...collision.map(({ min }) => min[axis]));
+    const width = Math.ceil(span(0) / cell + 2) * cell;
+    const depth = Math.ceil(span(2) / cell + 2) * cell;
+    models.set('fixture_floor', {
+      ...model,
+      id: 'fixture_floor',
+      parts: {
+        body: {
+          massKg: 1,
+          centreOfMass: [width / 2, cell / 2, depth / 2],
+          voxelGrain: cell,
+          collision: [{ min: [0, 0, 0], max: [width, cell, depth] }],
+        },
+      },
+    });
+    items.set('fixture_floor', {
+      ...plate,
+      id: 'fixture_floor',
+      model: 'fixture_floor',
+      vehicle: { ...plate.vehicle!, addon: undefined, service: undefined },
+    });
+    const vehicleBlueprints = new Map(registry.vehicleBlueprints);
+    for (const id of ['hatchback', 'pickup']) {
+      vehicleBlueprints.set(id, {
+        id,
+        name: 'Fixture plate host',
+        fittings: [{ id: 'part', part: 'fixture_floor', at: [0, 0, 0], supportedBy: [] }],
+      });
+    }
+    const { runtime, inventory, hatchback } = fixture({ ...registry, items, models, vehicleBlueprints });
+    const plates = [inventory.create(plate.id), inventory.create(plate.id)];
+    const pos = runtime.player.body.pos.map(Math.floor) as [number, number, number];
+    for (const item of plates) {
+      expect(inventory.add(item, { kind: 'pile', pos })).toBe(true);
+    }
+    const singleOwners = () => {
+      const state = capture(runtime);
+      const owned = [...savedItemTree(state.character.inventory, state.world.vehicles)];
+      for (const item of plates) {
+        expect(owned.filter(({ item: saved }) => saved.uid === item.uid)).toHaveLength(1);
+      }
+    };
+    const targetFor = (item: Item, support: string, id: string): VehicleWorkTarget => {
+      const listed = legalAddonPlacements(inventory.registry, item, inventory.vehicles.get(hatchback)!);
+      const target = listed.find((entry) => entry.support === support)?.cells[0];
+      expect(target).toBeDefined();
+      return { id, ...target! };
+    };
+    const payload = (kind: 'install' | 'remove', item: Item, target: VehicleWorkTarget): ReplayActionPayload => ({
+      kind: 'vehicle.work',
+      work: kind,
+      vehicleId: hatchback,
+      fittingId: target.id,
+      itemUid: item.uid,
+      ...copyVehicleWorkPlacement(target),
+    });
+    const work = (kind: 'install' | 'remove', item: Item, target: VehicleWorkTarget) => {
+      expect(command(runtime, payload(kind, item, target))).toBeUndefined();
+      singleOwners();
+      runtime.sim.scheduler.advance(duration + 1);
+      singleOwners();
+      expect(inventory.locate(item)?.kind).toBe(kind === 'install' ? 'vehicle' : 'pile');
+    };
+    singleOwners();
+    const [lower, upper] = plates as [Item, Item];
+    const lowerTarget = targetFor(lower, 'part', 'lower');
+    work('install', lower, lowerTarget);
+    const upperTarget = targetFor(upper, 'lower', 'upper');
+    work('install', upper, upperTarget);
+    expect(command(runtime, payload('remove', lower, lowerTarget))).toBe(
+      coreMessage(inventory.registry, 'partSupportsOthers'),
+    );
+    expect(runtime.sim.actions.snapshotState().job).toBeNull();
+    singleOwners();
+    work('remove', upper, upperTarget);
+    work('remove', lower, lowerTarget);
+    expect(inventory.vehicles.get(hatchback)!.fittings.map(({ id }) => id)).toEqual(['part']);
+  });
   it('moves a factory cargo item to another legal cell through work with exactly one owner and removes it again', () => {
     const registry = fixtureRegistry();
     const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;

@@ -1481,6 +1481,37 @@
         "tiers": [],
         "usage": []
       },
+      "id": "mounting_plate",
+      "model": "mounting_plate",
+      "name": "Mounting plate",
+      "notLoot": false,
+      "size": [5, 5],
+      "vehicle": {
+        "addon": {
+          "requires": "load_floor"
+        },
+        "capabilities": ["structure", "load_floor"],
+        "mount": "mounting_plate",
+        "obstruction": {
+          "combat": true,
+          "light": true,
+          "sight": true,
+          "sound": true
+        },
+        "service": {
+          "durationSimSeconds": 10,
+          "mount": "mounting_plate",
+          "qualities": {}
+        }
+      },
+      "workInProgress": false
+    },
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
       "id": "pickup_bed_floor",
       "model": "pickup_bed_floor",
       "name": "Pickup bed floor",
@@ -3628,6 +3659,25 @@
             }
           ],
           "massKg": 0.20000000000000001,
+          "node": "body:block",
+          "voxelGrain": 0.03125
+        }
+      }
+    },
+    {
+      "anchors": {},
+      "file": "assets/models/mounting_plate.glb",
+      "id": "mounting_plate",
+      "parts": {
+        "body": {
+          "centreOfMass": [0, 0.015625, 0],
+          "collision": [
+            {
+              "max": [0.25, 0.03125, 0.25],
+              "min": [-0.25, 0, -0.25]
+            }
+          ],
+          "massKg": 12,
           "node": "body:block",
           "voxelGrain": 0.03125
         }

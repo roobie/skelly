@@ -3040,13 +3040,15 @@ face without authoring geometry. A later narrowing field need not change the wor
 One region function shares lattice and fitted-collision rules, taking clearance from
 the add-on item, so another word does not need another region implementation. See
 `src/core/schema.ts`, `VEHICLE_ADDON_FACES`, and `src/core/cargoSpace.ts`,
-`placementRegion` and `fitIssue`.
+`placementRegion` and `fitIssue`. Sub-cell clearance matters because an add-on
+resting on a thin plate must not invalidate the plate below it.
 
 Every named support must carry the add-on's required word: adding that word is enough
 to make a part a support, without giving `structure` a second meaning. See
 `src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
-forward; plate content follows under #1124.
+forward. See `src/content/base/vehicles.jsonnet`, `mounting_plate`, and
+`packages/thing-authoring-tool/vehicle-parts.libsonnet`, `mounting_plate`.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,
