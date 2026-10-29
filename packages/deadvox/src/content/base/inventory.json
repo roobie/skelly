@@ -1,6 +1,7 @@
 {
   "inventory": [
     {
+      "autoPlacementTallMinFreeAreaGainCells": 4,
       "cellMetres": 0.10000000000000001,
       "chestHeightMetres": 1,
       "conditionBands": [

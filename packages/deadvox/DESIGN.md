@@ -1320,6 +1320,16 @@ that fits no pocket of the furniture rolling it is a content error. Validation
 holds content to this; see `src/core/inventoryScale.ts`. Pockets may
 restrict their contents; liquids remain measured within their container.
 
+Automatic placement favors wide footprints for readability, but may choose tall
+when packing beside existing items preserves noticeably more usable space. An
+empty grid's aspect ratio is not a reason to stand a lone item upright. The
+preference belongs to shared placement so loot, piles and automatic inventory
+moves cannot disagree; explicit player placement remains the player's choice.
+Content owns how much
+packing benefit outweighs readability, so mods can retune that trade-off. See
+`src/core/items.ts`, `findSpot` and `largestFreeRectangleArea`, and
+`src/core/schema.ts`, `InventoryTuningSchema`.
+
 A soft container such as a bag isn't rigid, so packed empty it is plausibly
 smaller than what it holds when used: its footprint may be smaller than its
 interior. A soft bag nests only when empty, because nesting it loaded would

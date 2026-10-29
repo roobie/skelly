@@ -13,6 +13,7 @@
       containerMaxWidthCells: 10,
       keyHoldRealSeconds: 0.35,
       groundPileStateCap: 65536,
+      autoPlacementTallMinFreeAreaGainCells: 4,
       reachMetres: 2,
       chestHeightMetres: 1,
       useReachMetres: 2,
