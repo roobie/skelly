@@ -29,7 +29,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
-  | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
+  | { kind: 'vehicle.work'; work: 'install' | 'remove' | 'enter' | 'exit'; vehicleId: number; fittingId: string; itemUid: number }
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
@@ -104,7 +104,7 @@ const isLiftPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.entityUid) && (payload.floorLocked === undefined || typeof payload.floorLocked === 'boolean');
 
 const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
-  (payload.work === 'install' || payload.work === 'remove') &&
+  (payload.work === 'install' || payload.work === 'remove' || payload.work === 'enter' || payload.work === 'exit') &&
   isUid(payload.vehicleId) &&
   typeof payload.fittingId === 'string' &&
   payload.fittingId !== '' &&
@@ -218,7 +218,7 @@ export interface ReplayCommandOwners {
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   vehicleWork: (
-    work: 'install' | 'remove',
+    work: 'install' | 'remove' | 'enter' | 'exit',
     vehicleId: number,
     fittingId: string,
     itemUid: number,

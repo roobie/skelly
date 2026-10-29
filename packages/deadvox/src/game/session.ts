@@ -109,6 +109,8 @@ import { spendFuel } from '../core/torch.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
+import { vehicleEntryHooks } from '../core/vehicleEntry.ts';
+import type { VehicleWorkKind } from '../core/longAction.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
@@ -1120,7 +1122,34 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet, calendar: () => sim.calendar });
   sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
+  let seated = restoredPlayer?.seated;
+  const occupiedSeat = (vehicleId: number, fittingId: string) => seated?.vehicleId === vehicleId && seated.fittingId === fittingId;
+  const seatDefinition = () => {
+    const fitting = seated && inventory.vehicles.get(seated.vehicleId)?.fittings.find(({ id }) => id === seated!.fittingId);
+    return fitting ? registry.items.get(fitting.item.type)?.vehicle?.seat : undefined;
+  };
+  if (seated && !seatDefinition()) throw new Error('Missing saved seat');
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    occupied: occupiedSeat,
+    access: vehicleEntryHooks(inventory, {
+      blockSize: s,
+      seated: () => seated,
+      handsOnLadder: () => ladderHold.snapshotState() !== null,
+      clear: (position) => {
+        const candidate = { ...body, pos: position };
+        return !bodyOverlapsTerrain(candidate, physicalSolid) && !standingZombieBodies().some((other) =>
+          Math.abs(position[0] - other.pos[0]) < body.halfWidth + other.halfWidth &&
+          Math.abs(position[2] - other.pos[2]) < body.halfWidth + other.halfWidth &&
+          position[1] < other.pos[1] + other.height && position[1] + body.height > other.pos[1]);
+      },
+      place: (position, reference) => {
+        body.pos = [...position];
+        body.vel = [0, 0, 0];
+        body.onGround = true;
+        seated = reference;
+        ladderHold.release();
+      },
+    }),
     output: () => ({ kind: 'pile', pos: feet() }),
     quality: (quality) =>
       Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),
@@ -1150,7 +1179,7 @@ export const createSession = (options: SessionOptions) => {
   const currentLean = () => leanFrame(leanAmount, Player.lean);
   let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
-    resolvePlayerEyeHeight(
+    seatDefinition()?.eyeHeightMetres ?? resolvePlayerEyeHeight(
       sim.body.unconscious,
       sim.body.tuning.proneEyeHeightMetres,
       loweredStance()?.eyeDropMetres,
@@ -1859,6 +1888,10 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
+    if (seated) {
+      body.vel = [0, 0, 0];
+      return;
+    }
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
     const jumpStarted = pacedIntent.jump && wasGrounded;
@@ -2543,11 +2576,14 @@ export const createSession = (options: SessionOptions) => {
     /** Metres from the chest to the vehicle's nearest part, the distance its reach is judged by. */
     vehicleDistance: (vehicleId: number) => vehicleDistance(reachPlayer, vehicleParts.boxesOf(vehicleId)),
     /** Why the selected part can't be fitted at or removed from the selected site now. */
-    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) =>
+    vehicleWorkRefusal: (kind: VehicleWorkKind, vehicleId: number, fittingId: string, itemUid: number) =>
       sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid),
     /** Starts, or resumes, service work on one selected site and part; returns why not. */
-    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => {
-      const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
+    beginVehicleWork: (kind: VehicleWorkKind, vehicleId: number, fittingId: string, itemUid: number) => {
+      const item = inventory.vehicles.get(vehicleId)?.fittings.find(({ id, item }) => id === fittingId && item.uid === itemUid)?.item;
+      const service = kind === 'enter' || kind === 'exit'
+        ? item && registry.items.get(item.type)?.vehicle?.seat
+        : inventory.vehicleService(vehicleId, fittingId, itemUid);
       return (
         sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid) ??
         sim.actions.beginVehicleWork({
@@ -2738,6 +2774,7 @@ export const createSession = (options: SessionOptions) => {
           firearmReadyWalking,
           handlingPausedForKnockout,
           ladder: ladderHold.snapshotState(),
+          ...(seated ? { seated: { ...seated } } : {}),
         }),
         aim,
         survival,

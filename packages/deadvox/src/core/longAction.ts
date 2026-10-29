@@ -47,7 +47,7 @@ export type LongJob =
     }
   | {
       jobType: 'vehicleWork';
-      kind: 'install' | 'remove';
+      kind: VehicleWorkKind;
       vehicleId: number;
       fittingId: string;
       itemUid: number;
@@ -118,13 +118,14 @@ export interface TreatmentActionHooks {
   finish: (region: BodyRegion, itemUid: number, itemType: string) => string | true;
 }
 /** Vehicle work saves only stable owner references; the effect owner retains destination policy. */
+export type VehicleWorkKind = 'install' | 'remove' | 'enter' | 'exit';
 export interface VehicleWorkHooks {
-  validate: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
-  finish: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
+  validate: (kind: VehicleWorkKind, vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
+  finish: (kind: VehicleWorkKind, vehicleId: number, fittingId: string, itemUid: number) => string | undefined;
 }
 
 export interface VehicleWorkStart {
-  kind: 'install' | 'remove';
+  kind: VehicleWorkKind;
   vehicleId: number;
   fittingId: string;
   itemUid: number;
@@ -200,7 +201,7 @@ const validateForcing = (job: Extract<LongJob, { jobType: 'forceDoor' }>): void 
 
 const validateVehicleWork = (job: Extract<LongJob, { jobType: 'vehicleWork' }>): void => {
   if (
-    (job.kind !== 'install' && job.kind !== 'remove') ||
+    !['install', 'remove', 'enter', 'exit'].includes(job.kind) ||
     !Number.isSafeInteger(job.vehicleId) ||
     job.vehicleId < 1 ||
     !job.fittingId ||

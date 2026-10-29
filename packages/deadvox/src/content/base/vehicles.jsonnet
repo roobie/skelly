@@ -18,6 +18,10 @@ local part(id, name, size, capabilities, description=null) = {
     },
   },
 } + (if description == null then {} else { description: description });
+local seat(position, entryCells, exitCells, eyeHeightMetres=0.85) = {
+  position: position, entryCells: entryCells, exitCells: exitCells,
+  eyeHeightMetres: eyeHeightMetres, durationSimSeconds: 2,
+};
 local fitting(id, part, at, supportedBy=[], service=null) =
   { id: id, part: part, at: at, supportedBy: supportedBy } +
   if service == null then {} else { service: service };
@@ -133,7 +137,8 @@ local pickup = batteryBay('pickup_battery_tray', [1.9, 0.8, 0.35]) + headlamps(2
   fitting('bed_floor', 'pickup_bed_floor', origin),
   fitting('bed_front', 'pickup_bed_front', origin, ['bed_floor']),
   cargoSpace('bed_cargo', [-1.15, 0.85, 0], [21, 4, 12], 'bed_floor'),
-] + pair('bed_side', 'pickup_bed_side', origin, on(['bed_floor']));
+] + pair('bed_side', 'pickup_bed_side', origin, on(['bed_floor']))
+  + pair('front_seat', 'front_seat', [0.7, 0.5, 0.4], on());
 // The van's cargo box: its factory cargo space covers the whole floor up to the roof.
 local boxVan = [
   fitting('box_floor', 'box_van_floor', origin),
@@ -223,7 +228,7 @@ local boxVan = [
     part('hatchback_battery_tray', 'Hatchback battery tray', [3, 2], ['structure'], 'A pressed steel shelf for a battery.'),
     part('pickup_battery_tray', 'Pickup battery tray', [4, 3], ['structure'], 'A heavy steel shelf for a battery.'),
     part('wheel_205_55r16', 'Wheel 205/55 R16', [6, 6], ['wheel']) + { vehicle+: { mount: 'hatchback_wheel' } },
-    part('front_seat', 'Front seat', [5, 10], ['seat']),
+    part('front_seat', 'Front seat', [5, 10], ['seat']) + { vehicle+: { seat: seat([0, 0.15, 0], [[0, -0.3, 1.1]], [[0, -0.3, 1.1], [0.5, -0.3, 1.1]]) } },
     part('door_mirror', 'Door mirror', [2, 2], []),
     part('steering_wheel', 'Steering wheel', [4, 4], ['steered']),
     part('gear_lever', 'Gear lever', [1, 3], []),
@@ -246,7 +251,7 @@ local boxVan = [
     part('hatchback_fuel_tank', 'Hatchback fuel tank', [5, 4], ['fuel']),
     part('hatchback_exhaust', 'Hatchback exhaust', [12, 2], []),
     part('hatchback_dashboard', 'Hatchback dashboard', pileSize, ['structure']),
-    part('hatchback_rear_seat', 'Hatchback rear seat', pileSize, ['seat']),
+    part('hatchback_rear_seat', 'Hatchback rear seat', pileSize, ['seat']) + { vehicle+: { seat: seat([-0.8, 0.45, 0.37], [[-0.8, 0, 1.5]], [[-0.8, 0, 1.5], [-0.8, 0, -1.5]]) } },
     part('hoist_frame_rail', 'Truck frame rail', pileSize, ['structure']),
     part('hoist_crossmember', 'Truck crossmember', [4, 2], ['structure']),
     part('hoist_wheel', 'Truck wheel', [6, 6], ['wheel']),
@@ -269,7 +274,7 @@ local boxVan = [
     part('hoist_front_bumper', 'Truck front bumper', pileSize, ['protection']),
     part('hoist_dashboard', 'Truck dashboard', pileSize, ['structure']),
     part('hoist_engine_cover', 'Truck engine cover', [6, 3], []),
-    part('hoist_bench', 'Truck bench seat', pileSize, ['seat']),
+    part('hoist_bench', 'Truck bench seat', pileSize, ['seat']) + { vehicle+: { seat: seat([1.7, 1.1, 0.4], [[1.7, 0, 1.5]], [[1.7, 0, 1.5], [1.7, 0, -1.5]]) } },
     part('hoist_deck_floor', 'Truck flat deck', pileSize, ['structure']),
     part('hoist_headboard', 'Truck headboard', pileSize, ['protection']),
     part('hoist_mudguard', 'Truck mudguard', [4, 3], ['protection']),

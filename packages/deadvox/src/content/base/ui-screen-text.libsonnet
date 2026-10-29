@@ -13,6 +13,8 @@
     empty: '{site}: empty',
     remove: 'Remove',
     install: 'Fit {part}',
+    enter: 'Enter',
+    exit: 'Exit',
     noPart: 'No part in reach fits',
     removing: 'Removing {part}',
     installing: 'Fitting {part}',
