@@ -40,7 +40,10 @@ export async function fingerprintAfterHotChange(
 }
 
 // Isolated experiment identity: not game/save identity and never covered by the debug exclusion.
-export const FEASIBILITY_ENTRIES = ['src/vehicles/feasibility/runner.ts'] as const;
+export const FEASIBILITY_ENTRIES = [
+  'src/vehicles/feasibility/runner.ts',
+  'src/vehicles/feasibility/driving.ts',
+] as const;
 
 export const SIMULATION_ENTRIES = [
   'src/core/sim.ts',
