@@ -11,6 +11,7 @@
       ],
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
+      keyHoldRealSeconds: 0.35,
       groundPileStateCap: 65536,
       reachMetres: 2,
       chestHeightMetres: 1,

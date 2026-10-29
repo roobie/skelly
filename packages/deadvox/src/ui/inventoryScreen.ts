@@ -8,7 +8,7 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
-import { practiceForNextLevel } from '../core/character.ts';
+import { offSide, practiceForNextLevel } from '../core/character.ts';
 import type { ItemDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -25,17 +25,18 @@ import {
   batterySlotRefusal,
   bestPocket,
   dropTarget,
+  inventoryPocket,
   type Option,
   options,
   otherHandPour,
   pourRefusal,
   quickestPockets,
-  quickMove,
 } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { blursFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { blursFindField, type InputCommand, inputBindings } from '../game/inputBindings.ts';
+import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
@@ -175,7 +176,12 @@ interface SlotViewModel {
 interface PileViewModel {
   readonly label: string;
   readonly grids: readonly GridViewModel[];
-  readonly bags: readonly { readonly name: string; readonly pockets: readonly PocketViewModel[] }[];
+  readonly bags: readonly {
+    readonly uid: number;
+    readonly chosen: boolean;
+    readonly name: string;
+    readonly pockets: readonly PocketViewModel[];
+  }[];
 }
 
 interface FurnitureViewModel {
@@ -184,6 +190,7 @@ interface FurnitureViewModel {
   readonly label: string;
   readonly searching: boolean;
   readonly targeted: boolean;
+  readonly chosen: boolean;
   readonly searchLabel?: string | undefined;
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
 }
@@ -564,6 +571,7 @@ const inventoryTemplate = (
     find,
     queue,
     search,
+    chooseTarget,
     attachmentAction,
     wait,
     stepWake,
@@ -571,6 +579,7 @@ const inventoryTemplate = (
     find: { query: string; change: (query: string) => void; key: (e: Event) => void };
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
+    chooseTarget: (key: string) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
     wait: () => void;
     stepWake: (step: 1 | -1) => void;
@@ -601,7 +610,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
       <summary>${text.controls}</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -661,8 +670,8 @@ const inventoryTemplate = (
           </div>
           ${pile.bags.map(
             (bag) => html`
-            <div class="inv-around-section inv-around-container" data-around-section="container">
-              <div class="inv-pile-label">${fillText(text.bagOnFloor, { bag: bag.name })}</div>
+            <div class="inv-around-section inv-around-container" data-around-section="container" data-put-container=${`item:${bag.uid}`}>
+              <label class="inv-pile-label"><input type="checkbox" data-put-target=${`item:${bag.uid}`} .checked=${bag.chosen} @change=${() => chooseTarget(`item:${bag.uid}`)}>${fillText(text.bagOnFloor, { bag: bag.name })}</label>
               <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
           `,
@@ -680,8 +689,8 @@ const inventoryTemplate = (
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
-            <div class="inv-pile-label">${furniture.targeted ? '▸ ' : ''}${furniture.label}</div>
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-put-container=${`furniture:${furniture.uid}`} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)}>${furniture.label}</label>
             ${furnitureBodyTemplate(furniture, search, text)}
             ${
               furniture.charger
@@ -861,13 +870,16 @@ const scrollbarWidth = (root: HTMLElement): number | undefined => {
 export class InventoryScreen {
   selected: Item | undefined;
   /** The container keyboard puts go to; not kept across a reload of the screen. */
-  private targetUid: number | undefined;
+  private targetKey: string | undefined;
+  private currentContainer: string | undefined;
+  private readonly gestures: PressHoldInput<string>;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
     Inventory,
     | 'carried'
     | 'carriedWeight'
+    | 'character'
     | 'entities'
     | 'hands'
     | 'landing'
@@ -908,6 +920,7 @@ export class InventoryScreen {
       Inventory,
       | 'carried'
       | 'carriedWeight'
+      | 'character'
       | 'entities'
       | 'hands'
       | 'landing'
@@ -930,6 +943,16 @@ export class InventoryScreen {
     this.inv = inv;
     this.queue = queue;
     this.hooks = hooks;
+    this.gestures = new PressHoldInput({
+      holdRealMs: () => reachTuning(this.inv.registry).keyHoldRealSeconds * 1000,
+      tap: (action) => this.onAction(action),
+      hold: (action) => {
+        const command = inputBindings.binding(action)?.commands.find(({ kind }) => kind === 'hold');
+        if (command) {
+          this.onAction(command.id);
+        }
+      },
+    });
     this.viewer = new ItemViewer(
       () => root.querySelector<HTMLElement>('.inv-viewer-host'),
       () => this.hooks.itemView,
@@ -937,6 +960,24 @@ export class InventoryScreen {
       () => this.text().viewerClose,
     );
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
+    root.addEventListener('dblclick', (e) => {
+      if (e.button !== 0) {
+        return;
+      }
+      const node = (e.target as Element).closest<HTMLElement>('[data-uid]');
+      const item = node && this.byUid.get(Number(node.dataset.uid));
+      if (item && this.viewer.viewedUid === undefined) {
+        this.endDrag();
+        this.report(
+          this.hooks.actionRefusal?.() ??
+            this.hooks.dispatch({
+              kind: 'inventory.wield-or-pocket',
+              itemUid: item.uid,
+              feet: this.hooks.feet(),
+            }),
+        );
+      }
+    });
     // A middle press would otherwise start the browser's autoscroll while the pointer is free.
     root.addEventListener('mousedown', (e) => {
       if (e.button !== 0 && isViewItemPress(e)) {
@@ -967,6 +1008,9 @@ export class InventoryScreen {
   }
 
   close(): void {
+    this.cancelInput();
+    this.targetKey = undefined;
+    this.currentContainer = undefined;
     this.tabs.close();
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
@@ -996,6 +1040,7 @@ export class InventoryScreen {
   }
 
   selectTab(tab: InventoryTab): void {
+    this.cancelInput();
     this.tabs.select(tab);
     this.root.dataset.tab = tab;
     this.syncTabClass();
@@ -1008,9 +1053,14 @@ export class InventoryScreen {
   }
 
   /** Redraws when something changed; call every frame while open. */
-  update(): void {
+  update(at = performance.now()): void {
     if (!this.isOpen) {
       return;
+    }
+    if (this.hooks.actionRefusal?.()) {
+      this.cancelInput();
+    } else {
+      this.gestures.update(at);
     }
     const piles = this.hooks
       .nearby()
@@ -1025,7 +1075,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetKey}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -1078,14 +1128,55 @@ export class InventoryScreen {
     return true;
   }
 
+  cancelInput(): void {
+    this.gestures.cancel();
+  }
+
+  onInputCommand({ action, phase, at }: InputCommand): boolean {
+    if (
+      !(
+        this.isOpen &&
+        action.startsWith('inventory.') &&
+        inputBindings.binding(action)?.commands.some(({ kind }) => kind === 'tap-or-hold')
+      )
+    ) {
+      return false;
+    }
+    if (phase === 'down') {
+      this.gestures.keyDown(action, at);
+    } else {
+      this.gestures.keyUp(action, at);
+    }
+    return true;
+  }
+
   /** The shared input owner has already selected an inventory command. */
   onAction(action: string): boolean {
     if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
+    if (this.navigationAction(action)) {
+      return true;
+    }
     const digit = this.quickbarDigit(action);
     const item = this.actionItem();
+    if (action === 'inventory.select-target') {
+      this.toggleCurrentTarget(item);
+      return true;
+    }
+    if (!item) {
+      return action.startsWith('inventory.') || digit !== undefined;
+    }
+    if (digit !== undefined) {
+      this.report(this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid }));
+      return true;
+    }
+    return this.selectedAction(action, item);
+  }
+
+  private navigationAction(action: string): boolean {
     if (action === 'handling.stop') {
+      this.cancelInput();
       this.report(this.hooks.dispatch({ kind: 'inventory.cancel-handling' }));
       return true;
     }
@@ -1104,18 +1195,36 @@ export class InventoryScreen {
       );
       return true;
     }
-    if (action === 'inventory.cycle-target') {
-      this.cycleTarget();
+    if (action === 'inventory.clear-find') {
+      this.findQuery = '';
+      this.drawn = '';
+      this.update();
       return true;
     }
-    if (!item) {
-      return action.startsWith('inventory.') || digit !== undefined;
+    return false;
+  }
+
+  private currentTargetKey(item: Item | undefined): string | undefined {
+    if (this.currentContainer) {
+      return this.currentContainer;
     }
-    if (digit !== undefined) {
-      this.report(this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid }));
-      return true;
+    if (item?.pockets) {
+      return `item:${item.uid}`;
     }
-    return this.selectedAction(action, item);
+    const at = item && this.inv.locate(item);
+    if (at?.kind === 'furniture') {
+      return `furniture:${at.entity.uid}`;
+    }
+    return at?.kind === 'pocket' ? `item:${at.owner.uid}` : undefined;
+  }
+
+  private toggleCurrentTarget(item: Item | undefined): void {
+    const key = this.currentTargetKey(item);
+    if (key) {
+      this.chooseTarget(key);
+    } else {
+      this.refuse(this.text().noPutTarget);
+    }
   }
 
   private actionItem(): Item | undefined {
@@ -1126,6 +1235,17 @@ export class InventoryScreen {
     switch (action) {
       case 'inventory.hands':
         this.report(this.hooks.dispatch({ kind: 'inventory.to-hands', itemUid: item.uid, feet: this.hooks.feet() }));
+        return true;
+      case 'inventory.offhand':
+        this.report(this.tryQueue(item, { kind: 'hand', side: offSide(this.inv.character) }));
+        return true;
+      case 'inventory.take': {
+        const target = inventoryPocket(this.hooks.reach().player.inventory, item);
+        this.report(target ? this.tryQueue(item, target) : this.text().noRoom);
+        return true;
+      }
+      case 'inventory.activate':
+        this.report(this.hooks.dispatch({ kind: 'inventory.activate', itemUid: item.uid }));
         return true;
       case 'inventory.wear':
         this.wearOrTakeOff(item);
@@ -1206,33 +1326,51 @@ export class InventoryScreen {
     }
   }
 
-  /** The chosen container if it is still within reach, else the nearest one. */
-  private targetEntity(): BlockEntity | undefined {
-    const containers = this.hooks.containers();
-    return containers.find((c) => c.uid === this.targetUid) ?? containers[0];
+  private putTargets(): { key: string; distance: number; pockets: Target[] }[] {
+    return [
+      ...this.hooks.containers().map((entity) => ({
+        key: `furniture:${entity.uid}`,
+        distance: this.hooks.entityDistance(entity),
+        pockets: (this.inv.entities.defOf(entity).container?.pockets ?? []).map(
+          (_, pocket): Target => ({ kind: 'furniture', entity, pocket }),
+        ),
+      })),
+      ...this.hooks.nearby().flatMap((pile) =>
+        pile.items
+          .filter(({ item }) => item.pockets)
+          .map(({ item }) => ({
+            key: `item:${item.uid}`,
+            distance: this.hooks.distance(pile),
+            pockets: item.pockets!.map((_, pocket): Target => ({ kind: 'pocket', owner: item, pocket })),
+          })),
+      ),
+    ].sort((a, b) => a.distance - b.distance);
   }
 
-  private cycleTarget(): void {
-    const containers = this.hooks.containers();
-    if (containers.length === 0) {
-      this.refuse('No container in reach');
+  private chooseTarget(key: string): void {
+    if (!this.putTargets().some((target) => target.key === key)) {
+      this.refuse(this.text().noPutTarget);
       return;
     }
-    const at = containers.findIndex((c) => c.uid === this.targetEntity()?.uid);
-    this.targetUid = containers[(at + 1) % containers.length]!.uid;
+    this.targetKey = this.targetKey === key ? undefined : key;
+    this.drawn = '';
+    this.update();
+  }
+
+  private putTarget() {
+    const targets = this.putTargets();
+    return targets.find(({ key }) => key === this.targetKey) ?? targets[0];
   }
 
   /** The mouse path's move into a container pocket, with the whole stack going to the first pocket that takes it. */
   private putInTarget(item: Item): void {
-    const entity = this.targetEntity();
-    if (!entity) {
-      this.refuse('No container in reach');
+    const chosen = this.putTarget();
+    if (!chosen) {
+      this.refuse(this.text().noPutTarget);
       return;
     }
-    const pockets = this.inv.entities.defOf(entity).container?.pockets ?? [];
     let refusal: string | undefined;
-    for (let pocket = 0; pocket < pockets.length; pocket += 1) {
-      const target: Target = { kind: 'furniture', entity, pocket };
+    for (const target of chosen.pockets) {
       const plan = this.inv.plan(item, target);
       if (plan.ok) {
         this.report(this.tryQueue(item, target));
@@ -1240,7 +1378,7 @@ export class InventoryScreen {
       }
       refusal ??= plan.reason;
     }
-    this.refuse(refusal ?? 'No room there');
+    this.refuse(refusal ?? this.text().noRoom);
   }
 
   /** Takes every item of the same category from the piles within reach. */
@@ -1273,6 +1411,7 @@ export class InventoryScreen {
   }
 
   private step(dir: number): void {
+    this.currentContainer = undefined;
     if (this.order.length === 0) {
       return;
     }
@@ -1327,6 +1466,7 @@ export class InventoryScreen {
               this.report(this.tryQueue(item, target));
             }
           },
+          chooseTarget: (key) => this.chooseTarget(key),
           search: (uid) => {
             const refusal = this.hooks.actionRefusal?.();
             const entity = this.entityByUid.get(uid);
@@ -1470,7 +1610,12 @@ export class InventoryScreen {
         grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
-          .map(({ item }) => ({ name: this.inv.name(item), pockets: this.pocketsViewModel(item) })),
+          .map(({ item }) => ({
+            uid: item.uid,
+            chosen: this.targetKey === `item:${item.uid}`,
+            name: this.inv.name(item),
+            pockets: this.pocketsViewModel(item),
+          })),
       }),
     );
     const feet = this.hooks.feet();
@@ -1499,7 +1644,8 @@ export class InventoryScreen {
         charger: this.hooks.charger?.(entity),
         label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
         searching: !entity.searched && this.hooks.searching(entity),
-        targeted: entity.uid === this.targetEntity()?.uid,
+        targeted: this.putTarget()?.key === `furniture:${entity.uid}`,
+        chosen: this.targetKey === `furniture:${entity.uid}`,
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
@@ -1864,7 +2010,13 @@ export class InventoryScreen {
       this.refuse(refusal);
       return;
     }
-    const node = (e.target as HTMLElement).closest<HTMLElement>('[data-uid]');
+    const element = e.target as HTMLElement;
+    const container = element.closest<HTMLElement>('[data-put-container]');
+    this.currentContainer = container?.dataset.putContainer;
+    if (element.closest('input,button,label')) {
+      return;
+    }
+    const node = element.closest<HTMLElement>('[data-uid]');
     const item = node ? this.byUid.get(Number(node.dataset.uid)) : undefined;
     if (node && item && isViewItemPress(e)) {
       e.preventDefault();
@@ -1877,13 +2029,6 @@ export class InventoryScreen {
     e.preventDefault();
     const card = this.selected;
     this.selected = item;
-    if (keyboardInput.held('inventory.quick-action-gate')) {
-      const option = quickMove(item, this.hooks.reach());
-      this.report(option.plan.ok ? this.tryQueue(item, option.target) : option.plan.reason);
-      this.drawn = '';
-      this.update();
-      return;
-    }
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;

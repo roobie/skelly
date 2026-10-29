@@ -154,6 +154,8 @@ const applyCommand = (
     tip: () => runtime.session.tipFurniture(),
     clearDownedBody: (id, way) => runtime.session.clearDownedBody(id, way),
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
+    craftRepairEntity: (recipeId, entityUid, preference) =>
+      runtime.session.crafting.repairEntity(recipeId, entityUid, preference),
     craftContinue: () => {
       const uid = runtime.session.crafting.currentUid;
       return uid === undefined ? undefined : runtime.session.crafting.act(uid, 'continue');

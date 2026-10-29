@@ -323,6 +323,7 @@ const InventoryTuningSchema = strictObject({
   cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  keyHoldRealSeconds: Positive,
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
@@ -443,7 +444,12 @@ const UiScreenTextSchema = strictObject({
   /** What the audio options call each volume. */
   audioVolumeLabels: strictObject({ master: Name, world: Name, body: Name, ui: Name }),
   /** The fixed pointer input each unbindable pointer action names. */
-  pointerButtonLabels: strictObject({ 'hand.use-dominant': Name, 'hand.off-instant': Name, 'pointer.look': Name }),
+  pointerButtonLabels: strictObject({
+    'hand.use-dominant': Name,
+    'hand.off-instant': Name,
+    'pointer.look': Name,
+    'inventory.wield-or-pocket': Name,
+  }),
   /** What the win card says about saving the completed attempt. */
   winCheckpointMessages: strictObject({ saved: Name, pending: Name, failed: Name, unavailable: Name }),
   /** The HUD, audio, graphics and fullscreen options in the menu. */
@@ -622,7 +628,8 @@ const UiScreenTextSchema = strictObject({
   tutorial: slottedTable({
     inventory: [],
     closeInventory: [],
-    quickAction: [],
+    findItems: [],
+    wieldOrStow: [],
     wieldSelectedItem: [],
     eatBeans: [],
     openedBeans: [],
@@ -832,6 +839,7 @@ const UiScreenTextSchema = strictObject({
     nothingQueued: [],
     nothingToSearch: [],
     noRoom: [],
+    noPutTarget: [],
     taking: ['count', 'category'],
     noneToTake: ['category'],
     secs: ['value'],
