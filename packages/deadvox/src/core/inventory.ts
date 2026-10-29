@@ -540,6 +540,7 @@ export class Inventory {
       !validVehicleWorkPlacement(target) ||
       item.count !== 1 ||
       part?.mount !== service.mount ||
+      vehicle.fittings.some(({ id, item: owned }) => id === target.id && owned.uid !== itemUid) ||
       (site?.service && !sameVehiclePlacement(site, target))
     ) {
       return coreMessage(this.registry, 'partDoesNotFit');

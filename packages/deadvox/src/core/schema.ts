@@ -1613,7 +1613,8 @@ const ItemSchema = strictObject({
       addon: optional(
         strictObject({
           requires: picklist(Object.keys(VEHICLE_ADDON_FACES) as (keyof typeof VEHICLE_ADDON_FACES)[]),
-          openClearanceCells: optional(Count),
+          /** An omitted clearance leaves open sky unbounded; fitted collision still limits height. */
+          openClearanceCells: optional(Cells),
         }),
       ),
       capabilities: pipe(

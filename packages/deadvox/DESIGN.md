@@ -3029,11 +3029,11 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
-**Parked service.** Work requirements belong to the part's item so mods author work
+**Part work.** Work requirements belong to the part's item so mods author work
 with the part; an authored site's service wins so a vehicle can override that work.
 Geometry and cargo pocket handling time cannot establish installation cost. See
 `src/core/schema.ts`, `VehicleServiceFields`, and `src/core/inventory.ts`,
-`Inventory.vehiclePlacementService`. Further add-on content follows #323.
+`Inventory.vehiclePlacementService`. Further add-on content follows #1124.
 
 **Add-on regions.** A capability word opens a face by a code rule so mods offer a
 face without authoring geometry. A later narrowing field need not change the word.
@@ -3046,7 +3046,7 @@ Every named support must carry the add-on's required word: adding that word is e
 to make a part a support, without giving `structure` a second meaning. See
 `src/core/inventory.ts`, `Inventory.vehiclePlacementRefusal`. A player-fitted plate
 belongs with add-ons because it proves support chains without bringing scratch-building
-forward; plate content follows under #323.
+forward; plate content follows under #1124.
 
 A stopped or refused action must not orphan or duplicate the selected item; see
 `src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,

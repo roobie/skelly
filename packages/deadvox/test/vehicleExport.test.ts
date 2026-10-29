@@ -97,6 +97,11 @@ describe('vehicle export contract', () => {
       modPart('fixture_cell', [], undefined, { addon: { requires: 'structure' } }),
       '.vehicle.addon.requires',
     ],
+    [
+      'an authored zero open clearance',
+      modPart('fixture_cell', [], undefined, { addon: { requires: 'load_floor', openClearanceCells: 0 } }),
+      '.vehicle.addon.openClearanceCells',
+    ],
     ['a part without baked collision', modPart('fixture_cell', [], bare), 'items[0].model'],
     ['a fitting naming no item', blueprint(fitting('cell', 'fixture_missing')), '.fittings[0].part'],
     [

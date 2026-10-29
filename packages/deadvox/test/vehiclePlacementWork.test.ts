@@ -7,7 +7,11 @@ import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { legalAddonPlacements } from '../src/core/vehicleBlueprint.ts';
-import { copyVehicleWorkPlacement, type VehicleWorkPlacement } from '../src/core/vehicleInstances.ts';
+import {
+  copyVehicleWorkPlacement,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+} from '../src/core/vehicleInstances.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
@@ -115,7 +119,11 @@ const fixture = (registry = fixtureRegistry()) => {
     ['part'],
   );
   const part = inventory.vehicles.get(hatchback)!.fittings.find(({ id }) => id === 'part')!.item;
-  const payload = (work: 'install' | 'remove', vehicleId: number, chosen = placement): ReplayActionPayload => ({
+  const payload = (
+    work: 'install' | 'remove',
+    vehicleId: number,
+    chosen = placement,
+  ): Extract<ReplayActionPayload, { kind: 'vehicle.work' }> => ({
     kind: 'vehicle.work',
     work,
     vehicleId,
@@ -152,6 +160,11 @@ describe('placement-carrying vehicle commands', () => {
       model: 'fixture_floor',
       vehicle: { ...floor.vehicle!, capabilities: ['structure', 'load_floor'] },
     });
+    items.set('fixture_structure', {
+      ...items.get('fixture_floor')!,
+      id: 'fixture_structure',
+      vehicle: { ...floor.vehicle!, capabilities: ['structure'] },
+    });
     const cargo = items.get('cargo_space')!;
     items.set(cargo.id, {
       ...cargo,
@@ -170,6 +183,7 @@ describe('placement-carrying vehicle commands', () => {
         name: 'Fixture cargo vehicle',
         fittings: [
           { id: 'support', part: 'fixture_floor', at: [0, 0, 0], supportedBy: [] },
+          { id: 'structure', part: 'fixture_structure', at: [-4 * cell, 0, 0], supportedBy: [] },
           { id: 'part', part: cargo.id, cargo: [1, 1, 1], ...original },
         ],
       });
@@ -191,10 +205,27 @@ describe('placement-carrying vehicle commands', () => {
     const listed = legalAddonPlacements(inventory.registry, part, inventory.vehicles.get(hatchback)!);
     const chosen = listed.flatMap(({ cells }) => cells).find(({ at }) => at[0] !== original.at[0])!;
     expect(chosen).toBeDefined();
-    const unsupported = { ...chosen, supportedBy: ['part'] };
-    expect(runtime.session.vehicleWorkRefusal('install', hatchback, { id: 'part', ...unsupported }, part.uid)).toBe(
-      coreMessage(inventory.registry, 'partNeedsSupport'),
-    );
+    const refusals: [VehicleWorkTarget, 'partDoesNotFit' | 'partNeedsSupport'][] = [
+      [{ ...chosen, id: 'support' }, 'partDoesNotFit'],
+      [{ ...chosen, id: 'part', supportedBy: ['structure'] }, 'partNeedsSupport'],
+      [{ ...chosen, id: 'part', supportedBy: ['part'] }, 'partNeedsSupport'],
+    ];
+    for (const [target, reason] of refusals) {
+      const refusal = coreMessage(inventory.registry, reason);
+      expect(runtime.session.vehicleWorkRefusal('install', hatchback, target, part.uid)).toBe(refusal);
+      expect(command(runtime, { ...payload('install', hatchback, target), fittingId: target.id })).toBe(refusal);
+      expect(
+        inventory.vehicleTransfer({
+          kind: 'install',
+          vehicleId: hatchback,
+          fittingId: target.id,
+          itemUid: part.uid,
+          placement: target,
+        }),
+      ).toBe(refusal);
+      expect(runtime.sim.actions.snapshotState().job).toBeNull();
+      expect(inventory.locate(part)?.kind).toBe('pile');
+    }
     work('install', chosen);
     expect(inventory.locate(part)).toMatchObject({ kind: 'vehicle', vehicleId: hatchback });
     const pile = inventory.pileAt(runtime.player.body.pos.map(Math.floor) as [number, number, number]);
