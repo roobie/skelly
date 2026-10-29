@@ -6,6 +6,7 @@
       "id": "debug-repair-look",
       "recipes": [
         {
+          "category": "fixtures",
           "components": [
             [
               {
@@ -27,7 +28,9 @@
             "count": 1,
             "item": "wooden_plank"
           },
+          "searchTerms": [],
           "skills": {},
+          "tags": [],
           "timeGameMinutes": 1
         }
       ],

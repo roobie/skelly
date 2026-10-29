@@ -10,6 +10,7 @@ import { decimalText } from '../core/numberText.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
+import { craftRequirementRows } from './craftRequirementRows.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>
@@ -87,33 +88,6 @@ const recipeStartReason = (
   }
   return undefined;
 };
-
-export const craftRequirementRows = (
-  registry: Registry,
-  status: ReturnType<typeof requirementStatus>,
-  prefer: CraftPreference | undefined,
-): Pick<CraftRow, 'components' | 'qualities' | 'skills'> => ({
-  components: status.components.map(({ alternatives, group }) => ({
-    group,
-    preferred: prefer?.[group] ?? '',
-    alternatives: alternatives.map((a) => ({
-      id: a.item,
-      name: registry.items.get(a.item)!.name,
-      needed: a.needed,
-      found: a.available,
-    })),
-  })),
-  qualities: status.qualities.map(({ quality, required, available }) => ({
-    name: quality,
-    required,
-    best: available,
-  })),
-  skills: status.skills.map(({ skill, required, available }) => ({
-    name: registry.skills.get(skill)!.name,
-    required,
-    available,
-  })),
-});
 
 export const craftRows = ({
   registry,

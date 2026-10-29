@@ -2577,6 +2577,7 @@ export const startPlay = (
       return;
     }
     const context = inputContext();
+    // The debug-only look records neither surface presses nor a work start; it is not a replayable repair flow.
     if (routeRepairCommand({ action, phase, at }, context)) {
       return;
     }

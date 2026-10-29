@@ -6,7 +6,8 @@ import type { CraftPreference } from '../core/crafting.ts';
 import { fillText } from '../core/textTemplate.ts';
 import type { InputCancellationReason, InputCommand, InputContext, KeyboardInput } from '../game/inputBindings.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
-import { craftingText, craftRequirementRows } from './craftReadout.ts';
+import { craftingText } from './craftReadout.ts';
+import { craftRequirementRows } from './craftRequirementRows.ts';
 import { craftRequirements } from './craftRequirements.ts';
 import { fillHint, type HintText } from './keyCap.ts';
 

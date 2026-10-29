@@ -13,9 +13,12 @@ import { Simulation } from '../src/core/sim.ts';
 import { selectBundledMods } from '../src/game/bundledMods.ts';
 import { repairLookEnabled } from '../src/game/config.ts';
 import { stageRepairLook } from '../src/game/testHouseRepairLook.ts';
+import { startupContent } from './baseRegistry.ts';
+import { withReusedBuilds } from './bundledContentReuse.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
-const admitted = selectBundledMods([], [repairLook.mod]);
+const normal = startupContent();
+const admitted = withReusedBuilds(() => selectBundledMods([], [repairLook.mod]));
 
 describe('test-house repair look', () => {
   it.each([
@@ -31,7 +34,7 @@ describe('test-house repair look', () => {
   it('admits the preview recipe through content validation without adding it to normal content', () => {
     expect(admitted.issues).toEqual([]);
     expect(new Character(admitted.content.registry).knownRecipes.has(repairLook.recipe)).toBe(true);
-    expect(selectBundledMods([]).content.registry.recipes.has(repairLook.recipe)).toBe(false);
+    expect(normal.registry.recipes.has(repairLook.recipe)).toBe(false);
   });
 
   it('keeps the damaged showroom target and reachable requirements when its column arrives', () => {
