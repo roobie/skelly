@@ -63,6 +63,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.weapon.melee.charge.fullSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'meleeClasses[].unarmed.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'meleeClasses[].unarmed.windupCapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'inventory[].keyHoldRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].search.minSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].search.maxSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].throwFlightSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

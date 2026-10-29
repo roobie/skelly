@@ -263,6 +263,9 @@ const BASE_DEFAULT_KEYS: BindingMap = new Map(
   ]),
 );
 export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS);
+const INVENTORY_CHECKBOX_BINDINGS: ReadonlySet<string> = new Set(
+  INPUT_BINDINGS.filter((binding) => binding.contexts.includes('inventory')).map(({ id }) => id),
+);
 export const POINTER_ACTIONS = [
   { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },
   { id: 'hand.off-instant', description: 'Instant off-hand use' },
@@ -807,7 +810,13 @@ const pageControl = (target: EventTarget | null): boolean =>
     target.closest('button,a[href],input,select,textarea,summary,label,[role="button"],[contenteditable="true"]'),
   );
 const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | undefined => {
-  if (!(event.target instanceof HTMLElement) || typesCharacter(event)) {
+  if (!(event.target instanceof HTMLElement)) {
+    return undefined;
+  }
+  if (event.target.matches('input[type="checkbox"][data-put-target]')) {
+    return INVENTORY_CHECKBOX_BINDINGS;
+  }
+  if (typesCharacter(event)) {
     return undefined;
   }
   if (event.target.matches('[data-inventory-find]')) {

@@ -1511,6 +1511,42 @@ describe('inventory screen Lit rendering', () => {
     expect(targeted()).toEqual([t.entity.uid]);
   });
 
+  it('dispatches put-target while its checkbox retains keyboard focus', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-put-target]')!;
+    checkbox.focus();
+    checkbox.click();
+    expect(document.activeElement).toBe(checkbox);
+    expect(checkbox.checked).toBe(true);
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.put-target')[0]!;
+      const key = inputBindings.label('inventory.put-target').toLowerCase();
+      const down = new KeyboardEvent('keydown', { ...chord, key, bubbles: true, cancelable: true });
+      checkbox.dispatchEvent(down);
+      checkbox.dispatchEvent(new KeyboardEvent('keyup', { ...chord, key, bubbles: true }));
+      expect(down.defaultPrevented).toBe(true);
+      expect(t.lastPayload()).toMatchObject({
+        kind: 'inventory.move',
+        itemUid: t.beans.uid,
+        target: { kind: 'furniture', entityUid: t.entity.uid },
+      });
+    } finally {
+      remove();
+      t.screen.close();
+    }
+  });
+
   it('takes all like items into every pocket with room and counts only what was queued with room', () => {
     const half = 2;
     const fixture = baseRegistryWith([
