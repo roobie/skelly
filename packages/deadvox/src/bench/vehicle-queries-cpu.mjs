@@ -44,7 +44,7 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
 const blockSize = 0.5;
-const bake = { models: 0, ms: 0 };
+const bake = { models: 0, microseconds: 0 };
 const baked = new Map();
 /** Stands in for shapes an export would bake: read once per model, never inside a timed query or sync. */
 const shapesOf = (model) => {
@@ -55,7 +55,7 @@ const shapesOf = (model) => {
     shapes = { mesh, convex: convexPieces(mesh) };
     baked.set(model, shapes);
     bake.models += 1;
-    bake.ms += performance.now() - start;
+    bake.microseconds += (performance.now() - start) * 1000;
   }
   return shapes;
 };
