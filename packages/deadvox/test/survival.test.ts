@@ -27,7 +27,8 @@ const base = (file: string): ContentSource => {
   }
   if (file === 'items-tools.json') {
     data.items = data.items.filter(
-      (item: { id: string }) => !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
+      (item: { id: string }) =>
+        !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
     );
   }
   if (file === 'items-wearables.json') {
