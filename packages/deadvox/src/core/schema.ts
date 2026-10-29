@@ -411,6 +411,8 @@ const UiScreenTextSchema = strictObject({
     heading: ['vehicle', 'distance'],
     empty: ['site'],
     remove: [],
+    enter: [],
+    exit: [],
     install: ['part'],
     noPart: [],
     removing: ['part'],
@@ -1594,6 +1596,15 @@ const ItemSchema = strictObject({
         sound: vBoolean(),
         combat: vBoolean(),
       }),
+      seat: optional(
+        strictObject({
+          position: ModelPointSchema,
+          entryCells: pipe(array(ModelPointSchema), nonEmpty('needs an entry cell')),
+          exitCells: pipe(array(ModelPointSchema), nonEmpty('needs an exit cell')),
+          eyeHeightMetres: Positive,
+          durationSimSeconds: PositiveSimSeconds,
+        }),
+      ),
       /** The heaviest load a `lift` part raises; one rating, not a chart over reach. */
       ratedLoadKg: optional(Positive),
       /**

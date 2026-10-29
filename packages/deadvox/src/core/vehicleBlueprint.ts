@@ -113,6 +113,9 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
       unsound.add(item.id);
     }
+    if (item.vehicle && item.vehicle.capabilities.includes('seat') !== Boolean(item.vehicle.seat)) {
+      issues.push({ section: 'items', id: item.id, path: '.vehicle.seat', message: 'seat capability needs seat data, and only seats have it' });
+    }
     const rating = item.vehicle && ratingIssue(item.vehicle);
     if (rating) {
       issues.push({ section: 'items', id: item.id, path: '.vehicle', message: rating });

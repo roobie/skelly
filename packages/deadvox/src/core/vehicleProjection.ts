@@ -80,6 +80,13 @@ const vehicleFittingTransform = (
   };
 };
 
+export const vehicleFittingPoint = (
+  vehicle: VehicleInstance,
+  fitting: Pick<VehicleInstance['fittings'][number], 'at' | 'mirror'>,
+  point: Vec3,
+  blockSize: number,
+): Vec3 => transformPoint(vehicleFittingTransform(vehicle, fitting, blockSize), point).map((value) => value / blockSize) as Vec3;
+
 /** Projects only occupied fittings: vacant service sites have neither a model nor a part pick shape. */
 export const projectVehicleParts = (
   registry: Registry,

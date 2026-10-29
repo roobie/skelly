@@ -2,11 +2,13 @@
 
 import { coreMessage } from './coreText.ts';
 import type { Inventory, Location, Target } from './inventory.ts';
-import type { VehicleWorkHooks } from './longAction.ts';
+import type { VehicleWorkHooks, VehicleWorkKind } from './longAction.ts';
 
 export interface VehicleWorkOptions {
   /** Resolves the ordinary output owner when a removal completes. */
   output: () => Target;
+  access?: VehicleWorkHooks;
+  occupied?: (vehicleId: number, fittingId: string) => boolean;
   /** Available tool qualities are derived by the interaction/reach owner. */
   quality: (name: string) => number;
 }
@@ -83,20 +85,28 @@ const serviceRefusal = (inventory: Inventory, options: VehicleWorkOptions, targe
  * contains no output object or closure; see `longAction.ts`, `VehicleWorkHooks`.
  */
 export const vehicleWorkHooks = (inventory: Inventory, options: VehicleWorkOptions): VehicleWorkHooks => {
-  const validate = (kind: WorkKind, vehicleId: number, fittingId: string, itemUid: number) => {
+  const validate = (kind: VehicleWorkKind, vehicleId: number, fittingId: string, itemUid: number) => {
+    if (kind === 'enter' || kind === 'exit') {
+      return options.access?.validate(kind, vehicleId, fittingId, itemUid) ?? (options.access ? undefined : coreMessage(inventory.registry, 'gone'));
+    }
+    if (kind === 'remove' && options.occupied?.(vehicleId, fittingId)) {
+      return coreMessage(inventory.registry, 'seatOccupied');
+    }
     const target = { vehicleId, fittingId, itemUid };
     return serviceRefusal(inventory, options, target) ?? sourceRefusal(inventory, kind, target);
   };
   return {
     validate,
-    finish: (kind, vehicleId, fittingId, itemUid) =>
-      validate(kind, vehicleId, fittingId, itemUid) ??
-      inventory.vehicleTransfer({
-        kind,
-        vehicleId,
-        fittingId,
-        itemUid,
+    finish: (kind, vehicleId, fittingId, itemUid) => {
+      const refusal = validate(kind, vehicleId, fittingId, itemUid);
+      if (refusal) return refusal;
+      if (kind === 'enter' || kind === 'exit') {
+        return options.access!.finish(kind, vehicleId, fittingId, itemUid);
+      }
+      return inventory.vehicleTransfer({
+        kind, vehicleId, fittingId, itemUid,
         ...(kind === 'remove' ? { output: options.output() } : {}),
-      }),
+      });
+    },
   };
 };
