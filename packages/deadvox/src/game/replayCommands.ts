@@ -3,6 +3,12 @@ import type { WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, TargetState } from '../core/inventory.ts';
+import {
+  copyVehicleWorkPlacement,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
+} from '../core/vehicleInstances.ts';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
@@ -29,7 +35,13 @@ export type ReplayActionPayload =
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
-  | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
+  | ({
+      kind: 'vehicle.work';
+      work: 'install' | 'remove';
+      vehicleId: number;
+      fittingId: string;
+      itemUid: number;
+    } & VehicleWorkPlacement)
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
@@ -108,7 +120,8 @@ const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.vehicleId) &&
   typeof payload.fittingId === 'string' &&
   payload.fittingId !== '' &&
-  isUid(payload.itemUid);
+  isUid(payload.itemUid) &&
+  validVehicleWorkPlacement(payload);
 
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
@@ -220,7 +233,7 @@ export interface ReplayCommandOwners {
   vehicleWork: (
     work: 'install' | 'remove',
     vehicleId: number,
-    fittingId: string,
+    target: VehicleWorkTarget,
     itemUid: number,
   ) => string | undefined;
   /** Puts a battery into a light from the light's battery slot on its item card. */
@@ -313,7 +326,12 @@ export const applyReplayActionPayload = (
         ? owners.removeAttachment(payload.firearmUid, payload.slotId)
         : 'Attachment handling is unavailable';
     case 'vehicle.work':
-      return owners.vehicleWork(payload.work, payload.vehicleId, payload.fittingId, payload.itemUid);
+      return owners.vehicleWork(
+        payload.work,
+        payload.vehicleId,
+        { id: payload.fittingId, ...copyVehicleWorkPlacement(payload) },
+        payload.itemUid,
+      );
     case 'light.battery.load':
       return owners.loadBattery(payload.lightUid, payload.batteryUid);
     case 'inventory.cancel-handling':

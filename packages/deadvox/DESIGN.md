@@ -3020,27 +3020,25 @@ their state.
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
    supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
-**Parked service.** Factory service sites use a content mount identity and content-owned
-quality and duration requirements. `src/core/vehicleWork.ts`, `vehicleWorkHooks`, keeps
-the exact UID with its original owner until `src/core/inventory.ts`, `Inventory.vehicleTransfer`
-preflights and commits the transfer, so a stopped or refused action cannot orphan it.
-`src/core/longAction.ts`, `LongActions.beginVehicleWork`, saves references rather than a
-copied part or an interaction closure. Removing a part another part rests on is refused
-before work starts, so no work time is spent on a part that cannot come off.
-Interacting with a parked vehicle part opens the vehicle in the inventory screen's
-surroundings, because exact service requirements and which loose parts fit an empty site
-are facts the world geometry cannot show. Fitted parts are ordinary items with their usual
-details; empty service sites show their content names; each operation names the exact
-vehicle, site and part the player selected and shows the core's own refusal, so the surface
-never promises work the action would refuse. Vehicle reach is measured from the chest to the
-nearest occupied part box, as furniture reach is, and one predicate decides opening, keeping the
-section open and service admission; measuring to the origin would leave a part the player can
-pick and touch out of reach. The reach also needs a clear line to a part box, the same rule as
-furniture, so a wall can't be worked through; the line ignores vehicle cells because the car's
-own body would otherwise hide every part. See `src/core/reach.ts`, `vehicleInReach`, `src/ui/vehicleInspection.ts`,
-`vehicleInspectionViewModel`, and `src/core/interactionPick.ts`, `pickInteractionTarget`.
-Site names stay in content rather than in the saved build, so a reworded pack relabels saved
-vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
+**Parked service.** Work requirements belong to content, not geometry: a legal cargo
+cell does not establish installation time or tool requirements. Until free-placement
+requirements are authored, only an authored service site's own placement can authorize
+work; see `src/core/inventory.ts`, `Inventory.vehiclePlacementService`. This boundary
+keeps cargo pocket handling time from becoming an invented installation cost.
+
+A stopped or refused action must not orphan or duplicate the selected item; see
+`src/core/inventory.ts`, `Inventory.vehicleTransfer`, and `src/core/vehicleWork.ts`,
+`vehicleWorkHooks`. Saved work describes the target rather than copying the part or
+an interaction closure; see `src/core/longAction.ts`, `LongActions.beginVehicleWork`.
+Admission must reject a supporting part before spending work time on its removal.
+
+Inspection needs the core's own refusal because geometry cannot show service
+requirements; see `src/ui/vehicleInspection.ts`, `vehicleInspectionViewModel`.
+Reach uses occupied part boxes rather than the vehicle origin so a touchable part
+stays reachable, and a clear line prevents working through walls without letting the
+vehicle hide its own parts; see `src/core/reach.ts`, `vehicleInReach`, and
+`src/core/interactionPick.ts`, `pickInteractionTarget`. Site names stay in content so
+a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `vehicleSiteName`.
 
 3. **Condition is not attachment or appearance.** Part types are immutable content;
    fittings own instance state. A fitting places an item on a vehicle without changing

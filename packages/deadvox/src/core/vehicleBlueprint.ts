@@ -5,10 +5,12 @@
 import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
-import { type CargoCells, cargoGrid, fitIssue } from './cargoSpace.ts';
+import { type CargoCells, cargoFitting, cargoGrid, fitIssue, freeFloor } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { Item } from './items.ts';
 import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
+import type { VehicleInstance, VehicleWorkPlacement } from './vehicleInstances.ts';
 
 type Vec3 = readonly [number, number, number];
 
@@ -244,6 +246,55 @@ export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): Pl
       ? { cargo: { cells, grid: cargoGrid(cells, space), openClearanceCells: space.openClearanceCells } }
       : {}),
   };
+};
+
+export interface LegalCargoPlacements {
+  readonly support: string;
+  readonly cells: readonly VehicleWorkPlacement[];
+}
+
+export const legalCargoPlacements = (
+  registry: Registry,
+  item: Item,
+  vehicle: VehicleInstance,
+): LegalCargoPlacements[] => {
+  const space = registry.items.get(item.type)?.vehicle?.cargoSpace;
+  const size = item.cargo;
+  if (!(space && size)) {
+    return [];
+  }
+  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+  const present = vehicle.fittings
+    .filter((fitting) => fitting.item.uid !== item.uid)
+    .map((fitting) =>
+      placeFitting(registry, {
+        id: fitting.id,
+        at: fitting.at,
+        mirror: fitting.mirror,
+        supportedBy: fitting.supportedBy,
+        part: fitting.item.type,
+        ...(fitting.item.cargo ? { cargo: [...fitting.item.cargo] } : {}),
+      }),
+    );
+  return present.flatMap(({ id }) => {
+    const floor = freeFloor(present, id, cell, space.openClearanceCells * cell);
+    if (!floor) {
+      return [];
+    }
+    const cells: VehicleWorkPlacement[] = [];
+    for (const key of floor.clearance.keys()) {
+      const [i, k] = key.split(',').map(Number) as [number, number];
+      const placement: VehicleWorkPlacement = {
+        at: [(i + size[0] / 2) * cell, floor.top, (k + size[2] / 2) * cell],
+        supportedBy: [id],
+      };
+      const candidate = placeFitting(registry, cargoFitting(item, { id: `cargo:${item.uid}`, ...placement }));
+      if (!fitIssue(present, candidate, cell)) {
+        cells.push(placement);
+      }
+    }
+    return [{ support: id, cells }];
+  });
 };
 
 /** A vehicle of these placed fittings, such as a blueprint with some of its fittings taken off. */

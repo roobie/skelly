@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
+import { copyVehicleWorkPlacement } from '../src/core/vehicleInstances.ts';
 import { vehicleInspectionViewModel } from '../src/ui/vehicleInspection.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -40,7 +41,14 @@ it('anchors service actions to the selected vehicle, site and part instances, of
   const empty = view.sites.find((site) => site.id === vacant!.id)!;
   expect(empty.item).toBeUndefined();
   expect(empty.actions.map(({ payload }) => payload)).toEqual([
-    { kind: 'vehicle.work', work: 'install', vehicleId: second, fittingId: vacant!.id, itemUid: part.uid },
+    {
+      kind: 'vehicle.work',
+      work: 'install',
+      vehicleId: second,
+      fittingId: vacant!.id,
+      itemUid: part.uid,
+      ...copyVehicleWorkPlacement(vacant!),
+    },
   ]);
   expect(empty.actions[0]!.refusal).toBeUndefined();
 
@@ -48,9 +56,16 @@ it('anchors service actions to the selected vehicle, site and part instances, of
   const fittedUid = inventory.vehicles.get(second)!.fittings.find(({ id }) => id === fitted!.id)!.item.uid;
   expect(occupied.item?.uid).toBe(fittedUid);
   expect(occupied.actions.map(({ payload }) => payload)).toEqual([
-    { kind: 'vehicle.work', work: 'remove', vehicleId: second, fittingId: fitted!.id, itemUid: fittedUid },
+    {
+      kind: 'vehicle.work',
+      work: 'remove',
+      vehicleId: second,
+      fittingId: fitted!.id,
+      itemUid: fittedUid,
+      ...copyVehicleWorkPlacement(fitted!),
+    },
   ]);
   expect(occupied.actions[0]!.refusal).toBe('refused');
-  expect(asked).toContainEqual(['remove', second, fitted!.id, fittedUid]);
+  expect(asked).toContainEqual(['remove', second, { id: fitted!.id, ...copyVehicleWorkPlacement(fitted!) }, fittedUid]);
   expect(asked.every(([, vehicleId]) => vehicleId === second)).toBe(true);
 });

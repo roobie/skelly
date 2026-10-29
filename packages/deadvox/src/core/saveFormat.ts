@@ -572,6 +572,7 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
     kind: opt(enumeration(['install', 'remove'])),
     vehicleId: opt(positiveInt),
     fittingId: opt(str({ id: true })),
+    placement: opt(obj({ at: vec3, mirror: opt(enumeration([true])), supportedBy: arr(str({ id: true })) })),
     duration: opt(positive),
     strikeInterval: opt(positive),
     nextStrike: opt(positive),
