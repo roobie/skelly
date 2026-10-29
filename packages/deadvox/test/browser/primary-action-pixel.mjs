@@ -14,10 +14,8 @@ import { observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
-// Three groups, so each fits its step's bound: held, worn and dropped items at the test house, the scope's zoom
-// pass at the test house, and the lake surface.
 const [, , group] = process.argv;
-assert.ok(group === 'held' || group === 'optic' || group === 'lake', 'choose the held, optic or lake group');
+assert.ok(['held', 'optic-zoom', 'optic-sights', 'lake'].includes(group), 'choose a pixel contract group');
 const measureGlowstickFloor = async (page, uid, label, capture) => {
   const screenshot = await capture();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');
@@ -646,13 +644,18 @@ const opticZoomCheck = async (chromium, port) => {
   // The short-relief prism also protects the world camera's near-plane boundary.
   const { page } = await enterTestHouse(chromium, port);
   const rifleUids = new Map();
-  for (const [opticType, gunType, endpoint, physicalWindow = false] of [
-    ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
-    ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
-    ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
-    ['optic_mini_reflex', 'rifle_assault', 'min'],
-    ['optic_holographic', 'rifle_assault', 'min', true],
-  ]) {
+  const endpoints = {
+    'optic-zoom': [
+      ['optic_lpvo_1_6x', 'rifle_assault', 'min'],
+      ['optic_lpvo_1_6x', 'rifle_assault', 'max'],
+    ],
+    'optic-sights': [
+      ['optic_fixed_prism_4x', 'rifle_assault', 'max'],
+      ['optic_mini_reflex', 'rifle_assault', 'min'],
+      ['optic_holographic', 'rifle_assault', 'min', true],
+    ],
+  };
+  for (const [opticType, gunType, endpoint, physicalWindow = false] of endpoints[group]) {
     await timePhase('optic-disc-endpoint', async () => {
       const record = await page.evaluate(opticZoomRecord, {
         opticType,
@@ -688,10 +691,12 @@ const opticZoomCheck = async (chromium, port) => {
         );
       }
       if (record.magnifying) {
-        const pixels = await page.evaluate(async (moduleUrl) => {
-          const { scopeDiscPixels } = await import(moduleUrl);
-          return scopeDiscPixels(globalThis.primaryActionTest);
-        }, '/test/browser/optic-disc-scene.mjs');
+        const pixels = await timePhase('optic-disc-pixels', () =>
+          page.evaluate(async (moduleUrl) => {
+            const { scopeDiscPixels } = await import(moduleUrl);
+            return scopeDiscPixels(globalThis.primaryActionTest);
+          }, '/test/browser/optic-disc-scene.mjs'),
+        );
         process.stdout.write(`OPTIC_DISC_PIXELS ${JSON.stringify({ opticType, endpoint, ...pixels })}\n`);
         assert.ok(pixels.occludingPixels > 0, 'opaque tube geometry would obscure the interior without the disc');
         assert.equal(pixels.unreplacedPixels, 0, 'the disc replaces every witnessed tube pixel inside its aperture');
@@ -827,7 +832,12 @@ try {
       renderMode: 'pixel',
     }),
   );
-  const checks = { held: heldItemChecks, optic: opticZoomCheck, lake: lakeSurfaceCheck };
+  const checks = {
+    held: heldItemChecks,
+    'optic-zoom': opticZoomCheck,
+    'optic-sights': opticZoomCheck,
+    lake: lakeSurfaceCheck,
+  };
   await checks[group](browser, address.port);
 } finally {
   if (browser) {
