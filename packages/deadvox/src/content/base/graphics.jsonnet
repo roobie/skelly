@@ -12,6 +12,8 @@ local toggle(label, default=false) = { label: label, default: default, options: 
     fogFarPlaneScale: 1.5,
     itemPictureCacheCapacity: 128,
     modelLoadConcurrency: 8,
+    skyJobsInFlight: 3,
+    skyPreloadRings: 1,
     unbuiltSkyCap: 0.5,
     itemViewer: {
       framing: 1.1,

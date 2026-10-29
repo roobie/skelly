@@ -50,6 +50,8 @@ const source = (options: GraphicsOptions) => ({
         itemPictureCacheCapacity: 2,
         modelLoadConcurrency: 2,
         unbuiltSkyCap: 0.5,
+        skyJobsInFlight: 2,
+        skyPreloadRings: 1,
         itemViewer: {
           framing: 1,
           startYawDegrees: 0,

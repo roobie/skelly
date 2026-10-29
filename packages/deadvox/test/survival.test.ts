@@ -39,6 +39,7 @@ const base = (file: string): ContentSource => {
 const { registry } = buildRegistry(
   [
     'ui.json',
+    'inventory.json',
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
@@ -271,8 +272,9 @@ describe('flashlight', () => {
   it('refuses a swap when the piles nearby are full, rather than losing the old battery', () => {
     const { inventory, light, old, batteries } = halfSpent();
     const pile: Target = { kind: 'pile', pos: [0, 0, 0] };
-    while (inventory.add(inventory.create('flashlight'), pile)) {
-      // Fill the pile until it refuses.
+    const filler = () => Object.assign(inventory.create('aa_battery'), { charges: old.charges });
+    while (inventory.add(filler(), pile)) {
+      // Fill with the displaced footprint, without merging charged batteries.
     }
     expect(swapBattery(inventory, light, batteries, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
     expect(light.slots!.battery).toBe(old);

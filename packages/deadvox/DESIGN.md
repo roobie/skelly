@@ -1320,6 +1320,16 @@ that fits no pocket of the furniture rolling it is a content error. Validation
 holds content to this; see `src/core/inventoryScale.ts`. Pockets may
 restrict their contents; liquids remain measured within their container.
 
+Automatic placement favors wide footprints for readability, but may choose tall
+when packing beside existing items preserves noticeably more usable space. An
+empty grid's aspect ratio is not a reason to stand a lone item upright. The
+preference belongs to shared placement so loot, piles and automatic inventory
+moves cannot disagree; explicit player placement remains the player's choice.
+Content owns how much
+packing benefit outweighs readability, so mods can retune that trade-off. See
+`src/core/items.ts`, `findSpot` and `largestFreeRectangleArea`, and
+`src/core/schema.ts`, `InventoryTuningSchema`.
+
 A soft container such as a bag isn't rigid, so packed empty it is plausibly
 smaller than what it holds when used: its footprint may be smaller than its
 interior. A soft bag nests only when empty, because nesting it loaded would
@@ -2496,40 +2506,30 @@ so it counts for nothing. A lit candle held alone is enough to read by at night.
 `src/core/illumination.ts`, `illuminationAt`, and `src/render/lightFalloff.ts`,
 `installNearFieldFalloff`.
 
-Mesh-first admission protects the first visible geometry without making it wait for
-lighting readiness. A copied sky request may wait outside the pool capacity;
-a mesh completion admits it before the next mesh refill, preventing persistent
-mesh backlog from starving lighting. Native worker FIFO remains the executor;
-its FIFO alone cannot guarantee fairness between these callers. A synchronous build
-of a large field takes far longer than a frame, so the renderer asks the cache for
-off-thread builds of the fields near the camera, one at a time, and never builds while
-drawing. The cache captures the snapshot on the main thread and installs the worker's
-result only while that snapshot is still current, so it is the result a synchronous
-build would give. Each field holds its own pending capture, waiting or out at the
-worker, until the result lands or an edit makes it stale; a capture the worker cannot
-take yet stays on its field for that field's next request, so several fields the camera
-passed can each hold one. See
-`src/game/streamer.ts`, `dispatchSky`, `src/core/skyField.ts`, `request`, and
-`src/render/skylight.ts`, `prepare`.
+Wrong light is worse than a hitch, and the hitch is not acceptable either. Sky
+transport therefore belongs ahead of reveal on workers; synchronous completion at
+reveal is a last resort, not the scheduling strategy. Edge fields need priority
+because they are the next rooms a walk discovers. Mesh-first startup admission
+protects the first geometry, while admission at completions prevents mesh backlog
+from starving lighting. Native worker FIFO alone cannot provide fairness between
+these callers. Terrain at the view edge must never be hidden while sky light
+finishes. Give sky work its lead by growing the loaded terrain radius, not by
+shrinking the visible radius or making visible chunks wait for lighting. The
+extra residency trades memory for time to build the next field before it enters
+view; it must not expand mesh or reveal admission. See
+`src/content/base/graphics.jsonnet`, `skyPreloadRings`,
+`src/render/skylight.ts`, `prepare`, `src/game/streamer.ts`, `dispatchSky`
+and `onBeforeReveal`, and `src/core/skyField.ts`, `finishColumn`.
 
-Until a field's answer lands, the view dims its diffuse sky to a content cap, during the
-load pause and in play alike. Near the player, direct sun still follows the shadow map,
-because that map is cast from real geometry; beyond the shadow map, an unbuilt receiver
-gets no direct sun. This is a presentation fallback, not the simulation's answer: a
-query builds the field synchronously, so gameplay already reads the room's real light.
-A room briefly too dark reads as "not lit yet", while open sky in a roofed room reads
-as wrong light; finishing a field before revealing its room would avoid both but stalls
-frames on walks without scheduling to spread that work. When #1261 provides that
-scheduling, finishing before reveal replaces this fallback. See
-`src/content/base/graphics.jsonnet`, `unbuiltSkyCap`. Once a field has a complete
-result, the view keeps it while an edit is rebuilt, so opening a door cannot flash a
-dark room. The replacement
-swaps atomically, and a late result for superseded geometry cannot install. Retained
-column heights supply the nonresident estimate. CPU and shader share this policy. The
-kept result can delay a darkening edit or step visibly at replacement; that is
-presentation latency only, since gameplay's answer is already current. Results survive
-GPU eviction, so re-entry does not repeat transport. Solve halos and spatial lookup
-cells do not expand the fields. Arbitrary construction and caves remain outside them.
+The dimmed presentation cap remains until #1261 proves the full reveal guarantee
+and verifies it without hitches on the reference laptop. Extra residency is lead
+time, not proof that every dependency arrives in time on a walk. Presentation must
+not substitute its incomplete answer for gameplay's current world-state answer.
+Keep an accepted result through edit revalidation and GPU eviction so a door edit
+cannot flash a dark room and re-entry cannot repeat transport. The retained result
+may briefly delay a visible edit; that latency is preferable to a false transient
+room. See `src/content/base/graphics.jsonnet`, `unbuiltSkyCap`,
+`src/core/skyField.ts`, `SkyFields`, and `src/render/skylight.ts`, `Skylight`.
 
 Worker execution protects rendering from dense transport work, but copying, submission,
 publication and texture uploads still consume the main frame, so background execution
@@ -2657,11 +2657,13 @@ grenade. See `src/game/throwCharge.ts`, `ThrowCharge.place`;
 `PileMeshes.sync`.
 
 Landing, presentation and duration share a stepped flight so drag cannot shorten
-the range while leaving a light item floating through an undragged arc. The launch
-follows the player's pitch, rather than borrowing the range of a different angle.
-Replay records launch strength rather than a drag-adjusted distance so it can
-reproduce the same flight with the recorded aim. See `src/core/itemThrow.ts`,
-`throwDistanceForItem`, `flightForItem` and `steppedItemFlight`.
+the range while leaving a light item floating through an undragged path. A throw
+leaves along the player's look direction without added lift; gravity alone makes
+the arc. For #1466, this makes the item go where the player aimed, because a
+climbing throw feels unpredictable. Replay records launch strength rather than a
+drag-adjusted distance so it can reproduce the same flight with the recorded aim.
+See `src/core/itemThrow.ts`, `throwDistanceForItem`, `flightForItem` and
+`steppedItemFlight`.
 
 Drag derives from footprint and mass so items need no individual drag rows. The
 footprint is a cell-rounded outline, not the face that meets the air, so one
