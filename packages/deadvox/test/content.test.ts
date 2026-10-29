@@ -2027,6 +2027,27 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
+  it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
+    const combat = baseRegistry.skills.get(CORE_CONTENT_IDS.firearmsCombat)!;
+    const tuning = combat.combat!.firearms!;
+    const precision = { ...baseRegistry.skills.get(tuning.longGunSteadinessSkill)!, id: 'fixture_precision' };
+    const firearms = {
+      ...combat,
+      combat: { ...combat.combat, firearms: { ...tuning, longGunSteadinessSkill: precision.id } },
+    };
+    const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
+    expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
+    const { steadiness: _steadiness, ...unconfigured } = precision;
+    expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
+      expect.objectContaining({
+        source: 'fixture-steadiness',
+        path: expect.stringContaining('longGunSteadinessSkill'),
+      }),
+    ]);
+    const { activities: _activities, ...training } = precision.training!;
+    expect(buildRegistry(source([firearms, { ...precision, training }])).issues.length).toBeGreaterThan(0);
+  });
+
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);

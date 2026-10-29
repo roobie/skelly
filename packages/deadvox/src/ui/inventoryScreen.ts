@@ -283,6 +283,7 @@ interface BodyRegionViewModel {
 }
 
 interface SkillViewModel {
+  readonly detail: string | undefined;
   readonly id: string;
   readonly name: string;
   readonly level: number;
@@ -729,7 +730,7 @@ const inventoryTemplate = (
       ${vm.skills.map(
         (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
-          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
+          <div class="inv-skill-heading"><strong>${skill.detail ? factDetail(skill.name, skill.detail) : skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
           <div class="inv-skill-practice">${
             Number.isFinite(skill.nextLevelPractice)
               ? fillText(text.practice, {
@@ -1661,6 +1662,7 @@ export class InventoryScreen {
       return {
         id: definition.id,
         name: definition.name,
+        detail: definition.detail,
         level,
         practice,
         nextLevelPractice,

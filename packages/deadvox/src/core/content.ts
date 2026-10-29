@@ -1859,6 +1859,15 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
 
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
   for (const skill of registry.skills.values()) {
+    const steadinessSkill = skill.combat?.firearms?.longGunSteadinessSkill;
+    if (steadinessSkill !== undefined && !registry.skills.get(steadinessSkill)?.steadiness) {
+      report(
+        'skills',
+        skill.id,
+        '.combat.firearms.longGunSteadinessSkill',
+        `no steadiness tuning on skill "${steadinessSkill}"`,
+      );
+    }
     skill.startingRecipes?.forEach((id, index) => {
       if (!registry.recipes.has(id)) {
         report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);

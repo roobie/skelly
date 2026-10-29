@@ -2,16 +2,21 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
+import { breathSteadying, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
+import { firearmStanceEffects, firearmsSkillEffects, steadinessTuning } from '../src/core/firearmsSkill.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '../src/core/leanCollision.ts';
 import { playerEyePosition } from '../src/core/playerLookPose.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, reachTuning } from '../src/core/reach.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
+import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../src/core/skillTraining.ts';
 import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -19,9 +24,12 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
+import { chargedRifle } from './rifleFixture.ts';
+import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const BASE = 'src/content/base';
 const registry = baseRegistry();
@@ -43,6 +51,7 @@ const makeRuntime = ({
   let intent: MoveIntent = { ...IDLE };
   let stanceToggle: StanceToggle | undefined;
   let readyHeld = false;
+  let ads = false;
   const footfalls: string[] = [];
   const refusals: string[] = [];
   const session = createSession({
@@ -60,6 +69,7 @@ const makeRuntime = ({
       active: () => true,
       intent: () => intent,
       readyHeld: () => readyHeld,
+      aimingDownSights: () => ads,
       consumeStanceToggle: () => {
         const pressed = stanceToggle;
         stanceToggle = undefined;
@@ -104,11 +114,199 @@ const makeRuntime = ({
     toggleProne: () => {
       stanceToggle = 'prone';
     },
+    setYaw: (value: number) => {
+      yaw = value;
+    },
+    setAds: (value: boolean) => {
+      ads = value;
+    },
     setReadyHeld: (value: boolean) => {
       readyHeld = value;
     },
   };
 };
+
+describe('long-gun skill ownership', () => {
+  const combatId = 'firearms_combat';
+  const snipingId = 'fixture_precision';
+  const gunId = 'fixture_training_long_gun';
+  const combat = registry.skills.get(combatId)!;
+  const content = baseRegistryWith([
+    {
+      source: 'fixture-sniping',
+      data: {
+        skills: [
+          {
+            ...combat,
+            combat: { ...combat.combat, firearms: { ...combat.combat!.firearms!, longGunSteadinessSkill: snipingId } },
+          },
+          { ...registry.skills.get(combat.combat!.firearms!.longGunSteadinessSkill)!, id: snipingId },
+        ],
+        items: [true, false].map((twoHanded) => ({
+          ...registry.items.get('rifle_assault')!,
+          id: twoHanded ? gunId : 'fixture_training_handgun',
+          twoHanded,
+          firearm: {
+            ...registry.items.get('rifle_assault')!.firearm!,
+            dispersionRadians: 0,
+          },
+        })),
+      },
+    },
+  ]);
+  const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {
+    const { session } = runtime;
+    return chargedRifle(session.inventory, session.queue, session.firearms, { type, magazines: session.magazines })
+      .rifle;
+  };
+  const train = (runtime: ReturnType<typeof makeRuntime>, id: string) => {
+    const actor = runtime.session.character;
+    while (actor.skills[id]! < SKILL_LEVEL_MAX) {
+      actor.awardPractice(id, practiceForNextLevel(content, actor.skills[id]!), SKILL_LEVEL_MAX);
+    }
+  };
+
+  it('selects a renamed content skill by long-gun classification, not optics or item identity', () => {
+    const gun = content.items.get(gunId)!;
+    expect(firearmSteadinessSkill(content, gun)).toBe(snipingId);
+    expect(firearmSteadinessSkill(content, { ...gun, twoHanded: false })).toBe(combatId);
+    const { firearm: _firearm, ...tool } = gun;
+    expect(firearmSteadinessSkill(content, { ...tool, twoHanded: true })).toBe(combatId);
+    expect(firearmShotPracticeSkill(content, gun, false)).toBe(combatId);
+    expect(firearmShotPracticeSkill(content, gun, true)).toBe(snipingId);
+    expect(firearmShotPracticeSkill(content, { ...gun, twoHanded: false }, true)).toBe(combatId);
+  });
+
+  it.each([gunId, 'fixture_training_handgun'])(
+    'selects independent steadiness and recoil owners for %s without resampling drift',
+    (type) => {
+      const measure = (combatExpert: boolean, snipingExpert: boolean) => {
+        const runtime = makeRuntime({ content });
+        equip(runtime, type);
+        if (combatExpert) {
+          train(runtime, combatId);
+        }
+        if (snipingExpert) {
+          train(runtime, snipingId);
+        }
+        runtime.setReadyHeld(true);
+        runtime.advance(90);
+        runtime.setAds(true);
+        runtime.setIntent({ ...IDLE, sprint: true });
+        runtime.setYaw(0.2);
+        const advance = vi.spyOn(runtime.session.aim, 'advance');
+        runtime.advance(1);
+        const [step] = advance.mock.calls.at(-1)!;
+        advance.mockRestore();
+        expect(runtime.session.aim.snapshotState().breath.held).toBe(true);
+        return { runtime, step };
+      };
+      const novice = measure(false, false);
+      const handler = measure(true, false);
+      const sniper = measure(false, true);
+      const steadyExpert = type === gunId ? sniper : handler;
+      const otherExpert = type === gunId ? handler : sniper;
+      expect(otherExpert.step.variance).toBe(novice.step.variance);
+      expect(otherExpert.step.breath!.steadying).toBe(novice.step.breath!.steadying);
+      expect(steadyExpert.step.variance).toBeLessThan(novice.step.variance);
+      expect(steadyExpert.step.breath!.steadying).toBeGreaterThan(novice.step.breath!.steadying);
+      expect(handler.step.recoilRecoveryRate).toBeGreaterThan(novice.step.recoilRecoveryRate!);
+      expect(sniper.step.recoilRecoveryRate).toBe(novice.step.recoilRecoveryRate);
+      expect(sniper.runtime.session.aim.snapshotState().wobbleNoise).toEqual(
+        novice.runtime.session.aim.snapshotState().wobbleNoise,
+      );
+      const tuning = combat.combat!.firearms!;
+      const steady = steadinessTuning(tuning, content.skills.get(snipingId)!);
+      expect(breathSteadying(SKILL_LEVEL_MAX, 0, steady.breathHold)).toBeGreaterThan(
+        breathSteadying(0, 0, steady.breathHold),
+      );
+      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).recoilRecoveryRate).toBeGreaterThan(
+        firearmsSkillEffects(0, tuning).recoilRecoveryRate,
+      );
+      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).recoilKickScale).toBeLessThan(
+        firearmsSkillEffects(0, tuning).recoilKickScale,
+      );
+      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).reloadDuration).toBeLessThan(
+        firearmsSkillEffects(0, tuning).reloadDuration,
+      );
+      expect(firearmStanceEffects(SKILL_LEVEL_MAX, tuning).raiseDurationSimSeconds).toBeLessThan(
+        firearmStanceEffects(0, tuning).raiseDurationSimSeconds,
+      );
+    },
+  );
+
+  it('awards acquisition once, includes idle ADS time and resumes without reacquiring after save', async () => {
+    const runtime = makeRuntime({ content });
+    equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    const before = runtime.session.character.practice[snipingId]!;
+    const combatPractice = runtime.session.character.practice[combatId];
+    expect(combatPractice).toBeGreaterThan(0);
+    runtime.setAds(true);
+    runtime.advance(1);
+    const acquired = runtime.session.character.practice[snipingId]!;
+    expect(acquired - before).toBeGreaterThanOrEqual(skillActivityPractice(content, snipingId, 'acquisition').practice);
+    const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
+    const decoded = await decodeSave(await encodeFixture(snapshot), {
+      version: formatVersion,
+      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+    });
+    const resumed = makeRuntime({ content, restore: decoded.snapshot });
+    resumed.session.sim.paused = false;
+    resumed.setReadyHeld(true);
+    resumed.setAds(true);
+    runtime.advance(30);
+    resumed.advance(30);
+    expect(resumed.session.sim.time).toBe(runtime.session.sim.time);
+    expect(resumed.session.inventory.hands.right?.type).toBe(gunId);
+    expect(resumed.session.firearms.isReady(resumed.session.inventory.hands.right!.uid)).toBe(true);
+    expect(resumed.session.sim.body.actionRefusal).toBeUndefined();
+    expect(runtime.session.character.practice[snipingId]).toBeGreaterThan(acquired);
+    expect(runtime.session.character.practice[combatId]).toBe(combatPractice);
+    expect(resumed.session.character.snapshotState()).toEqual(runtime.session.character.snapshotState());
+    const beforeLowering = runtime.session.character.practice[snipingId];
+    runtime.setAds(false);
+    runtime.advance(30);
+    expect(runtime.session.character.practice[snipingId]).toBe(beforeLowering);
+  });
+
+  it('routes a committed aimed shot and hit only to Sniping and rejects an unready shot without practice', () => {
+    const runtime = makeRuntime({ content });
+    const rifle = equip(runtime);
+    const { session } = runtime;
+    const shot = {
+      item: rifle,
+      feet: [0, 1, 0] as Vec3,
+      eye: [0, 4, 0] as Vec3,
+      yaw: 0,
+      pitch: 0,
+      blockSize: 0.5,
+      simTime: session.sim.time,
+      seed: 7,
+      ready: false,
+      sprinting: false,
+      aimingDownSights: true,
+      aimFrame: NEUTRAL_AIM,
+    };
+    const before = session.character.snapshotState();
+    expect(session.firearms.fire(shot)).toBe(false);
+    expect(session.character.snapshotState()).toEqual(before);
+    const zombieType = [...content.zombies.values()][0]!;
+    session.zombies.add(zombieType, [0, 1, -3], [0, 0, 1]);
+    const hits = vi.spyOn(session.zombies, 'firePellets');
+    expect(session.firearms.fire({ ...shot, ready: true })).toBe(true);
+    expect(hits).toHaveReturnedWith(expect.objectContaining({ hits: expect.any(Number) }));
+    expect(hits.mock.results[0]!.value.hits).toBeGreaterThan(0);
+    const expected = ['shot', 'hit'].reduce(
+      (sum, activity) => sum + skillActivityPractice(content, snipingId, activity).practice,
+      0,
+    );
+    expect(session.character.practice[snipingId]! - before.practice[snipingId]!).toBeCloseTo(expected);
+    expect(session.character.practice[combatId]).toBe(before.practice[combatId]);
+    hits.mockRestore();
+  });
+});
 
 describe('held lateral lean', () => {
   const eye = (runtime: ReturnType<typeof makeRuntime>): Vec3 =>

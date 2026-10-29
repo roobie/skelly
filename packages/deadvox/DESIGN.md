@@ -68,6 +68,7 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
+  - you're changing long-gun steadiness, independent Sniping progression or firearm training ownership
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
   - you author item models or decide how medicine quantities should look
@@ -2187,67 +2188,55 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   does not recover; once the weapon reaches its pitch limit, the saved view pitch
   continues to climb without a plateau. The shifted view stays after release
   while the on-screen weapon offset recovers, so mouse look can counter the
-  climb. Firearm-owned `dispersionRadians` is sampled per round, while
-  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery;
-  legendary grants no control beyond ordinary expert. Skill-zero handling must
-  make automatic fire meaningfully harder to control. Tuning lives in content
-  and can be adjusted with runtime debug controls.
-  Accordingly, skill-zero endpoints for single/first shots and
-  automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
-  firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
-  them. A follow-up is a committed shot from the same firearm within its burst window; see
-  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert
-  endpoint stays on the existing curve, so skill-10 shot handling is unchanged;
-  legendary still matches expert.
-  Different guns need different skill-zero factors. The per-gun values are
-  provisional and await BR's slider review; endpoint approval did not approve
-  these individual starting factors. Optional per-firearm settings sit beside
-  base recoil in `src/content/base/models-firearms.json`. The `FirearmSchema`
-  in `src/core/schema.ts` requires a complete in-range shape when present.
-  A per-gun shape replaces the shared skill-zero endpoints as a whole; absent
-  factors use the global firearms-combat endpoints. Keeping the override
-  complete avoids mixing fields from different guns. `FirearmMechanics.skillZeroHandlingFor`
-  in `src/game/firearmHandling.ts` selects the effective factors, and
-  `firearmsSkillEffects` in
-  `src/core/firearmsSkill.ts` interpolates them toward
-  the same expert endpoint. `src/debug/index.ts` renders runtime tuning controls
-  for the shared and per-firearm skill-zero settings.
-  The controls are runtime-only, reset on reload, and do not alter saves. The shared skill
-  effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
-  per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
-  spread and adds no firearm cone. This reuses the already saved player pitch, so no
-  aim-state field or save-schema change is needed. See
-  `src/game/firearmAim.ts`, `firearmBoreRay`, `firearmBoreTarget`,
-  `src/core/crosshairTarget.ts`, `crosshairTarget`, `src/core/zombies.ts`, `ZombieSystem.aimAt`,
-  `src/core/pellets.ts`, `coneDirection`,
-  `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
-  `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
-  `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
-  `wirePayloadSchema`.
+  climb. Precision control develops independently from general firearm handling:
+  Sniping owns long-gun steadiness, while Firearms Combat retains recoil and
+  handling. The content classification in `src/core/firearmFitting.ts`, `isLongGun`,
+  keeps carrying, fitting and skill coverage consistent without a catalogue of
+  weapon names or an optics requirement. See `src/core/skillTraining.ts`,
+  `firearmSteadinessSkill`, and `src/game/session.ts`, `advanceSessionAim`.
 
-  Shared reload and rack curves scale with firearms skill without changing
-  skill-zero time. Legendary remains clamped to expert. See `firearmsSkillEffects`
-  in `src/core/firearmsSkill.ts` and `FirearmMechanics.load` / `cock` in
-  `src/game/firearmHandling.ts`.
+  Raising, ready movement, loading, racking and attachment handling stay with
+  Combat because steadiness does not replace handling competence. Recoil kick
+  and recovery have one owner; splitting only kick would quietly move recovery
+  to the wrong skill. Firearm quality owns dispersion. Sniping and Combat must
+  not multiply sway together or compete through separate aim controllers. See
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, `steadinessTuning` and
+  `firearmStanceEffects`.
 
-  Readied-gait sway and look lag follow firearms skill, while dispersion and recoil remain separate. An unskilled character's readied sway is large with any firearm because they've never handled one; at skill 10, the character hardly sways. Each firearm's skill-zero values set the relative steadiness between guns. Automatic follow-ups sway at least as much as single shots, so sway does not drop during burst fire. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait, and content owns the shape and skill endpoints. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
+  Different guns need different novice endpoints, and automatic follow-ups must
+  remain harder to control. Complete per-gun overrides avoid mixing fields from
+  different guns; the tuning remains content-owned so an author can change the
+  response without changing its mechanism. See `src/game/firearmHandling.ts`,
+  `FirearmMechanics.skillZeroHandlingFor`, and `src/core/schema.ts`, `SkillSchema`.
 
-  A braced, lower body is steadier, so crouching reduces wobble drift and lying prone reduces it further; stance does not change recoil or dispersion. Content owns the stance factors beside the other sway tuning. See `src/core/firearmsSkill.ts`, `FirearmsCombatTuning`, and `src/game/session.ts`, `advanceSessionAim`.
+  Lower stances are steadier because the body is braced. Mean-reverting drift
+  avoids unbounded sway, and smoothing avoids fixed-tick twitch. Sharing gait
+  phase keeps the walking lune aligned with footsteps. Saving the running aim
+  state preserves the path across Continue and replay; a weapon switch must
+  select its skill without resampling that state to conceal the transition.
+  See `src/core/aim.ts`, `frameFromState`, `advanceOrnsteinUhlenbeckAxis` and
+  `AimController.snapshotState`, and `src/core/footsteps.ts`, `FootstepClock`.
 
-  Mean-reverting Brownian drift avoids unbounded sway; smoothing keeps fixed-tick noise from reading as frame-level twitch. The shared walking lune remains separate, firearms skill continues to scale sway, and content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity. The vertical/horizontal lune ratio remains independently tunable without changing the drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
+  **Holding breath** earns a careful shot by timing rather than by waiting out drift. Breath steadies the body, not the gun, so it damps only wobble drift, leaving recoil and dispersion with their owners. It works in any stance and through any sights in ADS, but not while moving, because a moving body cannot be held still. The ready firearm already refuses sprint, leaving that key free without a new binding. Holding breath costs stamina because it is effort; one winded threshold gates both starting and giving out to keep the rule simple. Recovery penalizes the next shot so holding too long has a cost. The steadiness skill strengthens the hold and pain weakens it because precise bodily control is distinct from handling speed. Breath sounds are presentation, not noise events: a shambler must not hear them. Content owns tuning (`PILLARS.md`, "Content forward compatibility"). Held breath and recovery change where shots go, so save and replay preserve them (`CONTROLS.md`, "Replay boundary"). See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim` and `breathHoldWanted`.
 
-  **Holding breath** earns a careful shot by timing rather than by waiting out drift. Breath steadies the body, not the gun, so it damps only wobble drift, leaving recoil and dispersion with their owners. It works in any stance and through any sights in ADS, but not while moving, because a moving body cannot be held still. The ready firearm already refuses sprint, leaving that key free without a new binding. Holding breath costs stamina because it is effort; one winded threshold gates both starting and giving out to keep the rule simple. Recovery penalizes the next shot so holding too long has a cost. Skill strengthens the hold and pain weakens it because steadying breath is part of handling the gun. Breath sounds are presentation, not noise events: a shambler must not hear them. Content owns tuning (`PILLARS.md`, "Content forward compatibility"). Held breath and recovery change where shots go, so save and replay preserve them (`CONTROLS.md`, "Replay boundary"). See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim` and `breathHoldWanted`.
+  Practice follows the competence used: long-gun acquisition, aimed shots and
+  hits, and time in ADS train Sniping. Idle ADS is practice too; movement is not
+  a prerequisite for deliberate sight control. A shot and its hit are distinct
+  activities, but neither also awards Combat when it trains Sniping. Keeping
+  Combat readying and handling separate avoids turning raising or ready-walking
+  into a second Sniping award. Simulation-time accrual avoids renderer-dependent
+  progression. See `src/game/session.ts`, `advancePlayerReadiness` and
+  `createSession`, and `src/core/skillTraining.ts`, `firearmShotPracticeSkill`.
 
-  Ready stance gates firearm fire; sprinting prohibits it. Duck-walk speed is
-  owned by firearms combat, and melee combat owns blocking. A held, completed
-  ready stance remains active through firearm rack/load handling; raising still
-  takes skill-scaled simulation time. Racking, loading, magazine changes, and
-  charging train firearms handling, while a magazine change and charge preserve
-  the held ready stance. See `advancePlayerReadiness` in `src/game/session.ts`
-  and `isFirearmTrainingAction` in `src/game/firearmHandling.ts`. Firearm quality
-  owns dispersion; skill controls handling. Training is tiered: an activity trains
-  only up to its tier, so above-tier practice is dropped; see
-  `src/core/character.ts`, `Character.awardPractice`.
+  Independent progression permits either skill to exceed the other; no inherited
+  level or shared XP pool can express that distinction. Tiered practice must not
+  erase progress from harder activity. New saves retain both skills and the
+  acquisition latch so Continue cannot award acquisition again. Missing skill
+  sets are rejected rather than migrated at this project stage. See
+  `src/core/character.ts`, `Character.awardPractice` and `Character.restoreState`,
+  `src/game/player.ts`, `snapshotPlayer`, and `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
+  Opened skill details explain the independent effects because feel alone cannot
+  identify their cause; see `src/ui/inventoryScreen.ts`, `SkillViewModel`.
 - **Shot impacts.** Each round that meets world geometry leaves a surface
   mark. Marks and dust are presentation, not simulation damage or save state.
   When a wall lies between eye and muzzle, tracing from the eye lets the near
@@ -3340,7 +3329,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **The ADS hood is hidden only in own view:** at eye relief it obstructs the player's eye, while other viewers and
   the sun should still see it. See `src/render/playerFigure.ts`, `PlayerMeshes`.
 - **The reticle marks aim, not the glass centre:** finite glass and housing move relative to the angular mark.
-  Perfect eye-to-optic alignment at every skill is unrealistic. Alignment is a firearms skill: an expert standing
+  Perfect eye-to-optic alignment at every skill is unrealistic. Long-gun steadiness belongs to Sniping: an expert standing
   still is nearly aligned, while walking adds misalignment through gait sway. The eye uses the unswayed optic seat
   rather than following the deviated instrument; the existing content-owned skill variance and gait govern the
   difference, including at unity power. Do not recenter the reticle to hide it. See `src/core/adsView.ts`,
