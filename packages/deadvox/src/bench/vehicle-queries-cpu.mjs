@@ -57,6 +57,9 @@ console.log(
     node: process.version,
     batches,
     repetitions,
+    frameRepetitions: 200,
+    buildSamples: batches,
+    detachSamples: batches,
     units: 'microseconds per operation; frames include 1 player + 20 box zombie/probe bodies, not AI',
     scenario: 'hatchbacks facing north, 12-block X spacing; 0.5m cells; floor y<0; 21 actors distributed beside cars',
   }),
@@ -135,7 +138,11 @@ for (const count of [1, 10, 50]) {
   }
   const [id] = ids;
   const original = inventory.vehicles.get(id);
-  const removed = { ...original, fittings: original.fittings.slice(1) };
+  const leaf = original.fittings.find((f) => !original.fittings.some((other) => other.supportedBy.includes(f.id)));
+  if (!leaf) {
+    throw new Error('Benchmark vehicle has no detachable support leaf');
+  }
+  const removed = { ...original, fittings: original.fittings.filter((f) => f !== leaf) };
   const update = { rapier: [], cells: [] };
   for (let batch = 0; batch < batches; batch++) {
     inventory.vehicles.replace(registry, id, removed);
@@ -155,6 +162,7 @@ for (const count of [1, 10, 50]) {
       rows,
       build: { rapier: stats(build.rapier), cells: stats(build.cells) },
       detach: { rapier: stats(update.rapier), cells: stats(update.cells) },
+      removedFitting: leaf.id,
       memory: {
         serializedRapierBytes: rapier.snapshotBytes(),
         combinedProcessDelta: {
