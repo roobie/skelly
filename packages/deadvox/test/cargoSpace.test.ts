@@ -13,7 +13,13 @@ import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ItemFactory, type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
 import type { VehicleFittingDef } from '../src/core/schema.ts';
-import { loadVehicleBlueprint, type PlacedFitting, placeFitting } from '../src/core/vehicleBlueprint.ts';
+import {
+  legalCargoPlacements,
+  loadVehicleBlueprint,
+  type PlacedFitting,
+  placeFitting,
+} from '../src/core/vehicleBlueprint.ts';
+import type { VehicleInstance } from '../src/core/vehicleInstances.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 
 // The vehicle content and the cell size it is measured in, not the whole base: see `test/vehicleExport.test.ts`.
@@ -64,6 +70,70 @@ const probe = (floor: string, top: number, key: string, height = 1): PlacedFitti
 };
 
 describe('cargo space', () => {
+  it('lists only cells that fit the existing cargo size on load floors, excluding occupied floor and excessive height', () => {
+    const models = new Map(registry.models);
+    const items = new Map(registry.items);
+    const prototype = items.get('car_battery')!;
+    const model = models.get(prototype.model!)!;
+    for (const [id, capabilities, min, max] of [
+      ['fixture_floor', ['load_floor'], [0, 0, 0], [4 * cell, cell, 3 * cell]],
+      ['fixture_obstacle', ['structure'], [cell, cell, cell], [2 * cell, 2 * cell, 2 * cell]],
+    ] as const) {
+      models.set(id, {
+        ...model,
+        id,
+        parts: {
+          body: { massKg: 1, centreOfMass: [0, 0, 0], voxelGrain: cell, collision: [{ min: [...min], max: [...max] }] },
+        },
+      });
+      items.set(id, {
+        ...prototype,
+        id,
+        model: id,
+        vehicle: { ...prototype.vehicle!, capabilities: [...capabilities] },
+      });
+    }
+    const fixture = { ...registry, models, items };
+    const factory = new ItemFactory();
+    const floor = {
+      id: 'floor',
+      at: [0, 0, 0] as [number, number, number],
+      supportedBy: [],
+      item: factory.create(fixture, 'fixture_floor'),
+    };
+    const obstacle = {
+      ...floor,
+      id: 'obstacle',
+      item: factory.create(fixture, 'fixture_obstacle'),
+      supportedBy: ['floor'],
+    };
+    const vehicle: VehicleInstance = {
+      blueprint: 'fixture',
+      placementKey: 'fixture',
+      origin: [0, 0, 0],
+      facing: 'n',
+      sites: [],
+      fittings: [floor, obstacle],
+    };
+    const cargo = cargoSpaceItem(factory, fixture, 'cargo_space', [2, 1, 1]);
+    const before = snapshotItem(cargo);
+    const listed = legalCargoPlacements(fixture, cargo, vehicle);
+    expect(listed.map(({ support }) => support)).toEqual(['floor']);
+    const { cells } = listed[0]!;
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells).toContainEqual({ at: [cell, cell, cell / 2], supportedBy: ['floor'] });
+    expect(cells).not.toContainEqual({ at: [cell, cell, 1.5 * cell], supportedBy: ['floor'] });
+    const present = [floor, obstacle].map((fitting) => placeFitting(fixture, { ...fitting, part: fitting.item.type }));
+    for (const placement of cells) {
+      expect(
+        fitIssue(present, placeFitting(fixture, cargoFitting(cargo, { id: 'probe', ...placement })), cell),
+      ).toBeUndefined();
+    }
+    const tall = cargoSpaceItem(factory, fixture, 'cargo_space', [2, Math.ceil(openMetres / cell) + 1, 1]);
+    expect(legalCargoPlacements(fixture, tall, vehicle)[0]!.cells).toEqual([]);
+    expect(legalCargoPlacements(fixture, factory.create(fixture, 'car_battery'), vehicle)).toEqual([]);
+    expect(snapshotItem(cargo)).toEqual(before);
+  });
   it('loads factory cargo spaces with no content issues', () => {
     expect(base.issues).toEqual([]);
     expect(['pickup', 'box_van'].every((host) => fittingsOf(host).some(({ cargo }) => cargo))).toBe(true);

@@ -70,9 +70,14 @@ import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import {
   copyVehiclePlacement,
+  copyVehicleWorkPlacement,
+  sameVehiclePlacement,
   type VehicleInstance,
   VehicleInstances,
   type VehicleInstancesState,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
 } from './vehicleInstances.ts';
 
 /** Handling tunables in seconds, authored in content beside the skill that scales them. */
@@ -171,6 +176,7 @@ export type Target =
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot; reserved?: true };
 
 export interface VehicleTransfer {
+  placement: VehicleWorkPlacement;
   kind: 'install' | 'remove';
   vehicleId: number;
   fittingId: string;
@@ -387,18 +393,22 @@ export class Inventory {
    * is completely admitted before either owner changes; see `vehicleTransfer`.
    */
   vehicleTransfer(request: VehicleTransfer): string | undefined {
-    const { kind, vehicleId, fittingId, itemUid } = request;
+    const { kind, vehicleId, fittingId, itemUid, placement } = request;
     const vehicle = this.vehicles.get(vehicleId);
     const site = vehicle?.sites.find(({ id }) => id === fittingId);
     const item = this.itemByUid(itemUid);
     if (!(vehicle && site?.service && item)) {
       return coreMessage(this.registry, 'gone');
     }
-    if (this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount || item.count !== 1) {
+    if (
+      !(validVehicleWorkPlacement(placement) && sameVehiclePlacement(site, placement)) ||
+      this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount ||
+      item.count !== 1
+    ) {
       return coreMessage(this.registry, 'partDoesNotFit');
     }
     return kind === 'install'
-      ? this.installVehiclePart(vehicle, site, item, vehicleId)
+      ? this.installVehiclePart(vehicle, { ...site, ...copyVehicleWorkPlacement(placement) }, item, vehicleId)
       : this.removeVehiclePart(vehicle, item, request);
   }
 
@@ -427,17 +437,17 @@ export class Inventory {
 
   private installVehiclePart(
     vehicle: VehicleInstance,
-    site: VehicleInstance['sites'][number],
+    placement: VehicleInstance['sites'][number],
     item: Item,
     vehicleId: number,
   ): string | undefined {
     const from = this.locate(item);
-    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === site.id)) {
+    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === placement.id)) {
       return coreMessage(this.registry, 'gone');
     }
     const refusal = this.replaceVehicle(
       vehicleId,
-      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(site), item }]),
+      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(placement), item }]),
       'partDoesNotFit',
     );
     if (refusal) {
@@ -495,6 +505,17 @@ export class Inventory {
       site.supportedBy.every((support) => vehicle?.fittings.some(({ id }) => id === support)) &&
       this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
       ? site.service
+      : undefined;
+  }
+
+  vehiclePlacementService(
+    vehicleId: number,
+    target: VehicleWorkTarget,
+    itemUid: number,
+  ): ReturnType<Inventory['vehicleService']> {
+    const site = this.vehicles.get(vehicleId)?.sites.find(({ id }) => id === target.id);
+    return site && validVehicleWorkPlacement(target) && sameVehiclePlacement(site, target)
+      ? this.vehicleService(vehicleId, target.id, itemUid)
       : undefined;
   }
 

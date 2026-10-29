@@ -157,6 +157,7 @@ describe('core long actions', () => {
         kind: 'install',
         vehicleId: 1,
         fittingId: 'fixture_site',
+        placement: { at: [0, 0, 0], supportedBy: [] },
         itemUid: 7,
         durationSimSeconds: 10,
       }),
