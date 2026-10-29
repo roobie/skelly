@@ -109,6 +109,7 @@ export const steppedItemFlight = ({
   blockSize,
   minY,
   isSolid,
+  hitsPoint,
 }: {
   from: Vec3;
   direction: Vec3;
@@ -119,6 +120,7 @@ export const steppedItemFlight = ({
   blockSize: number;
   minY: number;
   isSolid: SolidAt;
+  hitsPoint?: (metres: Vec3) => boolean;
 }): ItemFlight => {
   const magnitude = Math.hypot(...direction);
   const unit = magnitude > 0 ? direction.map((axis) => axis / magnitude) : [0, 0, 1];
@@ -128,7 +130,9 @@ export const steppedItemFlight = ({
   // Above this bound explicit drag steps can reverse velocity and diverge instead of landing.
   const stableDrag = Math.min(drag, 0.5 / (dt * Math.max(Math.hypot(...velocity), Math.sqrt(gravity))));
   const points: Vec3[] = [from];
-  if (isSolid(...(from.map((axis) => Math.floor(axis / blockSize)) as Vec3))) {
+  const blocked =
+    hitsPoint ?? ((sample: Vec3) => isSolid(...(sample.map((axis) => Math.floor(axis / blockSize)) as Vec3)));
+  if (blocked(from)) {
     return { points, durationSimSeconds: 0, landing: undefined };
   }
   let point = from;
@@ -137,7 +141,7 @@ export const steppedItemFlight = ({
     const speed = Math.hypot(...velocity);
     const acceleration = velocity.map((v, i) => -stableDrag * speed * v - (i === 1 ? gravity : 0));
     const next = point.map((axis, i) => axis + velocity[i]! * dt + 0.5 * acceleration[i]! * dt ** 2) as Vec3;
-    if (isSolid(...(next.map((axis) => Math.floor(axis / blockSize)) as Vec3))) {
+    if (blocked(next)) {
       break;
     }
     points.push(next);
