@@ -6,7 +6,7 @@ import {
   cargoGrid,
   cargoSpaceItem,
   fitIssue,
-  freeFloor,
+  placementRegion,
   snapBox,
 } from '../src/core/cargoSpace.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
@@ -14,7 +14,7 @@ import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ItemFactory, type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
 import type { VehicleFittingDef } from '../src/core/schema.ts';
 import {
-  legalCargoPlacements,
+  legalAddonPlacements,
   loadVehicleBlueprint,
   type PlacedFitting,
   placeFitting,
@@ -34,7 +34,8 @@ const NO_LOAD_FLOOR = /load floor/;
 const base = buildRegistry(fixtureSources);
 const { registry } = base;
 const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
-const openMetres = registry.items.get('cargo_space')!.vehicle!.cargoSpace!.openClearanceCells * cell;
+const openMetres = registry.items.get('cargo_space')!.vehicle!.addon!.openClearanceCells! * cell;
+const addon = { requires: 'load_floor' as const, openClearanceCells: openMetres / cell };
 
 const fittingsOf = (host: string): readonly PlacedFitting[] => loadVehicleBlueprint(registry, host).fittings;
 const defOf = (host: string, id: string): VehicleFittingDef =>
@@ -70,7 +71,7 @@ const probe = (floor: string, top: number, key: string, height = 1): PlacedFitti
 };
 
 describe('cargo space', () => {
-  it('lists only cells that fit the existing cargo size on load floors, excluding occupied floor and excessive height', () => {
+  it('lists add-ons by their required support word, excluding occupied cells and excessive height', () => {
     const models = new Map(registry.models);
     const items = new Map(registry.items);
     const prototype = items.get('car_battery')!;
@@ -117,7 +118,7 @@ describe('cargo space', () => {
     };
     const cargo = cargoSpaceItem(factory, fixture, 'cargo_space', [2, 1, 1]);
     const before = snapshotItem(cargo);
-    const listed = legalCargoPlacements(fixture, cargo, vehicle);
+    const listed = legalAddonPlacements(fixture, cargo, vehicle);
     expect(listed.map(({ support }) => support)).toEqual(['floor']);
     const { cells } = listed[0]!;
     expect(cells.length).toBeGreaterThan(0);
@@ -130,9 +131,26 @@ describe('cargo space', () => {
       ).toBeUndefined();
     }
     const tall = cargoSpaceItem(factory, fixture, 'cargo_space', [2, Math.ceil(openMetres / cell) + 1, 1]);
-    expect(legalCargoPlacements(fixture, tall, vehicle)[0]!.cells).toEqual([]);
-    expect(legalCargoPlacements(fixture, factory.create(fixture, 'car_battery'), vehicle)).toEqual([]);
+    expect(legalAddonPlacements(fixture, tall, vehicle)[0]!.cells).toEqual([]);
+    expect(legalAddonPlacements(fixture, factory.create(fixture, 'car_battery'), vehicle)).toEqual([]);
     expect(snapshotItem(cargo)).toEqual(before);
+    const wrongSupport = cargoFitting(cargo, { id: 'probe', ...cells[0]!, supportedBy: ['floor', 'obstacle'] });
+    expect(fitIssue(present, placeFitting(fixture, wrongSupport), cell)).toMatch(NO_LOAD_FLOOR);
+
+    items.set('fixture_addon', {
+      ...prototype,
+      id: 'fixture_addon',
+      model: 'fixture_obstacle',
+      vehicle: { ...prototype.vehicle!, addon: { requires: 'load_floor' } },
+    });
+    const addonItem = factory.create(fixture, 'fixture_addon');
+    const addonPlacements = legalAddonPlacements(fixture, addonItem, vehicle);
+    expect(addonPlacements.map(({ support }) => support)).toEqual(['floor']);
+    expect(addonPlacements[0]!.cells.length).toBeGreaterThan(0);
+    for (const placement of addonPlacements[0]!.cells) {
+      const candidate = placeFitting(fixture, { id: 'addon', part: addonItem.type, ...placement });
+      expect(fitIssue(present, candidate, cell)).toBeUndefined();
+    }
   });
   it('loads factory cargo spaces with no content issues', () => {
     expect(base.issues).toEqual([]);
@@ -142,7 +160,7 @@ describe('cargo space', () => {
   it('keeps the free floor inside a bare load floor’s own edges', () => {
     for (const host of ['pickup', 'box_van']) {
       const floor = loadFloorOf(fittingsOf(host));
-      const free = freeFloor([floor], floor.id, cell, openMetres)!;
+      const free = placementRegion([floor], floor.id, cell, addon)!;
       expect(free.clearance.size).toBeGreaterThan(0);
       for (const key of free.clearance.keys()) {
         expect(floor.collision.some((box) => planInside(cellPlan(key, floor), box))).toBe(true);
@@ -153,11 +171,11 @@ describe('cargo space', () => {
   it('takes out the floor under the pickup’s wheel tubs', () => {
     const fittings = without(fittingsOf('pickup'), 'bed_cargo');
     const floor = loadFloorOf(fittings);
-    const free = freeFloor(fittings, floor.id, cell, openMetres)!;
+    const free = placementRegion(fittings, floor.id, cell, addon)!;
     const tubs = fittings
       .filter(({ id }) => id.startsWith('bed_side'))
       .flatMap(({ collision }) => collision)
-      .filter((box) => box.min[1] < free.top && box.max[1] > free.top)
+      .filter((box) => box.min[1] < free.plane && box.max[1] > free.plane)
       .filter((box) => floor.collision.some((face) => planOverlaps(box, face)));
     expect(tubs.length).toBeGreaterThan(0);
     expect(free.clearance.size).toBeGreaterThan(0);
@@ -178,16 +196,16 @@ describe('cargo space', () => {
   it('refuses a cargo space outside the free floor or above its clearance', () => {
     const present = without(fittingsOf('box_van'), 'box_cargo');
     const floor = loadFloorOf(present);
-    const free = freeFloor(present, floor.id, cell, openMetres)!;
+    const free = placementRegion(present, floor.id, cell, addon)!;
     const [key, clearance] = [...free.clearance].find(([at]) => {
       const [i, k] = at.split(',').map(Number) as [number, number];
       return !free.clearance.has(`${i + 1},${k}`);
     })!;
     const [i, k] = key.split(',').map(Number) as [number, number];
-    expect(fitIssue(present, probe(floor.id, free.top, key), cell)).toBeUndefined();
-    expect(fitIssue(present, probe(floor.id, free.top, `${i + 1},${k}`), cell)).toMatch(OFF_FREE_FLOOR);
+    expect(fitIssue(present, probe(floor.id, free.plane, key), cell)).toBeUndefined();
+    expect(fitIssue(present, probe(floor.id, free.plane, `${i + 1},${k}`), cell)).toMatch(OFF_FREE_FLOOR);
     const tooTall = Math.ceil(clearance / cell) + 1;
-    expect(fitIssue(present, probe(floor.id, free.top, key, tooTall), cell)).toMatch(ABOVE_CLEARANCE);
+    expect(fitIssue(present, probe(floor.id, free.plane, key, tooTall), cell)).toMatch(ABOVE_CLEARANCE);
   });
 
   describe('refuses overlap both ways', () => {
@@ -261,7 +279,8 @@ describe('cargo space', () => {
         ...hold,
         collision: [{ min: [x, 0.2, -0.1], max: [x + cells[0] * 0.1, 0.2 + cells[1] * 0.1, 0.1] }],
         supportedBy: ['floor'],
-        cargo: { cells, grid: cargoGrid(cells, { handlingSimSeconds: 1 } as CargoSpaceDef), openClearanceCells: 20 },
+        addon: { requires: 'load_floor', openClearanceCells: 20 },
+        cargo: { cells, grid: cargoGrid(cells, { handlingSimSeconds: 1 } as CargoSpaceDef) },
       };
     };
     expect(wall.collision[0]!.min[0]).toBeLessThan(0.2);

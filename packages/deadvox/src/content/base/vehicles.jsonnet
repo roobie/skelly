@@ -287,9 +287,11 @@ local boxVan = [
     part('hoist_boom_rest', 'Crane boom rest', [3, 4], ['structure']),
     part('cargo_space', 'Cargo space', [1, 1], ['storage'], 'Room marked out on a load floor for what the vehicle carries.') + {
       vehicle+: {
+        mount: 'cargo_space',
+        service: { mount: 'cargo_space', durationSimSeconds: 10, qualities: {} },
+        addon: { requires: 'load_floor', openClearanceCells: 20 },
         cargoSpace: {
           handlingSimSeconds: 1.2,
-          openClearanceCells: 20,
           wideReason: 'A cargo space is as wide as the floor it covers, not a carried bag.',
         },
       },

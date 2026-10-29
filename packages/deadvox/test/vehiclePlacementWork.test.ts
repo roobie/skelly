@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
+import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import { savedItemTree } from '../src/core/itemTree.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { legalAddonPlacements } from '../src/core/vehicleBlueprint.ts';
 import { copyVehicleWorkPlacement, type VehicleWorkPlacement } from '../src/core/vehicleInstances.ts';
 import {
   applyReplayActionPayload,
@@ -78,6 +80,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
     tip: unexpected,
     clearDownedBody: unexpected,
     craftStart: unexpected,
+    craftRepairEntity: unexpected,
     craftContinue: unexpected,
     craftStop: unexpected,
     wait: unexpected,
@@ -87,8 +90,7 @@ const command = (runtime: ReturnType<typeof createRuntime>, payload: ReplayActio
   });
 };
 
-const fixture = () => {
-  const registry = fixtureRegistry();
+const fixture = (registry = fixtureRegistry()) => {
   const spawn: [number, number, number] = [
     fixtureZombieColumn[0] * CHUNK + 8.5,
     (scale.maxCy - 1) * CHUNK + 1.0001,
@@ -125,6 +127,85 @@ const fixture = () => {
 };
 
 describe('placement-carrying vehicle commands', () => {
+  it('moves a factory cargo item to another legal cell through work with exactly one owner and removes it again', () => {
+    const registry = fixtureRegistry();
+    const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+    const items = new Map(registry.items);
+    const models = new Map(registry.models);
+    const floor = items.get('car_battery')!;
+    const floorModel = models.get(floor.model!)!;
+    models.set('fixture_floor', {
+      ...floorModel,
+      id: 'fixture_floor',
+      parts: {
+        body: {
+          massKg: 1,
+          centreOfMass: [0, 0, 0],
+          voxelGrain: cell,
+          collision: [{ min: [0, 0, 0], max: [4 * cell, cell, 3 * cell] }],
+        },
+      },
+    });
+    items.set('fixture_floor', {
+      ...floor,
+      id: 'fixture_floor',
+      model: 'fixture_floor',
+      vehicle: { ...floor.vehicle!, capabilities: ['structure', 'load_floor'] },
+    });
+    const cargo = items.get('cargo_space')!;
+    items.set(cargo.id, {
+      ...cargo,
+      vehicle: {
+        ...cargo.vehicle!,
+        mount: service.mount,
+        service: { ...service, qualities: {} },
+        addon: { requires: 'load_floor', openClearanceCells: 3 },
+      },
+    });
+    const original: VehicleWorkPlacement = { at: [cell / 2, cell, cell / 2], supportedBy: ['support'] };
+    const vehicleBlueprints = new Map(registry.vehicleBlueprints);
+    for (const id of ['hatchback', 'pickup']) {
+      vehicleBlueprints.set(id, {
+        id,
+        name: 'Fixture cargo vehicle',
+        fittings: [
+          { id: 'support', part: 'fixture_floor', at: [0, 0, 0], supportedBy: [] },
+          { id: 'part', part: cargo.id, cargo: [1, 1, 1], ...original },
+        ],
+      });
+    }
+    const { runtime, inventory, hatchback, part, payload } = fixture({ ...registry, items, models, vehicleBlueprints });
+    const outputOwner = () => {
+      const state = capture(runtime);
+      expect(
+        [...savedItemTree(state.character.inventory, state.world.vehicles)].filter(({ item }) => item.uid === part.uid),
+      ).toHaveLength(1);
+    };
+    const work = (kind: 'install' | 'remove', target: VehicleWorkPlacement) => {
+      expect(command(runtime, payload(kind, hatchback, target))).toBeUndefined();
+      runtime.sim.scheduler.advance(duration + 1);
+      outputOwner();
+    };
+    work('remove', original);
+    expect(inventory.locate(part)?.kind).toBe('pile');
+    const listed = legalAddonPlacements(inventory.registry, part, inventory.vehicles.get(hatchback)!);
+    const chosen = listed.flatMap(({ cells }) => cells).find(({ at }) => at[0] !== original.at[0])!;
+    expect(chosen).toBeDefined();
+    const unsupported = { ...chosen, supportedBy: ['part'] };
+    expect(runtime.session.vehicleWorkRefusal('install', hatchback, { id: 'part', ...unsupported }, part.uid)).toBe(
+      coreMessage(inventory.registry, 'partNeedsSupport'),
+    );
+    work('install', chosen);
+    expect(inventory.locate(part)).toMatchObject({ kind: 'vehicle', vehicleId: hatchback });
+    const pile = inventory.pileAt(runtime.player.body.pos.map(Math.floor) as [number, number, number]);
+    expect(pile?.items.some(({ item }) => item.uid === part.uid) ?? false).toBe(false);
+    const fitted = inventory.vehicles.get(hatchback)!.fittings.find(({ item }) => item.uid === part.uid)!;
+    expect(copyVehicleWorkPlacement(fitted)).toEqual(chosen);
+    work('remove', chosen);
+    expect(inventory.locate(part)?.kind).toBe('pile');
+    expect(inventory.vehicles.get(hatchback)!.fittings.some(({ item }) => item.uid === part.uid)).toBe(false);
+    expect(part.cargo).toEqual([1, 1, 1]);
+  });
   it('moves one service UID hatchback to inventory to pickup with exactly one owner, retaining placement through save', async () => {
     const { runtime, registry, inventory, hatchback, pickup, part, payload } = fixture();
     const owner = (expected: 'vehicle' | 'pile', vehicleId?: number) => {
@@ -160,6 +241,32 @@ describe('placement-carrying vehicle commands', () => {
       contentLookup,
     });
     expect(completed.snapshot.world.vehicles).toEqual(capture(runtime).world.vehicles);
+  });
+
+  it('uses authored site requirements instead of the part requirements', () => {
+    const registry = fixtureRegistry();
+    const items = new Map(registry.items);
+    const wheel = items.get('wheel_205_55r16')!;
+    items.set(wheel.id, {
+      ...wheel,
+      vehicle: {
+        ...wheel.vehicle!,
+        service: {
+          mount: service.mount,
+          durationSimSeconds: simSeconds(duration * 3),
+          qualities: { wrenching: 5 },
+        },
+      },
+    });
+    const { runtime, inventory, hatchback, part, payload } = fixture({ ...registry, items });
+    expect(inventory.vehicleService(hatchback, 'part', part.uid)).toEqual({
+      mount: service.mount,
+      durationSimSeconds: service.durationSimSeconds,
+      qualities: service.qualities,
+    });
+    expect(command(runtime, payload('remove', hatchback))).toBeUndefined();
+    runtime.sim.scheduler.advance(duration + 1);
+    expect(inventory.locate(part)?.kind).toBe('pile');
   });
 
   it('refuses changed cells, wrong mounts and unapproved supports identically in commands and inspection admission', () => {
@@ -203,7 +310,7 @@ describe('placement-carrying vehicle commands', () => {
     expect(inventory.locate(part)?.kind).toBe('pile');
   });
 
-  it('refuses a free placement with no authored service site and removing a supporting part before work starts', () => {
+  it('refuses a free placement without part requirements and removing a supporting part before work starts', () => {
     const { runtime, inventory, hatchback, part } = fixture();
     const fitted = inventory.vehicles.get(hatchback)!.fittings.find(({ id }) => id === 'support')!;
     expect(

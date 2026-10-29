@@ -6,7 +6,7 @@
 import type { ModelBox } from '@skelly/thing-core/schema';
 import type { Registry } from './content.ts';
 import type { Item, ItemFactory } from './items.ts';
-import type { ItemDef, VehicleFittingDef } from './schema.ts';
+import { type ItemDef, VEHICLE_ADDON_FACES, type VehicleFittingDef } from './schema.ts';
 import type { PlacedFitting } from './vehicleBlueprint.ts';
 
 /** A cargo space's size in inventory cells along x, y and z. */
@@ -18,11 +18,11 @@ type Container = NonNullable<ItemDef['container']>;
 /** Exported collision is float metres; this absorbs its rounding against the cell lattice. */
 const EPSILON = 1e-6;
 
-/** The cells of one load floor that a cargo space may cover. */
-export interface FreeFloor {
+/** Legal cells on a supporting part's capability-selected face. */
+export interface PlacementRegion {
   readonly support: string;
-  /** The load floor's top face, vehicle metres. */
-  readonly top: number;
+  readonly plane: number;
+  readonly face: (typeof VEHICLE_ADDON_FACES)[keyof typeof VEHICLE_ADDON_FACES];
   /** Free cells by `cellKey`, each with the metres clear above it. */
   readonly clearance: ReadonlyMap<string, number>;
   /** The lattice the load floor is drawn on, which cargo standing on it snaps to. */
@@ -53,14 +53,15 @@ export const snapBox = (lattice: Lattice, { min, max }: ModelBox): ModelBox => (
 const cellKey = (i: number, k: number): string => `${i},${k}`;
 
 /** Inventory cells `metres` across over one load floor, each snapped to its `lattice` as cargo on it would be. */
-interface FloorCells {
+interface FaceCells {
   readonly metres: number;
   readonly lattice: Lattice;
+  readonly face: PlacementRegion['face'];
 }
 
 /** Cell indices along `axis`: those lying inside the span, or those it overlaps (touching excluded). */
 const cellSpan = (
-  { metres, lattice }: FloorCells,
+  { metres, lattice }: FaceCells,
   [low, high]: readonly [number, number],
   axis: number,
   inside: boolean,
@@ -76,53 +77,56 @@ const cellSpan = (
   return cells;
 };
 
-const planCells = (cells: FloorCells, { min, max }: ModelBox, inside: boolean): string[] =>
-  cellSpan(cells, [min[0], max[0]], 0, inside).flatMap((i) =>
-    cellSpan(cells, [min[2], max[2]], 2, inside).map((k) => cellKey(i, k)),
+const planCells = (cells: FaceCells, { min, max }: ModelBox, inside: boolean): string[] => {
+  const [a, b] = cells.face.tangents;
+  return cellSpan(cells, [min[a], max[a]], a, inside).flatMap((i) =>
+    cellSpan(cells, [min[b], max[b]], b, inside).map((k) => cellKey(i, k)),
   );
+};
 
 /**
- * The free floor of load floor `support`: its top face less what stands in the cell-high layer above it, each
- * cell's clearance being the lowest fitting above it, or `openClearanceMetres` where nothing is.
+ * A word opens its face; all regions share lattice and fitted-collision subtraction.
  */
-export const freeFloor = (
+export const placementRegion = (
   fittings: readonly PlacedFitting[],
   support: string,
   cellMetres: number,
-  openClearanceMetres: number,
-): FreeFloor | undefined => {
+  addon: NonNullable<PlacedFitting['addon']>,
+): PlacementRegion | undefined => {
   const floor = fittings.find(({ id }) => id === support);
-  if (!floor?.capabilities.includes('load_floor')) {
+  if (!floor?.capabilities.includes(addon.requires)) {
     return undefined;
   }
-  const top = Math.max(...floor.collision.map(({ max }) => max[1]));
+  const face = VEHICLE_ADDON_FACES[addon.requires];
+  const plane = Math.max(...floor.collision.map(({ max }) => max[face.normal]));
   const { lattice } = floor;
-  const cells: FloorCells = { metres: cellMetres, lattice };
+  const cells: FaceCells = { metres: cellMetres, lattice, face };
   const clearance = new Map<string, number>();
-  for (const face of floor.collision.filter(({ max }) => Math.abs(max[1] - top) < EPSILON)) {
-    for (const key of planCells(cells, face, true)) {
-      clearance.set(key, openClearanceMetres);
+  for (const faceBox of floor.collision.filter(({ max }) => Math.abs(max[face.normal] - plane) < EPSILON)) {
+    for (const key of planCells(cells, faceBox, true)) {
+      clearance.set(key, addon.openClearanceCells ? addon.openClearanceCells * cellMetres : Number.POSITIVE_INFINITY);
     }
   }
   for (const fitting of fittings) {
     for (const box of fitting === floor ? [] : drawnCollision(fittings, fitting)) {
-      narrow(clearance, box, top, cells);
+      narrow(clearance, box, plane, cells);
     }
   }
-  return { support, top, clearance, lattice };
+  return { support, plane, face, clearance, lattice };
 };
 
 /** Takes a box above the floor out of the cells under it: whole where it stands in the first cell's layer. */
-const narrow = (clearance: Map<string, number>, box: ModelBox, top: number, cells: FloorCells): void => {
-  if (box.max[1] <= top + EPSILON) {
+const narrow = (clearance: Map<string, number>, box: ModelBox, plane: number, cells: FaceCells): void => {
+  const axis = cells.face.normal;
+  if (box.max[axis] <= plane + EPSILON) {
     return;
   }
-  const standing = box.min[1] < snap(cells.lattice, top + cells.metres, 1) - EPSILON;
+  const standing = box.min[axis] < snap(cells.lattice, plane + cells.metres, axis) - EPSILON;
   for (const key of planCells(cells, box, false).filter((at) => clearance.has(at))) {
     if (standing) {
       clearance.delete(key);
     } else {
-      clearance.set(key, Math.min(clearance.get(key)!, box.min[1] - top));
+      clearance.set(key, Math.min(clearance.get(key)!, box.min[axis] - plane));
     }
   }
 };
@@ -152,53 +156,64 @@ const drawnCollision = (fittings: readonly PlacedFitting[], fitting: PlacedFitti
   return fitting.collision.map((box) => snapBox(floor?.lattice, box));
 };
 
-const cargoIssue = (
+const addonIssue = (
   present: readonly PlacedFitting[],
   candidate: PlacedFitting,
-  cells: CargoCells,
   cellMetres: number,
 ): string | undefined => {
   const block = bounds(candidate.collision);
-  const openMetres = (candidate.cargo?.openClearanceCells ?? 0) * cellMetres;
-  const floors = candidate.supportedBy.flatMap((id) => freeFloor(present, id, cellMetres, openMetres) ?? []);
-  if (floors.length === 0) {
-    return 'a cargo space must rest on a load floor';
+  const addon = candidate.addon!;
+  const subject = candidate.cargo ? 'a cargo space' : 'an add-on';
+  const floors = candidate.supportedBy.flatMap((id) => placementRegion(present, id, cellMetres, addon) ?? []);
+  if (floors.length === 0 || floors.length !== candidate.supportedBy.length) {
+    return `${subject} must rest on a ${addon.requires.replaceAll('_', ' ')}`;
   }
-  const floor = floors.find(({ top, lattice }) => Math.abs(top - snap(lattice, block.min[1], 1)) < EPSILON);
+  const floor = floors.find(
+    ({ plane, lattice, face }) => Math.abs(plane - snap(lattice, block.min[face.normal], face.normal)) < EPSILON,
+  );
   if (!floor) {
-    return 'a cargo space must stand on its load floor’s top face';
+    return `${subject} must stand on its support’s face`;
   }
-  const [i0, k0] = [block.min[0] / cellMetres, block.min[2] / cellMetres];
+  const [a, b] = floor.face.tangents;
+  const [i0, k0] = [block.min[a] / cellMetres, block.min[b] / cellMetres];
   if (Math.abs(i0 - Math.round(i0)) > EPSILON || Math.abs(k0 - Math.round(k0)) > EPSILON) {
-    return 'a cargo space must lie on the inventory cell lattice';
+    return `${subject} must lie on the inventory cell lattice`;
   }
+  const cells = candidate.cargo?.cells ?? [
+    Math.ceil((block.max[0] - block.min[0]) / cellMetres),
+    Math.ceil((block.max[1] - block.min[1]) / cellMetres),
+    Math.ceil((block.max[2] - block.min[2]) / cellMetres),
+  ];
   let clear = Number.POSITIVE_INFINITY;
-  for (let i = 0; i < cells[0]; i += 1) {
-    for (let k = 0; k < cells[2]; k += 1) {
+  for (let i = 0; i < cells[a]!; i += 1) {
+    for (let k = 0; k < cells[b]!; k += 1) {
       const above = floor.clearance.get(cellKey(Math.round(i0) + i, Math.round(k0) + k));
       if (above === undefined) {
-        return `a cargo space must lie within the free floor of ${floor.support}`;
+        return `${subject} must lie within the free floor of ${floor.support}`;
       }
       clear = Math.min(clear, above);
     }
   }
   const drawn = snapBox(floor.lattice, block);
-  return drawn.max[1] - drawn.min[1] > clear + EPSILON
-    ? `a cargo space must not rise above the clearance over ${floor.support}`
+  return drawn.max[floor.face.normal] - drawn.min[floor.face.normal] > clear + EPSILON
+    ? `${subject} must not rise above the clearance over ${floor.support}`
     : undefined;
 };
 
 /**
- * Why `candidate` can't be fitted beside `present`, the vehicle's other fittings. A cargo space must lie on a
- * supporting load floor's free floor, below its clearance; any other part must stay out of fitted cargo spaces.
+ * Why `candidate` can't be fitted beside `present`: add-ons need their word's free region and all parts must
+ * stay out of fitted cargo spaces.
  */
 export const fitIssue = (
   present: readonly PlacedFitting[],
   candidate: PlacedFitting,
   cellMetres: number,
 ): string | undefined => {
-  if (candidate.cargo) {
-    return cargoIssue(present, candidate, candidate.cargo.cells, cellMetres);
+  if (candidate.addon) {
+    const issue = addonIssue(present, candidate, cellMetres);
+    if (issue) {
+      return issue;
+    }
   }
   const all = [...present, candidate];
   const hold = present.find(
