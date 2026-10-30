@@ -1708,7 +1708,11 @@ an unaudited yield table cannot promise intact recovery or a recovery-quality
 policy. The item yield/work projection is `src/core/disassembly.ts`,
 `planDisassembly`; selecting a capability does not authorize that projection to
 replace retained parts with generated copies. See `src/core/content.ts`,
-`checkDisassembly` and `checkRecipes`, and `docs/crafting.md`.
+`checkDisassembly`, `checkMaterialCycles` and `checkRecipes`, and `docs/crafting.md`.
+
+No craft-and-take-apart cycle may yield more material than it consumes. Cloth
+strips return to a rag only by sewing several together. Endless material breaks
+scarcity.
 
 Recipe knowledge may come from a book, a skill level, either, or the starting
 set. A book shortcuts the skill grind; a skilled character does not need the

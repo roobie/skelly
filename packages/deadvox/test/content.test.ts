@@ -2066,6 +2066,50 @@ describe('content references', () => {
     expect(registry.skills.get('fixture_skill')).toEqual(recipePack.skills[0]);
   });
 
+  it('rejects a craft-and-take-apart cycle that grows material', () => {
+    const source = {
+      source: 'material-cycle-fixture.json',
+      data: {
+        items: [
+          { id: 'fixture_fabric', name: 'Fixture fabric', category: 'material', weight: 1, size: [1, 1] },
+          {
+            id: 'fixture_strip',
+            name: 'Fixture strip',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            disassembly: {
+              timeGameMinutes: 1,
+              skill: 'fixture_crafting',
+              yields: [{ item: 'fixture_fabric', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+            },
+          },
+        ],
+        skills: [{ id: 'fixture_crafting', name: 'Fixture crafting', training: { craftingTierOffset: 1 } }],
+        recipeCategories: [{ id: 'fixture_materials', label: 'Fixture materials', order: 1 }],
+        recipes: [
+          {
+            id: 'fixture_cut_fabric',
+            category: 'fixture_materials',
+            tags: [],
+            searchTerms: [],
+            result: { item: 'fixture_strip', count: 2 },
+            timeGameMinutes: 1,
+            skills: Object.fromEntries([['fixture_crafting', 0]]),
+            qualities: {},
+            components: [[{ item: 'fixture_fabric', count: 1 }]],
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([source]).issues).toContainEqual({
+      source: source.source,
+      path: 'recipes[0].components',
+      message:
+        'craft-and-take-apart cycle returns more material than it consumes: fixture_fabric → fixture_strip → fixture_fabric',
+    });
+  });
+
   it('checks result, skill, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
     const data = {
       ...recipePack,
