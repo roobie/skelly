@@ -17,6 +17,10 @@
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
     {
+      "source": "packages/deadvox/src/config/repair-look.jsonnet",
+      "output": "packages/deadvox/src/config/repair-look.json"
+    },
+    {
       "source": "packages/deadvox/src/config/vehicleFeasibility.jsonnet",
       "output": "packages/deadvox/src/config/vehicleFeasibility.json"
     },

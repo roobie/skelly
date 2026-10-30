@@ -2,6 +2,7 @@
 // The simulation core runs the clock, the player's physics, needs and the handling
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
+import repairLook from '../config/repair-look.json' with { type: 'json' };
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
@@ -19,7 +20,7 @@ import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
-import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
+import { movableRefusal } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
@@ -108,6 +109,7 @@ import { mountTutorial } from '../ui/tutorial.ts';
 import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
+import { WorldRepairSurface } from '../ui/worldRepairSurface.ts';
 import { GameAudio } from './audio.ts';
 import { createRefusalPresenter, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { BackquoteOrbitGesture } from './backquoteOrbitGesture.ts';
@@ -131,7 +133,7 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
-import { FurnitureActionSelection } from './furnitureActions.ts';
+import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -198,6 +200,7 @@ import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
 import { populateTestHouseRepairCorner } from './testHouseRepair.ts';
+import { faceRepairLookTarget, stageRepairLook } from './testHouseRepairLook.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -213,6 +216,19 @@ import { finishLoadingFrame, WorldLoading } from './worldLoading.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+const mountRepairLookSurface = (
+  enabled: boolean,
+  owner: ConstructorParameters<typeof WorldRepairSurface>[1],
+): WorldRepairSurface | undefined => {
+  if (!enabled) {
+    return undefined;
+  }
+  const root = document.createElement('section');
+  root.id = 'world-repair';
+  document.body.append(root);
+  return new WorldRepairSurface(root, owner);
+};
 
 const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number, liftMetres: number): Vec3 => [
   (x + 0.5) * blockSize,
@@ -734,6 +750,7 @@ export const startPlay = (
   const s = scale.blockSize;
   const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
 
+  let repairSurface: WorldRepairSurface | undefined;
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
     focus: config.focus,
@@ -744,7 +761,7 @@ export const startPlay = (
     shouldCancelInputForViewerFocus(reason, replayPlayer !== undefined);
   const input = new Input(
     inputTarget,
-    () => !debugTools?.buildOn,
+    () => !debugTools?.buildOn && repairSurface?.context === undefined,
     () => shouldCancelForViewerFocus('window-blur'),
     () => worldLoading.ready && replayPlayer === undefined,
   );
@@ -775,10 +792,8 @@ export const startPlay = (
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
-  const furnitureActions = (): ItemAction[] => [
-    { id: 'push', label: 'Push' },
-    { id: 'drag', label: 'Drag' },
-  ];
+  const furnitureActions = (entity: BlockEntity): ItemAction[] =>
+    furnitureActionsFor(inventory, entity, s, repairSurface ? repairLook.recipe : undefined);
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -1181,6 +1196,8 @@ export const startPlay = (
       source: engine.site,
     });
   }
+  const debugRepairTarget = stageRepairLook(inventory, engine.site, config, options.restore !== undefined);
+  const debugRepairIntents: ReplayActionPayload[] = [];
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
     terrain: streamer,
@@ -1431,6 +1448,20 @@ export const startPlay = (
   const craftPanel = mountCraftPanel($('crafting'), session, {
     notice: (text) => showRefusal(text, sim.time),
     dispatch: dispatchScreenCommand,
+  });
+
+  repairSurface = mountRepairLookSurface(debugRepairTarget !== undefined, {
+    registry,
+    crafting: session.crafting,
+    keyboard: keyboardInput,
+    aimedEntity: () => lookedAt()?.uid,
+    turn: (yaw, pitch) => {
+      input.yaw += yaw;
+      input.adjustPitch(pitch);
+    },
+    aimRadiansPerRealSecond: playerTuning(registry).aim.keyboardTargetRadiansPerRealSecond,
+    emit: (intent) => debugRepairIntents.push(intent),
+    returned: () => inputTarget.focus(),
   });
 
   let revealZombies = false;
@@ -1787,8 +1818,9 @@ export const startPlay = (
       reading.close();
       closeInventoryScreen();
       debugTools?.closeMenus();
+      repairSurface?.close();
     }
-    input.menuPointer = state.menuPointer || !worldLoading.ready;
+    input.menuPointer = state.menuPointer || !worldLoading.ready || repairSurface?.context === 'world-service';
     keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
     $('go').hidden = state.showGo === false;
@@ -2238,10 +2270,7 @@ export const startPlay = (
     };
   };
 
-  const playContext = (): InputContext => {
-    if (mainMenuOpen || sim.dead) {
-      return 'menu';
-    }
+  const activePlayContext = (): InputContext => {
     if (reading.isOpen) {
       return 'reading';
     }
@@ -2256,6 +2285,8 @@ export const startPlay = (
     }
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
+  const playContext = (): InputContext =>
+    mainMenuOpen || sim.dead ? 'menu' : (repairSurface?.context ?? activePlayContext());
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {
@@ -2282,6 +2313,9 @@ export const startPlay = (
       return;
     }
     input.cancel(preservePointer);
+    if (reason) {
+      repairSurface?.cancelInput(reason);
+    }
     screen.cancelInput();
     cancelBackquoteGesture(backquoteGesture);
     cancelItemThrow();
@@ -2290,7 +2324,9 @@ export const startPlay = (
     quickbarInput.cancel();
   };
   keyboardInput.escape = () => {
-    if (sim.dead) {
+    if (repairSurface?.context) {
+      repairSurface.back();
+    } else if (sim.dead) {
       if (reviewMapOpen) {
         toggleReviewMap(false);
       }
@@ -2518,11 +2554,26 @@ export const startPlay = (
       gameplayCommand(action, at, slot);
     }
   };
+  const routeRepairCommand = (command: InputCommand, context: InputContext): boolean => {
+    if (context !== 'world-targeting' && context !== 'world-service') {
+      return false;
+    }
+    if (command.action === 'ui.main-menu-toggle' && command.phase === 'down') {
+      repairSurface?.back();
+    } else {
+      repairSurface?.onCommand(command);
+    }
+    return true;
+  };
   const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
     if (!worldLoading.ready || (replayPlayer && !fromReplay) || !spectator.allowsCommand(action)) {
       return;
     }
     const context = inputContext();
+    // The debug-only look records neither surface presses nor a work start; it is not a replayable repair flow.
+    if (routeRepairCommand({ action, phase, at }, context)) {
+      return;
+    }
     const payloadBackedScreenAction = isPayloadBackedScreenAction(context, action);
     // Gameplay records this press after toggling saved state; recording it here too duplicates the live press.
     const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
@@ -2607,7 +2658,7 @@ export const startPlay = (
     return (
       target?.kind === 'furniture' &&
       furnitureActionSelection.isOpen(target.entity) &&
-      furnitureActionSelection.step(target.entity, furnitureActions(), Math.sign(deltaY))
+      furnitureActionSelection.step(target.entity, furnitureActions(target.entity), Math.sign(deltaY))
     );
   };
   const cycleWieldedAction = (deltaY: number): boolean => {
@@ -2695,6 +2746,8 @@ export const startPlay = (
     const target = interactionTargetAt();
     return target?.kind === 'furniture' ? target.entity : undefined;
   };
+
+  faceRepairLookTarget(input, eye(), debugRepairTarget);
 
   /** The open cell in front of the surface in the crosshair, or at the end of reach when none is near. */
   const aimedCell = (): [number, number, number] => {
@@ -2792,18 +2845,32 @@ export const startPlay = (
     );
   };
 
-  const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
+  const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
+    const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
+    if (!selected) {
+      return undefined;
+    }
+    if (selected.id === 'repair') {
+      input.cancel();
+      repairSurface?.open(repairLook.recipe);
+      return undefined;
+    }
+    if (selected.id === 'lift') {
+      return { kind: 'furniture.lift', entityUid: entity.uid };
+    }
+    return selected.id === 'drag'
+      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+  };
+  const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
     const control = session.power?.control(entity);
     if (control) {
       return { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled };
     }
-    if (slidableFurniture(inventory, entity, s) && furnitureActionSelection.isOpen(entity)) {
-      const selected = furnitureActionSelection.confirm(entity, furnitureActions())!;
-      return selected.id === 'drag'
-        ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
-        : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+    if (furnitureActionSelection.isOpen(entity)) {
+      return confirmFurnitureAction(entity);
     }
-    if (mode === 'wield' && slidableFurniture(inventory, entity, s)) {
+    if (mode === 'wield' && furnitureActions(entity).length > 0) {
       return { kind: 'furniture.interact', entityUid: entity.uid, alternatives: true };
     }
     return mode === 'wield' && liftable(entity)
@@ -2818,7 +2885,7 @@ export const startPlay = (
   function interactionPayload(
     target: Exclude<InteractionTarget, { kind: 'vehicle' }>,
     mode: 'pocket' | 'wield',
-  ): ReplayActionPayload {
+  ): ReplayActionPayload | undefined {
     switch (target.kind) {
       case 'item':
         return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
@@ -2902,8 +2969,8 @@ export const startPlay = (
     if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
       return undefined;
     }
-    if (alternatives && slidableFurniture(inventory, entity, s)) {
-      furnitureActionSelection.open(entity, furnitureActions());
+    if (alternatives && furnitureActions(entity).length > 0) {
+      furnitureActionSelection.open(entity, furnitureActions(entity));
     } else {
       useTarget(entity);
     }
@@ -3455,7 +3522,14 @@ export const startPlay = (
     if (!(isForwardButton(e) && forwardPress.accept(e.timeStamp))) {
       return;
     }
-    if (!input.locked || input.menuPointer || compression.locksInput || spectator.enabled || debugTools?.buildOn) {
+    if (
+      !input.locked ||
+      input.menuPointer ||
+      repairSurface?.context ||
+      compression.locksInput ||
+      spectator.enabled ||
+      debugTools?.buildOn
+    ) {
       return;
     }
     if (refusePrimaryUseWhileHandling()) {
@@ -3561,7 +3635,8 @@ export const startPlay = (
   const furnitureInteractionHint = (entity: BlockEntity): HintText => {
     const key = keyCap('world.interact');
     if (furnitureActionSelection.isOpen(entity)) {
-      return html`${key}: ${furnitureActionSelection.forItem(entity, furnitureActions())?.label} ${nameOf(entity)}`;
+      const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity));
+      return html`${key}: ${selected?.label} ${selected?.id === 'repair' ? '' : nameOf(entity)}`;
     }
     if (entity.bar) {
       const lift = doorPlan(inventory, entity, 'unbar');
@@ -3573,7 +3648,7 @@ export const startPlay = (
           });
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
-    if (slidableFurniture(inventory, entity, s)) {
+    if (furnitureActions(entity).length > 0) {
       return html`${useText(entity)} · ${key} (hold): actions`;
     }
     return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);
@@ -3625,9 +3700,9 @@ export const startPlay = (
       target?.kind === 'furniture' && furnitureActionSelection.isOpen(target.entity)
         ? [
             `${nameOf(target.entity)}:`,
-            ...furnitureActions().map(
+            ...furnitureActions(target.entity).map(
               (action) =>
-                `${action.id === furnitureActionSelection.forItem(target.entity, furnitureActions())?.id ? '›' : ' '} ${action.label}`,
+                `${action.id === furnitureActionSelection.forItem(target.entity, furnitureActions(target.entity))?.id ? '›' : ' '} ${action.label}`,
             ),
           ].join('\n')
         : undefined;
@@ -4228,7 +4303,8 @@ export const startPlay = (
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
-    const visible = hudVisibility(hudOptions, false, menuState.menuPointer);
+    repairSurface?.update(dt);
+    const visible = hudVisibility(hudOptions, false, input.menuPointer);
     let mark = realNow();
     prepareStreaming(now);
     meshingQueueMs = realNow() - mark;

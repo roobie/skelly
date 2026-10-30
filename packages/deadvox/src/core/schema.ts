@@ -514,6 +514,17 @@ const UiScreenTextSchema = strictObject({
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
   prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  worldService: slottedTable({
+    heading: [],
+    push: [],
+    drag: [],
+    lift: [],
+    actions: ['key'],
+    details: [],
+    back: [],
+    start: [],
+    target: ['name', 'damage'],
+  }),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -4205,6 +4216,7 @@ const PlayerSchema = strictObject({
   aim: strictObject({
     moveYawPerSpeed: NonNegative,
     lookSensitivityRadiansPerPixel: Positive,
+    keyboardTargetRadiansPerRealSecond: Positive,
     freeLook: strictObject({
       yawLimitRadians: pipe(Positive, maxValue(Math.PI)),
       pitchLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),

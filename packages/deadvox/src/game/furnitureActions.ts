@@ -1,4 +1,34 @@
+import type { BlockEntity } from '../core/blockEntities.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
+import type { Inventory } from '../core/inventory.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { type ItemAction, ItemActionSelection } from './itemActions.ts';
+
+export const furnitureActionsFor = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  blockSize: number,
+  repairRecipeId?: string,
+): ItemAction[] => {
+  const recipe = repairRecipeId === undefined ? undefined : inventory.registry.recipes.get(repairRecipeId);
+  const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
+  const text = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+  const hasRepair = repair?.entity === entity.type && inventory.entities.canRepair(entity, repair.amount);
+  const actions: ItemAction[] = [];
+  if (slidableFurniture(inventory, entity, blockSize)) {
+    actions.push({ id: 'push', label: text.worldService.push }, { id: 'drag', label: text.worldService.drag });
+  } else if (hasRepair && movableRefusal(inventory, entity, blockSize) === undefined) {
+    actions.push({ id: 'lift', label: text.worldService.lift });
+  }
+  if (hasRepair) {
+    actions.push({
+      id: 'repair',
+      label: fillText(text.crafting.repair, { item: inventory.entities.defOf(entity).name }),
+    });
+  }
+  return actions;
+};
 
 export class FurnitureActionSelection extends ItemActionSelection {
   private uid: number | undefined;

@@ -6,6 +6,7 @@ import { applyBenchWeathering } from './bench/post.ts';
 import { showReport } from './bench/report.ts';
 import { benchGameConfig, benchRunFromUrl, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
+import repairLook from './config/repair-look.json' with { type: 'json' };
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
@@ -17,6 +18,7 @@ import {
   configFromUrl,
   DEFAULT_RADIUS_M,
   makeConfig,
+  repairLookEnabled,
   savingEnabledFromUrl,
 } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
@@ -53,7 +55,10 @@ if (showMods) {
   startupScreen.hidden = true;
   modsScreen.hidden = false;
 }
-const bundled = selectBundledMods(showMods ? [] : bundledModIdsFromUrl(params));
+const bundled = selectBundledMods(
+  showMods ? [] : bundledModIdsFromUrl(params),
+  repairLookEnabled(params) ? [repairLook.mod] : [],
+);
 // The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.
 const browserSelection = showMods
   ? await chooseMods(modsScreen, bundled.content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.mods)

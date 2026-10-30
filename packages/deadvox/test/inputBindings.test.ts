@@ -97,6 +97,41 @@ const storage = () => {
 };
 
 describe('keyboard registry', () => {
+  it.each([
+    { from: 'world-targeting', to: 'world-service', action: 'world.actions', next: 'world.service-activate' },
+    { from: 'world-service', to: 'world-targeting', action: 'world.service-activate', next: 'world.actions' },
+  ] as const)(
+    'consumes native button activation from a held key after transfer into $to',
+    ({ from, to, action, next }) => {
+      const keyboard = new KeyboardInput(new BindingRegistry(undefined, storage()));
+      let context: InputContext = from;
+      keyboard.context = () => ({ context, debug: false });
+      const commands: InputCommand[] = [];
+      keyboard.command = (command) => {
+        commands.push(command);
+        if (command.action === action && command.phase === 'down') {
+          context = to;
+        }
+      };
+      const remove = keyboard.install();
+      const button = document.createElement('button');
+      document.body.append(button);
+      button.focus();
+      try {
+        button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true, cancelable: true }));
+        const repeated = new KeyboardEvent('keydown', { code: 'Enter', repeat: true, bubbles: true, cancelable: true });
+        button.dispatchEvent(repeated);
+        expect(repeated.defaultPrevented).toBe(true);
+        expect(commands.filter(({ phase }) => phase === 'down').map((command) => command.action)).toEqual([action]);
+        button.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', bubbles: true }));
+        button.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true, cancelable: true }));
+        expect(commands.at(-1)?.action).toBe(next);
+      } finally {
+        remove();
+        button.remove();
+      }
+    },
+  );
   it('accepts a physical Shift down with a false Shift flag so strafe remains available', () => {
     const keyboard = new KeyboardInput(
       new BindingRegistry(

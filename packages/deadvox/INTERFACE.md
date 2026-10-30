@@ -6,6 +6,7 @@ read_if:
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
   - you're changing debug/playtest separation or inventory layout
+  - you're changing world-target inspection, repair details or keyboard targeting
   - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
 ---
 
@@ -78,6 +79,8 @@ A blocking runtime error halts play, releases pointer lock and prevents further 
 The drawn cursor stays above ordinary panels while pointer lock is held; otherwise the player cannot see where menu actions land. The debug review map may cover it because opening that map releases gameplay input. In-game choices use the game's combo box rather than a native select, which would take focus and pause play. See `src/ui/style.css`, ":root", and `src/ui/comboBox.ts`, `comboBox`.
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
+
+World-target service details are opened meta controls because shape cannot express missing supplies or consent to spend. Sharing requirement presentation with crafting avoids conflicting accounts of the same stock. Aim and opened controls need separate input ownership so navigating a detail cannot move the target or confirm through a held press. Refused actions remain focusable because a pointer-only explanation would deny keyboard inspection. See `src/ui/worldRepairSurface.ts`, `WorldRepairSurface`, and `src/ui/craftRequirements.ts`, `craftRequirements`.
 
 ## Item pictures
 

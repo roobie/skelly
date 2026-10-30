@@ -51,7 +51,7 @@ export interface BundledSelection {
 }
 
 /** Admits the named bundled mods through the same intake as player mods; unknown ids are issues. */
-export const selectBundledMods = (ids: readonly string[]): BundledSelection => {
+export const selectBundledMods = (ids: readonly string[], additional: readonly BundledMod[] = []): BundledSelection => {
   const issues: ContentIssue[] = [];
   const mods: BrowserMod[] = [];
   const admitted: BundledSelection['admitted'] = [];
@@ -69,6 +69,10 @@ export const selectBundledMods = (ids: readonly string[]): BundledSelection => {
     const { data } = found;
     admitted.push({ id, data });
     mods.push({ source, text: JSON.stringify(data), enabled: true });
+  }
+  for (const { id, data } of additional) {
+    admitted.push({ id, data });
+    mods.push({ source: id, text: JSON.stringify(data), enabled: true });
   }
   const result = evaluateMods(mods);
   for (const list of result.issues.values()) {

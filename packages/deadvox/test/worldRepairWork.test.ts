@@ -17,51 +17,12 @@ import { workName } from '../src/ui/craftReadout.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { fixtureSources } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
+import { AMOUNT, DURABILITY, PIECE, RECIPE, STOCK, worldRepairSources } from './worldRepairFixture.ts';
 
-const STOCK = 'world_repair_stock';
-const PIECE = 'world_repair_piece';
-const RECIPE = 'world_repair_recipe';
-const DURABILITY = 100;
-const AMOUNT = 20;
 const ORIGIN: [number, number, number] = [0, 0, 0];
-const registry = baseRegistryWith(
-  fixtureSources([
-    {
-      source: 'world-repair-fixture',
-      data: {
-        skills: [{ id: 'world_repair_skill', name: 'Fixture repair', startingRecipes: [RECIPE] }],
-        items: [{ id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
-        furniture: [
-          {
-            id: PIECE,
-            name: 'Fixture piece',
-            size: [1, 1, 1],
-            color: '#777777',
-            breach: { minimumStrength: 1, durability: DURABILITY },
-          },
-        ],
-        recipes: [
-          {
-            id: RECIPE,
-            category: 'fixture_category',
-            tags: [],
-            searchTerms: [],
-            kind: 'repair',
-            result: { item: STOCK, count: 1 },
-            repair: { entity: PIECE, skill: 'world_repair_skill', amount: AMOUNT, perSkill: 0 },
-            timeGameMinutes: 1,
-            skills: {},
-            qualities: {},
-            components: [[{ item: STOCK, count: 2 }]],
-          },
-        ],
-      },
-    },
-  ]),
-);
+const registry = baseRegistryWith(worldRepairSources());
 
 interface Saved {
   inventory: ReturnType<Inventory['snapshotState']>;
