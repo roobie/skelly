@@ -41,7 +41,7 @@ const fixture = (skill = 'fixture_skill', level = 2, taughtRecipe = 'fixture_rec
             timeGameMinutes: 1,
             skills: {},
             qualities: {},
-            components: [],
+            components: [[{ item: 'fixture_material_item', count: 1 }]],
             skillUnlock: { skill, level },
           },
         ],

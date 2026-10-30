@@ -24,6 +24,7 @@ import { itemPresentationIssues } from './itemPresentation.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
+import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
@@ -1675,36 +1676,36 @@ const checkRecipe = ({
   }
 };
 
-interface MaterialTransformation {
-  from: string;
-  to: string;
-  factor: number;
-  section: 'items' | 'recipes';
-  id: string;
-  path: string;
-}
-
-interface MaterialCycleSearch {
-  current: string;
-  factor: number;
-  path: readonly MaterialTransformation[];
-  seen: ReadonlySet<string>;
-}
-
-const materialTransformations = (registry: Registry): MaterialTransformation[] => {
-  const transformations: MaterialTransformation[] = [];
-  for (const item of registry.items.values()) {
-    item.disassembly?.yields.forEach((yieldItem, index) => {
-      transformations.push({
-        from: item.id,
-        to: yieldItem.item,
-        factor: yieldItem.count,
-        section: 'items',
-        id: item.id,
-        path: `.disassembly.yields[${index}]`,
-      });
-    });
+const addMaterialBalance = (balance: Map<string, bigint>, item: string, count: number): void => {
+  const total = (balance.get(item) ?? 0n) + BigInt(count);
+  if (total === 0n) {
+    balance.delete(item);
+  } else {
+    balance.set(item, total);
   }
+};
+
+const itemMaterialTransformations = (item: ItemDef): MaterialOperation[] => {
+  const transformations: MaterialOperation[] = [];
+  for (const [path, yields] of [
+    ['.disassembly.yields', item.disassembly?.yields],
+    ['.salvage', item.salvage],
+    ['.unpack', item.unpack ? [item.unpack] : undefined],
+  ] as const) {
+    if (!yields) {
+      continue;
+    }
+    const balance = new Map([[item.id, -1n]]);
+    for (const output of yields) {
+      addMaterialBalance(balance, output.item, output.count);
+    }
+    transformations.push({ balance, section: 'items', id: item.id, path });
+  }
+  return transformations;
+};
+
+const materialTransformations = (registry: Registry): MaterialOperation[] => {
+  const transformations = [...registry.items.values()].flatMap(itemMaterialTransformations);
   for (const recipe of registry.recipes.values()) {
     if (recipe.kind === 'repair') {
       continue;
@@ -1713,75 +1714,39 @@ const materialTransformations = (registry: Registry): MaterialTransformation[] =
     if (solidGroups.some((group) => group.length === 0)) {
       continue;
     }
-    const inputIds = new Set(solidGroups.flat().map(({ item }) => item));
-    if (inputIds.size !== 1) {
-      continue;
+    let balances = [new Map<string, bigint>()];
+    for (const group of solidGroups) {
+      balances = balances.flatMap((balance) =>
+        group.map(({ item, count }) => {
+          const next = new Map(balance);
+          addMaterialBalance(next, item, -count);
+          return next;
+        }),
+      );
     }
-    const counts = solidGroups.reduce<number[]>(
-      (totals, alternatives) => totals.flatMap((total) => alternatives.map(({ count }) => total + count)),
-      [0],
-    );
-    const from = solidGroups[0]![0]!.item;
-    for (const count of counts) {
-      transformations.push({
-        from,
-        to: recipe.result.item,
-        factor: recipe.result.count / count,
-        section: 'recipes',
-        id: recipe.id,
-        path: '.components',
-      });
+    for (const balance of balances) {
+      addMaterialBalance(balance, recipe.result.item, recipe.result.count);
+      transformations.push({ balance, section: 'recipes', id: recipe.id, path: '.components' });
     }
   }
   return transformations;
 };
 
-const materialCycle = (
-  start: string,
-  outgoing: ReadonlyMap<string, readonly MaterialTransformation[]>,
-): MaterialTransformation[] | undefined => {
-  const pending: MaterialCycleSearch[] = [{ current: start, factor: 1, path: [], seen: new Set([start]) }];
-  while (pending.length > 0) {
-    const search = pending.pop()!;
-    for (const transformation of outgoing.get(search.current) ?? []) {
-      const factor = search.factor * transformation.factor;
-      if (transformation.to === start && factor > 1 + Number.EPSILON) {
-        return [...search.path, transformation];
-      }
-      if (transformation.to !== start && !search.seen.has(transformation.to)) {
-        pending.push({
-          current: transformation.to,
-          factor,
-          path: [...search.path, transformation],
-          seen: new Set([...search.seen, transformation.to]),
-        });
-      }
-    }
-  }
-  return undefined;
-};
-
 const checkMaterialCycles = (registry: Registry, report: Report): void => {
-  const outgoing = new Map<string, MaterialTransformation[]>();
-  for (const transformation of materialTransformations(registry)) {
-    const entries = outgoing.get(transformation.from) ?? [];
-    entries.push(transformation);
-    outgoing.set(transformation.from, entries);
+  const transformations = materialTransformations(registry);
+  const result = materialCycle(transformations);
+  if (result.kind === 'balanced') {
+    return;
   }
-  for (const item of registry.items.keys()) {
-    const cycle = materialCycle(item, outgoing);
-    if (cycle) {
-      const names = [...cycle.map(({ from }) => from), item].join(' → ');
-      const origin = cycle[0]!;
-      report(
-        origin.section,
-        origin.id,
-        origin.path,
-        `craft-and-take-apart cycle returns more material than it consumes: ${names}`,
-      );
-      return;
-    }
-  }
+  const origin = result.kind === 'gain' ? result.operations[0]! : transformations[0]!;
+  report(
+    origin.section,
+    origin.id,
+    origin.path,
+    result.kind === 'gain'
+      ? `craft-and-take-apart cycle returns more material than it consumes: ${result.operations.map(({ id, path }) => `${id}${path}`).join(', ')}`
+      : 'material-cycle analysis exceeded its work limit; item stock could not be validated',
+  );
 };
 
 const checkRecipeCategories = (registry: Registry, report: Report): void => {
