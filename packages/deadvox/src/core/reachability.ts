@@ -345,8 +345,12 @@ const knowledgeIssues = (recipe: RecipeDef, knowledge: ReadonlySet<string>): Rec
     : [
         {
           recipe: recipe.id,
-          path: '.knowledge',
-          message: `recipe "${recipe.id}" has no starting or reachable book knowledge source`,
+          path: recipe.skillUnlock ? '.skillUnlock' : '.knowledge',
+          message: `recipe "${recipe.id}" has no knowledge source: not in any skill's startingRecipes; no reachable book teaches it; ${
+            recipe.skillUnlock
+              ? `unlock at "${recipe.skillUnlock.skill}" level ${recipe.skillUnlock.level} has no reachable practice source for "${recipe.skillUnlock.skill}"`
+              : 'recipe names no skill unlock'
+          }`,
         },
       ];
 
@@ -426,16 +430,6 @@ const recipeDiagnostics = (context: RecipeDiagnosticContext): { issues: RecipeDi
   return { issues };
 };
 
-const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: ReadonlySet<string>) => {
-  const taught = new Set(known);
-  for (const item of found) {
-    for (const recipe of registry.items.get(item)?.book?.recipes ?? []) {
-      taught.add(recipe);
-    }
-  }
-  return taught;
-};
-
 const canPracticeRecipe = (
   recipe: RecipeDef,
   {
@@ -462,39 +456,57 @@ const canPracticeRecipe = (
   ) &&
   (typeof recipe.workstation !== 'string' || workstations.has(recipe.workstation));
 
-interface ReachableSkillContext {
+const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: ReadonlySet<string>) => {
+  const knowledge = new Set(known);
+  for (const recipe of registry.recipes.values()) {
+    if (recipe.skillUnlock?.level === 0) {
+      knowledge.add(recipe.id);
+    }
+  }
+  for (const item of found) {
+    for (const recipe of registry.items.get(item)?.book?.recipes ?? []) {
+      knowledge.add(recipe);
+    }
+  }
+  return knowledge;
+};
+
+interface ReachableKnowledgeAndSkillsContext {
   registry: Registry;
   found: ReadonlySet<string>;
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
-  knowledge: ReadonlySet<string>;
+  known: ReadonlySet<string>;
 }
 
-const reachableSkills = ({
+const reachableKnowledgeAndSkills = ({
   registry,
   found,
   workstations,
   workstationQualities,
-  knowledge,
-}: ReachableSkillContext): Set<string> => {
+  known,
+}: ReachableKnowledgeAndSkillsContext) => {
+  const knowledge = knownRecipes(registry, found, known);
   const skills = new Set<string>();
-  let tools = new Set(found);
-  let changed: boolean;
+  let previous: number;
   do {
-    tools = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
-    changed = false;
+    previous = knowledge.size + skills.size;
+    const tools = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
     for (const recipe of registry.recipes.values()) {
-      if (canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations, workstationQualities })) {
-        for (const skill of Object.keys(recipe.skills)) {
-          if (!skills.has(skill)) {
-            skills.add(skill);
-            changed = true;
-          }
-        }
+      if (!canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations, workstationQualities })) {
+        continue;
+      }
+      for (const skill of Object.keys(recipe.skills)) {
+        skills.add(skill);
       }
     }
-  } while (changed);
-  return skills;
+    for (const recipe of registry.recipes.values()) {
+      if (recipe.skillUnlock && skills.has(recipe.skillUnlock.skill)) {
+        knowledge.add(recipe.id);
+      }
+    }
+  } while (knowledge.size + skills.size !== previous);
+  return { knowledge, skills };
 };
 
 export const checkReachability = (
@@ -503,8 +515,13 @@ export const checkReachability = (
   scope?: ReachabilityScope,
 ) => {
   const { found, placed, rolled, workstations, workstationQualities } = worldSources(registry, scope);
-  const knowledge = knownRecipes(registry, found, known);
-  const skills = reachableSkills({ registry, found, workstations, workstationQualities, knowledge });
+  const { knowledge, skills } = reachableKnowledgeAndSkills({
+    registry,
+    found,
+    workstations,
+    workstationQualities,
+    known,
+  });
   const components = closure({ registry, found, tools: false, knowledge, skills, workstationQualities });
   const toolReachable = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
   const { issues } = recipeDiagnostics({
