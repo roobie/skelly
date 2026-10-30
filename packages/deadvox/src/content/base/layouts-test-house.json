@@ -280,34 +280,12 @@
                 "placement": "surface"
               },
               {
-                "count": 1,
-                "item": "paperback",
-                "placement": "surface"
+                "count": 4,
+                "item": "paperback"
               },
               {
-                "count": 1,
-                "item": "paperback",
-                "placement": "surface"
-              },
-              {
-                "count": 1,
-                "item": "paperback",
-                "placement": "surface"
-              },
-              {
-                "count": 1,
-                "item": "paperback",
-                "placement": "surface"
-              },
-              {
-                "count": 1,
-                "item": "duct_tape",
-                "placement": "surface"
-              },
-              {
-                "count": 1,
-                "item": "duct_tape",
-                "placement": "surface"
+                "count": 2,
+                "item": "duct_tape"
               }
             ]
           }

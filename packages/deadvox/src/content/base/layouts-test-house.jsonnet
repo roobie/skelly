@@ -59,8 +59,11 @@ local bays = [
               'hand_saw', 'screwdriver', 'copper_wire', 'small_spring', 'hinge_set', 'fastener_pack', 'taped_flashlight_mount', 'scrap_foregrip',
               'camp_craft_book', 'workshop_notes', 'cloth_strip', 'cloth_strip', 'flashlight', 'aa_battery', 'baseball_bat', 'hammer',
               'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails',
-              'stick', 'kitchen_knife', 'nylon_cord', 'paperback', 'paperback', 'paperback', 'paperback', 'duct_tape', 'duct_tape',
+              'stick', 'kitchen_knife', 'nylon_cord',
             ]
+          ] + [
+            { item: 'paperback', count: 4 },
+            { item: 'duct_tape', count: 2 },
           ],
         },
       ],

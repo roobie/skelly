@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { actionText, fillText } from '../src/core/actionText.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { Inventory } from '../src/core/inventory.ts';
 import { propCentre, type ShowroomProp } from '../src/core/showroom.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { DebugTestHouseSite, playerStartFromWorld } from '../src/game/worldSetup.ts';
@@ -80,6 +81,13 @@ describe('test house showroom', () => {
         `${type} focus stands clear of furniture`,
       ).toBe(false);
       expect(aim(pose.pos, pose.yaw, propCentre(prop)), `${type} focus looks at its prop`).toBeGreaterThan(0.99);
+    }
+  });
+
+  it('fits every staged surface item on its furniture', () => {
+    const inventory = new Inventory(registry);
+    for (const spawn of furniture) {
+      inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot, spawn.fixedCount);
     }
   });
 
