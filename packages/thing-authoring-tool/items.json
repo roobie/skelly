@@ -2105,6 +2105,28 @@
       "anchors": {},
       "connections": [],
       "exportMass": "parts",
+      "id": "mounting_plate",
+      "parts": [
+        {
+          "family": "block",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "body",
+          "massKg": 12,
+          "params": {
+            "depth": "0.5",
+            "height": "0.0060000000000000001",
+            "width": "0.5"
+          },
+          "ports": []
+        }
+      ]
+    },
+    {
+      "anchors": {},
+      "connections": [],
+      "exportMass": "parts",
       "id": "pickup_bed_floor",
       "parts": [
         {
@@ -5694,7 +5716,12 @@
       ]
     },
     {
-      "connections": [],
+      "connections": [
+        {
+          "from": "lighter.fill",
+          "to": "fuel_fill.base"
+        }
+      ],
       "exportMass": "parts",
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
@@ -5709,21 +5736,56 @@
         {
           "family": "lighter",
           "finish": {
-            "body": "plastic-red",
+            "body": "plastic-clear-red",
             "cap": "steel-grey",
             "wheel": "steel-grey"
           },
           "id": "lighter",
-          "massKg": 0.02,
+          "massKg": 0.019,
           "params": {
             "capHeight": "0.0089999999999999993",
             "depth": "0.012",
             "height": "0.055",
             "width": "0.024"
           },
-          "ports": []
+          "ports": [
+            {
+              "gender": "female",
+              "id": "fill",
+              "mount": "fuel-fill",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.0050000000000000001, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "block",
+          "finish": {
+            "body": "fuel-amber"
+          },
+          "id": "fuel_fill",
+          "massKg": 0.001,
+          "params": {
+            "depth": "0.0080000000000000002",
+            "height": "0.040000000000000001",
+            "width": "0.014"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "base",
+              "mount": "fuel-fill",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
         }
-      ]
+      ],
+      "voxelGrain": 0.002
     },
     {
       "connections": [],

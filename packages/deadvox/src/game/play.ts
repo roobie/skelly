@@ -1443,7 +1443,7 @@ export const startPlay = (
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
-    attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
+    attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.offers(firearmUid, slotId),
   };
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
@@ -2023,7 +2023,7 @@ export const startPlay = (
       }
     },
     work: actOnWork,
-    vehicleWork: session.beginVehicleWork,
+    vehicleWork: (work, vehicleId, target, itemUid) => session.beginVehicleWork(work, vehicleId, target, itemUid),
     fitAttachment: (firearmUid, slotId, attachmentUid) =>
       session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
     removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
@@ -2908,7 +2908,11 @@ export const startPlay = (
       return undefined;
     }
     const inspection = vehicleInspectionViewModel(
-      { inventory, reach: session.reach(), refusal: session.vehicleWorkRefusal },
+      {
+        inventory,
+        reach: session.reach(),
+        refusal: (work, id, target, itemUid) => session.vehicleWorkRefusal(work, id, target, itemUid),
+      },
       openedVehicleId,
     );
     return inspection && { view: inspection, distanceMetres: session.vehicleDistance(openedVehicleId) };

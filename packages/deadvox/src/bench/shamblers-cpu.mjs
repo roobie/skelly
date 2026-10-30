@@ -87,7 +87,6 @@ for (const count of counts) {
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,
     physics: physicsFor(engine.config.scale, PLAYER),
-    jumpSpeed: PLAYER.jump,
     tuning: registry.senses.get(CORE_CONTENT_IDS.player),
     player: () => player,
     dayPhase: () => dayPhaseAt(requireDayCycle(registry), startTime),

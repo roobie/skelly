@@ -26,7 +26,6 @@ import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePositio
 export type GoreTuning = GraphicsTuningDef['gore'];
 
 // Presentation tuning, not gameplay.
-const GRAVITY_MPS2 = 9.81;
 const DROPLET_MAX_AGE_S = 3;
 const SPRAY_DROPLETS_MIN = 2;
 const SPRAY_DROPLETS_MAX = 14;
@@ -146,6 +145,7 @@ const patchSplatOpacity = (material: MeshLambertMaterial): void => {
 export class Gore {
   readonly group = new Group();
   private readonly blockSize: number;
+  private readonly gravityMetresPerSimSecondSquared: number;
   private readonly tuning: GoreTuning;
   private readonly rng: Rng;
   private readonly droplets: Droplet[];
@@ -174,8 +174,9 @@ export class Gore {
   private dripperCount = 0;
   private updates = 0;
 
-  constructor(blockSize: number, tuning: GoreTuning, seed = 1) {
+  constructor(blockSize: number, gravityMetresPerSimSecondSquared: number, tuning: GoreTuning, seed = 1) {
     this.blockSize = blockSize;
+    this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
     this.tuning = tuning;
     this.rng = Rng.stream(seed, 'gore');
     this.droplets = Array.from({ length: tuning.dropletCap }, () => ({
@@ -456,7 +457,7 @@ export class Gore {
   private advance(droplet: Droplet, dt: number, isSolid: (x: number, y: number, z: number) => boolean): void {
     const { position, velocity } = droplet;
     const s = this.blockSize;
-    velocity.y -= GRAVITY_MPS2 * dt;
+    velocity.y -= this.gravityMetresPerSimSecondSquared * dt;
     for (const axis of AXES) {
       const speed = velocity.getComponent(axis);
       const next = position.getComponent(axis) + speed * dt;

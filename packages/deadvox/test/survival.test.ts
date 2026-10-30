@@ -22,16 +22,23 @@ const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
   const source = `src/content/base/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
+  if (file === 'items-other.json') {
+    data.items = data.items.filter((item: { category: string }) => item.category !== 'book');
+  }
   if (file === 'items-tools.json') {
     data.items = data.items.filter(
       (item: { id: string }) => !['torch', 'candle', 'door_bar', 'oil_lamp'].includes(item.id),
     );
+  }
+  if (file === 'items-attachments.json') {
+    data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
   return { source, data };
 };
 const { registry } = buildRegistry(
   [
     'ui.json',
+    'item-wear.json',
     'inventory.json',
     'sounds.json',
     'sounds-pump.json',

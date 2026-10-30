@@ -7,7 +7,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -69,7 +69,6 @@ describe('melee while debug-frozen', () => {
         dayPhase: () => dayStateAtHour(12),
         blockSize: BLOCK_SIZE,
         physics: physicsFor(SCALE),
-        jumpSpeed: PLAYER.jump,
         tuning: TEST_SENSE_TUNING,
         hurtPlayer: () => undefined,
         onSever: (sourceId, sourceZombie, part, hit) => {

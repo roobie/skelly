@@ -33,7 +33,6 @@ const standing = (position: Vec3, facing: Vec3) => {
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });

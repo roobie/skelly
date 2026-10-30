@@ -19,6 +19,7 @@ interface ItemViewPose {
 /** Builds and draws an item's model; the item pictures satisfy it, so the viewer shares their renderer. */
 export interface ItemViewSource {
   model: (item: Item) => Object3D | undefined;
+  disposeModel: (model: Object3D) => void;
   view: (model: Object3D, pose: ItemViewPose, width: number, height: number) => CanvasImageSource | undefined;
 }
 
@@ -36,6 +37,7 @@ interface Viewing {
   readonly uid: number;
   name: string;
   model: Object3D;
+  dispose: () => void;
   yaw: number;
   pitch: number;
   zoom: number;
@@ -76,7 +78,8 @@ export class ItemViewer {
 
   /** Opens on the item; false when it has no model ready to show. */
   open(item: Item, name: string): boolean {
-    const model = this.source()?.model(item);
+    const source = this.source();
+    const model = source?.model(item);
     if (!model) {
       return false;
     }
@@ -85,8 +88,10 @@ export class ItemViewer {
       const focused = document.activeElement;
       this.returnFocus = focused instanceof HTMLElement ? focused : undefined;
     }
+    this.viewing?.dispose();
     this.viewing = {
       uid: item.uid,
+      dispose: () => source?.disposeModel(model),
       name,
       model,
       yaw: tuning.startYawDegrees * RADIANS_PER_DEGREE,
@@ -101,6 +106,7 @@ export class ItemViewer {
 
   close(): void {
     const wasViewing = this.viewing !== undefined;
+    this.viewing?.dispose();
     this.viewing = undefined;
     this.drag = undefined;
     this.render();
@@ -141,12 +147,17 @@ export class ItemViewer {
       return;
     }
     const item = find(viewing.uid);
-    const model = item && this.source()?.model(item);
+    const source = this.source();
+    const model = item && source?.model(item);
     if (!(item && model)) {
       this.close();
       return;
     }
+    if (viewing.model !== model) {
+      viewing.dispose();
+    }
     viewing.model = model;
+    viewing.dispose = () => source?.disposeModel(model);
     viewing.name = name(item);
     this.render();
     this.draw();

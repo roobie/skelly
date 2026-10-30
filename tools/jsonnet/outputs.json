@@ -101,6 +101,10 @@
       "output": "packages/deadvox/src/content/base/inventory.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/item-wear.jsonnet",
+      "output": "packages/deadvox/src/content/base/item-wear.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/items-ammunition.jsonnet",
       "output": "packages/deadvox/src/content/base/items-ammunition.json"
     },
@@ -215,6 +219,10 @@
     {
       "source": "packages/deadvox/src/content/base/power.jsonnet",
       "output": "packages/deadvox/src/content/base/power.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/presentation/fuel-parts.jsonnet",
+      "output": "packages/deadvox/src/content/base/presentation/fuel-parts.json"
     },
     {
       "source": "packages/deadvox/src/content/base/range.jsonnet",
@@ -375,6 +383,10 @@
     {
       "source": "packages/deadvox/test/fixtures/mods/reading-world.jsonnet",
       "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
+    },
+    {
+      "source": "packages/deadvox/test/fixtures/packs/lamp/lamp.jsonnet",
+      "output": "packages/deadvox/test/fixtures/packs/lamp/lamp.json"
     },
     {
       "source": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.jsonnet",

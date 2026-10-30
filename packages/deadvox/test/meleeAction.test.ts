@@ -25,7 +25,7 @@ import { primaryMeleeAction } from '../src/game/primaryAction.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
@@ -98,7 +98,6 @@ const makeSystem = (
     isOpaque: isSolid,
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,

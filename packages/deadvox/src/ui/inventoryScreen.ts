@@ -122,7 +122,10 @@ export interface ScreenHooks {
   /** The alarm's wake hour (undefined: when rested), or undefined while no alarm is carried. */
   wakeGameHour?: () => { readonly gameHour: number | undefined } | undefined;
   actionRefusal?: () => string | undefined;
-  attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
+  attachmentCandidates?: (
+    firearmUid: number,
+    slotId: string,
+  ) => readonly { readonly item: Item; readonly reason?: string }[];
 }
 
 interface Drag {
@@ -234,7 +237,7 @@ interface AttachmentSlotViewModel {
   readonly occupied?: string;
   readonly attachmentUid?: number;
   readonly battery?: BatterySlotViewModel;
-  readonly candidates: readonly { readonly uid: number; readonly name: string }[];
+  readonly candidates: readonly { readonly uid: number; readonly name: string; readonly reason?: string }[];
 }
 
 /** A powered light's battery slot, which takes a dragged battery. */
@@ -283,6 +286,7 @@ interface BodyRegionViewModel {
 }
 
 interface SkillViewModel {
+  readonly detail: string | undefined;
   readonly id: string;
   readonly name: string;
   readonly level: number;
@@ -489,9 +493,10 @@ const attachmentSlotTemplate = (
     <span>${fillText(text.slot, { slot: slot.label, item: slot.occupied ?? text.open })}</span>
     ${
       slot.attachmentUid === undefined
-        ? slot.candidates.map(
-            (candidate) =>
-              html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`,
+        ? slot.candidates.map((candidate) =>
+            candidate.reason === undefined
+              ? html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`
+              : html`<div class="inv-option inv-option-no" data-refused><span>${fillText(text.fit, { item: candidate.name })}</span><span class="inv-reason">${candidate.reason}</span></div>`,
           )
         : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>${text.remove}</button>`
     }
@@ -729,7 +734,7 @@ const inventoryTemplate = (
       ${vm.skills.map(
         (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
-          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
+          <div class="inv-skill-heading"><strong>${skill.detail ? factDetail(skill.name, skill.detail) : skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
           <div class="inv-skill-practice">${
             Number.isFinite(skill.nextLevelPractice)
               ? fillText(text.practice, {
@@ -1661,6 +1666,7 @@ export class InventoryScreen {
       return {
         id: definition.id,
         name: definition.name,
+        detail: definition.detail,
         level,
         practice,
         nextLevelPractice,
@@ -1830,9 +1836,10 @@ export class InventoryScreen {
         ...(battery ? { battery } : {}),
         candidates: fitted
           ? []
-          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map((candidate) => ({
+          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map(({ item: candidate, reason }) => ({
               uid: candidate.uid,
               name: workName(this.inv.registry, candidate),
+              ...(reason ? { reason } : {}),
             })),
       };
     });

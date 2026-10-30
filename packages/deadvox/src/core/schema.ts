@@ -9,6 +9,8 @@ import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
+  type BaseIssue,
+  type BaseSchema,
   check,
   exactOptional,
   finite,
@@ -266,7 +268,7 @@ const VEHICLE_CAPABILITIES = [
   'lift',
   /** Braces a lifting vehicle against the ground; a vehicle that lifts needs one. */
   'stabiliser',
-  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `freeFloor`). */
+  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `placementRegion`). */
   'load_floor',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
@@ -338,8 +340,6 @@ const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Downward acceleration on a thrown item. */
-  throwGravityMetresPerSimSecondSquared: NonNegative,
   /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
@@ -1494,6 +1494,17 @@ const VesselSchema = strictObject({
 
 export type LiquidContents = InferOutput<typeof LiquidContentsSchema>;
 
+export const VEHICLE_ADDON_FACES = {
+  // biome-ignore lint/style/useNamingConvention: keys are content capability words.
+  load_floor: { normal: 1, tangents: [0, 2] },
+} as const;
+
+const VehicleServiceFields = {
+  mount: Id,
+  durationSimSeconds: PositiveSimSeconds,
+  qualities: record(Id, QualityLevel),
+};
+
 const ItemSchema = strictObject({
   id: Id,
   economy: ItemEconomySchema,
@@ -1546,7 +1557,7 @@ const ItemSchema = strictObject({
   ),
   /** An authored yield for a finished item; never inferred from recipe alternatives. */
   disassembly: optional(DisassemblySchema),
-  /** Fixed outputs for found items with no recipe. */
+  /** Destructive recovery outputs, independent of recipes and disassembly support. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),
@@ -1606,6 +1617,14 @@ const ItemSchema = strictObject({
     strictObject({
       /** Content identity of the service interface this loose part can occupy. */
       mount: optional(Id),
+      service: optional(strictObject(VehicleServiceFields)),
+      addon: optional(
+        strictObject({
+          requires: picklist(Object.keys(VEHICLE_ADDON_FACES) as (keyof typeof VEHICLE_ADDON_FACES)[]),
+          /** An omitted clearance leaves open sky unbounded; fitted collision still limits height. */
+          openClearanceCells: optional(Cells),
+        }),
+      ),
       capabilities: pipe(
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
@@ -1627,8 +1646,6 @@ const ItemSchema = strictObject({
         strictObject({
           /** Sim seconds to take an item out or put one in, before the per-cell part. */
           handlingSimSeconds: SimSeconds,
-          /** The clearance above a free-floor cell with nothing over it, in cells. */
-          openClearanceCells: Cells,
           /** Why its pocket may be wider than the inventory width tuning allows. */
           wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
         }),
@@ -1649,14 +1666,12 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
   cargo: optional(tuple([Cells, Cells, Cells])),
-  /** Requirements for servicing this site; omitted sites are not player-serviceable. */
+  /** Overrides the part's work requirements at this authored site. */
   service: optional(
     strictObject({
       /** What the opened vehicle calls this site while it is empty. */
       name: Name,
-      mount: Id,
-      durationSimSeconds: PositiveSimSeconds,
-      qualities: record(Id, QualityLevel),
+      ...VehicleServiceFields,
     }),
   ),
 });
@@ -2203,8 +2218,41 @@ const HandsModelSchema = strictObject({
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
+const PresentationBands = <T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>>(entry: T) =>
+  pipe(array(entry), minLength(1));
+
+const ItemWearSchema = strictObject({
+  id: Id,
+  bands: PresentationBands(
+    strictObject({
+      from: pipe(number(), minValue(0), maxValue(1)),
+      tints: record(Id, strictObject({ color: Color, mix: pipe(number(), minValue(0), maxValue(1)) })),
+    }),
+  ),
+});
+
 export const ModelSchema = pipe(
   modelSchema({
+    itemPresentation: optional(
+      strictObject({
+        materials: array(Id),
+        wear: Id,
+        supply: union([
+          strictObject({ kind: literal('none') }),
+          strictObject({
+            kind: literal('fill'),
+            piece: pipe(string(), nonEmpty()),
+            axis: picklist(['x', 'y', 'z']),
+            bands: PresentationBands(
+              strictObject({
+                from: pipe(number(), minValue(0), maxValue(1)),
+                scale: pipe(number(), minValue(0), maxValue(1)),
+              }),
+            ),
+          }),
+        ]),
+      }),
+    ),
     gun: optional(GunModelSchema),
     dial: optional(CompassDialSchema),
     lever: optional(LeverModelSchema),
@@ -3381,7 +3429,6 @@ const AcidSpitSchema = pipe(
     cancelPenaltyFraction: Fraction,
     spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
     globMetresPerSimSecond: SimRate,
-    globGravityMetresPerSimSecondSquared: SimAcceleration,
     presentation: strictObject({
       color: Color,
       radiusMetres: Positive,
@@ -3471,6 +3518,7 @@ const ZombieSchema = strictObject({
   footstepSound: optional(picklist(['shambler'])),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
+  jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
   /**
    * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
    * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
@@ -3859,7 +3907,16 @@ const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    detail: optional(Name),
     curve: optional(SkillCurveSchema),
+    steadiness: optional(
+      strictObject({
+        wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
+        steadyingMinimum: Fraction,
+        steadyingSkillRange: Fraction,
+        steadyingSkillHalfLifeLevels: Positive,
+      }),
+    ),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -3896,6 +3953,7 @@ const SkillSchema = pipe(
       strictObject({
         firearms: optional(
           strictObject({
+            longGunSteadinessSkill: Id,
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
@@ -3965,7 +4023,7 @@ const SkillSchema = pipe(
       }),
     ),
   }),
-  check(({ training, id, combat, inventory }) => {
+  check(({ training, id, combat, inventory, steadiness, curve }) => {
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
@@ -3984,6 +4042,13 @@ const SkillSchema = pipe(
     const melee = combat?.melee;
     return (
       complete &&
+      (!steadiness ||
+        (curve !== undefined &&
+          steadiness.steadyingMinimum + steadiness.steadyingSkillRange <= 1 &&
+          activity('acquisition', 'practice') &&
+          activity('ads', 'practicePerSimSecond') &&
+          activity('shot', 'practice') &&
+          activity('hit', 'practice'))) &&
       (!firearm ||
         (firearm.readyMovementMinimum + firearm.readyMovementRange <= 1 &&
           firearm.breathHold.steadyingMinimum + firearm.breathHold.steadyingSkillRange <= 1)) &&
@@ -4126,6 +4191,8 @@ const PlayerSchema = strictObject({
   jog: SimRate,
   sprint: SimRate,
   jump: SimRate,
+  /** Downward acceleration shared by every falling body and effect. */
+  gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
@@ -4744,6 +4811,7 @@ const SECTION_DESCRIPTOR = {
   },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
+  itemWear: { schema: optional(array(ItemWearSchema)), label: 'item wear looks', order: 7.1 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
@@ -4828,6 +4896,7 @@ export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
 export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
+export type SkillDef = InferOutput<typeof SkillSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
 

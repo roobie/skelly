@@ -8,7 +8,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
 import { type HordeState, perceivePlayer } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
@@ -45,7 +45,6 @@ const hordeModeAt = (time: number): HordeState['mode'] => {
     isOpaque: floor,
     blockSize: scale.blockSize,
     physics: physicsFor(scale),
-    jumpSpeed: PLAYER.jump,
     tuning: registry.senses.get('player')!,
     dayPhase: () => state,
     hurtPlayer: () => undefined,

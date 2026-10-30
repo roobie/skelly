@@ -4,7 +4,7 @@ import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 
 const baseJson = (name: string) =>
   JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as {
-    skills?: { id: string }[];
+    skills?: { id: string; combat?: { firearms?: { longGunSteadinessSkill: string } } }[];
     ui?: { id: string; refusalSound: string }[];
     sounds?: { id: string }[];
   };
@@ -30,7 +30,10 @@ export const playerInventorySource = (): ContentSource => ({
 });
 
 /** The firearms skill's tuning, which held-item rendering needs; taken from base content so no test restates its values. */
-export const firearmsSkillSource = (): ContentSource => ({
-  source: 'firearms-skill-fixture.json',
-  data: { skills: [baseSkill(CORE_CONTENT_IDS.firearmsCombat)] },
-});
+export const firearmsSkillSource = (): ContentSource => {
+  const combat = baseSkill(CORE_CONTENT_IDS.firearmsCombat);
+  return {
+    source: 'firearms-skill-fixture.json',
+    data: { skills: [combat, baseSkill(combat.combat!.firearms!.longGunSteadinessSkill)] },
+  };
+};

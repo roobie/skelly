@@ -309,7 +309,8 @@
           "rag_to_cloth_strip",
           "trim_wood_offcut",
           "assemble_fastener_pack",
-          "make_scrap_foregrip"
+          "make_scrap_foregrip",
+          "make_weapon_sling"
         ],
         "title": "Camp Craft"
       },
@@ -337,6 +338,7 @@
           "repair_kit",
           "make_sewing_kit",
           "make_sewing_repair_kit",
+          "sew_cloth_strip",
           "repair_crowbar",
           "repair_hammer",
           "repair_machete",
@@ -383,7 +385,8 @@
           "assemble_fastener_pack",
           "make_taped_flashlight_mount",
           "make_improvised_suppressor",
-          "make_scrap_foregrip"
+          "make_scrap_foregrip",
+          "make_weapon_sling"
         ],
         "title": "Workshop Notes"
       },

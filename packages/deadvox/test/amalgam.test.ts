@@ -60,7 +60,6 @@ const system = (
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer,
     seed,
@@ -293,7 +292,6 @@ const runObstacleCase = (
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
@@ -508,7 +506,6 @@ describe('amalgam body and combat seam', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(makeScale(0.5)),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       onSound: (event, _position, zombie) => {
@@ -534,7 +531,6 @@ describe('amalgam body and combat seam', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(makeScale(0.5)),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       onSound: (event, _position, targetZombie) => {
@@ -616,7 +612,6 @@ describe('amalgam body and combat seam', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(makeScale(0.5)),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });
@@ -652,7 +647,6 @@ describe('amalgam body and combat seam', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(makeScale(0.5)),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });
@@ -679,7 +673,6 @@ describe('amalgam body and combat seam', () => {
         dayPhase: () => dayStateAtHour(12),
         blockSize: BLOCK_SIZE,
         physics: physicsFor(makeScale(0.5)),
-        jumpSpeed: PLAYER.jump,
         tuning: TEST_SENSE_TUNING,
         hurtPlayer: () => undefined,
       });
@@ -964,7 +957,6 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: (amount) => hits.push(amount),
   });

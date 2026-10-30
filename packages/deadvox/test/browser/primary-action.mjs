@@ -1821,6 +1821,16 @@ try {
       gestures: [{ trusted: true, actorExists: false }],
       creationHidden: true,
     });
+    // Spawn settling must finish before lean's unchanged-feet baseline is sampled.
+    await page.waitForFunction(async () => {
+      const { session, frames } = globalThis.primaryActionTest;
+      if (!session.body.onGround) {
+        return false;
+      }
+      const [, height] = session.body.pos;
+      await new Promise((done) => requestAnimationFrame(done));
+      return globalThis.primaryActionTest.frames > frames && session.body.onGround && session.body.pos[1] === height;
+    });
     const leanFeet = await page.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
     await page.keyboard.down('KeyQ');
     await page.waitForFunction(() => globalThis.primaryActionTest.session.leanAmount < 0);

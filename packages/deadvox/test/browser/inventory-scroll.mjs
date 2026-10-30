@@ -26,6 +26,7 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const itemPicturesModule = '/src/render/itemPictures.ts';
 const modelsModule = '/src/render/models.ts';
 const itemLookModule = '/src/render/itemLook.ts';
+const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
@@ -139,7 +140,8 @@ import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
 import { factDetail } from '/src/ui/factDetail.ts';
 import { render } from 'lit-html';
-const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement);
+const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement)
+  .map((skill) => ({ ...skill, detail: 'Fixture handling effect.' }));
 if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
@@ -1071,6 +1073,12 @@ try {
   // The character's practice accumulates as products of tuning numbers, so the panel must round it.
   await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
   activeTab = 'skills';
+  const skillFact = page.locator('#inventory .inv-skill .fact-detail').first();
+  await skillFact.focus();
+  const skillTooltip = skillFact.locator('[role="tooltip"]');
+  assert.equal(await skillTooltip.isVisible(), true, 'skill effect detail is visible on keyboard focus');
+  assert.equal(await skillTooltip.textContent(), 'Fixture handling effect.');
+  await skillFact.evaluate((label) => label.blur());
   const practiceLine = await page.locator('#inventory .inv-skill-practice').first().textContent();
   assert.equal(
     practiceLine?.includes((2.5 * 0.46).toFixed(1)),
@@ -1540,6 +1548,19 @@ try {
     assert.ok(await isFocused(coveredFit), 'closing gives focus back to the control that had it');
     assert.deepEqual(await viewState(), beforeView, 'viewing and closing leave the inventory as it was');
     logPhase('item viewer');
+    await page.evaluate(async (moduleUrl) => {
+      const { statePixelFixture } = await import(moduleUrl);
+      globalThis.itemStatePixels = await statePixelFixture();
+    }, itemStatePixelsModule);
+    await page.waitForFunction(() => globalThis.itemStatePixels.ready());
+    const statePixels = await page.evaluate(() => globalThis.itemStatePixels.capture());
+    assert.ok(statePixels.full.blue > statePixels.lowFuel.blue, 'more fuel draws more fill through the clear shell');
+    assert.ok(
+      statePixels.worn.red > statePixels.full.red,
+      'wear tints the metal class while keeping the fuel material',
+    );
+    await page.evaluate(() => globalThis.itemStatePixels.dispose());
+    logPhase('item state pixels');
     await page.evaluate(() => {
       const { screen } = globalThis.foregripFitTest;
       screen.hooks.itemView = undefined;

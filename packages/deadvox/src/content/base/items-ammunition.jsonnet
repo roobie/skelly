@@ -1,1 +1,1 @@
-(import 'economy.libsonnet').pack(import 'items-ammunition.libsonnet')
+(import 'item-presentation.libsonnet').pack((import 'economy.libsonnet').pack(import 'items-ammunition.libsonnet'))

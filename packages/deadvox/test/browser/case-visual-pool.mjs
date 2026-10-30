@@ -14,6 +14,7 @@ const probeSource = `
 import { Scene, PerspectiveCamera, WebGLRenderer } from 'three';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
+import { playerTuning } from '/src/game/player.ts';
 import { CaseEffects, FLYING_CASE_CAP } from '/src/render/caseEffects.ts';
 import { PileMeshes } from '/src/render/piles.ts';
 import { ModelLibrary } from '/src/render/models.ts';
@@ -106,7 +107,7 @@ if (mode === 'delayed') {
   sync();
   upgrade = delta(before, snapshot());
 }
-const effects = new CaseEffects(0.5, models);
+const effects = new CaseEffects(0.5, playerTuning(registry).gravityMetresPerSimSecondSquared, models);
 scene.add(effects.mesh);
 const shot = {
   origin: [0.25, 1, 0.25],

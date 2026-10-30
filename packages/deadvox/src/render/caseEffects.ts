@@ -8,13 +8,16 @@ import { placeholderCaseMesh, resolveCaseModel } from './caseVisual.ts';
 import type { ModelLibrary } from './models.ts';
 
 export const FLYING_CASE_CAP = 32;
-const GRAVITY = 9.81;
 
 export const caseFlightPoint = (
   from: Vec3,
   to: Vec3,
   progress: number,
-  { durationSimSeconds, initialVelocity }: { durationSimSeconds: number; initialVelocity: Vec3 },
+  {
+    durationSimSeconds,
+    initialVelocity,
+    gravityMetresPerSimSecondSquared,
+  }: { durationSimSeconds: number; initialVelocity: Vec3; gravityMetresPerSimSecondSquared: number },
 ): Vec3 => {
   const t = Math.max(0, Math.min(1, progress));
   if (t === 1 || !(durationSimSeconds > 0)) {
@@ -23,12 +26,18 @@ export const caseFlightPoint = (
   const elapsed = durationSimSeconds * t;
   const correction: Vec3 = [
     to[0] - from[0] - initialVelocity[0] * durationSimSeconds,
-    to[1] - from[1] - initialVelocity[1] * durationSimSeconds + (GRAVITY * durationSimSeconds ** 2) / 2,
+    to[1] -
+      from[1] -
+      initialVelocity[1] * durationSimSeconds +
+      (gravityMetresPerSimSecondSquared * durationSimSeconds ** 2) / 2,
     to[2] - from[2] - initialVelocity[2] * durationSimSeconds,
   ];
   return [
     from[0] + initialVelocity[0] * elapsed + correction[0] * t ** 2,
-    from[1] + initialVelocity[1] * elapsed - (GRAVITY * elapsed ** 2) / 2 + correction[1] * t ** 2,
+    from[1] +
+      initialVelocity[1] * elapsed -
+      (gravityMetresPerSimSecondSquared * elapsed ** 2) / 2 +
+      correction[1] * t ** 2,
     from[2] + initialVelocity[2] * elapsed + correction[2] * t ** 2,
   ];
 };
@@ -55,6 +64,7 @@ interface Particle {
 export class CaseEffects {
   readonly mesh = new Group();
   private readonly models: ModelLibrary | undefined;
+  private readonly gravityMetresPerSimSecondSquared: number;
   private readonly particles: Particle[] = Array.from({ length: FLYING_CASE_CAP }, () => ({
     active: false,
     startedAtSimSeconds: 0,
@@ -74,7 +84,8 @@ export class CaseEffects {
     fallbackModels: new Set(),
   }));
 
-  constructor(_blockSize: number, models?: ModelLibrary) {
+  constructor(_blockSize: number, gravityMetresPerSimSecondSquared: number, models?: ModelLibrary) {
+    this.gravityMetresPerSimSecondSquared = gravityMetresPerSimSecondSquared;
     this.models = models;
   }
 
@@ -146,6 +157,7 @@ export class CaseEffects {
       const point = caseFlightPoint(particle.origin.toArray() as Vec3, particle.landing.toArray() as Vec3, progress, {
         durationSimSeconds: duration,
         initialVelocity: particle.velocity.toArray() as Vec3,
+        gravityMetresPerSimSecondSquared: this.gravityMetresPerSimSecondSquared,
       });
       particle.position.set(...point);
       particle.rotation.addScaledVector(particle.spin, Math.max(0, simTime - particle.updatedAtSimSeconds));

@@ -21,11 +21,12 @@
         "speedMetresPerSimSecond": 1
       },
       "eye": 1.6200000000000001,
+      "gravityMetresPerSimSecondSquared": 9.8100000000000005,
       "halfWidth": 0.29999999999999999,
       "height": 1.8,
       "id": "player",
       "jog": 4.2999999999999998,
-      "jump": 7.9000000000000004,
+      "jump": 4.6760999999999999,
       "lean": {
         "enterSimSeconds": 0.22,
         "movementSpeedScale": 0.65000000000000002,

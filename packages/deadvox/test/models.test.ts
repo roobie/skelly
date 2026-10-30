@@ -28,7 +28,14 @@ import { createCompass } from '../src/render/compass.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { presentHeldDisplay } from '../src/render/heldDisplay.ts';
 import { itemLook } from '../src/render/itemLook.ts';
-import { fittedPartFrame, groundModelFrame, heldModelFrame, ModelLibrary, prepareModel } from '../src/render/models.ts';
+import {
+  fittedPartFrame,
+  groundModelFrame,
+  heldModelFrame,
+  indexModelMaterials,
+  ModelLibrary,
+  prepareModel,
+} from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -50,7 +57,8 @@ const imageLoader = {
 const loader = new GLTFLoader(new LoadingManager());
 Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThis });
 loader.manager.addHandler(/.*/, imageLoader as unknown as Loader);
-const parseGlb = async (bytes: Buffer) => loader.parseAsync(Uint8Array.from(bytes).buffer, '');
+const parseGlb = async (bytes: Buffer) =>
+  loader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
 const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box3): boolean =>
   (['x', 'y', 'z'] as const).every((axis) => {
     const coordinate = anchor[AXIS_INDEX[axis]];
@@ -88,6 +96,39 @@ it('prepares every thing recipe export for ground and held drawing with its grip
         const grip = heldModelFrame(held).localToWorld(new Vector3(...definition.grip.at));
         expect(grip.length(), id).toBeCloseTo(0);
       }
+    }),
+  );
+});
+
+it('keeps every authored fuel fill inside its clear shell and resolves its original glTF node name', async () => {
+  const filled = [...registry.models.values()].filter((model) => model.itemPresentation?.supply.kind === 'fill');
+  expect(filled.length).toBeGreaterThan(0);
+  await Promise.all(
+    filled.map(async (model) => {
+      const { scene } = await parseGlb(readFileSync(`${BASE}/${model.file}`));
+      const { supply } = model.itemPresentation!;
+      if (supply.kind !== 'fill') {
+        throw new Error('Expected fill selector');
+      }
+      const shell = new Box3();
+      let fill: import('three').Object3D | undefined;
+      scene.updateMatrixWorld(true);
+      scene.traverse((node) => {
+        if (node.userData.itemNodeName === supply.piece) {
+          fill = node;
+        }
+        if (
+          node instanceof Mesh &&
+          (Array.isArray(node.material) ? node.material : [node.material]).some(
+            (material) => material.transparent && material.opacity < 1,
+          )
+        ) {
+          shell.union(new Box3().setFromObject(node));
+        }
+      });
+      expect(fill, model.id).toBeDefined();
+      expect(shell.isEmpty(), model.id).toBe(false);
+      expect(shell.containsBox(new Box3().setFromObject(fill!)), model.id).toBe(true);
     }),
   );
 });

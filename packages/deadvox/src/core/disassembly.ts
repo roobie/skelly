@@ -6,6 +6,79 @@ import type { Item } from './items.ts';
 import { isEmpty } from './items.ts';
 import type { ReachSnapshot } from './reach.ts';
 
+export type RecoveryOperation = 'salvage' | 'disassembly';
+export type RecoveryTarget =
+  | { kind: 'definition'; definition: ItemDef }
+  | { kind: 'item'; source: Item; reach: ReachSnapshot };
+
+type RecoveryOutcome =
+  | { operation: 'salvage'; outputs: NonNullable<ItemDef['salvage']>; timeGameMinutes: number }
+  | { operation: 'disassembly'; capability: NonNullable<ItemDef['disassembly']> };
+
+export type RecoverySelection =
+  | { status: 'unsupported'; target: RecoveryTarget; operation: RecoveryOperation }
+  | {
+      status: 'refused';
+      target: RecoveryTarget;
+      operation: RecoveryOperation;
+      reason: 'work' | 'contents' | 'unreachable';
+    }
+  | { status: 'ready'; target: RecoveryTarget; outcome: RecoveryOutcome };
+
+const recoveryTargetRefusal = (
+  target: RecoveryTarget,
+): Extract<RecoverySelection, { status: 'refused' }>['reason'] | undefined => {
+  if (target.kind === 'definition') {
+    return undefined;
+  }
+  if (target.source.work) {
+    return 'work';
+  }
+  if (!isEmpty(target.source)) {
+    return 'contents';
+  }
+  if (!target.reach.entries.some(({ item }) => item === target.source)) {
+    return 'unreachable';
+  }
+  return undefined;
+};
+
+/** Selects authored capabilities only; it neither generates parts nor chooses a recovery quality policy. */
+export const selectRecoveryOperation = (target: RecoveryTarget, operation: RecoveryOperation): RecoverySelection => {
+  const definition =
+    target.kind === 'definition'
+      ? target.definition
+      : target.reach.player.inventory.registry.items.get(target.source.type);
+  const unsupported = { status: 'unsupported', target, operation } as const;
+  if (!definition) {
+    return unsupported;
+  }
+  let outcome: RecoveryOutcome;
+  if (operation === 'salvage') {
+    if (!definition.salvage) {
+      return unsupported;
+    }
+    if (definition.salvageTimeGameMinutes === undefined) {
+      throw new Error(`Item "${definition.id}" has no salvage work time`);
+    }
+    outcome = {
+      operation,
+      outputs: definition.salvage,
+      timeGameMinutes: definition.salvageTimeGameMinutes,
+    };
+  } else {
+    if (!definition.disassembly) {
+      return unsupported;
+    }
+    outcome = { operation, capability: definition.disassembly };
+  }
+  const reason = recoveryTargetRefusal(target);
+  if (reason) {
+    return { status: 'refused', target, operation, reason };
+  }
+  return { status: 'ready', target, outcome };
+};
+
 export interface DisassemblyOutput {
   item: string;
   count: number;

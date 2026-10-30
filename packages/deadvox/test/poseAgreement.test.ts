@@ -18,7 +18,7 @@ import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -46,7 +46,6 @@ const livePoseZombie = (type = SHAMBLER) => {
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     hurtPlayer: (amount) => {
       damage += amount;
     },
@@ -239,7 +238,6 @@ describe('rendered and hit shambler poses', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       hurtPlayer: () => undefined,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
@@ -276,7 +274,6 @@ describe('rendered and hit shambler poses', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       hurtPlayer: () => undefined,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
@@ -307,7 +304,6 @@ describe('rendered and hit shambler poses', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       hurtPlayer: () => undefined,
     });
     const freshId = freshSystem.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);

@@ -11,7 +11,7 @@ const MOD = 'mods/vehicle-fixture.json';
 
 // A mod case needs the vehicle content it refers to, not the whole base: a full rebuild per case grows with every
 // content file and times out on loaded runners. Cargo spaces are measured in the inventory's cell size.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json'];
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 
 const withMod = (data: object) => buildRegistry([...fixtureSources, { source: MOD, data } satisfies ContentSource]);
@@ -20,7 +20,7 @@ const modPart = (
   id: string,
   capabilities: readonly string[],
   model: object = { ...battery, id },
-  ratedLoadKg?: number,
+  vehicle: object = {},
 ) => ({
   models: [model],
   items: [
@@ -36,7 +36,7 @@ const modPart = (
       vehicle: {
         capabilities,
         obstruction: { sight: true, light: true, sound: true, combat: true },
-        ...(ratedLoadKg === undefined ? {} : { ratedLoadKg }),
+        ...vehicle,
       },
     },
   ],
@@ -79,6 +79,29 @@ describe('vehicle export contract', () => {
   // Each row names the path its issue must point at, so a refusal can't pass for another reason.
   const refusals: [string, object, string][] = [
     ['an unsupported capability', modPart('fixture_cell', ['teleport']), '.vehicle.capabilities[0]'],
+    [
+      'cargo without an add-on face requirement',
+      modPart('fixture_cell', ['storage'], undefined, { cargoSpace: { handlingSimSeconds: 1 } }),
+      '.vehicle.addon',
+    ],
+    [
+      'work requirements with a different mount',
+      modPart('fixture_cell', [], undefined, {
+        mount: 'fixture_mount',
+        service: { mount: 'other_mount', durationSimSeconds: 1, qualities: {} },
+      }),
+      '.vehicle.service.mount',
+    ],
+    [
+      'an unsupported add-on face word',
+      modPart('fixture_cell', [], undefined, { addon: { requires: 'structure' } }),
+      '.vehicle.addon.requires',
+    ],
+    [
+      'an authored zero open clearance',
+      modPart('fixture_cell', [], undefined, { addon: { requires: 'load_floor', openClearanceCells: 0 } }),
+      '.vehicle.addon.openClearanceCells',
+    ],
     ['a part without baked collision', modPart('fixture_cell', [], bare), 'items[0].model'],
     ['a fitting naming no item', blueprint(fitting('cell', 'fixture_missing')), '.fittings[0].part'],
     [
@@ -114,12 +137,15 @@ describe('vehicle export contract', () => {
     ['a lifting part without a rated load', modPart('fixture_cell', ['lift']), 'items[0].vehicle'],
     [
       'a rated load on a part that does not lift',
-      modPart('fixture_cell', ['structure'], undefined, 500),
+      modPart('fixture_cell', ['structure'], undefined, { ratedLoadKg: 500 }),
       'items[0].vehicle',
     ],
     [
       'a lifting vehicle without stabilisers',
-      { ...modPart('fixture_cell', ['lift'], undefined, 500), ...blueprint(fitting('crane', 'fixture_cell')) },
+      {
+        ...modPart('fixture_cell', ['lift'], undefined, { ratedLoadKg: 500 }),
+        ...blueprint(fitting('crane', 'fixture_cell')),
+      },
       'vehicleBlueprints[0].fittings',
     ],
   ];

@@ -1,0 +1,15 @@
+{
+  "lamp_oil_bottle": {
+    "clear": {
+      "materials": [0],
+      "opacity": 0.22
+    },
+    "fill": {
+      "bottom": [0, 0.0050000000000000001, 0],
+      "color": "#ba8429",
+      "piece": "fuel-fill",
+      "roughness": 0.34999999999999998,
+      "size": [0.067000000000000004, 0.105, 0.047]
+    }
+  }
+}

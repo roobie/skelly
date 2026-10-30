@@ -7,6 +7,7 @@ import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { HitImpulse, Zombie } from '../src/core/zombies.ts';
 import { Gore, type GoreBodies } from '../src/render/gore.ts';
 import { PLAYER_REGION_BOXES } from '../src/render/playerFigure.ts';
+import { WORLD_GRAVITY } from './playerFixture.ts';
 import { GORE_TUNING_FIXTURE } from './presentationFixture.ts';
 
 const floor = (_x: number, y: number, _z: number) => y < 0;
@@ -17,7 +18,7 @@ const BASE_DRIP = { rate: 1, size: 1 };
 
 describe('Gore', () => {
   it('lights droplets and splats as the world is lit, shadows included', () => {
-    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     const meshes = gore.group.children.filter((child): child is InstancedMesh => child instanceof InstancedMesh);
     expect(meshes).toHaveLength(2);
     expect(meshes.every((mesh) => mesh.material instanceof MeshLambertMaterial)).toBe(true);
@@ -26,7 +27,7 @@ describe('Gore', () => {
   });
 
   it('starts at most the per-frame budget of droplets between two updates, however much is sprayed', () => {
-    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     for (let spray = 0; spray < GORE_TUNING_FIXTURE.dropletCap; spray++) {
       gore.spray(lowHit, 100);
     }
@@ -35,7 +36,7 @@ describe('Gore', () => {
   });
 
   it("gives a severed part's blood the part's launch velocity", () => {
-    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     const partVelocity: Vec3 = [3, 0, 0];
     gore.severed(lowHit, partVelocity, {
       droplets: 2,
@@ -59,7 +60,7 @@ describe('Gore', () => {
     const drip = (bleeding: BodyRegion) => (bleeding === region ? BASE_DRIP : undefined);
 
     const dripPosition = (thirdPerson: boolean): Vector3 => {
-      const gore = new Gore(BLOCK_SIZE, GORE_TUNING_FIXTURE);
+      const gore = new Gore(BLOCK_SIZE, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
       gore.update(1, floor, {
         zombies: new MapEntityStore<Zombie>(),
         listener: playerPos,
@@ -100,7 +101,7 @@ describe('Gore', () => {
   });
 
   it('stops player wound drips once the wound stops bleeding', () => {
-    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     const bodies: GoreBodies = {
       zombies: new MapEntityStore<Zombie>(),
       listener: [0, 0, 0],
@@ -120,7 +121,7 @@ describe('Gore', () => {
   });
 
   it('keeps droplets and splats within their pools under a flood of sprays', () => {
-    const gore = new Gore(1, GORE_TUNING_FIXTURE);
+    const gore = new Gore(1, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     const frames = Math.ceil(GORE_TUNING_FIXTURE.splatCap / GORE_TUNING_FIXTURE.dropletSpawnsPerFrame) * 3;
     for (let frame = 0; frame < frames; frame++) {
       for (let spray = 0; spray < GORE_TUNING_FIXTURE.dropletCap; spray++) {

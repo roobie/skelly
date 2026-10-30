@@ -6,7 +6,7 @@ import type { MeleeResult, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -37,7 +37,6 @@ const makeSystem = (
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer,
     ...(onMeleeResult ? { onMeleeResult } : {}),
@@ -93,7 +92,6 @@ describe('debug shambler freeze', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       seed: 31,

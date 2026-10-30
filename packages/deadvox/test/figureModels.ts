@@ -6,7 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { Registry } from '../src/core/content.ts';
 import { FIGURE_LIMBS } from '../src/core/schema.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
-import type { ModelLibrary } from '../src/render/models.ts';
+import { indexModelMaterials, type ModelLibrary } from '../src/render/models.ts';
 
 export type FigureModels = Pick<ModelLibrary, 'has' | 'part' | 'partLook' | 'heldLook'>;
 
@@ -22,7 +22,7 @@ export const loadFigureModels = async (
   const parsed = await Promise.all(
     ids.map((id) => {
       const bytes = readFileSync(new URL(`../src/content/base/${registry.models.get(id)!.file}`, import.meta.url));
-      return loader.parseAsync(Uint8Array.from(bytes).buffer, '');
+      return loader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     }),
   );
   const scenes = new Map<string, Object3D>(ids.map((id, index) => [id, parsed[index]!.scene]));

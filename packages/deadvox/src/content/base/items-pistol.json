@@ -270,6 +270,13 @@
       },
       "hold": "forward",
       "id": "pistol_service",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "barrel": {
           "centreOfMass": [0.057513043478260875, 1.1212660583809553e-33, 7.0433164604874739e-18],
@@ -462,21 +469,42 @@
           }
         ]
       },
-      "id": "magazine_pistol_9"
+      "id": "magazine_pistol_9",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/round_9x19.glb",
       "gun": {
         "calibre": "9x19"
       },
-      "id": "round_9x19"
+      "id": "round_9x19",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/case_9x19.glb",
       "gun": {
         "calibre": "9x19"
       },
-      "id": "case_9x19"
+      "id": "case_9x19",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     }
   ]
 }

@@ -15,7 +15,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -45,7 +45,6 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
     isOpaque: isSolid,
     blockSize: BLOCK_SIZE,
     physics: PHYSICS,
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => player,
     dayPhase: () => dayStateAtHour(12),

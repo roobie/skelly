@@ -378,6 +378,10 @@
           "weight": 1
         },
         {
+          "item": "rope",
+          "weight": 1
+        },
+        {
           "item": "lamp_oil",
           "weight": 2
         },
@@ -439,6 +443,10 @@
         },
         {
           "item": "weapon_sling",
+          "weight": 1
+        },
+        {
+          "item": "rope",
           "weight": 1
         },
         {

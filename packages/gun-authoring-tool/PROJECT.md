@@ -4,7 +4,7 @@ read_if:
   - you change cartridge-driven frame selection or design authoring
   - you use or update the golden AKM reference photo or its overlays
   - you change attachment compatibility, sights, eye-distance ranges or the Gungen-to-Deadvox export contract
-  - you change non-magnifying optic defaults or their hold-dependent fit rules
+  - you change per-optic eye relief or hold-dependent fit rules
   - you change a gun Deadvox ships, or anything its export reads
   - you change physical inputs, drawn collision exports or their ownership
   - you author or key a gun part's mass
@@ -66,7 +66,7 @@ collision does not turn them into assemblies. See `src/gun/physical.ts`,
 
 Iron eye-distance ranges belong to the gun tool so consumers can fit a bounded viewing camera without inventing sight geometry or remodelling the weapon. The far endpoint accommodates the existing gun's rear rather than assuming every iron has a rear notch; optics retain a fixed eye point. See `src/gun/sightView.ts`, `ironGunEyeRange`; `src/gun/sightView.jsonnet`; and `src/gun/exportGlb.ts`, `sightMetadata`.
 
-One shared default eye relief keeps non-magnifying red dots simple and alike. Eye-to-optic distance belongs to how the gun is held—a pistol at arm's length, a rifle at the cheek—not to the sight. A red dot's default must not disqualify a stockless hold; magnifying optics need a cheek datum because their eye placement is constrained. See `src/gun/opticPresentation.jsonnet` and `src/gun/rules.ts`, `opticEyeRelief`.
+Non-magnifying optics need an iron-like viewing distance so their apertures leave the surrounding view visible, with the reflex or holographic reticle seen through the optic rather than an aperture filling the viewport. Author eye relief per optic so each model owns its sight picture instead of a consumer override. See `src/gun/opticPresentation.jsonnet`, `miniReflex`, `tubeDot` and `holographic`; and `src/gun/attachments.ts`, `attachmentMetadata`, which exports `eyeReliefMetres`. A non-magnifying optic must not disqualify a stockless hold; magnifying optics need a cheek datum because their eye placement is constrained. See `src/gun/rules.ts`, `opticEyeRelief`.
 
 The hunting rifle's civilian identity, integral loading, separate scope and phased turn-bolt contract are governed by `docs/bolt-action-export.md`. Geometry is exported before playable handling so Deadvox consumes fitted dimensions rather than inventing them.
 

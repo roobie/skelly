@@ -53,7 +53,6 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
     dayPhase: () => dayPhaseAt(DAY_CYCLE, 12 * 3600),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
     onSound: (id) => {
