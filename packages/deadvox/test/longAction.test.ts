@@ -34,6 +34,7 @@ const readingFixtureRegistry = buildRegistry([
     source: 'reading-fixture.json',
     data: {
       items: [
+        { id: 'reading_fixture_result', name: 'Fixture result', category: 'material', weight: 1, size: [1, 1] },
         {
           id: 'reading_fixture_book',
           name: 'Fixture manual',
@@ -46,7 +47,7 @@ const readingFixtureRegistry = buildRegistry([
       recipes: [
         {
           id: 'reading_fixture',
-          result: { item: 'torch', count: 1 },
+          result: { item: 'reading_fixture_result', count: 1 },
           timeGameMinutes: 1,
           skills: {},
           qualities: {},
