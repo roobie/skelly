@@ -516,6 +516,9 @@ const UiScreenTextSchema = strictObject({
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
   worldService: slottedTable({
     heading: [],
+    push: [],
+    drag: [],
+    lift: [],
     actions: ['key'],
     details: [],
     back: [],

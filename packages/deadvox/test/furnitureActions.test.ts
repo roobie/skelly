@@ -1,11 +1,60 @@
 import { describe, expect, it } from 'vitest';
-import { FurnitureActionSelection } from '../src/game/furnitureActions.ts';
+import { reachTuning } from '../src/core/reach.ts';
+import { FurnitureActionSelection, furnitureActionsFor } from '../src/game/furnitureActions.ts';
+import { baseRegistryWith } from './baseRegistry.ts';
+import { AMOUNT, DURABILITY, PIECE, RECIPE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
 
 const piece = { uid: 7 };
 const actions = [
   { id: 'use', label: 'Use' },
   { id: 'push', label: 'Push' },
 ];
+
+describe('furniture service choices', () => {
+  const registry = baseRegistryWith(worldRepairSources());
+
+  it.each(['damaged', 'intact', 'ruined', 'unmatched', 'disabled'] as const)(
+    'offers repair only for a damaged target with an admitted recipe: %s',
+    (state) => {
+      const { inventory, target } = worldRepairFixture(registry);
+      if (state === 'intact') {
+        expect(inventory.entities.repair(target, DURABILITY)).toBe(true);
+      } else if (state === 'ruined') {
+        expect(inventory.entities.bash(target, DURABILITY)).toBe('ruined');
+      }
+      const admittedRecipe = state === 'unmatched' ? 'fixture_other_recipe' : RECIPE;
+      const recipeId = state === 'disabled' ? undefined : admittedRecipe;
+      const choices = furnitureActionsFor(inventory, target, 0.5, recipeId);
+      expect(choices.some(({ id }) => id === 'repair')).toBe(state === 'damaged');
+    },
+  );
+
+  it('retains ordinary lift when repair joins a small target’s long-press choices', () => {
+    const { inventory, target } = worldRepairFixture(registry);
+    const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
+    const choices = furnitureActionsFor(inventory, target, blockSize, RECIPE);
+    expect(choices.some(({ id }) => id === 'lift')).toBe(true);
+    expect(choices.some(({ id }) => id === 'repair')).toBe(true);
+  });
+
+  it('offers repair alongside drag in the same target-bound choice list', () => {
+    const { inventory } = worldRepairFixture(registry);
+    const target = inventory.entities.add({ type: PIECE, pos: [8, 1, 0], size: [4, 1, 1], facing: 'n' })!;
+    expect(inventory.entities.bash(target, AMOUNT)).toBe('damaged');
+    const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
+    const choices = furnitureActionsFor(inventory, target, blockSize, RECIPE);
+    expect(choices.some(({ id }) => id === 'drag')).toBe(true);
+    expect(choices.some(({ id }) => id === 'repair')).toBe(true);
+    const selection = new FurnitureActionSelection('fixture open can');
+    selection.open(target, choices);
+    const repairIndex = choices.findIndex(({ id }) => id === 'repair');
+    for (const _choice of choices.slice(0, repairIndex)) {
+      selection.step(target, choices, 1);
+    }
+    expect(selection.confirm(target, choices)?.id).toBe('repair');
+    expect(selection.isOpen(target)).toBe(false);
+  });
+});
 
 describe('furniture action menu lifetime', () => {
   it('requires reopening after confirming an action', () => {

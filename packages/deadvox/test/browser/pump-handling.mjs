@@ -30,7 +30,7 @@ const observation = {
       marker,
       `
   Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    repairSurface, debugRepairTarget, debugRepairIntents,
+    repairSurface, debugRepairTarget, debugRepairIntents, furnitureActionSelection, furnitureActions,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {

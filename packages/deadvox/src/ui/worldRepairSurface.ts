@@ -106,13 +106,9 @@ export class WorldRepairSurface {
       case 'world.actions':
         this.activate('inspect');
         break;
-      case 'world.service-activate': {
-        const button = this.root.ownerDocument.activeElement;
-        if (button instanceof HTMLElement && this.root.contains(button)) {
-          button.click();
-        }
+      case 'world.service-activate':
+        this.activateFocused();
         break;
-      }
       case 'world.service-previous':
         this.focusStep(-1);
         break;
@@ -121,6 +117,17 @@ export class WorldRepairSurface {
         break;
       default:
         break;
+    }
+  }
+  private activateFocused(): void {
+    const button = this.root.ownerDocument.activeElement;
+    if (!(button instanceof HTMLElement && this.root.contains(button))) {
+      return;
+    }
+    const action = button.dataset.worldAction;
+    if (action === 'details' || action === 'confirm' || action === 'back') {
+      // Keyboard consent must not be redirected to the drawn pointer's position.
+      this.activate(action);
     }
   }
   private focusStep(step: number): void {

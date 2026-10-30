@@ -1,7 +1,8 @@
 // biome-ignore-all lint/correctness/noNodejsModules: browser assertions run in Node.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative browser flow.
+// biome-ignore-all lint/performance/noAwaitInLoops: native wheel delivery must settle before the next choice.
 import assert from 'node:assert/strict';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 export const worldRepairInGameFlow = async (page, origin) => {
@@ -22,7 +23,47 @@ export const worldRepairInGameFlow = async (page, origin) => {
       document.querySelector('#world-loading')?.dataset.state === 'ready',
   );
   await pressAction(page, 'world.interact');
-  assert.equal(await page.locator('#world-repair').isVisible(), true, 'in-game action opens repair targeting');
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.screen.isOpen);
+  assert.equal(await page.locator('#world-repair').isHidden(), true, 'tap keeps normal container use');
+  await pressAction(page, 'ui.inventory-toggle');
+  await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+  const openRepair = async () => {
+    const release = await holdAction(page, 'world.interact');
+    try {
+      await page.waitForFunction(() => {
+        const f = globalThis.pumpHandlingTest;
+        return f.furnitureActionSelection.isOpen(f.debugRepairTarget);
+      });
+    } finally {
+      await release();
+    }
+    assert.equal(await page.locator('#world-repair').isHidden(), true, 'hold opens choices, not the repair panel');
+    const choices = await page.evaluate(() => {
+      const f = globalThis.pumpHandlingTest;
+      return f.furnitureActions(f.debugRepairTarget).map(({ id }) => id);
+    });
+    assert.ok(choices.includes('repair'), 'damaged target offers repair in the existing action list');
+    for (const _choice of choices) {
+      const selected = await page.evaluate(() => {
+        const f = globalThis.pumpHandlingTest;
+        return f.furnitureActionSelection.forItem(f.debugRepairTarget, f.furnitureActions(f.debugRepairTarget))?.id;
+      });
+      if (selected === 'repair') {
+        break;
+      }
+      await page.mouse.wheel(0, 100);
+      await page.waitForFunction((previous) => {
+        const f = globalThis.pumpHandlingTest;
+        return (
+          f.furnitureActionSelection.forItem(f.debugRepairTarget, f.furnitureActions(f.debugRepairTarget))?.id !==
+          previous
+        );
+      }, selected);
+    }
+    await pressAction(page, 'world.interact');
+    assert.equal(await page.locator('#world-repair').isVisible(), true, 'choosing repair opens keyboard targeting');
+  };
+  await openRepair();
   const initial = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
     return { name: f.engine.registry.furniture.get(f.debugRepairTarget.type).name, yaw: f.input.yaw };
@@ -50,15 +91,30 @@ export const worldRepairInGameFlow = async (page, origin) => {
   await page.keyboard.press('Backspace');
   assert.equal(await page.locator('#world-repair').isHidden(), true, 'Back returns to live play');
   assert.deepEqual(await page.evaluate(() => globalThis.pumpHandlingTest.debugRepairIntents), []);
-  await pressAction(page, 'world.interact');
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
+  await openRepair();
   await page.keyboard.press('Enter');
+  assert.equal(await page.locator('[data-world-action="details"]').count(), 1, 'reopened targeting enters actions');
+  await page.waitForFunction(() => globalThis.pumpHandlingTest.input.menuPointer);
   await page.keyboard.press('Enter');
+  assert.equal(
+    await page.locator('[data-world-action="confirm"]').getAttribute('aria-disabled'),
+    'false',
+    'reopened details still admit the pinned target',
+  );
   await page.keyboard.press('Enter');
   const result = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
-    return { intents: f.debugRepairIntents, target: f.debugRepairTarget.uid, job: f.session.sim.actions.job };
+    return {
+      intents: f.debugRepairIntents,
+      target: f.debugRepairTarget.uid,
+      job: f.session.sim.actions.job,
+      context: f.repairSurface.context,
+      focused: document.activeElement?.outerHTML,
+      panel: document.querySelector('#world-repair')?.textContent,
+    };
   });
-  assert.equal(result.intents.length, 1);
+  assert.equal(result.intents.length, 1, JSON.stringify(result));
   assert.equal(result.intents[0].kind, 'craft.repair-entity');
   assert.equal(result.intents[0].entityUid, result.target);
   assert.equal(result.job, undefined, 'debug confirmation does not dispatch repair work');

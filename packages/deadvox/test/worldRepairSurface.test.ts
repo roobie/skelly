@@ -92,6 +92,17 @@ it('pointer and keyboard confirmation emit identical copied UID intents through 
   expect(f.inventory.hands.right).toBeUndefined();
 });
 
+it('keyboard service activation cannot be redirected through pointer click routing', () => {
+  const f = make();
+  f.open();
+  f.aim();
+  f.tap('Enter');
+  const click = vi.spyOn(f.button('details'), 'click').mockImplementation(() => undefined);
+  f.tap('Enter');
+  expect(f.button('confirm')).not.toBeNull();
+  expect(click).not.toHaveBeenCalled();
+});
+
 it('context transfer consumes held confirmation until release', () => {
   const f = make();
   f.open();
