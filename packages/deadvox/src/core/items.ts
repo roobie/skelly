@@ -675,13 +675,16 @@ export const isEmpty = (item: Item): boolean =>
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
+const holdsLiquid = (item: Item): boolean =>
+  item.liquidContents?.kind === 'filled' ||
+  Object.values(item.slots ?? {}).some(holdsLiquid) ||
+  (item.pockets ?? []).some((grid) => grid.some(({ item: child }) => holdsLiquid(child))) ||
+  (item.work?.components ?? []).some(holdsLiquid);
+
 /** Recipes may consume fitted parts, but never silently discard liquid, pocket contents or unfinished work. */
 export const craftComponentEligible = (item: Item, consumeFitted = false): boolean =>
   isEmpty(item) ||
-  (consumeFitted &&
-    item.liquidContents?.kind !== 'filled' &&
-    !item.work &&
-    (item.pockets ?? []).every((grid) => grid.length === 0));
+  (consumeFitted && !holdsLiquid(item) && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
 
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
