@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change shared item-instance presentation, fuel visibility or material wear
+  - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -70,10 +71,11 @@ read_if:
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
+  - you're changing long-gun steadiness, independent Sniping progression or firearm training ownership
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
   - you author item models or decide how medicine quantities should look
-  - you're changing military progression, loot economy admission or loot unit planning, ground supply or roll-once persistence, including debug overlays
+  - you're changing military progression, loot economy admission, table-versus-source authority or loot unit planning, ground supply or roll-once persistence, including debug overlays
   - you're changing firearm case ejection, landing, or save presentation
   - you're diagnosing or changing inventory stalls from firearm attachment candidate discovery
   - you're changing when a running game warns before page exit relative to its last save
@@ -1175,7 +1177,18 @@ stream, keeping generation independent of chunk request order. See `src/core/loo
 A story item is `notLoot`, and in the two playtest scenarios every key is story.
 
 Usage tags and tiers decide which items a source admits, so what a place holds matches
-what it is. See `src/core/loot.ts`, `economyEligible`.
+what it is. Tables supply weights, not a second geography authority: a candidate's
+presence in a table does not grant admission at a source. See `src/core/loot.ts`,
+`economyEligible` and `lootTypeIssue`.
+
+Military-only admission protects progression without inferring it from calibre or
+furniture type. Shared supplies remain craftable even when military sources carry
+them; ordinary crafting, destructive salvage, non-destructive disassembly and
+unpacking must not manufacture Military-only supplies. The recovery verbs retain
+their shared meaning under `DESIGN.md`, "Crafting"; changing a verb cannot open a
+supply bypass. Fixed stock and installed descendants must match their source
+context. See `src/core/content.ts`, `checkMilitaryLoot`, and
+`src/core/magazine.ts`, `militaryLootItems`.
 
 Hunting supplies belong at hunting places, rather than wherever a common gun can roll.
 The rifle and .308 ammunition therefore narrow their usage without changing their tiers;
@@ -1680,10 +1693,22 @@ behind unrelated declarations. See `src/content/base/graphics.jsonnet`,
 
 ## Crafting
 
-Disassembly uses an authored yield rather than reversing recipes: several
-recipes may produce the same item, so reversing one would make salvage depend
-on an arbitrary production route. See `src/core/disassembly.ts`,
-`planDisassembly`, and `docs/crafting.md`.
+Salvage destroys the source assembly to recover materials or components;
+disassembly undoes connections to recover intact parts without destroying or
+losing them. These meanings apply to items, furniture and vehicles alike: the
+chosen tool must not silently decide which thing survives. Supporting one
+operation does not require supporting the other, and a refused disassembly must
+never become salvage. See `src/core/disassembly.ts`, `selectRecoveryOperation`
+and `RecoverySelection`.
+
+Recovery capabilities are authored independently of recipes: several recipes may
+produce the same item, and manufacture alone proves neither intact composition
+nor a playable reverse route. Capability selection is separate from execution so
+an unaudited yield table cannot promise intact recovery or a recovery-quality
+policy. The item yield/work projection is `src/core/disassembly.ts`,
+`planDisassembly`; selecting a capability does not authorize that projection to
+replace retained parts with generated copies. See `src/core/content.ts`,
+`checkDisassembly` and `checkRecipes`, and `docs/crafting.md`.
 
 Recipe knowledge may come from a book, a skill level, either, or the starting
 set. A book shortcuts the skill grind; a skilled character does not need the
@@ -2217,67 +2242,56 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   does not recover; once the weapon reaches its pitch limit, the saved view pitch
   continues to climb without a plateau. The shifted view stays after release
   while the on-screen weapon offset recovers, so mouse look can counter the
-  climb. Firearm-owned `dispersionRadians` is sampled per round, while
-  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery;
-  legendary grants no control beyond ordinary expert. Skill-zero handling must
-  make automatic fire meaningfully harder to control. Tuning lives in content
-  and can be adjusted with runtime debug controls.
-  Accordingly, skill-zero endpoints for single/first shots and
-  automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
-  firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
-  them. A follow-up is a committed shot from the same firearm within its burst window; see
-  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert
-  endpoint stays on the existing curve, so skill-10 shot handling is unchanged;
-  legendary still matches expert.
-  Different guns need different skill-zero factors. The per-gun values are
-  provisional and await BR's slider review; endpoint approval did not approve
-  these individual starting factors. Optional per-firearm settings sit beside
-  base recoil in `src/content/base/models-firearms.json`. The `FirearmSchema`
-  in `src/core/schema.ts` requires a complete in-range shape when present.
-  A per-gun shape replaces the shared skill-zero endpoints as a whole; absent
-  factors use the global firearms-combat endpoints. Keeping the override
-  complete avoids mixing fields from different guns. `FirearmMechanics.skillZeroHandlingFor`
-  in `src/game/firearmHandling.ts` selects the effective factors, and
-  `firearmsSkillEffects` in
-  `src/core/firearmsSkill.ts` interpolates them toward
-  the same expert endpoint. `src/debug/index.ts` renders runtime tuning controls
-  for the shared and per-firearm skill-zero settings.
-  The controls are runtime-only, reset on reload, and do not alter saves. The shared skill
-  effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
-  per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
-  spread and adds no firearm cone. This reuses the already saved player pitch, so no
-  aim-state field or save-schema change is needed. See
-  `src/game/firearmAim.ts`, `firearmBoreRay`, `firearmBoreTarget`,
-  `src/core/crosshairTarget.ts`, `crosshairTarget`, `src/core/zombies.ts`, `ZombieSystem.aimAt`,
-  `src/core/pellets.ts`, `coneDirection`,
-  `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
-  `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
-  `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
-  `wirePayloadSchema`.
+  climb. Precision control develops independently from general firearm handling:
+  Sniping owns long-gun steadiness, while Firearms Combat retains recoil and
+  handling. The content classification in `src/core/firearmFitting.ts`, `isLongGun`,
+  keeps carrying, fitting and skill coverage consistent without a catalogue of
+  weapon names or an optics requirement. See `src/core/skillTraining.ts`,
+  `firearmSteadinessSkill`, and `src/game/session.ts`, `advanceSessionAim`.
 
-  Shared reload and rack curves scale with firearms skill without changing
-  skill-zero time. Legendary remains clamped to expert. See `firearmsSkillEffects`
-  in `src/core/firearmsSkill.ts` and `FirearmMechanics.load` / `cock` in
-  `src/game/firearmHandling.ts`.
+  Raising, ready movement, loading, racking and attachment handling stay with
+  Combat because steadiness does not replace handling competence. Recoil kick
+  and recovery have one owner; splitting only kick would quietly move recovery
+  to the wrong skill. Firearm quality owns dispersion. Sniping and Combat must
+  not multiply sway together or compete through separate aim controllers. See
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, `steadinessTuning` and
+  `firearmStanceEffects`.
 
-  Readied-gait sway and look lag follow firearms skill, while dispersion and recoil remain separate. An unskilled character's readied sway is large with any firearm because they've never handled one; at skill 10, the character hardly sways. Each firearm's skill-zero values set the relative steadiness between guns. Automatic follow-ups sway at least as much as single shots, so sway does not drop during burst fire. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait, and content owns the shape and skill endpoints. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
+  Different guns need different novice endpoints, and automatic follow-ups must
+  remain harder to control. Complete per-gun overrides avoid mixing fields from
+  different guns; the tuning remains content-owned so an author can change the
+  response without changing its mechanism. See `src/game/firearmHandling.ts`,
+  `FirearmMechanics.skillZeroHandlingFor`, and `src/core/schema.ts`, `SkillSchema`.
 
-  A braced, lower body is steadier, so crouching reduces wobble drift and lying prone reduces it further; stance does not change recoil or dispersion. Content owns the stance factors beside the other sway tuning. See `src/core/firearmsSkill.ts`, `FirearmsCombatTuning`, and `src/game/session.ts`, `advanceSessionAim`.
+  Lower stances are steadier because the body is braced. Mean-reverting drift
+  avoids unbounded sway, and smoothing avoids fixed-tick twitch. Sharing gait
+  phase keeps the walking lune aligned with footsteps. Saving the running aim
+  state preserves the path across Continue and replay; a weapon switch must
+  select its skill without resampling that state to conceal the transition.
+  See `src/core/aim.ts`, `frameFromState`, `advanceOrnsteinUhlenbeckAxis` and
+  `AimController.snapshotState`, and `src/core/footsteps.ts`, `FootstepClock`.
 
-  Mean-reverting Brownian drift avoids unbounded sway; smoothing keeps fixed-tick noise from reading as frame-level twitch. The shared walking lune remains separate, firearms skill continues to scale sway, and content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity. The vertical/horizontal lune ratio remains independently tunable without changing the drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
+  **Holding breath** earns a careful shot by timing rather than by waiting out drift. Breath steadies the body, not the gun, so it damps only wobble drift, leaving recoil and dispersion with their owners. It works in any stance and through any sights in ADS, but not while moving, because a moving body cannot be held still. The ready firearm already refuses sprint, leaving that key free without a new binding. Holding breath costs stamina because it is effort; one winded threshold gates both starting and giving out to keep the rule simple. Recovery penalizes the next shot so holding too long has a cost. The steadiness skill strengthens the hold and pain weakens it because precise bodily control is distinct from handling speed. Breath sounds are presentation, not noise events: a shambler must not hear them. Content owns tuning (`PILLARS.md`, "Content forward compatibility"). Held breath and recovery change where shots go, so save and replay preserve them (`CONTROLS.md`, "Replay boundary"). See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim` and `breathHoldWanted`.
 
-  **Holding breath** earns a careful shot by timing rather than by waiting out drift. Breath steadies the body, not the gun, so it damps only wobble drift, leaving recoil and dispersion with their owners. It works in any stance and through any sights in ADS, but not while moving, because a moving body cannot be held still. The ready firearm already refuses sprint, leaving that key free without a new binding. Holding breath costs stamina because it is effort; one winded threshold gates both starting and giving out to keep the rule simple. Recovery penalizes the next shot so holding too long has a cost. Skill strengthens the hold and pain weakens it because steadying breath is part of handling the gun. Breath sounds are presentation, not noise events: a shambler must not hear them. Content owns tuning (`PILLARS.md`, "Content forward compatibility"). Held breath and recovery change where shots go, so save and replay preserve them (`CONTROLS.md`, "Replay boundary"). See `src/core/aim.ts`, `AimController.advance`, and `src/game/session.ts`, `advanceSessionAim` and `breathHoldWanted`.
+  Practice follows the competence used: long-gun acquisition, aimed shots and
+  hits, and time in ADS train Sniping. Idle ADS is practice too; movement is not
+  a prerequisite for deliberate sight control. A shot and its hit are distinct
+  activities, but neither also awards Combat when it trains Sniping. Keeping
+  Combat readying and handling separate avoids turning raising or ready-walking
+  into a second Sniping award. Simulation-time accrual avoids renderer-dependent
+  progression. See `src/game/session.ts`, `advancePlayerReadiness` and
+  `createSession`, and `src/core/skillTraining.ts`, `firearmShotPracticeSkill`.
 
-  Ready stance gates firearm fire; sprinting prohibits it. Duck-walk speed is
-  owned by firearms combat, and melee combat owns blocking. A held, completed
-  ready stance remains active through firearm rack/load handling; raising still
-  takes skill-scaled simulation time. Racking, loading, magazine changes, and
-  charging train firearms handling, while a magazine change and charge preserve
-  the held ready stance. See `advancePlayerReadiness` in `src/game/session.ts`
-  and `isFirearmTrainingAction` in `src/game/firearmHandling.ts`. Firearm quality
-  owns dispersion; skill controls handling. Training is tiered: an activity trains
-  only up to its tier, so above-tier practice is dropped; see
-  `src/core/character.ts`, `Character.awardPractice`.
+  Independent progression permits either skill to exceed the other; no inherited
+  level or shared XP pool can express that distinction. Above-tier practice is
+  dropped. Persisting the acquisition latch keeps replay continuation deterministic:
+  a segment whose start state restores ADS must not award acquisition absent from
+  the recorded run. Missing skill sets are rejected rather than migrated at this
+  project stage. See
+  `src/core/character.ts`, `Character.awardPractice` and `Character.restoreState`,
+  `src/game/player.ts`, `snapshotPlayer`, and `AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility".
+  Opened skill details explain the independent effects because feel alone cannot
+  identify their cause; see `src/ui/inventoryScreen.ts`, `SkillViewModel`.
 - **Shot impacts.** Each round that meets world geometry leaves a surface
   mark. Marks and dust are presentation, not simulation damage or save state.
   When a wall lies between eye and muzzle, tracing from the eye lets the near
@@ -2302,7 +2316,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
-- **Military loot (3.2):** Authored Military-only usage protects military progression without inferring admission from calibre or furniture type. Shared supplies remain craftable even when military sources can carry them; ordinary crafting, salvage and unpacking cannot manufacture Military-only supplies. Fixed stock and its installed descendants must match their resolved source context. Tables supply weights, not a second geography authority. See `src/core/loot.ts`, `economyEligible` and `lootTypeIssue`, `src/core/magazine.ts`, `militaryLootItems`, and `src/core/content.ts`, `checkMilitaryLoot`.
+- **Military loot (3.2):** Progression admission has one owner under `DESIGN.md`, "Loot", so recovery cannot bypass source restrictions.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
   supported landing cells, including spill destinations. If none is available,
   discard the case rather than jam the firearm for a cosmetic item. When an
@@ -2751,7 +2765,7 @@ mechanism lands, because a content value no system reads is a silent no-op.
 
 Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns, the crisis HQ's markers and the lab's research level, because the HQ is a military site whose threat should be mostly soldiers and the research level is where the lab's threat changes kind (`DESIGN.md`, "Gauntlet"); no other place that merely looks military takes them; `src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
 
-A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Military loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
+A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
 The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
 
@@ -3032,8 +3046,11 @@ cannot be authored, blended or added to without a code change per animation.
 ## Base building and electricity
 
 - **Construction is crafting that places blocks and block entities:** walls,
-  doors, barricades, furniture, workbenches, machines. Deconstruction is
-  disassembly.
+  doors, barricades, furniture, workbenches, machines. Non-destructive
+  deconstruction is disassembly; destructive recovery is salvage under
+  `DESIGN.md`, "Crafting". Deliberate work must respect safe removal rather than
+  bypass support through destruction cascades. See `src/core/furnitureMove.ts`,
+  `removalRefusal`.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
 - **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
 - **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `src/core/options.ts`, `heldDoorBar`, and `src/core/schema.ts`, `ItemSchema`.
@@ -3141,10 +3158,13 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
    fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
    Engine noise is the source, with the chassis/hull damping it. See `measure` and
    `noiseRadius` in `src/vehicles/model.ts`.
-6. **Parts are items.** Salvage and refitting retain condition, appearance, resources
-   and contents, rather than copying them into a second vehicle item universe. Parts
-   are unhanded to keep salvage reusable across sides, without closing later handed
-   content. Shared identity starts at `src/vehicles/catalogue.ts`, `CATALOGUE`.
+6. **Parts are items.** Intact removal is disassembly, not salvage, under
+   `DESIGN.md`, "Crafting". Disassembly and refitting retain condition, appearance,
+   resources and contents: changing connection or location must not mint a second
+   identity or erase earned state. Parts are unhanded to keep recovered parts
+   reusable across sides, without closing later handed content. See
+   `src/core/inventory.ts`, `Inventory.vehicleTransfer`, and
+   `src/core/vehicleWork.ts`, `vehicleWorkHooks`.
    Heavy recovery uses a heavy-part-hoist vehicle built and driven through the vehicle
    systems, not an equipment exception or an engine carried in a pocket.
 7. **Data-driven and moddable.** VAT assembles things whose shapes the thing tool
@@ -3153,7 +3173,7 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
    authority. See `packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
    `things/WORK.md`, "Decisions". Game capabilities remain schema-validated content
    so a mod adds compatible parts without code.
-8. **The grain is a useful salvage action.** Factory welded structure is one
+8. **The grain is a useful disassembly action.** Factory welded structure is one
    player-facing assembly with component fittings retained for damage and shape.
    Factory structures plus compatible parts and capability-matched add-ons come
    before scratch-building, without reducing mounting to fixed sockets. Keep the grain
@@ -3194,7 +3214,7 @@ Creation and drag sizing follow #1124: a rectangle bounded by the free region is
 complete form of choosing a size, leaving a suggested size additive. Rectangles match
 inventory pockets and remain valid if shaped spaces arrive; an odd floor can take
 several spaces. Growing a space to walls and roof would exclude open beds. Retaining
-its chosen size lets salvage and refitting preserve the same item. Existing load
+its chosen size lets disassembly and refitting preserve the same item. Existing load
 floors bound this work; building floors and walls from nothing belongs to #322.
 
 Cargo is a datum so a space that fills a drawn bed fits at any vehicle grain, without
@@ -3392,7 +3412,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **The ADS hood is hidden only in own view:** at eye relief it obstructs the player's eye, while other viewers and
   the sun should still see it. See `src/render/playerFigure.ts`, `PlayerMeshes`.
 - **The reticle marks aim, not the glass centre:** finite glass and housing move relative to the angular mark.
-  Perfect eye-to-optic alignment at every skill is unrealistic. Alignment is a firearms skill: an expert standing
+  Perfect eye-to-optic alignment at every skill is unrealistic. Long-gun steadiness belongs to Sniping: an expert standing
   still is nearly aligned, while walking adds misalignment through gait sway. The eye uses the unswayed optic seat
   rather than following the deviated instrument; the existing content-owned skill variance and gait govern the
   difference, including at unity power. Do not recenter the reticle to hide it. See `src/core/adsView.ts`,

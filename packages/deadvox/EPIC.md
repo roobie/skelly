@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you align the vehicle slice with intact disassembly and destructive salvage
   - you're planning a version 1 slice, milestone or playtest
   - you're deciding which features belong in deadvox version 1
   - you're deciding what to cut if version 1 runs late
@@ -231,7 +232,7 @@ The scope, open decision gates and reviewable build order are in [SLICE-5.md](SL
 
 The settled scope, implementation gates and build order are in [SLICE-6.md](SLICE-6.md).
 The hatchback and pickup establish the transport loop; the heavy-part-hoist uses the
-same vehicle systems for field salvage. The motorbike follows the four-wheel loop.
+same vehicle systems for field disassembly. The motorbike follows the four-wheel loop.
 Every new vehicle starts on the content path; see
 `docs/vehicle-spike.md`, "The hatchback from content".
 

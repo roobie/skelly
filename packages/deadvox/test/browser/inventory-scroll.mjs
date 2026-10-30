@@ -140,7 +140,8 @@ import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
 import { factDetail } from '/src/ui/factDetail.ts';
 import { render } from 'lit-html';
-const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement);
+const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement)
+  .map((skill) => ({ ...skill, detail: 'Fixture handling effect.' }));
 if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
 const { registry, issues } = buildRegistry([
   ...${JSON.stringify(content)},
@@ -1072,6 +1073,12 @@ try {
   // The character's practice accumulates as products of tuning numbers, so the panel must round it.
   await page.locator('#inventory .inv-tab[data-tab="skills"]').click();
   activeTab = 'skills';
+  const skillFact = page.locator('#inventory .inv-skill .fact-detail').first();
+  await skillFact.focus();
+  const skillTooltip = skillFact.locator('[role="tooltip"]');
+  assert.equal(await skillTooltip.isVisible(), true, 'skill effect detail is visible on keyboard focus');
+  assert.equal(await skillTooltip.textContent(), 'Fixture handling effect.');
+  await skillFact.evaluate((label) => label.blur());
   const practiceLine = await page.locator('#inventory .inv-skill-practice').first().textContent();
   assert.equal(
     practiceLine?.includes((2.5 * 0.46).toFixed(1)),

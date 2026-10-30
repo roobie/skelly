@@ -30,6 +30,7 @@ import {
   type FirearmsSkillZeroHandling,
   firearmsSkillEffects,
   sameFirearmsSkillZeroHandling,
+  steadinessTuning,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import { foodMillisecondsAt } from '../core/food.ts';
@@ -98,7 +99,12 @@ import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
-import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
+import {
+  firearmShotPracticeSkill,
+  firearmSteadinessSkill,
+  skillActivityPractice,
+  skillActivityPracticeRate,
+} from '../core/skillTraining.ts';
 import { type SkyFieldOwner, SkyFields } from '../core/skyField.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
@@ -193,12 +199,84 @@ const sessionFirearmTargetName = (registry: Registry, firearmType: string | unde
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
 const isInventoryPracticeAction = (job: Job): boolean =>
   job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
+const sessionSteadiness = (
+  registry: Registry,
+  character: Character,
+  tuning: FirearmsCombatTuning,
+  firearm: Item | undefined,
+) => {
+  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
+  return {
+    level: skillEffectLevel(character.skills[skillId]!),
+    tuning:
+      skillId === CORE_CONTENT_IDS.firearmsCombat ? tuning : steadinessTuning(tuning, registry.skills.get(skillId)!),
+  };
+};
+
+const initialAimVariance = (
+  registry: Registry,
+  character: Character,
+  tuning: FirearmsCombatTuning,
+  firearm: Item | undefined,
+): number => {
+  const steady = sessionSteadiness(registry, character, tuning, firearm);
+  return firearmsSkillEffects(steady.level, {
+    ...steady.tuning,
+    skillZeroHandling: firearm
+      ? (defOf(registry, firearm.type).firearm?.skillZeroHandling ?? tuning.skillZeroHandling)
+      : tuning.skillZeroHandling,
+  }).variance;
+};
+
+const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined, uid: number | undefined): void => {
+  if (
+    uid !== undefined &&
+    (!firearm ||
+      firearm.uid !== uid ||
+      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) === CORE_CONTENT_IDS.firearmsCombat)
+  ) {
+    throw new Error('Invalid saved Sniping acquisition firearm');
+  }
+};
+
+const advanceSnipingPractice = ({
+  registry,
+  character,
+  firearms,
+  firearm,
+  ready,
+  aiming,
+  previousUid,
+  dt,
+}: {
+  registry: Registry;
+  character: Character;
+  firearms: FirearmMechanics;
+  firearm: Item | undefined;
+  ready: boolean;
+  aiming: boolean;
+  previousUid: number | undefined;
+  dt: number;
+}): number | undefined => {
+  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
+  if (!(ready && aiming && firearm && firearms.isReady(firearm.uid)) || skillId === CORE_CONTENT_IDS.firearmsCombat) {
+    return undefined;
+  }
+  if (firearm.uid !== previousUid) {
+    const training = skillActivityPractice(registry, skillId, 'acquisition');
+    character.awardPractice(skillId, training.practice, training.tier);
+  }
+  const training = skillActivityPracticeRate(registry, skillId, 'ads');
+  character.awardPractice(skillId, dt * training.practicePerSecond, training.tier);
+  return firearm.uid;
+};
+
 const createSessionAim = ({
   player,
   tuning,
   seed,
   restored,
-  character,
+  variance,
   wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
@@ -206,7 +284,7 @@ const createSessionAim = ({
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
-  character: Character;
+  variance: number;
   wobbleFlatOverride: number | undefined;
   wobbleNoiseScaleOverride: number | undefined;
 }): AimController => {
@@ -235,7 +313,7 @@ const createSessionAim = ({
           breathHoldState: restored.character.aim.breath,
         }
       : {}),
-    variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
+    variance,
     stridePhase: footstepClock.stridePhase,
   });
 };
@@ -245,6 +323,8 @@ const advanceSessionAim = ({
   firearms,
   tuning,
   skillLevel,
+  steadinessLevel,
+  steadiness,
   firearmUid,
   timeSimSeconds,
   dt,
@@ -262,6 +342,8 @@ const advanceSessionAim = ({
   firearms: FirearmMechanics;
   tuning: FirearmsCombatTuning;
   skillLevel: number;
+  steadinessLevel: number;
+  steadiness: FirearmsCombatTuning;
   firearmUid: number | undefined;
   timeSimSeconds: number;
   dt: number;
@@ -282,19 +364,24 @@ const advanceSessionAim = ({
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
   const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
+  const steady = firearmsSkillEffects(
+    steadinessLevel,
+    sessionFirearmsTuning(firearms, steadiness, firearmUid),
+    shotKind,
+  );
   aim.advance({
     breath: {
       wanted: breath.wanted,
       stamina: breath.stamina,
       windedBelow: breath.windedBelow,
-      steadying: breathSteadying(skillEffectLevel(skillLevel), breath.painRatio, tuning.breathHold),
+      steadying: breathSteadying(skillEffectLevel(steadinessLevel), breath.painRatio, steadiness.breathHold),
     },
     dt,
     velocity,
     blockSize,
     yaw,
     pitch,
-    variance: skill.variance * aimSway,
+    variance: steady.variance * aimSway,
     stanceDriftScale: tuning.wobbleStanceDriftScale[stance],
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
@@ -803,12 +890,16 @@ export const createSession = (options: SessionOptions) => {
       inventory.version += 1; // The item now draws with or without its pin.
     },
   );
+  const firearmInHands = () =>
+    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
+      (item) => item && registry.items.get(item.type)?.firearm,
+    );
   const aim = createSessionAim({
     player: Player,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,
-    character,
+    variance: initialAimVariance(registry, character, currentFirearmsCombatTuning(), firearmInHands()),
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
@@ -1062,8 +1153,6 @@ export const createSession = (options: SessionOptions) => {
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
     onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'shot');
-      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
       const tuning = sessionFirearmsTuning(firearms, currentFirearmsCombatTuning(), firearmUid);
       aim.recordShot(
         shotSeed,
@@ -1075,11 +1164,14 @@ export const createSession = (options: SessionOptions) => {
     onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
     onShot: (shot, time, firearm, sighted) => {
       options.onDischarge?.(firearm, sighted);
+      const skillId = firearmShotPracticeSkill(registry, defOf(registry, firearm.type), sighted);
+      const shotTraining = skillActivityPractice(registry, skillId, 'shot');
+      character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
       const { hits, stops } = zombieSystem.firePellets(shot);
       bodyStops = stops;
-      if (hits > 0 && firearmReadyWalking) {
-        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
-        character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
+      if (hits > 0 && (skillId !== CORE_CONTENT_IDS.firearmsCombat || firearmReadyWalking)) {
+        const training = skillActivityPractice(registry, skillId, 'hit');
+        character.awardPractice(skillId, training.practice, training.tier);
       }
       const sound = firearmShotSound(registry, firearm);
       playPlayerSound(sound.event, time, {
@@ -1150,6 +1242,8 @@ export const createSession = (options: SessionOptions) => {
   let leanAmount = 0;
   const currentLean = () => leanFrame(leanAmount, Player.lean);
   let firearmReadyWalking = restoredFirearmReadyWalking;
+  let snipingAdsUid = restoredPlayer?.snipingAdsUid;
+  validateSnipingAdsFirearm(registry, firearmInHands(), snipingAdsUid);
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
@@ -1197,11 +1291,15 @@ export const createSession = (options: SessionOptions) => {
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
+    const firearm = firearmInHands();
+    const steady = sessionSteadiness(registry, character, currentFirearmsCombatTuning(), firearm);
     advanceSessionAim({
       aim,
       firearms,
       tuning: currentFirearmsCombatTuning(),
       skillLevel: firearmsSkillLevel(character),
+      steadinessLevel: steady.level,
+      steadiness: steady.tuning,
       firearmUid: firearmInHands()?.uid,
       timeSimSeconds: sim.time,
       dt,
@@ -1307,10 +1405,6 @@ export const createSession = (options: SessionOptions) => {
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
   });
-  const firearmInHands = () =>
-    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
-      (item) => item && registry.items.get(item.type)?.firearm,
-    );
   /** The one body pose a held firearm's shot, strike and ejection are placed from, read at the player tick. */
   const firearmPose = (uid: number): FirearmPoseInput | undefined => {
     if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
@@ -1951,6 +2045,16 @@ export const createSession = (options: SessionOptions) => {
       const training = skillActivityPracticeRate(registry, CORE_CONTENT_IDS.firearmsCombat, 'readying');
       character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, dt * training.practicePerSecond, training.tier);
     }
+    snipingAdsUid = advanceSnipingPractice({
+      registry,
+      character,
+      firearms,
+      firearm: heldFirearm,
+      ready: readinessHeld,
+      aiming: Boolean(controls.aimingDownSights?.()),
+      previousUid: snipingAdsUid,
+      dt,
+    });
     return readyGait;
   };
 
@@ -2737,6 +2841,7 @@ export const createSession = (options: SessionOptions) => {
           stance: playerStance,
           sprinting,
           firearmReadyWalking,
+          snipingAdsUid: firearmInHands()?.uid === snipingAdsUid ? snipingAdsUid : undefined,
           handlingPausedForKnockout,
           ladder: ladderHold.snapshotState(),
         }),

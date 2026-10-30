@@ -2035,6 +2035,27 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
+  it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
+    const combat = baseRegistry.skills.get(CORE_CONTENT_IDS.firearmsCombat)!;
+    const tuning = combat.combat!.firearms!;
+    const precision = { ...baseRegistry.skills.get(tuning.longGunSteadinessSkill)!, id: 'fixture_precision' };
+    const firearms = {
+      ...combat,
+      combat: { ...combat.combat, firearms: { ...tuning, longGunSteadinessSkill: precision.id } },
+    };
+    const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
+    expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
+    const { steadiness: _steadiness, ...unconfigured } = precision;
+    expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
+      expect.objectContaining({
+        source: 'fixture-steadiness',
+        path: expect.stringContaining('longGunSteadinessSkill'),
+      }),
+    ]);
+    const { activities: _activities, ...training } = precision.training!;
+    expect(buildRegistry(source([firearms, { ...precision, training }])).issues.length).toBeGreaterThan(0);
+  });
+
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);
@@ -2168,18 +2189,28 @@ describe('content references', () => {
     expect(displayIssues({ ...needle, display, dial })).toEqual([]);
   });
 
-  it('requires an explicit disassembly yield for a recipe result', () => {
-    const missingYield = {
+  it.each([
+    { salvage: false, disassembly: false },
+    { salvage: true, disassembly: false },
+    { salvage: false, disassembly: true },
+    { salvage: true, disassembly: true },
+  ])('does not infer recovery capabilities from a recipe: %j', ({ salvage, disassembly }) => {
+    const { disassembly: composition, ...item } = structuredClone(recipePack.items[0]!);
+    const data = {
       ...structuredClone(recipePack),
-      items: [Object.fromEntries(Object.entries(recipePack.items[0]!).filter(([key]) => key !== 'disassembly'))],
+      items: [
+        {
+          ...item,
+          ...(disassembly ? { disassembly: composition } : {}),
+          ...(salvage ? { salvage: [{ item: 'nails', count: 1 }], salvageTimeGameMinutes: 1 } : {}),
+        },
+      ],
     };
-    const source = 'missing-disassembly.json';
-    const { issues } = buildRegistry([recipeDependencies, { source, data: missingYield }]);
-    expect(issues).toContainEqual({
-      source,
-      path: 'items[0].disassembly',
-      message: 'recipe result needs an explicit disassembly yield',
-    });
+    const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recovery-recipe.json', data }]);
+    expect(issues).toEqual([]);
+    const result = registry.items.get(data.recipes[0]!.result.item)!;
+    expect(Boolean(result.salvage)).toBe(salvage);
+    expect(Boolean(result.disassembly)).toBe(disassembly);
   });
 
   it('reports a loot entry for a missing item, and drops the whole file', () => {
