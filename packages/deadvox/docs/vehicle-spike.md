@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you distinguish intact vehicle disassembly from destructive salvage
   - you change the vehicle part model, build page or vehicle exports
   - you add a vehicle part, capability or vehicle blueprint to content
   - you start vehicle content, in-game vehicles or saved vehicle state
@@ -28,7 +29,7 @@ Two authoring paths live side by side. Vehicles authored as TypeScript under `sr
 
 Support prevents floating assemblies during deliberate editing; see `src/vehicles/model.ts`, `addFitting` and `removeFitting`. Those editor refusal rules do not implement impact detachment. The game must cascade through unsupported dependents while preserving surviving items, as specified in `SLICE-6.md`, "Condition, appearance and attachment".
 
-Seeded cosmetic wear permits visual variation without changing shape or implying functional damage. Keep detail bounded by mesh cost. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`. The game's appearance belongs to the part through salvage and refitting; the spike's vehicle paint is not a competing production ownership rule.
+Seeded cosmetic wear permits visual variation without changing shape or implying functional damage. Keep detail bounded by mesh cost. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`. The game's appearance belongs to the part through disassembly and refitting; the spike's vehicle paint is not a competing production ownership rule.
 
 ## Noise comes from the build
 
@@ -54,7 +55,7 @@ The hatchback was rebuilt from a real car because the earlier one was too poor a
 
 A new vehicle starts on the content path, as thing-tool parts and a content blueprint, so none is authored twice. The `.ts` part model holds spike concepts, not a production schema; its vehicles stay as built and expire with the spike. The spike page loads a content build through the same loader as the game; see `src/debug/vehicleSpike.ts`, `assembleContentBuild`, and `src/core/vehicleBlueprint.ts`, `assembledVehicle`.
 
-Parts alike across hosts are authored once and placed by each blueprint, so salvage from one host fits another. The hatchback's own panels are pressed for its body, so they are authored where they sit on it and fit at the vehicle origin. Several body parts are made of pieces with different finishes, such as a door's skin, glass and trim; see `packages/thing-authoring-tool/src/families/compound.ts`. Glazing is see-through through a material finish's opacity; see `packages/thing-core/src/materials.ts`, `MaterialSchema`.
+Parts alike across hosts are authored once and placed by each blueprint, so parts disassembled from one host fit another. The hatchback's own panels are pressed for its body, so they are authored where they sit on it and fit at the vehicle origin. Several body parts are made of pieces with different finishes, such as a door's skin, glass and trim; see `packages/thing-authoring-tool/src/families/compound.ts`. Glazing is see-through through a material finish's opacity; see `packages/thing-core/src/materials.ts`, `MaterialSchema`.
 
 The body shell carries the mass of wiring, trim and sound deadening that no part models, so the fitted car weighs what the reference does at the kerb. Keeping that mass in the shell needs no extra parts or fittings to author; the cost, accepted, is that handling may feel less nose-heavy than the front-engined reference.
 
@@ -64,9 +65,9 @@ Real dimensions stay, and the only seated check is entry: every vehicle with a s
 
 ## The crane truck from content
 
-The crane truck is on the content path because heavy recovery depends on it, and building it from authored parts lets its parts be salvaged and fitted like any other vehicle's. It shares the parts that fit across hosts, such as the battery, headlamps, steering wheel and gear lever, and keeps its own road wheel, because a light truck's wheel does not fit a car.
+The crane truck is on the content path because heavy recovery depends on it, and building it from authored parts lets its parts be disassembled and fitted like any other vehicle's. It shares the parts that fit across hosts, such as the battery, headlamps, steering wheel and gear lever, and keeps its own road wheel, because a light truck's wheel does not fit a car.
 
-Every part is its own item, so the first loop's welded assemblies do not apply to the crane truck, because each of its parts breaks, wears and is salvaged on its own. The cost, accepted, is a long fitting list.
+Every part is its own item, so the first loop's welded assemblies do not apply to the crane truck, because each of its parts breaks, wears and is disassembled on its own. The cost, accepted, is a long fitting list.
 
 The boom is telescopic, with its extension a separate part, even though that carries the most debt: a sliding stage sets the vocabulary for vehicle motion early, before other moving parts need it.
 
@@ -88,11 +89,11 @@ The settled scope and dependency order are in `SLICE-6.md`, "Reviewable build or
 
 VAT assembles thing-tool-authored parts and exports baked geometry. That boundary lets the game load validated content without evaluating authoring shapes. Shared exported per-part mass and centre of mass replace a parallel vehicle physical authority; see `things/WORK.md`, "Decisions". Cargo remains items within fitted storage rather than becoming fittings itself.
 
-The first loop builds from factory structures, uses welded assemblies as player-facing units, and shares unhanded parts across compatible hosts. Independent appearance and event-driven condition keep salvage history without scheduled maintenance. The shared item condition vocabulary avoids a meaning change when a part comes off. Heavy recovery uses a drivable hoist vehicle, so it exercises the same build and ownership rules rather than a separate equipment model.
+The first loop builds from factory structures, uses welded assemblies as player-facing units, and shares unhanded parts across compatible hosts. Independent appearance and event-driven condition keep recovered-part state without scheduled maintenance. The shared item condition vocabulary avoids a meaning change when a part comes off. Heavy recovery uses a drivable hoist vehicle, so it exercises the same build and ownership rules rather than a separate equipment model.
 
 ## Export contract
 
-A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so salvage, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
+A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so disassembly, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
 
 Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. Each capability carries only the numbers the game code that reads it needs, added when that reader lands. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`.
 

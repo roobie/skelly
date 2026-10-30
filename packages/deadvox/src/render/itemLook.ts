@@ -6,9 +6,46 @@ import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { LIGHT_MOUNT_SLOT } from '../core/firearmFitting.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { supplyShare } from '../core/lights.ts';
+
+export interface ItemStateLook {
+  readonly on?: boolean;
+  readonly glow?: { readonly color: string; readonly intensity: number };
+  readonly wear?: number;
+  readonly supply?: number | 'absent' | 'present';
+}
+
+const bandOf = (bands: readonly { readonly from: number }[], share: number): number =>
+  Math.max(
+    0,
+    bands.findLastIndex((band) => band.from <= share),
+  );
+
+export const itemStateLook = (registry: Registry, item: Item, model: string): ItemStateLook => {
+  const def = defOf(registry, item.type);
+  const presentation = registry.models.get(model)?.itemPresentation;
+  const wear = presentation && registry.itemWear.get(presentation.wear);
+  const supply = supplyShare(registry, item);
+  let supplyLook: ItemStateLook['supply'];
+  if (supply?.kind === 'absent') {
+    supplyLook = 'absent';
+  }
+  if (supply?.kind === 'share') {
+    supplyLook = presentation?.supply.kind === 'fill' ? bandOf(presentation.supply.bands, supply.share) : 'present';
+  }
+  return {
+    ...(def.light ? { on: item.on === true } : {}),
+    ...(def.light?.color !== undefined && def.light.emissive !== undefined
+      ? { glow: { color: def.light.color, intensity: def.light.emissive } }
+      : {}),
+    ...(wear ? { wear: bandOf(wear.bands, item.condition) } : {}),
+    ...(supplyLook === undefined ? {} : { supply: supplyLook }),
+  };
+};
 
 export interface ItemLookSlot {
   readonly slot: string;
+  readonly state?: ItemStateLook;
   /** The slot frame in the base model's metres. */
   readonly at: Vec3;
   /** Magazine pose in XYZ degrees; attachment slots instead use direction and up. */
@@ -23,10 +60,11 @@ export interface ItemLookSlot {
 
 export interface ItemLook {
   readonly model: string;
+  readonly state?: ItemStateLook;
   readonly slots: readonly ItemLookSlot[];
   /** Exported pieces the item has shed, such as a lit grenade's lever or a pulled pin. */
   readonly hidden: readonly string[];
-  /** Equal exactly when two items draw the same. */
+  /** Composition and banded-state cache identity, including supply presence. */
   readonly key: string;
 }
 
@@ -56,7 +94,9 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
           slot: 'magazine',
           at: magazineSlot.at,
           turn: magazineSlot.turn,
-          ...(magazineModel ? { model: magazineModel } : {}),
+          ...(magazineModel
+            ? { model: magazineModel, state: itemStateLook(registry, fittedMagazine!, magazineModel) }
+            : {}),
         },
       ]
     : [];
@@ -66,17 +106,20 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
     }
     const slot = attachmentSlot(registry, item, slotId, child);
     if (slot) {
-      slots.push(slot);
+      slots.push({ ...slot, state: itemStateLook(registry, child, slot.model!) });
     }
   }
   const hidden = shedGroups(registry, model, item);
+  const state = itemStateLook(registry, item, model);
   return {
     model,
+    state,
     slots,
     hidden,
     key: [
       model,
-      ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}`),
+      JSON.stringify(state),
+      ...slots.map((entry) => `${entry.slot}=${entry.model ?? ''}:${JSON.stringify(entry.state)}`),
       ...hidden.map((group) => `-${group}`),
     ].join('+'),
   };

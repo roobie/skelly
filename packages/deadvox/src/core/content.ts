@@ -20,6 +20,7 @@ import {
   rigidPocketScaleIssue,
   rolledFitIssue,
 } from './inventoryScale.ts';
+import { itemPresentationIssues } from './itemPresentation.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
@@ -420,9 +421,6 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
   }
   if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
     report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
-  }
-  if (disassembly && item.salvage) {
-    report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
   }
 };
 
@@ -1665,6 +1663,112 @@ const checkRecipe = ({
   }
 };
 
+interface MaterialTransformation {
+  from: string;
+  to: string;
+  factor: number;
+  section: 'items' | 'recipes';
+  id: string;
+  path: string;
+}
+
+interface MaterialCycleSearch {
+  current: string;
+  factor: number;
+  path: readonly MaterialTransformation[];
+  seen: ReadonlySet<string>;
+}
+
+const materialTransformations = (registry: Registry): MaterialTransformation[] => {
+  const transformations: MaterialTransformation[] = [];
+  for (const item of registry.items.values()) {
+    item.disassembly?.yields.forEach((yieldItem, index) => {
+      transformations.push({
+        from: item.id,
+        to: yieldItem.item,
+        factor: yieldItem.count,
+        section: 'items',
+        id: item.id,
+        path: `.disassembly.yields[${index}]`,
+      });
+    });
+  }
+  for (const recipe of registry.recipes.values()) {
+    if (recipe.kind === 'repair') {
+      continue;
+    }
+    const inputs = recipe.components.flat();
+    const inputIds = new Set(inputs.map(({ item }) => item));
+    if (inputIds.size !== 1) {
+      continue;
+    }
+    const counts = recipe.components.reduce<number[]>(
+      (totals, alternatives) => totals.flatMap((total) => alternatives.map(({ count }) => total + count)),
+      [0],
+    );
+    const from = inputs[0]!.item;
+    for (const count of counts) {
+      transformations.push({
+        from,
+        to: recipe.result.item,
+        factor: recipe.result.count / count,
+        section: 'recipes',
+        id: recipe.id,
+        path: '.components',
+      });
+    }
+  }
+  return transformations;
+};
+
+const materialCycle = (
+  start: string,
+  outgoing: ReadonlyMap<string, readonly MaterialTransformation[]>,
+): MaterialTransformation[] | undefined => {
+  const pending: MaterialCycleSearch[] = [{ current: start, factor: 1, path: [], seen: new Set([start]) }];
+  while (pending.length > 0) {
+    const search = pending.pop()!;
+    for (const transformation of outgoing.get(search.current) ?? []) {
+      const factor = search.factor * transformation.factor;
+      if (transformation.to === start && factor > 1 + Number.EPSILON) {
+        return [...search.path, transformation];
+      }
+      if (transformation.to !== start && !search.seen.has(transformation.to)) {
+        pending.push({
+          current: transformation.to,
+          factor,
+          path: [...search.path, transformation],
+          seen: new Set([...search.seen, transformation.to]),
+        });
+      }
+    }
+  }
+  return undefined;
+};
+
+const checkMaterialCycles = (registry: Registry, report: Report): void => {
+  const outgoing = new Map<string, MaterialTransformation[]>();
+  for (const transformation of materialTransformations(registry)) {
+    const entries = outgoing.get(transformation.from) ?? [];
+    entries.push(transformation);
+    outgoing.set(transformation.from, entries);
+  }
+  for (const item of registry.items.keys()) {
+    const cycle = materialCycle(item, outgoing);
+    if (cycle) {
+      const names = [...cycle.map(({ from }) => from), item].join(' → ');
+      const origin = cycle[0]!;
+      report(
+        origin.section,
+        origin.id,
+        origin.path,
+        `craft-and-take-apart cycle returns more material than it consumes: ${names}`,
+      );
+      return;
+    }
+  }
+};
+
 const checkRecipeCategories = (registry: Registry, report: Report): void => {
   const checked = new Set<string>();
   for (const category of registry.recipeCategories.values()) {
@@ -1691,6 +1795,7 @@ const checkRecipeCategories = (registry: Registry, report: Report): void => {
 
 const checkRecipes = (registry: Registry, report: Report) => {
   checkRecipeCategories(registry, report);
+  checkMaterialCycles(registry, report);
   const qualities = new Set([
     ...[...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})),
     ...[...registry.furniture.values()].flatMap((furniture) => Object.keys(furniture.workstation?.qualities ?? {})),
@@ -1700,20 +1805,6 @@ const checkRecipes = (registry: Registry, report: Report) => {
   );
   for (const recipe of registry.recipes.values()) {
     checkRecipe({ registry, recipe, qualities, workstations, report });
-  }
-  for (const id of new Set(
-    [...registry.recipes.values()].filter((recipe) => recipe.kind !== 'repair').map((recipe) => recipe.result.item),
-  )) {
-    const item = registry.items.get(id);
-    if (!item) {
-      continue;
-    }
-    if (!item.disassembly) {
-      report('items', id, '.disassembly', 'recipe result needs an explicit disassembly yield');
-    }
-    if (item.salvage) {
-      report('items', id, '.salvage', 'recipe results use a disassembly yield, not a salvage list');
-    }
   }
 };
 
@@ -1859,6 +1950,15 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
 
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
   for (const skill of registry.skills.values()) {
+    const steadinessSkill = skill.combat?.firearms?.longGunSteadinessSkill;
+    if (steadinessSkill !== undefined && !registry.skills.get(steadinessSkill)?.steadiness) {
+      report(
+        'skills',
+        skill.id,
+        '.combat.firearms.longGunSteadinessSkill',
+        `no steadiness tuning on skill "${steadinessSkill}"`,
+      );
+    }
     skill.startingRecipes?.forEach((id, index) => {
       if (!registry.recipes.has(id)) {
         report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
@@ -2042,6 +2142,9 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  for (const issue of itemPresentationIssues(registry)) {
+    report(issue.section, issue.id, '.itemPresentation', issue.message);
+  }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
   for (const block of registry.blocks) {

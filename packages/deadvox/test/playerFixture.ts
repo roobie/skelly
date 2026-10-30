@@ -1,3 +1,4 @@
+import playerContent from '../src/content/base/player.json' with { type: 'json' };
 import type { PlayerDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import {
@@ -17,7 +18,8 @@ export const PLAYER: PlayerDef = {
   walk: simRate(1.8),
   jog: simRate(4.3),
   sprint: simRate(6.5),
-  jump: simRate(7.9),
+  jump: simRate(playerContent.player[0]!.jump),
+  gravityMetresPerSimSecondSquared: playerContent.player[0]!.gravityMetresPerSimSecondSquared,
   reach: 4,
   stepHeight: 0.5,
   movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
@@ -42,7 +44,10 @@ export const PLAYER: PlayerDef = {
     maxOffsetRadians: 0.12,
   },
 };
-export const physicsFor = (scale: Parameters<typeof paramsFor>[0]) => paramsFor(scale, PLAYER);
+export const WORLD_GRAVITY = PLAYER.gravityMetresPerSimSecondSquared;
+
+export const physicsFor = (scale: Parameters<typeof paramsFor>[0], player: PlayerDef = PLAYER) =>
+  paramsFor(scale, player);
 export const createPlayerBody = (scale: Parameters<typeof bodyFor>[0], x: number, y: number, z: number) =>
   bodyFor(scale, [x, y, z], PLAYER);
 export const steer = (

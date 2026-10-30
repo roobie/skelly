@@ -3,6 +3,7 @@ import { crawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
 import inventory from '../src/content/base/inventory.json' with { type: 'json' };
+import player from '../src/content/base/player.json' with { type: 'json' };
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { initializeRagdollPhysics, RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 
@@ -30,7 +31,7 @@ export async function measureRagdolls() {
   for (const model of ragdollContent.sweep.models) {
     for (const constrained of [false, true]) {
       const figure = zombieFigure({ model }, seed).realized;
-      const world = new RagdollWorld();
+      const world = new RagdollWorld(player.player[0]!.gravityMetresPerSimSecondSquared);
       try {
         const corpses = Array.from({ length: maxCorpses }, (_, index) =>
           world.spawn({

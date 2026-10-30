@@ -496,17 +496,21 @@ describe('pure craft planner', () => {
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
     actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
-    actor.awardPractice(
-      'crafting',
-      practiceForNextLevel(benchmarkRegistry, actor.skills.crafting!),
-      SKILL_LEVEL_LEGENDARY,
-    );
-    actor.awardPractice(
-      'mechanics',
-      practiceForNextLevel(benchmarkRegistry, actor.skills.mechanics!) +
-        practiceForNextLevel(benchmarkRegistry, actor.skills.mechanics! + 1),
-      SKILL_LEVEL_LEGENDARY,
-    ); // Timings exercise successful plans, including skill-gated recipes.
+    const skillGates = new Map<string, number>();
+    for (const definition of benchmarkRegistry.recipes.values()) {
+      for (const [skill, required] of Object.entries(definition.skills)) {
+        skillGates.set(skill, Math.max(skillGates.get(skill) ?? 0, required));
+      }
+    }
+    for (const [skill, required] of skillGates) {
+      while (actor.skills[skill]! < required) {
+        actor.awardPractice(
+          skill,
+          practiceForNextLevel(benchmarkRegistry, actor.skills[skill]!),
+          SKILL_LEVEL_LEGENDARY,
+        );
+      }
+    } // Timings exercise successful plans, including skill-gated recipes.
     const started = performance.now();
     const index = indexCraftReach(snapshot);
     const indexMs = performance.now() - started;

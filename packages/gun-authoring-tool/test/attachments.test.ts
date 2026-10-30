@@ -542,6 +542,13 @@ describe('attachment parts and export metadata', () => {
     for (const { id, modelId, result, deadvox, gltf, nodes } of models) {
       expect(deadvox.issues).toEqual([]);
       expect(deadvox.registry.models.has(modelId)).toBe(true);
+      const optic = Object.values(OPTIC_CATALOG).find((entry) => `optic-${entry.id}` === id);
+      if (optic) {
+        const relief = optic.eyeReliefU! * gunDomain.units.metresPerUnit;
+        expect(relief).toBeGreaterThan(0);
+        expect(result.modelEntry.gun.attachment?.sight?.eyeReliefMetres).toBeCloseTo(relief);
+        expect(deadvox.registry.models.get(modelId)?.gun?.attachment?.sight?.eyeReliefMetres).toBeCloseTo(relief);
+      }
       expect(attachmentMetadataProblems(id, result.modelEntry.gun.attachment)).toEqual([]);
       const { familyName, params, part } = attachmentBuild(id);
       const metadata = attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part)!;

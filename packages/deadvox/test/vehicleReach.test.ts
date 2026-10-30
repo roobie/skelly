@@ -68,13 +68,13 @@ it('keeps every exterior vehicle pick within the reach its surface and service s
   for (const feet of exterior) {
     runtime.player.body.pos = feet;
     expect(runtime.inventory.canReachVehicle(vehicleId), `from ${feet.join(',')}`).toBe(true);
-    expect(runtime.session.vehicleWorkRefusal('remove', vehicleId, wheel.id, wheel.item.uid)).not.toBe(tooFar);
+    expect(runtime.session.vehicleWorkRefusal('remove', vehicleId, wheel, wheel.item.uid)).not.toBe(tooFar);
   }
 
   const far = Math.max(...boxes.map(({ max }) => max[0])) + 3;
   runtime.player.body.pos = [far / s, origin[1], origin[2]];
   expect(runtime.inventory.canReachVehicle(vehicleId)).toBe(false);
-  expect(runtime.session.vehicleWorkRefusal('remove', vehicleId, wheel.id, wheel.item.uid)).toBe(tooFar);
+  expect(runtime.session.vehicleWorkRefusal('remove', vehicleId, wheel, wheel.item.uid)).toBe(tooFar);
 });
 
 it('refuses vehicle service through a wall and allows it again once the wall is gone', () => {

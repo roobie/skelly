@@ -38,7 +38,6 @@ try {
     isSolid: () => false,
     blockSize: 0.5,
     physics: physicsFor(makeScale(0.5), PLAYER),
-    jumpSpeed: 0,
     player: () => player,
     hour: () => 12,
     hurtPlayer: () => undefined,

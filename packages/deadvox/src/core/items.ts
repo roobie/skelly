@@ -80,7 +80,7 @@ export interface ItemFields<Node> {
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
-  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to salvage (core/cargoSpace.ts). */
+  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to disassembly (core/cargoSpace.ts). */
   cargo?: [x: number, y: number, z: number];
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;

@@ -7,7 +7,7 @@ import type { ZombieDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -48,7 +48,6 @@ const fixture = (radiusMetres = 4) => {
     dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
     blockSize: scale.blockSize,
     physics: physicsFor(scale),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   };

@@ -8,6 +8,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { PlayerStance } from './playerStance.ts';
+import type { SkillDef } from './schema.ts';
 
 export const FIREARMS_SKILL_ZERO_RANGES = {
   variance: { min: 0.1, max: 100, step: 0.1 },
@@ -39,6 +40,7 @@ export const sameFirearmsSkillZeroHandling = (
 ): boolean => canonicalJson(left) === canonicalJson(right);
 
 export interface FirearmsCombatTuning {
+  readonly longGunSteadinessSkill: string;
   readonly raiseMinimumSimSeconds: number;
   readonly raiseRangeSimSeconds: number;
   readonly raiseHalfLifeLevels: number;
@@ -119,6 +121,19 @@ export const firearmsSkillEffects = (
     recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryScale),
     reloadDuration: skillSaturation(effectLevel, tuning.reloadFactorFloor, tuning.reloadFactorHalfLifeLevels),
     rackDuration: skillSaturation(effectLevel, tuning.rackFactorFloor, tuning.rackFactorHalfLifeLevels),
+  };
+};
+
+export const steadinessTuning = (tuning: FirearmsCombatTuning, skill: SkillDef): FirearmsCombatTuning => {
+  if (!(skill.steadiness && skill.curve)) {
+    throw new Error(`Missing steadiness tuning on skill ${skill.id}`);
+  }
+  const { wobbleSkillTenVariance, ...breath } = skill.steadiness;
+  return {
+    ...tuning,
+    curve: skill.curve,
+    wobbleSkillTenVariance,
+    breathHold: { ...tuning.breathHold, ...breath },
   };
 };
 

@@ -1464,9 +1464,25 @@ describe('input replay', () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     const commands = [
-      { kind: 'vehicle.work', work: 'remove', vehicleId: 1, fittingId: 'site', itemUid: 2 },
-      { kind: 'vehicle.work', work: 'install', vehicleId: 1, fittingId: 'site', itemUid: 2 },
-    ] as const;
+      {
+        kind: 'vehicle.work',
+        work: 'remove',
+        vehicleId: 1,
+        fittingId: 'site',
+        itemUid: 2,
+        at: [1, 2, 3],
+        supportedBy: ['frame'],
+      },
+      {
+        kind: 'vehicle.work',
+        work: 'install',
+        vehicleId: 1,
+        fittingId: 'site',
+        itemUid: 2,
+        at: [1, 2, 3],
+        supportedBy: ['frame'],
+      },
+    ] satisfies ReplayActionPayload[];
     for (const command of commands) {
       recorder.queueAction(command.kind, 'down', 'inventory', { payload: command });
       recorder.recordTick(replaySample);

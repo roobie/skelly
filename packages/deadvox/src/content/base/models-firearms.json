@@ -2676,6 +2676,26 @@
         }
       },
       "id": "rifle_assault",
+      "itemPresentation": {
+        "materials": [
+          "metal",
+          "metal",
+          "metal",
+          "polymer",
+          "polymer",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "glass",
+          "polymer"
+        ],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "barrel": {
           "centreOfMass": [0.19400000000000001, 0, 2.3457474544298815e-17],
@@ -3609,6 +3629,28 @@
         }
       },
       "id": "rifle_ak",
+      "itemPresentation": {
+        "materials": [
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "wood",
+          "wood",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "wood"
+        ],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "barrel": {
           "centreOfMass": [0.184, 0, 2.2533501104311298e-17],
@@ -4087,42 +4129,84 @@
       "gun": {
         "calibre": "7.62x39"
       },
-      "id": "round_7_d_62x39"
+      "id": "round_7_d_62x39",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/case_7_d_62x39.glb",
       "gun": {
         "calibre": "7.62x39"
       },
-      "id": "case_7_d_62x39"
+      "id": "case_7_d_62x39",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/round_5_d_56x45.glb",
       "gun": {
         "calibre": "5.56x45"
       },
-      "id": "round_5_d_56x45"
+      "id": "round_5_d_56x45",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/case_5_d_56x45.glb",
       "gun": {
         "calibre": "5.56x45"
       },
-      "id": "case_5_d_56x45"
+      "id": "case_5_d_56x45",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/round_12_h_gauge_h_00_h_buck.glb",
       "gun": {
         "calibre": "12-gauge-00-buck"
       },
-      "id": "round_12_h_gauge_h_00_h_buck"
+      "id": "round_12_h_gauge_h_00_h_buck",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "paper"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/case_12_h_gauge_h_00_h_buck.glb",
       "gun": {
         "calibre": "12-gauge-00-buck"
       },
-      "id": "case_12_h_gauge_h_00_h_buck"
+      "id": "case_12_h_gauge_h_00_h_buck",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "anchors": {
@@ -4194,6 +4278,13 @@
         }
       },
       "id": "revolver",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal", "wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "barrel": {
           "centreOfMass": [0.06241223832528181, -0.0035780998389694043, 3.0914863189787685e-17],
@@ -4574,14 +4665,28 @@
       "gun": {
         "calibre": "357-magnum"
       },
-      "id": "round_357_h_magnum"
+      "id": "round_357_h_magnum",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/case_357_h_magnum.glb",
       "gun": {
         "calibre": "357-magnum"
       },
-      "id": "case_357_h_magnum"
+      "id": "case_357_h_magnum",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "anchors": {
@@ -4672,6 +4777,13 @@
         }
       },
       "id": "shotgun_pump",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "wood", "metal", "metal", "metal", "polymer", "wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "barrel": {
           "centreOfMass": [0.24745836985100791, 0, 3.0304910056025873e-17],
@@ -5456,6 +5568,25 @@
         }
       },
       "id": "rifle_hunting",
+      "itemPresentation": {
+        "materials": [
+          "metal",
+          "metal",
+          "metal",
+          "wood",
+          "polymer",
+          "metal",
+          "metal",
+          "metal",
+          "metal",
+          "polymer",
+          "wood"
+        ],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "barrel": {
           "centreOfMass": [0.27600000000000002, 0, 3.3800251656466954e-17],
@@ -6462,14 +6593,28 @@
       "gun": {
         "calibre": "308-winchester"
       },
-      "id": "round_308_h_winchester"
+      "id": "round_308_h_winchester",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "file": "assets/models/case_308_h_winchester.glb",
       "gun": {
         "calibre": "308-winchester"
       },
-      "id": "case_308_h_winchester"
+      "id": "case_308_h_winchester",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -6600,7 +6745,14 @@
           }
         }
       },
-      "id": "optic_hunting_3_9x"
+      "id": "optic_hunting_3_9x",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     }
   ]
 }

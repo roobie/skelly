@@ -1,4 +1,4 @@
-{
+(import 'item-presentation.libsonnet').pack({
   models: [
     import 'gungen/ak_slant_compensator.model.json',
     import 'gungen/foregrip.model.json',
@@ -14,4 +14,4 @@
     import 'gungen/real_suppressor.model.json',
     import 'gungen/tactical_flashlight_mount.model.json',
   ],
-}
+})

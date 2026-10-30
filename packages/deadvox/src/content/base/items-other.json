@@ -323,7 +323,8 @@
           "assemble_fastener_pack",
           "make_scrap_foregrip",
           "make_bandage",
-          "make_headlamp_strap"
+          "make_headlamp_strap",
+          "make_weapon_sling"
         ],
         "title": "Camp Craft"
       },
@@ -351,6 +352,7 @@
           "repair_kit",
           "make_sewing_kit",
           "make_sewing_repair_kit",
+          "sew_cloth_strip",
           "repair_crowbar",
           "repair_hammer",
           "repair_machete",
@@ -400,7 +402,8 @@
           "make_scrap_foregrip",
           "make_nail_bat",
           "make_spear",
-          "make_taped_armour"
+          "make_taped_armour",
+          "make_weapon_sling"
         ],
         "title": "Workshop Notes"
       },

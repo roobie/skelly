@@ -17,6 +17,7 @@ import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';
 import { Mood } from '../src/render/mood.ts';
+import { WORLD_GRAVITY } from './playerFixture.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
 const toggle = (label: string) => ({ label, default: true, options: [false, true] });
@@ -48,6 +49,7 @@ const source = (options: GraphicsOptions) => ({
         streamHysteresisM: 16,
         fogFarPlaneScale: 1.5,
         itemPictureCacheCapacity: 2,
+        itemPicture: { framing: 1.1 },
         modelLoadConcurrency: 2,
         unbuiltSkyCap: 0.5,
         skyJobsInFlight: 2,
@@ -77,7 +79,7 @@ it.each(['dropletCap', 'splatCap', 'dropletSpawnsPerFrame'] as const)(
     candidate.data.graphics[0]!.gore[capacity] = 0;
     expect(validateContent(candidate)).toEqual([]);
     const row = buildRegistry([candidate]).registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
-    const gore = new Gore(1, row.gore);
+    const gore = new Gore(1, WORLD_GRAVITY, row.gore);
     try {
       gore.spray({ point: [0.5, 0.05, 0.5], direction: [0, -1, 0], impulse: 4 }, 100);
       if (capacity === 'splatCap') {

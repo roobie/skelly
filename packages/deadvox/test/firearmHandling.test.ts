@@ -37,6 +37,7 @@ import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
+import { WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
@@ -195,7 +196,7 @@ describe('rifle firearm handling', () => {
   it('ends the native case effect at the pile renderer instance position', () => {
     const blockSize = 0.5;
     const worldSeed = 17;
-    const effects = new CaseEffects(blockSize);
+    const effects = new CaseEffects(blockSize, WORLD_GRAVITY);
     let inventory: Inventory | undefined;
     let effect: FirearmShotEffect | undefined;
     const {

@@ -355,7 +355,14 @@
           }
         ]
       },
-      "id": "magazine_stanag_30"
+      "id": "magazine_stanag_30",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -459,7 +466,14 @@
           }
         ]
       },
-      "id": "magazine_stanag_20"
+      "id": "magazine_stanag_20",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -627,7 +641,14 @@
           }
         ]
       },
-      "id": "magazine_akm_30"
+      "id": "magazine_akm_30",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     }
   ]
 }

@@ -14,7 +14,7 @@ import { type MeleeWeapon, PLAYER_CHEST_METRES, zombieAttackReachMetres } from '
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -60,7 +60,6 @@ const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
     dayPhase: () => dayStateAtHour(12),
     blockSize: 0.5,
     physics: physicsFor(makeScale(0.5)),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: (damage) => hits.push(damage),
   });
@@ -196,7 +195,6 @@ it('admits the amalgam tentacle thrust only when its reach clears the wire thres
       dayPhase: () => dayStateAtHour(12),
       blockSize: 0.5,
       physics: physicsFor(makeScale(0.5)),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: (damage) => hits.push(damage),
     });

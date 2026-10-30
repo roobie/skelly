@@ -36,7 +36,6 @@
   },
   "footprintMetres": [2.5, 2.5, 2.5],
   "friction": 0.80000000000000004,
-  "gravity": -9.8100000000000005,
   "groups": [
     {
       "bones": ["pelvis", "spine", "chest"],

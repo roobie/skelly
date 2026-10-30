@@ -161,7 +161,6 @@ describe('debug starting equipment', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       onSever: (_id, _zombie, _part, hit) => {

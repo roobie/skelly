@@ -56,6 +56,7 @@ const wheelWork = (runtime: ReturnType<typeof createRuntime>, placementKey: stri
       vehicleId: id,
       fittingId: fitting.id,
       itemUid: fitting.item.uid,
+      placement: fitting,
       output: { kind: 'pile', pos: output },
     });
     if (removal) {
@@ -73,6 +74,7 @@ const wheelWork = (runtime: ReturnType<typeof createRuntime>, placementKey: stri
     fittingId: fitting.id,
     itemUid: item.uid,
     durationSimSeconds: service.durationSimSeconds,
+    placement: fitting,
   });
   if (refusal) {
     throw new Error(refusal);
@@ -247,12 +249,19 @@ describe('production vehicle ownership', () => {
         vehicleId: id,
         fittingId: fitting.id,
         itemUid: fitting.item.uid,
+        placement: fitting,
         output,
       }),
     ).toBeUndefined();
     expect(inventory.locate(fitting.item)).toMatchObject({ kind: 'pile' });
     expect(
-      inventory.vehicleTransfer({ kind: 'install', vehicleId: id, fittingId: fitting.id, itemUid: fitting.item.uid }),
+      inventory.vehicleTransfer({
+        kind: 'install',
+        vehicleId: id,
+        fittingId: fitting.id,
+        itemUid: fitting.item.uid,
+        placement: fitting,
+      }),
     ).toBeUndefined();
     expect(inventory.locate(fitting.item)).toMatchObject({ kind: 'vehicle', vehicleId: id, fittingId: fitting.id });
   });
@@ -270,7 +279,7 @@ describe('production vehicle ownership', () => {
     const replace = vi.spyOn(inventory.vehicles, 'replace').mockImplementation(() => {
       throw new Error(engineText);
     });
-    const request = { vehicleId: id, fittingId: fitting.id, itemUid: fitting.item.uid };
+    const request = { vehicleId: id, fittingId: fitting.id, itemUid: fitting.item.uid, placement: fitting };
     const removal = inventory.vehicleTransfer({
       ...request,
       kind: 'remove',
@@ -308,6 +317,7 @@ describe('production vehicle ownership', () => {
         vehicleId: id,
         fittingId: fitting.id,
         itemUid: fitting.item.uid,
+        placement: fitting,
         output,
       }),
     ).toBeDefined();
@@ -374,6 +384,7 @@ describe('production vehicle ownership', () => {
         vehicleId: work.id,
         fittingId: strut.id,
         itemUid: strut.item.uid,
+        placement: strut,
         output: { kind: 'pile', pos: work.output },
       }),
     ).toBeUndefined();
@@ -394,7 +405,7 @@ describe('production vehicle ownership', () => {
     runtime.sim.actions.cancel();
     const strut = runtime.inventory.vehicles.get(work.id)!.fittings.find(({ id }) => id === 'front_strut_near')!;
 
-    expect(runtime.session.beginVehicleWork('remove', work.id, strut.id, strut.item.uid)).toBeDefined();
+    expect(runtime.session.beginVehicleWork('remove', work.id, strut, strut.item.uid)).toBeDefined();
     expect(runtime.sim.actions.snapshotState().job).toBeNull();
     expect(runtime.inventory.locate(strut.item)).toMatchObject({ kind: 'vehicle', fittingId: strut.id });
   });

@@ -172,7 +172,8 @@ describe('debug avatar mannequin', () => {
     const fixtureRegistry = { ...registry, items: new Map([...registry.items, [garment.id, garment]]) };
     const fixtureModels = {
       ...models,
-      part: (id: string) => (id === 'fixture_worn' ? new Group() : models.part(id)),
+      partLook: (look: import('../src/render/itemLook.ts').ItemLook) =>
+        look.model === 'fixture_worn' ? new Group() : models.partLook(look),
     } as ModelLibrary;
     const mannequin = createAvatarMannequin(
       new Scene(),

@@ -227,6 +227,7 @@ export const createPlayView = (
   const look = lookDefaultsOf(registry);
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
+  const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
   const models = new ModelLibrary(registry, report, undefined, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
@@ -235,6 +236,7 @@ export const createPlayView = (
       registry,
       models,
       registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
+      { framing: graphics.itemPicture.framing },
     );
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');
@@ -251,8 +253,8 @@ export const createPlayView = (
   const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
-  const caseEffects = new CaseEffects(s, models);
-  const gore = new Gore(s, graphics.gore, config.seed);
+  const caseEffects = new CaseEffects(s, gravityMetresPerSimSecondSquared, models);
+  const gore = new Gore(s, gravityMetresPerSimSecondSquared, graphics.gore, config.seed);
   const decals =
     engine.scenario && config.authoredDecals
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
@@ -274,8 +276,8 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
-  const leverProps = new LeverProps(s, engine.isSolid);
-  const acidEffects = new AcidEffects(s, config.seed);
+  const leverProps = new LeverProps(s, gravityMetresPerSimSecondSquared, engine.isSolid);
+  const acidEffects = new AcidEffects(s, gravityMetresPerSimSecondSquared, config.seed);
   const held = new HeldItems(inventory, models, playerFigure, {
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
@@ -348,6 +350,7 @@ export const createPlayView = (
       ? new MobActorMeshes(s, undefined, {
           ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
           handlingReachMetres: reachTuning(registry).reachMetres,
+          gravityMetresPerSimSecondSquared,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           zombies: registry.zombies,

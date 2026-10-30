@@ -1110,12 +1110,26 @@
     {
       "emissiveMaterial": "chemical-light tube",
       "file": "assets/models/glowstick.glb",
-      "id": "glowstick"
+      "id": "glowstick",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "emissiveMaterial": "chemical-light tube",
       "file": "assets/models/glowstick.glb",
-      "id": "road_flare"
+      "id": "road_flare",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     }
   ]
 }

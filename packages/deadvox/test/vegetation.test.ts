@@ -20,7 +20,7 @@ import { perceivePlayer } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
@@ -180,7 +180,6 @@ describe('passable but opaque vegetation', () => {
       isOpaque: opaque,
       blockSize: 0.5,
       physics: physicsFor(scale),
-      jumpSpeed: PLAYER.jump,
       tuning: senseTuning,
       player: () => player,
       dayPhase: () => dayStateAtHour(12),

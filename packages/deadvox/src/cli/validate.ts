@@ -12,13 +12,42 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
 import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
-import { buildRegistry, type ContentSource, requiredContentIssues } from '../core/content.ts';
+import {
+  buildRegistry,
+  type ContentIssue,
+  type ContentSource,
+  type Registry,
+  requiredContentIssues,
+} from '../core/content.ts';
+import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
 import { checkReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
 
 const BASE = 'src/content/base';
 const CATALOGUE = 'src/config/bundled-mods.json';
+
+const presentationAssetIssues = (registry: Registry, root: string): ContentIssue[] =>
+  [...registry.models.values()].flatMap((model) => {
+    const origin = registry.modelOrigins.get(model.id)!;
+    const file = resolve(root, dirname(origin.source), model.file);
+    if (!existsSync(file)) {
+      return [];
+    }
+    let messages: string[];
+    try {
+      const bytes = readFileSync(file);
+      const asset = JSON.parse(bytes.toString('utf8', 20, 20 + bytes.readUInt32LE(12)));
+      messages = modelPresentationAssetIssues(model, asset);
+    } catch (error) {
+      messages = [`cannot read model presentation: ${error instanceof Error ? error.message : String(error)}`];
+    }
+    return messages.map((message) => ({
+      source: origin.source,
+      path: origin.path,
+      message,
+    }));
+  });
 
 /** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
 export const validate = (
@@ -72,6 +101,7 @@ export const validate = (
   if (catalogue !== undefined) {
     issues.push(...bundledModCatalogueIssues(catalogue).map((message) => ({ source: CATALOGUE, path: '', message })));
   }
+  issues.push(...presentationAssetIssues(registry, root));
   let assets = 0;
   for (const source of manifests) {
     const data = read(source);

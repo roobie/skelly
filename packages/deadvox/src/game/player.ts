@@ -18,11 +18,8 @@ export const playerTuning = (registry: Registry): PlayerDef => {
   return tuning;
 };
 
-/** m/s². Heavier than Earth's; it makes jumps feel snappy. */
-const GRAVITY = 28;
-
 export const physicsFor = (scale: Scale, tuning: PlayerDef): PhysicsParams => ({
-  gravity: GRAVITY / scale.blockSize,
+  gravity: tuning.gravityMetresPerSimSecondSquared / scale.blockSize,
   stepHeight: tuning.stepHeight / scale.blockSize,
 });
 
@@ -60,11 +57,15 @@ export interface PlayerState {
   stance: PlayerStance;
   sprinting: boolean;
   firearmReadyWalking: boolean;
+  snipingAdsUid?: number | undefined;
   handlingPausedForKnockout: boolean;
   ladder: LadderHoldState | null;
 }
 
-export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Readonly<PlayerState> =>
+export const snapshotPlayer = (
+  body: Body,
+  { snipingAdsUid, ...state }: Omit<PlayerState, 'body'>,
+): Readonly<PlayerState> =>
   freezeSnapshot({
     body: {
       pos: [...body.pos],
@@ -74,6 +75,7 @@ export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Re
       onGround: body.onGround,
     },
     ...state,
+    ...(snipingAdsUid === undefined ? {} : { snipingAdsUid }),
   });
 
 export const restorePlayer = (state: PlayerState): PlayerState => ({
@@ -90,6 +92,7 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   stance: state.stance,
   sprinting: state.sprinting,
   firearmReadyWalking: state.firearmReadyWalking,
+  snipingAdsUid: state.snipingAdsUid,
   handlingPausedForKnockout: state.handlingPausedForKnockout,
   ladder: state.ladder && { ...state.ladder },
 });

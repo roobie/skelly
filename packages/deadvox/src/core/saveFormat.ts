@@ -572,6 +572,7 @@ const longJob = (jobType: Schema, extra: Record<string, Schema> = {}) =>
     kind: opt(enumeration(['install', 'remove'])),
     vehicleId: opt(positiveInt),
     fittingId: opt(str({ id: true })),
+    placement: opt(obj({ at: vec3, mirror: opt(enumeration([true])), supportedBy: arr(str({ id: true })) })),
     duration: opt(positive),
     strikeInterval: opt(positive),
     nextStrike: opt(positive),
@@ -707,6 +708,7 @@ const playerState = obj({
   stance: enumeration(PLAYER_STANCES),
   sprinting: bool,
   firearmReadyWalking: bool,
+  snipingAdsUid: opt(positiveInt),
   handlingPausedForKnockout: bool,
   /** `LadderHoldState` (src/core/ladders.ts): on a ladder, or grabbed and not reached yet. */
   ladder: nullable(union(obj({ on: enumeration([true]) }), obj({ on: enumeration([false]), grabbedUid: positiveInt }))),
@@ -1659,7 +1661,15 @@ function validateFoodWatermarks(snapshot: SaveSnapshot, tree: readonly { item: I
   }
 }
 
+function validateSnipingAcquisition(snapshot: SaveSnapshot): void {
+  const adsUid = snapshot.character.player.snipingAdsUid;
+  if (adsUid !== undefined && !Object.values(snapshot.character.inventory.hands).some((item) => item?.uid === adsUid)) {
+    throw new Error('Saved Sniping acquisition firearm is not held');
+  }
+}
+
 function validateActionReferences(snapshot: SaveSnapshot): void {
+  validateSnipingAcquisition(snapshot);
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
   if (

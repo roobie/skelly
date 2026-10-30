@@ -16,7 +16,7 @@ import { countText, decimalText } from '../src/core/numberText.ts';
 import { toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { ATTACHMENT_WORK_SKILL, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
   INPUT_BINDINGS,
@@ -192,7 +192,7 @@ function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right
     },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
-    attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
+    attachmentCandidates: (_firearmUid: number, _slotId: string) => [{ item: beans }],
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
@@ -262,7 +262,7 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
         groundLook: () => new Group(),
       },
       2,
-      { paint: () => 'still', view: vi.fn(), dispose: vi.fn() },
+      { painter: { paint: () => 'still', view: vi.fn(), dispose: vi.fn() } },
     ),
   });
   test.screen.update();
@@ -497,7 +497,9 @@ describe('inventory screen Lit rendering', () => {
     const test = setup();
     const { root, screen, inv, queue, beans } = test;
     const model = vi.fn(() => new Group());
-    Object.assign(test.hooks, { itemView: { model, view: vi.fn() } });
+    const disposeModel = vi.fn();
+    const pictures = { version: 0, picture: () => undefined };
+    Object.assign(test.hooks, { pictures, itemView: { model, view: vi.fn(), disposeModel } });
     // Selected, so a drop that leaked past the viewer would move it.
     screen.selected = beans;
     screen.update();
@@ -522,6 +524,7 @@ describe('inventory screen Lit rendering', () => {
     expect(viewer).not.toBeNull();
     // Focus leaves the covered button, which stays out of reach through a redraw.
     expect(document.activeElement).toBe(viewer);
+    pictures.version += 1;
     screen.update();
     expect(covered.closest('[inert]')).not.toBeNull();
     expect(viewer!.closest('[inert]')).toBeNull();
@@ -537,6 +540,8 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector('[inert]')).toBeNull();
     expect(document.activeElement).toBe(covered);
     expect({ state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length }).toEqual(before);
+    expect(model.mock.results.length).toBeGreaterThan(1);
+    expect(disposeModel.mock.calls.map(([disposed]) => disposed)).toEqual(model.mock.results.map(({ value }) => value));
     screen.close();
   });
 
@@ -544,7 +549,7 @@ describe('inventory screen Lit rendering', () => {
     const test = setup();
     const { root, screen, beans } = test;
     const view = vi.fn();
-    Object.assign(test.hooks, { itemView: { model: () => new Group(), view } });
+    Object.assign(test.hooks, { itemView: { model: () => new Group(), view, disposeModel: vi.fn() } });
     screen.update();
     const issue = inputBindings.rebind('inventory.view-item', [{ code: 'Mouse0' }]);
     try {
@@ -948,6 +953,18 @@ describe('inventory screen Lit rendering', () => {
     expect(needs()).toContain('fatigue 130');
   });
 
+  it('exposes authored skill effects on a focusable label and its tooltip', () => {
+    const skill = { id: 'fixture_skill_detail', name: 'Fixture skill', detail: 'Fixture effect.' };
+    const content = baseRegistryWith([{ source: 'fixture-detail', data: { skills: [skill] } }]);
+    const { screen, root } = setup(content);
+    screen.selectTab('skills');
+    const label = root.querySelector<HTMLElement>(`[data-skill="${skill.id}"] .fact-detail`)!;
+    expect(label.tabIndex).toBe(0);
+    const tooltip = label.querySelector<HTMLElement>('[role="tooltip"]')!;
+    expect(tooltip.getAttribute('role')).toBe('tooltip');
+    expect(tooltip.textContent).toBe(skill.detail);
+  });
+
   it('renders a skill level from the live character progression', () => {
     const { screen, root, character } = setup();
     const [skill] = registry.skills.values();
@@ -1196,7 +1213,7 @@ describe('inventory screen Lit rendering', () => {
       throw new Error('Fixture could not place the AR in hand and foregrip in an inventory pocket');
     }
     const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
-    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.candidates(firearmUid, slotId);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
     test.hooks.dispatch = (payload) =>
       applyReplayActionPayload(payload, {
         inventory: test.inv,
@@ -1230,9 +1247,7 @@ describe('inventory screen Lit rendering', () => {
     const paint = vi.fn(() => `data:image/png;base64,${paint.mock.calls.length}`);
     const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };
     const pictures = new ItemPictures(registry, models, registry.graphics.get('core')!.itemPictureCacheCapacity, {
-      paint,
-      view: vi.fn(),
-      dispose: vi.fn(),
+      painter: { paint, view: vi.fn(), dispose: vi.fn() },
     });
     Object.assign(test.hooks, { pictures });
     test.screen.selected = firearm;
@@ -1347,6 +1362,44 @@ describe('inventory screen Lit rendering', () => {
     expect(test.refusals).toEqual([reason]);
     expect(test.notices).toEqual([]);
     expect(test.queue.jobs).toHaveLength(0);
+  });
+
+  it('offers a suppressor below its fit level as a refused row with the reason, and as a button once trained', () => {
+    const test = setup();
+    const firearm = test.inv.create('rifle_assault');
+    const suppressor = test.inv.create('real_suppressor');
+    const gun = registry.models.get('rifle_assault')!.gun!;
+    const suppressorId = registry.models.get('real_suppressor')!.gun!.attachment!.id;
+    const slot = gun.attachmentSlots!.find((candidate) => gun.compatibility?.[candidate.id]?.includes(suppressorId));
+    if (!(slot && test.inv.consume(test.beans))) {
+      throw new Error('Fixture AR needs a suppressor mount and a free hand');
+    }
+    if (
+      !(
+        test.inv.add(firearm, { kind: 'hand', side: 'right' }) &&
+        test.inv.add(suppressor, { kind: 'pile', pos: [0, 0, 0] })
+      )
+    ) {
+      throw new Error('Fixture could not place the AR and suppressor');
+    }
+    const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
+    const effects = registry.items.get('real_suppressor')?.firearmAttachmentEffects;
+    if (effects?.kind !== 'suppressor' || effects.fitSkillLevel < 1) {
+      throw new Error('Fixture suppressor needs a readable fit level above the minimum');
+    }
+    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel - 1;
+    test.screen.selected = firearm;
+    test.screen.update();
+
+    const row = `[data-attachment-slot="${slot.id}"]`;
+    expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
+    expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(effects.fitRefusal);
+
+    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel;
+    test.screen.update();
+    expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
+    expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
   });
 
   it('refuses inventory actions while unconscious and permits them after waking', () => {

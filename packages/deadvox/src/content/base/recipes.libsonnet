@@ -31,7 +31,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     {
       "id": "crafting",
       "name": "Crafting",
-      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar"] + [recipe.id for recipe in sharpenRecipes],
+      "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar", "make_rope"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "name": "Mechanics" },
@@ -50,6 +50,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     {
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
+      "detail": "Improves recoil control, handling and raising. Steadies firearms other than long guns.",
       "training": {
         "activities": {
           "readying": { "practicePerSimSecond": 0.1, "tier": 1 },
@@ -61,6 +62,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       },
       "combat": {
         "firearms": {
+          "longGunSteadinessSkill": "sniping",
           "raiseMinimumSimSeconds": 0.28,
           "raiseRangeSimSeconds": 0.42,
           "raiseHalfLifeLevels": 5,
@@ -104,6 +106,23 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
           }
         }
       }
+    },
+    {
+      "id": "sniping",
+      "name": "Sniping",
+      "detail": "Reduces long-gun sway and look lag. Improves breath steadying with long guns.",
+      "steadiness": {
+        "wobbleSkillTenVariance": 0.05,
+        "steadyingMinimum": 0.5,
+        "steadyingSkillRange": 0.4,
+        "steadyingSkillHalfLifeLevels": 5,
+      },
+      "training": { "activities": {
+        "acquisition": { "practice": 0.1, "tier": 1 },
+        "ads": { "practicePerSimSecond": 0.1, "tier": 1 },
+        "shot": { "practice": 1, "tier": 3 },
+        "hit": { "practice": 1, "tier": 5 },
+      } },
     },
     {
       "id": "melee_combat",

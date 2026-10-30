@@ -15,6 +15,7 @@ const SOURCE_ROOTS = [
   'packages/deadvox/src/config',
   'packages/deadvox/test/fixtures/mods',
   'packages/deadvox/test/fixtures/content',
+  'packages/deadvox/test/fixtures/packs',
   'packages/gun-authoring-tool/src/gun',
   'packages/gun-authoring-tool/cartridges',
   'packages/gun-authoring-tool/designs',

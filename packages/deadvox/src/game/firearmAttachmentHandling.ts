@@ -81,10 +81,19 @@ export class FirearmAttachmentHandling {
         return (
           this.couldFit(slotId, item, definition) &&
           availableAt(this.inventory, location) &&
-          this.attachmentFitReason(firearm, slotId, item) === undefined
+          this.attachmentFitReason(firearm, slotId, item, false) === undefined
         );
       })
       .map(({ item }) => item);
+  }
+
+  /** Candidates with the reason a fit is refused right now; a skill refusal stays offered so the player sees it. */
+  offers(firearmUid: number, slotId: string): { item: Item; reason?: string }[] {
+    const firearm = this.inventory.itemByUid(firearmUid);
+    return this.candidates(firearmUid, slotId).map((item) => {
+      const reason = firearm ? this.fitReason(firearm, slotId, item) : undefined;
+      return reason === undefined ? { item } : { item, reason };
+    });
   }
 
   private couldFit(slotId: string, item: Item, definition: ReturnType<typeof defOf>): boolean {
@@ -117,26 +126,26 @@ export class FirearmAttachmentHandling {
     return undefined;
   }
 
-  private attachmentFitReason(firearm: Item, slotId: string, attachment: Item): string | undefined {
+  private attachmentFitReason(firearm: Item, slotId: string, attachment: Item, withSkill = true): string | undefined {
     return (
-      this.kindReason(slotId, attachment) ??
+      this.kindReason(slotId, attachment, withSkill) ??
       slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment })
     );
   }
 
   /** The light mount's kind match is `slotsReason`'s; gungen's certificate covers only the exported slots. */
-  private kindReason(slotId: string, attachment: Item): string | undefined {
+  private kindReason(slotId: string, attachment: Item, withSkill: boolean): string | undefined {
     if (slotId === SLING_SLOT) {
       return this.slingReason(attachment);
     }
-    return slotId === LIGHT_MOUNT_SLOT ? undefined : this.exportedAttachmentReason(attachment);
+    return slotId === LIGHT_MOUNT_SLOT ? undefined : this.exportedAttachmentReason(attachment, withSkill);
   }
 
   private slingReason(attachment: Item): string | undefined {
     return defOf(this.inventory.registry, attachment.type).sling ? undefined : this.text.attachments.slingOnly;
   }
 
-  private exportedAttachmentReason(attachment: Item): string | undefined {
+  private exportedAttachmentReason(attachment: Item, withSkill: boolean): string | undefined {
     const attachmentId = attachmentIdFor(this.inventory.registry, attachment);
     if (!attachmentId) {
       return this.text.attachments.notExported;
@@ -147,6 +156,7 @@ export class FirearmAttachmentHandling {
       : undefined;
     const effects = attachmentDefinition.firearmAttachmentEffects;
     if (
+      withSkill &&
       effects?.kind === 'suppressor' &&
       skillEffectLevel(this.inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN) <
         effects.fitSkillLevel

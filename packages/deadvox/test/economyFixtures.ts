@@ -1,3 +1,4 @@
+import baseItemWear from '../src/content/base/item-wear.json' with { type: 'json' };
 import baseSounds from '../src/content/base/sounds.json' with { type: 'json' };
 import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
@@ -47,6 +48,7 @@ export const fixtureMaterialSource = (): ContentSource => {
     source: 'fixture-materials.json',
     data: {
       furnitureMaterials: fixtureMaterials(),
+      itemWear: structuredClone(baseItemWear.itemWear),
       sounds: [...fixtureSounds(), sound],
       ui,
       recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],

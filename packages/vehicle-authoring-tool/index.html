@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vehicle authoring</title>
+    <style>
+      body { max-width: 72rem; margin: 2rem auto; padding: 0 1rem; color: #e4e9ee; background: #20252b; font-family: system-ui, sans-serif; }
+      header, .toolbar { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+      h1 { font-size: 1.4rem; }
+      h2 { font-size: 1rem; margin-top: 2rem; }
+      button, select { font: inherit; }
+      #issues:empty::before { content: 'None'; }
+      #issues { white-space: pre-wrap; }
+      #fittings { padding-left: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Vehicle authoring</h1>
+    </header>
+    <main>
+      <div class="toolbar">
+        <label>Blueprint <select id="blueprint"></select></label>
+        <button id="download" type="button">Download export</button>
+      </div>
+      <section>
+        <h2>Fittings</h2>
+        <ul id="fittings"></ul>
+      </section>
+      <section>
+        <h2>Content issues</h2>
+        <pre id="issues"></pre>
+      </section>
+    </main>
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>

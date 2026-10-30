@@ -483,6 +483,7 @@ local hoistBoomRest = hpart('hoist_boom_rest', 8, [hbox('rest', 'crane', [22, 30
   // One inventory cell; a fitting scales it to the cargo space's size. The space weighs next to nothing: its
   // load is its contents.
   part('cargo_space', 'block', 0.2, { width: 0.1, height: 0.1, depth: 0.1 }, { body: 'plastic-green' }, {}, exportMass='parts'),
+  part('mounting_plate', 'block', 12, { width: 0.5, height: 0.006, depth: 0.5 }, { body: 'steel-grey' }, {}, exportMass='parts'),
   bedFloor,
   bedSide,
   bedFront,
