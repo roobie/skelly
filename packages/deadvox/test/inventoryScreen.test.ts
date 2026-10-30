@@ -948,6 +948,18 @@ describe('inventory screen Lit rendering', () => {
     expect(needs()).toContain('fatigue 130');
   });
 
+  it('exposes authored skill effects on a focusable label and its tooltip', () => {
+    const skill = { id: 'fixture_skill_detail', name: 'Fixture skill', detail: 'Fixture effect.' };
+    const content = baseRegistryWith([{ source: 'fixture-detail', data: { skills: [skill] } }]);
+    const { screen, root } = setup(content);
+    screen.selectTab('skills');
+    const label = root.querySelector<HTMLElement>(`[data-skill="${skill.id}"] .fact-detail`)!;
+    expect(label.tabIndex).toBe(0);
+    const tooltip = label.querySelector<HTMLElement>('[role="tooltip"]')!;
+    expect(tooltip.getAttribute('role')).toBe('tooltip');
+    expect(tooltip.textContent).toBe(skill.detail);
+  });
+
   it('renders a skill level from the live character progression', () => {
     const { screen, root, character } = setup();
     const [skill] = registry.skills.values();

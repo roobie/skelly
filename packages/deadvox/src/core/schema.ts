@@ -3864,7 +3864,16 @@ const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    detail: optional(Name),
     curve: optional(SkillCurveSchema),
+    steadiness: optional(
+      strictObject({
+        wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
+        steadyingMinimum: Fraction,
+        steadyingSkillRange: Fraction,
+        steadyingSkillHalfLifeLevels: Positive,
+      }),
+    ),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -3901,6 +3910,7 @@ const SkillSchema = pipe(
       strictObject({
         firearms: optional(
           strictObject({
+            longGunSteadinessSkill: Id,
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
@@ -3970,7 +3980,7 @@ const SkillSchema = pipe(
       }),
     ),
   }),
-  check(({ training, id, combat, inventory }) => {
+  check(({ training, id, combat, inventory, steadiness, curve }) => {
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
@@ -3989,6 +3999,13 @@ const SkillSchema = pipe(
     const melee = combat?.melee;
     return (
       complete &&
+      (!steadiness ||
+        (curve !== undefined &&
+          steadiness.steadyingMinimum + steadiness.steadyingSkillRange <= 1 &&
+          activity('acquisition', 'practice') &&
+          activity('ads', 'practicePerSimSecond') &&
+          activity('shot', 'practice') &&
+          activity('hit', 'practice'))) &&
       (!firearm ||
         (firearm.readyMovementMinimum + firearm.readyMovementRange <= 1 &&
           firearm.breathHold.steadyingMinimum + firearm.breathHold.steadyingSkillRange <= 1)) &&
@@ -4834,6 +4851,7 @@ export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
 export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
+export type SkillDef = InferOutput<typeof SkillSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
 
