@@ -2189,18 +2189,28 @@ describe('content references', () => {
     expect(displayIssues({ ...needle, display, dial })).toEqual([]);
   });
 
-  it('requires an explicit disassembly yield for a recipe result', () => {
-    const missingYield = {
+  it.each([
+    { salvage: false, disassembly: false },
+    { salvage: true, disassembly: false },
+    { salvage: false, disassembly: true },
+    { salvage: true, disassembly: true },
+  ])('does not infer recovery capabilities from a recipe: %j', ({ salvage, disassembly }) => {
+    const { disassembly: composition, ...item } = structuredClone(recipePack.items[0]!);
+    const data = {
       ...structuredClone(recipePack),
-      items: [Object.fromEntries(Object.entries(recipePack.items[0]!).filter(([key]) => key !== 'disassembly'))],
+      items: [
+        {
+          ...item,
+          ...(disassembly ? { disassembly: composition } : {}),
+          ...(salvage ? { salvage: [{ item: 'nails', count: 1 }], salvageTimeGameMinutes: 1 } : {}),
+        },
+      ],
     };
-    const source = 'missing-disassembly.json';
-    const { issues } = buildRegistry([recipeDependencies, { source, data: missingYield }]);
-    expect(issues).toContainEqual({
-      source,
-      path: 'items[0].disassembly',
-      message: 'recipe result needs an explicit disassembly yield',
-    });
+    const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recovery-recipe.json', data }]);
+    expect(issues).toEqual([]);
+    const result = registry.items.get(data.recipes[0]!.result.item)!;
+    expect(Boolean(result.salvage)).toBe(salvage);
+    expect(Boolean(result.disassembly)).toBe(disassembly);
   });
 
   it('reports a loot entry for a missing item, and drops the whole file', () => {

@@ -225,8 +225,8 @@ export const fitIssue = (
 };
 
 /**
- * A cargo space item of `type` sized `cells`, with its pocket empty. Salvage keeps the size and contents on the
- * item (`DESIGN.md`, "Vehicles", rule 6), and `cargoFitting` refits it at that size.
+ * Disassembly keeps size and contents on the item so refitting cannot erase either
+ * (`DESIGN.md`, "Vehicles").
  */
 export const cargoSpaceItem = (factory: ItemFactory, registry: Registry, type: string, cells: CargoCells): Item => {
   const item = factory.create(registry, type, 1);
