@@ -723,9 +723,16 @@ const opticZoomCheck = async (chromium, port) => {
     assert.equal(samples[0].acquired, false, 'the sight is not acquired on the frame after the toggle');
     assert.equal(samples.at(-1).acquired, true, 'the sight is acquired once acquisition completes');
     assert.ok(acquisition.framesToAcquire > 1, 'aiming down sights takes simulation time rather than snapping');
+    // Render frames can land between 60 Hz player ticks and run no tick, so renderer samples may
+    // legitimately repeat a tick's progress; what must hold is no backwards motion and real advancement.
+    const incomplete = samples.slice(0, -1);
     assert.ok(
-      samples.slice(0, -1).every((sample, index) => index === 0 || sample.elapsed > samples[index - 1].elapsed),
-      'acquisition progress accumulates frame by frame until it completes',
+      incomplete.every((sample, index) => index === 0 || sample.elapsed >= incomplete[index - 1].elapsed),
+      'acquisition progress never runs backwards between renderer samples',
+    );
+    assert.ok(
+      incomplete.length < 2 || incomplete.at(-1).elapsed > incomplete[0].elapsed,
+      'acquisition progress advances across the observed render samples',
     );
     assert.ok(
       samples.slice(0, -1).every((sample) => !sample.lensFrame),

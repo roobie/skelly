@@ -138,7 +138,20 @@ describe('long-gun skill ownership', () => {
         skills: [
           {
             ...combat,
-            combat: { ...combat.combat, firearms: { ...combat.combat!.firearms!, longGunSteadinessSkill: snipingId } },
+            combat: {
+              ...combat.combat,
+              firearms: {
+                ...combat.combat!.firearms!,
+                longGunSteadinessSkill: snipingId,
+                // Test-authored timing so the two ADS regimes are fixture properties, not production
+                // tuning: the novice raise (minimum + range) exceeds the maximum, so the clamp bites,
+                // while a trained handler's raise (minimum + range * 5 / 15 at half-life 5) stays under it.
+                raiseMinimumSimSeconds: 0.3,
+                raiseRangeSimSeconds: 0.3,
+                raiseHalfLifeLevels: 5,
+                adsAcquisitionMaximumSimSeconds: 0.45,
+              },
+            },
           },
           { ...registry.skills.get(combat.combat!.firearms!.longGunSteadinessSkill)!, id: snipingId },
         ],
@@ -154,6 +167,8 @@ describe('long-gun skill ownership', () => {
       },
     },
   ]);
+  /** The fixture's own firearms timing; assertions read it, so production retuning cannot break them. */
+  const tuning = content.skills.get(combatId)!.combat!.firearms!;
   const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {
     const { session } = runtime;
     return chargedRifle(session.inventory, session.queue, session.firearms, { type, magazines: session.magazines })
@@ -232,7 +247,6 @@ describe('long-gun skill ownership', () => {
       expect(sniper.runtime.session.aim.snapshotState().wobbleNoise).toEqual(
         novice.runtime.session.aim.snapshotState().wobbleNoise,
       );
-      const tuning = combat.combat!.firearms!;
       const steady = steadinessTuning(tuning, content.skills.get(snipingId)!);
       expect(breathSteadying(SKILL_LEVEL_MAX, 0, steady.breathHold)).toBeGreaterThan(
         breathSteadying(0, 0, steady.breathHold),
@@ -325,19 +339,21 @@ describe('long-gun skill ownership', () => {
   });
 
   it('times long-gun ADS acquisition from Combat alone and clamps it to the ADS-only floor', () => {
-    const tuning = combat.combat!.firearms!;
+    // The fixture authors both regimes: a novice raise above the maximum is clamped to it, and a
+    // trained handler's raise under it reads the raise curve unchanged.
     const novice = firearmStanceEffects(0, tuning);
     const expert = firearmStanceEffects(SKILL_LEVEL_MAX, tuning);
-    // The fixture content must exercise both regimes: the floor bites a novice, not an expert handler.
+    expect(novice.raiseDurationSimSeconds).toBeGreaterThan(tuning.adsAcquisitionMaximumSimSeconds);
+    expect(expert.raiseDurationSimSeconds).toBeLessThan(tuning.adsAcquisitionMaximumSimSeconds);
     expect(novice.adsAcquisitionDurationSimSeconds).toBe(tuning.adsAcquisitionMaximumSimSeconds);
     expect(expert.adsAcquisitionDurationSimSeconds).toBe(expert.raiseDurationSimSeconds);
-    const measure = (combatExpert: boolean, snipingExpert: boolean) => {
+    const measure = (combatTrained: boolean, snipingTrained: boolean) => {
       const runtime = makeRuntime({ content });
       equip(runtime);
-      if (combatExpert) {
+      if (combatTrained) {
         train(runtime, combatId);
       }
-      if (snipingExpert) {
+      if (snipingTrained) {
         train(runtime, snipingId);
       }
       runtime.setReadyHeld(true);
@@ -369,7 +385,6 @@ describe('long-gun skill ownership', () => {
   });
 
   it('cancels incomplete ADS acquisition on release and lost readiness, and re-entry restarts it', () => {
-    const tuning = combat.combat!.firearms!;
     const partway = Math.max(
       1,
       Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
@@ -407,7 +422,6 @@ describe('long-gun skill ownership', () => {
   });
 
   it('resumes saved ADS acquisition progress as an uninterrupted run continues it', async () => {
-    const tuning = combat.combat!.firearms!;
     const partway = Math.max(
       1,
       Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),

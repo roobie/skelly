@@ -2260,13 +2260,12 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   faster one: a long gun reads the same Combat raise curve for its shouldering
   time, clamped by a content maximum ADS duration so a novice sights faster than
   they raise instead of doubling the slowest handling. The clamp bounds ADS only,
-  never raise, and the acquisition is authoritative simulation state that starts
-  from an already ready firearm, charges no second raise job, and cancels with the
-  same sprint, readiness and hold constraints. Sniping has no timing curve of its
-  own. Recoil kick and recovery have one owner; splitting only kick would quietly
-  move recovery to the wrong skill. Firearm quality owns dispersion. Sniping and
-  Combat must not multiply sway together or compete through separate aim
-  controllers. See `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  never raise, and the acquisition is authoritative saved state, not a second
+  raise job. Sniping has no timing curve of its own. Recoil kick and recovery
+  have one owner; splitting only kick would quietly move recovery to the wrong
+  skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
+  sway together or compete through separate aim controllers. See
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
   `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
   `src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired` and
   `stanceEffectsFor`; and `src/game/session.ts`, `advancePlayerReadiness`.
