@@ -1424,7 +1424,7 @@ export const startPlay = (
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
-    attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
+    attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.offers(firearmUid, slotId),
   };
   const screen = new InventoryScreen(inventoryPanel, inventory, queue, hooks);
 
