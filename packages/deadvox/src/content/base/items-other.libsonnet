@@ -236,6 +236,7 @@ local spentCase(id, name, weight, description, model) = {
         'repair_kit',
         'make_sewing_kit',
         'make_sewing_repair_kit',
+        'sew_cloth_strip',
         'repair_crowbar',
         'repair_hammer',
         'repair_machete',

@@ -107,12 +107,7 @@ local lights = import 'lights.libsonnet';
       "weight": 25,
       "size": [1, 1],
       "stack": 8,
-      "model": "cloth_bundle",
-      "disassembly": {
-        "timeGameMinutes": 3,
-        "skill": "crafting",
-        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
+      "model": "cloth_bundle"
     },
     {
       "id": "sewing_thread",
@@ -415,6 +410,18 @@ local lights = import 'lights.libsonnet';
       "skills": { "crafting": 0 },
       "qualities": { "cutting": 1 },
       "components": [[{ "item": "rag", "count": 1 }]]
+    },
+    {
+      "id": "sew_cloth_strip",
+      category: 'materials', tags: ['textile'], searchTerms: [],
+      "result": { "item": "rag", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [
+        [{ "item": "cloth_strip", "count": 3 }],
+        [{ "item": "sewing_thread", "count": 1 }]
+      ]
     },
     {
       "id": "make_rope",
