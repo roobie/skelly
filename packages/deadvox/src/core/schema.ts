@@ -4592,11 +4592,6 @@ const GraphicsTuningSchema = strictObject({
     rimSoftness: pipe(Positive, maxValue(0.5)),
     reticleAntiAliasWidth: pipe(Positive, maxValue(2)),
   }),
-  /**
-   * How far a non-magnifying optic's window drifts from its dot per unit of true eye-to-axis offset. The true offset
-   * is below a pixel on screen, so the shown drift is a multiple of it; 1 is physical.
-   */
-  opticParallaxGain: pipe(number(), finite(), minValue(1), maxValue(50)),
   readyRadiusM: pipe(number(), finite(), minValue(0)),
   /** How far past the view radius terrain stays loaded and drawn, so a column on the edge does not churn. */
   streamHysteresisM: pipe(Positive, finite()),

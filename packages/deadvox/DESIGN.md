@@ -3306,8 +3306,8 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
-- **Optic presentation tuning is content:** the player view, lens-edge controls and the 1x dot-drift gain remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
-- **A 1x optic exaggerates the window's drift, never the dot:** physical eye misalignment is too subtle to show imperfect alignment, but the dot marks the shot direction and must not move off it. See `src/core/opticView.ts`, `exaggerateWindowDrift`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
+- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
+- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical

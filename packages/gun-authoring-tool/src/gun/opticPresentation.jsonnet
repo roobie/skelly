@@ -6,7 +6,7 @@
   miniReflex: { eyeReliefU: 24, windowHalfWidthU: 1, windowBottomY: 0.75, windowTopY: 2.5 },
   tubeDot: { eyeReliefU: 25 },
   holographic: {
-    eyeReliefU: 22,
+    eyeReliefU: 14.8,
     hoodFrontX: 0.25,
     batteryRearX: -3,
     batteryTopY: 1,

@@ -59,7 +59,6 @@
         "reticleAntiAliasWidth": 0.5,
         "rimSoftness": 0.040000000000000001
       },
-      "opticParallaxGain": 10,
       "playerViewFovDegrees": 75,
       "readyRadiusM": 64,
       "renderScale": {

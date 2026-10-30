@@ -23,13 +23,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
-import {
-  exaggerateWindowDrift,
-  type OpticLensFrame,
-  presentedOptic,
-  projectLensAperture,
-  projectOpticReticle,
-} from '../core/opticView.ts';
+import { type OpticLensFrame, presentedOptic, projectLensAperture, projectOpticReticle } from '../core/opticView.ts';
 import { ActorAnimator, type ActorItemPose, type HeldHandlingFrame } from './actorAnimator.ts';
 import { HeldPresentation } from './heldPresentation.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
@@ -63,7 +57,6 @@ export class HeldItems {
   private readonly models: ModelLibrary | undefined;
   private readonly figure: FigureDef;
   private readonly sunSource: DirectionalLight | undefined;
-  private readonly opticParallaxGain: number;
 
   constructor(
     inventory: Inventory,
@@ -72,16 +65,9 @@ export class HeldItems {
     {
       nearPlaneMetres,
       playerViewFovDegrees,
-      opticParallaxGain = 1,
       sunSource,
-    }: {
-      nearPlaneMetres: number;
-      playerViewFovDegrees: number;
-      opticParallaxGain?: number;
-      sunSource?: DirectionalLight;
-    },
+    }: { nearPlaneMetres: number; playerViewFovDegrees: number; sunSource?: DirectionalLight },
   ) {
-    this.opticParallaxGain = opticParallaxGain;
     this.inventory = inventory;
     this.camera = new PerspectiveCamera(playerViewFovDegrees, 1, nearPlaneMetres, 10);
     this.models = models;
@@ -220,14 +206,7 @@ export class HeldItems {
       settings.magnification,
     );
     if (aperture && reticleCenter) {
-      this.opticViewFrame = {
-        ...settings,
-        ...aperture,
-        center: settings.magnifying
-          ? aperture.center
-          : exaggerateWindowDrift(reticleCenter, aperture.center, this.opticParallaxGain),
-        reticleCenter,
-      };
+      this.opticViewFrame = { ...settings, ...aperture, reticleCenter };
     }
   }
 

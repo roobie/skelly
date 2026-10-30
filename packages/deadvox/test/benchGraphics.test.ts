@@ -49,7 +49,6 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
             id: CORE_CONTENT_IDS.coreGraphics,
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
-            opticParallaxGain: 1,
             readyRadiusM: 16,
             streamHysteresisM: 16,
             fogFarPlaneScale: 1.5,

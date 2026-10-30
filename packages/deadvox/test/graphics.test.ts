@@ -24,7 +24,6 @@ const fixtureGraphics = {
   nearPlaneMetres: 0.01,
   playerViewFovDegrees: 75,
   opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },
-  opticParallaxGain: 1,
 };
 const tuning: GraphicsOptions = {
   renderScale: {
