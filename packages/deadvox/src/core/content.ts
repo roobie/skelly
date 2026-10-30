@@ -1638,7 +1638,19 @@ const checkRecipe = ({
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
-      checkItem(component.item, `.components[${g}][${c}].item`);
+      if ('item' in component) {
+        checkItem(component.item, `.components[${g}][${c}].item`);
+        return;
+      }
+      const path = `.components[${g}][${c}]`;
+      if (!registry.liquids.has(component.liquid)) {
+        report('recipes', recipe.id, `${path}.liquid`, `no liquid "${component.liquid}"`);
+      } else if (![...registry.items.values()].some((item) => item.vessel?.accepts.includes(component.liquid))) {
+        report('recipes', recipe.id, `${path}.liquid`, 'no vessel accepts this liquid');
+      }
+      if (component.volumeMicrolitres % recipe.result.count !== 0) {
+        report('recipes', recipe.id, `${path}.volumeMicrolitres`, 'volume must divide by result count');
+      }
     });
   });
   for (const id of Object.keys(recipe.skills)) {
@@ -1697,16 +1709,19 @@ const materialTransformations = (registry: Registry): MaterialTransformation[] =
     if (recipe.kind === 'repair') {
       continue;
     }
-    const inputs = recipe.components.flat();
-    const inputIds = new Set(inputs.map(({ item }) => item));
+    const solidGroups = recipe.components.map((group) => group.filter((input) => 'item' in input));
+    if (solidGroups.some((group) => group.length === 0)) {
+      continue;
+    }
+    const inputIds = new Set(solidGroups.flat().map(({ item }) => item));
     if (inputIds.size !== 1) {
       continue;
     }
-    const counts = recipe.components.reduce<number[]>(
+    const counts = solidGroups.reduce<number[]>(
       (totals, alternatives) => totals.flatMap((total) => alternatives.map(({ count }) => total + count)),
       [0],
     );
-    const from = inputs[0]!.item;
+    const from = solidGroups[0]![0]!.item;
     for (const count of counts) {
       transformations.push({
         from,

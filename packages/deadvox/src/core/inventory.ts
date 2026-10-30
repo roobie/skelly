@@ -54,13 +54,14 @@ import {
   type PlacedState,
   restoreItem,
   restorePlaced,
+  sameRecoveryState,
   snapshotItem,
   snapshotPlaced,
   stackRoom,
   weightOf,
 } from './items.ts';
 import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, walkItemTree } from './itemTree.ts';
-import { type LiquidTransferPlan, planLiquidTransfer } from './liquids.ts';
+import { type LiquidTransferPlan, type LiquidTransferRefusal, planLiquidDraw, planLiquidTransfer } from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import { countText } from './numberText.ts';
@@ -994,6 +995,71 @@ export class Inventory {
     return { ok: true, item };
   }
 
+  private liquidEndpointRefusal(item: Item): LiquidTransferRefusal | undefined {
+    const at = this.locate(item);
+    if (!at) {
+      return 'missing-endpoint';
+    }
+    const place = this.placeOf(at);
+    if (!this.reachable(place)) {
+      return 'unreachable';
+    }
+    if (heldInPlace(this.registry, item, at) || this.accessRefusal(place, undefined)) {
+      return 'inaccessible';
+    }
+    return undefined;
+  }
+
+  planLiquidDraws(
+    draws: readonly { uid: number; liquid: string; volumeMicrolitres: number }[],
+  ):
+    | { ok: false; reason: LiquidTransferRefusal; uid: number; liquid: string }
+    | { ok: true; balances: { item: Item; contents: NonNullable<Item['liquidContents']> }[] } {
+    const totals = new Map<number, { liquid: string; volumeMicrolitres: number }>();
+    for (const draw of draws) {
+      const previous = totals.get(draw.uid);
+      if (
+        !Number.isSafeInteger(draw.volumeMicrolitres) ||
+        draw.volumeMicrolitres <= 0 ||
+        (previous && previous.liquid !== draw.liquid)
+      ) {
+        return { ok: false, reason: 'invalid-limit', uid: draw.uid, liquid: draw.liquid };
+      }
+      totals.set(draw.uid, {
+        liquid: draw.liquid,
+        volumeMicrolitres: (previous?.volumeMicrolitres ?? 0) + draw.volumeMicrolitres,
+      });
+    }
+    const balances: { item: Item; contents: NonNullable<Item['liquidContents']> }[] = [];
+    for (const [uid, draw] of totals) {
+      const item = this.itemByUid(uid);
+      const plan = planLiquidDraw(this.registry, item, draw.liquid, draw.volumeMicrolitres);
+      if (!plan.ok) {
+        return { ...plan, uid, liquid: draw.liquid };
+      }
+      const reason = this.liquidEndpointRefusal(item!);
+      if (reason) {
+        return { ok: false, reason, uid, liquid: draw.liquid };
+      }
+      balances.push({ item: item!, contents: plan.sourceContents });
+    }
+    return { ok: true, balances };
+  }
+
+  drawLiquids(
+    draws: readonly { uid: number; liquid: string; volumeMicrolitres: number }[],
+  ): ReturnType<Inventory['planLiquidDraws']> {
+    const plan = this.planLiquidDraws(draws);
+    if (!plan.ok) {
+      return plan;
+    }
+    for (const { item, contents } of plan.balances) {
+      item.liquidContents = { ...contents };
+    }
+    this.version += 1;
+    return plan;
+  }
+
   planLiquidTransfer(
     sourceUid: number,
     receiverUid: number | undefined,
@@ -1005,18 +1071,11 @@ export class Inventory {
     if (!plan.ok) {
       return plan;
     }
-    const from = this.locate(source!)!;
-    const to = this.locate(receiver!)!;
-    const sourcePlace = this.placeOf(from);
-    const receiverPlace = this.placeOf(to);
-    if (!(this.reachable(sourcePlace) && this.reachable(receiverPlace))) {
-      return { ok: false, reason: 'unreachable' };
+    const reason = this.liquidEndpointRefusal(source!) ?? this.liquidEndpointRefusal(receiver!);
+    if (reason) {
+      return { ok: false, reason };
     }
-    if (
-      heldInPlace(this.registry, source!, from) ||
-      heldInPlace(this.registry, receiver!, to) ||
-      this.accessRefusal(sourcePlace, receiverPlace)
-    ) {
+    if (this.accessRefusal(this.placeOf(this.locate(source!)!), this.placeOf(this.locate(receiver!)!))) {
       return { ok: false, reason: 'inaccessible' };
     }
     return plan;
@@ -1167,6 +1226,9 @@ export class Inventory {
     if (!this.sameFood(target, source)) {
       throw new Error('Only an equal food cohort can join a stack');
     }
+    if (!sameRecoveryState(target, source)) {
+      throw new Error('Only equal unlit recovery states can join a stack');
+    }
     target.count += source.count;
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
     if (lootedCount > 0) {
@@ -1192,7 +1254,18 @@ export class Inventory {
       }
       seen.add(item.uid);
     }
-    return !plan.tools.some((tool) => seen.has(tool.item.uid));
+    return (
+      !plan.tools.some((tool) => seen.has(tool.item.uid)) &&
+      this.planLiquidDraws(
+        plan.liquids.flatMap((draw) =>
+          draw.sources.map((source) => ({
+            uid: source.item.uid,
+            liquid: draw.liquid,
+            volumeMicrolitres: source.volumeMicrolitres,
+          })),
+        ),
+      ).ok
+    );
   }
 
   private validRepairPlan(
@@ -1267,6 +1340,12 @@ export class Inventory {
     return {
       kind: 'craft',
       recipe: plan.recipe,
+      liquids: plan.liquids.map((draw) => ({
+        group: draw.group,
+        liquid: draw.liquid,
+        volumeMicrolitres: draw.volumeMicrolitres,
+        sources: draw.sources.map((source) => ({ uid: source.item.uid, volumeMicrolitres: source.volumeMicrolitres })),
+      })),
       elapsed: 0,
       duration: plan.gather + plan.work,
       components,
@@ -1449,7 +1528,17 @@ export class Inventory {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
-    return [this.create(result.item, result.count, 1, calendar)];
+    const output = this.create(result.item, result.count, 1, calendar);
+    const totals = new Map<string, number>();
+    for (const draw of payload.liquids ?? []) {
+      totals.set(draw.liquid, (totals.get(draw.liquid) ?? 0) + draw.volumeMicrolitres / result.count);
+    }
+    if (totals.size > 0) {
+      output.craftedLiquids = [...totals]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([liquid, volumeMicrolitres]) => ({ liquid, volumeMicrolitres }));
+    }
+    return [output];
   }
 
   private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
@@ -1476,6 +1565,36 @@ export class Inventory {
     );
   }
 
+  private workDrawAdmission(
+    payload: NonNullable<Item['work']>,
+    finish: boolean,
+  ): { item: Item; contents: NonNullable<Item['liquidContents']> }[] {
+    const plan = this.planLiquidDraws(
+      finish && payload.kind === 'craft'
+        ? (payload.liquids ?? []).flatMap((draw) => draw.sources.map((source) => ({ ...source, liquid: draw.liquid })))
+        : [],
+    );
+    if (!plan.ok) {
+      const source = this.itemByUid(plan.uid);
+      const liquid = this.registry.liquids.get(plan.liquid)!.name;
+      throw new Error(
+        source
+          ? coreMessage(this.registry, 'craftLiquidUnavailable', {
+              vessel: this.registry.items.get(source.type)!.name,
+              liquid,
+            })
+          : coreMessage(this.registry, 'craftLiquidSourceMissing', { liquid }),
+      );
+    }
+    return plan.balances;
+  }
+
+  private applyWorkRepair(payload: NonNullable<Item['work']>, target: Item | undefined, finish: boolean): void {
+    if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
+      target.condition = Math.min(1, target.condition + payload.repairAmount);
+    }
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, complete: boolean, feet: Vec3, calendar = 0): void {
     const payload = work.work;
@@ -1483,7 +1602,8 @@ export class Inventory {
     if (!(payload && at)) {
       return;
     }
-    const finish = complete && this.completeEntityRepair(payload);
+    const finish = complete;
+    const balances = this.workDrawAdmission(payload, finish);
     const repairing = payload.kind === 'craft' && payload.repairTarget !== undefined;
     const target = this.repairTargetForWork(payload, finish);
     const outputs = this.workOutputs(payload, finish, calendar);
@@ -1492,11 +1612,19 @@ export class Inventory {
       throw new Error('An input or result is too large to put down');
     }
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
+    if (finish && !this.completeEntityRepair(payload)) {
+      this.releaseWork(work, false, feet, calendar);
+      return;
+    }
+    if (finish) {
+      // All admissions precede world repair and this non-refusing balance commit.
+      for (const { item, contents } of balances) {
+        item.liquidContents = { ...contents };
+      }
+    }
     this.remove(at);
     work.work = undefined;
-    if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
-      target.condition = Math.min(1, target.condition + payload.repairAmount);
-    }
+    this.applyWorkRepair(payload, target, finish);
     this.version += 1;
     if (resultInHand && at.kind === 'hand') {
       this.put(outputs[0]!, { kind: 'hand', side: at.side });
@@ -2257,6 +2385,48 @@ const validDisassemblySnapshot = (
   return outputsAreValid && sameDisassemblyOutputs(expected, work.outputs);
 };
 
+const validateCraftLiquidDraws = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
+) => {
+  const recipe = registry.recipes.get(work.recipe)!;
+  const liquidGroups = new Map<number, NonNullable<typeof work.liquids>[number]>();
+  const perUnit = new Map<string, number>();
+  for (const draw of work.liquids ?? []) {
+    if (
+      !Number.isSafeInteger(draw.group) ||
+      draw.group < 0 ||
+      liquidGroups.has(draw.group) ||
+      !registry.liquids.has(draw.liquid) ||
+      !Number.isSafeInteger(draw.volumeMicrolitres) ||
+      draw.volumeMicrolitres <= 0 ||
+      !recipe.components[draw.group]?.some(
+        (alternative) =>
+          'liquid' in alternative &&
+          alternative.liquid === draw.liquid &&
+          alternative.volumeMicrolitres === draw.volumeMicrolitres,
+      ) ||
+      !Array.isArray(draw.sources) ||
+      draw.sources.length === 0 ||
+      new Set(draw.sources.map(({ uid }) => uid)).size !== draw.sources.length ||
+      draw.sources.some(
+        ({ uid, volumeMicrolitres }) =>
+          !Number.isSafeInteger(uid) || uid < 1 || !Number.isSafeInteger(volumeMicrolitres) || volumeMicrolitres <= 0,
+      ) ||
+      draw.sources.reduce((sum, source) => sum + source.volumeMicrolitres, 0) !== draw.volumeMicrolitres
+    ) {
+      throw new Error('Invalid craft liquid draws');
+    }
+    const volume = (perUnit.get(draw.liquid) ?? 0) + draw.volumeMicrolitres / recipe.result.count;
+    if (!Number.isSafeInteger(volume)) {
+      throw new Error('Invalid per-unit craft liquid volume');
+    }
+    perUnit.set(draw.liquid, volume);
+    liquidGroups.set(draw.group, draw);
+  }
+  return liquidGroups;
+};
+
 const validateCraftWorkItem = (
   registry: Registry,
   work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
@@ -2277,6 +2447,7 @@ const validateCraftWorkItem = (
   ) {
     throw new Error('Invalid craft work payload');
   }
+  const liquidGroups = validateCraftLiquidDraws(registry, work);
   const actual = new Map<string, number>();
   for (const component of work.components) {
     actual.set(component.type, (actual.get(component.type) ?? 0) + component.count);
@@ -2286,6 +2457,18 @@ const validateCraftWorkItem = (
       return [...remaining.values()].every((count) => count === 0);
     }
     return recipe.components[group]!.some((alternative) => {
+      const draw = liquidGroups.get(group);
+      if ('liquid' in alternative) {
+        return Boolean(
+          draw &&
+            draw.liquid === alternative.liquid &&
+            draw.volumeMicrolitres === alternative.volumeMicrolitres &&
+            matches(group + 1, remaining),
+        );
+      }
+      if (draw) {
+        return false;
+      }
       const available = remaining.get(alternative.item) ?? 0;
       if (available < alternative.count) {
         return false;

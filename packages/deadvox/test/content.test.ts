@@ -2066,11 +2066,20 @@ describe('content references', () => {
     expect(registry.skills.get('fixture_skill')).toEqual(recipePack.skills[0]);
   });
 
-  it('rejects a craft-and-take-apart cycle that grows material', () => {
+  it('rejects a growing solid craft cycle even when its recipe offers a liquid alternative', () => {
     const source = {
       source: 'material-cycle-fixture.json',
       data: {
+        liquids: [{ id: 'fixture_liquid', name: 'Fixture liquid', densityGramsPerMillilitre: 1 }],
         items: [
+          {
+            id: 'fixture_vessel',
+            name: 'Fixture vessel',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            vessel: { capacityMicrolitres: 10, accepts: ['fixture_liquid'], initialContents: { kind: 'empty' } },
+          },
           { id: 'fixture_fabric', name: 'Fixture fabric', category: 'material', weight: 1, size: [1, 1] },
           {
             id: 'fixture_strip',
@@ -2097,7 +2106,12 @@ describe('content references', () => {
             timeGameMinutes: 1,
             skills: Object.fromEntries([['fixture_crafting', 0]]),
             qualities: {},
-            components: [[{ item: 'fixture_fabric', count: 1 }]],
+            components: [
+              [
+                { item: 'fixture_fabric', count: 1 },
+                { liquid: 'fixture_liquid', volumeMicrolitres: 2 },
+              ],
+            ],
           },
         ],
       },

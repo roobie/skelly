@@ -122,7 +122,7 @@ it('a save round-trip keeps the barred side of a door', async () => {
 it('a save round-trip restores a discounted door-bar craft in progress', async () => {
   const runtime = createRuntime(undefined, false, undefined, { registry, spawn: [0, 1, 0] });
   const recipe = registry.recipes.get('door_bar')!;
-  const [component] = recipe.components[0]!;
+  const component = recipe.components[0]!.find((part) => 'item' in part)!;
   const pos = runtime.player.body.pos.map(Math.floor) as Vec3;
   for (const side of ['right', 'left'] as const) {
     const held = runtime.inventory.hands[side];

@@ -2,7 +2,7 @@ import type { Registry } from './content.ts';
 import type { Item } from './items.ts';
 import type { LiquidContents } from './schema.ts';
 
-type LiquidTransferRefusal =
+export type LiquidTransferRefusal =
   | 'missing-endpoint'
   | 'same-endpoint'
   | 'not-vessel'
@@ -13,7 +13,8 @@ type LiquidTransferRefusal =
   | 'incompatible-liquid'
   | 'full-receiver'
   | 'unreachable'
-  | 'inaccessible';
+  | 'inaccessible'
+  | 'short';
 
 export type LiquidTransferPlan =
   | { ok: false; reason: LiquidTransferRefusal }
@@ -50,6 +51,44 @@ export const vesselFillShare = (item: Item, vessel: { readonly capacityMicrolitr
 
 const afterDebit = (contents: Extract<LiquidContents, { kind: 'filled' }>, remaining: number): LiquidContents =>
   remaining === 0 ? { kind: 'empty' } : { ...contents, volumeMicrolitres: remaining };
+
+export type LiquidDrawPlan =
+  | { ok: false; reason: LiquidTransferRefusal }
+  | { ok: true; sourceContents: LiquidContents };
+
+export const planLiquidDraw = (
+  registry: Registry,
+  source: Item | undefined,
+  liquid: string,
+  volumeMicrolitres: number,
+): LiquidDrawPlan => {
+  if (!source) {
+    return { ok: false, reason: 'missing-endpoint' };
+  }
+  if (!registry.items.get(source.type)?.vessel) {
+    return { ok: false, reason: 'not-vessel' };
+  }
+  if (!serviceable(source)) {
+    return { ok: false, reason: 'unserviceable' };
+  }
+  if (!validContents(registry, source)) {
+    return { ok: false, reason: 'invalid-contents' };
+  }
+  if (!Number.isSafeInteger(volumeMicrolitres) || volumeMicrolitres <= 0) {
+    return { ok: false, reason: 'invalid-limit' };
+  }
+  const contents = source.liquidContents!;
+  if (contents.kind === 'empty') {
+    return { ok: false, reason: 'empty-source' };
+  }
+  if (contents.liquid !== liquid) {
+    return { ok: false, reason: 'incompatible-liquid' };
+  }
+  if (contents.volumeMicrolitres < volumeMicrolitres) {
+    return { ok: false, reason: 'short' };
+  }
+  return { ok: true, sourceContents: afterDebit(contents, contents.volumeMicrolitres - volumeMicrolitres) };
+};
 
 export const planLiquidTransfer = (
   registry: Registry,

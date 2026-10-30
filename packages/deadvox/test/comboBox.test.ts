@@ -153,9 +153,12 @@ it('sends a crafting material choice to the recipe preference', () => {
       {
         group: 0,
         preferred: '',
+        draws: [],
+        automatic: true,
+        vessels: [],
         alternatives: [
-          { id: 'rag', name: 'Rag', needed: 1, found: 1 },
-          { id: 'cloth_strip', name: 'Cloth strip', needed: 1, found: 2 },
+          { kind: 'item', id: 'rag', name: 'Rag', needed: 1, found: 1 },
+          { kind: 'item', id: 'cloth_strip', name: 'Cloth strip', needed: 1, found: 2 },
         ],
       },
     ],
@@ -165,7 +168,7 @@ it('sends a crafting material choice to the recipe preference', () => {
   };
   const prefer = vi.fn();
   const text = baseScreenText().crafting;
-  renderCrafting(root, [row], { start: vi.fn(), prefer }, text);
+  renderCrafting(root, [row], { start: vi.fn(), prefer, source: vi.fn() }, text);
   const field = root.querySelector<HTMLInputElement>('[role="combobox"]')!;
   expect(field.getAttribute('aria-label')).toBe(fillText(text.group, { recipe: 'Bandage', group: '1' }));
 
