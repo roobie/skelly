@@ -1035,41 +1035,6 @@
       }
     },
     {
-      "anchors": {
-        "flame": [0.069000000000000006, 0.050000000000000003, 0]
-      },
-      "file": "assets/models/dead_desk_lamp.glb",
-      "grip": {
-        "at": [0, 0, 0],
-        "turn": [0, 0, 0]
-      },
-      "id": "oil_lamp",
-      "itemPresentation": {
-        "materials": ["metal", "metal", "metal"],
-        "supply": {
-          "kind": "none"
-        },
-        "wear": "core"
-      },
-      "parts": {
-        "arm": {
-          "centreOfMass": [0.00099999999999999937, 0.077499999999999986, -9.7561600103919698e-18],
-          "massKg": 0.25,
-          "node": "arm:arm"
-        },
-        "base": {
-          "centreOfMass": [0, 0.0050000000000000001, 0],
-          "massKg": 0.5,
-          "node": "base:base"
-        },
-        "shade": {
-          "centreOfMass": [0.069232558139534883, 0.061325581395348834, -0.00058139534883721743],
-          "massKg": 0.14999999999999999,
-          "node": "shade:shade"
-        }
-      }
-    },
-    {
       "file": "assets/models/table_fan.glb",
       "id": "table_fan",
       "itemPresentation": {
@@ -1539,6 +1504,74 @@
           "node": "material:foldedSheet"
         }
       },
+      "roll": 0
+    },
+    {
+      "anchors": {
+        "flame": [0.016, 0.078000000000000014, -2.2695244761675402e-17]
+      },
+      "file": "assets/models/oil_lamp.glb",
+      "grip": {
+        "at": [0, 0.0060000000000000001, 0],
+        "turn": [0, 0, -90]
+      },
+      "hold": "upright",
+      "id": "oil_lamp",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "glass", "fuel"],
+        "supply": {
+          "axis": "y",
+          "bands": [
+            {
+              "from": 0,
+              "scale": 0
+            },
+            {
+              "from": 0.01,
+              "scale": 0.20000000000000001
+            },
+            {
+              "from": 0.34999999999999998,
+              "scale": 0.5
+            },
+            {
+              "from": 0.69999999999999996,
+              "scale": 1
+            }
+          ],
+          "kind": "fill",
+          "piece": "fuel_fill:fuel_fill"
+        },
+        "wear": "core"
+      },
+      "parts": {
+        "base": {
+          "centreOfMass": [0, 0.006000000000000001, 0],
+          "massKg": 0.40000000000000002,
+          "node": "base:base"
+        },
+        "burner": {
+          "centreOfMass": [0, 0.078000000000000014, -1.9225797809721788e-17],
+          "massKg": 0.080000000000000002,
+          "node": "burner:burner"
+        },
+        "chimney": {
+          "centreOfMass": [-3.0047739399045255e-5, 0.1316902555461949, -3.7349059253066799e-5],
+          "massKg": 0.080000000000000002,
+          "node": "chimney:chimney"
+        },
+        "fuel_fill": {
+          "centreOfMass": [-2.8234966850572586e-5, 0.041998655477769022, -2.957948908156249e-5],
+          "massKg": 0.001,
+          "node": "fuel_fill:fuel_fill"
+        },
+        "reservoir": {
+          "centreOfMass": [0, 0.041999999999999996, -4.9749830044246645e-18],
+          "massKg": 0.12,
+          "node": "reservoir:reservoir"
+        }
+      },
+      "rest": "upright",
       "roll": 0
     },
     {

@@ -44,7 +44,7 @@ import { grenade } from './families/grenade.ts';
 import { compass, keycard, key as keyFamily, lighter, matchbox } from './families/handheld.ts';
 import { handOpener } from './families/handOpener.ts';
 import { bottleJack, engineHoist, scissorJack } from './families/jacks.ts';
-import { arm, base, shade } from './families/lamp.ts';
+import { arm, base, chimney, reservoir, shade } from './families/lamp.ts';
 import { candle, flashlight, torch } from './families/lights.ts';
 import { cutStock, foldedSheet, turnedStock } from './families/materials.ts';
 import { bat, crowbar, hammer, knife, sledgehammer, steelPipe, wrench } from './families/melee.ts';
@@ -148,6 +148,8 @@ const builders = {
   cylinder: base,
   arm,
   shade,
+  reservoir,
+  chimney,
   carton,
   vessel,
   'folded-garment': foldedGarment,

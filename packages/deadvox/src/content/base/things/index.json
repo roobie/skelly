@@ -455,6 +455,38 @@
     "anchors": { "flame": [0.112, 0, 0] }
   },
   {
+    "id": "oil_lamp",
+    "file": "assets/models/oil_lamp.glb",
+    "parts": {
+      "base": { "node": "base:base", "massKg": 0.4, "centreOfMass": [0, 0.006000000000000001, 0] },
+      "reservoir": {
+        "node": "reservoir:reservoir",
+        "massKg": 0.12,
+        "centreOfMass": [0, 0.041999999999999996, -4.9749830044246645e-18]
+      },
+      "fuel_fill": {
+        "node": "fuel_fill:fuel_fill",
+        "massKg": 0.001,
+        "centreOfMass": [-0.000028234966850572586, 0.04199865547776902, -0.00002957948908156249]
+      },
+      "burner": {
+        "node": "burner:burner",
+        "massKg": 0.08,
+        "centreOfMass": [0, 0.07800000000000001, -1.9225797809721788e-17]
+      },
+      "chimney": {
+        "node": "chimney:chimney",
+        "massKg": 0.08,
+        "centreOfMass": [-0.000030047739399045255, 0.1316902555461949, -0.0000373490592530668]
+      }
+    },
+    "grip": { "at": [0, 0.006, 0], "turn": [0, 0, -90] },
+    "hold": "upright",
+    "rest": "upright",
+    "roll": 0,
+    "anchors": { "flame": [0.016, 0.07800000000000001, -2.2695244761675402e-17] }
+  },
+  {
     "id": "dead_desk_lamp",
     "file": "assets/models/dead_desk_lamp.glb",
     "parts": {
