@@ -506,17 +506,22 @@ export const planCraft = (
     Object.entries(sources).sort(([a], [b]) => Number(a) - Number(b)),
     skillKey,
   ]);
-  const componentReason =
-    Object.keys(sources).length > 0
-      ? coreMessage(snapshot.player.inventory.registry, 'craftSourcesShort')
-      : componentRefusal(snapshot, status, prefer);
+  const componentReason = componentRefusal(snapshot, status, prefer);
+  const componentFailure = (): CraftResult => {
+    // Blame the selected vessels only if the craft is feasible without that restriction.
+    const sourcesShort =
+      Object.keys(sources).length > 0 && 'plan' in planCraft(recipe, snapshot, character, { prefer });
+    return refusal(
+      sourcesShort ? coreMessage(snapshot.player.inventory.registry, 'craftSourcesShort') : componentReason,
+    );
+  };
   const cached = cache.get(key);
   if (cached !== undefined) {
-    return cached ? { plan: copyPlan(cached) } : refusal(componentReason);
+    return cached ? { plan: copyPlan(cached) } : componentFailure();
   }
   const best = bestCraftAllocation({ recipe, snapshot, index, character }, { prefer, sources });
   cache.set(key, best ?? null);
-  return best ? { plan: copyPlan(best) } : refusal(componentReason);
+  return best ? { plan: copyPlan(best) } : componentFailure();
 };
 
 const liquidGather = (liquids: CraftLiquid[], allocation: Allocation, snapshot: ReachSnapshot): number => {

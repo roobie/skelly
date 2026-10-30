@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import type { RecipeDef } from '../src/core/content.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { type CraftSources, planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
@@ -147,11 +148,35 @@ it('a colliding item id cannot satisfy a preferred liquid alternative', () => {
     planCraft(recipe, r.reach(), r.character, { prefer: { 0: { kind: 'liquid', liquid: STOCK } } }),
   ).toHaveProperty('missing');
 });
+it('a fully supplied named vessel does not hide a missing solid component', () => {
+  const r = setup([20]);
+  const stock = [...r.inventory.items()].find(({ item }) => item.type === STOCK)!.item;
+  staged(r.inventory.consume(stock, stock.count));
+  const expected = planCraft(definition, r.reach(), r.character);
+  if (!('missing' in expected)) {
+    throw new Error('Fixture should lack solid stock');
+  }
+  expect(expected.missing.reason).toContain(registry.items.get(STOCK)!.name.toLowerCase());
+  expect(planCraft(definition, r.reach(), r.character, { sources: { 0: [r.vessels[0]!.uid] } })).toMatchObject({
+    missing: { reason: expected.missing.reason },
+  });
+});
+it('a named liquid source does not hide competition for solid stock', () => {
+  const r = setup([20]);
+  const stock = [...r.inventory.items()].find(({ item }) => item.type === STOCK)!.item;
+  const recipe = {
+    ...definition,
+    components: [definition.components[0]!, [{ item: STOCK, count: stock.count }], definition.components[1]!],
+  };
+  expect(planCraft(recipe, r.reach(), r.character, { sources: { 0: [r.vessels[0]!.uid] } })).toMatchObject({
+    missing: { reason: coreMessage(registry, 'componentsCompete') },
+  });
+});
 it('a short named list never tops up from other default vessels', () => {
   const r = setup([5, 100]);
-  expect(planCraft(definition, r.reach(), r.character, { sources: { 0: [r.vessels[0]!.uid] } })).toHaveProperty(
-    'missing',
-  );
+  expect(planCraft(definition, r.reach(), r.character, { sources: { 0: [r.vessels[0]!.uid] } })).toMatchObject({
+    missing: { reason: coreMessage(registry, 'craftSourcesShort') },
+  });
 });
 it('Continue admits empty recorded vessels but finish stops at full progress retaining escrow and all balances', () => {
   const r = setup();
@@ -169,6 +194,19 @@ it('Continue admits empty recorded vessels but finish stops at full progress ret
   expect(r.inventory.snapshotState().piles).toEqual(before);
   expect(r.sim.compression.interruption ?? '').toContain(registry.liquids.get(STOCK)!.name);
   expect(r.sim.compression.interruption ?? '').toContain(registry.items.get(r.vessels[1]!.type)!.name);
+});
+it('a destroyed recorded vessel refuses completion without exposing its uid', () => {
+  const r = setup([20]);
+  expect(r.commands.start(definition.id)).toBeUndefined();
+  const work = r.inventory.hands.right!;
+  r.sim.actions.stop();
+  staged(r.inventory.consume(r.vessels[0]!));
+  expect(r.commands.act(work.uid, 'continue')).toBeUndefined();
+  r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+  expect(r.sim.compression.interruption).toBe(
+    coreMessage(registry, 'craftLiquidSourceMissing', { liquid: registry.liquids.get(STOCK)!.name }),
+  );
+  expect(work.work!.elapsed).toBe(work.work!.duration);
 });
 it('refilling the recorded vessel and continuing finishes on the next tick with the exact recorded debit', () => {
   const r = setup([20, 20]);

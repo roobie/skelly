@@ -1576,11 +1576,14 @@ export class Inventory {
     );
     if (!plan.ok) {
       const source = this.itemByUid(plan.uid);
+      const liquid = this.registry.liquids.get(plan.liquid)!.name;
       throw new Error(
-        coreMessage(this.registry, 'craftLiquidUnavailable', {
-          vessel: source ? this.registry.items.get(source.type)!.name : countText(plan.uid),
-          liquid: this.registry.liquids.get(plan.liquid)!.name,
-        }),
+        source
+          ? coreMessage(this.registry, 'craftLiquidUnavailable', {
+              vessel: this.registry.items.get(source.type)!.name,
+              liquid,
+            })
+          : coreMessage(this.registry, 'craftLiquidSourceMissing', { liquid }),
       );
     }
     return plan.balances;
