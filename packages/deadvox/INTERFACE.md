@@ -6,7 +6,7 @@ read_if:
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
   - you're changing debug/playtest separation or inventory layout
-  - you're implementing or refining inventory item pictures, lighting or state depiction
+  - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
 ---
 
 # Deadvox interface
@@ -126,13 +126,20 @@ a declared model failing to load: errors must not be hidden as intentional
 coverage, and temporary loading must not become a permanent absent picture.
 See `src/core/schema.ts`, `ItemSchema`, and `src/render/models.ts`, `ModelLibrary`.
 
-Pictures depict stable instance snapshots, not handling motion. This supports
-recognition of fitted equipment without another animation or action owner.
+Pictures and the read-only viewer depict stable instance snapshots, not handling
+motion. They share the world's state presentation so inspection does not invent
+another likeness. Battery level remains text-only: charge hidden inside a battery
+is not visible knowledge. Fuel fill requires authored clear geometry; opaque
+vessels grant no x-ray view. Wear tints follow material class so metal, cloth and
+wood remain distinct substances. Existing lit glow and firestarter flames remain
+visible in the reference view, independent of the world's ambient light. See
+`src/render/itemLook.ts`, `itemLook`, `src/render/itemStateLook.ts`,
+`applyItemStateLook`, and `src/render/itemPictures.ts`, `ItemPictures`.
+
 State that geometry cannot express remains text; a misleading pose must be
 corrected or omitted, not excused as static. A fitted magazine does not prove
-loaded ammunition. Pictures remain subject to the shared instance-look rule in
-`DESIGN.md`, "Piles and item models": they must not imply fitted parts or handling
-state the owned item lacks. See `src/render/itemLook.ts`, `itemLook`.
+loaded ammunition. The shared instance-look rule in `DESIGN.md`, "Piles and item models",
+keeps pictures from implying fitted parts or handling state the owned item lacks.
 
 ## Title choice
 

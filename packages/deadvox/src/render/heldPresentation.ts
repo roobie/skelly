@@ -27,8 +27,8 @@ import { type HandPose, interpolateHandPose } from '../core/meleePose.ts';
 import type { ArmRigDef } from '../core/schema.ts';
 import { type ArmRig, type ArmSolution, buildArmRig, solveArmRig } from './armRig.ts';
 import { presentHeldDisplay } from './heldDisplay.ts';
-import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
+import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import type { WornPresentation } from './playerFigure.ts';
 import { WornModels } from './wornModels.ts';
@@ -128,7 +128,7 @@ export class HeldPresentation {
     this.wornFrames.clear();
     this.baseParts.clear();
     for (const held of this.heldByHand.values()) {
-      disposeItemEmissiveMaterials(held);
+      disposeItemStateMaterials(held);
     }
     for (const object of [...this.arms.values(), ...this.heldByHand.values()]) {
       object.removeFromParent();
@@ -147,9 +147,8 @@ export class HeldPresentation {
   model(item: Item): ReturnType<ModelLibrary['heldLook']> {
     const look = itemLook(this.registry, item);
     const model = look && this.models?.heldLook(look);
-    if (model) {
-      const def = defOf(this.registry, item.type);
-      applyItemEmissive(model.root, item, def, def.model ? this.registry.models.get(def.model) : undefined);
+    if (model && look) {
+      applyItemStateLook(model.root, look, this.registry);
     }
     return model;
   }

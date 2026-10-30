@@ -1669,6 +1669,13 @@
       },
       "file": "assets/models/car_battery.glb",
       "id": "car_battery",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.09375, 0],
@@ -1699,6 +1706,13 @@
       },
       "file": "assets/models/car_headlamp.glb",
       "id": "car_headlamp",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.078125, 0],
@@ -1720,6 +1734,13 @@
       },
       "file": "assets/models/hatchback_battery_tray.glb",
       "id": "hatchback_battery_tray",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.015625, 0.015625, 0],
@@ -1741,6 +1762,13 @@
       },
       "file": "assets/models/pickup_battery_tray.glb",
       "id": "pickup_battery_tray",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.015625, 0],
@@ -1762,6 +1790,13 @@
       },
       "file": "assets/models/wheel_205_55r16.glb",
       "id": "wheel_205_55r16",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.00092132972322502926, -0.0015230144404332125, 0],
@@ -1787,6 +1822,13 @@
       },
       "file": "assets/models/front_seat.glb",
       "id": "front_seat",
+      "itemPresentation": {
+        "materials": ["metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.12729357798165139, 0.30239392201834864, 0],
@@ -1820,6 +1862,13 @@
       },
       "file": "assets/models/door_mirror.glb",
       "id": "door_mirror",
+      "itemPresentation": {
+        "materials": ["polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.014423076923076924, 0.061298076923076927, 0.11778846153846155],
@@ -1849,6 +1898,13 @@
       },
       "file": "assets/models/steering_wheel.glb",
       "id": "steering_wheel",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.021306818181818184, -0.011837121212121212, 0],
@@ -1876,6 +1932,13 @@
       "anchors": {},
       "file": "assets/models/gear_lever.glb",
       "id": "gear_lever",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.00026483050847457616, 0.097192796610169496, -0.00026483050847457616],
@@ -1903,6 +1966,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_shell.glb",
       "id": "hatchback_shell",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.4474143693527568, 0.61026674580490503, 0],
@@ -2053,6 +2123,13 @@
       },
       "file": "assets/models/hatchback_front_door.glb",
       "id": "hatchback_front_door",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.20264061766087366, 0.69860409816815405, 0.82473432362611554],
@@ -2087,6 +2164,13 @@
       },
       "file": "assets/models/hatchback_rear_door.glb",
       "id": "hatchback_rear_door",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.7129830441640379, 0.74003351735015777, 0.82240733438485814],
@@ -2125,6 +2209,13 @@
       },
       "file": "assets/models/hatchback_tailgate.glb",
       "id": "hatchback_tailgate",
+      "itemPresentation": {
+        "materials": ["metal", "glass", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.9205230222496907, 0.96552456736711978, 0],
@@ -2152,6 +2243,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_windscreen.glb",
       "id": "hatchback_windscreen",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.38308189655172414, 1.1945043103448276, 0],
@@ -2171,6 +2269,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_bonnet.glb",
       "id": "hatchback_bonnet",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.40625, 0.86595394736842102, 0],
@@ -2190,6 +2295,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_front_wing.glb",
       "id": "hatchback_front_wing",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.4742994332493702, 0.67124527707808568, 0.84375],
@@ -2217,6 +2329,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_front_bumper.glb",
       "id": "hatchback_front_bumper",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.002389705882353, 0.43922794117647057, 0],
@@ -2244,6 +2363,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_rear_bumper.glb",
       "id": "hatchback_rear_bumper",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2, 0.40625, 0],
@@ -2263,6 +2389,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_tail_lamp.glb",
       "id": "hatchback_tail_lamp",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2, 0.75, 0.734375],
@@ -2284,6 +2417,13 @@
       },
       "file": "assets/models/hatchback_front_strut.glb",
       "id": "hatchback_front_strut",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.2484631147540983, 0.32402663934426229, 0.52254098360655743],
@@ -2311,6 +2451,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_rear_axle.glb",
       "id": "hatchback_rear_axle",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.1019736842105263, 0.30448190789473684, 0],
@@ -2354,6 +2501,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_engine.glb",
       "id": "hatchback_engine",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.4559157580477675, 0.57481503115264798, -0.030682113187954312],
@@ -2389,6 +2543,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_gearbox.glb",
       "id": "hatchback_gearbox",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.359375, 0.484375, -0.421875],
@@ -2408,6 +2569,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_radiator.glb",
       "id": "hatchback_radiator",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.875, 0.578125, 0],
@@ -2427,6 +2595,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_fuel_tank.glb",
       "id": "hatchback_fuel_tank",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.703125, 0.15625, -0.40625],
@@ -2446,6 +2621,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_exhaust.glb",
       "id": "hatchback_exhaust",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.3226474719101124, 0.21882022471910115, 0.022261235955056181],
@@ -2473,6 +2655,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_dashboard.glb",
       "id": "hatchback_dashboard",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.54629062778272486, 0.67105409617097056, 0.0023374888691006235],
@@ -2504,6 +2693,13 @@
       "anchors": {},
       "file": "assets/models/hatchback_rear_seat.glb",
       "id": "hatchback_rear_seat",
+      "itemPresentation": {
+        "materials": ["metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.88585805084745761, 0.60531426553672318, 0],
@@ -2531,6 +2727,13 @@
       "anchors": {},
       "file": "assets/models/hoist_frame_rail.glb",
       "id": "hoist_frame_rail",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.46875, 0.5],
@@ -2550,6 +2753,13 @@
       "anchors": {},
       "file": "assets/models/hoist_crossmember.glb",
       "id": "hoist_crossmember",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.0625, 0.046875, 0.4375],
@@ -2571,6 +2781,13 @@
       },
       "file": "assets/models/hoist_wheel.glb",
       "id": "hoist_wheel",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.0011666530811868267, -0.0011462748614281043, -0.01052025595044017],
@@ -2594,6 +2811,13 @@
       "anchors": {},
       "file": "assets/models/hoist_front_axle.glb",
       "id": "hoist_front_axle",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.9143391652613826, 0.32759801854974702, -0.03319983136593592],
@@ -2625,6 +2849,13 @@
       "anchors": {},
       "file": "assets/models/hoist_rear_axle.glb",
       "id": "hoist_rear_axle",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.4919108347386172, 0.32759801854974702, -0.03319983136593592],
@@ -2656,6 +2887,13 @@
       "anchors": {},
       "file": "assets/models/hoist_engine.glb",
       "id": "hoist_engine",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.8224394846434149, 0.69492614523685581, -4.0668922436231143e-5],
@@ -2711,6 +2949,13 @@
       "anchors": {},
       "file": "assets/models/hoist_gearbox.glb",
       "id": "hoist_gearbox",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.0428240740740742, 0.6186342592592593, 0],
@@ -2734,6 +2979,13 @@
       "anchors": {},
       "file": "assets/models/hoist_prop_shaft.glb",
       "id": "hoist_prop_shaft",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.33032349246231157, 0.48358982412060303, 0.015625],
@@ -2753,6 +3005,13 @@
       "anchors": {},
       "file": "assets/models/hoist_fuel_tank.glb",
       "id": "hoist_fuel_tank",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.34375, 0.390625, -0.71875],
@@ -2772,6 +3031,13 @@
       "anchors": {},
       "file": "assets/models/hoist_exhaust.glb",
       "id": "hoist_exhaust",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.014300847457627119, 0.40889830508474578, 0.67478813559322037],
@@ -2799,6 +3065,13 @@
       "anchors": {},
       "file": "assets/models/hoist_radiator.glb",
       "id": "hoist_radiator",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.75, 0.703125, 0],
@@ -2818,6 +3091,13 @@
       "anchors": {},
       "file": "assets/models/hoist_cab_floor.glb",
       "id": "hoist_cab_floor",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.9704269591141397, 0.95828896933560481, 0],
@@ -2857,6 +3137,13 @@
       "anchors": {},
       "file": "assets/models/hoist_cab_skirt.glb",
       "id": "hoist_cab_skirt",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.0198092749110321, 0.76832184163701067, 0.84690558274021344],
@@ -2984,6 +3271,13 @@
       "anchors": {},
       "file": "assets/models/hoist_cab_back.glb",
       "id": "hoist_cab_back",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.1832386363636365, 1.546875, 0],
@@ -3027,6 +3321,13 @@
       "anchors": {},
       "file": "assets/models/hoist_front_panel.glb",
       "id": "hoist_front_panel",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.8247306034482755, 1.217198275862069, 0],
@@ -3062,6 +3363,13 @@
       "anchors": {},
       "file": "assets/models/hoist_a_post.glb",
       "id": "hoist_a_post",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.7968750000000004, 1.7656250000000002, 0.84375000000000011],
@@ -3081,6 +3389,13 @@
       "anchors": {},
       "file": "assets/models/hoist_windscreen.glb",
       "id": "hoist_windscreen",
+      "itemPresentation": {
+        "materials": ["glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.828125, 1.765625, 0],
@@ -3100,6 +3415,13 @@
       "anchors": {},
       "file": "assets/models/hoist_roof.glb",
       "id": "hoist_roof",
+      "itemPresentation": {
+        "materials": ["metal", "cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.9732974357883992, 2.1279155681238304, 0],
@@ -3126,6 +3448,13 @@
       },
       "file": "assets/models/hoist_door.glb",
       "id": "hoist_door",
+      "itemPresentation": {
+        "materials": ["metal", "cloth", "polymer", "glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.015219448449892, 1.5168641852919973, 0.83670917447728921],
@@ -3173,6 +3502,13 @@
       "anchors": {},
       "file": "assets/models/hoist_front_bumper.glb",
       "id": "hoist_front_bumper",
+      "itemPresentation": {
+        "materials": ["polymer", "metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.9230263157894738, 0.67680921052631582, 0],
@@ -3204,6 +3540,13 @@
       "anchors": {},
       "file": "assets/models/hoist_dashboard.glb",
       "id": "hoist_dashboard",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.6688458813758063, 1.2454105188587061, 0.0415984707836623],
@@ -3231,6 +3574,13 @@
       "anchors": {},
       "file": "assets/models/hoist_engine_cover.glb",
       "id": "hoist_engine_cover",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [2.09375, 1.140625, 0],
@@ -3252,6 +3602,13 @@
       },
       "file": "assets/models/hoist_bench.glb",
       "id": "hoist_bench",
+      "itemPresentation": {
+        "materials": ["cloth"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.4319556451612905, 1.3346774193548387, 0],
@@ -3275,6 +3632,13 @@
       "anchors": {},
       "file": "assets/models/hoist_deck_floor.glb",
       "id": "hoist_deck_floor",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.21875, 0.81862745098039214, 0],
@@ -3302,6 +3666,13 @@
       "anchors": {},
       "file": "assets/models/hoist_headboard.glb",
       "id": "hoist_headboard",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.40625, 1.09375, 0],
@@ -3321,6 +3692,13 @@
       "anchors": {},
       "file": "assets/models/hoist_mudguard.glb",
       "id": "hoist_mudguard",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.5069867886178863, 0.72370426829268297, 0.71875000000000011],
@@ -3368,6 +3746,13 @@
       "anchors": {},
       "file": "assets/models/hoist_rear_underrun.glb",
       "id": "hoist_rear_underrun",
+      "itemPresentation": {
+        "materials": ["metal", "polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.9528409090909089, 0.35767045454545454, 0],
@@ -3407,6 +3792,13 @@
       "anchors": {},
       "file": "assets/models/hoist_tail_lamp.glb",
       "id": "hoist_tail_lamp",
+      "itemPresentation": {
+        "materials": ["polymer", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.96875, 0.640625, 0.6875],
@@ -3430,6 +3822,13 @@
       "anchors": {},
       "file": "assets/models/hoist_crane_base.glb",
       "id": "hoist_crane_base",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.78125000000000011, 0.80729166666666674, 0],
@@ -3457,6 +3856,13 @@
       "anchors": {},
       "file": "assets/models/hoist_stabiliser.glb",
       "id": "hoist_stabiliser",
+      "itemPresentation": {
+        "materials": ["metal", "polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.78125, 0.61677631578947367, 0.76315789473684204],
@@ -3484,6 +3890,13 @@
       "anchors": {},
       "file": "assets/models/hoist_crane_column.glb",
       "id": "hoist_crane_column",
+      "itemPresentation": {
+        "materials": ["metal", "metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.78125, 1.4243515850144091, 0],
@@ -3523,6 +3936,13 @@
       "anchors": {},
       "file": "assets/models/hoist_boom.glb",
       "id": "hoist_boom",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.031818181818181815, 1.7493371212121211, 0],
@@ -3542,6 +3962,13 @@
       "anchors": {},
       "file": "assets/models/hoist_boom_extension.glb",
       "id": "hoist_boom_extension",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.6059027777777777, 1.515625, 0],
@@ -3561,6 +3988,13 @@
       "anchors": {},
       "file": "assets/models/hoist_luff_ram.glb",
       "id": "hoist_luff_ram",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.26181402439024398, 1.4142530487804879, 0],
@@ -3580,6 +4014,13 @@
       "anchors": {},
       "file": "assets/models/hoist_winch.glb",
       "id": "hoist_winch",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0.99676724137931028, 1.3724407327586208, 0],
@@ -3607,6 +4048,13 @@
       "anchors": {},
       "file": "assets/models/hoist_hook_block.glb",
       "id": "hoist_hook_block",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.53125, 1.2230113636363638, 0],
@@ -3630,6 +4078,13 @@
       "anchors": {},
       "file": "assets/models/hoist_boom_rest.glb",
       "id": "hoist_boom_rest",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-2.25, 1.125, 0],
@@ -3649,6 +4104,13 @@
       "anchors": {},
       "file": "assets/models/cargo_space.glb",
       "id": "cargo_space",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.046875, 0],
@@ -3668,6 +4130,13 @@
       "anchors": {},
       "file": "assets/models/mounting_plate.glb",
       "id": "mounting_plate",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [0, 0.015625, 0],
@@ -3687,6 +4156,13 @@
       "anchors": {},
       "file": "assets/models/pickup_bed_floor.glb",
       "id": "pickup_bed_floor",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.140625, 0.71399456521739135, 0],
@@ -3710,6 +4186,13 @@
       "anchors": {},
       "file": "assets/models/pickup_bed_side.glb",
       "id": "pickup_bed_side",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-1.1646983664501338, 0.83360598968284294, 0.77152990064959881],
@@ -3733,6 +4216,13 @@
       "anchors": {},
       "file": "assets/models/pickup_bed_front.glb",
       "id": "pickup_bed_front",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.0625, 1.015625, 0],
@@ -3752,6 +4242,13 @@
       "anchors": {},
       "file": "assets/models/box_van_floor.glb",
       "id": "box_van_floor",
+      "itemPresentation": {
+        "materials": ["metal", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.90625, 0.875, 0],
@@ -3775,6 +4272,13 @@
       "anchors": {},
       "file": "assets/models/box_van_side.glb",
       "id": "box_van_side",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.90625, 1.953125, 1.03125],
@@ -3794,6 +4298,13 @@
       "anchors": {},
       "file": "assets/models/box_van_front.glb",
       "id": "box_van_front",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [1.21875, 2, 0],
@@ -3813,6 +4324,13 @@
       "anchors": {},
       "file": "assets/models/box_van_roof.glb",
       "id": "box_van_roof",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "body": {
           "centreOfMass": [-0.875, 3.03125, 0],

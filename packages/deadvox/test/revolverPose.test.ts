@@ -11,13 +11,15 @@ import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { actionPartPaths, cloneHeldModel, poseRevolverParts } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
-import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { heldModelFrame, indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { content } from './fixtures/startupContent.ts';
 
 const loadModel = (model: ModelDef) => {
   const bytes = readFileSync(`src/content/base/${model.file}`);
-  return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
+  return new GLTFLoader()
+    .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
+    .then(indexModelMaterials);
 };
 
 it('flat revolver nodes ride the crane without accumulating motion, then return to their exported rests', async () => {

@@ -26,6 +26,7 @@ const root = fileURLToPath(new URL('../..', import.meta.url));
 const itemPicturesModule = '/src/render/itemPictures.ts';
 const modelsModule = '/src/render/models.ts';
 const itemLookModule = '/src/render/itemLook.ts';
+const itemStatePixelsModule = '/test/browser/item-state-pixels.ts';
 // argv[3], when given, is a PNG path for a debugging screenshot of the around pane; CI never passes it.
 const engine = process.argv[2] ?? 'chromium';
 assert.ok(['chromium', 'firefox'].includes(engine));
@@ -1547,6 +1548,19 @@ try {
     assert.ok(await isFocused(coveredFit), 'closing gives focus back to the control that had it');
     assert.deepEqual(await viewState(), beforeView, 'viewing and closing leave the inventory as it was');
     logPhase('item viewer');
+    await page.evaluate(async (moduleUrl) => {
+      const { statePixelFixture } = await import(moduleUrl);
+      globalThis.itemStatePixels = await statePixelFixture();
+    }, itemStatePixelsModule);
+    await page.waitForFunction(() => globalThis.itemStatePixels.ready());
+    const statePixels = await page.evaluate(() => globalThis.itemStatePixels.capture());
+    assert.ok(statePixels.full.blue > statePixels.lowFuel.blue, 'more fuel draws more fill through the clear shell');
+    assert.ok(
+      statePixels.worn.red > statePixels.full.red,
+      'wear tints the metal class while keeping the fuel material',
+    );
+    await page.evaluate(() => globalThis.itemStatePixels.dispose());
+    logPhase('item state pixels');
     await page.evaluate(() => {
       const { screen } = globalThis.foregripFitTest;
       screen.hooks.itemView = undefined;

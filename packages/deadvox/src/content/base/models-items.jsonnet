@@ -86,11 +86,11 @@ local authored = [
     import 'things/shambler_left_leg.model.json',
     import 'things/shambler_right_leg.model.json'
 ];
-{
+(import 'item-presentation.libsonnet').pack({
   // Explicit registrations must not also appear through the export index.
   models: authored + [
     model
     for model in import 'things/index.json'
     if !std.member([entry.id for entry in authored + (import 'models-melee.jsonnet').models], model.id)
   ],
-}
+})

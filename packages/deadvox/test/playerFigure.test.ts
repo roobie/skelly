@@ -420,6 +420,7 @@ describe('held light presentation', () => {
     const geometry = new BoxGeometry(1, 0.1, 0.1);
     const tubeMaterial = new MeshStandardMaterial({ color: '#62ff81' });
     tubeMaterial.name = 'chemical-light tube';
+    tubeMaterial.userData.itemMaterialIndex = 0;
     const modelRoot = new Group();
     modelRoot.add(new Mesh(geometry, tubeMaterial));
     const models = {

@@ -11,6 +11,13 @@
       },
       "hold": "upright",
       "id": "baseball_bat",
+      "itemPresentation": {
+        "materials": ["wood"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "baseball_bat": {
           "centreOfMass": [0.16811516120885597, -9.4789123663608247e-5, -8.7381092684569501e-5],
@@ -32,6 +39,13 @@
       },
       "hold": "upright",
       "id": "crowbar",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "crowbar": {
           "centreOfMass": [-0.07926048565121413, -0.011432671081677703, 0],
@@ -54,6 +68,13 @@
       },
       "hold": "upright",
       "id": "hammer",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "hammer": {
           "centreOfMass": [-0.0042468179302711717, -0.0079204680211874441, -0.00053427148391177156],
@@ -74,6 +95,13 @@
       },
       "hold": "forward",
       "id": "kabar",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "kabar": {
           "centreOfMass": [-0.011265993265993273, -0.00013973063973063976, -6.9023569023569088e-5],
@@ -94,6 +122,13 @@
       },
       "hold": "forward",
       "id": "kitchen_knife",
+      "itemPresentation": {
+        "materials": ["polymer", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "kitchen_knife": {
           "centreOfMass": [0.038700050581689439, -0.003254425897824988, -2.3267577137076356e-5],
@@ -115,6 +150,13 @@
       },
       "hold": "forward",
       "id": "machete",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "machete": {
           "centreOfMass": [-0.054441009320300077, -0.010371902705160264, -3.4098658786087779e-5],
@@ -136,6 +178,13 @@
       },
       "hold": "upright",
       "id": "sledgehammer",
+      "itemPresentation": {
+        "materials": ["wood", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "sledgehammer": {
           "centreOfMass": [-0.2129179552841525, -2.8759972421944166e-5, -2.3047375160051148e-5],
@@ -156,6 +205,13 @@
       },
       "hold": "upright",
       "id": "wrench",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "wrench": {
           "centreOfMass": [0.0033004926108374435, 0.0079310344827586195, 0],
@@ -176,6 +232,13 @@
       },
       "hold": "upright",
       "id": "steel_pipe",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      },
       "parts": {
         "steel_pipe": {
           "centreOfMass": [0.50986915470968708, 4.3119470671325572e-6, -0.004980298862538101],

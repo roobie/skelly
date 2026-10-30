@@ -221,7 +221,7 @@ describe('held-item throws', () => {
       model: 'rifle_model',
       slots: [{ slot: 'magazine', model: 'magazine_model' }],
     });
-    expect(throws.group.getObjectByName('rifle_model+magazine=magazine_model')).toBe(rifleModel);
+    expect(throws.group.getObjectByName(requestedLook!.key)).toBe(rifleModel);
     throws.dispose();
   });
 

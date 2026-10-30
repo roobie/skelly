@@ -25,7 +25,7 @@ import {
 import { HeldItems } from '../src/render/hands.ts';
 import type { HeldPresentation } from '../src/render/heldPresentation.ts';
 import { createHeldViews } from '../src/render/heldViews.ts';
-import { heldModelFrame, type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { heldModelFrame, indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
@@ -110,7 +110,7 @@ const pistolFixture = async (
   const model = registry.models.get(registry.items.get('pistol_service')!.model!)!;
   const figures = await loadFigureModels(registry);
   const bytes = readFileSync(new URL(`../src/content/base/${model.file}`, import.meta.url));
-  const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+  const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
   const prepared = prepareModel(model, gltf.scene);
   const paths = actionPartPaths(gltf.scene, model.gun!.action, gltf.parser);
   const models = {

@@ -45,6 +45,9 @@ const validLimit = (limit: number | undefined): boolean =>
 const sameKind = (contents: LiquidContents, liquid: string): boolean =>
   contents.kind === 'empty' || contents.liquid === liquid;
 const volumeOf = (contents: LiquidContents): number => (contents.kind === 'empty' ? 0 : contents.volumeMicrolitres);
+export const vesselFillShare = (item: Item, vessel: { readonly capacityMicrolitres: number }): number =>
+  (item.liquidContents ? volumeOf(item.liquidContents) : 0) / vessel.capacityMicrolitres;
+
 const afterDebit = (contents: Extract<LiquidContents, { kind: 'filled' }>, remaining: number): LiquidContents =>
   remaining === 0 ? { kind: 'empty' } : { ...contents, volumeMicrolitres: remaining };
 

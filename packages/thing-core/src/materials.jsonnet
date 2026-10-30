@@ -17,6 +17,8 @@ local hex(n) = [std.floor(n / 65536) / 255, (std.floor(n / 256) % 256) / 255, (n
   steel: material([0.29, 0.32, 0.31]),
   'paperboard-brown': material([0.27, 0.23, 0.17]),
   'plastic-red': material([0.7, 0.035, 0.025]),
+  'plastic-clear-red': material([0.7, 0.15, 0.12]) + { finish: { metallic: 0, roughness: 0.1, opacity: 0.25 } },
+  'fuel-amber': material(hex(13937236)) + { finish: { metallic: 0, roughness: 0.35 } },
   'plastic-green': self['plastic-red'] + { colour: [0.08, 0.4, 0.13] },
   'plastic-blue': self['plastic-red'] + { colour: [0.04, 0.15, 0.6] },
   'plastic-black': self['plastic-red'] + { colour: [0.06, 0.06, 0.06] },

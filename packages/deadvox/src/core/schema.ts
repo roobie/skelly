@@ -9,6 +9,8 @@ import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
+  type BaseIssue,
+  type BaseSchema,
   check,
   exactOptional,
   finite,
@@ -2208,8 +2210,41 @@ const HandsModelSchema = strictObject({
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
+const PresentationBands = <T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>>(entry: T) =>
+  pipe(array(entry), minLength(1));
+
+const ItemWearSchema = strictObject({
+  id: Id,
+  bands: PresentationBands(
+    strictObject({
+      from: pipe(number(), minValue(0), maxValue(1)),
+      tints: record(Id, strictObject({ color: Color, mix: pipe(number(), minValue(0), maxValue(1)) })),
+    }),
+  ),
+});
+
 export const ModelSchema = pipe(
   modelSchema({
+    itemPresentation: optional(
+      strictObject({
+        materials: array(Id),
+        wear: Id,
+        supply: union([
+          strictObject({ kind: literal('none') }),
+          strictObject({
+            kind: literal('fill'),
+            piece: pipe(string(), nonEmpty()),
+            axis: picklist(['x', 'y', 'z']),
+            bands: PresentationBands(
+              strictObject({
+                from: pipe(number(), minValue(0), maxValue(1)),
+                scale: pipe(number(), minValue(0), maxValue(1)),
+              }),
+            ),
+          }),
+        ]),
+      }),
+    ),
     gun: optional(GunModelSchema),
     dial: optional(CompassDialSchema),
     lever: optional(LeverModelSchema),
@@ -4767,6 +4802,7 @@ const SECTION_DESCRIPTOR = {
   },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
+  itemWear: { schema: optional(array(ItemWearSchema)), label: 'item wear looks', order: 7.1 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
