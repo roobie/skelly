@@ -46,11 +46,22 @@ describe('crafting read-only presentation', () => {
       requirements.components.map(({ group, alternatives }) => ({
         group,
         preferred: '',
-        alternatives: alternatives.map(({ item, needed, available }) => ({
-          id: item,
-          name: registry.items.get(item)!.name,
-          needed,
-          found: available,
+        draws: [],
+        automatic: true,
+        vessels: [],
+        alternatives: alternatives.map((alternative) => ({
+          kind: alternative.kind,
+          id: JSON.stringify(
+            alternative.kind === 'item'
+              ? { kind: 'item', item: alternative.item }
+              : { kind: 'liquid', liquid: alternative.liquid },
+          ),
+          name:
+            alternative.kind === 'item'
+              ? registry.items.get(alternative.item)!.name
+              : registry.liquids.get(alternative.liquid)!.name,
+          needed: alternative.needed,
+          found: alternative.available,
         })),
       })),
     );
@@ -72,7 +83,7 @@ describe('crafting read-only presentation', () => {
     expect(torch.reason).toBe('missing' in result ? result.missing.reason : undefined);
     const root = document.createElement('section');
     const start = vi.fn();
-    renderCrafting(root, rows, { start, prefer: vi.fn() }, craftingText(registry));
+    renderCrafting(root, rows, { start, prefer: vi.fn(), source: vi.fn() }, craftingText(registry));
     const button = root.querySelector<HTMLButtonElement>('[data-recipe="torch"] .craft-start');
     expect(button).toBeDefined();
     expect(button!.disabled).toBe(torch.reason !== undefined);

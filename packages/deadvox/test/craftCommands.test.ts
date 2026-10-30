@@ -26,10 +26,9 @@ const CRAFT = 'torch';
 const SECOND_CRAFT = 'candle';
 const stockFor = (recipeId: string): [string, number][] => {
   const recipe = registry.recipes.get(recipeId)!;
-  const stock: [string, number][] = recipe.components.map((alternatives) => [
-    alternatives[0]!.item,
-    alternatives[0]!.count,
-  ]);
+  const stock: [string, number][] = recipe.components
+    .map((group) => group.filter((part) => 'item' in part))
+    .map((alternatives) => [alternatives[0]!.item, alternatives[0]!.count]);
   const required = Object.entries(recipe.qualities);
   if (required.length === 0) {
     throw new Error('the recipe demands no tool quality, so no tool can be derived');
@@ -198,7 +197,7 @@ describe('live craft commands', () => {
     const r = make();
     r.inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
     const recipe = r.inventory.registry.recipes.get('door_bar')!;
-    const [component] = recipe.components[0]!;
+    const component = recipe.components[0]!.find((part) => 'item' in part)!;
     expect(
       r.inventory.add(r.inventory.create(component!.item, component!.count - 1), { kind: 'pile', pos: [0, 0, 0] }),
     ).toBe(true);

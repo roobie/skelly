@@ -78,7 +78,10 @@ const authoredStockFixture = () => {
     return def?.container && def.size[1] === def.size[2];
   })!;
   const stockTypes = new Set(
-    repairRecipes.flatMap(({ result, components }) => [result.item, ...components.flat().map((part) => part.item)]),
+    repairRecipes.flatMap(({ result, components }) => [
+      result.item,
+      ...components.flat().flatMap((part) => ('item' in part ? [part.item] : [])),
+    ]),
   );
   const item = [...scenarioRegistry.items.values()]
     .sort((a, b) => a.id.localeCompare(b.id))

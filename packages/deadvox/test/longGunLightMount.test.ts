@@ -97,7 +97,7 @@ describe('a light mount on a long gun', () => {
     });
     const commands = new CraftCommands({ inventory, character, sim, queue, reach });
     for (const alternatives of recipe.components) {
-      const component = alternatives[0]!;
+      const component = alternatives.find((part) => 'item' in part)!;
       if (component.item !== 'flashlight') {
         expect(inventory.add(inventory.create(component.item, component.count), { kind: 'pile', pos: position })).toBe(
           true,

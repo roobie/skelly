@@ -1,7 +1,7 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
 import { type CraftCharacter, dominantSide, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
-import { type CraftPreference, type CraftResult, planCraft, requirementStatus } from './crafting.ts';
+import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
 import { entityRepairRefusal } from './craftWork.ts';
 import { planDisassembly } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
@@ -76,16 +76,18 @@ export class CraftCommands {
     }
     return undefined;
   }
-  preview(recipeId: string, prefer?: CraftPreference): CraftResult | undefined {
+  preview(recipeId: string, prefer?: CraftPreference, sources?: CraftSources): CraftResult | undefined {
     const recipe = this.inventory.registry.recipes.get(recipeId);
-    return recipe && !recipe.activation ? planCraft(recipe, this.reach(), this.character, prefer) : undefined;
+    return recipe && !recipe.activation
+      ? planCraft(recipe, this.reach(), this.character, { prefer, sources })
+      : undefined;
   }
-  start(recipeId: string, prefer?: CraftPreference): string | undefined {
+  start(recipeId: string, prefer?: CraftPreference, sources?: CraftSources): string | undefined {
     const reason = this.startReason();
     if (reason) {
       return reason;
     }
-    const result = this.preview(recipeId, prefer);
+    const result = this.preview(recipeId, prefer, sources);
     if (!result) {
       return 'Unknown recipe';
     }
@@ -108,13 +110,18 @@ export class CraftCommands {
     const amount = Math.min(1, repair.amount + repair.perSkill * skill);
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'item', uid: target.uid }, amount });
   }
-  previewEntityRepair(recipeId: string, entityUid: number, prefer?: CraftPreference): EntityRepairProjection {
+  previewEntityRepair(
+    recipeId: string,
+    entityUid: number,
+    prefer?: CraftPreference,
+    sources?: CraftSources,
+  ): EntityRepairProjection {
     const { registry, entities } = this.inventory;
     const entity = entities.byUid(entityUid);
     const recipe = registry.recipes.get(recipeId);
     const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
     const snapshot = this.reach();
-    const result = repair?.entity ? planCraft(recipe!, snapshot, this.character, prefer) : undefined;
+    const result = repair?.entity ? planCraft(recipe!, snapshot, this.character, { prefer, sources }) : undefined;
     const skill = repair ? skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN) : 0;
     const targetRefusal = repair?.entity
       ? entityRepairRefusal(this.inventory, entityUid, repair.entity, repair.amount + repair.perSkill * skill)
@@ -128,8 +135,13 @@ export class CraftCommands {
         this.startReason() ?? targetRefusal ?? (result && 'missing' in result ? result.missing.reason : undefined),
     };
   }
-  repairEntity(recipeId: string, entityUid: number, prefer?: CraftPreference): string | undefined {
-    const reason = this.previewEntityRepair(recipeId, entityUid, prefer).refusal;
+  repairEntity(
+    recipeId: string,
+    entityUid: number,
+    prefer?: CraftPreference,
+    sources?: CraftSources,
+  ): string | undefined {
+    const reason = this.previewEntityRepair(recipeId, entityUid, prefer, sources).refusal;
     if (reason) {
       return reason;
     }
@@ -138,7 +150,7 @@ export class CraftCommands {
     if (recipe?.kind !== 'repair' || !recipe.repair?.entity || !entity || entity.type !== recipe.repair.entity) {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
-    const result = this.preview(recipeId, prefer);
+    const result = this.preview(recipeId, prefer, sources);
     if (!result || 'missing' in result) {
       return result && 'missing' in result
         ? result.missing.reason

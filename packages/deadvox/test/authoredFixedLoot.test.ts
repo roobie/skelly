@@ -1077,7 +1077,11 @@ describe('authored fixed loot', () => {
     const torch = result.registry.recipes.get('torch');
     expect(torch).toBeDefined();
     for (const alternatives of torch!.components) {
-      expect(alternatives.some((ingredient) => (houseCounts.get(ingredient.item) ?? 0) >= ingredient.count)).toBe(true);
+      expect(
+        alternatives.some(
+          (ingredient) => 'item' in ingredient && (houseCounts.get(ingredient.item) ?? 0) >= ingredient.count,
+        ),
+      ).toBe(true);
     }
   });
 
@@ -1140,12 +1144,16 @@ describe('authored fixed loot', () => {
     expect(mountRecipe).toBeDefined();
     expect(suppressorRecipe).toBeDefined();
     const hardware = mountRecipe!.components.filter((alternatives) =>
-      alternatives.every((ingredient) => result.registry.items.get(ingredient.item)?.light === undefined),
+      alternatives.every(
+        (ingredient) => 'item' in ingredient && result.registry.items.get(ingredient.item)?.light === undefined,
+      ),
     );
     expect(hardware.length).toBeGreaterThan(0);
     expect(
       hardware.every((alternatives) =>
-        alternatives.some((ingredient) => itemCount(garageItems, ingredient.item) >= ingredient.count),
+        alternatives.some(
+          (ingredient) => 'item' in ingredient && itemCount(garageItems, ingredient.item) >= ingredient.count,
+        ),
       ),
     ).toBe(true);
 
@@ -1170,7 +1178,9 @@ describe('authored fixed loot', () => {
     }
     const missingGroups = suppressorRecipe!.components.filter(
       (alternatives) =>
-        !alternatives.some((ingredient) => (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count),
+        !alternatives.some(
+          (ingredient) => 'item' in ingredient && (workshopCounts.get(ingredient.item) ?? 0) >= ingredient.count,
+        ),
     );
     expect(missingGroups).toHaveLength(1);
     const garageRandomTables = garageTemplateIds.flatMap((templateId) =>
@@ -1181,7 +1191,7 @@ describe('authored fixed loot', () => {
     expect(garageRandomTables.length).toBeGreaterThan(0);
     const garageRandomItems = new Set(garageRandomTables.flatMap((tableId) => [...possibleLootItems(tableId)]));
     expect(garageRandomItems.size).toBeGreaterThan(0);
-    expect(missingGroups[0]!.some(({ item }) => garageRandomItems.has(item))).toBe(false);
+    expect(missingGroups[0]!.some((input) => 'item' in input && garageRandomItems.has(input.item))).toBe(false);
     expect(garageRandomItems.has(mountRecipe!.result.item)).toBe(false);
     expect(garageRandomItems.has(suppressorRecipe!.result.item)).toBe(false);
 
@@ -1194,7 +1204,9 @@ describe('authored fixed loot', () => {
         building.template === 'workshop_yard' && override.at.join(',') === scrapPile!.pos.join(','),
     );
     const pileItems = pileOverride?.override.items ?? [];
-    expect(missingGroups[0]!.some(({ item, count }) => itemCount(pileItems, item) >= count)).toBe(true);
+    expect(missingGroups[0]!.some((input) => 'item' in input && itemCount(pileItems, input.item) >= input.count)).toBe(
+      true,
+    );
     const searchNoise = result.registry.furniture.get('workshop_scrap_pile')?.searchNoise;
     expect(searchNoise).toBeDefined();
     expect(result.registry.sounds.get(searchNoise!.sound)?.noise.enabled).toBe(true);

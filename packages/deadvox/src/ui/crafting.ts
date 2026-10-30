@@ -1,7 +1,7 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import { html, nothing, render } from 'lit-html';
 import { repeat } from 'lit-html/directives/repeat.js';
-import { countText } from '../core/numberText.ts';
+import { countText, volumeText } from '../core/numberText.ts';
 import type { ScreenText } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
 import { comboBox } from './comboBox.ts';
@@ -14,7 +14,20 @@ type CraftingText = ScreenText['crafting'];
 export interface CraftPanelActions {
   start: (id: string) => void;
   prefer: (id: string, group: number, item: string) => void;
+  source: (id: string, group: number, uid: number | undefined) => void;
 }
+const alternativeLabel = (
+  alternative: CraftRow['components'][number]['alternatives'][number],
+  text: CraftingText,
+): string => {
+  const liquid = alternative.kind === 'liquid';
+  const amount = liquid ? (value: number) => volumeText(value / 1000) : countText;
+  return fillText(liquid ? text.liquidFound : text.found, {
+    item: alternative.name,
+    found: amount(alternative.found),
+    needed: amount(alternative.needed),
+  });
+};
 export const renderCrafting = (
   root: HTMLElement,
   rows: readonly CraftRow[],
@@ -31,7 +44,7 @@ export const renderCrafting = (
       <h3>${row.name}</h3><div class="craft-time">${fillText(text.length, { span: row.time })}</div>
       ${row.components.map(
         (group) => html`<div class="craft-components">
-        ${group.alternatives.map((a) => html`<div class=${a.found < a.needed ? 'craft-gap' : ''}>${fillText(text.found, { item: a.name, found: countText(a.found), needed: countText(a.needed) })}</div>`)}
+        ${group.alternatives.map((a) => html`<div class=${a.found < a.needed ? 'craft-gap' : ''}>${alternativeLabel(a, text)}</div>`)}
         ${
           group.alternatives.length > 1
             ? html`<div class="craft-use">${fillHint(text.use, {
@@ -46,6 +59,15 @@ export const renderCrafting = (
                   choose: (item) => actions.prefer(row.id, group.group, item),
                 }),
               })}</div>`
+            : nothing
+        }
+        ${group.draws.map((draw) => html`<div class="craft-liquid-draw">${draw}</div>`)}
+        ${
+          group.alternatives.some((alternative) => alternative.kind === 'liquid')
+            ? html`<details class="craft-sources"><summary>${text.sources}</summary>
+          <label><input type="checkbox" .checked=${group.automatic} @change=${() => actions.source(row.id, group.group, undefined)}>${text.defaultSources}</label>
+          ${group.vessels.map((vessel) => html`<label><input type="checkbox" .checked=${vessel.selected} @change=${() => actions.source(row.id, group.group, vessel.uid)}>${vessel.label}</label>`)}
+        </details>`
             : nothing
         }
       </div>`,

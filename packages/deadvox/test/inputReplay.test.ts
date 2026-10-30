@@ -500,7 +500,7 @@ const createCraftReplayFixture = () => {
     }
   }
   for (const group of recipe.components) {
-    const component = group[0]!;
+    const component = group.find((part) => 'item' in part)!;
     const item = runtime.inventory.create(component.item, component.count);
     if (!runtime.inventory.add(item, { kind: 'pocket', owner: backpack, pocket: 0 })) {
       throw new Error(`Replay fixture could not add ${component.item}`);
