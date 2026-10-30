@@ -724,18 +724,19 @@ const opticZoomCheck = async (chromium, port) => {
     assert.equal(samples.at(-1).acquired, true, 'the sight is acquired once acquisition completes');
     assert.ok(acquisition.framesToAcquire > 1, 'aiming down sights takes simulation time rather than snapping');
     // Render frames can land between 60 Hz player ticks and run no tick, so renderer samples may
-    // legitimately repeat a tick's progress; what must hold is no backwards motion and real advancement.
+    // legitimately repeat a tick's progress. What must hold over every sample, completion included,
+    // is no backwards motion, and the completed progress must stand above the first sample's.
+    assert.ok(
+      samples.every((sample, index) => index === 0 || sample.elapsed >= samples[index - 1].elapsed),
+      'acquisition progress never runs backwards between renderer samples, completion included',
+    );
+    assert.ok(
+      samples.at(-1).elapsed > samples[0].elapsed,
+      'acquisition progress advances from the first sample to the completed one',
+    );
     const incomplete = samples.slice(0, -1);
     assert.ok(
-      incomplete.every((sample, index) => index === 0 || sample.elapsed >= incomplete[index - 1].elapsed),
-      'acquisition progress never runs backwards between renderer samples',
-    );
-    assert.ok(
-      incomplete.length < 2 || incomplete.at(-1).elapsed > incomplete[0].elapsed,
-      'acquisition progress advances across the observed render samples',
-    );
-    assert.ok(
-      samples.slice(0, -1).every((sample) => !sample.lensFrame),
+      incomplete.every((sample) => !sample.lensFrame),
       'the optic sight picture waits for the acquisition to complete',
     );
     // The held view redraws after the simulation frame, so the sight picture is read from the view.
