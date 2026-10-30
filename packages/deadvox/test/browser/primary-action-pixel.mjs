@@ -361,10 +361,12 @@ const opticZoomRecord = ({ opticType, gunType, endpoint, rifleUid, withGear }) =
         held.render = after;
         renderer.render = render;
         done(drawn);
-      } else if (frames > 40) {
+      } else if (frames > 120) {
+        // A fresh rifle raises and then acquires ADS before the zoom camera draws, so the budget
+        // covers both motions on a fast renderer, not only the raise.
         held.render = after;
         renderer.render = render;
-        failed(new Error('The zoom camera did not draw within 40 frames'));
+        failed(new Error('The zoom camera did not draw within 120 frames'));
       }
     };
   });
@@ -639,10 +641,106 @@ const heldItemChecks = async (chromium, port) => {
   });
 };
 
+// Long-gun ADS acquisition is Combat-owned simulation time: the fixture raises with the debug hip
+// latch, then latches ADS, and the hooked session frames sample acquisition progress and the held
+// optic's sight picture until the acquisition completes. Runs inside the page, like opticZoomRecord.
+const adsAcquisitionMotionRecord = () => {
+  const r = globalThis.primaryActionTest;
+  const { inventory, session } = r;
+  r.input.pitch = 0;
+  const rifle = inventory.create('rifle_assault');
+  r.setHand(r.dominant, rifle);
+  const scope = inventory.create('optic_fixed_prism_4x');
+  const stations = inventory.registry.models
+    .get(inventory.registry.items.get(rifle.type).model)
+    .gun.attachmentSlots.map(({ id }) => id);
+  const fitted = stations.some((slot) => {
+    try {
+      return inventory.fitSlot(rifle, slot, scope);
+    } catch {
+      // Another station may fit.
+      return false;
+    }
+  });
+  if (!fitted) {
+    throw new Error('Could not fit the acquisition fixture optic');
+  }
+  if (r.debugGunPose.mode !== 'hip') {
+    r.debugGunPose.toggle('hip');
+  }
+  const { uid } = rifle;
+  const samples = [];
+  let toggledAt = 0;
+  const { frame } = session;
+  const restore = () => {
+    session.frame = frame;
+  };
+  const sample = () => {
+    if (!session.firearms.isReady(uid)) {
+      return;
+    }
+    if (r.debugGunPose.mode !== 'ads') {
+      r.debugGunPose.toggle('ads');
+      toggledAt = r.frames;
+      return;
+    }
+    samples.push({
+      acquired: session.firearms.isAdsAcquired(uid),
+      elapsed: rifle.firearm?.adsAcquiring?.elapsedSimSeconds ?? 0,
+      lensFrame: r.view.held.opticLensFrame !== undefined,
+    });
+    if (samples.at(-1).acquired) {
+      restore();
+      return { rifleUid: uid, toggledAt, framesToAcquire: r.frames - toggledAt, samples };
+    }
+  };
+  return new Promise((done, failed) => {
+    session.frame = (...args) => {
+      const out = frame(...args);
+      try {
+        const result = sample();
+        if (result !== undefined) {
+          done(result);
+        }
+      } catch (error) {
+        restore();
+        failed(error);
+      }
+      return out;
+    };
+  });
+};
+
 const opticZoomCheck = async (chromium, port) => {
   // One session also exercises clearing masks when switching between optic presentations.
   // The short-relief prism also protects the world camera's near-plane boundary.
   const { page } = await enterTestHouse(chromium, port);
+  // The optic's sight picture must arrive with the acquisition motion, not on the toggle's frame.
+  await timePhase('ads-acquisition-motion', async () => {
+    const acquisition = await page.evaluate(adsAcquisitionMotionRecord);
+    const { samples } = acquisition;
+    assert.ok(samples.length > 1, 'long-gun ADS acquisition is observed over more than one simulation frame');
+    assert.equal(samples[0].acquired, false, 'the sight is not acquired on the frame after the toggle');
+    assert.equal(samples.at(-1).acquired, true, 'the sight is acquired once acquisition completes');
+    assert.ok(acquisition.framesToAcquire > 1, 'aiming down sights takes simulation time rather than snapping');
+    assert.ok(
+      samples.slice(0, -1).every((sample, index) => index === 0 || sample.elapsed > samples[index - 1].elapsed),
+      'acquisition progress accumulates frame by frame until it completes',
+    );
+    assert.ok(
+      samples.slice(0, -1).every((sample) => !sample.lensFrame),
+      'the optic sight picture waits for the acquisition to complete',
+    );
+    // The held view redraws after the simulation frame, so the sight picture is read from the view.
+    const sightPicture = await page.waitForFunction((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.session.inventory.hands[r.dominant]?.uid === uid && r.view.held.opticLensFrame !== undefined;
+    }, acquisition.rifleUid);
+    assert.ok(sightPicture, 'the optic sight picture arrives once the acquisition completes');
+    process.stdout.write(
+      `ADS_ACQUISITION_MOTION ${JSON.stringify({ framesToAcquire: acquisition.framesToAcquire, samples: samples.length })}\n`,
+    );
+  });
   const rifleUids = new Map();
   const endpoints = {
     'optic-zoom': [

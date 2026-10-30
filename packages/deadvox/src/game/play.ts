@@ -1136,6 +1136,11 @@ export const startPlay = (
       !session.sprinting
     );
   };
+  /** Effective ADS: wanted and, for a long gun, acquired through its Combat-owned acquisition time. */
+  const isAimedDownSights = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    return action.kind === 'firearm' && isAimingDownSights() && firearms.isAdsAcquired(action.item.uid);
+  };
   input.setAimingDownSightsAllowed(() => {
     const action = selectPrimaryAction(inventory);
     return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
@@ -1143,7 +1148,7 @@ export const startPlay = (
   const { lookSensitivityRadiansPerPixel, freeLook } = playerTuning(registry).aim;
   input.setFreeLook(freeLook, () => spectator.enabled || isAimingDownSights());
   input.setLookSensitivity(lookSensitivityRadiansPerPixel, () =>
-    opticZoom.appliedPower(zoomFirearm(), isAimingDownSights()),
+    opticZoom.appliedPower(zoomFirearm(), isAimedDownSights()),
   );
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet, {
@@ -2621,7 +2626,7 @@ export const startPlay = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer && !spectator.enabled) {
-        if (cycleFurnitureAction(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimingDownSights(), e.deltaY)) {
+        if (cycleFurnitureAction(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimedDownSights(), e.deltaY)) {
           e.preventDefault();
         } else if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
           debugTools?.wheel(e.deltaY);
@@ -2645,7 +2650,7 @@ export const startPlay = (
       lean: session.lean,
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
-      ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
+      ads: playerAdsPose(inventory, isAimedDownSights(), aim.frame),
     });
 
   const heldBodyPose = () =>
@@ -2655,7 +2660,7 @@ export const startPlay = (
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
       lean: session.lean,
-      ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
+      ads: playerAdsPose(inventory, isAimedDownSights(), aim.frame),
     });
   /** The body's seats and eyes a held firearm is placed from, so the shot leaves the drawn gun. */
   const heldBodyInput = (side: HandSide) => {
@@ -3683,7 +3688,7 @@ export const startPlay = (
         stridePhase: session.playerStridePhase,
         stance: session.stance,
         lean: session.lean,
-        ads: playerAdsPose(inventory, isAimingDownSights(), aim.frame),
+        ads: playerAdsPose(inventory, isAimedDownSights(), aim.frame),
         eye: eye(),
         ...(spectator.body
           ? { spectator: { position: [...spectator.body.pos], yaw: input.yaw, pitch: input.pitch } }
@@ -3748,7 +3753,7 @@ export const startPlay = (
     return {
       uid: selected.item.uid,
       progress: firearms.readyProgress(selected.item.uid),
-      aimingDownSights: isAimingDownSights(),
+      aimingDownSights: isAimedDownSights(),
     };
   };
 
@@ -3787,7 +3792,7 @@ export const startPlay = (
     view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
       floorPlacement: carryFloorPlacement(),
       firearms: firearms.frames(),
-      opticZoom: opticZoom.frame(zoomFirearm(), isAimingDownSights()),
+      opticZoom: opticZoom.frame(zoomFirearm(), isAimedDownSights()),
       ...(readiness === undefined ? {} : { readiness }),
       aim: aim.frame,
       job: handlingJob,

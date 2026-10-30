@@ -9,8 +9,10 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
+import { isLongGun } from '../core/firearmFitting.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
 import {
+  adsAcquisitionDuration,
   type FirearmStanceEffects,
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
@@ -264,6 +266,7 @@ export class FirearmMechanics {
   private readonly active = new Set<number>();
   private observedAtSimSeconds = 0;
   private readonly raising = new Set<number>();
+  private readonly acquiring = new Set<number>();
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly blockSize: number;
@@ -369,6 +372,9 @@ export class FirearmMechanics {
       }
       if (item.firearm?.readying) {
         this.raising.add(item.uid);
+      }
+      if (item.firearm?.adsAcquiring) {
+        this.acquiring.add(item.uid);
       }
     }
     this.revolvers = new RevolverHandling(inventory, queue, {
@@ -520,6 +526,58 @@ export class FirearmMechanics {
     progress.elapsed = Math.min(progress.duration, progress.elapsed + dt);
   }
 
+  /**
+   * Long-gun ADS acquisition: the Combat-owned shouldering motion after the raise. Only long guns
+   * acquire; other firearms aim the moment they are ready, as before. Not a second raise job.
+   */
+  advanceAdsAcquisition(dt: number, uid: number | undefined, wanted: boolean): void {
+    if (!Number.isFinite(dt) || dt < 0) {
+      throw new Error('Invalid firearm ADS acquisition step');
+    }
+    for (const acquiringUid of this.acquiring) {
+      if (acquiringUid === uid && wanted && this.held(acquiringUid) && this.isReady(acquiringUid)) {
+        continue;
+      }
+      const item = this.inventory.itemByUid(acquiringUid);
+      if (item?.firearm) {
+        item.firearm.adsAcquiring = undefined;
+      }
+      this.acquiring.delete(acquiringUid);
+    }
+    if (!(wanted && uid !== undefined && this.held(uid) && this.isReady(uid))) {
+      return;
+    }
+    const item = this.inventory.itemByUid(uid)!;
+    if (!isLongGun(defOf(this.inventory.registry, item.type))) {
+      return;
+    }
+    let state = item.firearm;
+    if (!state) {
+      state = { chamber: 'empty' };
+      item.firearm = state;
+    }
+    let progress = state.adsAcquiring;
+    if (!progress) {
+      progress = {
+        elapsedSimSeconds: 0,
+        durationSimSeconds: this.stanceEffectsFor(uid).adsAcquisitionDurationSimSeconds,
+      };
+      state.adsAcquiring = progress;
+      this.acquiring.add(uid);
+    }
+    progress.elapsedSimSeconds = Math.min(progress.durationSimSeconds, progress.elapsedSimSeconds + dt);
+  }
+
+  /** A long gun is sighted only once its acquisition completes; other firearms are sighted when ready. */
+  isAdsAcquired(uid: number): boolean {
+    const item = this.inventory.itemByUid(uid);
+    if (!(item && isLongGun(defOf(this.inventory.registry, item.type)))) {
+      return true;
+    }
+    const acquiring = item.firearm?.adsAcquiring;
+    return acquiring !== undefined && acquiring.elapsedSimSeconds >= acquiring.durationSimSeconds;
+  }
+
   private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
     const tuning = this.firearmsCombatTuning;
     if (!tuning) {
@@ -577,8 +635,14 @@ export class FirearmMechanics {
     }
     const loadScale = this.muzzleLoadScale(item);
     const response = firearmAttachmentResponse(this.inventory.registry, item);
+    const raiseDurationSimSeconds = stance.raiseDurationSimSeconds * loadScale * response.raiseScale;
     return {
-      raiseDurationSimSeconds: stance.raiseDurationSimSeconds * loadScale * response.raiseScale,
+      raiseDurationSimSeconds,
+      // The clamp bounds the final duration, attachment load included, so ADS never exceeds the floor's maximum.
+      adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(
+        raiseDurationSimSeconds,
+        this.requiredFirearmsCombatTuning(),
+      ),
       readyMovementFactor: (stance.readyMovementFactor * response.swingScale) / loadScale,
     };
   }

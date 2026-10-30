@@ -165,6 +165,22 @@ describe('long-gun skill ownership', () => {
       actor.awardPractice(id, practiceForNextLevel(content, actor.skills[id]!), SKILL_LEVEL_MAX);
     }
   };
+  /** Advances simulation frames until the held firearm's ADS acquisition completes; returns the frames spent. */
+  const acquireAds = (runtime: ReturnType<typeof makeRuntime>): number => {
+    const uid = runtime.session.inventory.hands.right?.uid;
+    if (uid === undefined) {
+      throw new Error('No held firearm to acquire ADS');
+    }
+    let frames = 0;
+    while (!runtime.session.firearms.isAdsAcquired(uid)) {
+      runtime.advance(1);
+      frames += 1;
+      if (frames > 3600) {
+        throw new Error('ADS acquisition did not complete');
+      }
+    }
+    return frames;
+  };
 
   it('selects a renamed content skill by long-gun classification, not optics or item identity', () => {
     const gun = content.items.get(gunId)!;
@@ -192,6 +208,7 @@ describe('long-gun skill ownership', () => {
         runtime.setReadyHeld(true);
         runtime.advance(90);
         runtime.setAds(true);
+        acquireAds(runtime);
         runtime.setIntent({ ...IDLE, sprint: true });
         runtime.setYaw(0.2);
         const advance = vi.spyOn(runtime.session.aim, 'advance');
@@ -244,7 +261,7 @@ describe('long-gun skill ownership', () => {
     const combatPractice = runtime.session.character.practice[combatId];
     expect(combatPractice).toBeGreaterThan(0);
     runtime.setAds(true);
-    runtime.advance(1);
+    acquireAds(runtime);
     const acquired = runtime.session.character.practice[snipingId]!;
     expect(acquired - before).toBeGreaterThanOrEqual(skillActivityPractice(content, snipingId, 'acquisition').practice);
     const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
@@ -305,6 +322,119 @@ describe('long-gun skill ownership', () => {
     expect(session.character.practice[snipingId]! - before.practice[snipingId]!).toBeCloseTo(expected);
     expect(session.character.practice[combatId]).toBe(before.practice[combatId]);
     hits.mockRestore();
+  });
+
+  it('times long-gun ADS acquisition from Combat alone and clamps it to the ADS-only floor', () => {
+    const tuning = combat.combat!.firearms!;
+    const novice = firearmStanceEffects(0, tuning);
+    const expert = firearmStanceEffects(SKILL_LEVEL_MAX, tuning);
+    // The fixture content must exercise both regimes: the floor bites a novice, not an expert handler.
+    expect(novice.adsAcquisitionDurationSimSeconds).toBe(tuning.adsAcquisitionMaximumSimSeconds);
+    expect(expert.adsAcquisitionDurationSimSeconds).toBe(expert.raiseDurationSimSeconds);
+    const measure = (combatExpert: boolean, snipingExpert: boolean) => {
+      const runtime = makeRuntime({ content });
+      equip(runtime);
+      if (combatExpert) {
+        train(runtime, combatId);
+      }
+      if (snipingExpert) {
+        train(runtime, snipingId);
+      }
+      runtime.setReadyHeld(true);
+      runtime.advance(90);
+      runtime.setAds(true);
+      const { uid } = runtime.session.inventory.hands.right!;
+      expect(runtime.session.firearms.isAdsAcquired(uid)).toBe(false);
+      const frames = acquireAds(runtime);
+      // The per-gun stance effect is the authoritative duration the mechanics sampled.
+      return {
+        seconds: frames / 60,
+        expected: runtime.session.firearms.stanceEffectsFor(uid).adsAcquisitionDurationSimSeconds,
+      };
+    };
+    const withinTick = (measured: { seconds: number; expected: number }) => {
+      expect(measured.seconds).toBeGreaterThanOrEqual(measured.expected);
+      expect(measured.seconds).toBeLessThanOrEqual(measured.expected + 2 / 60);
+    };
+    const base = measure(false, false);
+    const handler = measure(true, false);
+    const sniper = measure(false, true);
+    withinTick(base);
+    withinTick(handler);
+    withinTick(sniper);
+    expect(handler.expected).toBeLessThan(base.expected);
+    expect(handler.seconds).toBeLessThan(base.seconds);
+    expect(sniper.expected).toBe(base.expected);
+    expect(sniper.seconds).toBe(base.seconds);
+  });
+
+  it('cancels incomplete ADS acquisition on release and lost readiness, and re-entry restarts it', () => {
+    const tuning = combat.combat!.firearms!;
+    const partway = Math.max(
+      1,
+      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+    );
+    const runtime = makeRuntime({ content });
+    const rifle = equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    runtime.advance(partway);
+    expect(runtime.session.firearms.isAdsAcquired(rifle.uid)).toBe(false);
+    const partial = rifle.firearm?.adsAcquiring;
+    expect(partial?.elapsedSimSeconds ?? 0).toBeGreaterThan(0);
+    runtime.setAds(false);
+    runtime.advance(1);
+    expect(rifle.firearm?.adsAcquiring).toBeUndefined();
+    runtime.setAds(true);
+    runtime.advance(1);
+    expect(rifle.firearm?.adsAcquiring?.elapsedSimSeconds).toBeCloseTo(1 / 60, 6);
+    runtime.advance(partway);
+    expect(runtime.session.firearms.isAdsAcquired(rifle.uid)).toBe(false);
+    runtime.setReadyHeld(false);
+    runtime.advance(1);
+    expect(runtime.session.firearms.isReady(rifle.uid)).toBe(false);
+    expect(rifle.firearm?.adsAcquiring).toBeUndefined();
+    runtime.setAds(false);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    // Re-entry after both cancellations needs the whole acquisition again, not the cancelled remainder.
+    const frames = acquireAds(runtime);
+    const expected = runtime.session.firearms.stanceEffectsFor(rifle.uid).adsAcquisitionDurationSimSeconds;
+    expect(frames / 60).toBeGreaterThanOrEqual(expected);
+    expect(frames / 60).toBeLessThanOrEqual(expected + 2 / 60);
+  });
+
+  it('resumes saved ADS acquisition progress as an uninterrupted run continues it', async () => {
+    const tuning = combat.combat!.firearms!;
+    const partway = Math.max(
+      1,
+      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+    );
+    const runtime = makeRuntime({ content });
+    equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    runtime.advance(partway);
+    const { uid } = runtime.session.inventory.hands.right!;
+    expect(runtime.session.firearms.isAdsAcquired(uid)).toBe(false);
+    const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
+    const decoded = await decodeSave(await encodeFixture(snapshot), {
+      version: formatVersion,
+      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+    });
+    const resumed = makeRuntime({ content, restore: decoded.snapshot });
+    resumed.session.sim.paused = false;
+    resumed.setReadyHeld(true);
+    resumed.setAds(true);
+    expect(resumed.session.inventory.hands.right?.firearm?.adsAcquiring?.elapsedSimSeconds).toBeGreaterThan(0);
+    const remainingResumed = acquireAds(resumed);
+    const remainingUninterrupted = acquireAds(runtime);
+    expect(remainingResumed).toBe(remainingUninterrupted);
+    expect(resumed.session.sim.time).toBe(runtime.session.sim.time);
+    expect(resumed.session.character.snapshotState()).toEqual(runtime.session.character.snapshotState());
   });
 });
 

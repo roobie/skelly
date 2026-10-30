@@ -72,6 +72,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing long-gun steadiness, independent Sniping progression or firearm training ownership
+  - you're changing long-gun aim-down-sights timing or its speed floor
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
   - you author item models or decide how medicine quantities should look
@@ -2254,12 +2255,21 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `firearmSteadinessSkill`, and `src/game/session.ts`, `advanceSessionAim`.
 
   Raising, ready movement, loading, racking and attachment handling stay with
-  Combat because steadiness does not replace handling competence. Recoil kick
-  and recovery have one owner; splitting only kick would quietly move recovery
-  to the wrong skill. Firearm quality owns dispersion. Sniping and Combat must
-  not multiply sway together or compete through separate aim controllers. See
-  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, `steadinessTuning` and
-  `firearmStanceEffects`.
+  Combat because steadiness does not replace handling competence. Aim-down-sights
+  acquisition is Combat-owned handling speed too, so a steadier shooter is not a
+  faster one: a long gun reads the same Combat raise curve for its shouldering
+  time, clamped by a content maximum ADS duration so a novice sights faster than
+  they raise instead of doubling the slowest handling. The clamp bounds ADS only,
+  never raise, and the acquisition is authoritative simulation state that starts
+  from an already ready firearm, charges no second raise job, and cancels with the
+  same sprint, readiness and hold constraints. Sniping has no timing curve of its
+  own. Recoil kick and recovery have one owner; splitting only kick would quietly
+  move recovery to the wrong skill. Firearm quality owns dispersion. Sniping and
+  Combat must not multiply sway together or compete through separate aim
+  controllers. See `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
+  `src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired` and
+  `stanceEffectsFor`; and `src/game/session.ts`, `advancePlayerReadiness`.
 
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from

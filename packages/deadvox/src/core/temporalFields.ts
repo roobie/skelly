@@ -180,6 +180,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
+    path: 'skills.combat.firearms.adsAcquisitionMaximumSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
+  {
     path: 'skills.combat.firearms.wobbleNoiseReversionRatePerSimSecond',
     clock: 'Sim',
     unit: 'PerSecond',

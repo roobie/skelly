@@ -3949,6 +3949,8 @@ const SkillSchema = pipe(
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
+            /** The ADS-only speed floor, as a maximum aim-down-sights acquisition duration. */
+            adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
             readyMovementMinimum: Fraction,
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
