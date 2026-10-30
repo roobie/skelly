@@ -276,6 +276,57 @@ it('puts the eye on a scoped long gun sight line in every stance within the came
   }
 });
 
+it('uses a non-magnifying optic model’s eye relief to place the ADS eye', () => {
+  const opticItem = [...baseRegistry.items.values()].find((item) => {
+    const attachment = baseRegistry.models.get(item.model ?? '')?.gun?.attachment;
+    return attachment?.kind === 'optic' && (attachment.properties.magnification?.max ?? 1) === 1;
+  })!;
+  expect(opticItem).toBeDefined();
+  const attachment = baseRegistry.models.get(opticItem.model!)!.gun!.attachment!;
+  const firearm = [...baseRegistry.items.values()].find((item) => {
+    const model = baseRegistry.models.get(item.model ?? '');
+    return (
+      model?.hands &&
+      model.gun?.attachmentSlots?.some((slot) => model.gun?.compatibility?.[slot.id]?.includes(attachment.id))
+    );
+  })!;
+  expect(firearm).toBeDefined();
+  const registry = baseRegistry;
+  const inventory = new Inventory(registry);
+  const gun = inventory.create(firearm.id);
+  const firearmModel = registry.models.get(firearm.model!)!;
+  const opticSlot = firearmModel.gun!.attachmentSlots!.find((entry) =>
+    firearmModel.gun!.compatibility?.[entry.id]?.includes(attachment.id),
+  )!;
+  for (const [slotId, child] of Object.entries(gun.slots ?? {})) {
+    const childModel = child && registry.models.get(registry.items.get(child.type)!.model ?? '');
+    if (childModel?.gun?.attachment?.kind === 'optic') {
+      inventory.fitSlot(gun, slotId, undefined);
+    }
+  }
+  inventory.fitSlot(gun, opticSlot.id, inventory.create(opticItem.id));
+  const model = sightedFirearmModel(registry, gun)!;
+  const sight = model.gun!.sight!;
+  expect(sight.eyeReliefMetres).toBe(attachment.sight!.eyeReliefMetres);
+  const pose = heldFirearmTransform({
+    holds: registry.figures.get('player')!.holds,
+    model,
+    side: 'right',
+    leadingSide: 'right',
+    twoHanded: true,
+    progress: 1,
+    aimingDownSights: true,
+    aimFrame: NEUTRAL_AIM,
+    loweredPitchRadians: 0,
+  });
+  const eyeFromGrip = new Vector3(...pose.sightEyeOffset!);
+  const ocularFromGrip = new Vector3(...sight.eye).sub(new Vector3(...model.grip!.at));
+  expect(eyeFromGrip.length()).toBeGreaterThan(0);
+  expect(eyeFromGrip.length()).toBeCloseTo(
+    ocularFromGrip.addScaledVector(new Vector3(...sight.direction), -sight.eyeReliefMetres).length(),
+  );
+});
+
 it('aligns ADS through the fitted optic frame and restores irons when removed', () => {
   const { registry, fitted } = withDefaultAttachment(baseRegistry, 'rifle_hunting', 'optic_hunting_3_9x');
   const inventory = new Inventory(registry);

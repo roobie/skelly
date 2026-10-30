@@ -3390,6 +3390,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
 - **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
+- **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
