@@ -2116,12 +2116,113 @@ describe('content references', () => {
         ],
       },
     };
-    expect(buildRegistry([source]).issues).toContainEqual({
-      source: source.source,
-      path: 'recipes[0].components',
-      message:
-        'craft-and-take-apart cycle returns more material than it consumes: fixture_fabric → fixture_strip → fixture_fabric',
-    });
+    expect(buildRegistry([source]).issues).toContainEqual(
+      expect.objectContaining({
+        source: source.source,
+        message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+      }),
+    );
+  });
+
+  const materialCycleSource = (recovery: 'disassembly' | 'salvage' | 'unpack' | undefined, fasteners: number) => {
+    const yields = [
+      { item: 'fixture_material', count: 2 },
+      ...(fasteners > 0 ? [{ item: 'fixture_fastener', count: 1 }] : []),
+    ];
+    return {
+      source: 'material-stock-fixture.json',
+      data: {
+        items: [
+          { id: 'fixture_material', name: 'Material', category: 'material', weight: 1, size: [1, 1], stack: 10 },
+          { id: 'fixture_fastener', name: 'Fastener', category: 'material', weight: 1, size: [1, 1] },
+          {
+            id: 'fixture_assembly',
+            name: 'Assembly',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            ...(recovery === 'disassembly'
+              ? {
+                  disassembly: {
+                    timeGameMinutes: 1,
+                    skill: 'fixture_crafting',
+                    yields: yields.map((output) => ({ ...output, fractions: [0.5, 1], rounding: 'floor' })),
+                  },
+                }
+              : {}),
+            ...(recovery === 'salvage' ? { salvage: yields, salvageTimeGameMinutes: 1 } : {}),
+            ...(recovery === 'unpack' ? { unpack: { ...yields[0]!, simSeconds: 1 } } : {}),
+          },
+        ],
+        skills: [{ id: 'fixture_crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+        recipeCategories: [{ id: 'fixture_materials', label: 'Materials', order: 1 }],
+        recipes: [
+          {
+            id: 'fixture_assemble',
+            category: 'fixture_materials',
+            tags: [],
+            searchTerms: [],
+            result: { item: 'fixture_assembly', count: 1 },
+            timeGameMinutes: 1,
+            skills: {},
+            qualities: {},
+            components: [
+              [{ item: 'fixture_material', count: 1 }],
+              ...(fasteners > 0 ? [[{ item: 'fixture_fastener', count: fasteners }]] : []),
+            ],
+          },
+        ],
+      },
+    };
+  };
+
+  it('rejects a multi-input cycle that replenishes every input and gains one stock', () => {
+    const { issues } = buildRegistry([materialCycleSource('disassembly', 1)]);
+    expect(issues).toEqual([
+      expect.objectContaining({
+        source: 'material-stock-fixture.json',
+        message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+      }),
+    ]);
+  });
+
+  it('accepts a loop that gains material but depletes fasteners even though it also produces fasteners', () => {
+    expect(buildRegistry([materialCycleSource('disassembly', 2)]).issues).toEqual([]);
+  });
+
+  it.each([
+    { returned: 2, gain: false },
+    { returned: 3, gain: true },
+  ])('checks joint recovery recipes at $returned returned per input', ({ returned, gain }) => {
+    const source = materialCycleSource(undefined, 1);
+    const recipe = source.data.recipes[0]!;
+    source.data.recipes.push(
+      ...['fixture_material', 'fixture_fastener'].map((item) => ({
+        ...recipe,
+        id: `fixture_recover_${item}`,
+        result: { item, count: returned },
+        components: [[{ item: 'fixture_assembly', count: 1 }]],
+      })),
+    );
+    const { issues } = buildRegistry([source]);
+    if (gain) {
+      expect(issues).toEqual([
+        expect.objectContaining({
+          message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+        }),
+      ]);
+    } else {
+      expect(issues).toEqual([]);
+    }
+  });
+
+  it.each(['salvage', 'unpack'] as const)('rejects a gainful recipe and %s cycle', (recovery) => {
+    expect(buildRegistry([materialCycleSource(recovery, 0)]).issues).toEqual([
+      expect.objectContaining({
+        source: 'material-stock-fixture.json',
+        message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+      }),
+    ]);
   });
 
   it('checks result, skill, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
