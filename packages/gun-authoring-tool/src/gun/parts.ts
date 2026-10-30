@@ -78,12 +78,13 @@ import {
   subtractConvexSection,
 } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
-import { roundedTriggerGuardSolids } from './roundedTriggerGuard.ts';
+import { openTriggerGuard, roundedTriggerGuardSolids } from './roundedTriggerGuard.ts';
 import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
 import { SMG_HANDLE_PROPORTIONS } from './smgHandleProportions.ts';
 import { cutSporterAction, sporterActionDetails, sporterFurniture, sporterLower, sporterStock } from './sporter.ts';
 import { SPORTER_PROPORTIONS } from './sporterProportions.ts';
 import { taperedStockSolids } from './taperedStock.ts';
+import { TRIGGER_GUARDS } from './triggerGuards.ts';
 import { inchesToMm, mmToU } from './units.ts';
 
 const SIGHT_GRAIN = GRID / 4;
@@ -634,11 +635,14 @@ const lowerGripContactX = (layout: string, gripXOverride?: number): number => {
  * Where a grip's front edge sits at height y in the lower's frame: below its contact vertex the edge leans back
  * with the grip, so a guard whose top sits lower meets it further back.
  */
-const lowerGripFrontXAt = (gripX: number, y: number): number => {
+export const lowerGripStraightTopY = (): number => {
   const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
   const [x, mountY] = GRIP_MOUNT_PROFILE[0];
-  const contactY = -1.5 - x * Math.sin(angle) + mountY * Math.cos(angle);
-  return lowerGripContactX('ar', gripX) - Math.max(0, contactY - y) * Math.tan(angle);
+  return -1.5 - x * Math.sin(angle) + mountY * Math.cos(angle);
+};
+const lowerGripFrontXAt = (gripX: number, y: number): number => {
+  const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
+  return lowerGripContactX('ar', gripX) - Math.max(0, lowerGripStraightTopY() - y) * Math.tan(angle);
 };
 const lowerGripRearX = (gripX: number): number => {
   const angle = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
@@ -3068,7 +3072,7 @@ const lower: PartFamily = {
         : (LOWER_TRIGGER_X[layout as keyof typeof LOWER_TRIGGER_X] ?? LOWER_TRIGGER_X.conventional);
     const triggerFinger = trigger(triggerX);
     const triggerGuards =
-      params.triggerGuard === 'missing'
+      params.triggerGuard === 'missing' || layout === 'ak'
         ? []
         : triggerGuardSolids(
             triggerFinger,
@@ -3190,19 +3194,33 @@ const lower: PartFamily = {
         // The receiver's lower half: the frame runs its full length and width, down to its bottom.
         const akWell = well(AK_PROPORTIONS.lower.magazineX);
         const frontHookX = akWell.port.pos[0] + MAGAZINE_DEPTH / 2;
+        const guardContent = TRIGGER_GUARDS.ak!;
+        const akFinger = keepOut(
+          'trigger-finger',
+          [triggerX, guardContent.fingerY[0], guardContent.fingerZ[0]],
+          [triggerX + triggerFinger.box.half[0] * 2, guardContent.fingerY[1], guardContent.fingerZ[1]],
+        );
+        const guard =
+          params.triggerGuard === 'missing'
+            ? { solids: [], tags: [] }
+            : openTriggerGuard(akFinger.box, guardContent, AK_RECEIVER.bottomU - AK_RECEIVER.shellBottomU, {
+                xAt: (y) => lowerGripFrontXAt(LOWER_GRIP_X.ak, y),
+                straightTopY: lowerGripStraightTopY(),
+              });
         return {
           family: 'lower',
+          tags: guard.tags,
           solids: [
             solid(
               'frame',
               [AK_RECEIVER.rearX, AK_RECEIVER.bottomU - AK_RECEIVER.shellBottomU, -AK_RECEIVER.halfWidthU],
               [0, 0, AK_RECEIVER.halfWidthU],
             ),
-            ...triggerGuards,
+            ...guard.solids,
           ],
           ports: [top, grip(LOWER_GRIP_X.ak), akWell.port],
           keepOuts: [
-            triggerFinger,
+            akFinger,
             keepOut(
               'magazine-rock-in-sweep',
               [frontHookX, -40, -MAGAZINE_WELL_WIDTH / 2],
