@@ -1612,7 +1612,7 @@
     {
       "anchors": {
         "flame": {
-          "fraction": [1, 0.5, 0.5],
+          "fraction": [0.5, 1, 0.5],
           "part": "burner",
           "solid": "body"
         }
@@ -1706,7 +1706,7 @@
               "id": "fuel",
               "mount": "assembly-joint",
               "normal": [0, 1, 0],
-              "pos": [0, 0.001, 0],
+              "pos": [0, 0.0050000000000000001, 0],
               "required": true,
               "up": [1, 0, 0]
             }
@@ -1720,8 +1720,8 @@
           "id": "fuel_fill",
           "massKg": 0.001,
           "params": {
-            "height": "0.058000000000000003",
-            "radius": "0.042999999999999997"
+            "height": "0.050000000000000003",
+            "radius": "0.039"
           },
           "ports": [
             {

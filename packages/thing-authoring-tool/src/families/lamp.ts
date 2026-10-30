@@ -37,13 +37,17 @@ export const chimney = (params: Readonly<Record<string, string>>) => {
     throw new Error('Chimney wall closes its opening');
   }
   return [
-    revolve('glass', [
-      [0, d.lowerRadius - d.wall],
-      [0, d.lowerRadius],
-      [d.height, d.upperRadius],
-      [d.height, d.upperRadius - d.wall],
-      [0, d.lowerRadius - d.wall],
-    ], 'glass'),
+    revolve(
+      'glass',
+      [
+        [0, d.lowerRadius - d.wall],
+        [0, d.lowerRadius],
+        [d.height, d.upperRadius],
+        [d.height, d.upperRadius - d.wall],
+        [0, d.lowerRadius - d.wall],
+      ],
+      'glass',
+    ),
   ];
 };
 
