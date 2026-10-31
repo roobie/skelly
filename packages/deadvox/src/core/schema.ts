@@ -545,6 +545,7 @@ const UiScreenTextSchema = strictObject({
     sourceVessel: ['vessel', 'volume'],
     noMatches: [],
     noRepairTarget: [],
+    entityRepairTargetRequired: [],
     repairing: ['item'],
     inProgress: ['item'],
     disassembly: ['item'],

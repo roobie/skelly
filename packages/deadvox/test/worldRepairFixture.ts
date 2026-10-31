@@ -11,6 +11,7 @@ import { fixtureSources } from './economyFixtures.ts';
 
 export const STOCK = 'world_repair_stock';
 export const PIECE = 'world_repair_piece';
+export const OTHER_PIECE = 'world_repair_other_piece';
 export const RECIPE = 'world_repair_recipe';
 export const DURABILITY = 100;
 export const AMOUNT = 20;
@@ -21,15 +22,13 @@ export const worldRepairSources = () =>
       data: {
         skills: [{ id: 'world_repair_skill', name: 'Fixture repair', startingRecipes: [RECIPE] }],
         items: [{ id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
-        furniture: [
-          {
-            id: PIECE,
-            name: 'Fixture piece',
-            size: [1, 1, 1],
-            color: '#777777',
-            breach: { minimumStrength: 1, durability: DURABILITY },
-          },
-        ],
+        furniture: [PIECE, OTHER_PIECE].map((id) => ({
+          id,
+          name: 'Fixture piece',
+          size: [1, 1, 1],
+          color: '#777777',
+          breach: { minimumStrength: 1, durability: DURABILITY },
+        })),
         recipes: [
           {
             id: RECIPE,

@@ -3,6 +3,7 @@ read_if:
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
   - you change furniture repair start, hand admission or completion refusal
+  - you change Crafting row naming, admission or refusal accessibility
   - you change reachability validation or the repair-corner scenario and its authored stock destinations
 ---
 
@@ -32,6 +33,8 @@ change a running job. Unknown recipes remain hidden, including their exclusive b
 and tags, because navigation must not disclose knowledge the character lacks. Selection
 clears rather than silently choosing another recipe when a query hides it. See
 `src/ui/recipeBrowser.ts`, `recipeBrowser`.
+
+A furniture repair names the piece rather than the recipe's item result because it preserves an existing world identity. An unpinned Crafting row cannot choose that identity for the player, so it refuses Start instead of routing through item crafting. See `src/ui/craftReadout.ts`, `craftRows`, and `src/ui/crafting.ts`, `renderCrafting`. The target-pinned view waits for #1469 to settle input selection.
 
 ## Work and progression
 

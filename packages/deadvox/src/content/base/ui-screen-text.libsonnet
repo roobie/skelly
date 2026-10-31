@@ -139,6 +139,7 @@
     sourceVessel: '{vessel} ({volume} ml)',
     noMatches: 'No matches',
     noRepairTarget: 'No damaged repair target in reach',
+    entityRepairTargetRequired: "I need to choose what I'm fixing",
     repairing: 'Repairing {item}',
     inProgress: '{item} in progress',
     disassembly: '{item} disassembly',

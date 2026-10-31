@@ -1885,6 +1885,9 @@ body.inventory-open.inventory-tab-crafting #crafting {
 .craft-start {
   margin-top: calc(var(--ui-spacing) * 0.625rem);
 }
+.craft-start[aria-disabled="true"] {
+  border-style: dashed;
+}
 .craft-use {
   display: flex;
   align-items: center;

@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { reachTuning } from '../src/core/reach.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from '../src/game/furnitureActions.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
-import { AMOUNT, DURABILITY, PIECE, RECIPE, worldRepairFixture, worldRepairSources } from './worldRepairFixture.ts';
+import {
+  AMOUNT,
+  DURABILITY,
+  OTHER_PIECE,
+  PIECE,
+  RECIPE,
+  worldRepairFixture,
+  worldRepairSources,
+} from './worldRepairFixture.ts';
 
 const piece = { uid: 7 };
 const actions = [
@@ -27,6 +35,16 @@ describe('furniture service choices', () => {
       expect(choices.some(({ id }) => id === 'repair')).toBe(state === 'damaged');
     },
   );
+
+  it('does not offer a known repair recipe on a different furniture type', () => {
+    const { inventory, character } = worldRepairFixture(registry);
+    const target = inventory.entities.add({ type: OTHER_PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
+    expect(inventory.entities.bash(target, AMOUNT)).toBe('damaged');
+    expect(character.knownRecipes.has(RECIPE)).toBe(true);
+    expect(furnitureActionsFor(inventory, target, 0.5, character.knownRecipes).some(({ id }) => id === 'repair')).toBe(
+      false,
+    );
+  });
 
   it('retains ordinary lift when repair joins a small target’s long-press choices', () => {
     const { inventory, target } = worldRepairFixture(registry);

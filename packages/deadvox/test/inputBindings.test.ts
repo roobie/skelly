@@ -105,7 +105,7 @@ describe('keyboard registry', () => {
     ({ from, to, action, next }) => {
       const keyboard = new KeyboardInput(new BindingRegistry(undefined, storage()));
       let context: InputContext = from;
-      keyboard.context = () => ({ context, debug: true });
+      keyboard.context = () => ({ context, debug: false });
       const commands: InputCommand[] = [];
       keyboard.command = (command) => {
         commands.push(command);

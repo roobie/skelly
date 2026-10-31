@@ -76,7 +76,7 @@ export const runningCraftPresentation = (
 export interface CraftRow {
   id: string;
   name: string;
-  /** The result's own name, for the start button. */
+  /** The repair subject or craft result name, for the start button. */
   itemName: string;
   kind: 'craft' | 'repair';
   time: string;
@@ -140,14 +140,18 @@ export const craftRows = ({
       const result = planCraft(recipe, reach, character, { prefer, sources: sources[id] });
       const status = requirementStatus(recipe, reach, character);
       const text = craftingText(registry);
-      const itemName = registry.items.get(recipe.result.item)!.name;
+      const itemName = recipe.repair?.entity
+        ? registry.furniture.get(recipe.repair.entity)!.name
+        : registry.items.get(recipe.result.item)!.name;
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-        reason: recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
+        reason: recipe.repair?.entity
+          ? text.entityRepairTargetRequired
+          : recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
         components: status.components.map(({ alternatives, group }) => ({
           group,
           preferred: prefer?.[group] ? JSON.stringify(prefer[group]) : '',

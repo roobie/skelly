@@ -452,6 +452,7 @@
           "craft": "Craft {item}",
           "defaultSources": "Automatic",
           "disassembly": "{item} disassembly",
+          "entityRepairTargetRequired": "I need to choose what I'm fixing",
           "find": "Find",
           "found": "{item}: {found} found / {needed} needed",
           "group": "{recipe} material group {group}",
