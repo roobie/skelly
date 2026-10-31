@@ -36,7 +36,7 @@ local classify(material) =
   local matches = [prefixes[p] for p in std.objectFields(prefixes) if material != null && std.startsWith(material, p)];
   assert std.length(matches) == 1 : 'Material needs an explicit wear class: ' + std.toString(material);
   matches[0];
-local fillModels = ['lamp_oil_bottle', 'lighter'];
+local fillModels = ['lamp_oil_bottle', 'lighter', 'oil_lamp'];
 local decorate(model) =
   local asset = metadata[model.file];
   local filename = std.strReplace(std.strReplace(model.file, 'assets/models/', ''), '.glb', '');
@@ -46,7 +46,7 @@ local decorate(model) =
     materials: materials,
     wear: 'core',
     supply: if std.member(fillModels, model.id) then {
-      kind: 'fill', piece: if model.id == 'lighter' then 'fuel_fill:fuel_fill' else 'fuel-fill', axis: 'y',
+      kind: 'fill', piece: if std.member(['lighter', 'oil_lamp'], model.id) then 'fuel_fill:fuel_fill' else 'fuel-fill', axis: 'y',
       bands: [{ from: 0, scale: 0 }, { from: 0.01, scale: 0.2 }, { from: 0.35, scale: 0.5 }, { from: 0.7, scale: 1 }],
     } else { kind: 'none' },
   } };

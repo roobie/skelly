@@ -9,7 +9,7 @@ export interface VehicleBlueprintExport {
   ];
 }
 
-interface VehicleFittingExport {
+export interface VehicleFittingExport {
   readonly id: string;
   readonly part: string;
   readonly at: readonly [number, number, number];
