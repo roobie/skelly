@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
   - you author recipes or item take-apart yields
@@ -424,32 +425,33 @@ and `src/core/saveFormat.ts`.
 
 ### Edits persist
 
-A block or piece the player removes never comes back, and one they place stays, when its
-column is generated again or the game is reloaded. Base building takes placed and
-authored pieces apart for resources and places a great many blocks and pieces, so a
-removal that undid itself would duplicate resources and erase the player's work, and
-keeping edits must stay cheap at that scale.
+Regeneration must not undo work or duplicate salvage. Damage-only edits need the same
+complete terrain persistence as replacements: saving an isolated damaged chunk would
+lose unrelated authored terrain when the rest of its column returns. Scratch queries
+must not become saved edits merely because an admission check reached them. See
+`src/core/canonicalTerrain.ts`, `CanonicalTerrain`; `src/core/blockDamage.ts`,
+`BlockDamage`; and `src/core/world.ts`, `World.touchColumn`.
 
-A column is furnished once, and its pieces are then saved state, kept in memory for the
-session, so a removed piece has nothing to return from. A column whose blocks have
-changed is saved whole from then on, and its chunks stay in memory for the session, so
-it is never rebuilt from the seed; unchanged columns regenerate. The save is one
-compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
-`World`; and `src/core/saveFormat.ts`, `encodeSave`.
+Authored supply must have one truth before and after arrival. A speculative check
+cannot allocate live items, and an emptied source must not regenerate its original
+stock. Owner-controlled publication preserves existing item aliases rather than
+replacing the live inventory with a private copy. See `src/core/columnSupply.ts`,
+`createColumnSupply`; `src/game/session.ts`, `rolledColumns`; and
+`src/core/saveState.ts`, `SaveSnapshot`.
 
-A piece cannot be removed while anything rests or stands on it, while a barricade stands
-in its doorway, or while it holds items, so removal never strands, floats or loses
-anything. Removing through a piece handle taken before a load throws, so the mistake
-shows at once instead of corrupting occupancy. The action that removes a piece first
-cancels the jobs that name it, so a save never refers to a missing piece. Pending
-deconstruction reserves its piece against use until the job is cancelled or finished, so
-paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
-resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
+Voluntary removal protects what relies on a piece rather than stranding or losing it.
+Stale handles must fail loudly instead of corrupting occupancy, and removing a work
+target must not leave saved jobs naming something absent. Pending deconstruction needs
+a reservation so paused work cannot lose its target to another use. See
+`src/core/furnitureMove.ts`, `removalRefusal`; `src/core/blockEntities.ts`,
+`BlockEntities.remove`; and `src/game/session.ts`, `forgetPiece`.
 
-Destruction is not removal: a blow cannot be refused, so the removal refusals don't
-apply, and everything the piece held or carried drops or falls instead. Destruction
-still cancels the jobs that name the piece. See `src/core/blockEntities.ts`,
-`BlockEntities.destroy`.
+Destruction must not inherit voluntary removal refusals, but damage is not permission
+to lose contents. Whole-plan drop admission keeps a crowded ruin standing until its
+items can be conserved; sharing reservations prevents separate dependants from each
+claiming the same remaining space. The commit resolves private references through the
+real owners so outstanding aliases remain valid. See `src/core/furnitureMove.ts`,
+`planRuin` and `commitRuin`; and `src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
 Because every explored piece stays in memory, a lookup must not cost more as the explored
 area grows, so lookups find pieces through an index by column. See
@@ -2425,23 +2427,23 @@ application rather than weapon-class special cases. See `ZombieSchema` in
     tears limbs off a shambler;
   - a breaching charge (directional, at contact) destroys a steel door and
     little around it.
-- **Blocks and block entities get materials.** Soil, wood, brick, concrete and
-  steel, each with durability and a resistance per damage type, as content-pack
-  data; a block has no material or durability fields (`src/core/schema.ts`,
-  `BlockSchema`). A destroyed block is removed
-  with `World.setBlock`. Saves already store changed cells as an overlay on the
-  regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
-  persists without new save machinery; saves grow with the damage done.
-- **Ruined furniture.** A piece of furniture whose damage reaches its durability is
-  destroyed: what it held, and any debris its content names, falls as piles and
-  whatever rested on it falls, so destruction loses and floats nothing; a door
-  instead breaks and stays as an open leaf. Like a destroyed block, a ruined piece
-  is gone for good; unlike blocks, which do not collapse (next bullet), furniture
-  left unsupported settles, and a piece that cannot come down clear is destroyed in
-  turn. A blow that would ruin a piece whose contents and debris have no room to
-  fall still adds its damage and is heard, but the piece stays standing at full
-  damage until a blow finds room, so nothing is lost. See
-  `src/core/furnitureMove.ts`, `ruinFurniture`.
+- **Material admission.** Explicit block resistances let fragments and pressure
+  differ without weapon-name exceptions or a later schema replacement. Missing
+  metadata must fail admission rather than hide incomplete content behind a default.
+  Resistance precedes the strength gate so an ineffective blow does not accumulate
+  damage. See `src/core/schema.ts`, `BlockMaterialSchema`; `src/core/content.ts`,
+  `buildRegistry`; and `src/core/blockDamage.ts`, `bashBlock`.
+- **Rubble preserves wreckage.** A material's fallen form is solid rubble because
+  wreckage should still provide cover; falling alone is not loose salvage. Strikes
+  and deconstruction are the intended routes to loose resources. See
+  `src/core/schema.ts`, `BlockMaterialSchema`.
+- **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
+  supplies without stranding them. Destructive dependants use spatial ordering so
+  arrival's allocation order cannot decide who takes drop capacity first. A fixed
+  leaf cannot float after what supported it is destroyed; ordinary door breach is
+  different because breaking a leaf need not remove its support. See
+  `src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `ruinFurniture`; and
+  `src/core/blockEntities.ts`, `BlockEntities.bash`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**

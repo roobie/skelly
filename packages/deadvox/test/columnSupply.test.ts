@@ -3,7 +3,7 @@ import type { EntitySpec } from '../src/core/blockEntities.ts';
 import { CanonicalTerrain } from '../src/core/canonicalTerrain.ts';
 import { createColumnSupply } from '../src/core/columnSupply.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { ruinFurniture } from '../src/core/furnitureMove.ts';
+import { commitRuin, planRuin, ruinFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -283,20 +283,21 @@ describe('authored supply projection', () => {
     const handle = projection.handle(0, 0, 0);
     const planned = projection.entity(handle)!;
     const contentUid = planned.pockets![0]![0]!.item.uid;
-    const target: Vec3 = [3, 2, 3];
-    const destination = projection.inventory.planAdd(planned.pockets![0]![0]!.item, { kind: 'pile', pos: target });
-    expect(destination.ok).toBe(true);
-    if (!(destination.ok && destination.at)) {
-      throw new Error('Fixture drop has no destination');
-    }
+    const context = {
+      inventory: projection.inventory,
+      terrainSolid: (x: number, y: number, z: number) => registry.blocks[canonical.getBlock(x, y, z)]!.solid,
+      blockSize: 0.5,
+      player: runtime.session.body,
+      others: [],
+      stamina: 100,
+    };
+    const plan = planRuin(context, [planned]);
+    expect(plan).toBeDefined();
     projection.publish(
       projection.revision,
       (cx, cz) => canonical.ensureColumn(cx, cz),
       (live) => {
-        const piece = projection.entity(handle, live)!;
-        const placed = piece.pockets![0]![0]!;
-        live.entities.destroy(piece);
-        live.landLoose([{ placed, to: target, at: destination.at! }]);
+        commitRuin({ ...context, inventory: live }, plan!);
       },
     );
     const saved = capture(runtime);
