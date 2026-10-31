@@ -50,7 +50,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     {
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
-      "detail": "Improves recoil control, handling and raising. Steadies firearms other than long guns.",
+      "detail": "Improves recoil control, handling, raising and aiming down sights. Steadies firearms other than long guns.",
       "training": {
         "activities": {
           "readying": { "practicePerSimSecond": 0.1, "tier": 1 },
@@ -66,6 +66,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
           "raiseMinimumSimSeconds": 0.28,
           "raiseRangeSimSeconds": 0.42,
           "raiseHalfLifeLevels": 5,
+          "adsAcquisitionMaximumSimSeconds": 0.55,
           "readyMovementMinimum": 0.45,
           "readyMovementRange": 0.35,
           "readyMovementHalfLifeLevels": 5,
