@@ -25,8 +25,10 @@ and range supply remains logic, not a second copy of the place.
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
 authored placement owner. It stands on the showroom deck beside the spawn, so charging
-needs no walk. Site power reads finished authored placements independently of
-streaming; see `src/core/sitePower.ts`, `placedPowerDevices`.
+needs no walk. Changes to showroom staging must preserve that reach for the charger
+and its service stock, so facing a feature prop does not put charging out of reach.
+Site power reads finished authored placements independently of streaming; see
+`src/core/sitePower.ts`, `placedPowerDevices`.
 
 Keep fixture layouts marked as demos so their containers do not contribute world
 loot supply. The demo flag is an economy boundary, not a save policy; see
