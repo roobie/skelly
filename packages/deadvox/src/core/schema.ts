@@ -3814,6 +3814,13 @@ const HeldPosesSchema = strictObject({
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 
 /** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
+/** How the view animates between hip and sights across an aim's acquisition and release. */
+const AdsViewBlendSchema = strictObject({
+  easing: picklist(['linear', 'smoothstep']),
+  /** How long the view takes to settle back to the hip pose after the aim is released. */
+  blendBackRealSeconds: PositiveRealSeconds,
+});
+
 const FigureSchema = strictObject({
   id: Id,
   /** Where the hips stand above the ground; stances pivot about them. */
@@ -3875,6 +3882,7 @@ const FigureSchema = strictObject({
         check((value) => value < 1, 'neck length must remain positive'),
       ),
       stockShoulderOffset: Point,
+      viewBlend: AdsViewBlendSchema,
     }),
   }),
   lookDownLean: strictObject({
@@ -3968,6 +3976,8 @@ const SkillSchema = pipe(
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
+            /** The ADS-only speed floor, as a maximum aim-down-sights acquisition duration. */
+            adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
             readyMovementMinimum: Fraction,
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,

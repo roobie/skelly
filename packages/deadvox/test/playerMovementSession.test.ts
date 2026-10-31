@@ -7,9 +7,11 @@ import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts'
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import { firearmStanceEffects, firearmsSkillEffects, steadinessTuning } from '../src/core/firearmsSkill.ts';
+import { blendHeldFirearmTransforms, heldFirearmTransform } from '../src/core/heldPose.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '../src/core/leanCollision.ts';
-import { playerEyePosition } from '../src/core/playerLookPose.ts';
+import { playerAdsPose } from '../src/core/playerAdsPose.ts';
+import { playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -138,7 +140,20 @@ describe('long-gun skill ownership', () => {
         skills: [
           {
             ...combat,
-            combat: { ...combat.combat, firearms: { ...combat.combat!.firearms!, longGunSteadinessSkill: snipingId } },
+            combat: {
+              ...combat.combat,
+              firearms: {
+                ...combat.combat!.firearms!,
+                longGunSteadinessSkill: snipingId,
+                // Test-authored timing so the two ADS regimes are fixture properties, not production
+                // tuning: the novice raise (minimum + range) exceeds the maximum, so the clamp bites,
+                // while a trained handler's raise (minimum + range * 5 / 15 at half-life 5) stays under it.
+                raiseMinimumSimSeconds: 0.3,
+                raiseRangeSimSeconds: 0.3,
+                raiseHalfLifeLevels: 5,
+                adsAcquisitionMaximumSimSeconds: 0.45,
+              },
+            },
           },
           { ...registry.skills.get(combat.combat!.firearms!.longGunSteadinessSkill)!, id: snipingId },
         ],
@@ -154,6 +169,8 @@ describe('long-gun skill ownership', () => {
       },
     },
   ]);
+  /** The fixture's own firearms timing; assertions read it, so production retuning cannot break them. */
+  const tuning = content.skills.get(combatId)!.combat!.firearms!;
   const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {
     const { session } = runtime;
     return chargedRifle(session.inventory, session.queue, session.firearms, { type, magazines: session.magazines })
@@ -164,6 +181,22 @@ describe('long-gun skill ownership', () => {
     while (actor.skills[id]! < SKILL_LEVEL_MAX) {
       actor.awardPractice(id, practiceForNextLevel(content, actor.skills[id]!), SKILL_LEVEL_MAX);
     }
+  };
+  /** Advances simulation frames until the held firearm's ADS acquisition completes; returns the frames spent. */
+  const acquireAds = (runtime: ReturnType<typeof makeRuntime>): number => {
+    const uid = runtime.session.inventory.hands.right?.uid;
+    if (uid === undefined) {
+      throw new Error('No held firearm to acquire ADS');
+    }
+    let frames = 0;
+    while (!runtime.session.firearms.isAdsAcquired(uid)) {
+      runtime.advance(1);
+      frames += 1;
+      if (frames > 3600) {
+        throw new Error('ADS acquisition did not complete');
+      }
+    }
+    return frames;
   };
 
   it('selects a renamed content skill by long-gun classification, not optics or item identity', () => {
@@ -192,6 +225,7 @@ describe('long-gun skill ownership', () => {
         runtime.setReadyHeld(true);
         runtime.advance(90);
         runtime.setAds(true);
+        acquireAds(runtime);
         runtime.setIntent({ ...IDLE, sprint: true });
         runtime.setYaw(0.2);
         const advance = vi.spyOn(runtime.session.aim, 'advance');
@@ -215,7 +249,6 @@ describe('long-gun skill ownership', () => {
       expect(sniper.runtime.session.aim.snapshotState().wobbleNoise).toEqual(
         novice.runtime.session.aim.snapshotState().wobbleNoise,
       );
-      const tuning = combat.combat!.firearms!;
       const steady = steadinessTuning(tuning, content.skills.get(snipingId)!);
       expect(breathSteadying(SKILL_LEVEL_MAX, 0, steady.breathHold)).toBeGreaterThan(
         breathSteadying(0, 0, steady.breathHold),
@@ -244,7 +277,7 @@ describe('long-gun skill ownership', () => {
     const combatPractice = runtime.session.character.practice[combatId];
     expect(combatPractice).toBeGreaterThan(0);
     runtime.setAds(true);
-    runtime.advance(1);
+    acquireAds(runtime);
     const acquired = runtime.session.character.practice[snipingId]!;
     expect(acquired - before).toBeGreaterThanOrEqual(skillActivityPractice(content, snipingId, 'acquisition').practice);
     const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
@@ -305,6 +338,184 @@ describe('long-gun skill ownership', () => {
     expect(session.character.practice[snipingId]! - before.practice[snipingId]!).toBeCloseTo(expected);
     expect(session.character.practice[combatId]).toBe(before.practice[combatId]);
     hits.mockRestore();
+  });
+
+  it('times long-gun ADS acquisition from Combat alone and clamps it to the ADS-only floor', () => {
+    // The fixture authors both regimes: a novice raise above the maximum is clamped to it, and a
+    // trained handler's raise under it reads the raise curve unchanged.
+    const novice = firearmStanceEffects(0, tuning);
+    const expert = firearmStanceEffects(SKILL_LEVEL_MAX, tuning);
+    expect(novice.raiseDurationSimSeconds).toBeGreaterThan(tuning.adsAcquisitionMaximumSimSeconds);
+    expect(expert.raiseDurationSimSeconds).toBeLessThan(tuning.adsAcquisitionMaximumSimSeconds);
+    expect(novice.adsAcquisitionDurationSimSeconds).toBe(tuning.adsAcquisitionMaximumSimSeconds);
+    expect(expert.adsAcquisitionDurationSimSeconds).toBe(expert.raiseDurationSimSeconds);
+    const measure = (combatTrained: boolean, snipingTrained: boolean) => {
+      const runtime = makeRuntime({ content });
+      equip(runtime);
+      if (combatTrained) {
+        train(runtime, combatId);
+      }
+      if (snipingTrained) {
+        train(runtime, snipingId);
+      }
+      runtime.setReadyHeld(true);
+      runtime.advance(90);
+      runtime.setAds(true);
+      const { uid } = runtime.session.inventory.hands.right!;
+      expect(runtime.session.firearms.isAdsAcquired(uid)).toBe(false);
+      const frames = acquireAds(runtime);
+      // The per-gun stance effect is the authoritative duration the mechanics sampled.
+      return {
+        seconds: frames / 60,
+        expected: runtime.session.firearms.stanceEffectsFor(uid).adsAcquisitionDurationSimSeconds,
+      };
+    };
+    const withinTick = (measured: { seconds: number; expected: number }) => {
+      expect(measured.seconds).toBeGreaterThanOrEqual(measured.expected);
+      expect(measured.seconds).toBeLessThanOrEqual(measured.expected + 2 / 60);
+    };
+    const base = measure(false, false);
+    const handler = measure(true, false);
+    const sniper = measure(false, true);
+    withinTick(base);
+    withinTick(handler);
+    withinTick(sniper);
+    expect(handler.expected).toBeLessThan(base.expected);
+    expect(handler.seconds).toBeLessThan(base.seconds);
+    expect(sniper.expected).toBe(base.expected);
+    expect(sniper.seconds).toBe(base.seconds);
+  });
+
+  it('cancels incomplete ADS acquisition on release and lost readiness, and re-entry restarts it', () => {
+    const partway = Math.max(
+      1,
+      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+    );
+    const runtime = makeRuntime({ content });
+    const rifle = equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    runtime.advance(partway);
+    expect(runtime.session.firearms.isAdsAcquired(rifle.uid)).toBe(false);
+    const partial = rifle.firearm?.adsAcquiring;
+    expect(partial?.elapsedSimSeconds ?? 0).toBeGreaterThan(0);
+    runtime.setAds(false);
+    runtime.advance(1);
+    expect(rifle.firearm?.adsAcquiring).toBeUndefined();
+    runtime.setAds(true);
+    runtime.advance(1);
+    expect(rifle.firearm?.adsAcquiring?.elapsedSimSeconds).toBeCloseTo(1 / 60, 6);
+    runtime.advance(partway);
+    expect(runtime.session.firearms.isAdsAcquired(rifle.uid)).toBe(false);
+    runtime.setReadyHeld(false);
+    runtime.advance(1);
+    expect(runtime.session.firearms.isReady(rifle.uid)).toBe(false);
+    expect(rifle.firearm?.adsAcquiring).toBeUndefined();
+    runtime.setAds(false);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    // Re-entry after both cancellations needs the whole acquisition again, not the cancelled remainder.
+    const frames = acquireAds(runtime);
+    const expected = runtime.session.firearms.stanceEffectsFor(rifle.uid).adsAcquisitionDurationSimSeconds;
+    expect(frames / 60).toBeGreaterThanOrEqual(expected);
+    expect(frames / 60).toBeLessThanOrEqual(expected + 2 / 60);
+  });
+
+  it('resumes saved ADS acquisition progress as an uninterrupted run continues it', async () => {
+    const partway = Math.max(
+      1,
+      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+    );
+    const runtime = makeRuntime({ content });
+    equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    runtime.advance(partway);
+    const { uid } = runtime.session.inventory.hands.right!;
+    expect(runtime.session.firearms.isAdsAcquired(uid)).toBe(false);
+    const snapshot = runtime.session.snapshot({ worldId: 'fixture-world', characterId: 'fixture-character' });
+    const decoded = await decodeSave(await encodeFixture(snapshot), {
+      version: formatVersion,
+      contentLookup: (kind, id, item) => contentLookup(content, kind, id, item),
+    });
+    const resumed = makeRuntime({ content, restore: decoded.snapshot });
+    resumed.session.sim.paused = false;
+    resumed.setReadyHeld(true);
+    resumed.setAds(true);
+    expect(resumed.session.inventory.hands.right?.firearm?.adsAcquiring?.elapsedSimSeconds).toBeGreaterThan(0);
+    const remainingResumed = acquireAds(resumed);
+    const remainingUninterrupted = acquireAds(runtime);
+    expect(remainingResumed).toBe(remainingUninterrupted);
+    expect(resumed.session.sim.time).toBe(runtime.session.sim.time);
+    expect(resumed.session.character.snapshotState()).toEqual(runtime.session.character.snapshotState());
+  });
+
+  it('poses between hip and sights while the acquisition is partial', () => {
+    const runtime = makeRuntime({ content });
+    const rifle = equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    const partway = Math.max(
+      1,
+      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+    );
+    runtime.advance(partway);
+    const { session } = runtime;
+    const progress = session.firearms.adsAcquisitionProgress(rifle.uid);
+    expect(progress).toBeGreaterThan(0);
+    expect(progress).toBeLessThan(1);
+    const figure = content.figures.get('player')!;
+    const poseArgs = { figure, models: content.models, pitch: 0, stance: session.stance } as const;
+    const hipPose = playerLookPose({ ...poseArgs });
+    const sightedPose = playerLookPose({ ...poseArgs, ads: playerAdsPose(session.inventory, true, undefined, 1) });
+    const partialPose = playerLookPose({
+      ...poseArgs,
+      ads: playerAdsPose(session.inventory, true, undefined, progress),
+    });
+    const between = (from: number, mid: number, to: number, label: string) => {
+      expect(mid, label).toBeGreaterThanOrEqual(Math.min(from, to));
+      expect(mid, label).toBeLessThanOrEqual(Math.max(from, to));
+    };
+    for (const [axis, from] of hipPose.eye.entries()) {
+      between(from, partialPose.eye[axis]!, sightedPose.eye[axis]!, `carried eye axis ${axis}`);
+    }
+    for (const side of ['left', 'right'] as const) {
+      for (const [axis, from] of hipPose.stockSeats[side].entries()) {
+        between(
+          from,
+          partialPose.stockSeats[side][axis]!,
+          sightedPose.stockSeats[side][axis]!,
+          `carried stock seat ${side} axis ${axis}`,
+        );
+      }
+    }
+    expect(partialPose.eye).not.toEqual(hipPose.eye);
+    expect(partialPose.eye).not.toEqual(sightedPose.eye);
+    // The held firearm rides the same share between its hip pose and its sighted one.
+    const sighted = playerAdsPose(session.inventory, true, undefined, 1)!;
+    const gunArgs = {
+      holds: figure.holds,
+      model: sighted.model,
+      side: sighted.side,
+      leadingSide: sighted.side,
+      twoHanded: true,
+      progress: 1,
+      aimFrame: NEUTRAL_AIM,
+      lookPitchRadians: 0,
+      loweredPitchRadians: 0,
+    } as const;
+    const hipGun = heldFirearmTransform({ ...gunArgs, aimingDownSights: false });
+    const sightedGun = heldFirearmTransform({ ...gunArgs, aimingDownSights: true });
+    const partialGun = blendHeldFirearmTransforms(hipGun, sightedGun, progress);
+    for (const [axis, from] of hipGun.rootOffset.entries()) {
+      between(from, partialGun.rootOffset[axis]!, sightedGun.rootOffset[axis]!, `carried gun root axis ${axis}`);
+    }
+    expect(partialGun.rootOffset).not.toEqual(hipGun.rootOffset);
+    expect(partialGun.rootOffset).not.toEqual(sightedGun.rootOffset);
   });
 });
 
