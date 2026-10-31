@@ -461,11 +461,42 @@ Closed lists to open:
 
 ### 7. Open damage kinds
 
-Damage kinds are a closed code list, and creature resistances have a fixed shape per kind;
-see `src/core/body.ts`, `DAMAGE_KINDS`, and `src/core/schema.ts`, `ZombieSchema`. Elemental
-schools need any content kind to work as a damage kind with resistances keyed by it.
-Wearable protection is already keyed by kind. Deadvox's planned resistant zombie types in
-`DESIGN.md`, "Types are data", need the same opening.
+Elemental schools need fire, cold and electric hits. Damage kinds are a closed code list,
+and the body's responses are tables keyed by every kind, so adding a kind means editing
+every table, and under field patches two mods adding kinds would each have to know them
+all; see `src/core/body.ts`, `DAMAGE_KINDS` and `MELEE_DAMAGE_KINDS`, and
+`src/core/schema.ts`, `perDamageKind`. Creature resistance has a fixed shape for the
+melee kinds plus a separate acid special case; see `src/core/schema.ts`,
+`MeleeDamageResistanceSchema`, and `src/core/zombies.ts`, `acidDamageToZombie`. Blasts
+always deal one kind; see `src/core/zombies.ts`, `ZombieSystem.detonate`. Wearable
+protection is already keyed by kind and optional (`src/core/wear.ts`).
+
+- **A kind owns its responses.** A damage kind is a content entry carrying its shock,
+  pain, bleeding chance and outer-wear multiplier, and the body holds no per-kind tables.
+  A mod adds a kind with one entry and patches nothing, the same inversion
+  `docs/magic-mod.md`, "Skills and the resolver" makes for skills.
+- **Any kind can come from a weapon.** There is no melee subset; content chooses what a
+  weapon deals.
+- **One resistance shape:** an optional resistance per kind and region, defaulting to
+  none, on any actor. Acid becomes an ordinary kind. Resistance is a modified effect, so a
+  fire ward or a cold-adapted mutation is a modifier.
+- **One kind per hit.** A hit keeps one kind, so the wound model is unchanged; a flaming
+  sword cuts, and its enchantment's proc rule applies burning (gap 5).
+- **Behaviour on the actor is content:** a kind applies effects on hit (gap 2), with a
+  chance or strength that scales with damage: burning as damage over time, chilled as
+  slowing modifiers in the impairment layer, a stun from electric.
+- **Every damage source names its kind:** blasts, projectiles, damage over time and
+  overdraw consequences, so a fireball is a blast of kind fire.
+- **Presentation belongs to the kind:** its cause wording (`INTERFACE.md`, "Text"),
+  sounds, decals and body cues.
+
+Behaviour on the world, such as igniting and spreading fire, freezing water or conducting
+through it, is engine work outside this draft. A kind would select such a reaction from
+engine vocabulary, and block and furniture materials would carry their response to each
+kind.
+
+Deadvox's planned resistant zombie types in `DESIGN.md`, "Types are data", need the same
+opening.
 
 ### 8. Creature abilities, factions and allies
 
