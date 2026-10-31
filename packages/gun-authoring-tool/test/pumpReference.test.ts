@@ -59,7 +59,7 @@ describe('870-derived pump silhouette', () => {
     expect(materialAt(receiver.solids, [x, y, z - hz - 0.125]), 'port centre').toBe(false);
   });
 
-  it('uses a thin trigger plate, a compact rounded loop and a trigger inside it', () => {
+  it('uses a thin trigger plate, a compact closed loop and a trigger inside it', () => {
     const resolved = resolve(assemblyFor(), gunDomain);
     const lower = resolved.defs.get('lower')!;
     const frame = lower.solids.find((s) => s.id === 'frame')!;
@@ -82,7 +82,7 @@ describe('870-derived pump silhouette', () => {
       'finger keep-out clears guard material',
     ).toBe(true);
     expect(guards.every((s) => s.kind === 'extruded-polygon')).toBe(true);
-    expectWatertightMesh(meshForSolidGroup(guards), 'rounded trigger loop');
+    expectWatertightMesh(meshForSolidGroup(guards), 'closed trigger loop');
     expect(lower.solids.some((s) => s.id === TRIGGER_BLADE_ID)).toBe(true);
   });
 
