@@ -1,42 +1,47 @@
 ---
 read_if:
-  - you're planning the magic product, made of content on the engine and inspired by Cataclysm's Magiclysm, or the engine work it needs
-  - you're mixing the magic product's content into Deadvox
+  - you're planning the magic mod inspired by Cataclysm's Magiclysm, or the engine work it needs
+  - you're planning the high-fantasy product the magic mod is a big piece of
+  - you're writing a compatibility mod that brings the magic mod into another product, such as Deadvox
   - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
   - you're deciding what a character attribute governs, or whether a new one is needed
   - you're choosing which engine verbs or content kinds the mod rules work adds first
   - you're opening a closed code list (damage kinds, item capabilities, long jobs, creature abilities) for mods
 ---
 
-# Magic product: working draft
+# Magic mod: working draft
 
-This is a working draft of the engine gaps between the engine and a magic product with a
-Morrowind-like feel. Its big inspiration is Magiclysm, the magic mod for Cataclysm: Dark
-Days Ahead; the product is not Magiclysm and does not take its name. The product's own name is open.
-"The magic product" is this draft's working name. Each gap names the closed mechanism to open; the order says which gap unblocks which. Each section shrinks to its reason and code
-cues as its gap closes, and the draft goes once every gap has its own doc or ADR.
+This is a working draft of the engine gaps for a magic mod whose big inspiration is
+Magiclysm, the magic mod for Cataclysm: Dark Days Ahead. The mod is not Magiclysm and does
+not take its name; "the magic mod" is this draft's working name. Each gap names the closed
+mechanism to open; the order says which gap unblocks which. Each section shrinks to its
+reason and code cues as its gap closes, and the draft goes once every gap has its own doc
+or ADR.
 
-## Why a product
+## Why a mod, and which products use it
 
 Products are content stacks on one engine and mod framework, and Deadvox is one of them
-(#1532). Magic is outside Deadvox's tone (`DESIGN.md`, "Tone"), so the magic product is a
-product of its own, made of content alone, and the magic product inside Deadvox is one way
-of mixing the two under the pack rules: declared dependencies, and clashes that fail closed unless a
-compatibility mod resolves them. Content alone means no product-specific code:
-what the magic product lacks is engine work, which the gaps below scope.
+(#1532). The magic mod is a big piece of a high-fantasy product, a game of its own with a
+Morrowind-like feel, made of content alone; "the fantasy product" is its working name, and
+its name is open. The mod is not tied to that product: a mod can serve several products,
+and using it in a product it was not written for goes through compatibility mods under the
+pack rules: declared dependencies, and clashes that fail closed unless a compatibility mod
+resolves them. Magic is outside Deadvox's tone (`DESIGN.md`, "Tone"), so Deadvox never
+ships the mod, but a player can mix it in through a compatibility mod. Content alone means
+no product-specific code: what the mod lacks is engine work, which the gaps below scope.
 
-Magiclysm, and so the magic product, has the same shape as Mind Over Matter, the target set by
+Magiclysm has the same shape as Mind Over Matter, the target set by
 `docs/decisions/0004-content-language.md`, "Mod rules": powers, a resource that pays for
-them, exclusive schools, and scaling with practice. Closing the magic product's gaps
-therefore mostly closes the gaps that ADR already commits to, and the product is a second,
-concrete consumer for the vocabulary #313 settles.
+them, exclusive schools, and scaling with practice. Closing the magic mod's gaps therefore
+mostly closes the gaps that ADR already commits to, and the mod is a second, concrete
+consumer for the vocabulary #313 settles.
 
-The target follows the ADR: a product of Magiclysm's kind, in the engine's own vocabulary,
-with no Magiclysm file loading unchanged and none of its names carried over. Mechanism names in this draft use general roles
-(actors, creatures), not one product's words; code cues name symbols as they are, and the
-leaks those names show belong to #1532.
+The target follows the ADR: a mod of Magiclysm's kind, in the engine's own vocabulary, with
+no Magiclysm file loading unchanged and none of its names carried over. Mechanism names in
+this draft use general roles (actors, creatures), not one product's words; code cues name
+symbols as they are, and the leaks those names show belong to #1532.
 
-## What the magic product needs
+## What the magic mod needs
 
 The parts it takes from Magiclysm's design, in engine terms:
 
@@ -75,7 +80,7 @@ Needed:
   (gap 2), each attributed to its source so removing the source removes its modifiers.
 - **One resolver for skills and attributes:** skill and attribute levels feed effects
   through the same resolver as modifiers, so a new consumer has one path
-  (`docs/magic-product.md`, "Skills and the resolver").
+  (`docs/magic-mod.md`, "Skills and the resolver").
 - **Vocabulary growth with mechanisms:** the effect list stays engine vocabulary
   (`PILLARS.md`, "Content forward compatibility"), so each later gap adds the entries its
   mechanism reads.
@@ -93,7 +98,7 @@ compete for the same effect:
 - **Agility:** the whole body. Movement and sprint speed, ladders and climbing, stance
   changes, melee recovery.
 - **Intellect:** learning. Practice gain, reading time and recipe access, and the mana
-  pool in the magic product.
+  pool in the magic mod.
 - **Perception:** noticing. The player's own eyes do the seeing in first person, so
   perception needs effects the game owns: hearing range and direction precision, telling
   creature types apart at a distance, and revealing hidden things such as traps and concealed
@@ -200,7 +205,7 @@ properties such as more skill never slowing an action and the bounds holding.
 
 ### 2. Timed status effects
 
-The magic product's buffs, debuffs and enchantment procs need a generic effect: the modifier
+The magic mod's buffs, debuffs and enchantment procs need a generic effect: the modifier
 carrier with a lifetime. Each lasting condition has its own owner, so nothing else can
 apply one. Analgesic doses already have most of an effect's shape (an onset, peak and fade
 envelope, stacking groups under a cap, aging that prunes spent doses, and presentation that
@@ -221,7 +226,7 @@ Modifiers emitted by conditions, and effect modifiers that content tags as impai
 form the impairment layer. Grit feeds one modified effect that pulls impairment modifiers
 toward no change, so it softens how much pain hampers aim without touching the pain, and
 leaves poison damage or an untagged curse alone. This is the mechanism behind grit's rule
-in `docs/magic-product.md`, "Attribute vocabulary".
+in `docs/magic-mod.md`, "Attribute vocabulary".
 
 #### What an effect carries
 
@@ -265,7 +270,7 @@ slower recovery while a need is critical, and a fixed scale with no maximum to r
 
 A pool is a spendable effort resource: stamina, mana, and later a psionic or bionic one.
 Hunger, thirst, fatigue and blood are conditions
-(`docs/magic-product.md`, "Effects and conditions") and stay with their owners. Battery charge stays on items.
+(`docs/magic-mod.md`, "Effects and conditions") and stay with their owners. Battery charge stays on items.
 
 #### What a pool carries
 
@@ -291,7 +296,7 @@ Hunger, thirst, fatigue and blood are conditions
 
 Every spend names its cost target, an amount and an exertion kind. The exertion kind is
 the bodily load the conditioned layer trains on
-(`docs/magic-product.md`, "How attributes are set"), so pool spends are the training measurement and need no separate one.
+(`docs/magic-mod.md`, "How attributes are set"), so pool spends are the training measurement and need no separate one.
 
 A cost target is a pool or a body cost: health or blood, which `Body` pays under its own
 rules, so blood spent on a spell or ritual lowers blood and brings its shock and recovery
@@ -310,7 +315,7 @@ consumer, as analgesics are for effects; mana is the second.
 Neither traits nor start state is content: schools need trait entries, and the start kit
 is code (`src/game/loadout.ts`, `startingLoadout`). The start-state design is
 `docs/url-mods.md`, "Start state in mods". Traits change during play, which Deadvox needs
-as much as the magic product: mutation pressure spreads outward from Deadvox's labs
+as much as the magic mod: mutation pressure spreads outward from Deadvox's labs
 (`DESIGN.md`, "Points of interest"), so mutation is a consumer outside magic and gap 4 need
 not wait for it.
 
@@ -353,9 +358,10 @@ noticed before it is named.
 
 ### 5. Mod infrastructure
 
-The magic product mixed into Deadvox patches Deadvox content (spellbooks in loot, schools
-in the start flow), and the product alone still builds on whatever shared content its packs depend
-on, so it needs:
+The magic mod adds content to whichever product it serves (spellbooks in loot, schools in
+the start flow): through its own packs in the fantasy product, and through a compatibility
+mod in a product it was not written for, such as Deadvox. Both build on shared content its
+packs depend on, so it needs:
 
 - **Field patches** (`docs/decisions/0007-typed-field-patches.md`, "Decision"). Without
   them the mod restates whole base entries.
@@ -369,7 +375,7 @@ The only shipped rule mechanism is the scenario event rules; see
 
 ### 6. Spells: abilities with an effect dispatch
 
-Magiclysm's spell effect types, which the product follows, are what ADR 0004 calls engine
+Magiclysm's spell effect types, which the mod follows, are what ADR 0004 calls engine
 verbs, so spells are a
 natural first consumer for #313's effect vocabulary. Each spell is content selecting a
 verb; the verbs are code.
@@ -426,6 +432,6 @@ comes last.
 ## Order
 
 Gaps 1 to 4 serve Deadvox as well (wound-care traits, drug effects, mutation, resistant
-zombie types), so they need not wait for the magic product to be scheduled. Spells (gap 6) wait for the #313
+zombie types), so they need not wait for the magic mod to be scheduled. Spells (gap 6) wait for the #313
 vocabulary and field patches (gap 5). Damage kinds can land whenever a fire or cold source
 needs them, and allies come last.
