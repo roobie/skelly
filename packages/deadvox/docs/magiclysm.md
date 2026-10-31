@@ -85,8 +85,10 @@ compete for the same effect:
   pool in Magiclysm.
 - **Perception:** noticing. The player's own eyes do the seeing in first person, so
   perception needs effects the game owns: hearing range and direction precision, telling
-  zombie types apart at a distance, spotting loot and traps. Without them it is a dump
-  attribute.
+  zombie types apart at a distance, and revealing hidden things such as traps and concealed
+  caches by highlighting them once the character notices them. Hidden things need a
+  concealment value in content for perception to beat. Perception also gates traits that
+  depend on keen senses. Without these it is a dump attribute.
 - **Grit:** resolve. How much a condition impairs the character, never the condition
   itself: grit keeps a bleeding or exhausted character working, but does not clot blood or
   shorten sleep debt. Its effects are the pain knockout threshold, the point at which shock
@@ -132,6 +134,10 @@ again for Mind Over Matter's psionic resource.
 Neither traits nor start state is content. Schools need trait entries with exclusive
 groups, and a start state that grants one; the start kit is code (`src/game/loadout.ts`,
 `startingLoadout`). The start-state design is `docs/url-mods.md`, "Start state in mods".
+
+A trait can require attribute levels, so perception gates sense traits and intellect could
+gate a school. The requirement is content on the trait, so every attribute can gate traits
+through the same mechanism.
 
 ### 5. Mod infrastructure
 
