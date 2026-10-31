@@ -115,6 +115,8 @@
     craftSourcesShort: 'Not enough liquid in the selected vessels',
     craftLiquidUnavailable: "I can't draw {liquid} from {vessel}",
     craftLiquidSourceMissing: "I can't find the vessel for {liquid}",
+    recoverySpill: 'Spill: {volume} ml {liquid}',
+    recoveryReceiverUnavailable: "I can't pour {liquid} into that vessel",
     componentsCompete: 'Components compete for the same stock or would consume a required tool',
     preferredCompete: 'Preferred alternatives compete for the same stock or would consume a required tool',
     bookGone: 'The book is missing',
