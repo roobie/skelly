@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import { CHUNK, toChunk, toLocal, type Vec3 } from '../src/core/coords.ts';
@@ -12,6 +12,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { Streamer } from '../src/game/streamer.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
@@ -279,7 +280,110 @@ const restore = async (f: Fixture, variant: Variant) => {
   return fixture(variant, decoded.snapshot);
 };
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('supply-aware terrain destruction', () => {
+  it('keeps complete affected columns and consumed supply through real streamer unload and return', () => {
+    const f = fixture();
+    expect(f.strike()?.outcome).toBe('broken');
+    const before = f.snapshot();
+    expect(before.world.rolledColumns).toEqual(expect.arrayContaining(['0,0', '1,0']));
+    vi.stubGlobal(
+      'Worker',
+      class {
+        postMessage = vi.fn();
+        terminate = vi.fn();
+      },
+    );
+    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
+    const streamer = new Streamer({
+      world: f.world,
+      meshes: meshes as never,
+      seed: f.terrain.seed,
+      terrain: f.terrain.blocks,
+      shape: f.terrain.shape,
+      scale,
+      structures: f.structures,
+      stamp: f.terrain.stamp,
+      colors: new Uint8Array(f.registry.blocks.length * 4),
+      patterns: new Uint8Array(f.registry.blocks.length),
+      weatherable: new Uint8Array(f.registry.blocks.length),
+      radius: 0,
+      preloadRings: 0,
+      hysteresis: 1,
+    });
+    streamer.onColumn = (cx, cz) => f.session.onColumn(cx, cz, f.source);
+    const unload = vi.fn();
+    streamer.onColumnUnload = unload;
+    const supply = vi.spyOn(f.source, 'furnitureIn');
+    const serve = (x: number, z: number) => {
+      for (let step = 0; step < 32 && !streamer.isReady(x, z); step += 1) {
+        streamer.update(x, z);
+      }
+    };
+    serve(cell[0], cell[2]);
+    expect(streamer.isReady(...([cell[0], cell[2]] as const))).toBe(true);
+    expect(streamer.hasGeneratedColumn(0, 0)).toBe(true);
+    serve(20 * CHUNK, 20 * CHUNK);
+    expect(unload).toHaveBeenCalledWith(0, 0);
+    expect(streamer.hasGeneratedColumn(0, 0)).toBe(false);
+    expect(f.world.getChunk(0, 0, 0)).toBeDefined();
+    expect(f.world.getChunk(1, 0, 0)).toBeDefined();
+    serve(cell[0], cell[2]);
+    expect(streamer.hasGeneratedColumn(0, 0)).toBe(true);
+    expect(supply.mock.calls.some(([cx, cz]) => (cx === 0 || cx === 1) && cz === 0)).toBe(false);
+    expect(f.inventory.snapshotState()).toEqual(before.character.inventory);
+    expect(f.snapshot().world.columns).toEqual(before.world.columns);
+    expect(f.world.getBlock(...marker)).toBe(f.floor);
+    expect(f.world.getBlock(...cell)).toBe(0);
+  });
+
+  it('admits a canonical fall path deeper than the resident-only furniture search limit', () => {
+    const f = fixture();
+    const deep: Terrain = {
+      ...f.terrain,
+      scale: { ...scale, minCy: -3 },
+      shape: { ...f.terrain.shape, minHeightMetres: -35.5, maxHeightMetres: -35.5 },
+      stamp: (chunk) => {
+        if (chunk.cy === 0) {
+          f.terrain.stamp?.(chunk);
+        }
+      },
+    };
+    const canonical = new CanonicalTerrain(f.world, deep, f.structures);
+    const source: ColumnSource = {
+      ...f.source,
+      furnitureIn: (cx, cz) => (cx === 0 && cz === 0 ? [f.spawns[0]!] : []),
+      lootPointsIn: () => [],
+    };
+    const result = strikeTerrain(
+      {
+        terrain: canonical,
+        supply: f.session.projectSupply(source),
+        mover: {
+          inventory: f.inventory,
+          terrainSolid: () => false,
+          blockSize: 0.5,
+          player: f.session.body,
+          others: [],
+          stamina: 100,
+        },
+      },
+      cell,
+      { strength: 20, kind: 'blunt' },
+    );
+    expect(result?.outcome).toBe('broken');
+    const items = [...f.inventory.items()].filter(({ item }) => item.type === stock);
+    expect(items).toHaveLength(3);
+    for (const { item } of items) {
+      const at = f.inventory.locate(item);
+      expect(at?.kind).toBe('pile');
+      if (at?.kind === 'pile') {
+        expect(at.pile.pos[1]).toBe(-70);
+        expect(canonical.getBlock(at.pile.pos[0], at.pile.pos[1] - 1, at.pile.pos[2])).toBe(f.floor);
+      }
+    }
+  });
   it('resists without owners or overlay, then publishes partial damage with complete stamped terrain', async () => {
     const f = fixture();
     const before = owners(f);
