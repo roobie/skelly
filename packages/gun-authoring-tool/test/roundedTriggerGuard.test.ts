@@ -5,9 +5,9 @@ import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { OPEN_TRIGGER_GUARD, openTriggerGuard } from '../src/gun/roundedTriggerGuard.ts';
+import { OPEN_TRIGGER_GUARD, openTriggerGuard, triggerBlade } from '../src/gun/roundedTriggerGuard.ts';
 import { triggerGuard } from '../src/gun/rules.ts';
-import type { TriggerGuardDimensions } from '../src/gun/triggerGuards.ts';
+import { TRIGGER_BLADE, type TriggerGuardDimensions } from '../src/gun/triggerGuards.ts';
 import { loadFixture } from './helpers.ts';
 
 const dimensions: TriggerGuardDimensions = {
@@ -162,8 +162,20 @@ describe('open trigger guard builder', () => {
   it('rejects a corner outside the straight face domain', () => {
     expect(() => openTriggerGuard(finger, dimensions, 4, { ...face, straightTopY: -0.1 })).toThrow('straight');
   });
-  it('rejects a finger reaching the ceiling', () => {
-    expect(() => openTriggerGuard(finger, dimensions, 3, face)).toThrow('ceiling');
+  it('rejects a finger reaching above the ceiling', () => {
+    expect(() => openTriggerGuard(finger, dimensions, 2.9, face)).toThrow('ceiling');
+  });
+  it('hangs a valid blade inside the finger space from the given top', () => {
+    const blade = triggerBlade(finger, TRIGGER_BLADE, 4);
+    if (blade.kind !== 'extruded-polygon') {
+      throw new Error('Expected polygon');
+    }
+    expect(validateExtrudedPolygon(blade.profile, blade.z)).toBeUndefined();
+    const [min, max] = localSolidBounds(blade);
+    expect(max[1]).toBe(4);
+    expect(min[0]).toBeGreaterThan(0);
+    expect(max[0]).toBeLessThan(2);
+    expect(min[1]).toBeGreaterThan(0);
   });
   it('rejects a front cut larger than the bar', () => {
     expect(() => openTriggerGuard(finger, { ...dimensions, frontCutU: dimensions.wallU * 2 }, 4, face)).toThrow('cut');
@@ -190,6 +202,11 @@ describe('open trigger guard rule', () => {
   });
   it('accepts a receiver-closed open fixture with content-owned thickness', () => {
     expect(issuesWith((lower) => lower)).toEqual([]);
+  });
+  it('accepts a trigger blade hanging from the receiver into the finger space', () => {
+    expect(
+      issuesWith((lower) => ({ ...lower, solids: [...lower.solids, triggerBlade(finger, TRIGGER_BLADE, 4)] })),
+    ).toEqual([]);
   });
   const rows: [string, (lower: PartDef) => PartDef][] = [
     ['tag without corner', (lower) => ({ ...lower, solids: lower.solids.filter(({ id }) => id !== cornerId) })],

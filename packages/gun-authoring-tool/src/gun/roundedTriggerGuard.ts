@@ -1,8 +1,24 @@
 import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
 import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
-import type { TriggerGuardDimensions } from './triggerGuards.ts';
+import type { TriggerBladeShape, TriggerGuardDimensions } from './triggerGuards.ts';
 
 export const OPEN_TRIGGER_GUARD = 'trigger-guard-open-rear';
+
+/** A trigger blade in the finger space, hanging from `topY`: the guard's top bar or the receiver that closes it. */
+export const triggerBlade = (finger: Box, shape: TriggerBladeShape, topY: number): Solid => {
+  const rearX = finger.center[0] - finger.half[0];
+  const bottomY = finger.center[1] - finger.half[1];
+  const profile: Vec2[] = [
+    ...shape.lower.map(([x, y]): Vec2 => [rearX + x, bottomY + y]),
+    ...shape.topX.map((x): Vec2 => [rearX + x, topY]),
+  ];
+  const z: readonly [number, number] = [-shape.halfWidthU, shape.halfWidthU];
+  const error = validateExtrudedPolygon(profile, z);
+  if (error) {
+    throw new Error(`Trigger blade: ${error}`);
+  }
+  return { id: 'trigger', kind: 'extruded-polygon', profile, z };
+};
 
 export const openTriggerGuard = (
   finger: Box,
@@ -23,8 +39,8 @@ export const openTriggerGuard = (
   const faceSlope = face.xAt(topY) - face.xAt(topY - 1);
   const meetY = (bottomY + slope * (rearX - face.xAt(topY) + faceSlope * topY)) / (1 + slope * faceSlope);
   const cutRun = dimensions.frontCutU / Math.tan((dimensions.frontCutDegrees * Math.PI) / 180);
-  if (finger.center[1] + finger.half[1] >= ceilingY) {
-    throw new Error('Trigger finger must be below the receiver ceiling.');
+  if (finger.center[1] + finger.half[1] > ceilingY) {
+    throw new Error('Trigger finger must not reach above the receiver ceiling.');
   }
   if (topY > face.straightTopY || meetY > face.straightTopY) {
     throw new Error('Trigger corner exceeds the straight grip face.');

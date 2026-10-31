@@ -460,7 +460,7 @@ const triggerGuardClosureIssue = (
   }
   const front = solidBounds(guards.get('trigger-guard-front')!);
   const corner = solidBounds(guards.get('trigger-guard-corner')!);
-  const closed = bodySolids.some((body) => {
+  const receivers = bodySolids.filter((body) => {
     if (body.kind !== 'box') {
       return false;
     }
@@ -473,12 +473,13 @@ const triggerGuardClosureIssue = (
       bounds.max[2] >= front.max[2] - 1e-8
     );
   });
-  if (!closed) {
+  if (receivers.length === 0) {
     return `${part}'s trigger guard is not closed by the receiver.`;
   }
+  // Only the closing receiver must stay out of the finger space: a trigger blade hangs inside it.
   const finger = def.keepOuts.find(({ id }) => id === 'trigger-finger')!;
   const fingerWorld = worldSolid(IDENTITY, { id: 'finger', kind: 'box', box: finger.box });
-  if (bodySolids.some((body) => penetrationWorld(fingerWorld, worldSolid(IDENTITY, body)) > 1e-8)) {
+  if (receivers.some((body) => penetrationWorld(fingerWorld, worldSolid(IDENTITY, body)) > 1e-8)) {
     return `${part}'s trigger finger overlaps the receiver.`;
   }
   return undefined;

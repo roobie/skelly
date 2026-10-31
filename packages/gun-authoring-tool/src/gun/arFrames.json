@@ -674,7 +674,6 @@
           "fingerFrontX": -9.75,
           "fingerRearX": -13,
           "fingerTopU": -5,
-          "guardWallU": 0.25,
           "housingRearWallU": 0.25
         },
         "wellCenterX": -5

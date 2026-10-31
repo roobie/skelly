@@ -9,7 +9,7 @@ read_if:
   - you change physical inputs, drawn collision exports or their ownership
   - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
-  - you change trigger-guard geometry, content or validation
+  - you change trigger-guard or trigger geometry, content or validation
   - you change the structured Deadvox export recipe or refresh boundary
   - you diagnose platform-dependent export comparisons
   - you share recipe or synchronization mechanisms between authoring tools
@@ -47,9 +47,11 @@ Keep the AR frame and magwell unchanged when correcting magazine seating: adjust
 
 ## Trigger guard
 
-The AK guard must not leave a thick block behind the trigger or duplicate the receiver underside with a top bar. The receiver closes the finger opening above, while a slanted corner joins the bottom bar to the grip, leaving the rear open. See `src/gun/roundedTriggerGuard.ts`, `openTriggerGuard`.
+A guard whose grip stands behind it must not leave a thick block behind the trigger or duplicate the receiver underside with a top bar. The receiver closes the finger opening above, while a slanted corner joins the bottom bar to the grip, leaving the rear open. See `src/gun/roundedTriggerGuard.ts`, `openTriggerGuard`. A gun keeps the closed four-bar guard until #1467 revisits it, and a lower whose body does not reach over the guard's front wall cannot close the opening.
 
 Proportions and corner cuts belong to per-gun content because their size and angles differ between guns; see `src/gun/triggerGuards.jsonnet`. Exports carry neither authoring blocks nor builder arguments, so validation measures bar thickness, identifies the open shape by its part tag and establishes receiver closure geometrically rather than by a body-solid name; see `src/gun/rules.ts`, `triggerGuard`.
+
+Every exported gun shows a trigger. One shared blade serves guns without a traced trigger, so the shape stays one content entry, and it hangs from whatever closes the opening's top so it never floats; see `src/gun/roundedTriggerGuard.ts`, `triggerBlade`. Because the blade sits inside the finger space, validation keeps only the closing receiver out of it.
 
 ## Testing
 

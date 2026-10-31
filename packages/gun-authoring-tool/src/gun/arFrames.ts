@@ -74,7 +74,6 @@ const FrameSchema = strictObject({
           fingerFrontX: Finite,
           fingerTopU: Finite,
           fingerBottomU: Finite,
-          guardWallU: Positive,
           housingRearWallU: Positive,
           blade: strictObject({
             // Convex side profiles that together trace the curved blade.
