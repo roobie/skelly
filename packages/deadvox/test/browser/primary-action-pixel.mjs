@@ -643,9 +643,11 @@ const heldItemChecks = async (chromium, port) => {
 
 // Long-gun ADS acquisition is Combat-owned simulation time: the fixture raises with the debug hip
 // latch, then latches ADS, and the hooked session frames sample acquisition progress and the held
-// optic's sight picture. Acceptance must not depend on the render cadence, so the record freezes
-// the simulation through the debug freeze control once the acquisition is half done, renders the
-// held partial state, then unfreezes and lets the acquisition complete. Runs inside the page.
+// optic's sight picture. Acceptance must not depend on the render cadence — one frame can carry
+// the acquisition past any watched interval — so once the raise completes the recorder takes
+// exclusive control of the session's tick entry: outer frames are absorbed while it advances the
+// acquisition in bounded single player ticks to a partial state, renders it, then hands the ticks
+// back and samples until the acquisition completes. Runs inside the page.
 const adsAcquisitionMotionRecord = async () => {
   const r = globalThis.primaryActionTest;
   const { inventory, session } = r;
@@ -671,78 +673,110 @@ const adsAcquisitionMotionRecord = async () => {
     r.debugGunPose.toggle('hip');
   }
   const { uid } = rifle;
+  const playerTick = 1 / 60;
   const samples = [];
+  let latched = false;
+  let holding = false;
   let toggledAt = 0;
   let heldElapsed = 0;
-  let unfreeze = () => null;
+  let hipCamera;
+  let partialCamera;
   let failWith;
-  let froze;
-  let finish;
-  const frozeNow = new Promise((markFrozen) => {
-    froze = markFrozen;
+  let markLatched;
+  let markDone;
+  const latchedNow = new Promise((markReady) => {
+    markLatched = markReady;
   });
-  const completed = new Promise((markCompleted) => {
-    finish = markCompleted;
+  const completed = new Promise((markFinished) => {
+    markDone = markFinished;
   });
   const { frame } = session;
-  const restore = () => {
-    session.frame = frame;
-  };
-  session.frame = (...args) => {
-    const out = frame(...args);
-    try {
-      if (!session.firearms.isReady(uid)) {
-        return out;
+  try {
+    session.frame = (...args) => {
+      if (holding) {
+        // Exclusive control: while the ticks are held, only the recorder's bounded steps run.
+        return;
       }
-      if (r.debugGunPose.mode !== 'ads') {
-        r.debugGunPose.toggle('ads');
-        toggledAt = r.frames;
-        return out;
+      let out;
+      try {
+        out = frame(...args);
+      } catch (error) {
+        // An error in the tick itself must settle the recorder rather than dangle its awaits.
+        failWith = error;
+        markLatched();
+        markDone();
+        return;
       }
-      const acquiring = rifle.firearm?.adsAcquiring;
-      const elapsed = acquiring?.elapsedSimSeconds ?? 0;
-      if (
-        !heldElapsed &&
-        acquiring &&
-        !session.firearms.isAdsAcquired(uid) &&
-        elapsed >= acquiring.durationSimSeconds / 2
-      ) {
-        heldElapsed = elapsed;
-        r.debugTools.handleAction('debug.freeze-game');
-        unfreeze = () => r.debugTools.handleAction('debug.freeze-game');
-        froze();
-        return out;
+      try {
+        if (!latched) {
+          if (session.firearms.isReady(uid) && r.debugGunPose.mode !== 'ads') {
+            r.debugGunPose.toggle('ads');
+            toggledAt = r.frames;
+            latched = true;
+            holding = true;
+            hipCamera = r.engine.camera.position.toArray();
+            markLatched();
+          }
+          return out;
+        }
+        samples.push({
+          acquired: session.firearms.isAdsAcquired(uid),
+          elapsed: rifle.firearm?.adsAcquiring?.elapsedSimSeconds ?? 0,
+          lensFrame: r.view.held.opticLensFrame !== undefined,
+        });
+        if (samples.at(-1).acquired) {
+          markDone();
+        }
+      } catch (error) {
+        failWith = error;
+        markLatched();
+        markDone();
       }
-      samples.push({
-        acquired: session.firearms.isAdsAcquired(uid),
-        elapsed,
-        camera: r.engine.camera.position.toArray(),
-        lensFrame: r.view.held.opticLensFrame !== undefined,
-      });
-      if (samples.at(-1).acquired) {
-        restore();
-        finish();
-      }
-    } catch (error) {
-      restore();
-      failWith = error;
-      finish();
+      return out;
+    };
+    await latchedNow;
+    if (failWith) {
+      throw failWith;
     }
-    return out;
-  };
-  await frozeNow;
-  // Rendering continues while the simulation is frozen; give the view a few frames to present the
-  // held partial state, then read the camera it shows.
-  for (let index = 0; index < 3; index += 1) {
-    await new Promise((frameDone) => requestAnimationFrame(frameDone));
+    // Bounded steps to a partial acquisition: one player tick at a time, so a state inside the
+    // acquisition is reached by construction instead of watched for in whole frames.
+    const acquiring = () => rifle.firearm?.adsAcquiring;
+    for (let steps = 0; steps < 600; steps += 1) {
+      const current = acquiring();
+      if (current && current.elapsedSimSeconds >= current.durationSimSeconds / 2) {
+        break;
+      }
+      frame(playerTick);
+    }
+    const reached = acquiring();
+    heldElapsed = reached?.elapsedSimSeconds ?? 0;
+    if (!reached || session.firearms.isAdsAcquired(uid)) {
+      throw new Error('Bounded ticks did not reach a partial acquisition state');
+    }
+    // Rendering continues while the ticks are held; give the view a few frames to present the
+    // partial state, then read the camera it shows.
+    for (let index = 0; index < 3; index += 1) {
+      await new Promise((frameDone) => requestAnimationFrame(frameDone));
+    }
+    partialCamera = r.engine.camera.position.toArray();
+    holding = false;
+    await completed;
+    if (failWith) {
+      throw failWith;
+    }
+    return {
+      rifleUid: uid,
+      toggledAt,
+      framesToAcquire: r.frames - toggledAt,
+      samples,
+      heldElapsed,
+      partialCamera,
+      hipCamera,
+    };
+  } finally {
+    holding = false;
+    session.frame = frame;
   }
-  const partialCamera = r.engine.camera.position.toArray();
-  unfreeze();
-  await completed;
-  if (failWith) {
-    throw failWith;
-  }
-  return { rifleUid: uid, toggledAt, framesToAcquire: r.frames - toggledAt, samples, heldElapsed, partialCamera };
 };
 
 const opticZoomCheck = async (chromium, port) => {
@@ -774,9 +808,10 @@ const opticZoomCheck = async (chromium, port) => {
       'the optic sight picture waits for the acquisition to complete',
     );
     // The view carries the aim from hip to sights with the acquisition instead of snapping. The
-    // record holds an explicit partial acquisition and renders it, so acceptance never depends on
-    // the render cadence: the frozen mid-acquisition camera must sit strictly part-way between the
-    // hip eye and the settled full-ADS camera, which the final read takes after one redraw.
+    // record reaches a partial acquisition by bounded ticks and renders it, so acceptance never
+    // depends on the render cadence: the held mid-acquisition camera must sit strictly part-way
+    // between the hip eye and the settled full-ADS camera, which the final read takes after one
+    // redraw.
     const sightPicture = await page.waitForFunction((uid) => {
       const r = globalThis.primaryActionTest;
       return r.session.inventory.hands[r.dominant]?.uid === uid && r.view.held.opticLensFrame !== undefined;
@@ -784,13 +819,13 @@ const opticZoomCheck = async (chromium, port) => {
     assert.ok(sightPicture, 'the optic sight picture arrives once the acquisition completes');
     const finalCamera = await page.evaluate(() => globalThis.primaryActionTest.engine.camera.position.toArray());
     const cameraDistance = (from, to) => Math.hypot(from[0] - to[0], from[1] - to[1], from[2] - to[2]);
-    const travel = cameraDistance(samples[0].camera, finalCamera);
+    const travel = cameraDistance(acquisition.hipCamera, finalCamera);
     assert.ok(travel > 0.002, 'the camera travels from the hip eye to the sighted eye');
     assert.ok(
       acquisition.heldElapsed > 0 && acquisition.heldElapsed < samples.at(-1).elapsed,
       'the held partial state sits strictly inside the acquisition',
     );
-    const carried = cameraDistance(samples[0].camera, acquisition.partialCamera);
+    const carried = cameraDistance(acquisition.hipCamera, acquisition.partialCamera);
     assert.ok(
       carried >= 0.25 * travel && carried <= 0.75 * travel,
       'the held partial acquisition renders the camera part-way to the sight line',
