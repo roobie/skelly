@@ -247,10 +247,52 @@ relies on it.
 
 ### 3. Resource pools
 
-Health, stamina, needs and battery charge are separate implementations; see
-`src/core/needs.ts`, `Needs`. Mana either copies stamina's pattern or becomes the first
-content-defined pool, with its maximum and recovery as modified effects. A pool kind pays
-again for Mind Over Matter's psionic resource.
+Mana needs a pool, and stamina is the only pool there is, with every pool feature
+hard-coded to it: a recovery delay that starts on emptying, a winded gate with hysteresis,
+slower recovery while a need is critical, and a fixed scale with no maximum to raise; see
+`src/core/needs.ts`, `spendStamina`, `stepStamina` and `canSprint`.
+
+A pool is a spendable effort resource: stamina, mana, and later a psionic or bionic one.
+Hunger, thirst, fatigue and blood are conditions
+(`docs/magiclysm.md`, "Effects and conditions") and stay with their owners. Battery charge stays on items.
+
+#### What a pool carries
+
+- **Clock:** named by the pool, as for effects. Stamina runs on Sim time; mana, which
+  returns over hours, on Game time.
+- **Amount and maximum:** the amount is absolute and the maximum is a modified effect that
+  aptitude feeds (the endurance group for stamina, intellect for mana), so a larger pool
+  buys more casts rather than cheaper ones. When the maximum falls below the amount, as
+  when an enchantment comes off, the excess drains gradually rather than vanishing.
+- **Recovery** as a modified effect. A critical need slows stamina recovery through a
+  modifier its condition emits, so grit softens it as part of the impairment layer.
+- **Recovery delay** after emptying, also a modified effect.
+- **Gates with hysteresis:** refuse below one level until the pool is back above another.
+  Winded is the first gate, and grit moves its threshold.
+- **Overdraw:** each pool selects whether an empty pool refuses a spend or lets it go past
+  empty for a consequence effect (gap 2), such as burnout or a nosebleed. Refusal is the
+  pool's setting, not an engine rule, so overreach in the manner of Mind Over Matter is
+  content.
+- **Emptying consequences** as effects, such as exhaustion when a pool runs dry.
+- **Body cues:** breathing for stamina; mana's cue is the mod's choice.
+
+#### Spending
+
+Every spend names its cost target, an amount and an exertion kind. The exertion kind is
+the bodily load the conditioned layer trains on
+(`docs/magiclysm.md`, "How attributes are set"), so pool spends are the training measurement and need no separate one.
+
+A cost target is a pool or a body cost: health or blood, which `Body` pays under its own
+rules, so blood spent on a spell or ritual lowers blood and brings its shock and recovery
+as any blood loss does. A ritual may instead pay through a self-inflicted wound, so
+bleeding and treatment apply. Stamina- and blood-cast spells then need no special case.
+See `src/core/body.ts`, `Body`.
+
+#### State
+
+Each actor saves each pool's amount, delay remaining and gate state, stepped in closed
+form on the pool's clock so compressed and ticked time agree. Stamina is the first
+consumer, as analgesics are for effects; mana is the second.
 
 ### 4. Traits and start state
 
