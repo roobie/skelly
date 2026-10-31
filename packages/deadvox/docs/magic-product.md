@@ -1,34 +1,44 @@
 ---
 read_if:
-  - you're planning a magic mod in the manner of Cataclysm's Magiclysm, or the engine work it needs
+  - you're planning the magic product, made of content on the engine and inspired by Cataclysm's Magiclysm, or the engine work it needs
+  - you're mixing the magic product's content into Deadvox
   - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
   - you're deciding what a character attribute governs, or whether a new one is needed
   - you're choosing which engine verbs or content kinds the mod rules work adds first
-  - you're opening a closed code list (damage kinds, item capabilities, long jobs, zombie abilities) for mods
+  - you're opening a closed code list (damage kinds, item capabilities, long jobs, creature abilities) for mods
 ---
 
-# Magiclysm mod: working draft
+# Magic product: working draft
 
-This is a working draft of the engine gaps between deadvox and a mod in the manner of
-Magiclysm, Cataclysm: Dark Days Ahead's magic mod. Each gap names the closed mechanism to
-open; the order says which gap unblocks which. Each section shrinks to its reason and code
+This is a working draft of the engine gaps between the engine and a magic product with a
+Morrowind-like feel. Its big inspiration is Magiclysm, the magic mod for Cataclysm: Dark
+Days Ahead; the product is not Magiclysm and does not take its name. The product's own name is open.
+"The magic product" is this draft's working name. Each gap names the closed mechanism to open; the order says which gap unblocks which. Each section shrinks to its reason and code
 cues as its gap closes, and the draft goes once every gap has its own doc or ADR.
 
-## Why a mod
+## Why a product
 
-Magic is outside the base game's tone (`DESIGN.md`, "Tone"), so it can only arrive as a
-mod. Magiclysm has the same shape as Mind Over Matter, the target set by
+Products are content stacks on one engine and mod framework, and Deadvox is one of them
+(#1532). Magic is outside Deadvox's tone (`DESIGN.md`, "Tone"), so the magic product is a
+product of its own, made of content alone, and the magic product inside Deadvox is one way
+of mixing the two under the pack rules: declared dependencies, and clashes that fail closed unless a
+compatibility mod resolves them. Content alone means no product-specific code:
+what the magic product lacks is engine work, which the gaps below scope.
+
+Magiclysm, and so the magic product, has the same shape as Mind Over Matter, the target set by
 `docs/decisions/0004-content-language.md`, "Mod rules": powers, a resource that pays for
-them, exclusive schools, and scaling with practice. Closing Magiclysm's gaps therefore
-mostly closes the gaps that ADR already commits to, and the mod is a second, concrete
-consumer for the vocabulary #313 settles.
+them, exclusive schools, and scaling with practice. Closing the magic product's gaps
+therefore mostly closes the gaps that ADR already commits to, and the product is a second,
+concrete consumer for the vocabulary #313 settles.
 
-The target follows the ADR: a mod of Magiclysm's kind, in deadvox's own vocabulary, with no
-Magiclysm file loading unchanged.
+The target follows the ADR: a product of Magiclysm's kind, in the engine's own vocabulary,
+with no Magiclysm file loading unchanged and none of its names carried over. Mechanism names in this draft use general roles
+(actors, creatures), not one product's words; code cues name symbols as they are, and the
+leaks those names show belong to #1532.
 
-## What the mod needs
+## What the magic product needs
 
-Magiclysm's parts, in deadvox terms:
+The parts it takes from Magiclysm's design, in engine terms:
 
 - **Schools:** mutually exclusive traits that grant a starting spell and shape what the
   character learns.
@@ -39,14 +49,14 @@ Magiclysm's parts, in deadvox terms:
 - **Enchantments:** items that carry modifiers under a condition such as worn or wielded.
 - **Elemental damage:** fire, cold and electric hits, with resistances per kind.
 - **Creatures and places:** new monster types, some with abilities, and new sites.
-- **Allies:** summoned or raised creatures that fight for the player.
+- **Allies:** summoned or raised creatures that fight for the player character.
 
 ## Gaps, in dependency order
 
 ### 1. Attributes and content-declared modifiers
 
-The resolver and its carriers exist, but no content reaches them. Bodies and zombies carry
-modifier lists that nothing fills, content cannot declare a modifier, and skills apply
+The resolver and its carriers exist, but no content reaches them. Player and creature bodies
+carry modifier lists that nothing fills, content cannot declare a modifier, and skills apply
 their effects through a separate saturation curve at each consumer. See
 `src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `src/core/sim.ts`, `Sim`;
 and `src/core/character.ts`, `skillSaturation`.
@@ -55,8 +65,9 @@ Needed:
 
 - **Attributes as content,** held by the character and saved with it. An attribute is a
   content entry that contributes modifiers to effects; no mechanism reads an attribute
-  directly. A mod therefore adds an attribute without an engine change, and the base set
-  only has to cover the base game.
+  directly. A product or mod therefore adds an attribute without an engine change, and a
+  shared set only has to cover the products that share it. Which pack owns the shared set
+  is open in #1532.
 - **Attributes as modified values:** an attribute has a base value plus modifiers, so an
   item or a condition can raise or lower it. This is what an enchantment's "+2 strength
   while worn" needs.
@@ -64,7 +75,7 @@ Needed:
   (gap 2), each attributed to its source so removing the source removes its modifiers.
 - **One resolver for skills and attributes:** skill and attribute levels feed effects
   through the same resolver as modifiers, so a new consumer has one path
-  (`docs/magiclysm.md`, "Skills and the resolver").
+  (`docs/magic-product.md`, "Skills and the resolver").
 - **Vocabulary growth with mechanisms:** the effect list stays engine vocabulary
   (`PILLARS.md`, "Content forward compatibility"), so each later gap adds the entries its
   mechanism reads.
@@ -82,10 +93,10 @@ compete for the same effect:
 - **Agility:** the whole body. Movement and sprint speed, ladders and climbing, stance
   changes, melee recovery.
 - **Intellect:** learning. Practice gain, reading time and recipe access, and the mana
-  pool in Magiclysm.
+  pool in the magic product.
 - **Perception:** noticing. The player's own eyes do the seeing in first person, so
   perception needs effects the game owns: hearing range and direction precision, telling
-  zombie types apart at a distance, and revealing hidden things such as traps and concealed
+  creature types apart at a distance, and revealing hidden things such as traps and concealed
   caches by highlighting them once the character notices them. Hidden things need a
   concealment value in content for perception to beat. Perception also gates traits that
   depend on keen senses. Without these it is a dump attribute.
@@ -114,7 +125,7 @@ An attribute's effective value has three layers:
 
 - **Innate:** set once by the start state (gap 4). Every attribute starts at a content
   default. Character creation screens wait for mod UI (gap 9), so point-buy and other
-  choices arrive as start-state content with no screen of their own in the base game.
+  choices arrive as start-state content with no screen of their own in Deadvox.
 - **Conditioned:** slow change from how the character lives, held in character state and
   saved. Strength, agility and, more slowly, dexterity train and atrophy. Grit trains and
   never falls, because hardship stays with a person. Intellect and perception have no
@@ -174,7 +185,7 @@ feed an existing effect from a new skill, as a spellcraft skill feeds casting fa
 an existing skill into a new effect.
 
 Practice runs through the same resolver: practice gain is a modified effect, which is
-intellect's main base-game consumer. Each training activity names the skill it trains in
+intellect's main consumer outside magic. Each training activity names the skill it trains in
 content, so no award names a skill in code.
 
 Progression thresholds are content too: the level range, the practice a legendary level
@@ -189,7 +200,7 @@ properties such as more skill never slowing an action and the bounds holding.
 
 ### 2. Timed status effects
 
-Magiclysm's buffs, debuffs and enchantment procs need a generic effect: the modifier
+The magic product's buffs, debuffs and enchantment procs need a generic effect: the modifier
 carrier with a lifetime. Each lasting condition has its own owner, so nothing else can
 apply one. Analgesic doses already have most of an effect's shape (an onset, peak and fade
 envelope, stacking groups under a cap, aging that prunes spent doses, and presentation that
@@ -210,7 +221,7 @@ Modifiers emitted by conditions, and effect modifiers that content tags as impai
 form the impairment layer. Grit feeds one modified effect that pulls impairment modifiers
 toward no change, so it softens how much pain hampers aim without touching the pain, and
 leaves poison damage or an untagged curse alone. This is the mechanism behind grit's rule
-in `docs/magiclysm.md`, "Attribute vocabulary".
+in `docs/magic-product.md`, "Attribute vocabulary".
 
 #### What an effect carries
 
@@ -230,7 +241,7 @@ in `docs/magiclysm.md`, "Attribute vocabulary".
 - **Body cues** for presentation (`INTERFACE.md`, "Diegesis and development"); a list of
   effects is at most a toggleable meta element.
 
-Effects are applied by used items, landed zombie moves, spells, rules (#313) and another
+Effects are applied by used items, landed creature moves, spells, rules (#313) and another
 effect's expiry, which chains poison into weakness. Rolls happen at application and the
 engine draws them (`docs/decisions/0004-content-language.md`, "Mod rules").
 
@@ -239,8 +250,8 @@ engine draws them (`docs/decisions/0004-content-language.md`, "Mod rules").
 Each actor saves its active instances (effect, source, age, intensity), pruned when spent.
 Aging is closed-form, so compressed and ticked time agree, as `src/core/pain.ts`,
 `fadeAcute`, and `DamageExposures` already do. Effects are actor-generic from the start:
-spells put fire, slowness and stuns on zombies, and a zombie with no effects costs nothing.
-Zombie stagger can later move onto effects; see `src/core/zombies.ts`, `staggerSimSeconds`.
+spells put fire, slowness and stuns on creatures, and a creature with no effects costs
+nothing. Creature stagger can later move onto effects; see `src/core/zombies.ts`, `staggerSimSeconds`.
 
 Analgesics are the first consumer: the mechanism must express painkillers before magic
 relies on it.
@@ -254,7 +265,7 @@ slower recovery while a need is critical, and a fixed scale with no maximum to r
 
 A pool is a spendable effort resource: stamina, mana, and later a psionic or bionic one.
 Hunger, thirst, fatigue and blood are conditions
-(`docs/magiclysm.md`, "Effects and conditions") and stay with their owners. Battery charge stays on items.
+(`docs/magic-product.md`, "Effects and conditions") and stay with their owners. Battery charge stays on items.
 
 #### What a pool carries
 
@@ -280,7 +291,7 @@ Hunger, thirst, fatigue and blood are conditions
 
 Every spend names its cost target, an amount and an exertion kind. The exertion kind is
 the bodily load the conditioned layer trains on
-(`docs/magiclysm.md`, "How attributes are set"), so pool spends are the training measurement and need no separate one.
+(`docs/magic-product.md`, "How attributes are set"), so pool spends are the training measurement and need no separate one.
 
 A cost target is a pool or a body cost: health or blood, which `Body` pays under its own
 rules, so blood spent on a spell or ritual lowers blood and brings its shock and recovery
@@ -298,10 +309,10 @@ consumer, as analgesics are for effects; mana is the second.
 
 Neither traits nor start state is content: schools need trait entries, and the start kit
 is code (`src/game/loadout.ts`, `startingLoadout`). The start-state design is
-`docs/url-mods.md`, "Start state in mods". Traits change during play, which the base game
-needs as much as the mod: mutation pressure spreads outward from the labs (`DESIGN.md`,
-"Points of interest"), so mutation is the base-game consumer and gap 4 need not wait for
-magic.
+`docs/url-mods.md`, "Start state in mods". Traits change during play, which Deadvox needs
+as much as the magic product: mutation pressure spreads outward from Deadvox's labs
+(`DESIGN.md`, "Points of interest"), so mutation is a consumer outside magic and gap 4 need
+not wait for it.
 
 #### What a trait carries
 
@@ -314,7 +325,7 @@ magic.
 - **Exclusive groups:** schools are one group, and a body is not both a fast and a slow
   healer.
 - **Lines:** a trait can replace the one before it, which gives mutation chains and
-  Magiclysm's attunements, which need levels in two schools.
+  attunements in the manner of Magiclysm's, which need levels in two schools.
 - **Body cues:** a mutation shows on the body before any list names it.
 
 #### Gaining and losing traits
@@ -342,8 +353,9 @@ noticed before it is named.
 
 ### 5. Mod infrastructure
 
-A Magiclysm mod patches a lot of base content (spellbooks in loot, mana on the player,
-schools in the start flow), so it needs:
+The magic product mixed into Deadvox patches Deadvox content (spellbooks in loot, schools
+in the start flow), and the product alone still builds on whatever shared content its packs depend
+on, so it needs:
 
 - **Field patches** (`docs/decisions/0007-typed-field-patches.md`, "Decision"). Without
   them the mod restates whole base entries.
@@ -357,7 +369,8 @@ The only shipped rule mechanism is the scenario event rules; see
 
 ### 6. Spells: abilities with an effect dispatch
 
-Magiclysm's spell effect types are what ADR 0004 calls engine verbs, so spells are a
+Magiclysm's spell effect types, which the product follows, are what ADR 0004 calls engine
+verbs, so spells are a
 natural first consumer for #313's effect vocabulary. Each spell is content selecting a
 verb; the verbs are code.
 
@@ -383,16 +396,16 @@ Closed lists to open:
 
 ### 7. Open damage kinds
 
-Damage kinds are a closed code list, and zombie resistances have a fixed shape per kind;
+Damage kinds are a closed code list, and creature resistances have a fixed shape per kind;
 see `src/core/body.ts`, `DAMAGE_KINDS`, and `src/core/schema.ts`, `ZombieSchema`. Elemental
 schools need any content kind to work as a damage kind with resistances keyed by it.
-Wearable protection is already keyed by kind. The planned resistant zombie types in
+Wearable protection is already keyed by kind. Deadvox's planned resistant zombie types in
 `DESIGN.md`, "Types are data", need the same opening.
 
 ### 8. Creature abilities, factions and allies
 
 Creature stats are content, but abilities and body models are closed code lists, and the
-AI targets only the player; see `src/core/schema.ts`, `ZOMBIE_ABILITIES`;
+AI targets only the player character; see `src/core/schema.ts`, `ZOMBIE_ABILITIES`;
 `src/core/zombieModels.ts`, `ZOMBIE_MODELS`; and `src/core/zombies.ts`, `ZombieMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.
@@ -412,7 +425,7 @@ comes last.
 
 ## Order
 
-Gaps 1 to 4 serve the base game as well (wound-care traits, drug effects, resistant zombie
-types), so they need not wait for magic to be scheduled. Spells (gap 6) wait for the #313
+Gaps 1 to 4 serve Deadvox as well (wound-care traits, drug effects, mutation, resistant
+zombie types), so they need not wait for the magic product to be scheduled. Spells (gap 6) wait for the #313
 vocabulary and field patches (gap 5). Damage kinds can land whenever a fire or cold source
 needs them, and allies come last.
