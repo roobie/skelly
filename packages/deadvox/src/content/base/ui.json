@@ -908,15 +908,9 @@
           "reload": "Reload game"
         },
         "worldService": {
-          "actions": "Actions ({key})",
-          "back": "Back",
-          "details": "Details",
           "drag": "Drag",
-          "heading": "World actions",
           "lift": "Lift",
-          "push": "Push",
-          "start": "Start",
-          "target": "{name} · {damage}"
+          "push": "Push"
         }
       },
       "spacing": 1,

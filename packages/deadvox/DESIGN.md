@@ -29,7 +29,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you change furniture repair admission or the boundary between repair and replacement
-  - you change world-target inspection or keyboard targeting ownership
+  - you change world-target repair selection or target identity ownership
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -3604,9 +3604,11 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 `ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
 `src/core/saveFormat.ts`, `itemSchema`.
 
-## World service inspection
+## World repair selection
 
-Inspecting a piece must not acquire it or its supplies: reviewing a repair is not consent to start work. Details pin an identity rather than following the crosshair, so looking away cannot silently change the job. Keyboard aim shares the mouse ray rather than granting remote selection, and focus loss discards transient inspection because a returning held press is not fresh consent. The confirmation owner receives an identity and copied choices, never a preview's permission to execute. See `src/ui/worldRepairSurface.ts`, `WorldRepairSurface`, and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+Choosing Repair pins the piece's identity rather than following the crosshair, so looking away cannot silently change the job. Reviewing a repair is not consent to acquire supplies or start work. The command owner revalidates the identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`, and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+
+The repair entry stays debug-gated until #1469 settles the Crafting requirement view and its input selection. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
 
 ## UI principles
 

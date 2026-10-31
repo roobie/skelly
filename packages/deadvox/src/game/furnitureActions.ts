@@ -9,12 +9,14 @@ export const furnitureActionsFor = (
   inventory: Inventory,
   entity: BlockEntity,
   blockSize: number,
-  repairRecipeId?: string,
+  knownRecipes: Iterable<string> = [],
 ): ItemAction[] => {
-  const recipe = repairRecipeId === undefined ? undefined : inventory.registry.recipes.get(repairRecipeId);
-  const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
   const text = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
-  const hasRepair = repair?.entity === entity.type && inventory.entities.canRepair(entity, repair.amount);
+  const hasRepair = [...knownRecipes].some((id) => {
+    const recipe = inventory.registry.recipes.get(id);
+    const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
+    return repair?.entity === entity.type && inventory.entities.canRepair(entity, repair.amount);
+  });
   const actions: ItemAction[] = [];
   if (slidableFurniture(inventory, entity, blockSize)) {
     actions.push({ id: 'push', label: text.worldService.push }, { id: 'drag', label: text.worldService.drag });

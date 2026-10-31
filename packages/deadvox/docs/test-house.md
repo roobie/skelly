@@ -10,7 +10,7 @@ read_if:
   - you change house supply, powered furnishings or player power controls
   - you add a feature's test prop to the showroom, or change its slot row or catalogue
   - you use or change the focus URL parameter
-  - you stage or inspect the debug repair-targeting preview
+  - you stage or inspect the debug repair entry
 ---
 
 # Test house
@@ -86,12 +86,10 @@ repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCo
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
 `DESIGN.md`, "Debug scenes".
 
-The repair-targeting preview is opt-in and debug-only because its staged damage and
-supplies are evaluation setup, not ordinary rewards. It reuses the showroom's authored
-prop so looking at repair never requires a second empty fixture page. Its recipe goes
-through shared content admission; confirmation records an intent without starting work,
-so inspection can be judged independently of work execution. The live game loop owns
-aim updates, and the side panel leaves the selected piece visible. See
+The repair entry is opt-in and debug-only because its staged damage and supplies are
+evaluation setup, not ordinary rewards. It reuses the showroom's authored prop and shared
+recipe admission so evaluating repair does not require a separate world or privileged
+content path. The requirement view waits for #1469 rather than inventing another panel. See
 `src/game/config.ts`, `repairLookEnabled`; `src/game/testHouseRepairLook.ts`,
 `stageRepairLook`; and
 `src/game/play.ts`, `startPlay`.

@@ -98,14 +98,14 @@ const storage = () => {
 
 describe('keyboard registry', () => {
   it.each([
-    { from: 'world-targeting', to: 'world-service', action: 'world.actions', next: 'world.service-activate' },
-    { from: 'world-service', to: 'world-targeting', action: 'world.service-activate', next: 'world.actions' },
+    { from: 'inventory', to: 'interrupted', action: 'inventory.best-pocket', next: 'compression.continue' },
+    { from: 'interrupted', to: 'inventory', action: 'compression.continue', next: 'inventory.best-pocket' },
   ] as const)(
     'consumes native button activation from a held key after transfer into $to',
     ({ from, to, action, next }) => {
       const keyboard = new KeyboardInput(new BindingRegistry(undefined, storage()));
       let context: InputContext = from;
-      keyboard.context = () => ({ context, debug: false });
+      keyboard.context = () => ({ context, debug: true });
       const commands: InputCommand[] = [];
       keyboard.command = (command) => {
         commands.push(command);

@@ -15,8 +15,6 @@ export const INPUT_CONTEXTS = {
   noclip: true,
   play: false,
   carrying: false,
-  'world-targeting': false,
-  'world-service': false,
   interrupted: false,
 } as const satisfies Record<string, boolean>;
 export type InputContext = keyof typeof INPUT_CONTEXTS;
@@ -57,8 +55,6 @@ const entered: readonly InputContext[] = [
   'spawn',
   'debug-panel',
   ...moving,
-  'world-targeting',
-  'world-service',
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
@@ -139,15 +135,6 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('hand.use-off', 'Use off hand', world),
   row('light.worn-toggle', 'Hold to switch worn lights on or off', world, 'hold'),
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it or lift furniture', world),
-  row('world.aim-left', 'Aim left at a world target', ['world-targeting'], 'held-state'),
-  row('world.aim-right', 'Aim right at a world target', ['world-targeting'], 'held-state'),
-  row('world.aim-up', 'Aim up at a world target', ['world-targeting'], 'held-state'),
-  row('world.aim-down', 'Aim down at a world target', ['world-targeting'], 'held-state'),
-  row('world.actions', 'Open world target actions', ['world-targeting']),
-  row('world.service-previous', 'Focus previous target action', ['world-service'], 'press', { repeat: true }),
-  row('world.service-next', 'Focus next target action', ['world-service'], 'press', { repeat: true }),
-  row('world.service-activate', 'Activate focused target action', ['world-service']),
-  row('world.back', 'Back from target inspection', ['world-targeting', 'world-service']),
   row(
     'firearm.reload',
     'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
@@ -1076,13 +1063,8 @@ export class KeyboardInput {
   }
   private refusedDown(event: KeyEvent, text: boolean, browserModifier: boolean): boolean {
     const blocked = this.blocked.has(event.code);
-    // Refusing a semantic edge must also prevent the browser clicking the newly focused service button.
-    const blockNativeActivation =
-      blocked &&
-      (this.state.context === 'world-service' || this.state.context === 'world-targeting') &&
-      !browserModifier &&
-      !text &&
-      nativeActivation(event);
+    // A rejected held edge must not click a button that acquired focus during the transfer.
+    const blockNativeActivation = blocked && !browserModifier && !text && nativeActivation(event);
     return this.traceDown(event, blockNativeActivation, blocked ? 'blocked' : 'browser-modifier');
   }
   press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {

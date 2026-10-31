@@ -7,7 +7,6 @@
           "returnRadiansPerRealSecond": 5,
           "yawLimitRadians": 1.3999999999999999
         },
-        "keyboardTargetRadiansPerRealSecond": 0.80000000000000004,
         "lookLagPerRadian": 0.035000000000000003,
         "lookSensitivityRadiansPerPixel": 0.0022000000000000001,
         "lookSettleSimSeconds": 0.22,

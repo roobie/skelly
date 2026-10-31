@@ -13,7 +13,7 @@ const actions = [
 describe('furniture service choices', () => {
   const registry = baseRegistryWith(worldRepairSources());
 
-  it.each(['damaged', 'intact', 'ruined', 'unmatched', 'disabled'] as const)(
+  it.each(['damaged', 'intact', 'ruined', 'unknown'] as const)(
     'offers repair only for a damaged target with an admitted recipe: %s',
     (state) => {
       const { inventory, target } = worldRepairFixture(registry);
@@ -22,9 +22,8 @@ describe('furniture service choices', () => {
       } else if (state === 'ruined') {
         expect(inventory.entities.bash(target, DURABILITY)).toBe('ruined');
       }
-      const admittedRecipe = state === 'unmatched' ? 'fixture_other_recipe' : RECIPE;
-      const recipeId = state === 'disabled' ? undefined : admittedRecipe;
-      const choices = furnitureActionsFor(inventory, target, 0.5, recipeId);
+      const knownRecipes = state === 'unknown' ? [] : [RECIPE];
+      const choices = furnitureActionsFor(inventory, target, 0.5, knownRecipes);
       expect(choices.some(({ id }) => id === 'repair')).toBe(state === 'damaged');
     },
   );
@@ -32,7 +31,7 @@ describe('furniture service choices', () => {
   it('retains ordinary lift when repair joins a small target’s long-press choices', () => {
     const { inventory, target } = worldRepairFixture(registry);
     const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-    const choices = furnitureActionsFor(inventory, target, blockSize, RECIPE);
+    const choices = furnitureActionsFor(inventory, target, blockSize, [RECIPE]);
     expect(choices.some(({ id }) => id === 'lift')).toBe(true);
     expect(choices.some(({ id }) => id === 'repair')).toBe(true);
   });
@@ -42,7 +41,7 @@ describe('furniture service choices', () => {
     const target = inventory.entities.add({ type: PIECE, pos: [8, 1, 0], size: [4, 1, 1], facing: 'n' })!;
     expect(inventory.entities.bash(target, AMOUNT)).toBe('damaged');
     const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-    const choices = furnitureActionsFor(inventory, target, blockSize, RECIPE);
+    const choices = furnitureActionsFor(inventory, target, blockSize, [RECIPE]);
     expect(choices.some(({ id }) => id === 'drag')).toBe(true);
     expect(choices.some(({ id }) => id === 'repair')).toBe(true);
     const selection = new FurnitureActionSelection('fixture open can');

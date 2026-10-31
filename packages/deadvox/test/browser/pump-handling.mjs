@@ -14,7 +14,7 @@ import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
-import { worldRepairFlow, worldRepairInGameFlow } from './world-repair-flow.mjs';
+import { worldRepairInGameFlow } from './world-repair-flow.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -30,7 +30,7 @@ const observation = {
       marker,
       `
   Object.assign(globalThis, { pumpHandlingTest: { engine, session, input, camera, audio, screen,
-    repairSurface, debugRepairTarget, debugRepairIntents, furnitureActionSelection, furnitureActions,
+    debugRepairTarget, get repairTargetUid() { return repairSelection.targetUid; }, furnitureActionSelection, furnitureActions,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
@@ -1202,7 +1202,6 @@ try {
   await releaseRevolverTopUp();
   assert.equal(revolverReloaded.reached, true, 'native top-up clears the fired case');
   await page.evaluate(() => globalThis.pumpManualFrames.disable());
-  await worldRepairFlow(page, `http://127.0.0.1:${address.port}`);
   await worldRepairInGameFlow(page, `http://127.0.0.1:${address.port}`);
   assert.deepEqual(errors, []);
   process.stdout.write(

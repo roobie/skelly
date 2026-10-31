@@ -48,8 +48,11 @@ export const stageRepairLook = (
   inventory.entities.markSearched(entity);
   const recipe = registry.recipes.get(repairLook.recipe)!;
   for (const group of recipe.components) {
-    const { item, count } = group[0]!;
-    const stock = inventory.create(item, count);
+    const component = group[0]!;
+    if (!('item' in component)) {
+      throw new Error('Repair look stock requires an item component');
+    }
+    const stock = inventory.create(component.item, component.count);
     if (!(entity.pockets ?? []).some((_, pocket) => inventory.add(stock, { kind: 'furniture', entity, pocket }))) {
       throw new Error('Repair look supplies did not fit');
     }

@@ -109,15 +109,9 @@
   prompt: { interruption: '{reason}.', continue: '{key}: continue', stop: '{key}: stop' },
   reading: { putAway: 'Put away', putAwayLabel: 'Put away reading', progress: 'Reading progress', text: 'Text' },
   worldService: {
-    heading: 'World actions',
     push: 'Push',
     drag: 'Drag',
     lift: 'Lift',
-    actions: 'Actions ({key})',
-    details: 'Details',
-    back: 'Back',
-    start: 'Start',
-    target: '{name} · {damage}',
   },
   crafting: {
     heading: 'Crafting',
