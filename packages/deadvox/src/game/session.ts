@@ -10,6 +10,7 @@ import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
+import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
@@ -111,6 +112,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { strikeTerrain } from '../core/terrainStrike.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
@@ -480,6 +482,7 @@ export interface SessionOptions {
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
+  terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
   scale: Scale;
@@ -1464,12 +1467,39 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
-  /** A swing that meets no zombie strikes the piece in its reach with the weapon's impulse. */
+  /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
-    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse);
+    if (piece && entities.isSolid(...hit.block)) {
+      return bashPiece(piece, weapon.impulse);
+    }
+    const context = options.terrainDestruction;
+    if (!(hit && context)) {
+      return false;
+    }
+    const block = registry.blocks[context.terrain.getBlock(...hit.block)];
+    const result = strikeTerrain(
+      {
+        terrain: context.terrain,
+        supply: columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      hit.block,
+      { strength: weapon.impulse, kind: weapon.type ?? 'blunt' },
+    );
+    if (!result) {
+      return false;
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+    if (block?.solid) {
+      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(hit.block, [1, 1, 1]));
+    }
+    return true;
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({

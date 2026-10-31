@@ -1,5 +1,6 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
+import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, type Registry } from '../core/content.ts';
@@ -41,6 +42,7 @@ export interface WorldSetup extends ColumnSource {
   scenario: ScenarioDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
+  canonicalTerrain: CanonicalTerrain;
   entities: BlockEntities;
   /** The site's sky field cache: the session answers from it and the renderer draws it. */
   skyFields: SkyFields;
@@ -231,12 +233,20 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const world = new World();
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
+  const terrain = {
+    seed,
+    blocks: sitePalette(registry).terrain,
+    shape,
+    scale,
+    surface: built?.surface,
+    stamp: built ? (chunk: Parameters<Site['stamp']>[0]) => built.stamp(chunk) : undefined,
+  };
   const streamer = new Streamer({
     world,
     meshes,
     seed,
-    terrain: sitePalette(registry).terrain,
-    shape,
+    terrain: terrain.blocks,
+    shape: terrain.shape,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
     liquids: blockLiquids(registry),
@@ -245,8 +255,8 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     weatherable: blockWeatherability(registry),
     scale,
     structures: [],
-    surface: built?.surface,
-    stamp: built ? (chunk) => built.stamp(chunk) : undefined,
+    surface: terrain.surface,
+    stamp: terrain.stamp,
     radius: config.radiusChunks,
     preloadRings: graphicsTuningOf(registry).skyPreloadRings,
     hysteresis: config.streamHysteresisChunks,
@@ -259,6 +269,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     scenario: registry.scenarios.get(config.site),
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
+    canonicalTerrain: new CanonicalTerrain(world, terrain),
     entities,
     skyFields: new SkyFields(
       { world, entities, registry },

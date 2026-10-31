@@ -20,6 +20,8 @@ export interface FurnitureMover {
   readonly inventory: Inventory;
   /** Terrain only; furniture comes from the inventory's entities. */
   readonly terrainSolid: SolidAt;
+  readonly readBox?: (pos: Readonly<Vec3>, size: Readonly<Vec3>) => void;
+  readonly minY?: number;
   readonly blockSize: number;
   readonly player: Body;
   /** Every other body that a piece could land on or be stood in. */
@@ -95,13 +97,22 @@ class Shadow {
   private readonly changed = new Map<string, BlockEntity | null>();
   private readonly terrainSolid: SolidAt;
   private readonly entities: BlockEntities;
+  private readonly readBox: FurnitureMover['readBox'];
+  private readonly minY: number | undefined;
 
-  constructor(terrainSolid: SolidAt, entities: BlockEntities) {
+  constructor(terrainSolid: SolidAt, entities: BlockEntities, readBox?: FurnitureMover['readBox'], minY?: number) {
     this.terrainSolid = terrainSolid;
     this.entities = entities;
+    this.readBox = readBox;
+    this.minY = minY;
+  }
+
+  fallFloor(fromY: number): number {
+    return this.minY ?? fromY - MAX_FALL + 1;
   }
 
   fill(entity: BlockEntity, pos: Readonly<Vec3>, filled: boolean): void {
+    this.readBox?.(pos, entity.size);
     for (const cell of boxCells(pos, entity.size)) {
       if (filled) {
         this.changed.set(key(cell), entity);
@@ -121,18 +132,20 @@ class Shadow {
   }
 
   free(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
+    this.readBox?.(pos, size);
     return boxCells(pos, size).every((cell) => !this.occupied(cell));
   }
 
   /** Whether anything is under a box, so it stands rather than falls. */
   rests(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
+    this.readBox?.(pos, size);
     return footprint(pos, size).some((cell) => this.occupied(below(cell)));
   }
 
   /** The height a free box comes to rest at when let go. */
   landing(pos: Readonly<Vec3>, size: Readonly<Vec3>): number | undefined {
     const [x, top, z] = pos;
-    for (let y = top; y > top - MAX_FALL; y--) {
+    for (let y = top; y >= this.fallFloor(top); y--) {
       if (this.rests([x, y, z], size)) {
         return y;
       }
@@ -263,6 +276,7 @@ const fallRefusal = (mover: FurnitureMover, entity: BlockEntity, y: number): str
   const messages = messagesOf(mover.inventory);
   const path: Vec3 = [entity.pos[0], y, entity.pos[2]];
   const pathSize: Vec3 = [entity.size[0], entity.pos[1] + entity.size[1] - y, entity.size[2]];
+  mover.readBox?.(path, pathSize);
   if (boxIntersectsBody(path, pathSize, mover.player)) {
     return messages.fallsOnPlayer;
   }
@@ -320,7 +334,8 @@ const resettlePiles = (
 /** Where a pile that lost its floor falls to, then the cells beside that. */
 const columnTargets = (shadow: Shadow, from: Readonly<Vec3>): Vec3[] => {
   let cell: Vec3 = [...from];
-  for (let fall = 0; fall < MAX_FALL && !shadow.occupied(below(cell)); fall++) {
+  const bottom = shadow.fallFloor(from[1] - 1);
+  while (cell[1] > bottom && !shadow.occupied(below(cell))) {
     cell = below(cell);
   }
   return shadow.occupied(below(cell)) ? [cell, ...shadow.aside(cell)] : [];
@@ -442,8 +457,8 @@ export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): str
  * A ruined piece's debris, in stacks no larger than each item stacks. These are stand-ins that only size the drop;
  * `ruinFurniture` makes the real items once everything is known to fit, so a refused ruin creates none.
  */
-const debrisOf = (inventory: Inventory, entity: BlockEntity): Placed[] =>
-  (inventory.entities.defOf(entity).ruin?.debris ?? []).flatMap(({ item, count }) => {
+const dropStandIns = (inventory: Inventory, yields: readonly { item: string; count: number }[]): Placed[] =>
+  yields.flatMap(({ item, count }) => {
     const stack = inventory.registry.items.get(item)?.stack ?? 1;
     return Array.from({ length: Math.ceil(count / stack) }, (_, at) => ({
       item: { uid: 0, type: item, count: Math.min(stack, count - at * stack), condition: 1 },
@@ -463,6 +478,11 @@ const cellOrder = (a: Readonly<Vec3>, b: Readonly<Vec3>): number => a[1] - b[1] 
 
 const ruinOrder = (a: BlockEntity, b: BlockEntity): number => cellOrder(a.pos, b.pos);
 
+export interface RuinDrop {
+  readonly pos: Vec3;
+  readonly yields: readonly { item: string; count: number }[];
+}
+
 export interface RuinPlan {
   readonly destroyed: readonly number[];
   readonly falls: readonly { uid: number; y: number }[];
@@ -476,22 +496,27 @@ export const planRuin = (
   mover: FurnitureMover,
   roots: readonly BlockEntity[],
   affectedPiles: readonly Pile[] = [],
+  drops: readonly RuinDrop[] = [],
 ): RuinPlan | undefined => {
   const { inventory } = mover;
-  const shadow = new Shadow(mover.terrainSolid, inventory.entities);
+  const shadow = new Shadow(mover.terrainSolid, inventory.entities, mover.readBox, mover.minY);
   const ordered = [...new Set(roots)].sort(ruinOrder);
   const { falls, ruined } = settle(mover, shadow, ordered, { ruin: true }) as Settled;
   const destroyed = [...ordered, ...ruined];
   const standIns = new Set<Placed>();
-  const loose = destroyed.map((piece) => {
-    const debris = debrisOf(inventory, piece);
+  const loose = [
+    ...destroyed.map((piece) => ({
+      contents: piece.pockets?.flat() ?? [],
+      yields: inventory.entities.defOf(piece).ruin?.debris ?? [],
+      cells: footprint(piece.pos, piece.size),
+    })),
+    ...drops.map(({ pos, yields }) => ({ contents: [], yields, cells: [pos] })),
+  ].map(({ contents, yields, cells }) => {
+    const debris = dropStandIns(inventory, yields);
     for (const placed of debris) {
       standIns.add(placed);
     }
-    return {
-      items: [...(piece.pockets?.flat() ?? []), ...debris],
-      targets: spreadFrom(shadow, footprint(piece.pos, piece.size)),
-    };
+    return { items: [...contents, ...debris], targets: spreadFrom(shadow, cells) };
   });
   const dropped = new Set(loose.flatMap(({ items }) => items));
   if ([...dropped].some(({ item }) => !couldFit(inventory.registry, PILE_GRID, item))) {

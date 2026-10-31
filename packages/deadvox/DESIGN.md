@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change block damage persistence, authored supply publication or destructive furniture admission
+  - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
   - you author recipes or item take-apart yields
@@ -450,8 +450,14 @@ Destruction must not inherit voluntary removal refusals, but damage is not permi
 to lose contents. Whole-plan drop admission keeps a crowded ruin standing until its
 items can be conserved; sharing reservations prevents separate dependants from each
 claiming the same remaining space. The commit resolves private references through the
-real owners so outstanding aliases remain valid. See `src/core/furnitureMove.ts`,
-`planRuin` and `commitRuin`; and `src/core/blockEntities.ts`, `BlockEntities.destroy`.
+real owners so outstanding aliases remain valid. Terrain floor loss and material rubble
+must compete with furniture drops rather than bypass that admission. Discovering more
+authored supply invalidates a plan's references and reservations together; retaining a
+full-damage identity on refusal allows another blow after space is freed without
+publishing rejected supply. Canonical fall paths use the world's vertical extent rather
+than treating a distant unseen floor as missing. See `src/core/furnitureMove.ts`,
+`planRuin` and `commitRuin`; `src/core/terrainStrike.ts`, `strikeTerrain`; and
+`src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
 Because every explored piece stays in memory, a lookup must not cost more as the explored
 area grows, so lookups find pieces through an index by column. See

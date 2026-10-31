@@ -885,6 +885,7 @@ export const startPlay = (
     discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
+    terrainDestruction: { terrain: engine.canonicalTerrain, source: engine },
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
     scale,
