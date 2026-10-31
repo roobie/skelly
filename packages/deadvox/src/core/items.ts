@@ -386,7 +386,7 @@ export const assertSavedLiquidContents = (registry: Registry, state: ItemState):
   }
 };
 
-const assertCraftedLiquids = (registry: Registry, state: ItemState): void => {
+export const assertCraftedLiquids = (registry: Registry, state: ItemState): void => {
   if (
     state.craftedLiquids !== undefined &&
     (!Array.isArray(state.craftedLiquids) ||

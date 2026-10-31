@@ -659,11 +659,17 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, paperMap, fitted, charge }: Rolled): Item {
+  createRolled({ type, count, condition, paperMap, fitted, charge, craftedLiquids, liquidContents }: Rolled): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),
     });
+    if (craftedLiquids !== undefined) {
+      item.craftedLiquids = craftedLiquids.map((amount) => ({ ...amount }));
+    }
+    if (liquidContents !== undefined) {
+      item.liquidContents = { ...liquidContents };
+    }
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
     }

@@ -1476,12 +1476,15 @@ const TreatmentSchema = pipe(
 );
 
 const LiquidVolumeMicrolitres = pipe(number(), safeInteger(), minValue(0));
+const LiquidAmountSchema = strictObject({
+  liquid: Id,
+  volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+});
 const LiquidContentsSchema = union([
   strictObject({ kind: literal('empty') }),
   strictObject({
     kind: literal('filled'),
-    liquid: Id,
-    volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+    ...LiquidAmountSchema.entries,
   }),
 ]);
 const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMillilitre: pipe(Positive, finite()) });
@@ -2608,6 +2611,8 @@ const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
   /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
   charge: optional(Fraction),
+  craftedLiquids: optional(pipe(array(LiquidAmountSchema), nonEmpty())),
+  liquidContents: optional(LiquidContentsSchema),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -4294,10 +4299,7 @@ const SenseSchema = strictObject({
     illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
-const RecipeInputSchema = union([
-  ItemCountSchema,
-  strictObject({ liquid: Id, volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)) }),
-]);
+const RecipeInputSchema = union([ItemCountSchema, LiquidAmountSchema]);
 
 const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
   const { min, max } = WEATHERING_RANGES[field];

@@ -5,7 +5,7 @@ read_if:
   - you change the haven's rooms, landscape, lake or south-facing view
   - you add a feature demonstration near the test-house spawn
   - you change the opt-in ragdoll sample's staging or normal/debug boundary
-  - you change the liquid-service demonstration's normal-mode boundary
+  - you change the liquid-service demonstration's normal-mode boundary or the authored liquid-recovery look
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
   - you add a feature's test prop to the showroom, or change its slot row or catalogue
@@ -80,6 +80,9 @@ house supply makes charging respond to the same blackout as other appliances, wh
 nearby portable equipment avoids debug inventory edits or travel. Liquid service shares
 the charging corner so the player can compare portable light sources without privileged
 setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+The liquid-recovery look also belongs in normal mode: authored instance state lets
+ordinary inventory choices be inspected without privileged setup. See
+`src/content/base/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
 Derived repair stock and the handling range are debug-only because their purpose is
 repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in

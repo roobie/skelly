@@ -9,7 +9,7 @@ read_if:
   - you change runtime escrow roles, severed-part item policy or world liveness tuning
   - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
-  - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
+  - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot, including authored liquid instance state
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you author standing water, basins or lots over water
   - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`packages/deadvox/docs/aftermath.md`)
@@ -203,6 +203,15 @@ Non-wood decks keep wooden flooring from reading as a wooden roof on masonry wal
 The test house is authored content rather than a code-built exception, so the same layout and template mechanisms serve mods and evaluation scenes. See `src/content/base/layouts-test-house.jsonnet`, `layouts`, and `docs/test-house.md`, "Content ownership".
 
 Scenario lead references may carry fixed loot on their template's furniture anchors, so a portable clue uses the same surface or container machinery as other items. Lead admission requires readable furniture or a readable fixed item; the route certificate still proves independent access around solid supports. Surface loot and discovery share furniture-top positioning so an observation identifies the pile actually offered by inventory, rather than the support's corner. See `src/core/furnitureSurface.ts`, `furnitureSurfacePosition`. Unknown placement kinds fail schema validation instead of selecting a fallback. See `src/core/schema.ts`, `FixedLootItem`; `src/core/scenarioComposition.ts`, `extraTemplateIssues`; and `src/core/scenarioCertificate.ts`, `lead`.
+
+Fixed stock may author liquid instance state so test-house looks can begin with a
+crafted recovery source and deliberately filled or empty vessels, without runtime
+fixture injection. It uses the same representation and validity rules as ordinary
+items; stock must not admit unknown liquids or contents an instance cannot hold.
+This is a narrow authoring capability, not permission to embed saved item trees.
+See `src/core/schema.ts`, `FixedLootItem`; `src/core/placementLoot.ts`,
+`fixedItemIssue`; `src/core/loot.ts`, `fixedItems`; and `src/core/inventory.ts`,
+`Inventory.createRolled`.
 
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Point overrides keep a special supply local to its anchor rather than retagging the building; fitted children meet the same resolved context. See `placementLootIssues` in `src/core/placementLoot.ts` and its callers in `src/core/authoredLayout.ts` and `src/core/scenarioComposition.ts`.
 

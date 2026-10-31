@@ -115,9 +115,6 @@
         "row": [-12, 21.5, -1],
         "slots": [
           {
-            "furniture": "bedroll"
-          },
-          {
             "fixed": true,
             "furniture": "grinding_wheel"
           },
@@ -286,6 +283,40 @@
               {
                 "count": 2,
                 "item": "duct_tape"
+              }
+            ]
+          },
+          {
+            "furniture": "workbench",
+            "items": [
+              {
+                "craftedLiquids": [
+                  {
+                    "liquid": "lamp_fuel",
+                    "volumeMicrolitres": 400000
+                  }
+                ],
+                "item": "oil_lamp",
+                "liquidContents": {
+                  "kind": "empty"
+                },
+                "placement": "surface"
+              },
+              {
+                "item": "lamp_oil",
+                "liquidContents": {
+                  "kind": "filled",
+                  "liquid": "lamp_fuel",
+                  "volumeMicrolitres": 500000
+                },
+                "placement": "surface"
+              },
+              {
+                "item": "lamp_oil",
+                "liquidContents": {
+                  "kind": "empty"
+                },
+                "placement": "surface"
               }
             ]
           }
