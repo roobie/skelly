@@ -9,6 +9,7 @@ read_if:
   - you change physical inputs, drawn collision exports or their ownership
   - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
+  - you change trigger-guard geometry, content or validation
   - you change the structured Deadvox export recipe or refresh boundary
   - you diagnose platform-dependent export comparisons
   - you share recipe or synchronization mechanisms between authoring tools
@@ -43,6 +44,12 @@ Gungen is an authoring tool, not a generator: the curated design is the product 
 The golden reference photograph and overlays stay outside the repository; cite [the public photo](https://www.americanrifleman.org/media/caqhmu12/izhmash_akm_right.jpg?width=1920&height=620) instead. The AK silhouette is registered to its public side-view reference by the bore and scaled from published overall length, rather than moving the receiver to force sight alignment. This preserves the receiver-to-bore relationship and places the rear sight on the receiver without an artificial post; see `src/gun/akProportions.ts`, `AK_PROPORTIONS`. The gas cylinder keeps the reference height and the piston stays on its axis; the lower handguard does not extend below the receiver, and the wooden stock keeps its straight bottom. Both AKM and AK-74 curved magazines fit the layout. The muzzle devices are separate threaded attachments because a muzzle style should not change the barrel geometry; `docs/attachments.md`, "Muzzle devices" says why the player fits them. See `src/gun/parts.ts`, `akMuzzleDevice` and `test/ak.test.ts`. The AK design retains its 7.62×39 identity; 5.45×39 support is separate follow-up #362 rather than an inference from similar geometry.
 
 Keep the AR frame and magwell unchanged when correcting magazine seating: adjust the shared well insertion so the established receiver silhouette and opening remain fixed. See `src/gun/arLayout.ts`, `AR_ACTION_LAYOUT` and `src/gun/parts.ts`, `MAGAZINE_INSERTION`.
+
+## Trigger guard
+
+The AK guard must not leave a thick block behind the trigger or duplicate the receiver underside with a top bar. The receiver closes the finger opening above, while a slanted corner joins the bottom bar to the grip, leaving the rear open. See `src/gun/roundedTriggerGuard.ts`, `openTriggerGuard`.
+
+Proportions and corner cuts belong to per-gun content because their size and angles differ between guns; see `src/gun/triggerGuards.jsonnet`. Exports carry neither authoring blocks nor builder arguments, so validation measures bar thickness, identifies the open shape by its part tag and establishes receiver closure geometrically rather than by a body-solid name; see `src/gun/rules.ts`, `triggerGuard`.
 
 ## Testing
 

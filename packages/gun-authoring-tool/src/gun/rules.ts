@@ -24,7 +24,8 @@ import {
 import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic, opticRailContactSolids } from './optics.ts';
-import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS, TRIGGER_GUARD } from './parts.ts';
+import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS } from './parts.ts';
+import { OPEN_TRIGGER_GUARD } from './roundedTriggerGuard.ts';
 
 /**
  * Rules judge only what they can place. A part with no path to the root (or a
@@ -357,11 +358,50 @@ const triggerGuardIds = [
   'trigger-guard-front',
   'trigger-guard-bottom',
 ] as const;
+const openTriggerGuardIds = ['trigger-guard-front', 'trigger-guard-bottom', 'trigger-guard-corner'] as const;
 const solidBounds = (solid: Solid): { min: Vec3; max: Vec3 } => {
   const [min, max] = localSolidBounds(solid);
   return { min, max };
 };
-const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, Solid>): boolean => {
+const openTriggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, Solid>): boolean => {
+  const front = guards.get('trigger-guard-front')!;
+  const bottom = guards.get('trigger-guard-bottom')!;
+  const corner = guards.get('trigger-guard-corner')!;
+  if (front.kind === 'revolved' || bottom.kind === 'revolved' || corner.kind !== 'extruded-polygon') {
+    return false;
+  }
+  const f = solidBounds(front);
+  const b = solidBounds(bottom);
+  const c = solidBounds(corner);
+  const finger = solidBounds({ id: 'finger', kind: 'box', box: fingerBox });
+  const close = (left: number, right: number) => Math.abs(left - right) <= 1e-8;
+  const frontEdge = corner.profile.filter(([x]) => close(x, c.max[0]));
+  const rearEdge = corner.profile.filter(([x]) => close(x, c.min[0]));
+  const world = [front, bottom, corner].map((solid) => worldSolid(IDENTITY, solid));
+  const fingerWorld = worldSolid(IDENTITY, { id: 'finger', kind: 'box', box: fingerBox });
+  const rearClearance = finger.min[0] - c.max[0];
+  return (
+    b.max[1] - b.min[1] > 1e-8 &&
+    close(b.max[1], finger.min[1]) &&
+    rearClearance > 1e-8 &&
+    close(rearClearance, f.min[0] - finger.max[0]) &&
+    close(b.min[0], c.max[0]) &&
+    close(b.max[0], f.max[0]) &&
+    c.min[1] >= b.min[1] - 1e-8 &&
+    c.max[1] <= b.max[1] + 1e-8 &&
+    close(Math.min(...frontEdge.map(([, y]) => y)), b.min[1]) &&
+    close(Math.max(...frontEdge.map(([, y]) => y)), b.max[1]) &&
+    Math.min(...rearEdge.map(([, y]) => y)) > b.min[1] + 1e-8 &&
+    [b, c].every((bounds) => close(bounds.min[2], f.min[2]) && close(bounds.max[2], f.max[2])) &&
+    distanceWorld(world[0]!, world[1]!) <= 1e-8 &&
+    distanceWorld(world[1]!, world[2]!) <= 1e-8 &&
+    world.every((guard) => penetrationWorld(guard, fingerWorld) <= 1e-8)
+  );
+};
+const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, Solid>, open: boolean): boolean => {
+  if (open) {
+    return openTriggerGuardGeometryFits(fingerBox, guards);
+  }
   const top = guards.get('trigger-guard-top');
   const rear = guards.get('trigger-guard-rear');
   const front = guards.get('trigger-guard-front');
@@ -390,9 +430,10 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
     rearClearance > 1e-8 &&
     close(rearClearance, frontClearance) &&
     close(topBounds.min[1], fingerBounds.max[1]) &&
-    close(topBounds.max[1], fingerBounds.max[1] + TRIGGER_GUARD.verticalWall) &&
+    topBounds.max[1] - topBounds.min[1] > 1e-8 &&
     close(bottomBounds.max[1], fingerBounds.min[1]) &&
-    close(bottomBounds.min[1], fingerBounds.min[1] - TRIGGER_GUARD.verticalWall) &&
+    bottomBounds.max[1] - bottomBounds.min[1] > 1e-8 &&
+    close(topBounds.max[1] - topBounds.min[1], bottomBounds.max[1] - bottomBounds.min[1]) &&
     connected &&
     [topBounds, bottomBounds].every(
       (bounds) =>
@@ -406,6 +447,72 @@ const triggerGuardGeometryFits = (fingerBox: Box, guards: ReadonlyMap<string, So
   );
 };
 
+const triggerGuardClosureIssue = (
+  part: string,
+  def: PartDef,
+  guards: ReadonlyMap<string, Solid>,
+): string | undefined => {
+  const bodySolids = def.solids.filter(({ id }) => !id.startsWith('trigger-guard-'));
+  if (!def.tags?.includes(OPEN_TRIGGER_GUARD)) {
+    const topWorld = worldSolid(IDENTITY, guards.get('trigger-guard-top')!);
+    const topGap = Math.min(...bodySolids.map((body) => distanceWorld(topWorld, worldSolid(IDENTITY, body))));
+    return topGap > 1e-8 ? `${part}'s trigger guard top does not contact its frame or lower.` : undefined;
+  }
+  const front = solidBounds(guards.get('trigger-guard-front')!);
+  const corner = solidBounds(guards.get('trigger-guard-corner')!);
+  const closed = bodySolids.some((body) => {
+    if (body.kind !== 'box') {
+      return false;
+    }
+    const bounds = solidBounds(body);
+    return (
+      Math.abs(bounds.min[1] - front.max[1]) <= 1e-8 &&
+      bounds.min[0] <= corner.max[0] + 1e-8 &&
+      bounds.max[0] >= front.max[0] - 1e-8 &&
+      bounds.min[2] <= front.min[2] + 1e-8 &&
+      bounds.max[2] >= front.max[2] - 1e-8
+    );
+  });
+  if (!closed) {
+    return `${part}'s trigger guard is not closed by the receiver.`;
+  }
+  const finger = def.keepOuts.find(({ id }) => id === 'trigger-finger')!;
+  const fingerWorld = worldSolid(IDENTITY, { id: 'finger', kind: 'box', box: finger.box });
+  if (bodySolids.some((body) => penetrationWorld(fingerWorld, worldSolid(IDENTITY, body)) > 1e-8)) {
+    return `${part}'s trigger finger overlaps the receiver.`;
+  }
+  return undefined;
+};
+
+const triggerGuardGripIssue = (
+  r: Resolved,
+  part: string,
+  def: PartDef,
+  guards: ReadonlyMap<string, Solid>,
+): string | undefined => {
+  const open = def.tags?.includes(OPEN_TRIGGER_GUARD) ?? false;
+  const rear = guards.get(open ? 'trigger-guard-corner' : 'trigger-guard-rear')!;
+  const rearWorld = worldSolid(r.placed.get(part)!, rear);
+  for (const connection of r.connections) {
+    const gripPart = gripPartOnLower(connection, part);
+    if (!gripPart) {
+      continue;
+    }
+    const gripTransform = r.placed.get(gripPart);
+    if (!gripTransform) {
+      continue;
+    }
+    const gripSolids = r.defs.get(gripPart)!.solids.map((solid) => worldSolid(gripTransform, solid));
+    const gap = Math.min(...gripSolids.map((solid) => distanceWorld(rearWorld, solid)));
+    const penetration = Math.max(0, ...gripSolids.map((solid) => penetrationWorld(rearWorld, solid)));
+    if (gap > 1e-8 || penetration > 1e-8) {
+      return `${part}'s ${open ? 'trigger-guard corner' : 'rear trigger-guard wall'} must contact ${gripPart} without a gap or overlap.`;
+    }
+    break;
+  }
+  return undefined;
+};
+
 const triggerGuardContactIssue = (
   r: Resolved,
   part: string,
@@ -413,7 +520,9 @@ const triggerGuardContactIssue = (
   guards: ReadonlyMap<string, Solid>,
 ): string | undefined => {
   const ownerTransform = r.placed.get(part)!;
-  const guardSolids = triggerGuardIds.map((id) => guards.get(id)!);
+  const open = def.tags?.includes(OPEN_TRIGGER_GUARD) ?? false;
+  const ids = open ? openTriggerGuardIds : triggerGuardIds;
+  const guardSolids = ids.map((id) => guards.get(id)!);
   const bodySolids = def.solids.filter(({ id }) => !id.startsWith('trigger-guard-'));
   const worldGuards = guardSolids.map((guard) => worldSolid(ownerTransform, guard));
   const worldBody = bodySolids.map((body) => worldSolid(ownerTransform, body));
@@ -424,28 +533,13 @@ const triggerGuardContactIssue = (
   if (guardBodyPenetration > 1e-8) {
     return `${part}'s trigger guard overlaps its frame or lower.`;
   }
-  const topWorld = worldGuards[triggerGuardIds.indexOf('trigger-guard-top')]!;
-  const topGap = Math.min(...worldBody.map((body) => distanceWorld(topWorld, body)));
-  if (topGap > 1e-8) {
-    return `${part}'s trigger guard top does not contact its frame or lower.`;
+  const closureIssue = triggerGuardClosureIssue(part, def, guards);
+  if (closureIssue) {
+    return closureIssue;
   }
-  for (const connection of r.connections) {
-    const gripPart = gripPartOnLower(connection, part);
-    if (!gripPart) {
-      continue;
-    }
-    const gripTransform = r.placed.get(gripPart);
-    if (!gripTransform) {
-      continue; // unplaced grip: nothing to measure the wall against
-    }
-    const gripSolids = r.defs.get(gripPart)!.solids.map((gripSolid) => worldSolid(gripTransform, gripSolid));
-    const rearWorld = worldGuards[triggerGuardIds.indexOf('trigger-guard-rear')]!;
-    const gap = Math.min(...gripSolids.map((gripSolid) => distanceWorld(rearWorld, gripSolid)));
-    const penetration = Math.max(0, ...gripSolids.map((gripSolid) => penetrationWorld(rearWorld, gripSolid)));
-    if (gap > 1e-8 || penetration > 1e-8) {
-      return `${part}'s rear trigger-guard wall must contact ${gripPart} without a gap or overlap.`;
-    }
-    break;
+  const gripIssue = triggerGuardGripIssue(r, part, def, guards);
+  if (gripIssue) {
+    return gripIssue;
   }
   for (const path of def.keepOuts.filter(({ id }) => id !== 'trigger-finger')) {
     const pathWorld = worldSolid(IDENTITY, { id: 'action-handle-path', kind: 'box', box: path.box });
@@ -469,7 +563,10 @@ export const triggerGuard: Rule = {
       const guards = new Map(
         def.solids.filter(({ id }) => id.startsWith('trigger-guard-')).map((solid) => [solid.id, solid]),
       );
-      if (triggerGuardIds.some((id) => !guards.has(id))) {
+      const open = def.tags?.includes(OPEN_TRIGGER_GUARD) ?? false;
+      const required = open ? openTriggerGuardIds : triggerGuardIds;
+      const forbidden = open ? ['trigger-guard-top', 'trigger-guard-rear'] : ['trigger-guard-corner'];
+      if (required.some((id) => !guards.has(id)) || forbidden.some((id) => guards.has(id))) {
         issues.push({
           rule: 'trigger-guard',
           message: `${part} has a trigger-finger volume but is missing its enclosing trigger guard.`,
@@ -477,7 +574,7 @@ export const triggerGuard: Rule = {
         });
         continue;
       }
-      const geometryIssue = triggerGuardGeometryFits(finger.box, guards)
+      const geometryIssue = triggerGuardGeometryFits(finger.box, guards, open)
         ? triggerGuardContactIssue(r, part, def, guards)
         : `${part}'s trigger guard does not enclose its trigger-finger volume.`;
       if (geometryIssue) {

@@ -1,6 +1,7 @@
 ---
 read_if:
   - you build or tune the compact SMG or its telescoping or fixed stock
+  - you change trigger-guard validation and its authority over a reference trace
   - you add or change the compact SMG's sights
   - you retrace the compact SMG from its reference photo
   - you change the forward cocking tube or sliding handle that the compact SMG reuses
@@ -22,7 +23,7 @@ The photo is not dimensioned, so it is scaled from a published length: the exten
 
 The bore line runs through the muzzle axis and is horizontal in the photo, so the registration has no slope. The origin is the receiver's front face, where the handguard starts, matching the sporter's receiver/barrel datum (`docs/bolt-action-export.md`, "Reference registration"). Parts are traced around that fixed bore and datum and never moved to cover the photo, for the same reason given there. Depth, wall thickness and clearances are not recoverable from a side view and stay authoring choices.
 
-A traced shape yields to a gun rule where the two disagree, and the table's comments name each such case. The trigger guard is the main one: the photo's curved guard becomes four straight bars, because the trigger-guard rule reads a top bar, a bottom bar and two walls of one thickness; see `src/gun/rules.ts`, `triggerGuardGeometryFits`. The front-sight post is another: its tip stands at the rear aperture's height and not at the photo's, because the sight line must run parallel to the bore (see "Sights" under "Rulings").
+A traced shape yields to a gun rule where the two disagree. The trigger guard is the main case: finger clearance and connected guard geometry take precedence over the traced curve; see `src/gun/rules.ts`, `triggerGuardGeometryFits`. The front-sight post likewise yields to a sight line parallel to the bore rather than the photo's apparent height; see [Sights](#rulings).
 
 Some photo detail is beyond the build's primitives and stays a known difference. The hood is a ring around the bore's axis, so from the side it shows square corners where the photo's hood is rounded and tapers toward the top. Knurling on the knob and the sight wheel is finer than the gun voxel grain (`src/gun/gunVoxel.json`), so those surfaces are smooth.
 
