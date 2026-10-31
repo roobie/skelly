@@ -189,12 +189,61 @@ properties such as more skill never slowing an action and the bounds holding.
 
 ### 2. Timed status effects
 
-Each lasting condition has its own owner, so nothing else can apply one. Magiclysm's buffs,
-debuffs and enchantment procs need a generic effect: a content kind with duration,
-stacking, the modifiers it carries and any damage over time. It is the modifier carrier
-with a lifetime. Lingering damage per region is a seed; see `src/core/damageExposure.ts`,
-`DamageExposures`. Pain, bleeding and drug effects are base-game candidates for the same
-mechanism.
+Magiclysm's buffs, debuffs and enchantment procs need a generic effect: the modifier
+carrier with a lifetime. Each lasting condition has its own owner, so nothing else can
+apply one. Analgesic doses already have most of an effect's shape (an onset, peak and fade
+envelope, stacking groups under a cap, aging that prunes spent doses, and presentation that
+follows strength); see `src/core/pain.ts`, `analgesia`, `ageDoses` and `drugVignette`.
+
+#### Effects and conditions
+
+An effect happens to an actor and has a lifetime of its own: a painkiller, a burn, haste,
+an enchantment's proc, a curse. A condition is what the body computes from its own state:
+bleeding per wound, the pain level, hunger and fatigue tiers. Conditions stay with their
+owners because they are physiology, but their consequences are modifiers of the same kind
+an effect carries, so pain's aim penalty and a curse's aim penalty are one thing. Pain's
+fixed consequences become such modifiers; see `src/core/pain.ts`, `painEffects`.
+
+#### Impairment and grit
+
+Modifiers emitted by conditions, and effect modifiers that content tags as impairment,
+form the impairment layer. Grit feeds one modified effect that pulls impairment modifiers
+toward no change, so it softens how much pain hampers aim without touching the pain, and
+leaves poison damage or an untagged curse alone. This is the mechanism behind grit's rule
+in `docs/magiclysm.md`, "Attribute vocabulary".
+
+#### What an effect carries
+
+- **Lifetime:** a fixed duration, an envelope like an analgesic's, or open-ended until
+  removed. Each effect names the clock its lifetime and rates run on, Game or Sim, as every
+  temporal field does (`DESIGN.md`, "Clocks and units"): drugs and illness follow the
+  calendar, while a stun or a fight-long haste must keep its felt length under compression.
+- **Stacking:** content selects one mechanism: refresh the duration, add intensity up to a
+  maximum, or independent instances under a group cap as analgesics stack.
+- **Modifiers** scaled by the effect's current strength, including modifiers on attributes.
+- **Damage over time** as an exposure source; see `src/core/damageExposure.ts`,
+  `DamageExposures`.
+- **Rules the existing owners hard-code,** as content selections: refusing time
+  compression, as heavy bleeding does, and interrupting long actions, as a critical need
+  does; see `src/core/needs.ts`, `CriticalRule`.
+- **Removal groups,** so a cure or a dispel names a group rather than an effect id.
+- **Body cues** for presentation (`INTERFACE.md`, "Diegesis and development"); a list of
+  effects is at most a toggleable meta element.
+
+Effects are applied by used items, landed zombie moves, spells, rules (#313) and another
+effect's expiry, which chains poison into weakness. Rolls happen at application and the
+engine draws them (`docs/decisions/0004-content-language.md`, "Mod rules").
+
+#### State and actors
+
+Each actor saves its active instances (effect, source, age, intensity), pruned when spent.
+Aging is closed-form, so compressed and ticked time agree, as `src/core/pain.ts`,
+`fadeAcute`, and `DamageExposures` already do. Effects are actor-generic from the start:
+spells put fire, slowness and stuns on zombies, and a zombie with no effects costs nothing.
+Zombie stagger can later move onto effects; see `src/core/zombies.ts`, `staggerSimSeconds`.
+
+Analgesics are the first consumer: the mechanism must express painkillers before magic
+relies on it.
 
 ### 3. Resource pools
 
