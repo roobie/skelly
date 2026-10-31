@@ -360,25 +360,84 @@ noticed before it is named.
 
 The magic mod adds content to whichever product it serves (spellbooks in loot, schools in
 the start flow): through its own packs in the fantasy product, and through a compatibility
-mod in a product it was not written for, such as Deadvox. Both build on shared content its
-packs depend on, so it needs:
+mod in a product it was not written for, such as Deadvox. Most of the mod is new entries,
+which need only the content kinds of the other gaps. Gap 4 already removed one patch: a
+school grants the mana pool, so no player entry is patched.
 
-- **Field patches** (`docs/decisions/0007-typed-field-patches.md`, "Decision"). Without
-  them the mod restates whole base entries.
-- **Declared dependencies on packs** (`docs/pack-split.md`, "Layers"; #637).
-- **Rules, effects and mod state**
-  (`docs/decisions/0004-content-language.md`, "Runtime design"; #313). The CEL harness in `src/spikes/expressions/` is a spike that the game
-  does not import.
+#### Packaging
+
+The magic mod and the fantasy product ship first as bundled packs in the repository, as
+Cataclysm ships Magiclysm. That keeps folder and URL mods, browser Jsonnet and the mod
+authoring tool (`docs/decisions/0008-mod-authoring-tool.md`) off the critical path.
+The asset manifest is already per pack (`src/core/assets.ts`, `validateManifest` and
+`MANIFEST_PATH`), and validation accepts manifests beyond the base one
+(`src/cli/validate.ts`). A bundled mod, though, is a single file with no assets directory
+(`src/config/bundled/`), so bundled packs need an assets directory and manifest of their
+own, checked as the base pack's are.
+
+#### Pack requirements
+
+The mod declares the packs it requires, and loading refuses a stack that lacks them
+(`docs/pack-split.md`, "Layers"; #637). A compatibility mod requires both the magic mod
+and the product it brings it into, which is what lets it settle their clashes.
+
+#### Field patches in two cuts
+
+`docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
+
+1. **Commuting additions:** spellbooks into loot tables, sites into map pools
+   (`src/core/schema.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
+   choices need ids, since rows are 0007's first keyed list.
+2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
+   packs genuinely clash, such as a creature's weakness to fire, and its dependency on
+   both is what allows it (`docs/decisions/0007-typed-field-patches.md`, "Conflicts").
+
+The first cut serves the mod in its own product and most of a compatibility mod.
+
+#### Rules
+
+Rules run in the format #313 settles: a trigger, an optional condition and engine
+effects (`docs/decisions/0004-content-language.md`, "Mod rules"). The mod needs:
+
+- **Procs:** a hit landing has a chance to apply an effect, through an engine event and a
+  random thunk.
+- **Conditions beyond worn or wielded,** such as night or standing in water: a predicate
+  the mod's timer checks, never a per-tick check.
+- **Rituals** as sequences of chained rules.
+- **Spells,** as gap 6 sets out.
+
+The engine events it needs: an ability cast; a hit landed and taken; a kill; an effect
+applied and expired; a pool emptied; a trait gained and lost; a skill level reached; and
+an item worn, removed, wielded and dropped.
+
+Modifiers stack and never set a value: they multiply and add, both commute, so every
+mod's modifiers apply and load order cannot change the result. That is this draft's
+position on how several mods' modifiers stack, which ADR 0004 leaves open in #313.
+
+#### Mod state
+
+The mod needs little mod state, at most ritual flags. Mod state excludes lists and
+free-form records so its size and save shape are checkable at load, a CEL rule never
+traverses a list the profile cannot bound, and no two rules dispute an element's order.
+A bounded map keyed by content id, open in #313, keeps those properties because its keys
+bound its size; per-altar ritual progress would need it.
 
 The only shipped rule mechanism is the scenario event rules; see
 `src/core/eventRules.ts`, `advanceEventRules`.
 
 ### 6. Spells: abilities with an effect dispatch
 
-Magiclysm's spell effect types, which the mod follows, are what ADR 0004 calls engine
-verbs, so spells are a
-natural first consumer for #313's effect vocabulary. Each spell is content selecting a
-verb; the verbs are code.
+A spell is an ability entry plus a rule body. The ability carries cost, the pool it draws
+on, cast time and targeting; the body is a rule triggered by the cast, whose effects are
+engine verbs. Magiclysm's spell effect types, which the mod follows, are what ADR 0004
+calls engine verbs, and per-level scaling, such as damage rising by a step per level, is
+an effect argument, so spells are the first heavy consumer of #313's rule format rather
+than a parallel system.
+
+Which abilities an actor knows, each with its level and practice, is engine state like
+skills, because engine mechanisms read it: cast dispatch, the quickbar, trait grants
+(gap 4), practice and the spell list. Mod state is for a mod's own rule bookkeeping that
+no mechanism reads.
 
 Parts to reuse:
 
