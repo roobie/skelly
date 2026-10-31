@@ -3,7 +3,16 @@ import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/eng
 import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import type { ClosedTriggerGuardDimensions, TriggerBladeShape, TriggerGuardDimensions } from './triggerGuards.ts';
 
-export const OPEN_TRIGGER_GUARD = 'trigger-guard-open-rear';
+/** The tag a corner guard's part carries for its declared rear; exports keep tags, not content. */
+export const TRIGGER_GUARD_REAR_TAGS = {
+  open: 'trigger-guard-open-rear',
+  lower: 'trigger-guard-lower-rear',
+} as const satisfies Record<TriggerGuardDimensions['rear'], string>;
+/** A corner guard's declared rear, or undefined for a closed loop. */
+export const cornerGuardRear = (tags: readonly string[] | undefined): TriggerGuardDimensions['rear'] | undefined => {
+  const declared = (['open', 'lower'] as const).filter((rear) => tags?.includes(TRIGGER_GUARD_REAR_TAGS[rear]));
+  return declared.length === 1 ? declared[0] : undefined;
+};
 /** Every trigger blade's solid id is this, or this plus a segment index. */
 export const TRIGGER_BLADE_ID = 'trigger-blade';
 export const isTriggerBlade = (id: string): boolean => id === TRIGGER_BLADE_ID || id.startsWith(`${TRIGGER_BLADE_ID}-`);
@@ -69,7 +78,7 @@ export const openTriggerGuard = (
     };
   };
   return {
-    tags: [OPEN_TRIGGER_GUARD],
+    tags: [TRIGGER_GUARD_REAR_TAGS[dimensions.rear]],
     solids: [
       {
         id: 'trigger-guard-front',

@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import {
-  OPEN_TRIGGER_GUARD,
   openTriggerGuard,
   rampedTriggerGuardSolids,
+  TRIGGER_GUARD_REAR_TAGS,
   triggerBlade,
 } from '../src/gun/roundedTriggerGuard.ts';
 import { triggerGuard } from '../src/gun/rules.ts';
@@ -22,6 +22,7 @@ const dimensions: TriggerGuardDimensions = {
   frontCutU: 0.2,
   frontCutDegrees: 40,
   rearSlantDegrees: 10,
+  rear: 'open',
   fingerY: [0, 3],
   fingerZ: [-1, 1],
 };
@@ -39,8 +40,8 @@ const polygon = (id: string, profile: readonly Vec2[]): Solid => ({
   z: [-0.5, 0.5],
 });
 const cornerId = 'trigger-guard-corner';
-const fixture = () => {
-  const built = openTriggerGuard(finger, dimensions, 4, face);
+const fixture = (rear: TriggerGuardDimensions['rear'] = 'open') => {
+  const built = openTriggerGuard(finger, { ...dimensions, rear }, 4, face);
   const lower: PartDef = {
     family: 'lower',
     tags: built.tags,
@@ -104,8 +105,11 @@ const changeCorner = (lower: PartDef, edit: (profile: Vec2[]) => void): PartDef 
     return { ...solid, profile };
   }),
 });
-const issuesWith = (edit: (lower: PartDef, grip: PartDef) => PartDef) => {
-  const { lower, grip, resolved } = fixture();
+const issuesWith = (
+  edit: (lower: PartDef, grip: PartDef) => PartDef,
+  rear: TriggerGuardDimensions['rear'] = 'open',
+) => {
+  const { lower, grip, resolved } = fixture(rear);
   return triggerGuard.check({
     ...resolved,
     defs: new Map([
@@ -118,7 +122,7 @@ const issuesWith = (edit: (lower: PartDef, grip: PartDef) => PartDef) => {
 describe('open trigger guard builder', () => {
   it.each([8, 12])('builds valid pieces on the straight grip face with rear angle %s', (rearSlantDegrees) => {
     const built = openTriggerGuard(finger, { ...dimensions, rearSlantDegrees }, 4, face);
-    expect(built.tags).toContain(OPEN_TRIGGER_GUARD);
+    expect(built.tags).toEqual([TRIGGER_GUARD_REAR_TAGS[dimensions.rear]]);
     expect(built.solids.map(({ id }) => id).sort()).toEqual(
       ['trigger-guard-bottom', cornerId, 'trigger-guard-front'].sort(),
     );
@@ -368,5 +372,38 @@ describe('open trigger guard rule', () => {
   ];
   it.each(rows)('rejects %s', (_name, edit) => {
     expect(issuesWith(edit).length).toBeGreaterThan(0);
+  });
+});
+
+describe('declared trigger guard rear', () => {
+  // The space behind the opening, from the grip face at the bar's top to the corner's front, up to the receiver.
+  const rearBox = (id: string, bottomY = 0, topY = 4, halfZ = 0.5) =>
+    box(id, [face.xAt(0), bottomY, -halfZ], [-dimensions.clearanceU, topY, halfZ]);
+  const adding =
+    (...solids: Solid[]) =>
+    (lower: PartDef): PartDef => ({ ...lower, solids: [...lower.solids, ...solids] });
+  it('rejects a body solid filling a rear declared open, whatever its name', () => {
+    expect(issuesWith(adding(rearBox('body-rear-closure'))).map(({ message }) => message)).toEqual([
+      "lower's trigger guard rear is declared open, but a solid of the part fills it.",
+    ]);
+    expect(issuesWith(adding(rearBox('trigger-guard-rear'))).length).toBeGreaterThan(0);
+  });
+  it.each([
+    ['one body box', [rearBox('body-rear-closure')]],
+    ['two stacked body boxes', [rearBox('lug', 0, 1.5), rearBox('boss', 1.5, 4)]],
+  ])('accepts a rear declared closed by the lower and filled by %s', (_name, solids) => {
+    expect(issuesWith(adding(...solids), 'lower')).toEqual([]);
+  });
+  it.each([
+    ['nothing', []],
+    ['a body box short of the receiver', [rearBox('body-rear-closure', 0, 3)]],
+    ['a body box narrower than the guard', [rearBox('body-rear-closure', 0, 4, 0.25)]],
+    ['a guard-named box', [rearBox('trigger-guard-rear')]],
+  ])('rejects a rear declared closed by the lower and filled by %s', (_name, solids) => {
+    expect(issuesWith(adding(...solids), 'lower').length).toBeGreaterThan(0);
+  });
+  it('rejects a part declaring both rears', () => {
+    const both = (lower: PartDef): PartDef => ({ ...lower, tags: Object.values(TRIGGER_GUARD_REAR_TAGS) });
+    expect(issuesWith(both).length).toBeGreaterThan(0);
   });
 });

@@ -7,6 +7,7 @@ import {
   number,
   optional,
   parse,
+  picklist,
   pipe,
   record,
   strictObject,
@@ -35,6 +36,8 @@ const Guard = strictObject({
   frontCutU: Positive,
   frontCutDegrees: Angle,
   rearSlantDegrees: Angle,
+  /** Whether the opening's rear above the corner is left open or closed by the lower's body. */
+  rear: picklist(['open', 'lower']),
   /** Absent where a traced lower owns the finger's height. */
   fingerY: optional(Extent),
   fingerZ: Extent,

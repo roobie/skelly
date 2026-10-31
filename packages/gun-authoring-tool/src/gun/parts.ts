@@ -3132,8 +3132,14 @@ const lower: PartFamily = {
         const fingerBounds = localSolidBounds({ id: 'finger', kind: 'box', box: arTriggerFinger.box });
         const openingRearX = fingerBounds[0][0] - guardContent.clearanceU;
         // A traced grip hangs from the lower's body, which comes down to its top; its foremost straight edge is the
-        // face the guard's corner meets, and the body's thin wall between that face and the opening closes its rear.
+        // face the guard's corner meets. A rear the content closes is the body's thin wall between that face and
+        // the opening.
         const gripTrace = traced?.grip;
+        if (guardContent.rear === 'lower' && !gripTrace) {
+          throw new Error(
+            `AR frame ${arLayout!.frameId} closes its guard's rear with the lower but has no traced grip.`,
+          );
+        }
         const gripPoints = gripTrace?.pieces.flat().map(([x, y]): Vec2 => [x, fromBore(y)]) ?? [];
         const gripMount: Vec2 | undefined = gripTrace && [gripTrace.mount[0], fromBore(gripTrace.mount[1])];
         const gripFrontX = Math.max(...gripPoints.map(([x]) => x));
@@ -3154,7 +3160,15 @@ const lower: PartFamily = {
                 ],
                 [openingRearX, -1.5, halfWidth],
               ),
-              solid('guard-lug', [gripFrontX, fingerBounds[0][1], -halfWidth], [openingRearX, gripMount[1], halfWidth]),
+              ...(guardContent.rear === 'lower'
+                ? [
+                    solid(
+                      'guard-lug',
+                      [gripFrontX, fingerBounds[0][1], -halfWidth],
+                      [openingRearX, gripMount[1], halfWidth],
+                    ),
+                  ]
+                : []),
             ]
           : [];
         const arGuard = openGuard(arTriggerFinger, guardContent, ceilingY, gripFace);

@@ -16,6 +16,7 @@
       "frontCutDegrees": 45,
       "frontCutU": 0.125,
       "halfWidthU": 0.625,
+      "rear": "open",
       "rearSlantDegrees": 4,
       "wallU": 0.25
     },
@@ -26,6 +27,7 @@
       "frontCutU": 0.375,
       "frontWallU": 0.25,
       "halfWidthU": 0.625,
+      "rear": "lower",
       "rearSlantDegrees": 35,
       "wallU": 0.5
     },
@@ -36,6 +38,7 @@
       "frontCutDegrees": 45,
       "frontCutU": 0.125,
       "halfWidthU": 0.625,
+      "rear": "open",
       "rearSlantDegrees": 4,
       "wallU": 0.25
     },
@@ -46,6 +49,7 @@
       "frontCutDegrees": 45,
       "frontCutU": 0.125,
       "halfWidthU": 0.625,
+      "rear": "open",
       "rearSlantDegrees": 4,
       "wallU": 0.25
     }

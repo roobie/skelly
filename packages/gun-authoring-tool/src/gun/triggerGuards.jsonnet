@@ -22,7 +22,10 @@
       halfWidthU: 0.625,
     },
   },
+  // Guards whose corner meets the grip. `rear` follows each gun's reference: `open` leaves the opening's rear
+  // above the corner empty, `lower` has the lower's body fill it.
   guards: {
+    // Open behind the trigger, as the AK(M) looks.
     ak: {
       wallU: 0.25,
       clearanceU: 0.5,
@@ -30,6 +33,7 @@
       frontCutU: 0.125,
       frontCutDegrees: 45,
       rearSlantDegrees: 4,
+      rear: 'open',
       fingerY: [-4.5, -1.75],
       fingerZ: [-1, 1],
     },
@@ -41,13 +45,15 @@
       frontCutU: 0.125,
       frontCutDegrees: 45,
       rearSlantDegrees: 4,
+      rear: 'open',
       fingerY: [-4.5, -1.75],
       fingerZ: [-1, 1],
     },
     // Traced with the frame's grip from BR's photo (see arFrames.jsonnet, whose lower owns the finger's x and y). The
     // bar bows below the opening, about 0.5u deep at its middle; its underside rises about 20 degrees into the
     // magwell and steeply up the short corner to the grip's straight front. The magwell's rear is the thin front
-    // wall. The opening keeps a 0.5u clearance each side.
+    // wall. The opening keeps a 0.5u clearance each side. The lower's body closes the opening's rear in front of the
+    // grip, as in the photo.
     'ar-large': {
       wallU: 0.5,
       frontWallU: 0.25,
@@ -56,6 +62,7 @@
       frontCutU: 0.375,
       frontCutDegrees: 20,
       rearSlantDegrees: 35,
+      rear: 'lower',
       fingerZ: [-1, 1],
     },
     conventional: {
@@ -65,6 +72,7 @@
       frontCutU: 0.125,
       frontCutDegrees: 45,
       rearSlantDegrees: 4,
+      rear: 'open',
       fingerY: [-4.5, -1.75],
       fingerZ: [-1, 1],
     },

@@ -17,7 +17,8 @@ import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, LOWER_LAYOUTS } from '../src/gun/parts.ts';
-import { isTriggerBlade, OPEN_TRIGGER_GUARD } from '../src/gun/roundedTriggerGuard.ts';
+import { cornerGuardRear, isTriggerBlade } from '../src/gun/roundedTriggerGuard.ts';
+import { triggerGuard } from '../src/gun/rules.ts';
 import { TRIGGER_GUARDS } from '../src/gun/triggerGuards.ts';
 import { loadCorpus, loadFixture } from './helpers.ts';
 
@@ -56,10 +57,18 @@ describe('traced AR large lower and grip', () => {
     }
     return validate(loaded.design.assembly, gunDomain);
   };
-  it('hangs the trigger inside its open guard', () => {
+  it('hangs the trigger inside its corner guard', () => {
     const lower = report().resolved.defs.get('lower')!;
-    expect(lower.tags).toContain(OPEN_TRIGGER_GUARD);
+    expect(cornerGuardRear(lower.tags)).toBeDefined();
     expect(hasPlacedTrigger(lower)).toBe(true);
+  });
+  it("needs its lower's body to close the guard's rear it declares closed", () => {
+    const { resolved } = report();
+    const lower = resolved.defs.get('lower')!;
+    expect(cornerGuardRear(lower.tags)).toBe('lower');
+    expect(triggerGuard.check(resolved)).toEqual([]);
+    const opened = { ...lower, solids: lower.solids.filter(({ id }) => id !== 'guard-lug') };
+    expect(triggerGuard.check({ ...resolved, defs: new Map([...resolved.defs, ['lower', opened]]) })).not.toEqual([]);
   });
   it('builds the grip from valid convex pieces and keeps the firing hand inside its body', () => {
     const { resolved } = report();
@@ -89,11 +98,11 @@ describe('traced AR large lower and grip', () => {
 });
 
 describe('trigger guards', () => {
-  it('matches each lower guard membership to its open tag', () => {
+  it('matches each lower guard membership to its rear tag', () => {
     for (const { label, params } of lowerBuilds()) {
       const def = FAMILIES.lower!.build(params);
       const guards = def.solids.filter(({ id }) => id.startsWith('trigger-guard-'));
-      const open = def.tags?.includes(OPEN_TRIGGER_GUARD) ?? false;
+      const open = cornerGuardRear(def.tags) !== undefined;
       expect(guards.map(({ id }) => id).sort(), label).toEqual(
         (open
           ? ['trigger-guard-front', 'trigger-guard-bottom', 'trigger-guard-corner']
@@ -102,10 +111,10 @@ describe('trigger guards', () => {
       );
     }
   });
-  it.each(Object.keys(TRIGGER_GUARDS))('builds valid open pieces with content-owned thickness for %s', (key) => {
+  it.each(Object.keys(TRIGGER_GUARDS))('builds valid corner pieces with content-owned shape for %s', (key) => {
     expect(CONTENT_LOWERS[key], `${key} has a lower to build`).toBeDefined();
     const def = FAMILIES.lower!.build(CONTENT_LOWERS[key]!);
-    expect(def.tags).toContain(OPEN_TRIGGER_GUARD);
+    expect(cornerGuardRear(def.tags)).toBe(TRIGGER_GUARDS[key]!.rear);
     const guards = def.solids.filter(({ id }) => id.startsWith('trigger-guard-'));
     expect(guards.length).toBeGreaterThan(0);
     for (const guard of guards) {
