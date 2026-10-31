@@ -2272,9 +2272,11 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   raise job. The view blends hip to sights across that acquisition and settles
   back over a content-owned blend on release, because the simulation owns when
   the sights arrive while the presentation owns how the move looks: the blend
-  reads the acquisition's progress and never writes simulation state, and the
-  optic picture hands over at full alignment. Sniping has no timing curve of its
-  own. Recoil kick and recovery
+  reads the acquisition's progress and never writes simulation state. The optic
+  picture switches at full alignment rather than blending its magnification —
+  the disc read stays exact only once the eye has arrived at the sight line —
+  while the pose, the camera standoff and the look sensitivity ride the carried
+  aim. Sniping has no timing curve of its own. Recoil kick and recovery
   have one owner; splitting only kick would quietly move recovery to the wrong
   skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
   sway together or compete through separate aim controllers. See

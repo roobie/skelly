@@ -6,6 +6,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandSide, Inventory } from './inventory.ts';
 import { type MeleeHand, type MeleePoseFrame, readyHandPair } from './meleePose.ts';
 import type { HeldPosesDef } from './schema.ts';
+import { basisRotation, blendDirection, blendRotation, rotationBasis } from './spatial.ts';
 
 /** A hold authored for the right hand, mirrored across the view's x for the left. */
 const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right' ? x : -x, y, z];
@@ -245,18 +246,20 @@ export const blendHeldFirearmTransforms = (
     return sighted;
   }
   const lerp = (from: Vec3, to: Vec3): Vec3 => from.map((value, axis) => value + (to[axis]! - value) * aim) as Vec3;
-  const lerpDirection = (from: Vec3, to: Vec3): Vec3 => normalize(lerp(from, to));
-  // The lerped basis columns drift off orthonormal; the share of the rotation keeps a right-handed frame.
-  const first = normalize(lerp(hip.rootRotation[0], sighted.rootRotation[0]));
-  const secondRaw = lerp(hip.rootRotation[1], sighted.rootRotation[1]);
-  const along = dot(secondRaw, first);
-  const second = normalize(secondRaw.map((value, axis) => value - first[axis]! * along) as Vec3);
-  const rootRotation = [first, second, cross(first, second)] as const;
+  // Directions swing along their shortest rotation so antiparallel endpoints (a half turn of the
+  // gun) stay defined, where lerping the vectors would cancel to zero.
+  const blendDirectionBy = (from: Vec3, to: Vec3): Vec3 => blendDirection(from, to, aim);
+  // The root rotation blends as a quaternion: lerping basis columns can cancel a column to zero
+  // (identity against a half turn about an axis), while a rotation blend stays defined and
+  // orthonormal for every right-handed pair of endpoint bases.
+  const rootRotation = rotationBasis(
+    blendRotation(basisRotation(hip.rootRotation), basisRotation(sighted.rootRotation), aim),
+  );
   return {
     rootOffset: lerp(hip.rootOffset, sighted.rootOffset),
     muzzleOffset: lerp(hip.muzzleOffset, sighted.muzzleOffset),
-    muzzleDirection: lerpDirection(hip.muzzleDirection, sighted.muzzleDirection),
-    muzzleUp: lerpDirection(hip.muzzleUp, sighted.muzzleUp),
+    muzzleDirection: blendDirectionBy(hip.muzzleDirection, sighted.muzzleDirection),
+    muzzleUp: blendDirectionBy(hip.muzzleUp, sighted.muzzleUp),
     ...(hip.sightEyeOffset && sighted.sightEyeOffset
       ? { sightEyeOffset: lerp(hip.sightEyeOffset, sighted.sightEyeOffset) }
       : {}),
@@ -268,9 +271,9 @@ export const blendHeldFirearmTransforms = (
         }
       : {}),
     ...(hip.sightDirection && sighted.sightDirection
-      ? { sightDirection: lerpDirection(hip.sightDirection, sighted.sightDirection) }
+      ? { sightDirection: blendDirectionBy(hip.sightDirection, sighted.sightDirection) }
       : {}),
-    ...(hip.sightUp && sighted.sightUp ? { sightUp: lerpDirection(hip.sightUp, sighted.sightUp) } : {}),
+    ...(hip.sightUp && sighted.sightUp ? { sightUp: blendDirectionBy(hip.sightUp, sighted.sightUp) } : {}),
     rootRotation,
   };
 };

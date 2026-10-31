@@ -285,6 +285,35 @@ const partSightedLookPose = ({
   return blendLookPoses(hip, sighted, aim);
 };
 
+/** Prone and trivial leans leave the solved pose alone; a real lean offsets its carried points. */
+const settledLookPose = (
+  solved: PlayerLookPose,
+  lean: LeanFrame | undefined,
+  stance: PlayerStance,
+  pitch: number,
+): PlayerLookPose => {
+  if (!lean || stance === 'prone' || (lean.rollRadians === 0 && lean.offsetMetres === 0)) {
+    return solved;
+  }
+  const leaned: PlayerLookPose = {
+    ...solved,
+    unleaned: solved,
+    lateralLean: {
+      frame: lean,
+      rotation: multiplyRotation(turnX(pitch), multiplyRotation(turnZ(lean.rollRadians), turnX(-pitch))),
+      pivot: [solved.hip[0], solved.hip[1] - solved.hipDrop, solved.hip[2]],
+    },
+  };
+  return {
+    ...leaned,
+    eye: playerLeanPoint(leaned, solved.eye),
+    shoulders: {
+      left: playerLeanPoint(leaned, solved.shoulders.left),
+      right: playerLeanPoint(leaned, solved.shoulders.right),
+    },
+  };
+};
+
 export const playerLookPose = ({
   figure,
   models,
@@ -398,26 +427,7 @@ export const playerLookPose = ({
   }
   const posedEye = playerPosePoint(pose, eyeAnchor, 'head');
   const solved = { ...pose, eye: posedEye, stockSeats: stockSeats(posedEye) };
-  if (!lean || stance === 'prone' || (lean.rollRadians === 0 && lean.offsetMetres === 0)) {
-    return solved;
-  }
-  const leaned: PlayerLookPose = {
-    ...solved,
-    unleaned: solved,
-    lateralLean: {
-      frame: lean,
-      rotation: multiplyRotation(turnX(pitch), multiplyRotation(turnZ(lean.rollRadians), turnX(-pitch))),
-      pivot: [pose.hip[0], pose.hip[1] - pose.hipDrop, pose.hip[2]],
-    },
-  };
-  return {
-    ...leaned,
-    eye: playerLeanPoint(leaned, solved.eye),
-    shoulders: {
-      left: playerLeanPoint(leaned, solved.shoulders.left),
-      right: playerLeanPoint(leaned, solved.shoulders.right),
-    },
-  };
+  return settledLookPose(solved, lean, stance, pitch);
 };
 
 export const playerEyePosition = ({

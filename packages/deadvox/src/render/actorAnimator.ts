@@ -138,6 +138,20 @@ export interface ActorItemPose {
 }
 
 /** Physical movers shared by world and transitional view presentations. */
+/** The held gun's readiness state: whether this item is the readiness item, and how far the aim is carried. */
+const heldReadinessState = (
+  readiness: HeldPresentationFrame['readiness'],
+  item: Item | undefined,
+  readyAmount: number,
+) => {
+  const isReadinessItem = readiness?.uid === item?.uid;
+  const aimingDownSights = Boolean(item && isReadinessItem && readiness?.aimingDownSights);
+  // The view carries the aim from hip to sights by the acquisition's share, so the gun rises with it
+  // instead of switching poses when the sights complete.
+  const adsAim = item && isReadinessItem ? (readiness?.adsAim ?? (aimingDownSights ? 1 : 0)) : 0;
+  return { firearmReadiness: isReadinessItem ? readyAmount : 0, aimingDownSights, adsAim };
+};
+
 export class ActorAnimator {
   private readonly flames = new ModelFlames('held-light-flame');
   inventory: Pick<Inventory, 'registry' | 'hands'>;
@@ -562,14 +576,7 @@ export class ActorAnimator {
     const baseModel = itemDefinition?.model ? this.inventory.registry.models.get(itemDefinition.model) : undefined;
     const modelDefinition =
       item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
-    const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
-    const aimingDownSights = Boolean(
-      item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
-    );
-    // The view carries the aim from hip to sights by the acquisition's share, so the gun rises with it
-    // instead of switching poses when the sights complete.
-    const adsAim =
-      item && handling.readiness?.uid === item.uid ? (handling.readiness.adsAim ?? (aimingDownSights ? 1 : 0)) : 0;
+    const { firearmReadiness, aimingDownSights, adsAim } = heldReadinessState(handling.readiness, item, readyAmount);
     const poseInput =
       itemDefinition?.firearm && modelDefinition
         ? {
