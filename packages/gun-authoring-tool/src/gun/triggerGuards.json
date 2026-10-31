@@ -1,4 +1,13 @@
 {
+  "closed": {
+    "pump": {
+      "clearanceU": 0.75,
+      "frontRampDegrees": 48,
+      "halfWidthU": 0.625,
+      "rearWallU": 0.75,
+      "wallU": 0.25
+    }
+  },
   "guards": {
     "ak": {
       "clearanceU": 0.5,

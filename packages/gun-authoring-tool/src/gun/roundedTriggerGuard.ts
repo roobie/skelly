@@ -1,6 +1,7 @@
+import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
 import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
-import type { TriggerBladeShape, TriggerGuardDimensions } from './triggerGuards.ts';
+import type { ClosedTriggerGuardDimensions, TriggerBladeShape, TriggerGuardDimensions } from './triggerGuards.ts';
 
 export const OPEN_TRIGGER_GUARD = 'trigger-guard-open-rear';
 /** Every trigger blade's solid id is this, or this plus a segment index. */
@@ -90,6 +91,60 @@ export const openTriggerGuard = (
       ]),
     ],
   };
+};
+
+/**
+ * A closed loop with a straight rear, a flat bottom and a front ramp leaning forward up to the receiver, partitioned
+ * into the four logical walls of a box guard. The ramp's foot keeps the finger's clearance.
+ */
+export const rampedTriggerGuardSolids = (finger: Box, dimensions: ClosedTriggerGuardDimensions): Solid[] => {
+  const rearInnerX = finger.center[0] - finger.half[0] - dimensions.clearanceU;
+  const rearX = rearInnerX - dimensions.rearWallU;
+  const footX = finger.center[0] + finger.half[0] + dimensions.clearanceU;
+  const minY = finger.center[1] - finger.half[1];
+  const maxY = finger.center[1] + finger.half[1];
+  const [bottomY, topY] = [minY - dimensions.wallU, maxY + dimensions.wallU];
+  const a = (dimensions.frontRampDegrees * Math.PI) / 180;
+  const run = (topY - bottomY) / Math.tan(a);
+  const thickness = dimensions.wallU / Math.sin(a);
+  const outline: Vec3[] = [
+    [rearX, bottomY, 0],
+    [footX + thickness, bottomY, 0],
+    [footX + run + thickness, topY, 0],
+    [rearX, topY, 0],
+  ];
+  const ramp = {
+    normal: [-Math.sin(a), Math.cos(a), 0] as const,
+    offset: -Math.sin(a) * footX + Math.cos(a) * bottomY,
+  };
+  const clip = (profile: readonly Vec3[], normal: readonly [number, number, number], offset: number) =>
+    clipPolygon(profile, { normal, offset }, true, 1e-9);
+  const behind = clip(outline, [-ramp.normal[0], -ramp.normal[1], 0], -ramp.offset);
+  const middle = clip(clip(behind, [0, -1, 0], -minY), [0, 1, 0], maxY);
+  const z: readonly [number, number] = [
+    finger.center[2] - dimensions.halfWidthU,
+    finger.center[2] + dimensions.halfWidthU,
+  ];
+  const walls: readonly [string, readonly Vec3[]][] = [
+    ['top', clip(behind, [0, -1, 0], -maxY)],
+    ['rear', clip(middle, [1, 0, 0], rearInnerX)],
+    ['front', clip(outline, ramp.normal, ramp.offset)],
+    ['bottom', clip(behind, [0, 1, 0], minY)],
+  ];
+  return walls.map(([name, profile]) => {
+    const points = profile.map(([x, y]): Vec2 => [x, y]);
+    const error = validateExtrudedPolygon(points, z);
+    if (error) {
+      throw new Error(`Trigger guard ${name}: ${error}`);
+    }
+    return {
+      id: `trigger-guard-${name}`,
+      kind: 'extruded-polygon',
+      profile: points,
+      z,
+      display: { bevel: false, outline: false, mergeGroup: 'trigger-guard' },
+    };
+  });
 };
 
 /** A faceted rounded loop, partitioned into the same four logical walls as a box guard. */

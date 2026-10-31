@@ -44,8 +44,20 @@ const Trigger = strictObject({
   topX: tuple([Positive, Positive]),
   halfWidthU: Positive,
 });
-const parsed = parse(strictObject({ trigger: Trigger, guards: record(string(), Guard) }), content);
+const ClosedGuard = strictObject({
+  wallU: Positive,
+  rearWallU: Positive,
+  clearanceU: Positive,
+  frontRampDegrees: Angle,
+  halfWidthU: Positive,
+});
+const parsed = parse(
+  strictObject({ trigger: Trigger, closed: record(string(), ClosedGuard), guards: record(string(), Guard) }),
+  content,
+);
 export const TRIGGER_GUARDS = parsed.guards;
+export const CLOSED_TRIGGER_GUARDS = parsed.closed;
+export type ClosedTriggerGuardDimensions = (typeof CLOSED_TRIGGER_GUARDS)[string];
 export const TRIGGER_BLADE = parsed.trigger;
 export type TriggerGuardDimensions = (typeof TRIGGER_GUARDS)[string];
 export type TriggerBladeShape = typeof TRIGGER_BLADE;

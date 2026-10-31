@@ -6,6 +6,22 @@
     topX: [1.25, 1],
     halfWidthU: 0.25,
   },
+  // Closed guards, keyed by lower layout.
+  closed: {
+    // BR's sketch over the stock-grip pump's guard, read at the trigger plate's scale: a near-vertical rear wall
+    // from the plate, its inner face about 0.85u behind the finger space and its outer face 0.75u further back; a
+    // flat bottom; and a long front ramp leaning forward up to the plate's front end. The sketched ramp, about 33
+    // degrees, would cut the finger space's front corner; a ramp whose foot clears it reaches the receiver's
+    // loading port unless it stands at least 47 degrees, so it takes 48. The opening keeps the rear's clearance
+    // at the ramp's foot, as the closed guard requires.
+    pump: {
+      wallU: 0.25,
+      rearWallU: 0.75,
+      clearanceU: 0.75,
+      frontRampDegrees: 48,
+      halfWidthU: 0.625,
+    },
+  },
   guards: {
     ak: {
       wallU: 0.25,

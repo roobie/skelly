@@ -693,7 +693,7 @@
       },
       "parts": {
         "lower_pump": {
-          "centreOfMass": [-0.141041095890411, -0.0085205479452054814, 0],
+          "centreOfMass": [-0.13746236559139785, -0.0085376344086021492, 0],
           "item": "lower_pump",
           "massKg": 0.14999999999999999,
           "node": "lower_pump:lower"

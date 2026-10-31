@@ -78,13 +78,13 @@ import {
   subtractConvexSection,
 } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
-import { openTriggerGuard, roundedTriggerGuardSolids, TRIGGER_BLADE_ID, triggerBlade } from './roundedTriggerGuard.ts';
+import { openTriggerGuard, rampedTriggerGuardSolids, TRIGGER_BLADE_ID, triggerBlade } from './roundedTriggerGuard.ts';
 import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
 import { SMG_HANDLE_PROPORTIONS } from './smgHandleProportions.ts';
 import { cutSporterAction, sporterActionDetails, sporterFurniture, sporterLower, sporterStock } from './sporter.ts';
 import { SPORTER_PROPORTIONS } from './sporterProportions.ts';
 import { taperedStockSolids } from './taperedStock.ts';
-import { TRIGGER_BLADE, TRIGGER_GUARDS, type TriggerGuardDimensions } from './triggerGuards.ts';
+import { CLOSED_TRIGGER_GUARDS, TRIGGER_BLADE, TRIGGER_GUARDS, type TriggerGuardDimensions } from './triggerGuards.ts';
 import { inchesToMm, mmToU } from './units.ts';
 
 const SIGHT_GRAIN = GRID / 4;
@@ -592,7 +592,6 @@ const triggerGuardSolids = (
     sideWall: number;
     verticalWall: number;
     zRatio: number;
-    cornerU?: number;
   } = TRIGGER_GUARD,
 ): Solid[] => {
   const { center, half } = triggerFinger.box;
@@ -609,15 +608,6 @@ const triggerGuardSolids = (
   const zHalf = half[2] * dimensions.zRatio;
   const minZ = center[2] - zHalf;
   const maxZ = center[2] + zHalf;
-  if (dimensions.cornerU) {
-    return roundedTriggerGuardSolids(triggerFinger.box, {
-      x: [outerRearX, outerFrontX],
-      y: [lowerY, upperY],
-      innerX: [innerRearX, innerFrontX],
-      z: [minZ, maxZ],
-      corner: dimensions.cornerU,
-    });
-  }
   return [
     solid('trigger-guard-top', [outerRearX, maxY, minZ], [outerFrontX, upperY, maxZ]),
     solid('trigger-guard-rear', [outerRearX, lowerY, minZ], [innerRearX, upperY, maxZ]),
@@ -3092,16 +3082,17 @@ const lower: PartFamily = {
       ceilingY: number,
       face: { xAt: (y: number) => number; straightTopY: number },
     ) => (guardPresent ? openTriggerGuard(finger.box, content, ceilingY, face) : { solids: [], tags: [] });
-    const triggerGuards =
-      guardPresent && ['trigger', 'thumbhole', 'pump'].includes(layout)
-        ? triggerGuardSolids(
-            triggerFinger,
-            layout === 'pump'
-              ? undefined
-              : lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
-            { ...LOWER_TRIGGER_GUARD, ...(triggerAssembly ? { cornerU: triggerAssembly.cornerU } : {}) },
-          )
-        : [];
+    const closedContent = CLOSED_TRIGGER_GUARDS[layout];
+    let triggerGuards: Solid[] = [];
+    if (guardPresent && closedContent) {
+      triggerGuards = rampedTriggerGuardSolids(triggerFinger.box, closedContent);
+    } else if (guardPresent && ['trigger', 'thumbhole'].includes(layout)) {
+      triggerGuards = triggerGuardSolids(
+        triggerFinger,
+        lowerGripContactX(layout, params.layout === 'conventional' ? conventionalGripX : undefined),
+        LOWER_TRIGGER_GUARD,
+      );
+    }
 
     switch (params.layout) {
       case 'ar': {
@@ -3295,7 +3286,16 @@ const lower: PartFamily = {
         return {
           family: 'lower',
           solids: [
-            solid('frame', [-16, -COMPACT_TRIGGER_PLATE.thicknessU, -1.5], [-9, 0, 1.5]),
+            // The plate runs forward over where the guard's front ramp meets it, to the next grid step.
+            solid(
+              'frame',
+              [-16, -COMPACT_TRIGGER_PLATE.thicknessU, -1.5],
+              [
+                Math.ceil(Math.max(-9, ...triggerGuards.map((guard) => localSolidBounds(guard)[1][0])) / GRID) * GRID,
+                0,
+                1.5,
+              ],
+            ),
             ...triggerGuards,
             triggerBlade(triggerFinger.box, TRIGGER_BLADE, COMPACT_TRIGGER_PLATE.fingerTopU),
           ],
