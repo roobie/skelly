@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { RECEIVER_SECTION } from '../src/gun/parts.ts';
+import { TRIGGER_BLADE_ID } from '../src/gun/roundedTriggerGuard.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
 import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
@@ -58,7 +59,7 @@ describe('870-derived pump silhouette', () => {
     expect(materialAt(receiver.solids, [x, y, z - hz - 0.125]), 'port centre').toBe(false);
   });
 
-  it('uses a thin trigger plate, a compact rounded loop and a trigger inside it', () => {
+  it('uses a thin trigger plate, a compact closed loop and a trigger inside it', () => {
     const resolved = resolve(assemblyFor(), gunDomain);
     const lower = resolved.defs.get('lower')!;
     const frame = lower.solids.find((s) => s.id === 'frame')!;
@@ -81,8 +82,8 @@ describe('870-derived pump silhouette', () => {
       'finger keep-out clears guard material',
     ).toBe(true);
     expect(guards.every((s) => s.kind === 'extruded-polygon')).toBe(true);
-    expectWatertightMesh(meshForSolidGroup(guards), 'rounded trigger loop');
-    expect(lower.solids.some((s) => s.id === 'trigger')).toBe(true);
+    expectWatertightMesh(meshForSolidGroup(guards), 'closed trigger loop');
+    expect(lower.solids.some((s) => s.id === TRIGGER_BLADE_ID)).toBe(true);
   });
 
   it('exposes separate grip, joint and comb roles without splitting the finished wood surface', () => {
