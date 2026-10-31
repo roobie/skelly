@@ -10,6 +10,7 @@ read_if:
   - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
   - you change trigger-guard or trigger geometry, content or validation
+  - you trace a gun part from a reference photo
   - you change the structured Deadvox export recipe or refresh boundary
   - you diagnose platform-dependent export comparisons
   - you share recipe or synchronization mechanisms between authoring tools
@@ -56,6 +57,24 @@ The stock-grip pump keeps a closed guard shaped to BR's sketch over it, which re
 Proportions and corner cuts belong to per-gun content because their size and angles differ between guns; see `src/gun/triggerGuards.jsonnet`. Exports carry neither authoring blocks nor builder arguments, so validation measures bar thickness, identifies the open shape by its part tag and establishes receiver closure geometrically rather than by a body-solid name; see `src/gun/rules.ts`, `triggerGuard`.
 
 Every exported gun shows a trigger. One shared blade serves guns without a traced trigger, so the shape stays one content entry, and it hangs from whatever closes the opening's top so it never floats; see `src/gun/roundedTriggerGuard.ts`, `triggerBlade`. A blade sits inside the finger space by design, so validation exempts trigger blades, named explicitly, from the finger-space check and nothing else: any other solid of the part there blocks the finger, and the engine's keep-out rule checks only other parts; see `src/gun/roundedTriggerGuard.ts`, `isTriggerBlade`.
+
+## Tracing a part from a reference photo
+
+A part traced from a side photo reads as the gun pictured where a family shape does not, but the trace is an estimate: each step below keeps it re-measurable and keeps the fit rules in charge. The large AR's guard and grip were made this way; see `src/gun/arFrames.jsonnet`, `grip`.
+
+1. **Take a side view.** Use a photo with the part square to the camera. Skew turns lengths into guesses, and a side view matches the model's side-on outlines.
+2. **Scale from a length the model already has.** Use a long, crisply ended feature already set in gun units, such as the receiver, so the photo agrees with the parts that stay. A long span keeps pixel error small. Then check a second, independent length against the scale; a mismatch means skew or a misread feature.
+3. **Register on the feature the rules constrain.** For a guard that is the finger opening. Registering there keeps the validated finger space and trigger where they are. The opening's other edges should then land within a grid step of the model's; if they don't, the scale or the registration is wrong. Positions are in bore coordinates, because the bore is the assembly's datum; see `src/gun/units.ts`, `GUN_UNITS`.
+4. **Read edges from marks on the photo.** Work on a scratch copy: crop and enlarge the region, then draw marker lines at candidate pixel positions and move them until each one sits on its edge. A marked value can be checked by looking at the copy, while an eyeballed one cannot. Scratch images and scripts stay untracked.
+5. **Round to the grid.** Convert pixels to gun units and round to the nearest grid step, because the stylized scale and the fit rules work on the grid.
+6. **Put the trace in content, with its provenance.** Values go in the gun's content blocks, with the source, scale, registration and shape notes in a comment beside them, so a later author can re-measure; see `src/gun/arFrames.jsonnet` and `src/gun/triggerGuards.jsonnet`.
+   - A grip outline is a set of convex pieces for `src/gun/parts.ts`, `tracedGrip`. The first piece is the hand's body, since the firing-hand anchor is taken from it.
+   - The grip's lean is the mean of its front and back edges.
+   - Whatever the photo shows as part of the lower or receiver becomes a body solid, not a guard piece. The trigger-guard rule then treats it as body; see `src/gun/rules.ts`, `triggerGuard`.
+7. **Check against the rules and the photo.** The trigger-guard rule must pass over the design corpus. Tests assert properties of the trace, never its coordinates; see `test/triggerGuard.test.ts`, "traced AR large lower and grip". Render a side outline from the built solids and compare it with the photo. BR's look on the exported design decides whether it reads as the gun.
+8. **Report the gaps.** For each place where the model departs from the photo, name the rule or part that forces it and the change that would close it. A known gap is then a decision, not a silent loss.
+
+Two choices in the steps above are still judgement, not rules. One is where to split an outline into convex pieces and which small features to drop. The other is how close the rendered outline must come to the photo before it goes to BR's look.
 
 ## Testing
 
