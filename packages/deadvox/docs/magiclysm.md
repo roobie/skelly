@@ -62,9 +62,9 @@ Needed:
   while worn" needs.
 - **Modifier sources as content:** items under a condition, traits and timed effects
   (gap 2), each attributed to its source so removing the source removes its modifiers.
-- **Derived modifiers:** an attribute or skill level contributes modifiers, so every
-  mechanism reads one resolver. Folding skills onto modifiers keeps a new consumer from
-  having to remember two paths.
+- **One resolver for skills and attributes:** skill and attribute levels feed effects
+  through the same resolver as modifiers, so a new consumer has one path
+  (`docs/magiclysm.md`, "Skills and the resolver").
 - **Vocabulary growth with mechanisms:** the effect list stays engine vocabulary
   (`PILLARS.md`, "Content forward compatibility"), so each later gap adds the entries its
   mechanism reads.
@@ -144,7 +144,48 @@ Content owns training and atrophy rates, the regain speed below the peak, caps, 
 and which exertion trains which attribute. Code owns the exertion kinds the sim can
 measure and the training integrator.
 
-Open: whether skills fold onto modifiers in the same change.
+#### Skills and the resolver
+
+Skill effects fold into the resolver; skills stay the owner of progression: practice,
+levels, recipe unlocks and training activities. Code reads skills in three ways that stop
+mods: by id (`src/core/inventory.ts`; `src/core/skillTraining.ts` and `src/core/craftWork.ts`
+through `CORE_CONTENT_IDS`), through mechanism tuning blocks on the skill entry
+(`src/core/schema.ts`, `SkillSchema`), and, as prying does, through content that names the
+skill driving it (`src/core/prying.ts`). The fold generalizes the third, which is also why
+a skill must not be selected by id in code.
+
+Each modified effect resolves in one pipeline:
+
+1. **Base:** the mechanism's content value.
+2. **Aptitude:** content on the effect names the skills and attributes that feed it, with
+   weights. Their contributions add into one effective level before the effect's own curve
+   turns it into a factor. Practice and natural aptitude are the same kind of capability,
+   so they share one ceiling, and the curve's floor bounds them together.
+3. **Modifiers:** items, traits and timed effects multiply and add on top, in factor space,
+   so they can carry a character past the aptitude ceiling. That is the room an enchanted
+   item or a superhuman trait needs.
+
+The engine owns each effect's true bounds, such as a duration staying positive; content
+cannot lift them (`PILLARS.md`, "Content forward compatibility"). The consumers'
+differing curve shapes (a saturating factor, interpolation from skill zero to expert, a
+minimum plus a range) all reduce to a factor on a base, so the effect declares its curve
+and the consumer stops calling `src/core/character.ts`, `skillSaturation`. A mod can then
+feed an existing effect from a new skill, as a spellcraft skill feeds casting failure, or
+an existing skill into a new effect.
+
+Practice runs through the same resolver: practice gain is a modified effect, which is
+intellect's main base-game consumer. Each training activity names the skill it trains in
+content, so no award names a skill in code.
+
+Progression thresholds are content too: the level range, the practice a legendary level
+needs, whether the legendary level has effects or is vanity, and the default training
+ceiling. Code keeps the mechanism, that levels are whole numbers, practice only
+accumulates and a ceiling stops it, and checks saved levels against content. See
+`src/core/character.ts`, `Character.awardPractice` and `skillEffectLevel`.
+
+The fold lands with or before attributes, so no consumer gains a second input path only to
+lose it. Moving consumers keeps each one's tuned shape, not its exact numbers; tests assert
+properties such as more skill never slowing an action and the bounds holding.
 
 ### 2. Timed status effects
 
