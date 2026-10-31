@@ -1003,6 +1003,7 @@ describe('input replay', () => {
       surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
       stamp: (chunk) => fixtureSite.stamp(chunk),
+      supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
@@ -1280,6 +1281,7 @@ describe('input replay', () => {
       surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
       stamp: (chunk) => fixtureSite.stamp(chunk),
+      supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>

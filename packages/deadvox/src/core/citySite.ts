@@ -8,10 +8,19 @@ import type { PublicCartographicFeature } from './publicCartography.ts';
 import type { Scale } from './scale.ts';
 import { cityRowDepth } from './settlementPools.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { type FurnitureSpawn, furnitureOf, lootSourcesOf, rectDistance, type Site, type ZombieSpawn } from './site.ts';
+import {
+  type FurnitureSpawn,
+  furnitureOf,
+  lootSourcesOf,
+  type Rect,
+  rectDistance,
+  type Site,
+  SupplyFootprints,
+  type ZombieSpawn,
+} from './site.ts';
 import { sitePalette } from './sitePalette.ts';
 import { stampChunk } from './structure.ts';
-import { footprint, type Placement, stampPlacement } from './templates.ts';
+import { footprint, type Placement, placedPieces, stampPlacement } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
 const mod = (n: number, m: number) => ((n % m) + m) % m;
@@ -25,6 +34,7 @@ export class CitySite implements Site {
   protected readonly byColumn = new Map<string, Placement[]>();
   private readonly paving: number;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
+  private readonly supplyFootprints: SupplyFootprints;
 
   constructor(seed: number, registry: Registry, scale: Scale, plan: CityPlan) {
     if (scale.blockSize !== TEMPLATE_BLOCK_SIZE) {
@@ -43,6 +53,10 @@ export class CitySite implements Site {
           plan.composition?.lootSources.find((source) => source.placement === placement)?.fixedLoot,
         ),
       ),
+    );
+    this.supplyFootprints = new SupplyFootprints(
+      plan.placements.flatMap(placedPieces),
+      [...this.lootColumns.values()].flat(),
     );
     this.spawn = { pos: plan.spawn.map((value) => value * scale.blockSize) as Vec3, yaw: -Math.PI / 2 };
     const paved = plan.grid.paving ?? [
@@ -141,6 +155,10 @@ export class CitySite implements Site {
         stampPlacement(chunk, placement);
       }
     }
+  }
+
+  supplySourcesIn(area: Rect) {
+    return this.supplyFootprints.in(area);
   }
 
   lootPointsIn(cx: number, cz: number): readonly LootSpawnPoint[] {

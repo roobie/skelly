@@ -123,6 +123,7 @@ describe('fixture save/load continuation', () => {
       surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
       stamp: () => undefined,
+      supplySourcesIn: () => [],
       lootPointsIn: () => [],
       furnitureIn: () => [],
       zombiesIn: () => [marker],

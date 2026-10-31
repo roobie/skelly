@@ -3,7 +3,7 @@ import { blockId, type Registry } from '../../src/core/content.ts';
 import { toChunk, type Vec3 } from '../../src/core/coords.ts';
 import { type LootPointSource, lootPointsByColumn } from '../../src/core/loot.ts';
 import type { Scale } from '../../src/core/scale.ts';
-import { fillFurnitureLoot, type Site } from '../../src/core/site.ts';
+import { fillFurnitureLoot, type Site, SupplyFootprints } from '../../src/core/site.ts';
 import fixture from './mods/reading-world.json' with { type: 'json' };
 
 export const readingWorld = (registry: Registry, seed: number, scale: Scale): Site => {
@@ -38,6 +38,7 @@ export const readingWorld = (registry: Registry, seed: number, scale: Scale): Si
     stamp: () => {
       // The authored terrain is the entire walking surface; no structure stamps are needed.
     },
+    supplySourcesIn: (area) => new SupplyFootprints(furniture, [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) =>
       fillFurnitureLoot(

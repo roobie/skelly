@@ -52,6 +52,9 @@ export class Forest implements Site {
   lootPointsIn() {
     return [];
   }
+  supplySourcesIn() {
+    return [];
+  }
   furnitureIn() {
     return [];
   }

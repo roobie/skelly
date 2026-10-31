@@ -13,6 +13,7 @@ import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
+import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -68,7 +69,7 @@ import { climb, LadderHold } from '../core/ladders.ts';
 import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
-import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
+import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
@@ -870,21 +871,7 @@ export const createSession = (options: SessionOptions) => {
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
-  const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const spawn of source.furnitureIn(cx, cz)) {
-      inventory.furnishSpawn(spawn);
-    }
-    for (const point of source.lootPointsIn(cx, cz)) {
-      if (point.channel !== 'ground') {
-        continue;
-      }
-      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point), scale.blockSize)) {
-        if (!inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: point.destination })) {
-          throw new Error(`ground item "${rolled.type}" does not fit in its pile`);
-        }
-      }
-    }
-  };
+  const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
   const fuses = new Fuses(
     registry,
     Array.from(inventory.items(), ({ item }) => item),
@@ -2725,14 +2712,10 @@ export const createSession = (options: SessionOptions) => {
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
     },
+    projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {
-      const key = `${cx},${cz}`;
-      if (!rolledColumns.has(key)) {
-        generateColumnSupply(cx, cz, source);
-        // Empty columns also stay rolled: absence of furniture or a surviving pile is not fresh supply.
-        rolledColumns.add(key);
-      }
+      columnSupply.arrive(cx, cz, source);
       spawner.onColumn({ cx, cz, site: source, registry, zombies: zombieSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),

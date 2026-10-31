@@ -15,7 +15,14 @@ import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
 import { focusPose, ShowroomCatalogue } from '../core/showroom.ts';
-import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Site } from '../core/site.ts';
+import {
+  type ColumnSource,
+  type FurnitureSpawn,
+  fillFurnitureLoot,
+  type Rect,
+  type Site,
+  SupplyFootprints,
+} from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
@@ -143,6 +150,15 @@ export class DebugTestHouseSite implements Site {
     return [...this.house.lootPointsIn(cx, cz), ...(this.lootPoints.get(`${cx},${cz}`) ?? [])];
   }
 
+  supplySourcesIn(area: Rect) {
+    return [
+      ...this.house.supplySourcesIn(area),
+      ...this.range.supplySourcesIn(area),
+      ...(this.catalogue?.supplySourcesIn(area) ?? []),
+      ...new SupplyFootprints([this.rack, this.target], [...this.lootPoints.values()].flat()).in(area),
+    ];
+  }
+
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     const spawns = [
       ...this.house.furnitureIn(cx, cz),
@@ -258,6 +274,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     spawn: built?.spawn ?? { pos: [0, groundAt(0, 0), 0], yaw: 0 },
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? [],
     furnitureIn: (cx, cz) => built?.furnitureIn(cx, cz) ?? [],
+    supplySourcesIn: (area) => built?.supplySourcesIn(area) ?? [],
     zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [],
     hordesIn: (cx, cz) => built?.hordesIn?.(cx, cz) ?? [],
   };
