@@ -12,12 +12,12 @@ const stock = (): FixedLootItemDef[] => [
   { item: RESULT, craftedLiquids: [{ liquid: STOCK, volumeMicrolitres: 200 }] },
   { item: VESSEL, liquidContents: { kind: 'filled', liquid: STOCK, volumeMicrolitres: 100 } },
 ];
-const pack = (items: unknown[]) =>
+const pack = (items: unknown[], data = liquidRecoveryData()) =>
   buildFixtureRegistry([
     {
       source: 'fixture-stock-liquids',
       data: {
-        ...liquidRecoveryData(),
+        ...data,
         inventory: inventoryContent.inventory,
         blocks: [{ id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' }],
         templates: [
@@ -50,6 +50,28 @@ describe('fixed stock liquid state', () => {
     expect(instances[0]!.craftedLiquids![0]).not.toBe(rolled[0]!.craftedLiquids![0]);
     expect(instances[1]!.liquidContents).not.toBe(rolled[1]!.liquidContents);
   });
+  it.each(['disassembly', 'salvage', 'neither'] as const)(
+    'refuses unsupported crafted-liquid stock (%s)',
+    (capability) => {
+      const data = liquidRecoveryData();
+      data.recipes = [];
+      const result = data.items.find(({ id }) => id === RESULT)!;
+      if (!('disassembly' in result)) {
+        throw new Error('Missing fixture recovery capabilities');
+      }
+      if (capability === 'disassembly') {
+        Reflect.deleteProperty(result.disassembly, 'liquidRecovery');
+      } else if (capability === 'salvage') {
+        Reflect.deleteProperty(result, 'salvageLiquidRecovery');
+      } else {
+        for (const field of ['disassembly', 'salvage', 'salvageTimeGameMinutes', 'salvageLiquidRecovery']) {
+          Reflect.deleteProperty(result, field);
+        }
+      }
+      expect(pack([{ item: RESULT }], data).issues).toEqual([]);
+      expect(pack([stock()[0]!], data).issues).not.toEqual([]);
+    },
+  );
   it.each(['craftedLiquids', 'liquidContents'] as const)(
     'refuses an unknown liquid in %s at content admission',
     (field) => {

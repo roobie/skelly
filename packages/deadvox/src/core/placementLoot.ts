@@ -1,4 +1,4 @@
-import type { Registry } from './content.ts';
+import type { ItemDef, Registry } from './content.ts';
 import { assertCraftedLiquids, assertSavedLiquidContents, couldFit, ItemFactory, snapshotItem } from './items.ts';
 import { type LootContext, placedTypeIssue, withLootDepth } from './loot.ts';
 import { slotsReason } from './magazine.ts';
@@ -7,6 +7,19 @@ import { reachTuning } from './reach.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type CompiledTemplate, type Placement, placedPieces } from './templates.ts';
 
+const craftedRecoveryIssue = (item: ItemDef): string | undefined => {
+  if (!(item.disassembly || item.salvage)) {
+    return 'crafted liquid stock needs a recovery capability';
+  }
+  if (item.disassembly && !item.disassembly.liquidRecovery) {
+    return 'crafted liquid stock needs disassembly liquid recovery';
+  }
+  if (item.salvage && !item.salvageLiquidRecovery) {
+    return 'crafted liquid stock needs salvage liquid recovery';
+  }
+  return undefined;
+};
+
 const fixedLiquidIssue = (registry: Registry, fixed: FixedLootItemDef): string | undefined => {
   if (fixed.craftedLiquids === undefined && fixed.liquidContents === undefined) {
     return undefined;
@@ -14,6 +27,10 @@ const fixedLiquidIssue = (registry: Registry, fixed: FixedLootItemDef): string |
   try {
     const item = new ItemFactory().create(registry, fixed.item);
     if (fixed.craftedLiquids !== undefined) {
+      const recoveryIssue = craftedRecoveryIssue(registry.items.get(fixed.item)!);
+      if (recoveryIssue !== undefined) {
+        return recoveryIssue;
+      }
       item.craftedLiquids = fixed.craftedLiquids;
     }
     if (fixed.liquidContents !== undefined) {

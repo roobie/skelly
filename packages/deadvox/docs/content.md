@@ -206,9 +206,13 @@ Scenario lead references may carry fixed loot on their template's furniture anch
 
 Fixed stock may author liquid instance state so test-house looks can begin with a
 crafted recovery source and deliberately filled or empty vessels, without runtime
-fixture injection. It uses the same representation and validity rules as ordinary
-items; stock must not admit unknown liquids or contents an instance cannot hold.
-This is a narrow authoring capability, not permission to embed saved item trees.
+fixture injection. It shares ordinary items' liquid representation and instance
+validation, so stock cannot admit unknown liquids or contents an instance cannot
+hold. Authored provenance also requires a recoverable type with liquid recovery
+for every operation it supports: selecting another recovery operation must not
+turn valid stock into an inventory-planning failure. Unrecoverable records are
+refused because they cannot serve the recovery look. This is a narrow authoring
+capability, not permission to embed saved item trees.
 See `src/core/schema.ts`, `FixedLootItem`; `src/core/placementLoot.ts`,
 `fixedItemIssue`; `src/core/loot.ts`, `fixedItems`; and `src/core/inventory.ts`,
 `Inventory.createRolled`.
