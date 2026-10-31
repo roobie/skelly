@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import type { PartDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { IDENTITY } from '@skelly/engine/foundation/math.ts';
 import {
@@ -8,17 +9,28 @@ import {
   validateExtrudedPolygon,
   worldSolid,
 } from '@skelly/engine/shapes/geometry.ts';
-import type { Box } from '@skelly/engine/shapes/solid.ts';
+import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, LOWER_LAYOUTS } from '../src/gun/parts.ts';
-import { OPEN_TRIGGER_GUARD } from '../src/gun/roundedTriggerGuard.ts';
+import { isTriggerBlade, OPEN_TRIGGER_GUARD } from '../src/gun/roundedTriggerGuard.ts';
 import { TRIGGER_GUARDS } from '../src/gun/triggerGuards.ts';
 import { loadCorpus, loadFixture } from './helpers.ts';
 
 const ROOT = resolve(import.meta.dirname, '../../..');
+
+/** The part has trigger blades, and each one lies in its finger space. */
+const hasPlacedTrigger = (def: PartDef): boolean => {
+  const finger = worldSolid(IDENTITY, {
+    id: 'finger',
+    kind: 'box',
+    box: def.keepOuts.find(({ id }) => id === 'trigger-finger')!.box,
+  });
+  const blades = def.solids.filter(({ id }) => isTriggerBlade(id));
+  return blades.length > 0 && blades.every((blade) => penetrationWorld(worldSolid(IDENTITY, blade), finger) > 1e-8);
+};
 
 // The lower each content block shapes.
 const CONTENT_LOWERS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
@@ -112,18 +124,21 @@ describe('trigger guards', () => {
       const owners = defs.filter((def) => def.keepOuts.some(({ id }) => id === 'trigger-finger'));
       expect(owners.length, source).toBeGreaterThan(0);
       for (const def of owners) {
-        const finger = worldSolid(IDENTITY, {
-          id: 'finger',
-          kind: 'box',
-          box: def.keepOuts.find(({ id }) => id === 'trigger-finger')!.box,
-        });
-        const inFinger = def.solids.filter(
-          (solid) =>
-            !solid.id.startsWith('trigger-guard-') && penetrationWorld(worldSolid(IDENTITY, solid), finger) > 1e-8,
-        );
-        expect(inFinger.length, `${source} has a trigger in its finger space`).toBeGreaterThan(0);
+        expect(hasPlacedTrigger(def), `${source} has a trigger blade in its finger space`).toBe(true);
       }
     }
+  });
+  it('does not take an unrelated solid in the finger space for a trigger', () => {
+    const lower = FAMILIES.lower!.build({ layout: 'ar' });
+    expect(hasPlacedTrigger(lower)).toBe(true);
+    const finger = lower.keepOuts.find(({ id }) => id === 'trigger-finger')!.box;
+    const obstruction: Solid = {
+      id: 'receiver-obstruction',
+      kind: 'box',
+      box: { ...finger, half: [finger.half[0] * 0.8, finger.half[1] * 0.8, finger.half[2] * 0.8] },
+    };
+    const solids = [...lower.solids.filter(({ id }) => !isTriggerBlade(id)), obstruction];
+    expect(hasPlacedTrigger({ ...lower, solids })).toBe(false);
   });
 
   // Check trigger-guard clearance across valid fixtures and published designs; broken-* fixtures intentionally violate geometry rules.

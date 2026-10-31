@@ -25,7 +25,7 @@ import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic, opticRailContactSolids } from './optics.ts';
 import { FIRING_GRIP, G3_MAGAZINE_WELL_TILT, HANDGUARD_CLEARANCE, LOWER_LAYOUTS } from './parts.ts';
-import { OPEN_TRIGGER_GUARD } from './roundedTriggerGuard.ts';
+import { isTriggerBlade, OPEN_TRIGGER_GUARD } from './roundedTriggerGuard.ts';
 
 /**
  * Rules judge only what they can place. A part with no path to the root (or a
@@ -476,11 +476,12 @@ const triggerGuardClosureIssue = (
   if (receivers.length === 0) {
     return `${part}'s trigger guard is not closed by the receiver.`;
   }
-  // Only the closing receiver must stay out of the finger space: a trigger blade hangs inside it.
+  // The trigger blade hangs in the finger space by design; nothing else of the part may enter it.
   const finger = def.keepOuts.find(({ id }) => id === 'trigger-finger')!;
   const fingerWorld = worldSolid(IDENTITY, { id: 'finger', kind: 'box', box: finger.box });
-  if (receivers.some((body) => penetrationWorld(fingerWorld, worldSolid(IDENTITY, body)) > 1e-8)) {
-    return `${part}'s trigger finger overlaps the receiver.`;
+  const obstructions = bodySolids.filter(({ id }) => !isTriggerBlade(id));
+  if (obstructions.some((body) => penetrationWorld(fingerWorld, worldSolid(IDENTITY, body)) > 1e-8)) {
+    return `${part}'s trigger finger overlaps its frame or lower.`;
   }
   return undefined;
 };

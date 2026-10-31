@@ -309,6 +309,13 @@ describe('open trigger guard rule', () => {
       }),
     ],
     [
+      'same-part obstruction in the finger space',
+      (lower) => ({
+        ...lower,
+        solids: [...lower.solids, box('receiver-obstruction', [0.2, 0.3, -0.8], [1.8, 2.7, 0.8])],
+      }),
+    ],
+    [
       'bottom disconnected from corner',
       (lower) => ({
         ...lower,

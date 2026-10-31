@@ -51,7 +51,7 @@ A guard whose grip stands behind it must not leave a thick block behind the trig
 
 Proportions and corner cuts belong to per-gun content because their size and angles differ between guns; see `src/gun/triggerGuards.jsonnet`. Exports carry neither authoring blocks nor builder arguments, so validation measures bar thickness, identifies the open shape by its part tag and establishes receiver closure geometrically rather than by a body-solid name; see `src/gun/rules.ts`, `triggerGuard`.
 
-Every exported gun shows a trigger. One shared blade serves guns without a traced trigger, so the shape stays one content entry, and it hangs from whatever closes the opening's top so it never floats; see `src/gun/roundedTriggerGuard.ts`, `triggerBlade`. Because the blade sits inside the finger space, validation keeps only the closing receiver out of it.
+Every exported gun shows a trigger. One shared blade serves guns without a traced trigger, so the shape stays one content entry, and it hangs from whatever closes the opening's top so it never floats; see `src/gun/roundedTriggerGuard.ts`, `triggerBlade`. A blade sits inside the finger space by design, so validation exempts trigger blades, named explicitly, from the finger-space check and nothing else: any other solid of the part there blocks the finger, and the engine's keep-out rule checks only other parts; see `src/gun/roundedTriggerGuard.ts`, `isTriggerBlade`.
 
 ## Testing
 

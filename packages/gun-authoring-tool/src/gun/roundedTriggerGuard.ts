@@ -3,6 +3,9 @@ import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import type { TriggerBladeShape, TriggerGuardDimensions } from './triggerGuards.ts';
 
 export const OPEN_TRIGGER_GUARD = 'trigger-guard-open-rear';
+/** Every trigger blade's solid id is this, or this plus a segment index. */
+export const TRIGGER_BLADE_ID = 'trigger-blade';
+export const isTriggerBlade = (id: string): boolean => id === TRIGGER_BLADE_ID || id.startsWith(`${TRIGGER_BLADE_ID}-`);
 
 /** A trigger blade in the finger space, hanging from `topY`: the guard's top bar or the receiver that closes it. */
 export const triggerBlade = (finger: Box, shape: TriggerBladeShape, topY: number): Solid => {
@@ -17,7 +20,7 @@ export const triggerBlade = (finger: Box, shape: TriggerBladeShape, topY: number
   if (error) {
     throw new Error(`Trigger blade: ${error}`);
   }
-  return { id: 'trigger', kind: 'extruded-polygon', profile, z };
+  return { id: TRIGGER_BLADE_ID, kind: 'extruded-polygon', profile, z };
 };
 
 export const openTriggerGuard = (

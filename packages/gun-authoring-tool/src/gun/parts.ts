@@ -78,7 +78,7 @@ import {
   subtractConvexSection,
 } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
-import { openTriggerGuard, roundedTriggerGuardSolids, triggerBlade } from './roundedTriggerGuard.ts';
+import { openTriggerGuard, roundedTriggerGuardSolids, TRIGGER_BLADE_ID, triggerBlade } from './roundedTriggerGuard.ts';
 import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
 import { SMG_HANDLE_PROPORTIONS } from './smgHandleProportions.ts';
 import { cutSporterAction, sporterActionDetails, sporterFurniture, sporterLower, sporterStock } from './sporter.ts';
@@ -2759,7 +2759,7 @@ const compactSmgLower = (top: PortDef, withGuard: boolean): PartDef => {
     solids: [
       extrudedPolygon('trigger-housing', tracedProfile(traced.housing, origin), [-halfWidth, halfWidth]),
       ...wellSolids,
-      extrudedPolygon('trigger', tracedProfile(traced.trigger, origin), [-GRID, GRID]),
+      extrudedPolygon(TRIGGER_BLADE_ID, tracedProfile(traced.trigger, origin), [-GRID, GRID]),
       ...guardSolids,
     ],
     ports: [
@@ -3153,7 +3153,7 @@ const lower: PartFamily = {
                 ),
                 ...tracedTrigger.blade.segments.map((segment, index) =>
                   extrudedPolygon(
-                    `trigger-blade-${index}`,
+                    `${TRIGGER_BLADE_ID}-${index}`,
                     segment.map(([x, y]) => [x, fromBore(y)] as Vec2),
                     [-tracedTrigger.blade.halfWidthU, tracedTrigger.blade.halfWidthU],
                   ),
