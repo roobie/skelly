@@ -1,5 +1,77 @@
-import { clipPolygon } from '@skelly/engine/shapes/geometry.ts';
+import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
 import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
+import type { TriggerGuardDimensions } from './triggerGuards.ts';
+
+export const OPEN_TRIGGER_GUARD = 'trigger-guard-open-rear';
+
+export const openTriggerGuard = (
+  finger: Box,
+  dimensions: TriggerGuardDimensions,
+  ceilingY: number,
+  face: { xAt: (y: number) => number; straightTopY: number },
+): { solids: Solid[]; tags: string[] } => {
+  const topY = finger.center[1] - finger.half[1];
+  const bottomY = topY - dimensions.wallU;
+  const rearX = finger.center[0] - finger.half[0] - dimensions.clearanceU;
+  const innerFrontX = finger.center[0] + finger.half[0] + dimensions.clearanceU;
+  const frontX = innerFrontX + dimensions.wallU;
+  const z: readonly [number, number] = [
+    finger.center[2] - dimensions.halfWidthU,
+    finger.center[2] + dimensions.halfWidthU,
+  ];
+  const slope = Math.tan((dimensions.rearSlantDegrees * Math.PI) / 180);
+  const faceSlope = face.xAt(topY) - face.xAt(topY - 1);
+  const meetY = (bottomY + slope * (rearX - face.xAt(topY) + faceSlope * topY)) / (1 + slope * faceSlope);
+  const cutRun = dimensions.frontCutU / Math.tan((dimensions.frontCutDegrees * Math.PI) / 180);
+  if (finger.center[1] + finger.half[1] >= ceilingY) {
+    throw new Error('Trigger finger must be below the receiver ceiling.');
+  }
+  if (topY > face.straightTopY || meetY > face.straightTopY) {
+    throw new Error('Trigger corner exceeds the straight grip face.');
+  }
+  if (!(meetY > bottomY && meetY < topY && face.xAt(topY) < rearX)) {
+    throw new Error('Trigger corner slant is too steep or does not reach the grip.');
+  }
+  if (dimensions.frontCutU > dimensions.wallU || cutRun >= frontX - rearX) {
+    throw new Error('Trigger front cut exceeds the bar.');
+  }
+  const polygon = (name: string, profile: Vec2[]): Solid => {
+    const error = validateExtrudedPolygon(profile, z);
+    if (error) {
+      throw new Error(`Trigger guard ${name}: ${error}`);
+    }
+    return {
+      id: `trigger-guard-${name}`,
+      kind: 'extruded-polygon',
+      profile,
+      z,
+      display: { bevel: false, outline: false, mergeGroup: 'trigger-guard' },
+    };
+  };
+  return {
+    tags: [OPEN_TRIGGER_GUARD],
+    solids: [
+      {
+        id: 'trigger-guard-front',
+        kind: 'box',
+        box: boxFromMinMax([innerFrontX, topY, z[0]], [frontX, ceilingY, z[1]]),
+      },
+      polygon('bottom', [
+        [rearX, bottomY],
+        [frontX - cutRun, bottomY],
+        [frontX, bottomY + dimensions.frontCutU],
+        ...(dimensions.frontCutU < dimensions.wallU ? [[frontX, topY] as Vec2] : []),
+        [rearX, topY],
+      ]),
+      polygon('corner', [
+        [rearX, bottomY],
+        [rearX, topY],
+        [face.xAt(topY), topY],
+        [face.xAt(meetY), meetY],
+      ]),
+    ],
+  };
+};
 
 /** A faceted rounded loop, partitioned into the same four logical walls as a box guard. */
 export const roundedTriggerGuardSolids = (

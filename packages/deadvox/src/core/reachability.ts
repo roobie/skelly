@@ -41,8 +41,17 @@ const addLoot = (registry: Registry, roots: ReadonlySet<string>): Set<string> =>
   return items;
 };
 
-const inputsReady = (recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
-  recipe.components.every((group) => group.some((component) => items.has(component.item)));
+const liquidReady = (registry: Registry, items: ReadonlySet<string>, liquid: string): boolean =>
+  [...items].some((id) => {
+    const contents = registry.items.get(id)?.vessel?.initialContents;
+    return contents?.kind === 'filled' && contents.liquid === liquid;
+  });
+const inputsReady = (registry: Registry, recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
+  recipe.components.every((group) =>
+    group.some((component) =>
+      'item' in component ? items.has(component.item) : liquidReady(registry, items, component.liquid),
+    ),
+  );
 
 const CALIBRE_SLUG_CHARACTERS = new Map([
   ['.', '_d_'],
@@ -134,7 +143,7 @@ const closure = ({ registry, found, tools, knowledge, skills, workstationQualiti
         recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
         Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
-        inputsReady(recipe, items) &&
+        inputsReady(registry, recipe, items) &&
         (!tools ||
           Object.entries(recipe.qualities).every(([quality, level]) =>
             qualityReady({ registry, items, workstationQualities }, quality, level),
@@ -354,23 +363,24 @@ const knowledgeIssues = (recipe: RecipeDef, knowledge: ReadonlySet<string>): Rec
         },
       ];
 
-const componentIssues = (recipe: RecipeDef, components: ReadonlySet<string>): RecipeDiagnostic[] => {
-  const issues: RecipeDiagnostic[] = [];
-  for (let groupIndex = 0; groupIndex < recipe.components.length; groupIndex += 1) {
-    const group = recipe.components[groupIndex]!;
-    for (let alternativeIndex = 0; alternativeIndex < group.length; alternativeIndex += 1) {
-      const component = group[alternativeIndex]!;
-      if (!components.has(component.item)) {
-        issues.push({
-          recipe: recipe.id,
-          path: `.components[${groupIndex}][${alternativeIndex}].item`,
-          message: `item "${component.item}" is neither found nor craftable`,
-        });
-      }
-    }
-  }
-  return issues;
-};
+const componentIssues = (registry: Registry, recipe: RecipeDef, components: ReadonlySet<string>): RecipeDiagnostic[] =>
+  recipe.components.flatMap((group, groupIndex) =>
+    group.flatMap((component, alternativeIndex) => {
+      const kind = 'item' in component ? 'item' : 'liquid';
+      const id = 'item' in component ? component.item : component.liquid;
+      const ready =
+        'item' in component ? components.has(component.item) : liquidReady(registry, components, component.liquid);
+      return ready
+        ? []
+        : [
+            {
+              recipe: recipe.id,
+              path: `.components[${groupIndex}][${alternativeIndex}].${kind}`,
+              message: `${kind} "${id}" is neither found nor craftable`,
+            },
+          ];
+    }),
+  );
 
 const skillIssues = (recipe: RecipeDef, skills: ReadonlySet<string>): RecipeDiagnostic[] => {
   const issues: RecipeDiagnostic[] = [];
@@ -421,7 +431,7 @@ const recipeDiagnostics = (context: RecipeDiagnosticContext): { issues: RecipeDi
   for (const recipe of context.registry.recipes.values()) {
     issues.push(
       ...knowledgeIssues(recipe, context.knowledge),
-      ...componentIssues(recipe, context.components),
+      ...componentIssues(context.registry, recipe, context.components),
       ...skillIssues(recipe, context.skills),
       ...qualityIssues(recipe, context),
       ...workstationIssues(recipe, context.workstations),
@@ -449,7 +459,7 @@ const canPracticeRecipe = (
   },
 ): boolean =>
   knowledge.has(recipe.id) &&
-  inputsReady(recipe, tools) &&
+  inputsReady(registry, recipe, tools) &&
   Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
   Object.entries(recipe.qualities).every(([quality, level]) =>
     qualityReady({ registry, items: tools, workstationQualities }, quality, level),

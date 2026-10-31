@@ -36,9 +36,9 @@ Food and drink use their food capability; painkillers use their analgesic capabi
 
 ## Crafting
 
-Craft work owns progress and exact input subtrees so interruption cannot lose materials or duplicate spending. Hands, tools and workstation remain live requirements rather than promises made by a preview. See `src/core/craftWork.ts`, `craftActionHooks`, and `src/core/inventory.ts`, `Inventory.beginWork`.
+Craft work owns progress and escrows item inputs so interruption cannot lose materials or duplicate spending. Liquid stays in the vessels chosen at begin until completion: switching vessels would spend one the player did not see, and unfinished work holding no liquid means taking it apart loses none. Hands, tools and workstation remain live requirements rather than promises made by a preview. See `src/core/craftWork.ts`, `craftActionHooks`, and `src/core/inventory.ts`, `Inventory.beginWork` and `Inventory.releaseWork`.
 
-Recipes are content. Alternatives may compete for the same stock, so planning must find a feasible allocation rather than choose each group independently. Tools stay where they are and cannot also be consumed as components. A player's preference may choose among alternatives, but it never silently falls back. Filled containers are not component stock.
+Recipes are content. Alternatives may compete for the same stock, so planning must find a feasible allocation rather than choose each group independently. Tools stay where they are and cannot also be consumed as item components. A player's alternative or source-vessel choice never silently falls back. Liquid is material and the vessel is not, so a recipe consumes liquid from reachable vessels while each vessel stays its owner's item. A vessel serving as a tool still supplies liquid because it is not consumed. Filled containers are not component stock, including when fitted to another component. See `src/core/crafting.ts`, `planCraft`, `src/core/items.ts`, `craftComponentEligible`, and `src/core/inventory.ts`, `Inventory.planLiquidDraws`.
 
 The planner is a disposable view. Commands obtain current reach and plan again; editing a returned plan cannot change later results. See `src/core/crafting.ts`, `planCraft`, and `src/core/longAction.ts`, `LongActions`.
 

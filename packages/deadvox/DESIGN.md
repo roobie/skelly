@@ -2,6 +2,7 @@
 read_if:
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
+  - you author recipes or item take-apart yields
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -1711,9 +1712,16 @@ policy. The item yield/work projection is `src/core/disassembly.ts`,
 replace retained parts with generated copies. See `src/core/content.ts`,
 `checkDisassembly`, `checkMaterialCycles` and `checkRecipes`, and `docs/crafting.md`.
 
-No craft-and-take-apart cycle may yield more material than it consumes. Cloth
-strips return to a rag only by sewing several together. Endless material breaks
-scarcity.
+Gainful cycles are forbidden because endless material breaks scarcity. A gainful
+cycle is a finite combination of crafting, disassembly, salvage or unpack
+operations whose total item balance is
+nonnegative for every item and positive for at least one. No exchange rate across
+different items is implied: gaining scrap while spending nails is bounded, not a
+gainful cycle. Starting stock may supply intermediate inputs, so discovering a
+source or meeting skill and tool requirements does not excuse an unbounded loop.
+Solid recipe alternatives are checked, including recipes with several inputs;
+recipes requiring a liquid-only component group are outside this item-stock rule.
+See `src/core/content.ts`, `checkMaterialCycles`.
 
 Recipe knowledge may come from a book, a skill level, either, or the starting
 set. A book shortcuts the skill grind; a skilled character does not need the

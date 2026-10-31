@@ -31,6 +31,9 @@ const recipeInputs = (definition: RecipeDef, source: Registry): Map<string, numb
   const required = new Map<string, number>();
   for (const alternatives of definition.components) {
     for (const component of alternatives) {
+      if (!('item' in component)) {
+        continue;
+      }
       required.set(component.item, (required.get(component.item) ?? 0) + component.count);
     }
   }
@@ -209,6 +212,7 @@ describe('pure craft planner', () => {
     const plan = (work: number): WorkPlan => ({
       kind: 'craft',
       recipe: 'fixture_instant',
+      liquids: [],
       components: [],
       tools: [],
       gather: 0,
@@ -375,12 +379,12 @@ describe('pure craft planner', () => {
       ],
       [{ item: 'rag', count: 2 }],
     ]);
-    const preferred = planCraft(definition, snapshot, character, { 0: 'stick' });
+    const preferred = planCraft(definition, snapshot, character, { prefer: { 0: { kind: 'item', item: 'stick' } } });
     expect('plan' in preferred && preferred.plan.components.map((component) => component.item)).toEqual([
       items[0],
       items[2],
     ]);
-    const refused = planCraft(definition, snapshot, character, { 0: 'rag' });
+    const refused = planCraft(definition, snapshot, character, { prefer: { 0: { kind: 'item', item: 'rag' } } });
     expect('missing' in refused).toBe(true);
     if (!('missing' in refused)) {
       throw new Error('impossible preference unexpectedly fell back to another plan');
