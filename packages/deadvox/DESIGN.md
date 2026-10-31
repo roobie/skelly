@@ -1403,7 +1403,8 @@ a two-handed item occupies both hands. What is held appears in first person,
 what is dropped appears in a pile, and furniture shows its contained items. A
 held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
-source is working. The lamp's authored grip must leave the flame visible; see
+source is working. Clear glass does not hide a flame because it still shows ignition.
+The lamp's authored grip must leave the flame visible; see
 `packages/thing-authoring-tool/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
