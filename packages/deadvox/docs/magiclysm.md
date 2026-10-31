@@ -296,13 +296,49 @@ consumer, as analgesics are for effects; mana is the second.
 
 ### 4. Traits and start state
 
-Neither traits nor start state is content. Schools need trait entries with exclusive
-groups, and a start state that grants one; the start kit is code (`src/game/loadout.ts`,
-`startingLoadout`). The start-state design is `docs/url-mods.md`, "Start state in mods".
+Neither traits nor start state is content: schools need trait entries, and the start kit
+is code (`src/game/loadout.ts`, `startingLoadout`). The start-state design is
+`docs/url-mods.md`, "Start state in mods". Traits change during play, which the base game
+needs as much as the mod: mutation pressure spreads outward from the labs (`DESIGN.md`,
+"Points of interest"), so mutation is the base-game consumer and gap 4 need not wait for
+magic.
 
-A trait can require attribute levels, so perception gates sense traits and intellect could
-gate a school. The requirement is content on the trait, so every attribute can gate traits
-through the same mechanism.
+#### What a trait carries
+
+- **Modifiers:** a trait is the main long-lived modifier source, such as a fast healer, a
+  clotting disorder or a school's affinity.
+- **Grants:** pools, abilities and effects. A school grants the mana pool, so a character
+  without magic carries no empty pool.
+- **Requirements:** attribute and skill levels, and other traits held or not held, so
+  perception gates sense traits and intellect can gate a school through one mechanism.
+- **Exclusive groups:** schools are one group, and a body is not both a fast and a slow
+  healer.
+- **Lines:** a trait can replace the one before it, which gives mutation chains and
+  Magiclysm's attunements, which need levels in two schools.
+- **Body cues:** a mutation shows on the body before any list names it.
+
+#### Gaining and losing traits
+
+Each route is a trigger, and every gain rechecks requirements, exclusive groups and lines:
+
+- **Start state:** grants traits once.
+- **Earned:** requirements met and a trigger fired, such as reading a text, a ritual or a
+  skill level. Content selects per trait whether it arrives when the trigger fires or is
+  offered as a choice; a choice needs UI, so it waits for mod UI (gap 9) as creation
+  screens do.
+- **Mutation:** exposure accumulates as a condition the body owns, rising near lab sites
+  and falling slowly. Crossing a threshold draws a gain by weight from a trait category,
+  respecting lines and exclusive groups; the engine draws the roll at the threshold.
+
+Requirements are checked at gain against innate plus conditioned values, never current
+ones, so a drink or pain never makes a held trait lapse. A held trait stays held until a
+cure removes it, a line replaces it, or an effect suppresses it for the effect's lifetime
+without removing it, as a dispel or a serum does.
+
+Each held trait is saved with its source and when it was gained, so a removal knows what
+it undoes and a save shows how the character came to be. Known traits show on the skills
+tab (`src/ui/inventoryTabs.ts`); a mutation surfaces through the body first, so it is
+noticed before it is named.
 
 ### 5. Mod infrastructure
 
