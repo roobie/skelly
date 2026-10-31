@@ -3,7 +3,7 @@
 // enough to evaluate per voxel, per bone (see voxelize.ts).
 
 import type { Mat3, Vec3 } from './math.ts';
-import { mulMV, sub, transpose } from './math.ts';
+import { IDENTITY_M, mulMM, mulMV, sub, transpose } from './math.ts';
 
 interface Capsule {
   readonly kind: 'capsule';
@@ -169,6 +169,32 @@ export const topOf = (shape: Shape): number => {
     row.reduce((sum, value, axis) => sum + Math.abs(value) * (shape.half[axis]! - shape.round), 0) +
     shape.round
   );
+};
+
+/** Moves a shape by a uniform similarity: `point` maps positions, `rotation` is that map's rotation and
+ * `factor` its uniform scale, so radii and rounding follow the same map as the positions. */
+export const transformShape = (shape: Shape, point: (p: Vec3) => Vec3, rotation: Mat3, factor: number): Shape => {
+  switch (shape.kind) {
+    case 'capsule':
+      return { ...shape, a: point(shape.a), b: point(shape.b), ra: shape.ra * factor, rb: shape.rb * factor };
+    case 'ellipsoid':
+      return {
+        ...shape,
+        center: point(shape.center),
+        radii: [shape.radii[0] * factor, shape.radii[1] * factor, shape.radii[2] * factor],
+        rot: mulMM(rotation, shape.rot ?? IDENTITY_M),
+      };
+    case 'box':
+      return {
+        ...shape,
+        center: point(shape.center),
+        half: [shape.half[0] * factor, shape.half[1] * factor, shape.half[2] * factor],
+        round: shape.round * factor,
+        rot: mulMM(rotation, shape.rot ?? IDENTITY_M),
+      };
+    default:
+      throw new Error(`unknown shape kind "${(shape as Shape).kind}"`);
+  }
 };
 
 export const union = (boxes: readonly Aabb[]): Aabb => {

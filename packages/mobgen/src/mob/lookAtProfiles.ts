@@ -1,3 +1,4 @@
+import type { Template } from '../core/template.ts';
 import data from './acidTemplate.json' with { type: 'json' };
 import skeleton from './skeletonTemplate.json' with { type: 'json' };
 
@@ -42,4 +43,13 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,
   },
+};
+
+/** A template's profile, or its recipe base's when it has none of its own. */
+export const lookAtProfileFor = (template: Pick<Template, 'name' | 'base'>): LookAtProfile => {
+  const profile = LOOK_AT_PROFILES[template.name] ?? (template.base ? LOOK_AT_PROFILES[template.base] : undefined);
+  if (!profile) {
+    throw new Error(`template "${template.name}" has no look-at profile`);
+  }
+  return profile;
 };

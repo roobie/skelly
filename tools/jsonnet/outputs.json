@@ -517,6 +517,10 @@
       "output": "packages/mobgen/src/mob/ragdoll.json"
     },
     {
+      "source": "packages/mobgen/src/mob/recipeTemplates.jsonnet",
+      "output": "packages/mobgen/src/mob/recipeTemplates.json"
+    },
+    {
       "source": "packages/mobgen/src/mob/skeletonTemplate.jsonnet",
       "output": "packages/mobgen/src/mob/skeletonTemplate.json"
     },

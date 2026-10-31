@@ -51,13 +51,20 @@ import {
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
-import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
+import { type LookAtProfile, lookAtProfileFor } from '../mob/lookAtProfiles.ts';
 import { flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
+import { RECIPE_TEMPLATES } from '../mob/recipeTemplates.ts';
 import { skeletonTemplate } from '../mob/skeletonTemplate.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
 // Comparison-only bodies are explicit viewer opt-ins rather than consumer entries.
-const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate, acidTemplate, skeletonTemplate];
+const TEMPLATES: readonly Template[] = [
+  ...VIEWER_TEMPLATES,
+  dogTemplate,
+  acidTemplate,
+  skeletonTemplate,
+  ...RECIPE_TEMPLATES,
+];
 
 /** Plans posed by the shared humanoid walk, idle, attack and death. */
 const usesHumanoidRig = (template: Template): boolean =>
@@ -443,7 +450,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   let loaded: Loaded = {
     genome,
     template,
-    lookAt: LOOK_AT_PROFILES[template.name]!,
+    lookAt: lookAtProfileFor(template),
     lookAtState: LOOK_AT_REST,
     realized,
     actor,

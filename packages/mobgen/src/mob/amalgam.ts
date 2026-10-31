@@ -1,7 +1,7 @@
 import type { Body, Feature } from '../core/body.ts';
 import { type BodyPlanDef, registerBodyPlan, sampleParams } from '../core/generate.ts';
 import { add, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, scale, sub, type Vec3 } from '../core/math.ts';
-import { aabbOf } from '../core/sdf.ts';
+import { aabbOf, transformShape } from '../core/sdf.ts';
 import type { Genome, Wound } from '../core/template.ts';
 import type { Voxels } from '../core/voxelize.ts';
 import { heightHeadBudgets } from './budgets.ts';
@@ -37,36 +37,8 @@ interface ModulePlacement {
 const placementPoint = (point: Vec3, placement: ModulePlacement): Vec3 =>
   add(mulMV(placement.rotation, scale(sub(point, placement.root), placement.scale)), placement.offset);
 
-const rotateShape = (shape: Feature['shape'], placement: ModulePlacement): Feature['shape'] => {
-  const { rotation } = placement;
-  switch (shape.kind) {
-    case 'capsule':
-      return {
-        ...shape,
-        a: placementPoint(shape.a, placement),
-        b: placementPoint(shape.b, placement),
-        ra: shape.ra * placement.scale,
-        rb: shape.rb * placement.scale,
-      };
-    case 'ellipsoid':
-      return {
-        ...shape,
-        center: placementPoint(shape.center, placement),
-        radii: [shape.radii[0] * placement.scale, shape.radii[1] * placement.scale, shape.radii[2] * placement.scale],
-        rot: mulMM(rotation, shape.rot ?? [1, 0, 0, 0, 1, 0, 0, 0, 1]),
-      };
-    case 'box':
-      return {
-        ...shape,
-        center: placementPoint(shape.center, placement),
-        half: [shape.half[0] * placement.scale, shape.half[1] * placement.scale, shape.half[2] * placement.scale],
-        round: shape.round * placement.scale,
-        rot: mulMM(rotation, shape.rot ?? [1, 0, 0, 0, 1, 0, 0, 0, 1]),
-      };
-    default:
-      throw new Error(`unknown shape kind "${(shape as Feature['shape']).kind}"`);
-  }
-};
+const rotateShape = (shape: Feature['shape'], placement: ModulePlacement): Feature['shape'] =>
+  transformShape(shape, (point) => placementPoint(point, placement), placement.rotation, placement.scale);
 
 const namespacedWounds = (member: number, wounds: readonly Wound[]): Wound[] =>
   wounds.map((wound) => ({ ...wound, bone: memberBone(member, wound.bone) }));

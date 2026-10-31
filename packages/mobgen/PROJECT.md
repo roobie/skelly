@@ -13,6 +13,7 @@ read_if:
   - "you're changing how a dead body falls or rests"
   - "you're changing the living leg-loss collapse into crawling"
   - "you're changing severed-limb or carved-flesh physics"
+  - "you're authoring a mob recipe or adding a recipe operator"
 ---
 
 # mobgen — procedural voxel actors
@@ -44,6 +45,18 @@ The viewer must not approve a fall the game never draws. Sharing the game's cont
 Contact rather than a pose rule should settle an open jaw. Acid bodies burst instead of falling. Limbs and carved flesh share the corpse world so a flying part can land on another body; sinking bodies must stop colliding so later falls cannot land on invisible flesh. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.startRagdoll`, `MobActorMeshes.finishDownedCorpse` and `MobActorMeshes.packCorpse`, and `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld`. Flesh has an independent presentation cap so carving cannot evict a corpse or a severed limb. Terrain follows the moving body because launch tuning must not outrun a fixed starting patch. See `packages/deadvox/src/render/amalgamFlesh.ts`, `FleshChunks`, `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld.buildGround`, and `src/mob/ragdoll.jsonnet`, `flesh`.
 
 Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
+
+## Recipes
+
+A recipe is an authoring-time list of steps layered on a template's body plan, so new mobs can be mixed from reusable operators instead of a new builder per creature. See `src/core/recipe.ts`, `applyRecipe`, and `src/core/generate.ts`, `build`.
+
+- **The base plan keeps the rig.** The plan still builds the base body, so poses, hit regions, wounds and every consumer that branches on `bodyPlan` treat a recipe mob like its base. A step may reshape, add and paint, but must not remove or rename a bone the base rig's poses drive. Bones a step adds have no pose entry and ride their parent rigidly. See `src/core/pose.ts`, `Pose`.
+- **Steps are addressed by id, not position.** A step's genome params carry its id as a prefix and it samples from its own stream keyed by seed and id, so adding, removing, reordering or disabling one step never rerolls another step or the base body. Tuning one step is only usable if the rest of the mob holds still. See `src/core/recipe.ts`, `sampleRecipeParams`, and `test/recipe.test.ts`.
+- **Operators are TypeScript, recipes are Jsonnet.** This follows the boundary above: algorithms stay in code, content stays declarative. A recipe is a list, so mixing is concatenation, and order matters because a graft copies whatever earlier steps put on its subtree. See `src/mob/recipeOps.ts`, `src/mob/recipeSteps.libsonnet` and `src/mob/recipeTemplates.jsonnet`.
+- **Operators never check feasibility.** A wild step may produce a body the validator rejects; `generateValid` then moves to the next seed, keeping the generator and the validator independent.
+- **Recipes stay comparison-only until approved,** so an experiment cannot reach a player through `consumableTemplate`.
+- **Grafted bones sit outside the base plan's hit regions,** so a consumer would not register hits on them. A recipe with grafts must not be marked ready until its plan's `regionBones` cover them.
+- **A recipe inherits its base's presentation.** Tables keyed by template name fall back to the recipe's base, so a recipe needs no entry of its own. See `src/core/template.ts`, `Template`, and `src/mob/lookAtProfiles.ts`, `lookAtProfileFor`.
 
 ## Body-plan constraints
 

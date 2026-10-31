@@ -10,6 +10,7 @@ import type { Body, BodyRegion } from './body.ts';
 import type { BoneMesh } from './mesh.ts';
 import { meshBones } from './mesh.ts';
 import { pick, type Rng, range, seededRng } from './random.ts';
+import { applyRecipe, recipeParamOrder, sampleRecipeParams } from './recipe.ts';
 import { type Budgets, type RuleBudgets, silhouetteSize, type ValidationProfile } from './rules.ts';
 import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByName, type Wound } from './template.ts';
 import { type Report, validate } from './validate.ts';
@@ -78,7 +79,13 @@ export const planOf = (name: BodyPlan): BodyPlanDef => {
 export const generate = (template: Template, seed: number, overrides?: { readonly voxelSize?: number }): Genome => {
   const rng = seededRng(seed);
   const { params, wounds } = planOf(template.bodyPlan).sample(rng, template);
-  return { template: template.name, seed, voxelSize: overrides?.voxelSize ?? template.voxelSize, params, wounds };
+  return {
+    template: template.name,
+    seed,
+    voxelSize: overrides?.voxelSize ?? template.voxelSize,
+    params: { ...params, ...sampleRecipeParams(seed, template.recipe) },
+    wounds,
+  };
 };
 
 /** Throws unless the genome is complete for its template's body plan: every param present and finite,
@@ -90,7 +97,7 @@ const checkGenome = (template: Template, genome: Genome): void => {
   if (!Number.isFinite(genome.voxelSize) || genome.voxelSize <= 0) {
     throw new Error(`${where}: voxelSize must be a positive finite number, got ${String(genome.voxelSize)}`);
   }
-  for (const name of plan.paramOrder) {
+  for (const name of [...plan.paramOrder, ...recipeParamOrder(template.recipe)]) {
     const value = genome.params[name];
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       throw new Error(`${where}: param "${name}" must be a finite number, got ${String(value)}`);
@@ -111,7 +118,7 @@ const checkGenome = (template: Template, genome: Genome): void => {
 export const build = (genome: Genome): Body => {
   const template = templateByName(genome.template);
   checkGenome(template, genome);
-  return planOf(template.bodyPlan).build(genome, template);
+  return applyRecipe(planOf(template.bodyPlan).build(genome, template), genome, template.recipe);
 };
 
 const budgetsForGenome = (template: Template, genome: Genome): Budgets =>

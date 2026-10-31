@@ -1,0 +1,279 @@
+[
+  {
+    "base": "shambler",
+    "description": "A shambler with a swollen trunk, pustules and rot mottling.",
+    "materials": {
+      "pus": {
+        "color": [0.71999999999999997, 0.66000000000000003, 0.32000000000000001],
+        "emissive": 0
+      },
+      "rot": {
+        "color": [0.35999999999999999, 0.29999999999999999, 0.22],
+        "emissive": 0
+      }
+    },
+    "name": "bloater",
+    "recipe": [
+      {
+        "bones": ["pelvis", "spine", "chest"],
+        "id": "gut",
+        "op": "swell",
+        "params": {
+          "factor": {
+            "max": 1.55,
+            "min": 1.25
+          }
+        }
+      },
+      {
+        "bones": ["spine", "chest", "upperArm.*"],
+        "id": "pustules",
+        "material": "pus",
+        "op": "scatter",
+        "params": {
+          "count": {
+            "max": 12,
+            "min": 5
+          },
+          "lift": {
+            "max": 0.5,
+            "min": 0.10000000000000001
+          },
+          "radius": {
+            "max": 0.050000000000000003,
+            "min": 0.029999999999999999
+          }
+        }
+      },
+      {
+        "bones": ["spine", "chest", "upperArm.*"],
+        "id": "mottle",
+        "material": "rot",
+        "onto": ["skin"],
+        "op": "paint",
+        "params": {
+          "coverage": {
+            "max": 0.5,
+            "min": 0.29999999999999999
+          },
+          "grain": {
+            "max": 0.14999999999999999,
+            "min": 0.089999999999999997
+          }
+        }
+      }
+    ],
+    "status": "comparison-only"
+  },
+  {
+    "base": "shambler",
+    "description": "A shambler with a second, smaller pair of arms grafted below the first.",
+    "materials": {},
+    "name": "grasper",
+    "recipe": [
+      {
+        "id": "lowerArmL",
+        "op": "graft",
+        "params": {
+          "offsetX": {
+            "max": 0.040000000000000001,
+            "min": 0.01
+          },
+          "offsetY": {
+            "max": -0.17999999999999999,
+            "min": -0.23999999999999999
+          },
+          "offsetZ": {
+            "max": 0.040000000000000001,
+            "min": 0
+          },
+          "rotateX": 0,
+          "rotateY": {
+            "max": 5,
+            "min": -15
+          },
+          "rotateZ": {
+            "max": 0,
+            "min": -12
+          },
+          "scale": {
+            "max": 0.94999999999999996,
+            "min": 0.80000000000000004
+          }
+        },
+        "parent": "spine",
+        "prefix": "lower.",
+        "root": "upperArm.L"
+      },
+      {
+        "id": "lowerArmR",
+        "op": "graft",
+        "params": {
+          "offsetX": {
+            "max": -0.01,
+            "min": -0.040000000000000001
+          },
+          "offsetY": {
+            "max": -0.17999999999999999,
+            "min": -0.23999999999999999
+          },
+          "offsetZ": {
+            "max": 0.040000000000000001,
+            "min": 0
+          },
+          "rotateX": 0,
+          "rotateY": {
+            "max": 15,
+            "min": -5
+          },
+          "rotateZ": {
+            "max": 12,
+            "min": 0
+          },
+          "scale": {
+            "max": 0.94999999999999996,
+            "min": 0.80000000000000004
+          }
+        },
+        "parent": "spine",
+        "prefix": "lower.",
+        "root": "upperArm.R"
+      }
+    ],
+    "status": "comparison-only"
+  },
+  {
+    "base": "shambler",
+    "description": "The bloater and grasper recipes mixed; bloating first, so the grafted arms copy the pustules on the arms they copy.",
+    "materials": {
+      "pus": {
+        "color": [0.71999999999999997, 0.66000000000000003, 0.32000000000000001],
+        "emissive": 0
+      },
+      "rot": {
+        "color": [0.35999999999999999, 0.29999999999999999, 0.22],
+        "emissive": 0
+      }
+    },
+    "name": "bloated-grasper",
+    "recipe": [
+      {
+        "bones": ["pelvis", "spine", "chest"],
+        "id": "gut",
+        "op": "swell",
+        "params": {
+          "factor": {
+            "max": 1.55,
+            "min": 1.25
+          }
+        }
+      },
+      {
+        "bones": ["spine", "chest", "upperArm.*"],
+        "id": "pustules",
+        "material": "pus",
+        "op": "scatter",
+        "params": {
+          "count": {
+            "max": 12,
+            "min": 5
+          },
+          "lift": {
+            "max": 0.5,
+            "min": 0.10000000000000001
+          },
+          "radius": {
+            "max": 0.050000000000000003,
+            "min": 0.029999999999999999
+          }
+        }
+      },
+      {
+        "bones": ["spine", "chest", "upperArm.*"],
+        "id": "mottle",
+        "material": "rot",
+        "onto": ["skin"],
+        "op": "paint",
+        "params": {
+          "coverage": {
+            "max": 0.5,
+            "min": 0.29999999999999999
+          },
+          "grain": {
+            "max": 0.14999999999999999,
+            "min": 0.089999999999999997
+          }
+        }
+      },
+      {
+        "id": "lowerArmL",
+        "op": "graft",
+        "params": {
+          "offsetX": {
+            "max": 0.040000000000000001,
+            "min": 0.01
+          },
+          "offsetY": {
+            "max": -0.17999999999999999,
+            "min": -0.23999999999999999
+          },
+          "offsetZ": {
+            "max": 0.040000000000000001,
+            "min": 0
+          },
+          "rotateX": 0,
+          "rotateY": {
+            "max": 5,
+            "min": -15
+          },
+          "rotateZ": {
+            "max": 0,
+            "min": -12
+          },
+          "scale": {
+            "max": 0.94999999999999996,
+            "min": 0.80000000000000004
+          }
+        },
+        "parent": "spine",
+        "prefix": "lower.",
+        "root": "upperArm.L"
+      },
+      {
+        "id": "lowerArmR",
+        "op": "graft",
+        "params": {
+          "offsetX": {
+            "max": -0.01,
+            "min": -0.040000000000000001
+          },
+          "offsetY": {
+            "max": -0.17999999999999999,
+            "min": -0.23999999999999999
+          },
+          "offsetZ": {
+            "max": 0.040000000000000001,
+            "min": 0
+          },
+          "rotateX": 0,
+          "rotateY": {
+            "max": 15,
+            "min": -5
+          },
+          "rotateZ": {
+            "max": 12,
+            "min": 0
+          },
+          "scale": {
+            "max": 0.94999999999999996,
+            "min": 0.80000000000000004
+          }
+        },
+        "parent": "spine",
+        "prefix": "lower.",
+        "root": "upperArm.R"
+      }
+    ],
+    "status": "comparison-only"
+  }
+]

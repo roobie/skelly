@@ -3,6 +3,7 @@
 // Domain-agnostic: the core never hard-codes the humanoid's bones or params.
 
 import type { MaterialDef } from './body.ts';
+import type { RecipeStep } from './recipe.ts';
 import type { Budgets } from './rules.ts';
 
 /** A fixed value, a numeric range, or a set of choices to pick one from uniformly. */
@@ -41,6 +42,11 @@ export interface Template {
   readonly flinchClip?: string;
   /** Readiness for consumers; see `TemplateStatus`. Omitted means ready. */
   readonly status?: TemplateStatus;
+  /** Steps applied on top of the body plan's base body; see core/recipe.ts. */
+  readonly recipe?: readonly RecipeStep[];
+  /** The template a recipe builds on. Presentation tables keyed by template name fall back to it, so a
+   * recipe inherits its base's look-at limits and the like without an entry of its own. */
+  readonly base?: string;
 }
 
 export interface Wound {
