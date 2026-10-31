@@ -107,6 +107,28 @@ it('prepares every thing recipe export for ground and held drawing with its grip
   );
 });
 
+it('rests the oil lamp on its base with its authored up axis upright', async () => {
+  const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const { ground } = prepareModel(definition, scene);
+  ground.updateMatrixWorld(true);
+  const frame = groundModelFrame(ground);
+  const origin = frame.localToWorld(new Vector3());
+  const up = frame
+    .localToWorld(new Vector3(0, 1, 0))
+    .sub(origin)
+    .normalize();
+  let baseNode: import('three').Object3D | undefined;
+  ground.traverse((node) => {
+    if (node.userData.itemNodeName === definition.parts!.base!.node) {
+      baseNode = node;
+    }
+  });
+  expect(baseNode).toBeDefined();
+  expect(up.dot(new Vector3(0, 1, 0))).toBeCloseTo(1);
+  expect(new Box3().setFromObject(baseNode!).min.y).toBeCloseTo(new Box3().setFromObject(ground).min.y);
+});
+
 it('keeps every authored fuel fill inside its clear shell and resolves its original glTF node name', async () => {
   const filled = [...registry.models.values()].filter((model) => model.itemPresentation?.supply.kind === 'fill');
   expect(filled.length).toBeGreaterThan(0);

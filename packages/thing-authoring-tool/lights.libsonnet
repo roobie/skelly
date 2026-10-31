@@ -43,7 +43,7 @@ local port(id, gender, pos, normal, up=[1, 0, 0]) = { id: id, mount: 'assembly-j
       part('chimney', 'chimney', 0.080, { lowerRadius: 0.026, upperRadius: 0.020, height: 0.100, wall: 0.002 }, { glass: 'glass-clear' }, [port('burner', 'male', [0, 0, 0], [0, -1, 0])]),
     ],
     connections: [{ from: 'base.reservoir', to: 'reservoir.base' }, { from: 'reservoir.fuel', to: 'fuel_fill.reservoir' }, { from: 'reservoir.burner', to: 'burner.reservoir' }, { from: 'burner.chimney', to: 'chimney.burner' }],
-    handling: { part: 'base', solid: 'body', fraction: [0.5, 0.5, 0.5], turn: [0, 0, -90], hold: 'upright', rest: 'upright', roll: 0 },
+    handling: { part: 'base', solid: 'body', fraction: [0.5, 0.5, 0.5], turn: [0, 0, -90], hold: 'upright', roll: 0 },
     anchors: { flame: { part: 'burner', solid: 'body', fraction: [0.5, 1, 0.5] } },
     voxelGrain: 0.002,
   },

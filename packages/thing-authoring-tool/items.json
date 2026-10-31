@@ -1640,7 +1640,6 @@
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
         "part": "base",
-        "rest": "upright",
         "roll": 0,
         "solid": "body",
         "turn": [0, 0, -90]
