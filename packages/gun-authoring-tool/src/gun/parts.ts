@@ -78,13 +78,25 @@ import {
   subtractConvexSection,
 } from './receiverSection.ts';
 import { revolverFamilySet } from './revolver.ts';
-import { openTriggerGuard, rampedTriggerGuardSolids, TRIGGER_BLADE_ID, triggerBlade } from './roundedTriggerGuard.ts';
+import {
+  curvedTriggerBlade,
+  openTriggerGuard,
+  rampedTriggerGuardSolids,
+  TRIGGER_BLADE_ID,
+  triggerBlade,
+} from './roundedTriggerGuard.ts';
 import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
 import { SMG_HANDLE_PROPORTIONS } from './smgHandleProportions.ts';
 import { cutSporterAction, sporterActionDetails, sporterFurniture, sporterLower, sporterStock } from './sporter.ts';
 import { SPORTER_PROPORTIONS } from './sporterProportions.ts';
 import { taperedStockSolids } from './taperedStock.ts';
-import { CLOSED_TRIGGER_GUARDS, TRIGGER_BLADE, TRIGGER_GUARDS, type TriggerGuardDimensions } from './triggerGuards.ts';
+import {
+  CLOSED_TRIGGER_GUARDS,
+  CURVED_TRIGGER_BLADES,
+  TRIGGER_BLADE,
+  TRIGGER_GUARDS,
+  type TriggerGuardDimensions,
+} from './triggerGuards.ts';
 import { inchesToMm, mmToU } from './units.ts';
 
 const SIGHT_GRAIN = GRID / 4;
@@ -3296,27 +3308,33 @@ const lower: PartFamily = {
           axes: [],
         };
       }
-      case 'pump':
+      case 'pump': {
+        const pumpBlade = CURVED_TRIGGER_BLADES.pump;
+        if (!pumpBlade) {
+          throw new Error('The pump lower has no curved trigger blade content.');
+        }
         return {
           family: 'lower',
           solids: [
-            // The plate runs forward over where the guard's front ramp meets it, to the next grid step.
+            // The plate ends on the grid step behind the guard's front ramp top, so it stays clear of the loading
+            // port's face in front of it.
             solid(
               'frame',
               [-16, -COMPACT_TRIGGER_PLATE.thicknessU, -1.5],
               [
-                Math.ceil(Math.max(-9, ...triggerGuards.map((guard) => localSolidBounds(guard)[1][0])) / GRID) * GRID,
+                Math.floor(Math.max(-9, ...triggerGuards.map((guard) => localSolidBounds(guard)[1][0])) / GRID) * GRID,
                 0,
                 1.5,
               ],
             ),
             ...triggerGuards,
-            triggerBlade(triggerFinger.box, TRIGGER_BLADE, COMPACT_TRIGGER_PLATE.fingerTopU),
+            ...curvedTriggerBlade(triggerFinger.box, pumpBlade),
           ],
           ports: [top],
           keepOuts: [triggerFinger],
           axes: [],
         };
+      }
       default: {
         const frame = magazineWellFrame(
           Math.min(recessedConventional ? -14 : -14.75, lowerGripRearX(conventionalGripX)),

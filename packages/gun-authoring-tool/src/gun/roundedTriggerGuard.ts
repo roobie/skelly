@@ -1,7 +1,12 @@
 import type { Vec3 } from '@skelly/engine/foundation/math.ts';
 import { boxFromMinMax, clipPolygon, validateExtrudedPolygon } from '@skelly/engine/shapes/geometry.ts';
 import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
-import type { ClosedTriggerGuardDimensions, TriggerBladeShape, TriggerGuardDimensions } from './triggerGuards.ts';
+import type {
+  ClosedTriggerGuardDimensions,
+  CurvedTriggerBladeShape,
+  TriggerBladeShape,
+  TriggerGuardDimensions,
+} from './triggerGuards.ts';
 
 /** The tag a corner guard's part carries for its declared rear; exports keep tags, not content. */
 export const TRIGGER_GUARD_REAR_TAGS = {
@@ -31,6 +36,21 @@ export const triggerBlade = (finger: Box, shape: TriggerBladeShape, topY: number
     throw new Error(`Trigger blade: ${error}`);
   }
   return { id: TRIGGER_BLADE_ID, kind: 'extruded-polygon', profile, z };
+};
+
+/** A curved blade in the finger space from convex segments offset from the space's rear and top. */
+export const curvedTriggerBlade = (finger: Box, shape: CurvedTriggerBladeShape): Solid[] => {
+  const rearX = finger.center[0] - finger.half[0];
+  const topY = finger.center[1] + finger.half[1];
+  const z: readonly [number, number] = [-shape.halfWidthU, shape.halfWidthU];
+  return shape.segments.map((segment, index) => {
+    const profile = segment.map(([x, y]): Vec2 => [rearX + x, topY + y]);
+    const error = validateExtrudedPolygon(profile, z);
+    if (error) {
+      throw new Error(`Trigger blade segment ${index}: ${error}`);
+    }
+    return { id: `${TRIGGER_BLADE_ID}-${index}`, kind: 'extruded-polygon', profile, z };
+  });
 };
 
 export const openTriggerGuard = (

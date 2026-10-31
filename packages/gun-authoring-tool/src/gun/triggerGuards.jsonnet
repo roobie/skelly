@@ -6,6 +6,21 @@
     topX: [1.25, 1],
     halfWidthU: 0.25,
   },
+  // Curved blades, keyed by lower layout: convex side profiles that together trace the blade, each point offset from
+  // the finger space's rear and top, so the blade hangs from whatever closes the opening's top.
+  blades: {
+    // Shaped like the large AR's traced blade and fitted to the pump's shorter finger space, which has no traceable
+    // reference: a crescent that bows back from the top and curves forward to a thin tip a quarter unit above the
+    // guard's floor, so its concave front is the finger face and the finger keeps the space in front of it.
+    pump: {
+      segments: [
+        [[0.5, -0.375], [1, -0.375], [1.25, 0], [0.75, 0]],
+        [[0.5, -0.75], [0.875, -0.75], [1, -0.375], [0.5, -0.375]],
+        [[0.875, -1.25], [1.125, -1.25], [0.875, -0.75], [0.5, -0.75]],
+      ],
+      halfWidthU: 0.25,
+    },
+  },
   // Closed guards, keyed by lower layout.
   closed: {
     // BR's sketch over the stock-grip pump's guard, read at the trigger plate's scale: a near-vertical rear wall

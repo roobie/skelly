@@ -3,6 +3,7 @@ import {
   check,
   finite,
   maxValue,
+  minLength,
   minValue,
   number,
   optional,
@@ -47,6 +48,10 @@ const Trigger = strictObject({
   topX: tuple([Positive, Positive]),
   halfWidthU: Positive,
 });
+const CurvedBlade = strictObject({
+  segments: pipe(array(pipe(array(tuple([Finite, Finite])), minLength(3))), minLength(1)),
+  halfWidthU: Positive,
+});
 const ClosedGuard = strictObject({
   wallU: Positive,
   rearWallU: Positive,
@@ -55,9 +60,16 @@ const ClosedGuard = strictObject({
   halfWidthU: Positive,
 });
 const parsed = parse(
-  strictObject({ trigger: Trigger, closed: record(string(), ClosedGuard), guards: record(string(), Guard) }),
+  strictObject({
+    trigger: Trigger,
+    blades: record(string(), CurvedBlade),
+    closed: record(string(), ClosedGuard),
+    guards: record(string(), Guard),
+  }),
   content,
 );
+export const CURVED_TRIGGER_BLADES = parsed.blades;
+export type CurvedTriggerBladeShape = (typeof CURVED_TRIGGER_BLADES)[string];
 export const TRIGGER_GUARDS = parsed.guards;
 export const CLOSED_TRIGGER_GUARDS = parsed.closed;
 export type ClosedTriggerGuardDimensions = (typeof CLOSED_TRIGGER_GUARDS)[string];
