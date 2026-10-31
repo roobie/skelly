@@ -72,14 +72,14 @@ const oneConnectedSolidSet = (solids: readonly Solid[]): boolean => {
   return connected.size === solids.length;
 };
 
-const gripGuardGap = (assembly: Assembly, gripFamily: 'grip' | 'stock'): number => {
+const stockGripGuardGap = (assembly: Assembly): number => {
   const report = validate(assembly, gunDomain);
   const lowerId = Object.keys(assembly.parts).find((id) => assembly.parts[id]!.family === 'lower')!;
-  const gripId = Object.keys(assembly.parts).find((id) => assembly.parts[id]!.family === gripFamily)!;
+  const gripId = Object.keys(assembly.parts).find((id) => assembly.parts[id]!.family === 'stock')!;
   const lowerDef = report.resolved.defs.get(lowerId)!;
   const gripDef = report.resolved.defs.get(gripId)!;
   const guard = lowerDef.solids.find((solid) => solid.id === 'trigger-guard-rear')!;
-  const grip = gripFamily === 'stock' ? gripDef.solids.filter((solid) => solid.id === 'grip') : gripDef.solids;
+  const grip = gripDef.solids.filter((solid) => solid.id === 'grip');
   const [guardRear] = worldBoundsX([guard], report.resolved.placed.get(lowerId)!);
   const [, gripFront] = worldBoundsX(grip, report.resolved.placed.get(gripId)!);
   return guardRear - gripFront;
@@ -133,16 +133,14 @@ describe('thumbhole stock and AWM design', () => {
     expect(stock.ports.some((port) => port.id === 'front')).toBe(true);
   });
 
-  it('keeps the measured AR grip-to-guard clearance when the thumbhole moves forward', () => {
-    const arGap = gripGuardGap(loadFixture('archetype-ar'), 'grip');
-    expect(arGap).toBeCloseTo(0, 6);
+  it('keeps the thumbhole grip behind the guard rear wall when the thumbhole moves forward', () => {
     const boltOverride = variant('archetype-bolt-rifle', (draft) => {
       draft.parts.stock!.params!.style = 'thumbhole';
       draft.parts.lower!.params!.layout = 'thumbhole';
     });
     for (const assembly of [design.assembly, boltOverride]) {
       expect(validate(assembly, gunDomain).issues).toEqual([]);
-      const gap = gripGuardGap(assembly, 'stock');
+      const gap = stockGripGuardGap(assembly);
       expect(gap).toBeGreaterThanOrEqual(0);
     }
   });

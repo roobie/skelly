@@ -473,7 +473,7 @@
       },
       "parts": {
         "grip_ar_long": {
-          "centreOfMass": [0.00022943221320973354, -0.054023174971031283, 0],
+          "centreOfMass": [-0.010869565217391304, -0.05940778032036613, -1.9221967963386715e-5],
           "item": "grip_ar_long",
           "massKg": 0.12,
           "node": "grip_ar_long:grip"
@@ -633,7 +633,7 @@
       },
       "parts": {
         "lower_ak": {
-          "centreOfMass": [-0.13298288508557457, -0.0092420537897310497, 0],
+          "centreOfMass": [-0.13312165450121655, -0.0093527980535279796, 0],
           "item": "lower_ak",
           "massKg": 0.25,
           "node": "lower_ak:lower"
@@ -653,7 +653,7 @@
       },
       "parts": {
         "lower_ar": {
-          "centreOfMass": [-0.099328063241106754, -0.015512516469038213, 0],
+          "centreOfMass": [-0.098822377622377652, -0.014900699300699306, 0],
           "item": "lower_ar",
           "massKg": 0.34999999999999998,
           "node": "lower_ar:lower"
@@ -673,7 +673,7 @@
       },
       "parts": {
         "lower_ar_large": {
-          "centreOfMass": [-0.12790836535619274, -0.02033047590895655, 5.9119125036949459e-7],
+          "centreOfMass": [-0.13617749226742801, -0.022114204139900069, 4.7585058291696416e-7],
           "item": "lower_ar_large",
           "massKg": 0.40000000000000002,
           "node": "lower_ar_large:lower"
@@ -693,7 +693,7 @@
       },
       "parts": {
         "lower_pump": {
-          "centreOfMass": [-0.141041095890411, -0.0085205479452054814, 0],
+          "centreOfMass": [-0.13845901639344263, -0.0086994535519125688, 0],
           "item": "lower_pump",
           "massKg": 0.14999999999999999,
           "node": "lower_pump:lower"
@@ -973,7 +973,7 @@
       },
       "parts": {
         "pistol_frame": {
-          "centreOfMass": [-0.034677296886864092, -0.027588458618071385, 0],
+          "centreOfMass": [-0.034598187311178252, -0.027604229607250761, 0],
           "item": "pistol_frame",
           "massKg": 0.28000000000000003,
           "node": "pistol_frame:frame"

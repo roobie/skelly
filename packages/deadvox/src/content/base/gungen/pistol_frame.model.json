@@ -7,7 +7,7 @@
       "item": "pistol_frame",
       "node": "pistol_frame:frame",
       "massKg": 0.28,
-      "centreOfMass": [-0.03467729688686409, -0.027588458618071385, 0]
+      "centreOfMass": [-0.03459818731117825, -0.02760422960725076, 0]
     }
   }
 }
