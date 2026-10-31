@@ -44,6 +44,8 @@ export interface FirearmsCombatTuning {
   readonly raiseMinimumSimSeconds: number;
   readonly raiseRangeSimSeconds: number;
   readonly raiseHalfLifeLevels: number;
+  /** The ADS-only speed floor, as the longest allowed aim-down-sights acquisition; bounds ADS, not raise. */
+  readonly adsAcquisitionMaximumSimSeconds: number;
   readonly readyMovementMinimum: number;
   readonly readyMovementRange: number;
   readonly readyMovementHalfLifeLevels: number;
@@ -84,6 +86,7 @@ export interface FirearmsSkillEffects {
 
 export interface FirearmStanceEffects {
   readonly raiseDurationSimSeconds: number;
+  readonly adsAcquisitionDurationSimSeconds: number;
   readonly readyMovementFactor: number;
 }
 
@@ -137,13 +140,19 @@ export const steadinessTuning = (tuning: FirearmsCombatTuning, skill: SkillDef):
   };
 };
 
+/** The ADS-only speed floor: acquisition reads the raise duration, clamped to a content maximum. */
+export const adsAcquisitionDuration = (raiseDurationSimSeconds: number, tuning: FirearmsCombatTuning): number =>
+  Math.min(raiseDurationSimSeconds, tuning.adsAcquisitionMaximumSimSeconds);
+
 /** Stance time and ready gait are read from the firearms-combat skill's content tuning. */
 export const firearmStanceEffects = (level: number, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
   const effectLevel = effectLevelFor(level);
+  const raiseDurationSimSeconds =
+    tuning.raiseMinimumSimSeconds +
+    tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels);
   return {
-    raiseDurationSimSeconds:
-      tuning.raiseMinimumSimSeconds +
-      tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels),
+    raiseDurationSimSeconds,
+    adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
     readyMovementFactor:
       tuning.readyMovementMinimum +
       tuning.readyMovementRange * (effectLevel / (effectLevel + tuning.readyMovementHalfLifeLevels)),

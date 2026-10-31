@@ -24,7 +24,7 @@ const recipe = (id: string, category: string, recipeTags: string[], searchTerms:
   timeGameMinutes: 1,
   skills: {},
   qualities: {},
-  components: [],
+  components: [[{ item: 'fixture_scrap', count: 1 }]],
 });
 const data = () => ({
   recipeCategories: categories(),

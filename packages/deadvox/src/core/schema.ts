@@ -544,6 +544,11 @@ const UiScreenTextSchema = strictObject({
     repair: ['item'],
     repairName: ['item'],
     cheapestAvailable: [],
+    liquidFound: ['item', 'found', 'needed'],
+    liquidDraw: ['liquid', 'volume', 'vessel'],
+    sources: [],
+    defaultSources: [],
+    sourceVessel: ['vessel', 'volume'],
     noMatches: [],
     noRepairTarget: [],
     repairing: ['item'],
@@ -3806,6 +3811,13 @@ const HeldPosesSchema = strictObject({
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 
 /** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
+/** How the view animates between hip and sights across an aim's acquisition and release. */
+const AdsViewBlendSchema = strictObject({
+  easing: picklist(['linear', 'smoothstep']),
+  /** How long the view takes to settle back to the hip pose after the aim is released. */
+  blendBackRealSeconds: PositiveRealSeconds,
+});
+
 const FigureSchema = strictObject({
   id: Id,
   /** Where the hips stand above the ground; stances pivot about them. */
@@ -3867,6 +3879,7 @@ const FigureSchema = strictObject({
         check((value) => value < 1, 'neck length must remain positive'),
       ),
       stockShoulderOffset: Point,
+      viewBlend: AdsViewBlendSchema,
     }),
   }),
   lookDownLean: strictObject({
@@ -3960,6 +3973,8 @@ const SkillSchema = pipe(
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
+            /** The ADS-only speed floor, as a maximum aim-down-sights acquisition duration. */
+            adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
             readyMovementMinimum: Fraction,
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
@@ -4292,8 +4307,10 @@ const SenseSchema = strictObject({
     illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
-/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
-const RecipeItemSchema = ItemCountSchema;
+const RecipeInputSchema = union([
+  ItemCountSchema,
+  strictObject({ liquid: Id, volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)) }),
+]);
 
 const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
   const { min, max } = WEATHERING_RANGES[field];
@@ -4642,7 +4659,7 @@ const RecipeSchema = strictObject({
   category: Id,
   tags: array(Id),
   searchTerms: array(Name),
-  result: RecipeItemSchema,
+  result: ItemCountSchema,
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type. */
   kind: optional(picklist(['craft', 'repair'])),
   /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
@@ -4658,7 +4675,7 @@ const RecipeSchema = strictObject({
   ),
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
-  components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  components: array(pipe(array(RecipeInputSchema), nonEmpty('needs at least one alternative'))),
   consumeFitted: optional(vBoolean()),
   workstation: optional(nullable(Id)),
 });

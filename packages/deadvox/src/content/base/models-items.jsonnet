@@ -66,11 +66,6 @@ local authored = [
     { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
     { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
     import 'things/dead_desk_lamp.model.json',
-    (import 'things/dead_desk_lamp.model.json') + {
-      id: 'oil_lamp',
-      grip: { at: [0, 0, 0], turn: [0, 0, 0] },
-      anchors: { flame: [0.069, 0.05, 0] },
-    },
     { "id": "table_fan", "file": "assets/models/table_fan.glb" },
     { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
     { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },

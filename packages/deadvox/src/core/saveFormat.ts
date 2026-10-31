@@ -380,6 +380,7 @@ itemSchema = obj({
   cartridges: opt(arr(str({ id: true }))),
   paperMap: opt(obj({ x: safeInt, z: safeInt })),
   liquidBurnRemainder: opt(num({ integer: true, min: 0, max: 999_999 })),
+  craftedLiquids: opt(arr(obj({ liquid: str({ id: true }), volumeMicrolitres: positiveInt }))),
   liquidContents: opt(
     union(
       obj({ kind: enumeration(['empty']) }),
@@ -428,6 +429,7 @@ itemSchema = obj({
         }),
       ),
       readying: opt(obj({ elapsed: nonNegative, duration: positive })),
+      adsAcquiring: opt(obj({ elapsedSimSeconds: nonNegative, durationSimSeconds: positive })),
       lastShotAtSimSeconds: opt(nonNegative),
       cycle: opt(
         obj({
@@ -448,14 +450,21 @@ itemSchema = obj({
       obj({
         kind: enumeration(['craft']),
         recipe: str({ id: true }),
+        liquids: opt(
+          arr(
+            obj({
+              group: nonNegativeInt,
+              liquid: str({ id: true }),
+              volumeMicrolitres: positiveInt,
+              sources: arr(obj({ uid: positiveInt, volumeMicrolitres: positiveInt }), 1),
+            }),
+          ),
+        ),
         elapsed: nonNegative,
         duration: positive,
         repairTarget: opt(obj({ kind: enumeration(['item', 'entity']), uid: positiveInt })),
         repairAmount: opt(positive),
-        components: arr(
-          lazy(() => itemSchema),
-          1,
-        ),
+        components: arr(lazy(() => itemSchema)),
       }),
       obj({
         kind: enumeration(['disassembly']),

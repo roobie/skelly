@@ -1,6 +1,6 @@
 import { actionText } from '../core/actionText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
-import type { CraftPreference } from '../core/crafting.ts';
+import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, TargetState } from '../core/inventory.ts';
 import {
@@ -45,8 +45,14 @@ export type ReplayActionPayload =
       itemUid: number;
     } & VehicleWorkPlacement)
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
-  | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
-  | { kind: 'craft.repair-entity'; recipeId: string; entityUid: number; preference: CraftPreference }
+  | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
+  | {
+      kind: 'craft.repair-entity';
+      recipeId: string;
+      entityUid: number;
+      preference: CraftPreference;
+      sources?: CraftSources;
+    }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -137,7 +143,35 @@ const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
       typeof payload.preference === 'object' &&
       !Array.isArray(payload.preference) &&
       Object.entries(payload.preference).every(
-        ([group, item]) => Number.isSafeInteger(Number(group)) && Number(group) >= 0 && typeof item === 'string',
+        ([group, ref]) =>
+          Number.isSafeInteger(Number(group)) &&
+          Number(group) >= 0 &&
+          ref !== null &&
+          typeof ref === 'object' &&
+          !Array.isArray(ref) &&
+          Object.keys(ref).length === 2 &&
+          (('kind' in ref &&
+            ref.kind === 'item' &&
+            'item' in ref &&
+            typeof ref.item === 'string' &&
+            ref.item.length > 0) ||
+            ('kind' in ref &&
+              ref.kind === 'liquid' &&
+              'liquid' in ref &&
+              typeof ref.liquid === 'string' &&
+              ref.liquid.length > 0)),
+      ))) &&
+  (payload.sources === undefined ||
+    (payload.sources !== null &&
+      typeof payload.sources === 'object' &&
+      !Array.isArray(payload.sources) &&
+      Object.entries(payload.sources).every(
+        ([group, uids]) =>
+          Number.isSafeInteger(Number(group)) &&
+          Number(group) >= 0 &&
+          Array.isArray(uids) &&
+          uids.every(isUid) &&
+          new Set(uids).size === uids.length,
       )));
 
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
@@ -223,7 +257,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         isUid(payload.entityUid) &&
         payload.preference !== undefined &&
         isCraftStartPayload(payload) &&
-        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference'].includes(key))
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference', 'sources'].includes(key))
       );
     default:
       return false;
@@ -265,8 +299,13 @@ export interface ReplayCommandOwners {
   /** Tips the carried piece onto its next face. */
   tip: () => string | undefined;
   clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
-  craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
-  craftRepairEntity: (recipeId: string, entityUid: number, preference: CraftPreference) => string | undefined;
+  craftStart: (recipeId: string, preference?: CraftPreference, sources?: CraftSources) => string | undefined;
+  craftRepairEntity: (
+    recipeId: string,
+    entityUid: number,
+    preference: CraftPreference,
+    sources?: CraftSources,
+  ) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -366,9 +405,9 @@ export const applyReplayActionPayload = (
       owners.queue.cancel();
       return undefined;
     case 'craft.start':
-      return owners.craftStart(payload.recipeId, payload.preference);
+      return owners.craftStart(payload.recipeId, payload.preference, payload.sources);
     case 'craft.repair-entity':
-      return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference);
+      return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':

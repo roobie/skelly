@@ -5,6 +5,9 @@ local worn(model, frame, covers) = {
 local pair(model, left, right, covers) = [worn(model, left, covers), worn(model, right, covers)];
 // Worn carry and armour models are authored in the bust's frame, so they sit on the torso frame as drawn.
 local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }, frame: 'torso', pivot: [0, 0, 0], at: [0, 0, 0], turn: [0, 0, 0] }];
+local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
+local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
+local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes, skill: 'crafting', yields: yields };
 {
   "items": [
     {
@@ -160,6 +163,23 @@ local onTorso(model) = [{ model: model, overTorso: { jacket: model + '_jacket' }
         "warmth": 3,
         "wearPerDamage": 0.001,
         "protects": { "cut": 0.8, "pierce": 0.7, "blunt": 0.1, "acid": 0 }
+      }
+    },
+    {
+      "id": "taped_armour",
+      "name": "Taped armour",
+      "model": "utility_vest",
+      "figureModels": onTorso('utility_vest_worn'),
+      "category": "clothing",
+      "size": [3, 3],
+      "description": "Paperbacks held together with tape.",
+      "disassembly": disassembly(15, [yield('paperback', 2), yield('duct_tape', 1)]),
+      "wearable": {
+        "slot": "vest",
+        "encumbrance": 10,
+        "warmth": 2,
+        "wearPerDamage": 0.003,
+        "protects": { "cut": 0.35, "pierce": 0.25, "blunt": 0.05, "acid": 0 }
       }
     },
     {

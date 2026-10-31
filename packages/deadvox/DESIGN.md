@@ -2,6 +2,7 @@
 read_if:
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
+  - you author recipes or item take-apart yields
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -73,6 +74,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing long-gun steadiness, independent Sniping progression or firearm training ownership
+  - you're changing long-gun aim-down-sights timing or its speed floor
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
   - you author item models or decide how medicine quantities should look
@@ -1404,8 +1406,9 @@ a two-handed item occupies both hands. What is held appears in first person,
 what is dropped appears in a pile, and furniture shows its contained items. A
 held light needs both its world illumination and a self-lit held presentation.
 A flame hidden inside the palm cannot communicate ignition, even when its world
-source is working. The lamp's authored grip must leave the flame visible; see
-`src/content/base/models-items.jsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
+source is working. Clear glass does not hide a flame because it still shows ignition.
+The lamp's authored grip must leave the flame visible; see
+`packages/thing-authoring-tool/lights.libsonnet`, `oil_lamp`, and `src/render/modelFlame.ts`, `ModelFlames`.
 
 Holding right mouse with empty hands must read as a boxer guard, ready to
 punch; an empty offhand must follow a melee weapon into en-garde. Empty hands
@@ -1711,9 +1714,16 @@ policy. The item yield/work projection is `src/core/disassembly.ts`,
 replace retained parts with generated copies. See `src/core/content.ts`,
 `checkDisassembly`, `checkMaterialCycles` and `checkRecipes`, and `docs/crafting.md`.
 
-No craft-and-take-apart cycle may yield more material than it consumes. Cloth
-strips return to a rag only by sewing several together. Endless material breaks
-scarcity.
+Gainful cycles are forbidden because endless material breaks scarcity. A gainful
+cycle is a finite combination of crafting, disassembly, salvage or unpack
+operations whose total item balance is
+nonnegative for every item and positive for at least one. No exchange rate across
+different items is implied: gaining scrap while spending nails is bounded, not a
+gainful cycle. Starting stock may supply intermediate inputs, so discovering a
+source or meeting skill and tool requirements does not excuse an unbounded loop.
+Solid recipe alternatives are checked, including recipes with several inputs;
+recipes requiring a liquid-only component group are outside this item-stock rule.
+See `src/core/content.ts`, `checkMaterialCycles`.
 
 Recipe knowledge may come from a book, a skill level, either, or the starting
 set. A book shortcuts the skill grind; a skilled character does not need the
@@ -2255,12 +2265,31 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `firearmSteadinessSkill`, and `src/game/session.ts`, `advanceSessionAim`.
 
   Raising, ready movement, loading, racking and attachment handling stay with
-  Combat because steadiness does not replace handling competence. Recoil kick
-  and recovery have one owner; splitting only kick would quietly move recovery
-  to the wrong skill. Firearm quality owns dispersion. Sniping and Combat must
-  not multiply sway together or compete through separate aim controllers. See
-  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, `steadinessTuning` and
-  `firearmStanceEffects`.
+  Combat because steadiness does not replace handling competence. Aim-down-sights
+  acquisition is Combat-owned handling speed too, so a steadier shooter is not a
+  faster one: a long gun reads the same Combat raise curve for its shouldering
+  time, clamped by a content maximum ADS duration so a novice sights faster than
+  they raise instead of doubling the slowest handling. The clamp bounds ADS only,
+  never raise, and the acquisition is authoritative saved state, not a second
+  raise job. The view blends hip to sights across that acquisition and settles
+  back over a content-owned blend on release, because the simulation owns when
+  the sights arrive while the presentation owns how the move looks: the blend
+  reads the acquisition's progress and never writes simulation state. The optic
+  picture switches at full alignment rather than blending its magnification —
+  the disc read stays exact only once the eye has arrived at the sight line —
+  while the pose, the camera standoff and the look sensitivity ride the carried
+  aim. Sniping has no timing curve of its own. Recoil kick and recovery
+  have one owner; splitting only kick would quietly move recovery to the wrong
+  skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
+  sway together or compete through separate aim controllers. See
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
+  `src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
+  `adsAcquisitionProgress` and `stanceEffectsFor`; `src/game/session.ts`,
+  `advancePlayerReadiness`; `src/game/play.ts`, `advanceAdsAim`;
+  `src/core/playerLookPose.ts`, `blendLookPoses`;
+  `src/core/heldPose.ts`, `blendHeldFirearmTransforms`; and
+  `src/render/playView.ts`, `adsCameraTarget`.
 
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from

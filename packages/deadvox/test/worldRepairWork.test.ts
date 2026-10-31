@@ -207,13 +207,13 @@ const intent = (uid: number): ReplayActionPayload => ({
   kind: 'craft.repair-entity',
   recipeId: RECIPE,
   entityUid: uid,
-  preference: { 0: STOCK },
+  preference: { 0: { kind: 'item', item: STOCK } },
 });
 
 it('projects the entity name, damage and requirements without owning inputs', () => {
   const r = prepare();
   const before = r.inventory.snapshotState();
-  const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid, { 0: STOCK });
+  const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid, { 0: { kind: 'item', item: STOCK } });
   expect(projection.targetName).toBe(registry.furniture.get(PIECE)!.name);
   expect(projection.targetName).not.toBe(registry.items.get(STOCK)!.name);
   expect(projection.damage).toBeDefined();
