@@ -28,15 +28,18 @@
       fingerY: [-4.5, -1.75],
       fingerZ: [-1, 1],
     },
-    // Traced with the frame's lower (see arFrames.jsonnet), which owns the finger's x and y: a 0.25u guard wall with
-    // the finger space's 0.5u clearance each side.
+    // Traced with the frame's grip from BR's photo (see arFrames.jsonnet, whose lower owns the finger's x and y). The
+    // bar bows below the opening, about 0.5u deep at its middle; its underside rises about 20 degrees into the
+    // magwell and steeply up the short corner to the grip's straight front. The magwell's rear is the thin front
+    // wall. The opening keeps a 0.5u clearance each side.
     'ar-large': {
-      wallU: 0.25,
+      wallU: 0.5,
+      frontWallU: 0.25,
       clearanceU: 0.5,
       halfWidthU: 0.625,
-      frontCutU: 0.125,
-      frontCutDegrees: 45,
-      rearSlantDegrees: 4,
+      frontCutU: 0.375,
+      frontCutDegrees: 20,
+      rearSlantDegrees: 35,
       fingerZ: [-1, 1],
     },
     conventional: {

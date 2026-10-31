@@ -85,7 +85,24 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
       lower: {
         rearX: -20.25,
         wellCenterX: -5,
-        gripX: -15.5,
+        // Traced from BR's side photo of an AR-10-pattern lower with an A2-style grip, scaled by the receiver's
+        // length (461.5 px for 20.25u, 22.79 px/u) and registered on the guard opening: its front on the
+        // magwell's rear at the finger space's front clearance, its floor on the finger space's bottom. To the
+        // nearest grid step. The grip's top block meets the lower 1.5u below the frame (the lower's body comes
+        // down to it) and its front face drops straight past the guard bar; below it the front leans back about
+        // 25 degrees to a finger-groove bump, then to the toe; the back is hollow under the top and swells to a
+        // flared heel. The lean is the mean of the front and back edges.
+        grip: {
+          mount: [-14, -5.5],
+          leanDegrees: 28,
+          halfWidthU: 1.25,
+          pieces: [
+            [[-18.25, -7.75], [-19.25, -9.5], [-15.5, -10.25], [-14.5, -8.25]],
+            [[-17, -5.5], [-17.5, -6.25], [-18.25, -7.75], [-14.5, -8.25], [-14, -8], [-14, -5.5]],
+            [[-19.25, -9.5], [-21, -12], [-21.25, -12.5], [-21, -13], [-17.5, -13.75], [-17, -13.5], [-15.5, -10.25]],
+            [[-15, -9.25], [-15.5, -10.25], [-14.75, -10], [-14.75, -9.75]],
+          ],
+        },
         housingFrontBottomU: -6.5,
         housingRearBottomU: -7.75,
         // Not visible in a side photo: flush with the receiver's sides.

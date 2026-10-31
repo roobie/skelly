@@ -28,6 +28,8 @@ const Extent = pipe(
 );
 const Guard = strictObject({
   wallU: Positive,
+  /** The front wall's width where it differs from the bar's depth. */
+  frontWallU: optional(Positive),
   clearanceU: Positive,
   halfWidthU: Positive,
   frontCutU: Positive,

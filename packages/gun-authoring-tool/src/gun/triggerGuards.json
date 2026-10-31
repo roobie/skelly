@@ -13,11 +13,12 @@
     "ar-large": {
       "clearanceU": 0.5,
       "fingerZ": [-1, 1],
-      "frontCutDegrees": 45,
-      "frontCutU": 0.125,
+      "frontCutDegrees": 20,
+      "frontCutU": 0.375,
+      "frontWallU": 0.25,
       "halfWidthU": 0.625,
-      "rearSlantDegrees": 4,
-      "wallU": 0.25
+      "rearSlantDegrees": 35,
+      "wallU": 0.5
     },
     "ar-small": {
       "clearanceU": 0.75,

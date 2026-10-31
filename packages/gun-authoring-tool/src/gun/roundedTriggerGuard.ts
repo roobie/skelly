@@ -33,7 +33,7 @@ export const openTriggerGuard = (
   const bottomY = topY - dimensions.wallU;
   const rearX = finger.center[0] - finger.half[0] - dimensions.clearanceU;
   const innerFrontX = finger.center[0] + finger.half[0] + dimensions.clearanceU;
-  const frontX = innerFrontX + dimensions.wallU;
+  const frontX = innerFrontX + (dimensions.frontWallU ?? dimensions.wallU);
   const z: readonly [number, number] = [
     finger.center[2] - dimensions.halfWidthU,
     finger.center[2] + dimensions.halfWidthU,

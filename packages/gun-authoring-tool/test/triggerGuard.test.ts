@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { PartDef } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
-import { IDENTITY } from '@skelly/engine/foundation/math.ts';
+import { applyPoint, IDENTITY, invert } from '@skelly/engine/foundation/math.ts';
 import {
   localSolidBounds,
   penetrationWorld,
@@ -12,6 +12,8 @@ import {
 import type { Box, Solid } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import recipe from '../exports/deadvox.json' with { type: 'json' };
+import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
+import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES, LOWER_LAYOUTS } from '../src/gun/parts.ts';
@@ -43,6 +45,48 @@ const lowerBuilds = () => [
   ...Object.keys(LOWER_LAYOUTS).map((layout) => ({ label: layout, params: { layout } })),
   ...Object.entries(CONTENT_LOWERS).map(([label, params]) => ({ label, params })),
 ];
+
+describe('traced AR large lower and grip', () => {
+  const report = () => {
+    const loaded = loadGunDesign(
+      readFileSync(resolve(ROOT, 'packages/gun-authoring-tool/designs/archetype-ar-large.json'), 'utf8'),
+    );
+    if (!loaded.ok) {
+      throw new Error(loaded.error.message);
+    }
+    return validate(loaded.design.assembly, gunDomain);
+  };
+  it('hangs the trigger inside its open guard', () => {
+    const lower = report().resolved.defs.get('lower')!;
+    expect(lower.tags).toContain(OPEN_TRIGGER_GUARD);
+    expect(hasPlacedTrigger(lower)).toBe(true);
+  });
+  it('builds the grip from valid convex pieces and keeps the firing hand inside its body', () => {
+    const { resolved } = report();
+    const grip = resolved.defs.get('grip')!;
+    expect(grip.solids.length).toBeGreaterThan(0);
+    for (const piece of grip.solids) {
+      if (piece.kind !== 'extruded-polygon') {
+        throw new Error(`${piece.id} is not a traced profile`);
+      }
+      expect(validateExtrudedPolygon(piece.profile, piece.z), piece.id).toBeUndefined();
+    }
+    const hold = selectGunAnchors(resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
+    if ('code' in hold) {
+      throw new Error(hold.code);
+    }
+    const [x, y, z] = applyPoint(invert(resolved.placed.get('grip')!), hold.hold.position);
+    const body = grip.solids.find(({ id }) => id === 'body')!;
+    if (body.kind !== 'extruded-polygon') {
+      throw new Error('Expected a traced body');
+    }
+    const inside = body.profile.every(([x0, y0], index) => {
+      const [x1, y1] = body.profile[(index + 1) % body.profile.length]!;
+      return (x1 - x0) * (y - y0) - (y1 - y0) * (x - x0) > 0;
+    });
+    expect(inside && z > body.z[0] && z < body.z[1]).toBe(true);
+  });
+});
 
 describe('trigger guards', () => {
   it('matches each lower guard membership to its open tag', () => {
@@ -81,7 +125,7 @@ describe('trigger guards', () => {
     const bar = localSolidBounds(guards.find(({ id }) => id === 'trigger-guard-bottom')!);
     const front = localSolidBounds(guards.find(({ id }) => id === 'trigger-guard-front')!);
     expect(bar[1][1] - bar[0][1]).toBeCloseTo(TRIGGER_GUARDS[key]!.wallU);
-    expect(front[1][0] - front[0][0]).toBeCloseTo(TRIGGER_GUARDS[key]!.wallU);
+    expect(front[1][0] - front[0][0]).toBeCloseTo(TRIGGER_GUARDS[key]!.frontWallU ?? TRIGGER_GUARDS[key]!.wallU);
   });
   it('keeps every lower-layout trigger volume clear of its guard solids', () => {
     const bounds = (box: Box) => ({

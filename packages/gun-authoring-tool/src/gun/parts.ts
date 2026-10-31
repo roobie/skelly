@@ -3082,13 +3082,16 @@ const lower: PartFamily = {
         [x + triggerFinger.box.half[0] * 2, y[1], content.fingerZ[1]],
       );
     };
-    const openGuard = (finger: KeepOut, content: TriggerGuardDimensions, ceilingY: number, gripX: number) =>
-      guardPresent
-        ? openTriggerGuard(finger.box, content, ceilingY, {
-            xAt: (y) => lowerGripFrontXAt(gripX, y),
-            straightTopY: lowerGripStraightTopY(),
-          })
-        : { solids: [], tags: [] };
+    const familyGripFace = (gripX: number) => ({
+      xAt: (y: number) => lowerGripFrontXAt(gripX, y),
+      straightTopY: lowerGripStraightTopY(),
+    });
+    const openGuard = (
+      finger: KeepOut,
+      content: TriggerGuardDimensions,
+      ceilingY: number,
+      face: { xAt: (y: number) => number; straightTopY: number },
+    ) => (guardPresent ? openTriggerGuard(finger.box, content, ceilingY, face) : { solids: [], tags: [] });
     const triggerGuards =
       guardPresent && ['trigger', 'thumbhole', 'pump'].includes(layout)
         ? triggerGuardSolids(
@@ -3115,8 +3118,9 @@ const lower: PartFamily = {
         if (!guardContent) {
           throw new Error(`AR frame ${arLayout!.frameId} has no trigger guard content.`);
         }
+        const frontWallU = guardContent.frontWallU ?? guardContent.wallU;
         const guardFrontX = guardPresent
-          ? triggerX + triggerFinger.box.half[0] * 2 + guardContent.clearanceU + guardContent.wallU
+          ? triggerX + triggerFinger.box.half[0] * 2 + guardContent.clearanceU + frontWallU
           : housingRearX;
         const gripShift = Math.min(0, housingRearX - guardFrontX);
         const arTriggerX = triggerX + gripShift;
@@ -3131,25 +3135,46 @@ const lower: PartFamily = {
                 [tracedTrigger.fingerFrontX, fromBore(tracedTrigger.fingerTopU), guardContent.fingerZ[1]],
               );
         const arGripX = traced?.gripX ?? LOWER_GRIP_X.ar + gripShift;
+        const halfWidth = traced?.halfWidthU ?? LOWER_HALF_WIDTH;
         // The photo's pinned trigger housing comes down to the opening's top, so it closes the guard there.
         const ceilingY = tracedTrigger === undefined ? -1.5 : fromBore(tracedTrigger.fingerTopU);
-        const arGuard = openGuard(arTriggerFinger, guardContent, ceilingY, arGripX);
+        const fingerBounds = localSolidBounds({ id: 'finger', kind: 'box', box: arTriggerFinger.box });
+        const openingRearX = fingerBounds[0][0] - guardContent.clearanceU;
+        // A traced grip hangs from the lower's body, which comes down to its top; its foremost straight edge is the
+        // face the guard's corner meets, and the body's thin wall between that face and the opening closes its rear.
+        const gripTrace = traced?.grip;
+        const gripPoints = gripTrace?.pieces.flat().map(([x, y]): Vec2 => [x, fromBore(y)]) ?? [];
+        const gripMount: Vec2 | undefined = gripTrace && [gripTrace.mount[0], fromBore(gripTrace.mount[1])];
+        const gripFrontX = Math.max(...gripPoints.map(([x]) => x));
+        const gripFace = gripMount
+          ? {
+              xAt: () => gripFrontX,
+              straightTopY: Math.max(...gripPoints.filter(([x]) => x === gripFrontX).map(([, y]) => y)),
+            }
+          : familyGripFace(arGripX);
+        const gripBody: Solid[] = gripMount
+          ? [
+              solid(
+                'grip-boss',
+                [
+                  Math.min(...gripPoints.filter(([, y]) => y === gripMount[1]).map(([x]) => x)),
+                  gripMount[1],
+                  -halfWidth,
+                ],
+                [openingRearX, -1.5, halfWidth],
+              ),
+              solid('guard-lug', [gripFrontX, fingerBounds[0][1], -halfWidth], [openingRearX, gripMount[1], halfWidth]),
+            ]
+          : [];
+        const arGuard = openGuard(arTriggerFinger, guardContent, ceilingY, gripFace);
         const triggerBody: Solid[] =
           tracedTrigger === undefined
             ? [triggerBlade(arTriggerFinger.box, TRIGGER_BLADE, ceilingY)]
             : [
                 solid(
                   'trigger-housing',
-                  [
-                    tracedTrigger.fingerRearX - guardContent.clearanceU,
-                    ceilingY,
-                    -(traced?.halfWidthU ?? LOWER_HALF_WIDTH),
-                  ],
-                  [
-                    tracedTrigger.fingerFrontX + guardContent.clearanceU + guardContent.wallU,
-                    -1.5,
-                    traced?.halfWidthU ?? LOWER_HALF_WIDTH,
-                  ],
+                  [openingRearX, ceilingY, -halfWidth],
+                  [tracedTrigger.fingerFrontX + guardContent.clearanceU + frontWallU, -1.5, halfWidth],
                 ),
                 ...tracedTrigger.blade.segments.map((segment, index) =>
                   extrudedPolygon(
@@ -3160,7 +3185,7 @@ const lower: PartFamily = {
                 ),
               ];
         const arWell = well(arWellCenterX);
-        const lowerRearX = Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX));
+        const lowerRearX = gripMount ? traced!.rearX : Math.min(traced?.rearX ?? -14.75, lowerGripRearX(arGripX));
         const frame = magazineWellFrame(
           lowerRearX,
           arWellCenterX + wellDepth / 2 + MAGAZINE_WELL_CLEARANCE,
@@ -3194,10 +3219,15 @@ const lower: PartFamily = {
                   }),
             }),
             ...triggerBody,
+            ...gripBody,
             ...arGuard.solids,
           ],
           tags: arGuard.tags,
-          ports: [top, grip(arGripX), arWell.port],
+          ports: [
+            top,
+            gripMount ? { ...grip(gripMount[0]), pos: [gripMount[0], gripMount[1], 0] } : grip(arGripX),
+            arWell.port,
+          ],
           keepOuts: [arTriggerFinger, arWell.path],
           axes: [],
         };
@@ -3208,7 +3238,7 @@ const lower: PartFamily = {
         const frontHookX = akWell.port.pos[0] + MAGAZINE_DEPTH / 2;
         const akFinger = contentFinger(triggerX, TRIGGER_GUARDS.ak!);
         const ceilingY = AK_RECEIVER.bottomU - AK_RECEIVER.shellBottomU;
-        const guard = openGuard(akFinger, TRIGGER_GUARDS.ak!, ceilingY, LOWER_GRIP_X.ak);
+        const guard = openGuard(akFinger, TRIGGER_GUARDS.ak!, ceilingY, familyGripFace(LOWER_GRIP_X.ak));
         return {
           family: 'lower',
           tags: guard.tags,
@@ -3286,7 +3316,12 @@ const lower: PartFamily = {
               })
             : [];
         const conventionalFinger = contentFinger(triggerX, TRIGGER_GUARDS.conventional!);
-        const guard = openGuard(conventionalFinger, TRIGGER_GUARDS.conventional!, -1.5, conventionalGripX);
+        const guard = openGuard(
+          conventionalFinger,
+          TRIGGER_GUARDS.conventional!,
+          -1.5,
+          familyGripFace(conventionalGripX),
+        );
         return {
           family: 'lower',
           // The well stays upright; only the rear housing plate is longer, so the opening plane tips the seated magazine.
@@ -4472,10 +4507,18 @@ const grip: PartFamily = {
       ...choice('standard', 'ar', 'pump', 'ak', 'sporter', 'compact-smg'),
       from: [{ port: 'top', param: 'section' }],
     },
+    actionFrame: {
+      ...choice(...Object.keys(AR_ACTION_LAYOUTS)),
+      from: [{ port: 'top', param: 'actionFrame' }],
+    },
   },
   build(params): PartDef {
     if (params.section === 'compact-smg') {
-      return compactSmgGrip();
+      return tracedGrip(COMPACT_SMG_PROPORTIONS.grip);
+    }
+    const arTrace = params.section === 'ar' ? AR_LOWER_PROPORTIONS[params.actionFrame ?? '']?.grip : undefined;
+    if (arTrace) {
+      return tracedGrip(arTrace);
     }
     const len = GRIP_BANDS.lengthU[cls(params, 'length')];
     const a = (GRIP_BANDS.leanDegrees * Math.PI) / 180;
@@ -4568,9 +4611,18 @@ const grip: PartFamily = {
   },
 };
 
-/** The compact SMG's traced grip, turned from the gun frame into the grip's leaned frame at its mount. */
-function compactSmgGrip(): PartDef {
-  const { mount, leanDegrees, halfWidthU, pieces } = COMPACT_SMG_PROPORTIONS.grip;
+/** A traced grip, turned from the gun frame into the grip's leaned frame at its mount; its first piece is the body. */
+function tracedGrip({
+  mount,
+  leanDegrees,
+  halfWidthU,
+  pieces,
+}: {
+  readonly mount: readonly [number, number];
+  readonly leanDegrees: number;
+  readonly halfWidthU: number;
+  readonly pieces: readonly (readonly (readonly [number, number])[])[];
+}): PartDef {
   const a = (leanDegrees * Math.PI) / 180;
   return {
     family: 'grip',
