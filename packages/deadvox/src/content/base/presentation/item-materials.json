@@ -204,6 +204,7 @@
   "assets/models/nails.glb": { "materials": ["steel-grey"] },
   "assets/models/night_vision_goggles.glb": { "materials": ["rubber-black", "polymer-od-green", "glass-lens-green"] },
   "assets/models/notebook.glb": { "materials": ["cover", "pages"] },
+  "assets/models/oil_lamp.glb": { "materials": ["steel-grey", "brass", "glass-clear", "fuel-amber"] },
   "assets/models/opened_beans.glb": { "materials": ["steel-grey", "paint-terracotta", "paperboard-tan"] },
   "assets/models/opened_soda.glb": { "materials": ["steel-grey", "plastic-red", "paperboard-tan", "paint-oxblood"] },
   "assets/models/opened_soup.glb": { "materials": ["steel-grey", "paperboard-tan", "paint-terracotta"] },

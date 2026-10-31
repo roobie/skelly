@@ -1610,6 +1610,191 @@
       "voxelGrain": 0.002
     },
     {
+      "anchors": {
+        "flame": {
+          "fraction": [0.5, 1, 0.5],
+          "part": "burner",
+          "solid": "body"
+        }
+      },
+      "connections": [
+        {
+          "from": "base.reservoir",
+          "to": "reservoir.base"
+        },
+        {
+          "from": "reservoir.fuel",
+          "to": "fuel_fill.reservoir"
+        },
+        {
+          "from": "reservoir.burner",
+          "to": "burner.reservoir"
+        },
+        {
+          "from": "burner.chimney",
+          "to": "chimney.burner"
+        }
+      ],
+      "exportMass": "parts",
+      "handling": {
+        "fraction": [0.5, 0.5, 0.5],
+        "hold": "upright",
+        "part": "base",
+        "roll": 0,
+        "solid": "body",
+        "turn": [0, 0, -90]
+      },
+      "id": "oil_lamp",
+      "parts": [
+        {
+          "family": "cylinder",
+          "finish": {
+            "body": "steel-grey"
+          },
+          "id": "base",
+          "massKg": 0.40000000000000002,
+          "params": {
+            "height": "0.012",
+            "radius": "0.051999999999999998"
+          },
+          "ports": [
+            {
+              "gender": "female",
+              "id": "reservoir",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.012, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "reservoir",
+          "finish": {
+            "glass": "glass-clear"
+          },
+          "id": "reservoir",
+          "massKg": 0.12,
+          "params": {
+            "height": "0.059999999999999998",
+            "innerRadius": "0.043999999999999997",
+            "outerRadius": "0.050000000000000003"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "base",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            },
+            {
+              "gender": "female",
+              "id": "burner",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.059999999999999998, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            },
+            {
+              "gender": "female",
+              "id": "fuel",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.0050000000000000001, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "cylinder",
+          "finish": {
+            "body": "fuel-amber"
+          },
+          "id": "fuel_fill",
+          "massKg": 0.001,
+          "params": {
+            "height": "0.050000000000000003",
+            "radius": "0.039"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "reservoir",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "cylinder",
+          "finish": {
+            "body": "brass"
+          },
+          "id": "burner",
+          "massKg": 0.080000000000000002,
+          "params": {
+            "height": "0.012",
+            "radius": "0.016"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "reservoir",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            },
+            {
+              "gender": "female",
+              "id": "chimney",
+              "mount": "assembly-joint",
+              "normal": [0, 1, 0],
+              "pos": [0, 0.012, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        },
+        {
+          "family": "chimney",
+          "finish": {
+            "glass": "glass-clear"
+          },
+          "id": "chimney",
+          "massKg": 0.080000000000000002,
+          "params": {
+            "height": "0.10000000000000001",
+            "lowerRadius": "0.025999999999999999",
+            "upperRadius": "0.02",
+            "wall": "0.002"
+          },
+          "ports": [
+            {
+              "gender": "male",
+              "id": "burner",
+              "mount": "assembly-joint",
+              "normal": [0, -1, 0],
+              "pos": [0, 0, 0],
+              "required": true,
+              "up": [1, 0, 0]
+            }
+          ]
+        }
+      ],
+      "voxelGrain": 0.002
+    },
+    {
       "connections": [
         {
           "from": "base.arm",
