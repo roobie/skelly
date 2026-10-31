@@ -108,10 +108,43 @@ being only more health.
 Excluded: charisma, which waits for NPCs or factions (gap 8); and luck, because the engine
 owns seeded randomness and luck works against skill.
 
-Open: how attributes are set and whether they change (point-buy at start, growth with
-practice, or fixed apart from modifiers), which decides whether the character stores them
-or the start state (gap 4) grants them; and whether skills fold onto modifiers in the same
-change.
+#### How attributes are set
+
+An attribute's effective value has three layers:
+
+- **Innate:** set once by the start state (gap 4). Every attribute starts at a content
+  default. Character creation screens wait for mod UI (gap 9), so point-buy and other
+  choices arrive as start-state content with no screen of their own in the base game.
+- **Conditioned:** slow change from how the character lives, held in character state and
+  saved. Strength, agility and, more slowly, dexterity train and atrophy. Grit trains and
+  never falls, because hardship stays with a person. Intellect and perception have no
+  conditioned layer: knowledge lives in skills, and fixed values keep them the character's
+  identity and stable trait gates.
+- **Current:** modifiers from conditions and items, such as pain lowering dexterity or an
+  enchanted ring raising strength (gap 2).
+
+Mechanisms read innate plus conditioned, then modifiers, through a content curve, so
+stacked bonuses saturate rather than run away.
+
+Training comes from bodily load over sim time, not from actions. A skill is technique and
+grows from successful actions; an attribute is capacity and grows from sustained exertion
+that the needs and stamina sim already measures. One swing practises melee, but only
+sustained heavy work moves strength. Tying training to load rather than action events
+denies repeat-an-action grinding, and spending it only while the body is fed and rested
+keeps it integrated over sim time as needs are, so time compression and replay stay
+deterministic; see `src/core/needs.ts`, `stepNeeds`. Diminishing returns and a soft cap
+relative to the innate value keep training from overriding who the character is.
+
+Atrophy follows starvation and long injury, not merely a lack of training, and it has
+hysteresis: the character keeps its peak conditioned value, and regaining ground below
+that peak is faster than first reaching it, as a once strong body regains lost strength
+quickly. The peak is therefore character state too.
+
+Content owns training and atrophy rates, the regain speed below the peak, caps, defaults,
+and which exertion trains which attribute. Code owns the exertion kinds the sim can
+measure and the training integrator.
+
+Open: whether skills fold onto modifiers in the same change.
 
 ### 2. Timed status effects
 
@@ -200,10 +233,14 @@ comes last.
 
 - **Spell list:** the inventory tabs are a closed list; see `src/ui/inventoryTabs.ts`.
 - **Mana readout:** `src/ui/playHud.ts`, `playNeedsText`. `INTERFACE.md`,
-  "Diegesis and development", favours bodily cues, so how mana feels on the body is settled before a bar
-  is added.
+  "Diegesis and development", favours bodily cues, so how mana feels on the body is
+  settled before a bar is added.
 - **Transient light:** light spells and glowing projectiles need a world light source that
   is not an item or a fixture; see `src/core/illumination.ts`, `IlluminationScene`.
+- **Mod UI by content:** mods bring screens and widgets through content alone, with no
+  engine change, so a start flow, a spell list or a mana readout is mod content rather
+  than a closed code list. `docs/decisions/0004-content-language.md`, "Mod rules", defers
+  mod UI to a spike once #313 settles the expression language.
 
 ## Order
 
