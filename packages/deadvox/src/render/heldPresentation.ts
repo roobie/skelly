@@ -41,7 +41,13 @@ interface SolvedArmPose {
 }
 
 export interface HeldPresentationFrame {
-  readonly readiness?: { readonly uid: number; readonly progress: number; readonly aimingDownSights: boolean };
+  readonly readiness?: {
+    readonly uid: number;
+    readonly progress: number;
+    readonly aimingDownSights: boolean;
+    /** How far the view has carried the held firearm from hip to sights; the ads pose blends by it. */
+    readonly adsAim?: number;
+  };
   readonly aim?: AimFrame;
 }
 
