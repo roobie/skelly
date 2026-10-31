@@ -96,7 +96,13 @@ it('bounds ADS neck length and joint turns for every sighted long gun and legal 
   const cases = adsCases();
   expect(cases.length).toBeGreaterThan(0);
   for (const { model, stance, pitch, side, aimFrame } of cases) {
-    const body = playerLookPose({ figure, models: baseRegistry.models, pitch, stance, ads: { model, side, aimFrame } });
+    const body = playerLookPose({
+      figure,
+      models: baseRegistry.models,
+      pitch,
+      stance,
+      ads: { model, side, aimFrame, aim: 1 },
+    });
     const label = `${model.id} ${stance} ${pitch} ${side} aim ${aimFrame.yaw},${aimFrame.pitch}`;
     expect(body.neckScale, `${label}: neck length`).toBeGreaterThanOrEqual(1 - tolerance - 1e-12);
     expect(body.neckScale, `${label}: neck length`).toBeLessThanOrEqual(1 + tolerance + 1e-12);
@@ -118,7 +124,13 @@ it('seats ADS stocks within the per-gun shoulder bound in every stance', () => {
   expect(cases.some(({ model }) => model.gun?.sight?.kind === 'iron')).toBe(true);
   expect(cases.some(({ model }) => model.gun?.sight?.kind === 'optic')).toBe(true);
   for (const { model, stance, pitch, side, aimFrame } of cases) {
-    const body = playerLookPose({ figure, models: baseRegistry.models, pitch, stance, ads: { model, side, aimFrame } });
+    const body = playerLookPose({
+      figure,
+      models: baseRegistry.models,
+      pitch,
+      stance,
+      ads: { model, side, aimFrame, aim: 1 },
+    });
     const pose = heldFirearmTransform({
       holds: figure.holds,
       model,

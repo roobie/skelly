@@ -229,6 +229,52 @@ export const heldAdsEye = (
   eyes: Readonly<Record<HandSide, Vec3>> | undefined,
 ): Vec3 => (model.hands && !model.hands.butt && eyes ? eyes[side] : [0, 0, 0]);
 
+/** Between hip and sighted: the aim's share of the two poses' points, directions and root basis. */
+export const blendHeldFirearmTransforms = (
+  hip: HeldFirearmTransform,
+  sighted: HeldFirearmTransform,
+  aim: number,
+): HeldFirearmTransform => {
+  if (!(Number.isFinite(aim) && aim >= 0 && aim <= 1)) {
+    throw new Error('Invalid held firearm aim blend');
+  }
+  if (aim <= 0) {
+    return hip;
+  }
+  if (aim >= 1) {
+    return sighted;
+  }
+  const lerp = (from: Vec3, to: Vec3): Vec3 => from.map((value, axis) => value + (to[axis]! - value) * aim) as Vec3;
+  const lerpDirection = (from: Vec3, to: Vec3): Vec3 => normalize(lerp(from, to));
+  // The lerped basis columns drift off orthonormal; the share of the rotation keeps a right-handed frame.
+  const first = normalize(lerp(hip.rootRotation[0], sighted.rootRotation[0]));
+  const secondRaw = lerp(hip.rootRotation[1], sighted.rootRotation[1]);
+  const along = dot(secondRaw, first);
+  const second = normalize(secondRaw.map((value, axis) => value - first[axis]! * along) as Vec3);
+  const rootRotation = [first, second, cross(first, second)] as const;
+  return {
+    rootOffset: lerp(hip.rootOffset, sighted.rootOffset),
+    muzzleOffset: lerp(hip.muzzleOffset, sighted.muzzleOffset),
+    muzzleDirection: lerpDirection(hip.muzzleDirection, sighted.muzzleDirection),
+    muzzleUp: lerpDirection(hip.muzzleUp, sighted.muzzleUp),
+    ...(hip.sightEyeOffset && sighted.sightEyeOffset
+      ? { sightEyeOffset: lerp(hip.sightEyeOffset, sighted.sightEyeOffset) }
+      : {}),
+    ...(hip.sightEyeRangeOffsets && sighted.sightEyeRangeOffsets
+      ? {
+          sightEyeRangeOffsets: hip.sightEyeRangeOffsets.map((from, index) =>
+            lerp(from, sighted.sightEyeRangeOffsets![index]!),
+          ) as [Vec3, Vec3],
+        }
+      : {}),
+    ...(hip.sightDirection && sighted.sightDirection
+      ? { sightDirection: lerpDirection(hip.sightDirection, sighted.sightDirection) }
+      : {}),
+    ...(hip.sightUp && sighted.sightUp ? { sightUp: lerpDirection(hip.sightUp, sighted.sightUp) } : {}),
+    rootRotation,
+  };
+};
+
 const subGrip = (model: ModelDef, point: Vec3): Vec3 => point.map((v, i) => v - model.grip!.at[i]!) as Vec3;
 
 const sightEyeBehind = (model: ModelDef, distance?: number): Vec3 | undefined => {

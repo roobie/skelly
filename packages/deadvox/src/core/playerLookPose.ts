@@ -58,6 +58,8 @@ export interface PlayerAdsPose {
   readonly model: ModelDef;
   readonly side: HandSide;
   readonly aimFrame?: AimFrame | undefined;
+  /** How far the view has carried the aim from hip to sights; 1 is fully sighted, 0 still hip. */
+  readonly aim?: number;
 }
 
 export interface PlayerLookPose {
@@ -177,6 +179,112 @@ const adsLookPose = (pose: PlayerLookPose, ads: PlayerAdsPose, figure: FigureDef
   return { ...pose, neckScale, neckRotation, headRotation };
 };
 
+const lerpScalar = (from: number, to: number, aim: number): number => from + (to - from) * aim;
+const lerpVec3 = (from: Vec3, to: Vec3, aim: number): Vec3 =>
+  from.map((value, axis) => value + (to[axis]! - value) * aim) as Vec3;
+const lerpRotation = (from: Quaternion, to: Quaternion, aim: number): Quaternion => {
+  const sign = to[3] < 0 ? -1 : 1;
+  const lerped = [
+    from[0] + (to[0]! * sign - from[0]) * aim,
+    from[1] + (to[1]! * sign - from[1]) * aim,
+    from[2] + (to[2]! * sign - from[2]) * aim,
+    from[3] + (to[3]! * sign - from[3]) * aim,
+  ];
+  const length = Math.hypot(...lerped);
+  return length > 0
+    ? ([lerped[0]! / length, lerped[1]! / length, lerped[2]! / length, lerped[3]! / length] as Quaternion)
+    : from;
+};
+
+/** Between hip and sighted: the aim's share of every seated point and joint turn of the two poses. */
+export const blendLookPoses = (hip: PlayerLookPose, sighted: PlayerLookPose, aim: number): PlayerLookPose => {
+  if (!(Number.isFinite(aim) && aim >= 0 && aim <= 1)) {
+    throw new Error('Invalid aim-down-sights pose blend');
+  }
+  if (aim <= 0) {
+    return hip;
+  }
+  if (aim >= 1) {
+    return sighted;
+  }
+  const lean =
+    hip.lateralLean && sighted.lateralLean
+      ? {
+          frame: {
+            offsetMetres: lerpScalar(hip.lateralLean.frame.offsetMetres, sighted.lateralLean.frame.offsetMetres, aim),
+            rollRadians: lerpScalar(hip.lateralLean.frame.rollRadians, sighted.lateralLean.frame.rollRadians, aim),
+          },
+          rotation: lerpRotation(hip.lateralLean.rotation, sighted.lateralLean.rotation, aim),
+          pivot: lerpVec3(hip.lateralLean.pivot, sighted.lateralLean.pivot, aim),
+        }
+      : (sighted.lateralLean ?? hip.lateralLean);
+  return {
+    ...(hip.unleaned && sighted.unleaned ? { unleaned: blendLookPoses(hip.unleaned, sighted.unleaned, aim) } : {}),
+    ...(lean ? { lateralLean: lean } : {}),
+    hip: lerpVec3(hip.hip, sighted.hip, aim),
+    spine: lerpVec3(hip.spine, sighted.spine, aim),
+    neck: lerpVec3(hip.neck, sighted.neck, aim),
+    head: lerpVec3(hip.head, sighted.head, aim),
+    hipTurn: lerpScalar(hip.hipTurn, sighted.hipTurn, aim),
+    spineTurn: lerpScalar(hip.spineTurn, sighted.spineTurn, aim),
+    neckTurn: lerpScalar(hip.neckTurn, sighted.neckTurn, aim),
+    headTurn: lerpScalar(hip.headTurn, sighted.headTurn, aim),
+    hipDrop: lerpScalar(hip.hipDrop, sighted.hipDrop, aim),
+    spineRotation: lerpRotation(hip.spineRotation, sighted.spineRotation, aim),
+    neckRotation: lerpRotation(hip.neckRotation, sighted.neckRotation, aim),
+    headRotation: lerpRotation(hip.headRotation, sighted.headRotation, aim),
+    neckScale: lerpScalar(hip.neckScale, sighted.neckScale, aim),
+    eyeFromHead: lerpVec3(hip.eyeFromHead, sighted.eyeFromHead, aim),
+    eye: lerpVec3(hip.eye, sighted.eye, aim),
+    eyes: {
+      left: lerpVec3(hip.eyes.left, sighted.eyes.left, aim),
+      right: lerpVec3(hip.eyes.right, sighted.eyes.right, aim),
+    },
+    shoulders: {
+      left: lerpVec3(hip.shoulders.left, sighted.shoulders.left, aim),
+      right: lerpVec3(hip.shoulders.right, sighted.shoulders.right, aim),
+    },
+    stockSeats: {
+      left: lerpVec3(hip.stockSeats.left, sighted.stockSeats.left, aim),
+      right: lerpVec3(hip.stockSeats.right, sighted.stockSeats.right, aim),
+    },
+    proneAds: hip.proneAds || sighted.proneAds,
+  };
+};
+
+/** The aim's share of the hip pose and the sighted one; each endpoint is the pose that gate alone gives. */
+const partSightedLookPose = ({
+  figure,
+  models,
+  pitch,
+  stance,
+  lean,
+  stancePose,
+  ads,
+}: {
+  figure: FigureDef;
+  models: Models;
+  pitch: number;
+  stance: PlayerStance;
+  lean?: LeanFrame | undefined;
+  stancePose?: FigureStancePose;
+  ads: PlayerAdsPose;
+}): PlayerLookPose => {
+  const aim = ads.aim ?? 1;
+  const shared = { figure, models, pitch, stance, lean };
+  const hip = playerLookPose({
+    ...shared,
+    stancePose: stancePose ?? figureStancePose(figure, stance, false),
+    ads: undefined,
+  });
+  const sighted = playerLookPose({
+    ...shared,
+    stancePose: stancePose ?? figureStancePose(figure, stance, true),
+    ads: { ...ads, aim: 1 },
+  });
+  return blendLookPoses(hip, sighted, aim);
+};
+
 export const playerLookPose = ({
   figure,
   models,
@@ -184,7 +292,7 @@ export const playerLookPose = ({
   stance,
   ads,
   lean,
-  stancePose = figureStancePose(figure, stance, ads !== undefined),
+  stancePose,
 }: {
   figure: FigureDef;
   models: Models;
@@ -194,6 +302,13 @@ export const playerLookPose = ({
   lean?: LeanFrame | undefined;
   ads?: PlayerAdsPose | undefined;
 }): PlayerLookPose => {
+  if (ads && ads.aim !== undefined && !(Number.isFinite(ads.aim) && ads.aim >= 0 && ads.aim <= 1)) {
+    throw new Error('Invalid aim-down-sights pose aim');
+  }
+  if (ads && (ads.aim ?? 1) < 1) {
+    return partSightedLookPose({ figure, models, pitch, stance, lean, ...(stancePose ? { stancePose } : {}), ads });
+  }
+  const settledStancePose = stancePose ?? figureStancePose(figure, stance, ads !== undefined);
   const anchors = models.get(figure.body.model)?.anchors;
   const anchor = (name: string): Vec3 => {
     const at = anchors?.[name];
@@ -214,7 +329,7 @@ export const playerLookPose = ({
     return [origin[0] - at[0], origin[1] + at[1], origin[2] - at[2]];
   };
   const hipAimTurn = -playerLookLean(figure, pitch, stance, ads !== undefined);
-  const hipTurn = -stancePose.torsoForwardDegrees * RADIANS + hipAimTurn;
+  const hipTurn = -settledStancePose.torsoForwardDegrees * RADIANS + hipAimTurn;
   const { torsoShare, neckShare, torsoLimitDegrees, neckLimitDegrees, headLimitDegrees, stockShoulderOffset } =
     figure.aimPose;
   const limit = (angle: number, bounds: readonly [number, number]): number =>
@@ -241,7 +356,7 @@ export const playerLookPose = ({
     spineTurn,
     neckTurn,
     headTurn,
-    hipDrop: stancePose.hipDropMetres,
+    hipDrop: settledStancePose.hipDropMetres,
     spineRotation: multiplyRotation(
       turnX(spineTurn),
       turnZ(ads ? adsRollDegrees(figure, ads.model, stance).torso * RADIANS * adsSign(ads) : 0),

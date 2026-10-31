@@ -687,6 +687,7 @@ const adsAcquisitionMotionRecord = () => {
     samples.push({
       acquired: session.firearms.isAdsAcquired(uid),
       elapsed: rifle.firearm?.adsAcquiring?.elapsedSimSeconds ?? 0,
+      camera: r.engine.camera.position.toArray(),
       lensFrame: r.view.held.opticLensFrame !== undefined,
     });
     if (samples.at(-1).acquired) {
@@ -739,12 +740,26 @@ const opticZoomCheck = async (chromium, port) => {
       incomplete.every((sample) => !sample.lensFrame),
       'the optic sight picture waits for the acquisition to complete',
     );
-    // The held view redraws after the simulation frame, so the sight picture is read from the view.
+    // The view carries the aim from hip to sights with the acquisition instead of snapping: most of
+    // the camera's travel to the sight line is covered before completion, while the settled
+    // camera holds the full-ADS position. The final read waits one redraw because the camera
+    // settles after the simulation frame that completes the acquisition.
     const sightPicture = await page.waitForFunction((uid) => {
       const r = globalThis.primaryActionTest;
       return r.session.inventory.hands[r.dominant]?.uid === uid && r.view.held.opticLensFrame !== undefined;
     }, acquisition.rifleUid);
     assert.ok(sightPicture, 'the optic sight picture arrives once the acquisition completes');
+    const finalCamera = await page.evaluate(() => globalThis.primaryActionTest.engine.camera.position.toArray());
+    const cameraDistance = (from, to) => Math.hypot(from[0] - to[0], from[1] - to[1], from[2] - to[2]);
+    const travel = cameraDistance(samples[0].camera, finalCamera);
+    assert.ok(travel > 0.002, 'the camera travels from the hip eye to the sighted eye');
+    if (samples.length > 2) {
+      const carried = cameraDistance(samples[0].camera, samples.at(-2).camera);
+      assert.ok(
+        carried >= 0.5 * travel,
+        'the camera carries most of the hip-to-sights travel during the acquisition, not at its end',
+      );
+    }
     process.stdout.write(
       `ADS_ACQUISITION_MOTION ${JSON.stringify({ framesToAcquire: acquisition.framesToAcquire, samples: samples.length })}\n`,
     );

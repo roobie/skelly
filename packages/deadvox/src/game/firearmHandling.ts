@@ -578,6 +578,15 @@ export class FirearmMechanics {
     return acquiring !== undefined && acquiring.elapsedSimSeconds >= acquiring.durationSimSeconds;
   }
 
+  /** How far the held firearm's aim-down-sights acquisition has carried it, from 0 to 1; a pure read. */
+  adsAcquisitionProgress(uid: number): number {
+    const acquiring = this.inventory.itemByUid(uid)?.firearm?.adsAcquiring;
+    if (!acquiring) {
+      return this.isAdsAcquired(uid) ? 1 : 0;
+    }
+    return Math.max(0, Math.min(1, acquiring.elapsedSimSeconds / acquiring.durationSimSeconds));
+  }
+
   private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
     const tuning = this.firearmsCombatTuning;
     if (!tuning) {

@@ -7,9 +7,11 @@ import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts'
 import type { Vec3 } from '../src/core/coords.ts';
 import type { EntityId } from '../src/core/entities.ts';
 import { firearmStanceEffects, firearmsSkillEffects, steadinessTuning } from '../src/core/firearmsSkill.ts';
+import { blendHeldFirearmTransforms, heldFirearmTransform } from '../src/core/heldPose.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the session's collision pose solves.
 import * as leanCollision from '../src/core/leanCollision.ts';
-import { playerEyePosition } from '../src/core/playerLookPose.ts';
+import { playerAdsPose } from '../src/core/playerAdsPose.ts';
+import { playerEyePosition, playerLookPose } from '../src/core/playerLookPose.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
@@ -449,6 +451,71 @@ describe('long-gun skill ownership', () => {
     expect(remainingResumed).toBe(remainingUninterrupted);
     expect(resumed.session.sim.time).toBe(runtime.session.sim.time);
     expect(resumed.session.character.snapshotState()).toEqual(runtime.session.character.snapshotState());
+  });
+
+  it('poses between hip and sights while the acquisition is partial', () => {
+    const runtime = makeRuntime({ content });
+    const rifle = equip(runtime);
+    runtime.setReadyHeld(true);
+    runtime.advance(90);
+    runtime.setAds(true);
+    const partway = Math.max(
+      1,
+      Math.floor((firearmStanceEffects(0, tuning).adsAcquisitionDurationSimSeconds * 60) / 2),
+    );
+    runtime.advance(partway);
+    const { session } = runtime;
+    const progress = session.firearms.adsAcquisitionProgress(rifle.uid);
+    expect(progress).toBeGreaterThan(0);
+    expect(progress).toBeLessThan(1);
+    const figure = content.figures.get('player')!;
+    const poseArgs = { figure, models: content.models, pitch: 0, stance: session.stance } as const;
+    const hipPose = playerLookPose({ ...poseArgs });
+    const sightedPose = playerLookPose({ ...poseArgs, ads: playerAdsPose(session.inventory, true, undefined, 1) });
+    const partialPose = playerLookPose({
+      ...poseArgs,
+      ads: playerAdsPose(session.inventory, true, undefined, progress),
+    });
+    const between = (from: number, mid: number, to: number, label: string) => {
+      expect(mid, label).toBeGreaterThanOrEqual(Math.min(from, to));
+      expect(mid, label).toBeLessThanOrEqual(Math.max(from, to));
+    };
+    for (const [axis, from] of hipPose.eye.entries()) {
+      between(from, partialPose.eye[axis]!, sightedPose.eye[axis]!, `carried eye axis ${axis}`);
+    }
+    for (const side of ['left', 'right'] as const) {
+      for (const [axis, from] of hipPose.stockSeats[side].entries()) {
+        between(
+          from,
+          partialPose.stockSeats[side][axis]!,
+          sightedPose.stockSeats[side][axis]!,
+          `carried stock seat ${side} axis ${axis}`,
+        );
+      }
+    }
+    expect(partialPose.eye).not.toEqual(hipPose.eye);
+    expect(partialPose.eye).not.toEqual(sightedPose.eye);
+    // The held firearm rides the same share between its hip pose and its sighted one.
+    const sighted = playerAdsPose(session.inventory, true, undefined, 1)!;
+    const gunArgs = {
+      holds: figure.holds,
+      model: sighted.model,
+      side: sighted.side,
+      leadingSide: sighted.side,
+      twoHanded: true,
+      progress: 1,
+      aimFrame: NEUTRAL_AIM,
+      lookPitchRadians: 0,
+      loweredPitchRadians: 0,
+    } as const;
+    const hipGun = heldFirearmTransform({ ...gunArgs, aimingDownSights: false });
+    const sightedGun = heldFirearmTransform({ ...gunArgs, aimingDownSights: true });
+    const partialGun = blendHeldFirearmTransforms(hipGun, sightedGun, progress);
+    for (const [axis, from] of hipGun.rootOffset.entries()) {
+      between(from, partialGun.rootOffset[axis]!, sightedGun.rootOffset[axis]!, `carried gun root axis ${axis}`);
+    }
+    expect(partialGun.rootOffset).not.toEqual(hipGun.rootOffset);
+    expect(partialGun.rootOffset).not.toEqual(sightedGun.rootOffset);
   });
 });
 

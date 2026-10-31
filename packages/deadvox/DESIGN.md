@@ -2269,14 +2269,23 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   time, clamped by a content maximum ADS duration so a novice sights faster than
   they raise instead of doubling the slowest handling. The clamp bounds ADS only,
   never raise, and the acquisition is authoritative saved state, not a second
-  raise job. Sniping has no timing curve of its own. Recoil kick and recovery
+  raise job. The view blends hip to sights across that acquisition and settles
+  back over a content-owned blend on release, because the simulation owns when
+  the sights arrive while the presentation owns how the move looks: the blend
+  reads the acquisition's progress and never writes simulation state, and the
+  optic picture hands over at full alignment. Sniping has no timing curve of its
+  own. Recoil kick and recovery
   have one owner; splitting only kick would quietly move recovery to the wrong
   skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
   sway together or compete through separate aim controllers. See
   `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
   `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
-  `src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired` and
-  `stanceEffectsFor`; and `src/game/session.ts`, `advancePlayerReadiness`.
+  `src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
+  `adsAcquisitionProgress` and `stanceEffectsFor`; `src/game/session.ts`,
+  `advancePlayerReadiness`; `src/game/play.ts`, `advanceAdsAim`;
+  `src/core/playerLookPose.ts`, `blendLookPoses`;
+  `src/core/heldPose.ts`, `blendHeldFirearmTransforms`; and
+  `src/render/playView.ts`, `adsCameraTarget`.
 
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
