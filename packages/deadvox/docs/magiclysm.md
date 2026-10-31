@@ -2,6 +2,7 @@
 read_if:
   - you're planning a magic mod in the manner of Cataclysm's Magiclysm, or the engine work it needs
   - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
+  - you're deciding what a character attribute governs, or whether a new one is needed
   - you're choosing which engine verbs or content kinds the mod rules work adds first
   - you're opening a closed code list (damage kinds, item capabilities, long jobs, zombie abilities) for mods
 ---
@@ -52,9 +53,13 @@ and `src/core/character.ts`, `skillSaturation`.
 
 Needed:
 
-- **Attributes as content,** held by the character and saved with it. `DESIGN.md`,
-  "Moving furniture", avoided adding an actor stat; the attribute vocabulary should cover
-  the cases that sentence worked around rather than add a parallel one.
+- **Attributes as content,** held by the character and saved with it. An attribute is a
+  content entry that contributes modifiers to effects; no mechanism reads an attribute
+  directly. A mod therefore adds an attribute without an engine change, and the base set
+  only has to cover the base game.
+- **Attributes as modified values:** an attribute has a base value plus modifiers, so an
+  item or a condition can raise or lower it. This is what an enchantment's "+2 strength
+  while worn" needs.
 - **Modifier sources as content:** items under a condition, traits and timed effects
   (gap 2), each attributed to its source so removing the source removes its modifiers.
 - **Derived modifiers:** an attribute or skill level contributes modifiers, so every
@@ -64,7 +69,47 @@ Needed:
   (`PILLARS.md`, "Content forward compatibility"), so each later gap adds the entries its
   mechanism reads.
 
-Open: the attribute vocabulary, and whether skills fold onto modifiers in the same change.
+#### Attribute vocabulary
+
+Each attribute owns one aptitude, with a boundary sharp enough that two attributes never
+compete for the same effect:
+
+- **Strength:** force. Melee impulse and bashing, throw range, recoil, lifting furniture.
+  `DESIGN.md`, "Moving furniture", lets size stand in for strength; strength is what that
+  sentence worked around.
+- **Dexterity:** the hands. Handling time (`DESIGN.md`, "Handling time"), reloading,
+  applying treatment, crafting and prying speed.
+- **Agility:** the whole body. Movement and sprint speed, ladders and climbing, stance
+  changes, melee recovery.
+- **Intellect:** learning. Practice gain, reading time and recipe access, and the mana
+  pool in Magiclysm.
+- **Perception:** noticing. The player's own eyes do the seeing in first person, so
+  perception needs effects the game owns: hearing range and direction precision, telling
+  zombie types apart at a distance, spotting loot and traps. Without them it is a dump
+  attribute.
+- **Grit:** resolve. How much a condition impairs the character, never the condition
+  itself: grit keeps a bleeding or exhausted character working, but does not clot blood or
+  shorten sleep debt. Its effects are the pain knockout threshold, the point at which shock
+  impairs, how hard fatigue and hunger tiers bite, the winded threshold, the cost of
+  adverse surroundings, and concentration under stress (holding breath, steadiness while
+  hurt, casting failure in pain).
+
+Endurance is not an attribute. It is a group of effects (stamina maximum and recovery,
+fatigue gain, the winded threshold) that strength and agility feed as the body's
+adaptation, and grit feeds as the mental state that keeps a body going.
+
+Physiology is not an attribute either. Bleeding closure, blood recovery and infection
+resistance belong to traits (gap 4) and to the character's state, such as nutrition and
+rest, because they are not aptitudes a person has or trains. This keeps any attribute from
+being only more health.
+
+Excluded: charisma, which waits for NPCs or factions (gap 8); and luck, because the engine
+owns seeded randomness and luck works against skill.
+
+Open: how attributes are set and whether they change (point-buy at start, growth with
+practice, or fixed apart from modifiers), which decides whether the character stores them
+or the start state (gap 4) grants them; and whether skills fold onto modifiers in the same
+change.
 
 ### 2. Timed status effects
 
