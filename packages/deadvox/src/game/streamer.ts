@@ -4,6 +4,7 @@
 // and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
 // and never need a second pass.
 
+import { installColumn } from '../core/canonicalTerrain.ts';
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
@@ -498,12 +499,7 @@ export class Streamer {
   private addGenerated(cx: number, cz: number): Chunk[] {
     const { world, seed, terrain, shape, scale, structures, surface, stamp } = this.opts;
     const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
-    // A chunk edited before its column generated is kept.
-    const added = column.filter((chunk) => !world.getChunk(chunk.cx, chunk.cy, chunk.cz));
-    for (const chunk of added) {
-      world.addChunk(chunk);
-    }
-    return added;
+    return installColumn(world, column);
   }
 
   /** A touched column's chunks when every one is resident, so it is installed instead of generated. */
@@ -516,7 +512,7 @@ export class Streamer {
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
       const chunk = world.getChunk(cx, cy, cz);
       if (!chunk) {
-        return undefined;
+        throw new Error(`Incomplete touched column ${cx},${cz}`);
       }
       chunks.push(chunk);
     }

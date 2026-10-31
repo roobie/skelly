@@ -4,6 +4,7 @@ import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 
 export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
@@ -69,12 +70,16 @@ export const fixtureLootPoint = (
   required: supply.kind === 'fixed',
 });
 
+const FIXTURE_ID = /^[a-z0-9_]+$/;
 const object = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
 const fixtureEntry = (entry: unknown, section: string): unknown => {
   if (!object(entry)) {
     return entry;
+  }
+  if (section === 'blocks') {
+    return { material: FIXTURE_MATERIAL, ...entry };
   }
   if (section === 'recipes') {
     return { category: 'fixture_category', tags: [], searchTerms: [], ...entry };
@@ -110,7 +115,19 @@ export const fixtureSources = (sources: readonly ContentSource[]): ContentSource
       return source;
     }
     const data = { ...source.data };
-    for (const section of ['items', 'templates', 'layouts', 'furniture', 'recipes']) {
+    if (
+      Array.isArray(data.blocks) &&
+      data.blocks.some((entry: unknown) => object(entry) && entry.material === undefined)
+    ) {
+      const solid = data.blocks.find(
+        (entry: unknown) =>
+          object(entry) && entry.solid === true && typeof entry.id === 'string' && FIXTURE_ID.test(entry.id),
+      );
+      if (object(solid) && typeof solid.id === 'string') {
+        data.blockMaterials ??= [fixtureBlockMaterial(solid.id)];
+      }
+    }
+    for (const section of ['blocks', 'items', 'templates', 'layouts', 'furniture', 'recipes']) {
       const entries = data[section];
       if (Array.isArray(entries)) {
         data[section] = entries.map((entry: unknown) => fixtureEntry(entry, section));

@@ -3,6 +3,7 @@ import type { ContentSource } from '../../src/core/content.ts';
 import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
+import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
 import {
   FIXTURE_MATERIAL,
   fixtureBreach,
@@ -128,11 +129,20 @@ export const fixtureScenarioSources = (
       source: 'scenario-fixture.json',
       data: {
         furnitureMaterials: fixtureMaterials(),
+        blockMaterials: [fixtureBlockMaterial('fixture_solid')],
         sounds: [...fixtureSounds(), ...bodySounds],
         blocks: [
-          { id: 'fixture_solid', name: 'Fixture solid', solid: true, color: '#808080' },
-          { id: 'asphalt', name: 'Fixture asphalt', solid: true, color: '#404040' },
-          { id: 'fixture_water', name: 'Fixture water', solid: false, opaque: false, liquid: true, color: '#3b6e8f' },
+          { id: 'fixture_solid', material: FIXTURE_MATERIAL, name: 'Fixture solid', solid: true, color: '#808080' },
+          { id: 'asphalt', material: FIXTURE_MATERIAL, name: 'Fixture asphalt', solid: true, color: '#404040' },
+          {
+            id: 'fixture_water',
+            material: FIXTURE_MATERIAL,
+            name: 'Fixture water',
+            solid: false,
+            opaque: false,
+            liquid: true,
+            color: '#3b6e8f',
+          },
         ],
         siteGeneration: [
           {

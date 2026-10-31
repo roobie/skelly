@@ -105,7 +105,7 @@ export interface Registry extends RegistryMaps {
   contentOrigins: Map<string, { source: string; path: string }>;
 }
 
-const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
+const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -2116,6 +2116,28 @@ const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void
   }
 };
 
+const checkBlockMaterials = (registry: Registry, report: Report): void => {
+  for (const block of registry.blocks.slice(1)) {
+    if (!registry.blockMaterials.has(block.material)) {
+      report('blocks', block.id, '.material', `no block material "${block.material}"`);
+    }
+  }
+  for (const material of registry.blockMaterials.values()) {
+    const rubble = registry.blockIds.get(material.fallsTo);
+    if (rubble === undefined || !registry.blocks[rubble]?.solid) {
+      report('blockMaterials', material.id, '.fallsTo', `no solid rubble block "${material.fallsTo}"`);
+    }
+    if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
+      report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
+    }
+    material.rubble.forEach(({ item }, i) => {
+      if (!registry.items.has(item)) {
+        report('blockMaterials', material.id, `.rubble[${i}].item`, `no item "${item}"`);
+      }
+    });
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -2127,6 +2149,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
+  checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

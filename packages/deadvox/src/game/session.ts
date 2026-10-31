@@ -10,9 +10,11 @@ import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying
 import { BearTraps } from '../core/bearTrap.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
+import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
+import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -68,7 +70,7 @@ import { climb, LadderHold } from '../core/ladders.ts';
 import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
-import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
+import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
@@ -110,6 +112,7 @@ import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { strikeTerrain } from '../core/terrainStrike.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
@@ -479,6 +482,7 @@ export interface SessionOptions {
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
+  terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
   scale: Scale;
@@ -509,6 +513,8 @@ export interface SessionOptions {
   refusal?: ((text: string) => void) | undefined;
   /** A held paper request selected by a live domain command; presentation owns its view. */
   onRead: (request: ReadRequest) => void;
+  /** Invalid saved overlay entries are discarded before simulation resumes. */
+  onRestoreIssue?: (issue: string) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
@@ -522,6 +528,8 @@ export interface SessionOptions {
   onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
+  /** Output only, after admitted terrain removal; includes neighbouring chunks whose meshes read the edited cells. */
+  onTerrainEdited?: (chunks: Vec3[]) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
   /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`DESIGN.md`, "Hand grenade"). */
@@ -868,21 +876,7 @@ export const createSession = (options: SessionOptions) => {
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
-  const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const spawn of source.furnitureIn(cx, cz)) {
-      inventory.furnishSpawn(spawn);
-    }
-    for (const point of source.lootPointsIn(cx, cz)) {
-      if (point.channel !== 'ground') {
-        continue;
-      }
-      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point), scale.blockSize)) {
-        if (!inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: point.destination })) {
-          throw new Error(`ground item "${rolled.type}" does not fit in its pile`);
-        }
-      }
-    }
-  };
+  const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
   const fuses = new Fuses(
     registry,
     Array.from(inventory.items(), ({ item }) => item),
@@ -1475,12 +1469,45 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
-  /** A swing that meets no zombie strikes the piece in its reach with the weapon's impulse. */
+  const strikeTerrainCell = (cell: Vec3, weapon: MeleeWeapon): boolean => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return false;
+    }
+    const block = registry.blocks[context.terrain.getBlock(...cell)];
+    const result = strikeTerrain(
+      {
+        terrain: context.terrain,
+        supply: columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      cell,
+      { strength: weapon.impulse, kind: weapon.type ?? 'blunt' },
+    );
+    if (!result) {
+      return false;
+    }
+    if (result.outcome === 'broken') {
+      options.onTerrainEdited?.(result.edited);
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+    if (block?.solid) {
+      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
+    }
+    return true;
+  };
+  /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
-    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse);
+    if (piece && entities.isSolid(...hit.block)) {
+      return bashPiece(piece, weapon.impulse);
+    }
+    return hit ? strikeTerrainCell(hit.block, weapon) : false;
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
@@ -2456,6 +2483,7 @@ export const createSession = (options: SessionOptions) => {
       }
       return found;
     });
+    world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     playerCombat.restoreState(restored.character.playerCombat);
     spawner.restoreState(restored.world.spawned);
@@ -2722,14 +2750,10 @@ export const createSession = (options: SessionOptions) => {
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
     },
+    projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {
-      const key = `${cx},${cz}`;
-      if (!rolledColumns.has(key)) {
-        generateColumnSupply(cx, cz, source);
-        // Empty columns also stay rolled: absence of furniture or a surviving pile is not fresh supply.
-        rolledColumns.add(key);
-      }
+      columnSupply.arrive(cx, cz, source);
       spawner.onColumn({ cx, cz, site: source, registry, zombies: zombieSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),

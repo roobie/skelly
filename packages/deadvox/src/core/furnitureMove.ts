@@ -20,6 +20,8 @@ export interface FurnitureMover {
   readonly inventory: Inventory;
   /** Terrain only; furniture comes from the inventory's entities. */
   readonly terrainSolid: SolidAt;
+  readonly readBox?: (pos: Readonly<Vec3>, size: Readonly<Vec3>) => void;
+  readonly minY?: number;
   readonly blockSize: number;
   readonly player: Body;
   /** Every other body that a piece could land on or be stood in. */
@@ -95,13 +97,22 @@ class Shadow {
   private readonly changed = new Map<string, BlockEntity | null>();
   private readonly terrainSolid: SolidAt;
   private readonly entities: BlockEntities;
+  private readonly readBox: FurnitureMover['readBox'];
+  private readonly minY: number | undefined;
 
-  constructor(terrainSolid: SolidAt, entities: BlockEntities) {
+  constructor(terrainSolid: SolidAt, entities: BlockEntities, readBox?: FurnitureMover['readBox'], minY?: number) {
     this.terrainSolid = terrainSolid;
     this.entities = entities;
+    this.readBox = readBox;
+    this.minY = minY;
+  }
+
+  fallFloor(fromY: number): number {
+    return this.minY ?? fromY - MAX_FALL + 1;
   }
 
   fill(entity: BlockEntity, pos: Readonly<Vec3>, filled: boolean): void {
+    this.readBox?.(pos, entity.size);
     for (const cell of boxCells(pos, entity.size)) {
       if (filled) {
         this.changed.set(key(cell), entity);
@@ -121,18 +132,20 @@ class Shadow {
   }
 
   free(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
+    this.readBox?.(pos, size);
     return boxCells(pos, size).every((cell) => !this.occupied(cell));
   }
 
   /** Whether anything is under a box, so it stands rather than falls. */
   rests(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
+    this.readBox?.(pos, size);
     return footprint(pos, size).some((cell) => this.occupied(below(cell)));
   }
 
   /** The height a free box comes to rest at when let go. */
   landing(pos: Readonly<Vec3>, size: Readonly<Vec3>): number | undefined {
     const [x, top, z] = pos;
-    for (let y = top; y > top - MAX_FALL; y--) {
+    for (let y = top; y >= this.fallFloor(top); y--) {
       if (this.rests([x, y, z], size)) {
         return y;
       }
@@ -183,39 +196,58 @@ interface Settled {
   ruined: BlockEntity[];
 }
 
-/**
- * Pieces that lose what held them up fall, lowest first, so a stack comes down in
- * order; only a piece standing on a cell that a moved piece left can fall. A fall with
- * nowhere to land or onto someone refuses a move; under a ruin, which can't be refused,
- * that piece is destroyed in turn instead, so nothing floats.
- */
-const settle = (
-  mover: FurnitureMover,
-  shadow: Shadow,
-  lifted: BlockEntity,
-  { ruin = false, movedTo }: { ruin?: boolean; movedTo?: Vec3 } = {},
-): Settled | string => {
-  const messages = messagesOf(mover.inventory);
-  const vacated = new Set(boxCells(lifted.pos, lifted.size).map(key));
-  shadow.fill(lifted, lifted.pos, false);
-  if (movedTo) {
-    shadow.fill(lifted, movedTo, true);
-  }
-  // Only a piece over a vacated cell can fall, and it shares that cell's column, so candidates come from the columns
-  // of what moved. A fall adds its own columns; the pieces that brings in stand above it, so the lowest-first order holds.
-  const seen = new Set<BlockEntity>([lifted]);
+const dependantQueue = (mover: FurnitureMover, roots: readonly BlockEntity[], ruin: boolean) => {
+  const seen = new Set<BlockEntity>(roots);
   const candidates: BlockEntity[] = [];
   const gather = (pos: Readonly<Vec3>, size: Readonly<Vec3>) => {
     const fresh = mover.inventory.entities
       .near(pos, [pos[0] + size[0] - 1, pos[1], pos[2] + size[2] - 1])
-      .filter((entity) => !(seen.has(entity) || fastened(mover.inventory, entity)));
+      .filter((entity) => !seen.has(entity) && (ruin || !fastened(mover.inventory, entity)));
     for (const entity of fresh) {
       seen.add(entity);
     }
     candidates.push(...fresh);
-    candidates.sort((a, b) => a.pos[1] - b.pos[1] || a.uid - b.uid);
+    candidates.sort(ruin ? ruinOrder : (a, b) => a.pos[1] - b.pos[1] || a.uid - b.uid);
   };
-  gather(lifted.pos, lifted.size);
+  for (const piece of roots) {
+    gather(piece.pos, piece.size);
+  }
+  return { candidates, gather };
+};
+
+const fallDestination = (mover: FurnitureMover, shadow: Shadow, entity: BlockEntity, ruin: boolean) => {
+  const y = ruin && fastened(mover.inventory, entity) ? undefined : shadow.landing(entity.pos, entity.size);
+  return {
+    y,
+    refusal: y === undefined ? messagesOf(mover.inventory).nowhereToLand : fallRefusal(mover, entity, y),
+  };
+};
+
+const vacate = (shadow: Shadow, vacated: Set<string>, entity: BlockEntity): void => {
+  shadow.fill(entity, entity.pos, false);
+  for (const cell of boxCells(entity.pos, entity.size)) {
+    vacated.add(key(cell));
+  }
+};
+
+/** Lowest-first settling keeps a stack coherent; an admitted ruin must not leave a refused dependant floating. */
+const settle = (
+  mover: FurnitureMover,
+  shadow: Shadow,
+  lifted: BlockEntity | readonly BlockEntity[],
+  { ruin = false, movedTo }: { ruin?: boolean; movedTo?: Vec3 } = {},
+): Settled | string => {
+  const roots = 'uid' in lifted ? [lifted] : lifted;
+  const vacated = new Set<string>();
+  for (const piece of roots) {
+    vacate(shadow, vacated, piece);
+  }
+  if (movedTo) {
+    shadow.fill(roots[0]!, movedTo, true);
+  }
+  // Only a piece over a vacated cell can fall, and it shares that cell's column, so candidates come from the columns
+  // of what moved. A fall adds its own columns; the pieces that brings in stand above it, so the lowest-first order holds.
+  const { candidates, gather } = dependantQueue(mover, roots, ruin);
   const falls: Fall[] = [];
   const ruined: BlockEntity[] = [];
   for (let entity = candidates.shift(); entity; entity = candidates.shift()) {
@@ -223,9 +255,8 @@ const settle = (
     if (!onVacated || shadow.rests(entity.pos, entity.size)) {
       continue;
     }
-    shadow.fill(entity, entity.pos, false);
-    const y = shadow.landing(entity.pos, entity.size);
-    const refusal = y === undefined ? messages.nowhereToLand : fallRefusal(mover, entity, y);
+    vacate(shadow, vacated, entity);
+    const { y, refusal } = fallDestination(mover, shadow, entity, ruin);
     if (refusal && !ruin) {
       return refusal;
     }
@@ -234,9 +265,6 @@ const settle = (
       falls.push({ entity, y });
     } else {
       ruined.push(entity);
-    }
-    for (const cell of boxCells(entity.pos, entity.size)) {
-      vacated.add(key(cell));
     }
     gather(entity.pos, entity.size);
   }
@@ -248,6 +276,7 @@ const fallRefusal = (mover: FurnitureMover, entity: BlockEntity, y: number): str
   const messages = messagesOf(mover.inventory);
   const path: Vec3 = [entity.pos[0], y, entity.pos[2]];
   const pathSize: Vec3 = [entity.size[0], entity.pos[1] + entity.size[1] - y, entity.size[2]];
+  mover.readBox?.(path, pathSize);
   if (boxIntersectsBody(path, pathSize, mover.player)) {
     return messages.fallsOnPlayer;
   }
@@ -305,7 +334,8 @@ const resettlePiles = (
 /** Where a pile that lost its floor falls to, then the cells beside that. */
 const columnTargets = (shadow: Shadow, from: Readonly<Vec3>): Vec3[] => {
   let cell: Vec3 = [...from];
-  for (let fall = 0; fall < MAX_FALL && !shadow.occupied(below(cell)); fall++) {
+  const bottom = shadow.fallFloor(from[1] - 1);
+  while (cell[1] > bottom && !shadow.occupied(below(cell))) {
     cell = below(cell);
   }
   return shadow.occupied(below(cell)) ? [cell, ...shadow.aside(cell)] : [];
@@ -427,8 +457,8 @@ export const removeFurniture = (mover: FurnitureMover, entity: BlockEntity): str
  * A ruined piece's debris, in stacks no larger than each item stacks. These are stand-ins that only size the drop;
  * `ruinFurniture` makes the real items once everything is known to fit, so a refused ruin creates none.
  */
-const debrisOf = (inventory: Inventory, entity: BlockEntity): Placed[] =>
-  (inventory.entities.defOf(entity).ruin?.debris ?? []).flatMap(({ item, count }) => {
+const dropStandIns = (inventory: Inventory, yields: readonly { item: string; count: number }[]): Placed[] =>
+  yields.flatMap(({ item, count }) => {
     const stack = inventory.registry.items.get(item)?.stack ?? 1;
     return Array.from({ length: Math.ceil(count / stack) }, (_, at) => ({
       item: { uid: 0, type: item, count: Math.min(stack, count - at * stack), condition: 1 },
@@ -438,29 +468,55 @@ const debrisOf = (inventory: Inventory, entity: BlockEntity): Placed[] =>
     }));
   });
 
-/**
- * Destroys a piece a blow ruined (`BlockEntities.bash`): what it held and the debris its content names fall as piles
- * at its cells, piles on it resettle, and pieces resting on it fall or, where they can't come down clear, are
- * destroyed in turn with the same drops. A blow can't be refused, so nothing here refuses, and nothing is lost or
- * left floating (`DESIGN.md`, "Edits persist"). Returns the destroyed pieces, the struck one first, so the caller
- * cancels the work that names them. Where the drops have no room it changes nothing and returns undefined: the piece
- * stands until a blow finds room, because destruction loses nothing (`DESIGN.md`, "Ruined furniture").
- */
+/** Refuse before owner writes when drops have no room, because destruction must conserve supplies. */
 export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): BlockEntity[] | undefined => {
+  const plan = planRuin(mover, [entity]);
+  return plan && commitRuin(mover, plan);
+};
+
+const cellOrder = (a: Readonly<Vec3>, b: Readonly<Vec3>): number => a[1] - b[1] || a[0] - b[0] || a[2] - b[2];
+
+const ruinOrder = (a: BlockEntity, b: BlockEntity): number => cellOrder(a.pos, b.pos);
+
+export interface RuinDrop {
+  readonly pos: Vec3;
+  readonly yields: readonly { item: string; count: number }[];
+}
+
+export interface RuinPlan {
+  readonly destroyed: readonly number[];
+  readonly falls: readonly { uid: number; y: number }[];
+  readonly moves: readonly PileMove[];
+  readonly standIns: ReadonlySet<Placed>;
+  readonly dropped: ReadonlySet<Placed>;
+}
+
+/** All roots, their dependants and affected piles reserve against one final shadow and one pile ledger. */
+export const planRuin = (
+  mover: FurnitureMover,
+  roots: readonly BlockEntity[],
+  affectedPiles: readonly Pile[] = [],
+  drops: readonly RuinDrop[] = [],
+): RuinPlan | undefined => {
   const { inventory } = mover;
-  const shadow = new Shadow(mover.terrainSolid, inventory.entities);
-  const { falls, ruined } = settle(mover, shadow, entity, { ruin: true }) as Settled;
-  const destroyed = [entity, ...ruined];
+  const shadow = new Shadow(mover.terrainSolid, inventory.entities, mover.readBox, mover.minY);
+  const ordered = [...new Set(roots)].sort(ruinOrder);
+  const { falls, ruined } = settle(mover, shadow, ordered, { ruin: true }) as Settled;
+  const destroyed = [...ordered, ...ruined];
   const standIns = new Set<Placed>();
-  const loose = destroyed.map((piece) => {
-    const debris = debrisOf(inventory, piece);
+  const loose = [
+    ...destroyed.map((piece) => ({
+      contents: piece.pockets?.flat() ?? [],
+      yields: inventory.entities.defOf(piece).ruin?.debris ?? [],
+      cells: footprint(piece.pos, piece.size),
+    })),
+    ...drops.map(({ pos, yields }) => ({ contents: [], yields, cells: [pos] })),
+  ].map(({ contents, yields, cells }) => {
+    const debris = dropStandIns(inventory, yields);
     for (const placed of debris) {
       standIns.add(placed);
     }
-    return {
-      items: [...(piece.pockets?.flat() ?? []), ...debris],
-      targets: spreadFrom(shadow, footprint(piece.pos, piece.size)),
-    };
+    return { items: [...contents, ...debris], targets: spreadFrom(shadow, cells) };
   });
   const dropped = new Set(loose.flatMap(({ items }) => items));
   if ([...dropped].some(({ item }) => !couldFit(inventory.registry, PILE_GRID, item))) {
@@ -471,13 +527,55 @@ export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): Block
     pos: [fallen.pos[0], y, fallen.pos[2]] as Vec3,
     size: fallen.size,
   }));
-  const moves = resettlePiles(mover, shadow, pilesOver(inventory, [...left, ...landed]), loose);
+  const piles = [...new Set([...affectedPiles, ...pilesOver(inventory, [...left, ...landed])])].sort((a, b) =>
+    cellOrder(a.pos, b.pos),
+  );
+  const moves = resettlePiles(mover, shadow, piles, loose);
   if (!moves) {
     return undefined;
   }
-  for (const placed of standIns) {
-    placed.item = inventory.create(placed.item.type, placed.item.count);
-  }
+  return {
+    destroyed: destroyed.map(({ uid }) => uid),
+    falls: falls.map(({ entity, y }) => ({ uid: entity.uid, y })),
+    moves,
+    standIns,
+    dropped,
+  };
+};
+
+/** Apply only an admitted plan, resolving private owner references after supply publication. */
+export const commitRuin = (mover: FurnitureMover, plan: RuinPlan): BlockEntity[] => {
+  const { inventory } = mover;
+  const entity = (uid: number): BlockEntity => {
+    const piece = inventory.entities.byUid(uid);
+    if (!piece) {
+      throw new Error(`Missing admitted ruin entity ${uid}`);
+    }
+    return piece;
+  };
+  const destroyed = plan.destroyed.map(entity);
+  const falls = plan.falls.map(({ uid, y }) => ({ entity: entity(uid), y }));
+  const piled = new Map([...inventory.piles.values()].flatMap(({ items }) => items.map((p) => [p.item.uid, p])));
+  const moves = plan.moves.map((move) => {
+    const { placed } = move;
+    let resolved: Placed;
+    if (plan.standIns.has(placed)) {
+      resolved = { ...placed, item: inventory.create(placed.item.type, placed.item.count) };
+    } else if (plan.dropped.has(placed)) {
+      const item = inventory.itemByUid(placed.item.uid);
+      if (!item) {
+        throw new Error(`Missing admitted ruin item ${placed.item.uid}`);
+      }
+      resolved = { ...placed, item };
+    } else {
+      const inPile = piled.get(placed.item.uid);
+      if (!inPile) {
+        throw new Error(`Missing admitted piled item ${placed.item.uid}`);
+      }
+      resolved = inPile;
+    }
+    return { ...move, placed: resolved, loose: plan.dropped.has(placed) };
+  });
   beforeRelocating(mover, [...destroyed, ...falls.map((fall) => fall.entity)]);
   for (const piece of destroyed) {
     inventory.entities.destroy(piece);
@@ -485,8 +583,8 @@ export const ruinFurniture = (mover: FurnitureMover, entity: BlockEntity): Block
   for (const { entity: fallen, y } of falls) {
     inventory.entities.drop(fallen, y);
   }
-  inventory.shiftPiles(moves.filter(({ placed }) => !dropped.has(placed)));
-  inventory.landLoose(moves.filter(({ placed }) => dropped.has(placed)));
+  inventory.shiftPiles(moves.filter(({ loose }) => !loose));
+  inventory.landLoose(moves.filter(({ loose }) => loose));
   return destroyed;
 };
 
