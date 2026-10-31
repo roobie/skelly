@@ -2,6 +2,7 @@
 read_if:
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
+  - you change furniture repair start, hand admission or completion refusal
   - you change reachability validation or the repair-corner scenario and its authored stock destinations
 ---
 
@@ -34,7 +35,9 @@ clears rather than silently choosing another recipe when a query hides it. See
 
 ## Work and progression
 
-A craft requires both hands free; stowing is the player's decision. The work item escrows inputs so nothing else can consume them mid-craft. Losing a tool or station stops work without losing progress; the same work can resume when requirements return. Finishing consumes escrow once and creates the result. Cancellation returns exact input identities.
+A craft, including furniture repair, refuses when either hand is occupied and never moves a held item out of the way. Stowing must be the player's active choice rather than an automatic side effect of starting work. See `src/core/craftCommands.ts`, `CraftCommands.startReason`.
+
+Escrow prevents other actions consuming inputs mid-craft. Lost tools or stations must not erase the player's investment, and cancellation owes the exact inputs rather than equivalent replacements. A refused repair completion must return its reason as well as its inputs, because silently losing the work would hide why the piece was not repaired. See `src/core/craftWork.ts`, `craftActionHooks`, and `src/core/longAction.ts`, `LongActions.finishJob`.
 
 Disassembly promises its yield when work starts, so stopping, skill changes or tool changes must not alter it. Repair improves an existing target rather than supplying disassembly results. Craft completion earns practice; take-apart does not. Books and skill levels teach recipes independently, so a book can shortcut the skill grind without changing item ownership. Practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice` and `Character.learnSkillRecipes`.
 

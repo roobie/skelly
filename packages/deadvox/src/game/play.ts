@@ -15,6 +15,7 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
+import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
@@ -735,7 +736,22 @@ export const startPlay = (
   const s = scale.blockSize;
   const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
 
-  const repairSelection: { targetUid?: number } = {};
+  const repairSelection = {
+    targetUid: undefined as number | undefined,
+    start: (
+      recipeId: string,
+      pinnedUid: number,
+      preference: CraftPreference = {},
+      sources?: CraftSources,
+    ): string | undefined =>
+      dispatchScreenCommand({
+        kind: 'craft.repair-entity',
+        recipeId,
+        entityUid: pinnedUid,
+        preference: { ...preference },
+        ...(sources ? { sources } : {}),
+      }),
+  };
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
     focus: config.focus,
@@ -778,7 +794,7 @@ export const startPlay = (
   let openedVehicleId: number | undefined;
   const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
   const furnitureActions = (entity: BlockEntity): ItemAction[] =>
-    furnitureActionsFor(inventory, entity, s, config.debugRepairLook ? session.character.knownRecipes : []);
+    furnitureActionsFor(inventory, entity, s, config.debugRepairLook ? session.character.knownRecipes : undefined);
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -2833,6 +2849,9 @@ export const startPlay = (
     if (selected.id === 'repair') {
       repairSelection.targetUid = entity.uid;
       return undefined;
+    }
+    if (selected.workUid !== undefined) {
+      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
     }
     if (selected.id === 'lift') {
       return { kind: 'furniture.lift', entityUid: entity.uid };

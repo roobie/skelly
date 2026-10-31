@@ -68,11 +68,58 @@ export const worldRepairInGameFlow = async (page, origin) => {
     return { uid: f.repairTargetUid, target: f.debugRepairTarget.uid, yaw: f.input.yaw };
   });
   assert.equal(pin.uid, pin.target, 'held-list choice pins the target without another aiming step');
-  await page.mouse.move(800, 450);
-  await page.waitForFunction((yaw) => globalThis.pumpHandlingTest.input.yaw !== yaw, pin.yaw);
+  await page.waitForFunction(() => {
+    const f = globalThis.pumpHandlingTest;
+    return f.input.locked && !f.input.menuPointer;
+  });
+  await page.evaluate(() => document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementX: 120 })));
+  assert.notEqual(await page.evaluate(() => globalThis.pumpHandlingTest.input.yaw), pin.yaw);
   assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.repairTargetUid), pin.uid);
   assert.deepEqual(await page.evaluate(() => globalThis.pumpHandlingTest.session.inventory.snapshotState()), before);
   assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.actions.job), undefined);
+
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  const started = await page.evaluate(() => {
+    const f = globalThis.pumpHandlingTest;
+    const recipe = [...f.session.character.knownRecipes].find(
+      (id) => f.engine.registry.recipes.get(id)?.repair?.entity === f.debugRepairTarget.type,
+    );
+    const condition = f.session.inventory.entities.conditionOf(f.debugRepairTarget);
+    const refusal = f.repairSelection.start(recipe, f.repairTargetUid, {});
+    const result = globalThis.pumpManualFrames.until(() => f.session.sim.actions.job?.jobType === 'craft');
+    const work = f.session.inventory.hands.right;
+    return {
+      refusal,
+      reached: result.reached,
+      condition,
+      target: work?.work?.repairTarget,
+      duration: work?.work?.duration,
+      ratio: f.session.sim.clock.ratio,
+    };
+  });
+  assert.equal(started.refusal, undefined);
+  assert.equal(started.reached, true);
+  assert.deepEqual(started.target, { kind: 'entity', uid: pin.uid });
+  const finished = await page.evaluate(({ duration, ratio }) => {
+    const f = globalThis.pumpHandlingTest;
+    return globalThis.pumpManualFrames.until(() => !f.session.sim.actions.job, Math.ceil((duration / ratio) * 60) + 2);
+  }, started);
+  assert.equal(finished.reached, true, 'repair completes through normal player ticks');
+  const result = await page.evaluate(() => {
+    const f = globalThis.pumpHandlingTest;
+    return {
+      condition: f.session.inventory.entities.conditionOf(f.debugRepairTarget),
+      uid: f.debugRepairTarget.uid,
+      hands: f.session.inventory.hands,
+      actions: f.getReplayActions().filter(({ payload }) => payload?.kind === 'craft.repair-entity'),
+    };
+  });
+  assert.equal(result.uid, pin.uid);
+  assert.ok(result.condition > started.condition, 'repair improves the pinned piece');
+  assert.equal(result.actions.length, 1, 'the start seam records exactly one repair');
+  assert.equal(result.actions[0].payload.entityUid, pin.uid);
+  assert.ok(!(result.hands.left || result.hands.right));
+  await page.evaluate(() => globalThis.pumpManualFrames.disable());
 
   await enter(0);
   assert.equal(
