@@ -1,4 +1,86 @@
 {
+  "driving": {
+    "ccdSubsteps": 4,
+    "driveAcceleration": 3,
+    "friction": 0,
+    "gravity": [0, -9.8100000000000005, 0],
+    "internalIterations": 1,
+    "lowerEnvelope": -4,
+    "massKg": 1200,
+    "maxColliders": 4,
+    "maxImpacts": 4,
+    "penetrationLimit": 0.02,
+    "radius": 0.5,
+    "restitution": 0,
+    "scenarios": [
+      {
+        "boxes": [
+          {
+            "centre": [0, -1, 0],
+            "half": [20, 0.5, 4],
+            "rotation": [0, 0, 0.099503719020998915, 0.99503719020998915]
+          }
+        ],
+        "id": "slope",
+        "position": [-4, 0.25, 0],
+        "velocity": [5, 0, 0],
+        "viewAxis": 1
+      },
+      {
+        "boxes": [
+          {
+            "centre": [-6, -0.5, 0],
+            "half": [6, 0.5, 4],
+            "rotation": [0, 0, 0, 1]
+          }
+        ],
+        "id": "edge-drop",
+        "position": [-4, 0.51000000000000001, 0],
+        "velocity": [5, 0, 0],
+        "viewAxis": 1
+      },
+      {
+        "boxes": [
+          {
+            "centre": [0, -0.5, 0],
+            "half": [100, 0.5, 4],
+            "rotation": [0, 0, 0, 1]
+          },
+          {
+            "centre": [0, 1, 0],
+            "half": [0.01, 1, 4],
+            "rotation": [0, 0, 0, 1]
+          }
+        ],
+        "id": "thin-obstacle",
+        "position": [-4, 0.51000000000000001, 0],
+        "velocity": [80, 0, 0],
+        "viewAxis": 1
+      },
+      {
+        "boxes": [
+          {
+            "centre": [0, -0.5, 0],
+            "half": [100, 0.5, 4],
+            "rotation": [0, 0, 0, 1]
+          },
+          {
+            "centre": [0, 1, 1],
+            "half": [100, 1, 0.10000000000000001],
+            "rotation": [0, 0, 0, 1]
+          }
+        ],
+        "id": "scrape",
+        "position": [-4, 0.51000000000000001, 0],
+        "velocity": [8, 0, 2],
+        "viewAxis": 2
+      }
+    ],
+    "skin": 1.0000000000000001e-5,
+    "solverIterations": 4,
+    "tickHz": 120,
+    "ticks": 360
+  },
   "footprintMetres": [6, 3],
   "heightMetres": 4,
   "loads": [

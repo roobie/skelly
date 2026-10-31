@@ -22,16 +22,16 @@ class PinnedTreeTest(unittest.TestCase):
             git('init', '-q')
             for name, text in {'LICENSE': 'fixture license', 'src/lib.rs': 'pinned rust',
                                'src.ts/rapier.ts': 'pinned bindings', '.gitignore': 'ignored.rs\n'}.items():
-                path = source / name
-                path.parent.mkdir(exist_ok=True)
+                path = source / ('bindings/typescript' if name.startswith('src') else '') / name
+                path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(text)
             git('add', '.')
             git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
                 'commit', '-qm', 'fixture')
             revision = git('rev-parse', 'HEAD').decode().strip()
-            (source / 'src.ts/rapier_wasm3d.ts').write_text('untracked loader replacement')
-            (source / 'src/ignored.rs').write_text('ignored source')
-            (source / 'src/lib.rs').write_text('modified checkout')
+            (source / 'bindings/typescript/src.ts/rapier_wasm3d.ts').write_text('untracked loader replacement')
+            (source / 'bindings/typescript/src/ignored.rs').write_text('ignored source')
+            (source / 'bindings/typescript/src/lib.rs').write_text('modified checkout')
             stage = root / 'stage'
             stage.mkdir()
             (stage / 'stale.ts').write_text('previous run')

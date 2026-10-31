@@ -39,7 +39,14 @@ const engines = {
 try {
   await vite.listen();
   await mkdir(artifactDirectory, { recursive: true });
-  if (process.argv.includes('--local-rapier')) {
+  if (process.argv.includes('--driving')) {
+    const { runDrivingComparison } = await import('./vehicle-driving.mjs');
+    await runDrivingComparison(
+      vite,
+      engines,
+      process.argv.slice(2).filter((argument) => argument !== '--driving'),
+    );
+  } else if (process.argv.includes('--local-rapier')) {
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(
       vite,
@@ -47,6 +54,8 @@ try {
       process.argv.slice(2).filter((argument) => argument !== '--local-rapier'),
     );
   } else {
+    const { runDrivingComparison } = await import('./vehicle-driving.mjs');
+    await runDrivingComparison(vite, engines, process.argv.slice(2));
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(vite, engines, process.argv.slice(2), false);
     const { runSuite } = await vite.ssrLoadModule('/src/vehicles/feasibility/runner.ts');

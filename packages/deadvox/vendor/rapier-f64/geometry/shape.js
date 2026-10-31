@@ -1,4 +1,4 @@
-import { VectorOps, RotationOps } from "../math";
+import { VectorOps, RotationOps, scratchBuffer } from "../math";
 import { RawShape, RawShapeType } from "../raw";
 import { ShapeContact } from "./contact";
 import { PointProjection } from "./point";
@@ -7,7 +7,9 @@ import { ShapeCastHit } from "./toi";
 export class Shape {
     static fromRaw(rawSet, handle) {
         const rawType = rawSet.coShapeType(handle);
-        let extents;
+        if (rawType === RawShapeType.Compound) {
+            return Compound.fromRawShape(rawSet.coShape(handle));
+        }
         let borderRadius;
         let vs;
         let indices;
@@ -18,12 +20,12 @@ export class Shape {
             case RawShapeType.Ball:
                 return new Ball(rawSet.coRadius(handle));
             case RawShapeType.Cuboid:
-                extents = rawSet.coHalfExtents(handle);
-                return new Cuboid(extents.x, extents.y, extents.z);
+                rawSet.coHalfExtents(handle, scratchBuffer);
+                return new Cuboid(scratchBuffer[0], scratchBuffer[1], scratchBuffer[2]);
             case RawShapeType.RoundCuboid:
-                extents = rawSet.coHalfExtents(handle);
                 borderRadius = rawSet.coRoundRadius(handle);
-                return new RoundCuboid(extents.x, extents.y, extents.z, borderRadius);
+                rawSet.coHalfExtents(handle, scratchBuffer);
+                return new RoundCuboid(scratchBuffer[0], scratchBuffer[1], scratchBuffer[2], borderRadius);
             case RawShapeType.Capsule:
                 halfHeight = rawSet.coHalfHeight(handle);
                 radius = rawSet.coRadius(handle);
@@ -34,7 +36,7 @@ export class Shape {
             case RawShapeType.Polyline:
                 vs = rawSet.coVertices(handle);
                 indices = rawSet.coIndices(handle);
-                return new Polyline(vs, indices);
+                return new Polyline(vs, indices, rawSet.coPolylineFlags(handle));
             case RawShapeType.Triangle:
                 vs = rawSet.coVertices(handle);
                 return new Triangle(VectorOps.new(vs[0], vs[1], vs[2]), VectorOps.new(vs[3], vs[4], vs[5]), VectorOps.new(vs[6], vs[7], vs[8]));
@@ -43,7 +45,8 @@ export class Shape {
                 borderRadius = rawSet.coRoundRadius(handle);
                 return new RoundTriangle(VectorOps.new(vs[0], vs[1], vs[2]), VectorOps.new(vs[3], vs[4], vs[5]), VectorOps.new(vs[6], vs[7], vs[8]), borderRadius);
             case RawShapeType.HalfSpace:
-                normal = VectorOps.fromRaw(rawSet.coHalfspaceNormal(handle));
+                rawSet.coHalfspaceNormal(handle, scratchBuffer);
+                normal = VectorOps.fromBuffer(scratchBuffer);
                 return new HalfSpace(normal);
             case RawShapeType.Voxels:
                 const vox_data = rawSet.coVoxelData(handle);
@@ -55,8 +58,13 @@ export class Shape {
                 const tri_flags = rawSet.coTriMeshFlags(handle);
                 return new TriMesh(vs, indices, tri_flags);
             case RawShapeType.HeightField:
-                const scale = rawSet.coHeightfieldScale(handle);
                 const heights = rawSet.coHeightfieldHeights(handle);
+                rawSet.coHeightfieldScale(handle, scratchBuffer);
+                const scale = {
+                    x: scratchBuffer[0],
+                    y: scratchBuffer[1],
+                    z: scratchBuffer[2],
+                };
                 const nrows = rawSet.coHeightfieldNRows(handle);
                 const ncols = rawSet.coHeightfieldNCols(handle);
                 const hf_flags = rawSet.coHeightFieldFlags(handle);
@@ -92,7 +100,117 @@ export class Shape {
                 throw new Error("unknown shape type: " + rawType);
         }
     }
-    castShape(shapePos1, shapeRot1, shapeVel1, shape2, shapePos2, shapeRot2, shapeVel2, targetDistance, maxToi, stopAtPenetration) {
+    static fromRawShape(rawShape) {
+        if (!rawShape)
+            return null;
+        let extents;
+        let borderRadius;
+        let vs;
+        let indices;
+        let halfHeight;
+        let radius;
+        let normal;
+        const rawType = rawShape.shapeType();
+        try {
+            switch (rawType) {
+                case RawShapeType.Ball:
+                    return new Ball(rawShape.radius());
+                case RawShapeType.Cuboid:
+                    extents = VectorOps.fromRaw(rawShape.halfExtents());
+                    return new Cuboid(extents.x, extents.y, extents.z);
+                case RawShapeType.RoundCuboid:
+                    extents = VectorOps.fromRaw(rawShape.halfExtents());
+                    borderRadius = rawShape.roundRadius();
+                    return new RoundCuboid(extents.x, extents.y, extents.z, borderRadius);
+                case RawShapeType.Capsule:
+                    halfHeight = rawShape.halfHeight();
+                    radius = rawShape.radius();
+                    return new Capsule(halfHeight, radius);
+                case RawShapeType.Segment:
+                    vs = rawShape.vertices();
+                    return new Segment(VectorOps.new(vs[0], vs[1], vs[2]), VectorOps.new(vs[3], vs[4], vs[5]));
+                case RawShapeType.Polyline:
+                    vs = rawShape.vertices();
+                    indices = rawShape.indices();
+                    return new Polyline(vs, indices, rawShape.polylineFlags());
+                case RawShapeType.Triangle:
+                    vs = rawShape.vertices();
+                    return new Triangle(VectorOps.new(vs[0], vs[1], vs[2]), VectorOps.new(vs[3], vs[4], vs[5]), VectorOps.new(vs[6], vs[7], vs[8]));
+                case RawShapeType.RoundTriangle:
+                    vs = rawShape.vertices();
+                    borderRadius = rawShape.roundRadius();
+                    return new RoundTriangle(VectorOps.new(vs[0], vs[1], vs[2]), VectorOps.new(vs[3], vs[4], vs[5]), VectorOps.new(vs[6], vs[7], vs[8]), borderRadius);
+                case RawShapeType.HalfSpace:
+                    normal = VectorOps.fromRaw(rawShape.halfspaceNormal());
+                    return new HalfSpace(normal);
+                case RawShapeType.Voxels:
+                    const vox_data = rawShape.voxelData();
+                    const vox_size = VectorOps.fromRaw(rawShape.voxelSize());
+                    return new Voxels(vox_data, vox_size);
+                case RawShapeType.TriMesh:
+                    vs = rawShape.vertices();
+                    indices = rawShape.indices();
+                    const tri_flags = rawShape.triMeshFlags();
+                    return new TriMesh(vs, indices, tri_flags);
+                case RawShapeType.HeightField:
+                    const scale = VectorOps.fromRaw(rawShape.heightfieldScale());
+                    const heights = rawShape.heightfieldHeights();
+                    const nrows = rawShape.heightfieldNRows();
+                    const ncols = rawShape.heightfieldNCols();
+                    const hf_flags = rawShape.heightFieldFlags();
+                    return new Heightfield(nrows, ncols, heights, scale, hf_flags);
+                case RawShapeType.ConvexPolyhedron: {
+                    const mesh = rawShape.convexMeshData();
+                    if (!mesh) {
+                        throw new Error("Failed to compute the convex hull of a convex polyhedron shape.");
+                    }
+                    vs = mesh.vertices;
+                    indices = mesh.indices;
+                    mesh.free();
+                    return new ConvexPolyhedron(vs, indices);
+                }
+                case RawShapeType.RoundConvexPolyhedron: {
+                    const mesh = rawShape.convexMeshData();
+                    if (!mesh) {
+                        throw new Error("Failed to compute the convex hull of a convex polyhedron shape.");
+                    }
+                    vs = mesh.vertices;
+                    indices = mesh.indices;
+                    mesh.free();
+                    borderRadius = rawShape.roundRadius();
+                    return new RoundConvexPolyhedron(vs, indices, borderRadius);
+                }
+                case RawShapeType.Cylinder:
+                    halfHeight = rawShape.halfHeight();
+                    radius = rawShape.radius();
+                    return new Cylinder(halfHeight, radius);
+                case RawShapeType.RoundCylinder:
+                    halfHeight = rawShape.halfHeight();
+                    radius = rawShape.radius();
+                    borderRadius = rawShape.roundRadius();
+                    return new RoundCylinder(halfHeight, radius, borderRadius);
+                case RawShapeType.Cone:
+                    halfHeight = rawShape.halfHeight();
+                    radius = rawShape.radius();
+                    return new Cone(halfHeight, radius);
+                case RawShapeType.RoundCone:
+                    halfHeight = rawShape.halfHeight();
+                    radius = rawShape.radius();
+                    borderRadius = rawShape.roundRadius();
+                    return new RoundCone(halfHeight, radius, borderRadius);
+                case RawShapeType.Compound:
+                    return Compound.fromRawShape(rawShape);
+                default:
+                    throw new Error("unknown shape type: " + rawType);
+            }
+        }
+        finally {
+            if (rawType !== RawShapeType.Compound) {
+                rawShape.free();
+            }
+        }
+    }
+    castShape(shapePos1, shapeRot1, shapeVel1, shape2, shapePos2, shapeRot2, shapeVel2, targetDistance, maxToi, stopAtPenetration, target) {
         let rawPos1 = VectorOps.intoRaw(shapePos1);
         let rawRot1 = RotationOps.intoRaw(shapeRot1);
         let rawVel1 = VectorOps.intoRaw(shapeVel1);
@@ -101,7 +219,13 @@ export class Shape {
         let rawVel2 = VectorOps.intoRaw(shapeVel2);
         let rawShape1 = this.intoRaw();
         let rawShape2 = shape2.intoRaw();
-        let result = ShapeCastHit.fromRaw(null, rawShape1.castShape(rawPos1, rawRot1, rawVel1, rawShape2, rawPos2, rawRot2, rawVel2, targetDistance, maxToi, stopAtPenetration));
+        const rawShapeCastHit = rawShape1.castShape(rawPos1, rawRot1, rawVel1, rawShape2, rawPos2, rawRot2, rawVel2, targetDistance, maxToi, stopAtPenetration);
+        let result = null;
+        if (rawShapeCastHit) {
+            rawShapeCastHit.getComponents(scratchBuffer);
+            result = ShapeCastHit.fromBuffer(null, scratchBuffer, target);
+            rawShapeCastHit.free();
+        }
         rawPos1.free();
         rawRot1.free();
         rawVel1.free();
@@ -128,14 +252,14 @@ export class Shape {
         rawShape2.free();
         return result;
     }
-    contactShape(shapePos1, shapeRot1, shape2, shapePos2, shapeRot2, prediction) {
+    contactShape(shapePos1, shapeRot1, shape2, shapePos2, shapeRot2, prediction, target) {
         let rawPos1 = VectorOps.intoRaw(shapePos1);
         let rawRot1 = RotationOps.intoRaw(shapeRot1);
         let rawPos2 = VectorOps.intoRaw(shapePos2);
         let rawRot2 = RotationOps.intoRaw(shapeRot2);
         let rawShape1 = this.intoRaw();
         let rawShape2 = shape2.intoRaw();
-        let result = ShapeContact.fromRaw(rawShape1.contactShape(rawPos1, rawRot1, rawShape2, rawPos2, rawRot2, prediction));
+        let result = ShapeContact.fromBuffer(rawShape1.contactShape(rawPos1, rawRot1, rawShape2, rawPos2, rawRot2, prediction), target);
         rawPos1.free();
         rawRot1.free();
         rawPos2.free();
@@ -156,12 +280,12 @@ export class Shape {
         rawShape.free();
         return result;
     }
-    projectPoint(shapePos, shapeRot, point, solid) {
+    projectPoint(shapePos, shapeRot, point, solid, target) {
         let rawPos = VectorOps.intoRaw(shapePos);
         let rawRot = RotationOps.intoRaw(shapeRot);
         let rawPoint = VectorOps.intoRaw(point);
         let rawShape = this.intoRaw();
-        let result = PointProjection.fromRaw(rawShape.projectPoint(rawPos, rawRot, rawPoint, solid));
+        let result = PointProjection.fromBuffer(rawShape.projectPoint(rawPos, rawRot, rawPoint, solid), target);
         rawPos.free();
         rawRot.free();
         rawPoint.free();
@@ -196,13 +320,13 @@ export class Shape {
         rawShape.free();
         return result;
     }
-    castRayAndGetNormal(ray, shapePos, shapeRot, maxToi, solid) {
+    castRayAndGetNormal(ray, shapePos, shapeRot, maxToi, solid, target) {
         let rawPos = VectorOps.intoRaw(shapePos);
         let rawRot = RotationOps.intoRaw(shapeRot);
         let rawRayOrig = VectorOps.intoRaw(ray.origin);
         let rawRayDir = VectorOps.intoRaw(ray.dir);
         let rawShape = this.intoRaw();
-        let result = RayIntersection.fromRaw(rawShape.castRayAndGetNormal(rawPos, rawRot, rawRayOrig, rawRayDir, maxToi, solid));
+        let result = RayIntersection.fromBuffer(rawShape.castRayAndGetNormal(rawPos, rawRot, rawRayOrig, rawRayDir, maxToi, solid), target);
         rawPos.free();
         rawRot.free();
         rawRayOrig.free();
@@ -221,6 +345,7 @@ export var ShapeType;
     ShapeType[ShapeType["Triangle"] = 5] = "Triangle";
     ShapeType[ShapeType["TriMesh"] = 6] = "TriMesh";
     ShapeType[ShapeType["HeightField"] = 7] = "HeightField";
+    ShapeType[ShapeType["Compound"] = 8] = "Compound";
     ShapeType[ShapeType["ConvexPolyhedron"] = 9] = "ConvexPolyhedron";
     ShapeType[ShapeType["Cylinder"] = 10] = "Cylinder";
     ShapeType[ShapeType["Cone"] = 11] = "Cone";
@@ -236,6 +361,14 @@ export var HeightFieldFlags;
 (function (HeightFieldFlags) {
     HeightFieldFlags[HeightFieldFlags["FIX_INTERNAL_EDGES"] = 1] = "FIX_INTERNAL_EDGES";
 })(HeightFieldFlags || (HeightFieldFlags = {}));
+export var PolylineFlags;
+(function (PolylineFlags) {
+    PolylineFlags[PolylineFlags["DEFORMABLE"] = 2] = "DEFORMABLE";
+})(PolylineFlags || (PolylineFlags = {}));
+export var CompoundFlags;
+(function (CompoundFlags) {
+    CompoundFlags[CompoundFlags["FIX_INTERNAL_EDGES"] = 1] = "FIX_INTERNAL_EDGES";
+})(CompoundFlags || (CompoundFlags = {}));
 export var TriMeshFlags;
 (function (TriMeshFlags) {
     TriMeshFlags[TriMeshFlags["DELETE_BAD_TOPOLOGY_TRIANGLES"] = 4] = "DELETE_BAD_TOPOLOGY_TRIANGLES";
@@ -244,6 +377,8 @@ export var TriMeshFlags;
     TriMeshFlags[TriMeshFlags["DELETE_DEGENERATE_TRIANGLES"] = 32] = "DELETE_DEGENERATE_TRIANGLES";
     TriMeshFlags[TriMeshFlags["DELETE_DUPLICATE_TRIANGLES"] = 64] = "DELETE_DUPLICATE_TRIANGLES";
     TriMeshFlags[TriMeshFlags["FIX_INTERNAL_EDGES"] = 144] = "FIX_INTERNAL_EDGES";
+    TriMeshFlags[TriMeshFlags["DEFORMABLE"] = 256] = "DEFORMABLE";
+    TriMeshFlags[TriMeshFlags["FIX_INTERNAL_EDGES_TWO_SIDED"] = 656] = "FIX_INTERNAL_EDGES_TWO_SIDED";
 })(TriMeshFlags || (TriMeshFlags = {}));
 export class Ball extends Shape {
     constructor(radius) {
@@ -356,14 +491,15 @@ export class RoundTriangle extends Shape {
     }
 }
 export class Polyline extends Shape {
-    constructor(vertices, indices) {
+    constructor(vertices, indices, flags) {
         super();
         this.type = ShapeType.Polyline;
         this.vertices = vertices;
         this.indices = indices ?? new Uint32Array(0);
+        this.flags = flags ?? 0;
     }
     intoRaw() {
-        return RawShape.polyline(this.vertices, this.indices);
+        return RawShape.polyline(this.vertices, this.indices, this.flags);
     }
 }
 export class Voxels extends Shape {
@@ -384,6 +520,63 @@ export class Voxels extends Shape {
         }
         voxelSize.free();
         return result;
+    }
+}
+export class Compound extends Shape {
+    constructor(shapes, positions, rotations, flags) {
+        super();
+        this.type = ShapeType.Compound;
+        if (shapes.length !== positions.length ||
+            shapes.length !== rotations.length) {
+            throw new Error("shapes, positions, and rotations arrays must have the same length");
+        }
+        if (shapes.length === 0) {
+            throw new Error("a compound shape must contain at least one shape");
+        }
+        if (shapes.some((shape) => shape.type === ShapeType.Compound)) {
+            throw new Error("nested compound shapes are not allowed");
+        }
+        this.shapes = shapes;
+        this.positions = positions;
+        this.rotations = rotations;
+        this.flags = flags ?? 0;
+    }
+    static fromRawShape(rawShape) {
+        try {
+            const numShapes = rawShape.compoundLen();
+            if (numShapes == null) {
+                throw new Error("Expected a raw compound shape.");
+            }
+            const shapes = new Array(numShapes);
+            const positions = new Array(numShapes);
+            const rotations = new Array(numShapes);
+            for (let i = 0; i < numShapes; i++) {
+                shapes[i] = Shape.fromRawShape(rawShape.compoundShape(i));
+                positions[i] = VectorOps.fromRaw(rawShape.compoundTranslation(i));
+                rotations[i] = RotationOps.fromRaw(rawShape.compoundRotation(i));
+            }
+            return new Compound(shapes, positions, rotations, rawShape.compoundFlags());
+        }
+        finally {
+            rawShape.free();
+        }
+    }
+    intoRaw() {
+        const rawShapes = this.shapes.map((s) => s.intoRaw());
+        const positions = new Float64Array(this.positions.length * 3);
+        this.positions.forEach((pos, i) => {
+            positions[i * 3] = pos.x;
+            positions[i * 3 + 1] = pos.y;
+            positions[i * 3 + 2] = pos.z;
+        });
+        const rotations = new Float64Array(this.rotations.length * 4);
+        this.rotations.forEach((rot, i) => {
+            rotations[i * 4] = rot.x;
+            rotations[i * 4 + 1] = rot.y;
+            rotations[i * 4 + 2] = rot.z;
+            rotations[i * 4 + 3] = rot.w;
+        });
+        return RawShape.compound(rawShapes, positions, rotations, this.flags);
     }
 }
 export class TriMesh extends Shape {

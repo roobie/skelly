@@ -9,14 +9,15 @@ export declare abstract class Shape {
     abstract intoRaw(): RawShape;
     abstract get type(): ShapeType;
     static fromRaw(rawSet: RawColliderSet, handle: ColliderHandle): Shape;
-    castShape(shapePos1: Vector, shapeRot1: Rotation, shapeVel1: Vector, shape2: Shape, shapePos2: Vector, shapeRot2: Rotation, shapeVel2: Vector, targetDistance: number, maxToi: number, stopAtPenetration: boolean): ShapeCastHit | null;
+    static fromRawShape(rawShape: RawShape): Shape;
+    castShape(shapePos1: Vector, shapeRot1: Rotation, shapeVel1: Vector, shape2: Shape, shapePos2: Vector, shapeRot2: Rotation, shapeVel2: Vector, targetDistance: number, maxToi: number, stopAtPenetration: boolean, target?: ShapeCastHit): ShapeCastHit | null;
     intersectsShape(shapePos1: Vector, shapeRot1: Rotation, shape2: Shape, shapePos2: Vector, shapeRot2: Rotation): boolean;
-    contactShape(shapePos1: Vector, shapeRot1: Rotation, shape2: Shape, shapePos2: Vector, shapeRot2: Rotation, prediction: number): ShapeContact | null;
+    contactShape(shapePos1: Vector, shapeRot1: Rotation, shape2: Shape, shapePos2: Vector, shapeRot2: Rotation, prediction: number, target?: ShapeContact): ShapeContact | null;
     containsPoint(shapePos: Vector, shapeRot: Rotation, point: Vector): boolean;
-    projectPoint(shapePos: Vector, shapeRot: Rotation, point: Vector, solid: boolean): PointProjection;
+    projectPoint(shapePos: Vector, shapeRot: Rotation, point: Vector, solid: boolean, target?: PointProjection): PointProjection;
     intersectsRay(ray: Ray, shapePos: Vector, shapeRot: Rotation, maxToi: number): boolean;
     castRay(ray: Ray, shapePos: Vector, shapeRot: Rotation, maxToi: number, solid: boolean): number;
-    castRayAndGetNormal(ray: Ray, shapePos: Vector, shapeRot: Rotation, maxToi: number, solid: boolean): RayIntersection;
+    castRayAndGetNormal(ray: Ray, shapePos: Vector, shapeRot: Rotation, maxToi: number, solid: boolean, target?: RayIntersection): RayIntersection;
 }
 export declare enum ShapeType {
     Ball = 0,
@@ -27,6 +28,7 @@ export declare enum ShapeType {
     Triangle = 5,
     TriMesh = 6,
     HeightField = 7,
+    Compound = 8,
     ConvexPolyhedron = 9,
     Cylinder = 10,
     Cone = 11,
@@ -41,13 +43,21 @@ export declare enum ShapeType {
 export declare enum HeightFieldFlags {
     FIX_INTERNAL_EDGES = 1
 }
+export declare enum PolylineFlags {
+    DEFORMABLE = 2
+}
+export declare enum CompoundFlags {
+    FIX_INTERNAL_EDGES = 1
+}
 export declare enum TriMeshFlags {
     DELETE_BAD_TOPOLOGY_TRIANGLES = 4,
     ORIENTED = 8,
     MERGE_DUPLICATE_VERTICES = 16,
     DELETE_DEGENERATE_TRIANGLES = 32,
     DELETE_DUPLICATE_TRIANGLES = 64,
-    FIX_INTERNAL_EDGES = 144
+    FIX_INTERNAL_EDGES = 144,
+    DEFORMABLE = 256,
+    FIX_INTERNAL_EDGES_TWO_SIDED = 656
 }
 export declare class Ball extends Shape {
     readonly type = ShapeType.Ball;
@@ -109,7 +119,8 @@ export declare class Polyline extends Shape {
     readonly type = ShapeType.Polyline;
     vertices: Float64Array;
     indices: Uint32Array;
-    constructor(vertices: Float64Array, indices?: Uint32Array);
+    flags: PolylineFlags;
+    constructor(vertices: Float64Array, indices?: Uint32Array, flags?: PolylineFlags);
     intoRaw(): RawShape;
 }
 export declare class Voxels extends Shape {
@@ -117,6 +128,16 @@ export declare class Voxels extends Shape {
     data: Float64Array | Int32Array;
     voxelSize: Vector;
     constructor(data: Float64Array | Int32Array, voxelSize: Vector);
+    intoRaw(): RawShape;
+}
+export declare class Compound extends Shape {
+    readonly type = ShapeType.Compound;
+    shapes: Shape[];
+    positions: Vector[];
+    rotations: Rotation[];
+    flags: CompoundFlags;
+    constructor(shapes: Shape[], positions: Vector[], rotations: Rotation[], flags?: CompoundFlags);
+    static fromRawShape(rawShape: RawShape): Compound;
     intoRaw(): RawShape;
 }
 export declare class TriMesh extends Shape {

@@ -12,6 +12,7 @@ export declare class ImpulseJointSet {
     remove(handle: ImpulseJointHandle, wakeUp: boolean): void;
     forEachJointHandleAttachedToRigidBody(handle: RigidBodyHandle, f: (handle: ImpulseJointHandle) => void): void;
     unmap(handle: ImpulseJointHandle): void;
+    unmapRemovedJoints(): void;
     len(): number;
     contains(handle: ImpulseJointHandle): boolean;
     get(handle: ImpulseJointHandle): ImpulseJoint | null;

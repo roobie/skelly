@@ -57,8 +57,48 @@ export class ColliderSet {
         this.map.set(handle, collider);
         return collider;
     }
-    remove(handle, islands, bodies, wakeUp) {
-        this.raw.remove(handle, islands.raw, bodies.raw, wakeUp);
+    createDeformableCollider(bodies, softBodies, desc, binding, parentHandle) {
+        let rawShape = desc.shape.intoRaw();
+        let rawTra = VectorOps.intoRaw(desc.translation);
+        let rawRot = RotationOps.intoRaw(desc.rotation);
+        let rawCom = VectorOps.intoRaw(desc.centerOfMass);
+        let rawPrincipalInertia = VectorOps.intoRaw(desc.principalAngularInertia);
+        let rawInertiaFrame = RotationOps.intoRaw(desc.angularInertiaLocalFrame);
+        let handle = this.raw.createDeformableCollider(desc.enabled, rawShape, rawTra, rawRot, desc.massPropsMode, desc.mass, rawCom, rawPrincipalInertia, rawInertiaFrame, desc.density, desc.friction, desc.restitution, desc.frictionCombineRule, desc.restitutionCombineRule, desc.isSensor, desc.collisionGroups, desc.solverGroups, desc.activeCollisionTypes, desc.activeHooks, desc.activeEvents, desc.contactForceEventThreshold, desc.contactSkin, binding.rawMode(), binding.particles, binding.eps, binding.selfContacts, parentHandle, bodies.raw, softBodies.raw);
+        rawShape.free();
+        rawTra.free();
+        rawRot.free();
+        rawCom.free();
+        rawPrincipalInertia.free();
+        rawInertiaFrame.free();
+        if (handle === undefined) {
+            return null;
+        }
+        let parent = bodies.get(parentHandle);
+        let collider = new Collider(this, handle, parent, desc.shape);
+        this.map.set(handle, collider);
+        return collider;
+    }
+    mapNewColliders(bodies) {
+        this.raw.forEachColliderHandle((handle) => {
+            if (!this.map.get(handle)) {
+                let parentHandle = this.raw.coParent(handle);
+                let parent = parentHandle === undefined
+                    ? null
+                    : bodies.get(parentHandle);
+                this.map.set(handle, new Collider(this, handle, parent));
+            }
+        });
+    }
+    unmapRemovedColliders() {
+        for (let collider of this.map.getAll()) {
+            if (!this.raw.contains(collider.handle)) {
+                this.map.delete(collider.handle);
+            }
+        }
+    }
+    remove(handle, islands, bodies, softBodies, wakeUp) {
+        this.raw.remove(handle, islands.raw, bodies.raw, softBodies.raw, wakeUp);
         this.unmap(handle);
     }
     unmap(handle) {

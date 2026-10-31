@@ -1,4 +1,4 @@
-import { RotationOps, VectorOps } from "../math";
+import { RotationOps, VectorOps, scratchBuffer } from "../math";
 import { SdpMatrix3Ops } from "../math";
 export var RigidBodyType;
 (function (RigidBodyType) {
@@ -6,6 +6,7 @@ export var RigidBodyType;
     RigidBodyType[RigidBodyType["Fixed"] = 1] = "Fixed";
     RigidBodyType[RigidBodyType["KinematicPositionBased"] = 2] = "KinematicPositionBased";
     RigidBodyType[RigidBodyType["KinematicVelocityBased"] = 3] = "KinematicVelocityBased";
+    RigidBodyType[RigidBodyType["SoftFrame"] = 4] = "SoftFrame";
 })(RigidBodyType || (RigidBodyType = {}));
 export class RigidBody {
     constructor(rawSet, colliderSet, handle) {
@@ -46,6 +47,23 @@ export class RigidBody {
     additionalSolverIterations() {
         return this.rawSet.rbAdditionalSolverIterations(this.handle);
     }
+    additionalPgsIterations() {
+        return this.rawSet.rbAdditionalPgsIterations(this.handle);
+    }
+    setAdditionalPgsIterations(iterations) {
+        this.rawSet.rbSetAdditionalPgsIterations(this.handle, iterations);
+    }
+    isSoftFrame() {
+        return this.rawSet.rbIsSoftFrame(this.handle);
+    }
+    softBody() {
+        let handle = this.rawSet.rbSoftBody(this.handle);
+        return handle === undefined ? null : handle;
+    }
+    softCluster() {
+        let cluster = this.rawSet.rbSoftCluster(this.handle);
+        return cluster === undefined ? null : cluster;
+    }
     setAdditionalSolverIterations(iters) {
         this.rawSet.rbSetAdditionalSolverIterations(this.handle, iters);
     }
@@ -58,21 +76,21 @@ export class RigidBody {
     softCcdPrediction() {
         return this.rawSet.rbSoftCcdPrediction(this.handle);
     }
-    translation() {
-        let res = this.rawSet.rbTranslation(this.handle);
-        return VectorOps.fromRaw(res);
+    translation(target) {
+        this.rawSet.rbTranslation(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    rotation() {
-        let res = this.rawSet.rbRotation(this.handle);
-        return RotationOps.fromRaw(res);
+    rotation(target) {
+        this.rawSet.rbRotation(this.handle, scratchBuffer);
+        return RotationOps.fromBuffer(scratchBuffer, target);
     }
-    nextTranslation() {
-        let res = this.rawSet.rbNextTranslation(this.handle);
-        return VectorOps.fromRaw(res);
+    nextTranslation(target) {
+        this.rawSet.rbNextTranslation(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    nextRotation() {
-        let res = this.rawSet.rbNextRotation(this.handle);
-        return RotationOps.fromRaw(res);
+    nextRotation(target) {
+        this.rawSet.rbNextRotation(this.handle, scratchBuffer);
+        return RotationOps.fromBuffer(scratchBuffer, target);
     }
     setTranslation(tra, wakeUp) {
         this.rawSet.rbSetTranslation(this.handle, tra.x, tra.y, tra.z, wakeUp);
@@ -102,47 +120,57 @@ export class RigidBody {
     setNextKinematicRotation(rot) {
         this.rawSet.rbSetNextKinematicRotation(this.handle, rot.x, rot.y, rot.z, rot.w);
     }
-    linvel() {
-        return VectorOps.fromRaw(this.rawSet.rbLinvel(this.handle));
+    linvel(target) {
+        this.rawSet.rbLinvel(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    velocityAtPoint(point) {
+    velocityAtPoint(point, target) {
         const rawPoint = VectorOps.intoRaw(point);
-        let result = VectorOps.fromRaw(this.rawSet.rbVelocityAtPoint(this.handle, rawPoint));
+        this.rawSet.rbVelocityAtPoint(this.handle, rawPoint, scratchBuffer);
         rawPoint.free();
-        return result;
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    angvel() {
-        return VectorOps.fromRaw(this.rawSet.rbAngvel(this.handle));
+    angvel(target) {
+        this.rawSet.rbAngvel(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
     mass() {
         return this.rawSet.rbMass(this.handle);
     }
-    effectiveInvMass() {
-        return VectorOps.fromRaw(this.rawSet.rbEffectiveInvMass(this.handle));
+    effectiveInvMass(target) {
+        this.rawSet.rbEffectiveInvMass(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
     invMass() {
         return this.rawSet.rbInvMass(this.handle);
     }
-    localCom() {
-        return VectorOps.fromRaw(this.rawSet.rbLocalCom(this.handle));
+    localCom(target) {
+        this.rawSet.rbLocalCom(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    worldCom() {
-        return VectorOps.fromRaw(this.rawSet.rbWorldCom(this.handle));
+    worldCom(target) {
+        this.rawSet.rbWorldCom(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    invPrincipalInertia() {
-        return VectorOps.fromRaw(this.rawSet.rbInvPrincipalInertia(this.handle));
+    invPrincipalInertia(target) {
+        this.rawSet.rbInvPrincipalInertia(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    principalInertia() {
-        return VectorOps.fromRaw(this.rawSet.rbPrincipalInertia(this.handle));
+    principalInertia(target) {
+        this.rawSet.rbPrincipalInertia(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    principalInertiaLocalFrame() {
-        return RotationOps.fromRaw(this.rawSet.rbPrincipalInertiaLocalFrame(this.handle));
+    principalInertiaLocalFrame(target) {
+        this.rawSet.rbPrincipalInertiaLocalFrame(this.handle, scratchBuffer);
+        return RotationOps.fromBuffer(scratchBuffer, target);
     }
-    effectiveWorldInvInertia() {
-        return SdpMatrix3Ops.fromRaw(this.rawSet.rbEffectiveWorldInvInertia(this.handle));
+    effectiveWorldInvInertia(target) {
+        this.rawSet.rbEffectiveWorldInvInertia(this.handle, scratchBuffer);
+        return SdpMatrix3Ops.fromBuffer(scratchBuffer, target);
     }
-    effectiveAngularInertia() {
-        return SdpMatrix3Ops.fromRaw(this.rawSet.rbEffectiveAngularInertia(this.handle));
+    effectiveAngularInertia(target) {
+        this.rawSet.rbEffectiveAngularInertia(this.handle, scratchBuffer);
+        return SdpMatrix3Ops.fromBuffer(scratchBuffer, target);
     }
     sleep() {
         this.rawSet.rbSleep(this.handle);
@@ -253,11 +281,13 @@ export class RigidBody {
         rawImpulse.free();
         rawPoint.free();
     }
-    userForce() {
-        return VectorOps.fromRaw(this.rawSet.rbUserForce(this.handle));
+    userForce(target) {
+        this.rawSet.rbUserForce(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
-    userTorque() {
-        return VectorOps.fromRaw(this.rawSet.rbUserTorque(this.handle));
+    userTorque(target) {
+        this.rawSet.rbUserTorque(this.handle, scratchBuffer);
+        return VectorOps.fromBuffer(scratchBuffer, target);
     }
 }
 export class RigidBodyDesc {
@@ -288,6 +318,7 @@ export class RigidBodyDesc {
         this.softCcdPrediction = 0.0;
         this.dominanceGroup = 0;
         this.additionalSolverIterations = 0;
+        this.additionalPgsIterations = 0;
     }
     static dynamic() {
         return new RigidBodyDesc(RigidBodyType.Dynamic);
@@ -319,6 +350,10 @@ export class RigidBodyDesc {
     }
     setAdditionalSolverIterations(iters) {
         this.additionalSolverIterations = iters;
+        return this;
+    }
+    setAdditionalPgsIterations(iters) {
+        this.additionalPgsIterations = iters;
         return this;
     }
     setEnabled(enabled) {

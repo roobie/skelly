@@ -7,5 +7,5 @@ export declare class ShapeContact {
     normal1: Vector;
     normal2: Vector;
     constructor(dist: number, point1: Vector, point2: Vector, normal1: Vector, normal2: Vector);
-    static fromRaw(raw: RawShapeContact): ShapeContact;
+    static fromBuffer(raw: RawShapeContact, target?: ShapeContact): ShapeContact;
 }
