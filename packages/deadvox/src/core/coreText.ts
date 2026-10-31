@@ -122,6 +122,8 @@ export const CORE_MESSAGE_SLOTS = {
   craftSourcesShort: [],
   craftLiquidUnavailable: ['vessel', 'liquid'],
   craftLiquidSourceMissing: ['liquid'],
+  recoverySpill: ['liquid', 'volume'],
+  recoveryReceiverUnavailable: ['liquid'],
   componentsCompete: [],
   preferredCompete: [],
   bookGone: [],

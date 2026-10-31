@@ -805,6 +805,12 @@ const UiScreenTextSchema = strictObject({
     searching: [],
     searchIt: ['key'],
     noSelection: [],
+    recoveryAmount: ['liquid', 'volume'],
+    recoveryReceiver: ['liquid'],
+    recoveryNoMatches: [],
+    recoverySpillAll: [],
+    recoveryUnavailable: [],
+    recoveryApproveSpill: ['liquid', 'volume'],
     inspect: [],
     whereItCanGo: [],
     firearmSlots: [],
@@ -1408,11 +1414,8 @@ const ToolFractionBonus = pipe(
   minLength(1, 'needs a bonus for at least one tool level'),
   check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
 );
-const DisassemblyYieldSchema = strictObject({
-  ...ItemCountSchema.entries,
-  /** Multiplier by skill level: index 0 is skill 0; the last entry is this yield's top level. */
+const LiquidRecoverySchema = strictObject({
   fractions: SkillFractions,
-  /** Applied independently to this yield's scaled count. */
   rounding: YieldRounding,
   toolModifier: optional(
     strictObject({
@@ -1422,11 +1425,16 @@ const DisassemblyYieldSchema = strictObject({
     }),
   ),
 });
+const DisassemblyYieldSchema = strictObject({
+  ...ItemCountSchema.entries,
+  ...LiquidRecoverySchema.entries,
+});
 const DisassemblySchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
+  liquidRecovery: optional(LiquidRecoverySchema),
 });
 /** What one dose of a painkiller does to felt pain (`DESIGN.md`, "Pain"); it heals nothing. */
 const AnalgesicSchema = strictObject({
@@ -1558,6 +1566,7 @@ const ItemSchema = strictObject({
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),
+  salvageLiquidRecovery: optional(strictObject({ skill: Id, ...LiquidRecoverySchema.entries })),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),

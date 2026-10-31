@@ -1711,6 +1711,27 @@ policy. The item yield/work projection is `src/core/disassembly.ts`,
 replace retained parts with generated copies. See `src/core/content.ts`,
 `checkDisassembly`, `checkMaterialCycles` and `checkRecipes`, and `docs/crafting.md`.
 
+Liquid recovery follows the source's own consumption record and remaining burn,
+not a recipe inferred from its type: found items cannot return liquid they never
+consumed, and spent fuel cannot be recovered again. Salvage uses its own authored
+skill and liquid fractions, independently of disassembly, because destructive
+recovery is a separate capability; its solid yields remain fixed. Recovery is
+snapshotted at the start so later skill, tool or burn changes cannot change the
+promised yield. See `src/core/disassembly.ts`, `planDisassembly` and
+`disassemblyLiquidOutputs`, and `src/core/content.ts`, `checkDisassembly`.
+
+Each recovered liquid kind has a player-chosen receiver because different kinds
+cannot share a vessel. Recovery pours what fits; any remainder needs approval of
+that stated amount, including when no receiver is chosen and all of it spills.
+Neither a hidden destination nor silent discard is an acceptable substitute for
+the player's choice. If room is lost during work, Continue may choose another
+receiver or approve the larger spill: the earlier approval was a bound, not
+permission to discard more. These choices apply equally to salvage and
+disassembly because changing the recovery operation must not hide a consequential
+liquid transfer. See `src/core/inventory.ts`, `Inventory.planLiquidReceipts` and
+`Inventory.releaseWork`; `src/core/craftCommands.ts`, `CraftCommands.recovery` and
+`CraftCommands.act`; and `src/ui/inventoryScreen.ts`, `recoveryTemplate`.
+
 Gainful cycles are forbidden because endless material breaks scarcity. A gainful
 cycle is a finite combination of crafting, disassembly, salvage or unpack
 operations whose total item balance is

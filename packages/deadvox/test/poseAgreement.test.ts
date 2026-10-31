@@ -3,7 +3,6 @@ import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import {
   advanceStanceWeight,
   HIT_FLINCH_DURATION,
@@ -13,7 +12,6 @@ import {
 } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
-import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -73,8 +71,7 @@ const startTurnedAttack = () => {
 
 const rendererFor = (zombie: Zombie) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
-    zombies: registry.zombies,
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
+    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
   });
 
 const offsetForBox = ({

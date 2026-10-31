@@ -812,6 +812,10 @@ describe('craft job codec and ownership', () => {
       savedWork.work = {
         kind: 'disassembly',
         source: radio.id,
+        operation: radio.disassembly ? 'disassembly' : 'salvage',
+        liquids: [],
+        receivers: [],
+        spillApproval: [],
         skillLevel: SKILL_LEVEL_LEGENDARY,
         toolLevels: {},
         outputs: disassemblyOutputs(radio, SKILL_LEVEL_LEGENDARY),

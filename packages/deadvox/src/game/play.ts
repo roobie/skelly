@@ -14,7 +14,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
-import type { WorkOperation } from '../core/craftCommands.ts';
+import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
@@ -1418,6 +1418,7 @@ export const startPlay = (
       ...pinDescription(session.fuses.state(item)),
     ],
     workOptions: (uid) => session.crafting.options(uid),
+    recovery: (uid, choices) => session.crafting.recovery(uid, choices),
     character: () => session.character,
     body: () => sim.body,
     slotLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
@@ -1904,8 +1905,8 @@ export const startPlay = (
     }
   };
 
-  const actOnWork = (uid: number, operation: WorkOperation): string | undefined => {
-    const reason = session.crafting.act(uid, operation);
+  const actOnWork = (uid: number, operation: WorkOperation, choices: RecoveryChoices = {}): string | undefined => {
+    const reason = session.crafting.act(uid, operation, choices);
     if (!reason && operation === 'continue') {
       closeInventoryScreen();
       syncMenuState();
