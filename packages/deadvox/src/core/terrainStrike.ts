@@ -15,6 +15,7 @@ interface TerrainStrike {
 export interface TerrainStrikeResult {
   readonly outcome: 'resisted' | 'damaged' | 'broken' | 'refused';
   readonly destroyed: readonly BlockEntity[];
+  readonly edited: Vec3[];
 }
 
 /** Closure expansion invalidates references as well as reservations, so abandon the entire attempt immediately. */
@@ -73,7 +74,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
   const material = registry.blockMaterials.get(block.material)!;
   const bash = bashBlock({ material, damage: world.blockDamage.get(cell)?.damage ?? 0 }, blow);
   if (bash.outcome === 'resisted') {
-    return { outcome: 'resisted', destroyed: [] };
+    return { outcome: 'resisted', destroyed: [], edited: [] };
   }
   const ensure = (cx: number, cz: number): void => terrain.ensureColumn(cx, cz);
   supply.readColumn(toChunk(cell[0]), toChunk(cell[2]));
@@ -81,7 +82,7 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
     supply.publish(supply.revision, ensure, () => {
       world.blockDamage.record(terrain, registry, cell, bash.damage);
     });
-    return { outcome: 'damaged', destroyed: [] };
+    return { outcome: 'damaged', destroyed: [], edited: [] };
   }
   for (;;) {
     const { revision } = supply;
@@ -93,15 +94,16 @@ export const strikeTerrain = (context: TerrainStrike, cell: Vec3, blow: BlockBlo
       const plan = planRuin(projected, roots, pile ? [pile] : [], [{ pos: cell, yields: material.rubble }]);
       if (!plan) {
         world.blockDamage.record(terrain, registry, cell, bash.damage);
-        return { outcome: 'refused', destroyed: [] };
+        return { outcome: 'refused', destroyed: [], edited: [] };
       }
       let destroyed: BlockEntity[] = [];
+      let edited: Vec3[] = [];
       supply.publish(revision, ensure, (live) => {
         terrain.ensureCell(...cell);
         destroyed = commitRuin({ ...mover, inventory: live }, plan);
-        world.setBlock(...cell, 0);
+        edited = world.setBlock(...cell, 0);
       });
-      return { outcome: 'broken', destroyed };
+      return { outcome: 'broken', destroyed, edited };
     } catch (error) {
       if (error !== expanded) {
         throw error;

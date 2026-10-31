@@ -528,6 +528,8 @@ export interface SessionOptions {
   onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
+  /** Output only, after admitted terrain removal; includes neighbouring chunks whose meshes read the edited cells. */
+  onTerrainEdited?: (chunks: Vec3[]) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
   /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`DESIGN.md`, "Hand grenade"). */
@@ -1467,6 +1469,36 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
+  const strikeTerrainCell = (cell: Vec3, weapon: MeleeWeapon): boolean => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return false;
+    }
+    const block = registry.blocks[context.terrain.getBlock(...cell)];
+    const result = strikeTerrain(
+      {
+        terrain: context.terrain,
+        supply: columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      cell,
+      { strength: weapon.impulse, kind: weapon.type ?? 'blunt' },
+    );
+    if (!result) {
+      return false;
+    }
+    if (result.outcome === 'broken') {
+      options.onTerrainEdited?.(result.edited);
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+    if (block?.solid) {
+      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
+    }
+    return true;
+  };
   /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
@@ -1475,31 +1507,7 @@ export const createSession = (options: SessionOptions) => {
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, weapon.impulse);
     }
-    const context = options.terrainDestruction;
-    if (!(hit && context)) {
-      return false;
-    }
-    const block = registry.blocks[context.terrain.getBlock(...hit.block)];
-    const result = strikeTerrain(
-      {
-        terrain: context.terrain,
-        supply: columnSupply.project(context.source),
-        mover: furnitureMover(),
-        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
-      },
-      hit.block,
-      { strength: weapon.impulse, kind: weapon.type ?? 'blunt' },
-    );
-    if (!result) {
-      return false;
-    }
-    for (const destroyed of result.destroyed) {
-      forgetPiece(destroyed);
-    }
-    if (block?.solid) {
-      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(hit.block, [1, 1, 1]));
-    }
-    return true;
+    return hit ? strikeTerrainCell(hit.block, weapon) : false;
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({

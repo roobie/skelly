@@ -1049,6 +1049,7 @@ export const startPlay = (
       }
     },
     onFirearmTrajectory: ({ traces }) => view.impactEffects.fire(traces, config.debug && debugLaserEnabled),
+    onTerrainEdited: (chunks) => streamer.markEdited(chunks),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
     onFuseLit: (item) => {
       const model = registry.items.get(item.type)?.model;

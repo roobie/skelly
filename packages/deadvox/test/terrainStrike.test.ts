@@ -3,17 +3,20 @@ import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts
 import { worldSolid } from '../src/core/collision.ts';
 import { CHUNK, toChunk, toLocal, type Vec3 } from '../src/core/coords.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
+import { buildMesh } from '../src/core/mesher.ts';
+import { paddedIndex } from '../src/core/meshInput.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { type ColumnSource, type FurnitureSpawn, SupplyFootprints } from '../src/core/site.ts';
 import type { BlockBox } from '../src/core/structure.ts';
 import { strikeTerrain } from '../src/core/terrainStrike.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { World } from '../src/core/world.ts';
+import { affectedChunks, World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
+import type { FromMesher, ToMesher } from '../src/worker/protocol.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { blockMaterialFixture, fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { fixtureLootPoint } from './economyFixtures.ts';
@@ -111,7 +114,11 @@ const fixtureGround = (full: boolean | undefined) =>
     position: [x, 1, 3] as Vec3,
     destination: [x, 1, 3] as Vec3,
   }));
-const fixture = (variant: Variant = {}, restored?: Readonly<SaveSnapshot>) => {
+const fixture = (
+  variant: Variant = {},
+  restored?: Readonly<SaveSnapshot>,
+  onTerrainEdited: (chunks: Vec3[]) => void = () => undefined,
+) => {
   const registry = fixtureRegistry();
   const world = new World();
   const floor = registry.blockIds.get(floorType)!;
@@ -163,6 +170,7 @@ const fixture = (variant: Variant = {}, restored?: Readonly<SaveSnapshot>) => {
     start: 43_200,
     spawn: [CHUNK - 1, 1, 6],
     terrainDestruction: { terrain: canonical, source },
+    onTerrainEdited,
     isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
     isOpaque: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
     ready: () => false,
@@ -214,6 +222,19 @@ const fixture = (variant: Variant = {}, restored?: Readonly<SaveSnapshot>) => {
       cell,
       { strength, kind },
     );
+  const playerStrike = (strength: number) => {
+    const hands = { right: null, left: null };
+    const started = session.playerCombat.beginMeleeSwing({
+      origin: [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5],
+      direction: [0, 1, 0],
+      weapon: { ...FISTS_MELEE, impulse: strength },
+      profile: 'fists',
+      twoHanded: false,
+      hands,
+    });
+    session.playerCombat.tick(FISTS_MELEE.cooldown, hands);
+    return started;
+  };
   const arrive = () => {
     for (const cx of order) {
       session.onColumn(cx, 0, source);
@@ -230,6 +251,7 @@ const fixture = (variant: Variant = {}, restored?: Readonly<SaveSnapshot>) => {
     source,
     snapshot,
     strike,
+    playerStrike,
     arrive,
     floor,
     spawns,
@@ -280,38 +302,110 @@ const restore = async (f: Fixture, variant: Variant) => {
   return fixture(variant, decoded.snapshot);
 };
 
+const meshing = (f: Fixture) => {
+  type Request = Extract<ToMesher, { type: 'mesh' }>;
+  const requests: { worker: ControlledWorker; message: Request }[] = [];
+  class ControlledWorker {
+    onmessage: ((event: { data: FromMesher }) => void) | undefined;
+    postMessage(message: ToMesher): void {
+      if (message.type === 'mesh') {
+        requests.push({ worker: this, message });
+      }
+    }
+  }
+  vi.stubGlobal('Worker', ControlledWorker);
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
+  const colors = new Uint8Array(f.registry.blocks.length * 4);
+  const streamer = new Streamer({
+    world: f.world,
+    meshes: meshes as never,
+    seed: f.terrain.seed,
+    terrain: f.terrain.blocks,
+    shape: f.terrain.shape,
+    scale,
+    structures: f.structures,
+    stamp: f.terrain.stamp,
+    colors,
+    patterns: new Uint8Array(f.registry.blocks.length),
+    weatherable: new Uint8Array(f.registry.blocks.length),
+    radius: 0,
+    preloadRings: 0,
+    hysteresis: 1,
+  });
+  const next = () => {
+    for (let step = 0; step < 32 && requests.length === 0; step += 1) {
+      streamer.update(cell[0], cell[2]);
+    }
+    const request = requests.shift();
+    if (!request) {
+      throw new Error('Expected a mesh request');
+    }
+    return request;
+  };
+  const reply = ({ worker, message }: ReturnType<typeof next>) => {
+    const mesh = buildMesh(message.padded, colors, { wide: message.wide });
+    worker.onmessage?.({ data: { type: 'mesh', key: message.key, version: message.version, ms: 0, mesh } });
+    return mesh;
+  };
+  return { streamer, meshes, next, reply };
+};
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('supply-aware terrain destruction', () => {
+  it.each(['drawn', 'in-flight'] as const)(
+    'remeshes an admitted player terrain strike with a %s pre-strike mesh',
+    (state) => {
+      const edited = vi.fn<(chunks: Vec3[]) => void>();
+      const f = fixture({}, undefined, edited);
+      const { streamer, meshes, next, reply } = meshing(f);
+      const mark = vi.spyOn(streamer, 'markEdited');
+      edited.mockImplementation((chunks) => streamer.markEdited(chunks));
+      const old = next();
+      const index = paddedIndex(toLocal(cell[0]) + 1, toLocal(cell[1]) + 1, toLocal(cell[2]) + 1);
+      expect(old.message.padded[index]).toBe(f.floor);
+      if (state === 'drawn') {
+        const mesh = reply(old);
+        expect(meshes.set).toHaveBeenCalledWith(old.message.key, expect.any(Array), mesh);
+        meshes.set.mockClear();
+      }
+      expect(f.playerStrike(20)).toBe(true);
+      expect(f.world.getBlock(...cell)).toBe(0);
+      const affected = affectedChunks(...cell);
+      expect(affected.length).toBeGreaterThan(1);
+      expect(mark).toHaveBeenCalledExactlyOnceWith(affected);
+      if (state === 'in-flight') {
+        reply(old);
+        expect(meshes.set).not.toHaveBeenCalled();
+      }
+      const replacement = next();
+      expect(replacement.message.key).toBe(old.message.key);
+      expect(replacement.message.version).toBeGreaterThan(old.message.version);
+      expect(replacement.message.padded[index]).toBe(0);
+      const mesh = reply(replacement);
+      expect(meshes.set).toHaveBeenCalledExactlyOnceWith(replacement.message.key, expect.any(Array), mesh);
+    },
+  );
+
+  it.each([false, true])(
+    'publishes no terrain removal notification for resisted, partial or refused blows (full destinations: %s)',
+    (full) => {
+      const edited = vi.fn<(chunks: Vec3[]) => void>();
+      const f = fixture({ resident: true, full }, undefined, edited);
+      expect(f.playerStrike(1)).toBe(true);
+      expect(f.world.blockDamage.get(cell)).toBeUndefined();
+      expect(f.playerStrike(full ? 20 : 4)).toBe(true);
+      expect(f.world.blockDamage.get(cell)?.damage).toBe(full ? 20 : 4);
+      expect(f.world.getBlock(...cell)).toBe(f.floor);
+      expect(edited).not.toHaveBeenCalled();
+    },
+  );
   it('keeps complete affected columns and consumed supply through real streamer unload and return', () => {
     const f = fixture();
     expect(f.strike()?.outcome).toBe('broken');
     const before = f.snapshot();
     expect(before.world.rolledColumns).toEqual(expect.arrayContaining(['0,0', '1,0']));
-    vi.stubGlobal(
-      'Worker',
-      class {
-        postMessage = vi.fn();
-        terminate = vi.fn();
-      },
-    );
-    const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn(), setRevealedColumns: vi.fn() };
-    const streamer = new Streamer({
-      world: f.world,
-      meshes: meshes as never,
-      seed: f.terrain.seed,
-      terrain: f.terrain.blocks,
-      shape: f.terrain.shape,
-      scale,
-      structures: f.structures,
-      stamp: f.terrain.stamp,
-      colors: new Uint8Array(f.registry.blocks.length * 4),
-      patterns: new Uint8Array(f.registry.blocks.length),
-      weatherable: new Uint8Array(f.registry.blocks.length),
-      radius: 0,
-      preloadRings: 0,
-      hysteresis: 1,
-    });
+    const { streamer } = meshing(f);
     streamer.onColumn = (cx, cz) => f.session.onColumn(cx, cz, f.source);
     const unload = vi.fn();
     streamer.onColumnUnload = unload;
