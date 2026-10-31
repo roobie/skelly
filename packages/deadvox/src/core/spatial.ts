@@ -58,7 +58,7 @@ export const basisRotation = ([right, up, back]: readonly [Vec3, Vec3, Vec3]): Q
     return normalizeRotation([(right[1] + up[0]) / s, s / 4, (back[1] + up[2]) / s, (back[0] - right[2]) / s]);
   }
   const s = Math.sqrt(1 + back[2] - right[0] - up[1]) * 2;
-  return normalizeRotation([(right[2] + back[0]) / s, (up[2] + back[1]) / s, s / 4, (up[0] - right[1]) / s]);
+  return normalizeRotation([(right[2] + back[0]) / s, (up[2] + back[1]) / s, s / 4, (right[1] - up[0]) / s]);
 };
 
 /** The orthonormal right-handed basis a rotation carries the unit axes to, as columns. */

@@ -197,7 +197,7 @@ const lerpRotation = (from: Quaternion, to: Quaternion, aim: number): Quaternion
 };
 
 /** Between hip and sighted: the aim's share of every seated point and joint turn of the two poses. */
-export const blendLookPoses = (hip: PlayerLookPose, sighted: PlayerLookPose, aim: number): PlayerLookPose => {
+const blendLookPoses = (hip: PlayerLookPose, sighted: PlayerLookPose, aim: number): PlayerLookPose => {
   if (!(Number.isFinite(aim) && aim >= 0 && aim <= 1)) {
     throw new Error('Invalid aim-down-sights pose blend');
   }
