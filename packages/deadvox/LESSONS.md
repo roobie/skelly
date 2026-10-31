@@ -7,6 +7,7 @@ read_if:
   - you're changing save-worker timeout policy or interpreting its request diagnostics
   - you're sizing browser-stage budgets after adding pixel captures
   - you're changing sparse vehicle meshing or investigating startup CPU cost
+  - you're changing pose-agreement fixtures or renderer test setup
   - you've solved a hard problem and need to preserve its reason
   - you're considering lowering the held gun near walls
 ---
@@ -40,6 +41,15 @@ Reference-source overlays keep presentation callers and their transitive UI call
 Keep Playwright's managed launch path and isolated profiles: desktop keyring initialization and DevTools discovery have delayed custom launches, while unrelated resource load is not a game readiness contract. Do not warm up a request, retry a failed stage or lengthen its readiness wait to hide a launch problem. See `test/browser/chromium.mjs`, `launchChromium`, and `test/browser/save-storage.mjs`, `trackPageNavigation`.
 
 Pixel readbacks can dominate a software-rendered stage even when individual frames remain comparable. When adding captures, compare the same phases against a green control and scale only the added work's share of the stage budget, rounding up to the workflow's time unit. Do not treat the total stage duration as proof of a rendering regression, or enlarge a budget to hide one. Keep capture timings separate from readiness so later failures remain attributable; see `test/browser/stairs.mjs`, `lightingCellarProofs` and `timePhase`.
+
+## Renderer test scope
+
+A pose-agreement case needs the actor it observes, not the catalogue's unused model and
+seed variants. Building unrelated variants makes a focused contract depend on content
+growth and machine contention without exercising any additional pose. Narrow renderer
+inputs to the observed actor while retaining the real renderer, skeleton and hit-region
+comparison; do not mask setup cost with a larger timeout. See `test/poseAgreement.test.ts`,
+`rendererFor`.
 
 ## Persistence requests
 
