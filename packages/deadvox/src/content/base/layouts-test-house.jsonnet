@@ -40,7 +40,7 @@ local bays = [
     ],
     // On the showroom deck, on the path's line to the house door; the bearing applies only while the slot row is empty,
     // since spawn faces the newest slot.
-    player: { position: [-6.25, 21.5, -0.5], bearing: 90 },
+    player: { position: [-7.5, 21.5, -0.5], bearing: 90 },
     showroom: {
       row: [-12, 21.5, -1],
       facing: 's',
@@ -49,7 +49,6 @@ local bays = [
       // A feature's test prop goes here, never in the house, garage or hall. Oldest first: past capacity, the first
       // entry leaves.
       slots: [
-        { furniture: 'bedroll' },
         { furniture: 'grinding_wheel', fixed: true },
         {
           furniture: 'crate',
@@ -64,6 +63,13 @@ local bays = [
           ] + [
             { item: 'paperback', count: 4 },
             { item: 'duct_tape', count: 2 },
+          ],
+        },
+        {
+          furniture: 'shelf',
+          items: [
+            { item: 'sledgehammer', count: 1 },
+            { item: 'paperback', count: 1 },
           ],
         },
       ],

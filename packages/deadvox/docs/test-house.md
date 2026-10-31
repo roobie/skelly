@@ -106,6 +106,10 @@ the haven into a warehouse and put evaluation props in play. The focus parameter
 in both modes because it only chooses where a fresh session starts. See
 `src/game/worldSetup.ts`, `DebugTestHouseSite`.
 
+The destruction slot stays in normal mode because its tool, stock and breakable deck
+exercise ordinary combat and furniture floor loss without privileged setup. See
+`src/content/base/layouts-test-house.jsonnet`, `showroom`.
+
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to
 content so balancing the haven does not change its mechanisms. See
