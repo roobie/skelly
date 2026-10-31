@@ -249,6 +249,66 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       ]
     },
     {
+      "id": "make_bandage",
+      category: 'supplies', tags: ['textile'], searchTerms: [],
+      "result": { "item": "bandage", "count": 1 },
+      "timeGameMinutes": 5,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [[{ "item": "cloth_strip", "count": 2 }]]
+    },
+    {
+      "id": "make_headlamp_strap",
+      category: 'lighting', tags: ['textile'], searchTerms: [],
+      "consumeFitted": true,
+      "result": { "item": "headlamp", "count": 1 },
+      "timeGameMinutes": 10,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [
+        [{ "item": "flashlight", "count": 1 }],
+        [{ "item": "cloth_strip", "count": 1 }],
+        [{ "item": "duct_tape", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_nail_bat",
+      category: 'tools', tags: ['wood', 'metal'], searchTerms: [],
+      "result": { "item": "nail_bat", "count": 1 },
+      "timeGameMinutes": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "hammering": 1 },
+      "components": [
+        [{ "item": "baseball_bat", "count": 1 }],
+        [{ "item": "nails", "count": 12 }]
+      ]
+    },
+    {
+      "id": "make_spear",
+      category: 'tools', tags: ['wood', 'textile'], searchTerms: [],
+      "result": { "item": "spear", "count": 1 },
+      "timeGameMinutes": 20,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [
+        [{ "item": "stick", "count": 1 }, { "item": "wooden_plank", "count": 1 }],
+        [{ "item": "kitchen_knife", "count": 1 }, { "item": "glass_shards", "count": 2 }],
+        [{ "item": "nylon_cord", "count": 1 }, { "item": "duct_tape", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_taped_armour",
+      category: 'supplies', tags: ['textile'], searchTerms: [],
+      "result": { "item": "taped_armour", "count": 1 },
+      "timeGameMinutes": 30,
+      "skills": { "crafting": 0 },
+      "qualities": {},
+      "components": [
+        [{ "item": "paperback", "count": 4 }],
+        [{ "item": "duct_tape", "count": 2 }]
+      ]
+    },
+    {
       "id": "candle",
       category: 'lighting', tags: [], searchTerms: [],
       "result": { "item": "candle", "count": 1 },

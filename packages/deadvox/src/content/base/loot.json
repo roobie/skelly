@@ -188,6 +188,11 @@
           "weight": 1
         },
         {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "taped_armour",
+          "weight": 0.5
+        },
+        {
           "nothing": true,
           "weight": 2
         }
@@ -418,6 +423,16 @@
           "condition": [0.40000000000000002, 1],
           "item": "baseball_bat",
           "weight": 1
+        },
+        {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "nail_bat",
+          "weight": 0.5
+        },
+        {
+          "condition": [0.40000000000000002, 0.80000000000000004],
+          "item": "spear",
+          "weight": 0.5
         },
         {
           "condition": [0.40000000000000002, 1],
