@@ -497,6 +497,10 @@
       "output": "packages/gun-authoring-tool/src/gun/sightView.json"
     },
     {
+      "source": "packages/gun-authoring-tool/src/gun/triggerGuards.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/triggerGuards.json"
+    },
+    {
       "source": "packages/gun-authoring-tool/src/gun/unitScale.jsonnet",
       "output": "packages/gun-authoring-tool/src/gun/unitScale.json"
     },

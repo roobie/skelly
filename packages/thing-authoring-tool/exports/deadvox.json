@@ -528,6 +528,18 @@
     }
   },
   {
+    "id": "oil_lamp",
+    "kind": "item",
+    "options": {
+      "mass": "parts"
+    },
+    "source": "oil_lamp",
+    "voxel": {
+      "detailGrain": 0.002,
+      "grain": 0.002
+    }
+  },
+  {
     "id": "dead_desk_lamp",
     "kind": "item",
     "options": {

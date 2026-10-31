@@ -8,7 +8,7 @@ import {
   type Loader,
   LoadingManager,
   Mesh,
-  type MeshBasicMaterial,
+  MeshBasicMaterial,
   type MeshStandardMaterial,
   PerspectiveCamera,
   Quaternion,
@@ -59,6 +59,13 @@ Object.defineProperty(globalThis, 'self', { configurable: true, value: globalThi
 loader.manager.addHandler(/.*/, imageLoader as unknown as Loader);
 const parseGlb = async (bytes: Buffer) =>
   loader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
+const isClearMesh = (object: import('three').Object3D): object is Mesh =>
+  object instanceof Mesh &&
+  (Array.isArray(object.material) ? object.material : [object.material]).every(
+    (material) => material.transparent && material.opacity < 1,
+  );
+const flameVisible = (ray: Raycaster, objects: import('three').Object3D[], flame: import('three').Object3D): boolean =>
+  ray.intersectObjects(objects, true).find(({ object }) => !isClearMesh(object))?.object === flame;
 const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box3): boolean =>
   (['x', 'y', 'z'] as const).every((axis) => {
     const coordinate = anchor[AXIS_INDEX[axis]];
@@ -98,6 +105,28 @@ it('prepares every thing recipe export for ground and held drawing with its grip
       }
     }),
   );
+});
+
+it('rests the oil lamp on its base with its authored up axis upright', async () => {
+  const definition = registry.models.get(registry.items.get('oil_lamp')!.model!)!;
+  const { scene } = await parseGlb(readFileSync(`${BASE}/${definition.file}`));
+  const { ground } = prepareModel(definition, scene);
+  ground.updateMatrixWorld(true);
+  const frame = groundModelFrame(ground);
+  const origin = frame.localToWorld(new Vector3());
+  const up = frame
+    .localToWorld(new Vector3(0, 1, 0))
+    .sub(origin)
+    .normalize();
+  let baseNode: import('three').Object3D | undefined;
+  ground.traverse((node) => {
+    if (node.userData.itemNodeName === definition.parts!.base!.node) {
+      baseNode = node;
+    }
+  });
+  expect(baseNode).toBeDefined();
+  expect(up.dot(new Vector3(0, 1, 0))).toBeCloseTo(1);
+  expect(new Box3().setFromObject(baseNode!).min.y).toBeCloseTo(new Box3().setFromObject(ground).min.y);
 });
 
 it('keeps every authored fuel fill inside its clear shell and resolves its original glTF node name', async () => {
@@ -245,10 +274,25 @@ it.each(['right', 'left'] as const)('keeps the held oil lamp flame visible beyon
     const eye = camera.getWorldPosition(new Vector3());
     const target = flame.localToWorld(new Vector3(0, 0.35, 0));
     const ray = new Raycaster(eye, target.clone().sub(eye).normalize());
-    expect(ray.intersectObjects(view.children, true)[0]?.object === flame).toBe(true);
+    expect(flameVisible(ray, view.children, flame)).toBe(true);
   } finally {
     held.dispose();
   }
+});
+
+it('treats clear meshes as non-occluding but opaque meshes as occluding a held flame', () => {
+  const flame = new Mesh(new BoxGeometry(1), new MeshBasicMaterial());
+  flame.position.z = -2;
+  const clear = new Mesh(new BoxGeometry(1), new MeshBasicMaterial({ transparent: true, opacity: 0.35 }));
+  clear.position.z = -1;
+  const opaque = new Mesh(new BoxGeometry(1), new MeshBasicMaterial());
+  opaque.position.z = -1;
+  const ray = new Raycaster(new Vector3(), new Vector3(0, 0, -1));
+  for (const part of [flame, clear, opaque]) {
+    part.updateMatrixWorld();
+  }
+  expect(flameVisible(ray, [clear, flame], flame)).toBe(true);
+  expect(flameVisible(ray, [opaque, flame], flame)).toBe(false);
 });
 
 describe('piles with models', () => {

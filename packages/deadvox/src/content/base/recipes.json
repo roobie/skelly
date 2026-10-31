@@ -278,6 +278,172 @@
       "timeGameMinutes": 20
     },
     {
+      "category": "supplies",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "cloth_strip"
+          }
+        ]
+      ],
+      "id": "make_bandage",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "bandage"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 5
+    },
+    {
+      "category": "lighting",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "flashlight"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "consumeFitted": true,
+      "id": "make_headlamp_strap",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "headlamp"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "baseball_bat"
+          }
+        ],
+        [
+          {
+            "count": 12,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "make_nail_bat",
+      "qualities": {
+        "hammering": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "nail_bat"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood", "metal"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "stick"
+          },
+          {
+            "count": 1,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "kitchen_knife"
+          },
+          {
+            "count": 2,
+            "item": "glass_shards"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          },
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "make_spear",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "spear"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood", "textile"],
+      "timeGameMinutes": 20
+    },
+    {
+      "category": "supplies",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "paperback"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "make_taped_armour",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "taped_armour"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 30
+    },
+    {
       "category": "lighting",
       "components": [
         [
