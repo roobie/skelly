@@ -509,6 +509,8 @@ export interface SessionOptions {
   refusal?: ((text: string) => void) | undefined;
   /** A held paper request selected by a live domain command; presentation owns its view. */
   onRead: (request: ReadRequest) => void;
+  /** Invalid saved overlay entries are discarded before simulation resumes. */
+  onRestoreIssue?: (issue: string) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
@@ -2456,6 +2458,7 @@ export const createSession = (options: SessionOptions) => {
       }
       return found;
     });
+    world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     playerCombat.restoreState(restored.character.playerCombat);
     spawner.restoreState(restored.world.spawned);

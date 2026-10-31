@@ -112,7 +112,7 @@ local building(id, context, shellId, roomId) = {
 };
 local stoneSteps = { player: 'footstep_stone', shambler: 'shambler_step_stone' };
 local signBlock(id, name, color, extra={}) =
-  { id: id, name: name, color: color, solid: true, footsteps: stoneSteps, weatherable: false } + extra;
+  { id: id, material: 'metal', name: name, color: color, solid: true, footsteps: stoneSteps, weatherable: false } + extra;
 local frontStyle(id, bindings) = { id: id, bindings: {
   facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
 } + bindings };
@@ -127,7 +127,7 @@ local yard(block) = { role: 'trim', block: block };
     signBlock('shop_yellow', 'Shop paint (hardware yellow)', '#f2c200'),
     signBlock('shop_red', 'Shop paint (medical red)', '#d0312d'),
     signBlock('shop_white', 'Shop paint (awning white)', '#f0ede4'),
-    signBlock('shop_produce', 'Produce crates', '#a8c840'),
+    signBlock('shop_produce', 'Produce crates', '#a8c840', { material: 'timber' }),
     signBlock('shop_grille', 'Shopfront grille', '#2b2d30', { opaque: false }),
   ],
   mapStyles: [
