@@ -12,7 +12,10 @@
       button, select { font: inherit; }
       #issues:empty::before { content: 'None'; }
       #issues { white-space: pre-wrap; }
-      #fittings { padding-left: 1.5rem; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { text-align: left; padding: 0.15rem 0.4rem; }
+      td input:not([type=checkbox]) { width: 100%; box-sizing: border-box; font: inherit; }
+      dialog form { display: grid; gap: 0.5rem; }
     </style>
   </head>
   <body>
@@ -22,12 +25,26 @@
     <main>
       <div class="toolbar">
         <label>Blueprint <select id="blueprint"></select></label>
+        <button id="save" type="button">Save edits</button>
         <button id="download" type="button">Download export</button>
       </div>
+      <p id="message" role="status"></p>
       <section>
         <h2>Fittings</h2>
-        <ul id="fittings"></ul>
+        <table>
+          <thead>
+            <tr><th>Id</th><th>Part</th><th>Position x, y, z</th><th>Mirror</th><th>Rests on</th><th>Cargo cells</th><th>Service</th><th></th></tr>
+          </thead>
+          <tbody id="fittings"></tbody>
+        </table>
+        <form id="add" class="toolbar">
+          <label>Id <input name="id" required /></label>
+          <label>Part <input name="part" list="parts" required /></label>
+          <button type="submit">Add fitting</button>
+        </form>
+        <datalist id="parts"></datalist>
       </section>
+      <dialog id="pair"></dialog>
       <section>
         <h2>Content issues</h2>
         <pre id="issues"></pre>
