@@ -250,7 +250,7 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
     try {
       for (const stance of ['standing', 'crouching'] as const) {
         for (const [phase, aimFrame] of envelope.entries()) {
-          const ads = { model, side: 'right' as const, aimFrame };
+          const ads = { model, side: 'right' as const, aimFrame, aim: 1 };
           const body = playerLookPose({ figure, models: f.registry.models, pitch: 0, stance, ads });
           const cameraPose = adsCameraEye({ figure, pose: body, ads, pitch: 0 });
           f.world.sync({

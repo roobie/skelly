@@ -85,6 +85,8 @@ export interface PlayCameraFrame {
   readonly headYaw?: number;
   readonly headPitch?: number;
   readonly ads?: PlayerAdsPose | undefined;
+  /** How far the view has carried the aim from hip to sights; the camera slides with it. */
+  readonly adsAim?: number;
   readonly stance: PlayerStance;
   readonly lean?: import('../core/lean.ts').LeanFrame | undefined;
   readonly eye: Vec3;
@@ -421,16 +423,20 @@ export const createPlayView = (
     if (!ads || frame.spectator || frame.thirdPerson) {
       return target;
     }
+    // The camera rides the aim's share between the hip eye (already `eye` at aim 0) and the sighted
+    // camera eye, so the view slides onto the sight line instead of cutting to it.
+    const sightedAds = { ...ads, aim: 1 };
     const pose = playerLookPose({
       figure: playerFigure,
       models: registry.models,
       pitch,
       stance,
-      ads,
+      ads: sightedAds,
       lean: frame.lean,
     });
-    const placed = adsCameraEye({ figure: playerFigure, pose, ads, pitch });
-    const delta = placed.eye.map((value, axis) => value - pose.eye[axis]!) as Vec3;
+    const placed = adsCameraEye({ figure: playerFigure, pose, ads: sightedAds, pitch });
+    const aim = frame.adsAim ?? 1;
+    const delta = placed.eye.map((value, axis) => (value - pose.eye[axis]!) * aim) as Vec3;
     const bodyEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
     const cameraEye: Vec3 = [
       bodyEye[0] + (delta[0] * Math.cos(yaw) + delta[2] * Math.sin(yaw)) / s,

@@ -217,7 +217,11 @@ describe('AR action-frame selection', () => {
 
     const issues = validate(assembly, gunDomain).issues.filter((issue) => issue.rule === 'action-frame-match');
 
-    expect(issues.map((issue) => issue.parts)).toEqual([['receiver', 'lower']]);
+    // The grip is built for its lower's frame too, since a traced grip seats on that frame's lower body.
+    expect(issues.map((issue) => issue.parts)).toEqual([
+      ['receiver', 'lower'],
+      ['lower', 'grip'],
+    ]);
   });
 
   it('does not select a frame when a required cartridge measure is unsourced', () => {

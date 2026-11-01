@@ -15,8 +15,7 @@ repository would answer a different question: whether we can own a compiler dist
 than whether a mod loader can consume an extant distribution. Grain is stopped at this boundary:
 its eligible published compiler bundle is not browser-ready, its browser wrapper does not meet the
 dependency-age rule, and native compiler releases cannot implement browser load-time compilation.
-Revisit Grain in #313 if an eligible browser compiler distribution becomes available. A failed
-artifact search is not evidence that the language itself is unsuitable.
+A failed artifact search is not evidence that the language itself is unsuitable.
 
 See `starlark.ts`, `starlark`, and `luau.ts`, `luau`, for the executable candidates. The bindings
 do not expose a deterministic instruction budget, so this comparison uses a bounded scalar profile
@@ -52,7 +51,8 @@ otherwise turn a small authored tree into exponentially more equality or members
 increasing its outer collection width. Flat aggregates preserve useful local reuse without owning
 expanded-shape accounting. See `celMods.ts`, `compileModExpression`, and
 `../../../test/celReuseSpike.test.ts` for the enforced profile, checker, single-evaluation and
-lexical-scope evidence. This restriction is a spike trade-off, not a production adoption decision.
+lexical-scope evidence. The production profile starts from this restriction; see
+`../../../../../docs/decisions/0004-content-language.md`, "Runtime design".
 
 Scoped state snapshots prevent aggregate membership and equality from revealing independent mods'
 state. Named functions require explicit snapshots rather than capturing mutable game state, so
@@ -75,7 +75,7 @@ general implicit conversion policy for effects, named functions or comparisons.
 Serialization is a semantic boundary, not merely formatting. The loader rejects a changed tree or
 literal instead of compiling it: the package serializer can round fractional doubles and omit
 parentheses in nested comparisons. See `../../../test/celRewriteSpike.test.ts` for fidelity,
-operator-removal and mixed-signature probes. Adoption remains open in #313; rejecting a valid authored
+operator-removal and mixed-signature probes. Rejecting a valid authored
 expression because it cannot survive the serializer is an authoring limitation, not safe support
 for that expression.
 
@@ -85,7 +85,7 @@ an out-of-band failure latch per evaluation; see `celMods.ts`, `compileModExpres
 registered callback records failure before throwing, and a recovered result is rejected before
 any effect application. Named bodies enforce the same boundary, and their failures propagate
 through the caller's latch. Unevaluated short-circuit branches record no failure. This owns an
-engine-boundary error policy, not a replacement evaluator or a production adoption decision.
+engine-boundary error policy, not a replacement evaluator.
 CEL-native errors that never enter a checked callback retain CEL's recoverable semantics.
 
 Diagnostics must refer to authored source, not generated calls. The rewrite pairs structurally
@@ -155,8 +155,7 @@ CEL's ability to evaluate a pure expression.
   state changes, including changes from a chained rule.
 - **Field patches:** not exercised. They belong to the content loader, not CEL; see
   `../../../../../docs/decisions/0007-typed-field-patches.md`, "Decision".
-- **UI:** not exercised; mod UI is deferred to a spike once #313 puts an expression language in
-  place.
+- **UI:** not exercised; mod UI is deferred to a spike once CEL rules run in the engine (#313).
 - **Core tuning:** a mod changes a core value as it changes any pack's value
   (`../../../../../docs/decisions/0004-content-language.md`, "Runtime design"); this is not exercised.
   Overrides need engine authorization and identity; exposing more numeric inputs alone does not
@@ -187,5 +186,5 @@ profile entries so wrapper growth is not mistaken for additional CEL package cod
 
 See `../../../test/expressionWasmCases.ts`, `wasmCases`, for behaviour checks shared between Node
 and browser probes. Float equality across engines is bounded fixture evidence, not proof of all
-floating-point programs or future runtime versions. No runtime is adopted; see
-`../../../../../docs/decisions/0004-content-language.md`, "Runtime design".
+floating-point programs or future runtime versions. CEL is adopted; see
+`../../../../../docs/decisions/0004-content-language.md`, "Decision".
