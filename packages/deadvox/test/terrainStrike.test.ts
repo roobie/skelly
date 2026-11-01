@@ -1,4 +1,6 @@
+import { Scene } from 'three';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { BlockBlow } from '../src/core/blockDamage.ts';
 import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import { CHUNK, toChunk, toLocal, type Vec3 } from '../src/core/coords.ts';
@@ -13,6 +15,8 @@ import { strikeTerrain } from '../src/core/terrainStrike.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { affectedChunks, World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { BuildMode } from '../src/debug/build.ts';
+import type { Engine } from '../src/game/engine.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
@@ -353,6 +357,47 @@ const meshing = (f: Fixture) => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('supply-aware terrain destruction', () => {
+  it('steps debug damage through the real strike owner, then removes the floor and its shelf like player hits', () => {
+    const variant = { resident: true, arrived: true, narrow: true };
+    const edited = vi.fn();
+    const debug = fixture(variant, undefined, edited);
+    const real = fixture(variant);
+    const blows: BlockBlow[] = [];
+    const engine = {
+      config: { debug: true, scale },
+      registry: debug.registry,
+      world: debug.world,
+      scene: new Scene(),
+      isOpaque: worldSolid(debug.world, debug.registry, debug.inventory.entities),
+    } as unknown as Engine;
+    const build = new BuildMode(engine, debug.session.body, 1, (target, blow) => {
+      blows.push(blow);
+      return debug.session.strikeTerrainCell(target, blow);
+    });
+    const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
+    const dir: Vec3 = [0, 1, 0];
+    expect(build.strike('step', eye, dir)).toBe(false);
+    expect(blows).toEqual([]);
+    build.toggle();
+    const before = build.target(eye, dir, true);
+    expect(build.strike('step', eye, dir)).toBe(true);
+    const { damage } = debug.world.blockDamage.get(cell)!;
+    expect(damage).toBeGreaterThan(0);
+    expect(damage).toBeLessThan(debug.registry.blockMaterials.get('fixture_material')!.durability);
+    expect(debug.world.getBlock(...cell)).toBe(debug.floor);
+    expect(debug.inventory.entities.at(...debug.spawns[0]!.spec.pos)).toBeDefined();
+    expect(build.target(eye, dir, true)).not.toBe(before);
+    expect(edited).not.toHaveBeenCalled();
+    expect(real.playerStrike(blows[0]!.strength)).toBe(true);
+    expect(logical(debug)).toEqual(logical(real));
+    expect(build.strike('destroy', eye, dir)).toBe(true);
+    expect(debug.world.getBlock(...cell)).toBe(0);
+    expect(debug.inventory.entities.at(...debug.spawns[0]!.spec.pos)).toBeUndefined();
+    expect(edited).toHaveBeenCalledOnce();
+    expect(real.playerStrike(blows[1]!.strength)).toBe(true);
+    expect(logical(debug)).toEqual(logical(real));
+  });
+
   it.each(['drawn', 'in-flight'] as const)(
     'remeshes an admitted player terrain strike with a %s pre-strike mesh',
     (state) => {

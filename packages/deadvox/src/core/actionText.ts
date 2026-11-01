@@ -41,6 +41,7 @@ export const fillText = <N extends string>(template: Template<N>, values: Readon
   template.replace(PLACEHOLDER, (_, name: string) => values[name as N]);
 
 export const ActionTextSchema = strictObject({
+  debugBuild: strictObject({ target: Template('block', 'damage', 'durability', 'stepKey', 'destroyKey') }),
   /** Refusals many actions share. */
   common: strictObject({ tooFar: Line, busy: Line, gone: Line, notHeld: Line, notCarried: Line }),
   /** What the death screen names as the cause, for harm the game deals without a weapon of its own. */

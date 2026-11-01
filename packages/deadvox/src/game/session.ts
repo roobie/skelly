@@ -8,6 +8,7 @@ import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying, NEUTRAL_AIM } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
+import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
@@ -1477,7 +1478,7 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
-  const strikeTerrainCell = (cell: Vec3, weapon: MeleeWeapon): boolean => {
+  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
     const context = options.terrainDestruction;
     if (!context) {
       return false;
@@ -1491,7 +1492,7 @@ export const createSession = (options: SessionOptions) => {
         obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
       },
       cell,
-      { strength: weapon.impulse, kind: weapon.type ?? 'blunt' },
+      blow,
     );
     if (!result) {
       return false;
@@ -1515,7 +1516,7 @@ export const createSession = (options: SessionOptions) => {
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, weapon.impulse);
     }
-    return hit ? strikeTerrainCell(hit.block, weapon) : false;
+    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type ?? 'blunt' }) : false;
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
@@ -2759,6 +2760,7 @@ export const createSession = (options: SessionOptions) => {
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
     },
+    strikeTerrainCell,
     projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {

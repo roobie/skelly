@@ -605,6 +605,22 @@
       ]
     },
     {
+      "id": "debug.build-damage",
+      "keys": [
+        {
+          "code": "KeyD"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-destroy",
+      "keys": [
+        {
+          "code": "KeyX"
+        }
+      ]
+    },
+    {
       "id": "debug.impact-laser",
       "keys": [
         {

@@ -1756,6 +1756,7 @@ export const startPlay = (
     feet,
     showNotice,
     spawnItem,
+    strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
     compress: () => compress(),
     skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {

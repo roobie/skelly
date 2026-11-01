@@ -4228,6 +4228,10 @@ const PlayerSchema = strictObject({
   /** Downward acceleration shared by every falling body and effect. */
   gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
+  debugBlockTool: strictObject({
+    reachMetres: Positive,
+    stepDurabilityFraction: pipe(Positive, ltValue(1)),
+  }),
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
   lean: strictObject({

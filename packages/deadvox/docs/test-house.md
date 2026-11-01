@@ -112,6 +112,13 @@ The destruction slot stays in normal mode because its tool, stock and breakable 
 exercise ordinary combat and furniture floor loss without privileged setup. See
 `src/content/base/layouts-test-house.jsonnet`, `showroom`.
 
+The build-mode block-strike shortcuts are debug-only: bypassing weapon swings is an
+evaluation convenience, not a player ability. They use the session's ordinary terrain
+strike so floor loss and supply admission remain real. The existing target HUD shows
+stored damage because terrain damage has no rendered appearance; the direct editor
+delete remains separate and does not test destruction. See `src/debug/build.ts`,
+`BuildMode`, and `src/game/session.ts`, `strikeTerrainCell`.
+
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to
 content so balancing the haven does not change its mechanisms. See
