@@ -13,6 +13,7 @@ read_if:
   - "you're changing how a dead body falls or rests"
   - "you're changing the living leg-loss collapse into crawling"
   - "you're changing severed-limb or carved-flesh physics"
+  - "you're deciding whether a mob recipe can support an authored body variant"
 ---
 
 # mobgen — procedural voxel actors
@@ -44,6 +45,10 @@ The viewer must not approve a fall the game never draws. Sharing the game's cont
 Contact rather than a pose rule should settle an open jaw. Acid bodies burst instead of falling. Limbs and carved flesh share the corpse world so a flying part can land on another body; sinking bodies must stop colliding so later falls cannot land on invisible flesh. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.startRagdoll`, `MobActorMeshes.finishDownedCorpse` and `MobActorMeshes.packCorpse`, and `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld`. Flesh has an independent presentation cap so carving cannot evict a corpse or a severed limb. Terrain follows the moving body because launch tuning must not outrun a fixed starting patch. See `packages/deadvox/src/render/amalgamFlesh.ts`, `FleshChunks`, `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld.buildGround`, and `src/mob/ragdoll.jsonnet`, `flesh`.
 
 Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
+
+## Recipe spike
+
+The closed, unmerged [recipe spike PR #1531](https://github.com/roobie/skelly/pull/1531) on branch `ccr-0ef98979-7ftt3n` retains its code. It found that ordered steps can modify a template's base body while its plan retains the rig; stable step ids keep streams independent, and the validator, not an operator, decides feasibility. Grafts remain outside the base hit regions, extra limbs have no motion, and a recipe cannot raise a validation budget.
 
 ## Body-plan constraints
 
