@@ -2,7 +2,7 @@
 read_if:
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
   - you author a demo mod or change how a URL selects mods
-  - you change the mod start-state section, the starting kit or how a new game is set up
+  - you change scenario-owned starts, product defaults or the starting kit
   - you change how the camera or other view state is written back to the URL
   - you write a browser test or CI script that opens the game with a prepared URL
   - you change how the bench reads its run parameters or sets up its world
@@ -17,7 +17,9 @@ This is the design plan for `../../../docs/decisions/0006-url-mods-and-hash-stat
 
 ## Start state in mods
 
-Add a start-state section to the mod schema, alongside the sections in `src/core/schema.ts`, `SECTION_DESCRIPTOR`. Its row describes a new game: the site layout and its storeys and density, the start time of day, the world seed, the kit, wounds and skill levels. The default row's pack placement follows the start-row question in `pack-split.md`, "Open questions", so its references do not force skill or setting entries into core. `startingLoadout` and the layout's start time move from code into content; see `PILLARS.md`, "Content forward compatibility".
+Start rows belong to scenario content because location and kit depend on the map and run. A scenario may provide several starts, and a mod may add one. The product entry pack names its default scenario and start; a player picker is later UI work. See `../../../docs/decisions/0009-content-defined-products.md`, "Starts and mixing".
+
+The planned start section joins `src/core/schema.ts`, `SECTION_DESCRIPTOR`, so new-game setup uses ordinary admission rather than a private preset path. Move the initial kit from `src/game/loadout.ts`, `startingLoadout`, and the layout's start time into that content. The row supplies layout, storeys, density, start time, seed, kit, wounds and skill levels without putting scenario references in shared topics.
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 
@@ -90,7 +92,7 @@ Browser scripts stop concatenating query strings. One helper under `test/browser
 
 ## Slices
 
-Each slice is one PR and leaves every URL that a later slice still owns working. Start state comes first, so the flashlight demo proves the mod path before anything moves onto it. Tests follow `AGENTS.md`, "Tests": the flashlight proof extends an existing flow rather than adding a browser stage.
+The slices preserve each later slice's URLs while migrating one concern at a time. Their delivery must obey `../../../docs/decisions/0009-content-defined-products.md`, "Refactor gate": use an existing PR or wait until the refactor is executed. Start state comes first so the flashlight demo proves the mod path before other setup moves onto it. Tests follow `AGENTS.md`, "Tests": extend an existing flow rather than adding a browser stage.
 
 1. **Start state and URL mod loading.** Establish the content-owned new-game path before migrating other URL state: the start section, validation and placement; the default row replacing `startingLoadout`; the demo source root; `?mods=` admitting demo mods; and `?modpanel`. Every script opening the panel with `?mods=1`, including `test/browser/firefox-ui.mjs`, moves to `?modpanel`. No other parameter moves in this slice. A flashlight-at-night demo with the flashlight in the dominant hand proves the new-game path. This slice owns URL migration, not default-entry UX: the independent default start-flow slice is owned by `docs/decisions/0008-mod-authoring-tool.md`, "Build plan". Coordinate its entry routes with this migration; both use shared admission and save-identity checks.
 2. **Hash state.** The parser, bounds and schema; the browser URL helper; the camera, look switches, weathering tuning, interaction ray, debug, radius and the other hash keys moved to the hash, with write-back of the camera and the panel's live keys. The bench run settings move to the hash, with the bench's `nextUrl` functions and the scripts that start a bench. Presets still in the query that are gated on debug read it from the hash. `src/game/tutorialUrl.ts`, `tutorialUrl`, carries radius and actors in the hash instead of clearing it. `test/browser/gauntlet-flow.mjs` and `test/browser/save-storage.mjs` drop route-fixture and save-lock-holder, which nothing in the game reads.

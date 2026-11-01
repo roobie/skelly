@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you're asking why Deadvox content and tunables live in a core mod
+  - you're asking why content and tunables live in ordinary mods rather than the engine
   - you're asking why mod and event rules use restricted CEL rather than a scripting language
   - you're modelling a scripted sequence of events, such as a panel that opens a door
   - you're designing deterministic functions or the engine-to-mod boundary
@@ -19,7 +19,7 @@ Dynamic world events remain a design need in #313; #393 tracks extraction of Typ
 
 ## Decision
 
-The base content pack is the core mod. New content and tuning values belong there with schema validation, so authored rules have one canonical identity while exact mechanics stay system-owned. See `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `docs/jsonnet.md` for the authoring rule.
+Content and tuning belong in schema-validated mods, while exact mechanisms stay engine-owned. Core, theme, product and scenario ownership follows `docs/decisions/0009-content-defined-products.md`, "Definitions and distribution"; no single core pack owns every shared value. The loader remains one authority for admission; see `packages/deadvox/src/game/bundledContent.ts`, `buildBundledContent`, and `docs/jsonnet.md` for authoring.
 
 Mod and event rules use restricted CEL inside a typed rule envelope, and no scripting language is admitted. The envelope is Jsonnet data: a trigger, an optional condition and a list of engine effects. CEL fills only the condition and the effect arguments. It cannot sequence, loop or mutate, so the engine keeps scheduling, state, randomness and effects, as the mod rules below require. A maintained runtime supplies parsing, type checking and evaluation without making a new language an engine maintenance obligation. A mod-facing rule may describe a consequence, but cannot mutate state outside the engine's validated boundary.
 
@@ -31,9 +31,9 @@ The guard boundary around CEL is owned engine code: checked arithmetic through a
 
 Purity should be enforced by the language or a sandbox, so composed content can be hashed and replayed deterministically. Mind Over Matter is the golden standard the content system should support, not merely a capability benchmark; the mod rules below say how closely the game follows it.
 
-Module ordering and conflict policy stay simple and useful. A mod declares the packs it requires, because a mod written for one setting would otherwise fail confusingly under another; the rule is in `packages/deadvox/docs/pack-split.md`, "Layers". Composition and combining follow the mod rules below. Migration goes incrementally in a low number of large steps, with the steps and boundaries set in #393. Weather simulation stays in code while mods configure it, so rules read weather rather than run it; its event contract belongs to #313.
+A mod declares its dependencies so reuse does not silently import another product's assumptions; see `packages/deadvox/docs/pack-split.md`, "Layers". Composition and combining follow the mod rules below. Runtime and pack extraction follows the single-refactor gate in `docs/decisions/0009-content-defined-products.md`, "Refactor gate"; #393 retains the bounded tuning-extraction work. Weather simulation stays in code while mods configure it, so rules read weather rather than run it; its event contract belongs to #313.
 
-The core mod is a pack like any other, with no extra protection or privilege, and a mod changes a core tuning value as it changes any pack's; see `packages/deadvox/docs/pack-split.md`, "Core is the default first pack, not a required one". One rule for every pack is simpler than a privileged core, and the mod author owns the consequences of what they override. Modifier hooks remain a mechanism, not the only way to change core tuning; their vocabulary and how several mods' modifiers stack remain open in #313.
+Every mod uses the same override rules, including core-tier providers. No tier grants protection or privilege, and the overriding mod owns the consequences. Modifier hooks remain a mechanism, not the only way to change tuning; their vocabulary and how several mods' modifiers stack remain open in #313. Restricted rules have no storage, credential or network access; see `docs/decisions/0009-content-defined-products.md`, "Remote intake".
 
 The game and the modding framework own save compatibility, and a mod has no say in it, so a save whose mod state no longer matches is refused like any pack mismatch; see `packages/deadvox/docs/decisions/0002-saves.md`, "Compatibility".
 
