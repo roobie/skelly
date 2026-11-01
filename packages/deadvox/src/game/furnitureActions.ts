@@ -1,12 +1,42 @@
 import { type ItemAction, ItemActionSelection } from './itemActions.ts';
 
-export const radialEntryIndex = (x: number, y: number, count: number, deadZone: number): number | undefined => {
-  if (count === 0 || Math.hypot(x, y) <= deadZone) {
+export interface RadialAction extends ItemAction {
+  readonly angleRadians: number;
+}
+
+export const radialEntries = (
+  actions: readonly ItemAction[],
+  slots: Readonly<Record<string, number>>,
+): RadialAction[] =>
+  actions.map((action) => {
+    const degrees = slots[action.id];
+    if (degrees === undefined) {
+      throw new Error(`No radial slot for action "${action.id}"`);
+    }
+    return { ...action, angleRadians: (degrees * Math.PI) / 180 };
+  });
+
+export const radialEntryIndex = (
+  x: number,
+  y: number,
+  actions: readonly RadialAction[],
+  deadZone: number,
+): number | undefined => {
+  if (Math.hypot(x, y) <= deadZone) {
     return undefined;
   }
-  const turn = Math.PI * 2;
-  const angle = (Math.atan2(x, -y) + turn) % turn;
-  return Math.floor((angle / turn) * count + 0.5) % count;
+  const angle = Math.atan2(x, -y);
+  let nearest: number | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  actions.forEach((action, index) => {
+    const delta = angle - action.angleRadians;
+    const distance = Math.abs(Math.atan2(Math.sin(delta), Math.cos(delta)));
+    if (distance < nearestDistance) {
+      nearest = index;
+      nearestDistance = distance;
+    }
+  });
+  return nearest;
 };
 
 export class FurnitureActionSelection extends ItemActionSelection {
@@ -32,15 +62,16 @@ export class FurnitureActionSelection extends ItemActionSelection {
     return this.uid;
   }
 
-  page(entity: { uid: number }, actions: readonly ItemAction[], cap: number): readonly ItemAction[] {
-    const index = actions.indexOf(this.forItem(entity, actions)!);
+  page<Action extends ItemAction>(entity: { uid: number }, actions: readonly Action[], cap: number): readonly Action[] {
+    const selected = this.forItem(entity, actions);
+    const index = actions.findIndex((action) => action.id === selected?.id);
     const start = Math.floor(Math.max(0, index) / cap) * cap;
     return actions.slice(start, start + cap);
   }
 
   point(
     entity: { uid: number },
-    actions: readonly ItemAction[],
+    actions: readonly RadialAction[],
     movement: { x: number; y: number },
     tuning: { radiusPixels: number; deadZonePixels: number; entryCap: number },
   ): void {
@@ -52,7 +83,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
       this.y *= tuning.radiusPixels / length;
     }
     const page = this.page(entity, actions, tuning.entryCap);
-    const index = radialEntryIndex(this.x, this.y, page.length, tuning.deadZonePixels);
+    const index = radialEntryIndex(this.x, this.y, page, tuning.deadZonePixels);
     this.armed = index !== undefined;
     if (index !== undefined) {
       this.selected.set(entity.uid, page[index]!.id);

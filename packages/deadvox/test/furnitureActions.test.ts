@@ -1,24 +1,42 @@
 import { describe, expect, it } from 'vitest';
-import { FurnitureActionSelection, radialEntryIndex } from '../src/game/furnitureActions.ts';
+import { FurnitureActionSelection, radialEntries, radialEntryIndex } from '../src/game/furnitureActions.ts';
 
 const piece = { uid: 7 };
-const actions = [
-  { id: 'use', label: 'Use' },
-  { id: 'push', label: 'Push' },
-];
+const actions = radialEntries(
+  [
+    { id: 'use', label: 'Use' },
+    { id: 'push', label: 'Push' },
+  ],
+  { use: 0, push: 180 },
+);
 
-it('maps clockwise directions from the top to entries and leaves the dead zone unmapped', () => {
+it('keeps content-authored action slots when another action appears or order changes', () => {
+  const pair = [
+    { id: 'fixture_a', label: 'A' },
+    { id: 'fixture_b', label: 'B' },
+  ];
+  const third = { id: 'fixture_c', label: 'C' };
+  const slots = Object.fromEntries([
+    ['fixture_a', 25],
+    ['fixture_b', 180],
+    ['fixture_c', 270],
+  ]);
+  const original = radialEntries(pair, slots);
+  const extended = radialEntries([third, ...pair.toReversed()], slots);
+  for (const action of original) {
+    expect(extended.find(({ id }) => id === action.id)?.angleRadians).toBe(action.angleRadians);
+  }
   const radius = 50;
   const deadZone = 5;
-  for (const count of [1, 2, 3, 7]) {
-    for (let index = 0; index < count; index++) {
-      const angle = (index * Math.PI * 2) / count;
-      expect(radialEntryIndex(Math.sin(angle) * radius, -Math.cos(angle) * radius, count, deadZone)).toBe(index);
-    }
+  for (const entries of [original, extended]) {
+    entries.forEach((action, index) => {
+      const angle = action.angleRadians;
+      expect(radialEntryIndex(Math.sin(angle) * radius, -Math.cos(angle) * radius, entries, deadZone)).toBe(index);
+    });
   }
-  expect(radialEntryIndex(0, 0, 3, deadZone)).toBeUndefined();
-  expect(radialEntryIndex(deadZone, 0, 3, deadZone)).toBeUndefined();
-  expect(radialEntryIndex(0, -radius, 0, deadZone)).toBeUndefined();
+  expect(radialEntryIndex(0, 0, extended, deadZone)).toBeUndefined();
+  expect(radialEntryIndex(deadZone, 0, extended, deadZone)).toBeUndefined();
+  expect(radialEntryIndex(0, -radius, [], deadZone)).toBeUndefined();
 });
 
 it('release runs only the visibly chosen action, never a remembered action in the dead zone', () => {

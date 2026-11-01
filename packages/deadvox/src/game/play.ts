@@ -132,7 +132,7 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
-import { FurnitureActionSelection } from './furnitureActions.ts';
+import { FurnitureActionSelection, type RadialAction, radialEntries } from './furnitureActions.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -159,7 +159,6 @@ import {
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
-import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
@@ -777,17 +776,21 @@ export const startPlay = (
   let openedVehicleId: number | undefined;
   const furnitureActionSelection = new FurnitureActionSelection(actionText(registry).itemActions.openCan);
   const radialTuning = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureRadial;
-  const furnitureActions = (entity: BlockEntity): ItemAction[] => [
-    ...((liftableFurniture(entities.defOf(entity)) && !slidableFurniture(inventory, entity, s)) || entity.bar
-      ? [{ id: 'lift', label: entity.bar ? screenText.interaction.liftBar : radialTuning.labels.lift }]
-      : []),
-    ...(slidableFurniture(inventory, entity, s)
-      ? [
-          { id: 'push', label: radialTuning.labels.push },
-          { id: 'drag', label: radialTuning.labels.drag },
-        ]
-      : []),
-  ];
+  const furnitureActions = (entity: BlockEntity): RadialAction[] =>
+    radialEntries(
+      [
+        ...((liftableFurniture(entities.defOf(entity)) && !slidableFurniture(inventory, entity, s)) || entity.bar
+          ? [{ id: 'lift', label: entity.bar ? screenText.interaction.liftBar : radialTuning.labels.lift }]
+          : []),
+        ...(slidableFurniture(inventory, entity, s)
+          ? [
+              { id: 'push', label: radialTuning.labels.push },
+              { id: 'drag', label: radialTuning.labels.drag },
+            ]
+          : []),
+      ],
+      radialTuning.slots,
+    );
   const openFurnitureActionTarget = (): BlockEntity | undefined => {
     const uid = furnitureActionSelection.openedUid;
     return uid === undefined ? undefined : entities.byUid(uid);

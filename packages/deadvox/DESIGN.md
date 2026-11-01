@@ -585,9 +585,12 @@ because rearranging a room should not require destroying its contents. See `src/
   unexpectedly. The radial spike keeps the choice near the target and holds
   look so choosing a direction cannot also lose that target. The centre is
   neutral so release cannot run a remembered choice that is not visibly selected;
-  mouse and keyboard choices share the same highlight and confirmation owner. See
-  `src/game/play.ts`, `furnitureActions`, `src/game/furnitureActions.ts`,
-  `FurnitureActionSelection`, and `src/ui/furnitureRadial.ts`,
+  mouse and keyboard choices share the same highlight and confirmation owner.
+  Action identity owns direction so changing availability does not retrain the
+  player's steering. Colliding or missing slots fail content validation rather
+  than silently moving choices. See `src/game/play.ts`, `furnitureActions`,
+  `src/game/furnitureActions.ts`, `radialEntries` and `FurnitureActionSelection`,
+  and `src/ui/furnitureRadial.ts`,
   `mountFurnitureRadial`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down

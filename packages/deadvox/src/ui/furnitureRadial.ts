@@ -1,16 +1,16 @@
 import { html, nothing, render } from 'lit-html';
 import type { ContentFile } from '../core/schema.ts';
-import type { ItemAction } from '../game/itemActions.ts';
+import type { RadialAction } from '../game/furnitureActions.ts';
 
 type RadialTuning = NonNullable<ContentFile['ui']>[number]['furnitureRadial'];
 
 /** Meta choice surface: the target's geometry cannot show which operation release will use. */
 export const mountFurnitureRadial =
   (root: HTMLElement) =>
-  (actions: readonly ItemAction[], selectedId: string | undefined, tuning: RadialTuning): void => {
+  (actions: readonly RadialAction[], selectedId: string | undefined, tuning: RadialTuning): void => {
     root.hidden = actions.length === 0;
-    const selectedIndex = actions.findIndex((action) => action.id === selectedId);
-    const direction = (selectedIndex / actions.length) * Math.PI * 2 - Math.PI / 2;
+    const selected = actions.find((action) => action.id === selectedId);
+    const direction = selected ? selected.angleRadians - Math.PI / 2 : undefined;
     const style = `--radial-radius: ${tuning.radiusPixels}px;
       --radial-dead-zone: ${tuning.deadZonePixels}px;
       --radial-stroke: ${tuning.strokePixels}px;
@@ -19,16 +19,16 @@ export const mountFurnitureRadial =
       --radial-label-radius: ${tuning.labelRadiusRem}rem`;
     render(
       html`<div class="radial-face" style=${style}>
-        <div class=${selectedIndex < 0 ? 'radial-centre' : 'radial-centre armed'}></div>
+        <div class=${selected ? 'radial-centre armed' : 'radial-centre'}></div>
         ${
-          selectedIndex < 0
-            ? nothing
-            : html`<div class="radial-pointer" style=${`transform: rotate(${direction}rad)`}>
+          selected
+            ? html`<div class="radial-pointer" style=${`transform: rotate(${direction}rad)`}>
           <div class="radial-spoke"></div>
         </div>`
+            : nothing
         }
-        ${actions.map((action, index) => {
-          const angle = (index / actions.length) * Math.PI * 2;
+        ${actions.map((action) => {
+          const angle = action.angleRadians;
           const x = Math.sin(angle) * tuning.radiusPixels;
           const y = -Math.cos(angle) * tuning.radiusPixels;
           return html`<div

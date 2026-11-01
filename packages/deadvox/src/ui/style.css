@@ -381,7 +381,6 @@ body.unconscious::after {
   transform: translate(-50%, -50%);
   border: var(--radial-stroke) dashed var(--muted);
   border-radius: 50%;
-  background: var(--panel);
 }
 .radial-centre.armed {
   border-style: solid;

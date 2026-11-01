@@ -904,6 +904,14 @@ const UiTuningSchema = strictObject({
     labelPaddingRem: Positive,
     labelRadiusRem: Positive,
     entryCap: pipe(number(), integer(), minValue(1)),
+    slots: record(
+      Id,
+      pipe(
+        number(),
+        minValue(0),
+        check((angle) => angle < 360, 'must be less than 360 degrees'),
+      ),
+    ),
     labels: strictObject({ lift: Name, push: Name, drag: Name, actions: Name }),
   }),
   /** The sound event played when the player tries an action that cannot be completed. */

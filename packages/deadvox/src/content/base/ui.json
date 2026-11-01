@@ -415,7 +415,7 @@
         "wornOut": "I can't hold it any longer"
       },
       "furnitureRadial": {
-        "deadZonePixels": 18,
+        "deadZonePixels": 30,
         "entryCap": 8,
         "labelPaddingRem": 0.5,
         "labelRadiusRem": 0.375,
@@ -427,6 +427,11 @@
         },
         "radiusPixels": 110,
         "selectedLabelScale": 1.25,
+        "slots": {
+          "drag": 180,
+          "lift": 270,
+          "push": 0
+        },
         "strokePixels": 3
       },
       "hudScale": 1,
