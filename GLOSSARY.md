@@ -19,10 +19,6 @@ The cost to build something is not tech debt.
 
 ## Actor roles
 
-These terms distinguish ownership rather than species or product. Keeping control,
-identity and persistent persona separate avoids making the player the only kind of
-actor a mechanism can address.
-
 - **Entity:** a stored identity.
 - **Actor:** a source of effects or behavior, including the source whose modifiers
   resolve an effect (`PILLARS.md`, "Content forward compatibility").

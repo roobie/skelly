@@ -67,8 +67,9 @@ Remote intake follows `docs/decisions/0009-content-defined-products.md`, "Remote
 HTTPS and CORS-readable sources, source disclosure and confirmation, files from the mod's
 own origin, and size and evaluation-cost bounds. Data-only rules cannot access storage,
 credentials or the network, so host allowlists and proxies add no needed trust boundary.
-A repository browsing API is not implied. Browser-only workspace hosting still needs
-an explicit transport for handoff.
+A repository browsing API is not implied; conveniences such as accepting a repository
+page URL remain undecided. Browser-only workspace hosting still needs an explicit
+transport for handoff.
 
 ### Testing, sharing and start flow
 
@@ -114,7 +115,7 @@ start flow.
    readable. This slice has no editing dependency on field patches. Guard the API-only
    import direction through `packages/engine/test/engineImportBoundary.test.ts`,
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
-2. **Engine field-patch merge.** Design-check and build the merge, typed refusal boundary
+2. **Engine field-patch merge.** Design-check and build the merge, schema marking
    and per-field origins governed by ADR 0007. This is independently scheduled within
    the PR gate, not blocked on slice 1. Resolve dependency-admission and fail-closed
    enforcement prerequisites against `packages/deadvox/docs/pack-split.md`, "Refactor workstreams"; the

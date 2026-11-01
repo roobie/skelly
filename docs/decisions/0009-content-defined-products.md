@@ -40,7 +40,8 @@ The manifest declares the tier: **core**, **theme**, **product** or **scenario**
 An id is not a tier discriminator. The scope in a product or scenario name identifies
 its owner; the loader must not infer its tier from that spelling. Consumer judgments
 can change as products appear, and encoding the tier in identity would turn
-reclassification into dependency and save breakage.
+reclassification into dependency and save breakage. Theme and product names can also
+share one id shape and clash, so spelling cannot distinguish their tiers.
 
 Core-tier topics are useful across almost all products. Theme mods are reusable but
 not universal. Product mods own a setting's content and policy; scenario mods own a
@@ -73,9 +74,9 @@ product or scenario that distributes them; consumer wiring declares its dependen
 This roster is a starting guide, not a content contract or a promise of implemented
 mechanisms. The other products are hypothetical consumers: MW is Morrowind-inspired,
 BL is Bannerlord-inspired and EM is Empyrion-inspired. DV is Deadvox, a real-time 3D
-voxel take on CDDA. All use the same engine. A check means expected use, a tilde means
-possible use, and a dot means no expected use. Consumer evidence governs classification,
-not perfect adherence to the table.
+voxel take on CDDA, possibly multiplayer later. All use the same engine. A check means
+expected use, a tilde means possible use, and a dot means no expected use. Consumer
+evidence governs classification, not perfect adherence to the table.
 
 | Content | DV | MW | BL | EM | Ownership guide |
 |---|---|---|---|---|---|
@@ -89,7 +90,7 @@ not perfect adherence to the table.
 | Food, wearables and readables | ✓ | ✓ | ✓ | ✓ | Topic definitions may mix eras |
 | Firearms, ammunition, attachments and gun parts | ✓ | · | · | ~ | Theme; also useful to an 80s Miami police product |
 | Explosives | ✓ | · | · | ✓ | Theme |
-| Manufactured blocks | ✓ | · | · | ✓ | Theme |
+| Manufactured blocks (concrete, asphalt, steel) | ✓ | · | · | ✓ | Theme |
 | Electric power content | ✓ | · | · | ✓ | Theme |
 | Ground motor vehicles | ✓ | · | · | · | Theme; also useful to an 80s Miami police product |
 | Magic | Opt-in | ✓ | · | · | Theme; #1528 is a reference consumer |
@@ -132,7 +133,8 @@ Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army
 would need its own mechanism, not a vaguer name for the horde. Rename setting and
 scenario names in framework mechanisms, such as `packages/deadvox/src/core/gauntlet.ts`,
-`GauntletSite`, to descriptive names. Generic words must not blur distinct mechanisms.
+`GauntletSite`, to descriptive names: a scenario name in framework code ties every
+product to one scenario. Generic words must not blur distinct mechanisms.
 Content selectors and taxonomies move out of code regardless of the mechanism's name;
 see `packages/deadvox/src/core/settlementSpawns.ts`, `HORDE_TYPE`, and
 `packages/deadvox/src/core/loot.ts`, `LOOT_TIERS`.
@@ -144,7 +146,7 @@ network. This invariant, not trust in a host, is the security boundary and prote
 future multiplayer credentials as well as local state.
 
 URL intake uses HTTPS and CORS-readable hosts only, shows the source and asks for
-confirmation. The loader admits files only from the mod's own origin, preventing
+confirmation. The loader must admit files only from the mod's own origin, preventing
 third-host tracking. Size and evaluation-cost bounds prevent bloat and freezes;
 trusted admission limits cannot come from the mod they bound. No trusted-host list
 or proxy is part of this design.
@@ -160,8 +162,8 @@ by `docs/decisions/0008-mod-authoring-tool.md`, "Folder mods and assets".
 
 The framework split changes no save-store policy. A product wanting separate saves
 uses a separate URL with the necessary hosting separation, not a new product save
-feature. Browser storage is origin-scoped; a different path alone must not be claimed
-to isolate it. Compatibility remains framework-owned under
+feature. Browser storage is origin-scoped; a different path on the same origin shares
+the store. Compatibility remains framework-owned under
 `packages/deadvox/docs/decisions/0002-saves.md`, "Compatibility". Ordered pack identity
 remains the rule until #1395 implements evaluated-content identity under
 `packages/deadvox/docs/decisions/0008-deterministic-world.md`, "Decision".
@@ -176,13 +178,10 @@ mechanisms still require scoped engine work.
 The runtime moves out of `packages/deadvox` into its own workspace package, and content
 splits into `skelly.*` mods in one refactor. The runtime package name is chosen at the
 refactor and must not collide with `packages/engine`, the assembly/geometry library.
-Extend the existing import-boundary pattern in
-`packages/engine/test/engineImportBoundary.test.ts`, `packageEdges`.
 
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
 #1403 and #1369. No new PRs open until the refactor is executed. Work can use an
-existing PR; this decision record belongs on #1529. Waiting avoids moving files under
-active branches, and one extraction avoids paying for a temporary internal-edge
-phase and its later removal. The content-extraction plan belongs in
+existing PR. Waiting avoids moving files under active branches, and one extraction
+avoids paying for a temporary internal-edge phase and its later removal. The content-extraction plan belongs in
 `packages/deadvox/docs/pack-split.md`.

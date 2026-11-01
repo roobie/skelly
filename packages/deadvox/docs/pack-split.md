@@ -12,7 +12,7 @@ read_if:
 This is the content-extraction plan for #637 within the single framework refactor
 owned by #1532. The product model, names, tier identities, consumer roster and
 execution gate belong to
-`../../../docs/decisions/0009-content-defined-products.md`. Products share mechanisms
+`docs/decisions/0009-content-defined-products.md`. Products share mechanisms
 without inheriting Deadvox's setting, and reusable definitions must not carry a
 product's distribution policy.
 
@@ -27,7 +27,7 @@ a product; anyone can author one.
 
 First-party ids use `skelly.*`, named for their content. The manifest, not the id,
 declares core, theme, product or scenario tier; see
-`../../../docs/decisions/0009-content-defined-products.md`, "Mod identity and tiers".
+`docs/decisions/0009-content-defined-products.md`, "Mod identity and tiers".
 There is no catch-all core pack and no shared-scenario pack. Content reused by several
 scenarios moves into product topic mods; content reusable across products belongs in
 shared topics rather than a product namespace.
@@ -35,21 +35,21 @@ shared topics rather than a product namespace.
 **No privileged core.** A stack may replace shared providers when its dependencies
 supply every required capability. Core-tier content has neither protection nor
 special override rights. One rule for all mods avoids binding products to a particular
-provider's identity.
+provider's identity. One rule for every pack is simpler than a privileged core.
 
 **Dependencies follow ownership.** Reusable definitions reference their own or lower
 layers, never the products or scenarios that distribute them. Consumer wiring declares
 the packs it uses; the entry pack selects the stack. An engine mechanism references no
 content id. These directions keep a theme usable without importing a product's starts
-or loot and keep load order out of filename conventions. Admission refuses missing
+or loot and keep load order out of filename conventions. Admission must refuse missing
 dependencies and undeclared overrides through the shared loader; see
-`../../../docs/decisions/0007-typed-field-patches.md`, "Conflicts".
+`docs/decisions/0007-typed-field-patches.md`, "Conflicts".
 
 ## Classification rule
 
 Classify entries, not files. Split a mixed file rather than moving its dependencies
 upward by accident. The consumer roster in
-`../../../docs/decisions/0009-content-defined-products.md`, "Classification guide",
+`docs/decisions/0009-content-defined-products.md`, "Classification guide",
 is guidance, not a permanent whitelist.
 
 **Definitions and distribution have different owners.** A reusable item's definition
@@ -135,7 +135,7 @@ load error naming the role, both packs and the fix. Load order alone never decid
 The replaced skill leaves the live skill list, gains no progression and has no saved
 state: restore under a different pack set is refused, so hidden state would have no
 valid return path. This shares the field-patch conflict rule in
-`../../../docs/decisions/0007-typed-field-patches.md`, "Conflicts".
+`docs/decisions/0007-typed-field-patches.md`, "Conflicts".
 
 **Combat policy is product content.** Engine mechanisms such as aiming, blocking and
 handling do not own a product's sway or penalty policy. Skills modify that policy;
@@ -157,7 +157,7 @@ The extraction covers required ids (`src/core/contentIds.ts`, `CORE_CONTENT_IDS`
 `src/core/content.ts`, `REQUIRED_CORE_CONTENT`), setting-name schema picklists,
 body/render branches and debug loadouts (`src/debug/debugLoadout.ts`,
 `equipDebugLoadout`). Mechanism names describe behavior rather than setting or
-scenario identity; see `../../../docs/decisions/0009-content-defined-products.md`,
+scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 "Vocabulary". #393 owns the bounded tunables inventory, not a parallel list here.
 
 ## Core-alone validation
@@ -175,9 +175,8 @@ model and sound checks apply per pack; static reachability applies to playable s
 
 ## Refactor workstreams
 
-#1532 delivers runtime extraction and content separation together after its PR gate,
-not as separately shipped pack rounds. These workstreams preserve #637's proof
-obligations within that one refactor:
+#1532 delivers runtime extraction and content separation together after its PR gate.
+These workstreams preserve #637's proof obligations within that one refactor:
 
 - **Pack intake and boundaries:** explicit topic/product/scenario sources, dependency
   admission, requirement ownership and shared-provider validation. Coordinate with the
@@ -204,7 +203,7 @@ obligations within that one refactor:
 
 The refactor's acceptance includes the unit suite, full-stack validation, save round
 trip and independent and mixed ground-based stacks. Space feasibility is deferred
-under `../../../docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
+under `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
 
 ## Save identity
 
@@ -214,7 +213,7 @@ changed pack; see `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and
 This remains pack-list identity until #1395 implements evaluated-content identity
 under `docs/decisions/0008-deterministic-world.md`, "Decision". Generator identity
 follows body plans rather than setting model names. Save-store policy is unchanged;
-see `../../../docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
+see `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
 No pre-beta migration is owed (`AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
 
 ## Open follow-ups
