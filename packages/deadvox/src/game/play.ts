@@ -515,7 +515,7 @@ const syncReadingProgress = (
     return;
   }
   if (action?.kind === 'reading' && action.ownerUid === bookUid) {
-    setProgress({ value: action.elapsed, max: action.duration });
+    setProgress({ value: action.elapsedGameSeconds, max: action.durationGameSeconds });
     return;
   }
   setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
@@ -604,12 +604,15 @@ const handlingPresentationFor = ({
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
+  const accrued = elapsedForPresentation(job, simSeconds, clockRatio, compressionActive);
+  const progress =
+    job.jobType === 'reading'
+      ? { kind: job.jobType, durationGameSeconds: job.duration, elapsedGameSeconds: accrued }
+      : { kind: job.jobType, durationSimSeconds: job.duration, elapsedSimSeconds: accrued };
   const action: TimedActionPresentation = {
-    kind: job.jobType,
+    ...progress,
     ...(job.jobType === 'reading' ? { ownerUid: job.bookUid } : {}),
     label: timedActionLabel(job, inventory),
-    duration: job.duration,
-    elapsed: elapsedForPresentation(job, simSeconds, clockRatio, compressionActive),
     stopped: job.stopped,
   };
   return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling);

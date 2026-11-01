@@ -76,8 +76,8 @@ export const runningCraftPresentation = (
         )
       : [];
   return {
-    ...item.work,
-    elapsed: Math.min(
+    durationGameSeconds: item.work.duration,
+    elapsedGameSeconds: Math.min(
       item.work.duration,
       item.work.elapsed + (compressionActive ? Math.max(0, simSeconds - job.last) * clockRatio : 0),
     ),
