@@ -333,7 +333,7 @@
         "noLightToFit": "I'm not holding a light it fits",
         "noLock": "The door has no lock",
         "noPadlock": "There's no locked padlock",
-        "noRepairTarget": "Nothing in reach needs repair",
+        "noRepairTarget": "I can't find anything to repair",
         "noRoom": "There's no room",
         "noRoomOnMe": "I've no room for it",
         "noRoomThere": "There's no room there",
@@ -358,8 +358,8 @@
         "pocketsFull": "My pockets are full",
         "preferredCompete": "Preferred alternatives compete for the same stock or would consume a required tool",
         "recipeUnknown": "Recipe not known",
-        "repairTargetGone": "The repair target is missing",
-        "repairTargetOutOfReach": "The repair target is out of reach",
+        "repairTargetGone": "I can't repair it now",
+        "repairTargetOutOfReach": "I can't reach it from here",
         "rested": "I feel rested",
         "rightHandHolding": "My right hand is holding the {item}",
         "rightHandOnLadder": "My right hand is holding the ladder",
@@ -375,7 +375,7 @@
         "wearingOther": "I'm already wearing the {item} there",
         "wokenBy": "I wake up: {reason}",
         "workHand": "It stays in my working hand",
-        "workNeedsBothHands": "The work needs both hands",
+        "workNeedsBothHands": "I need both hands for this",
         "workstationNotInReach": "Required workstation not in reach",
         "wrongBattery": "It doesn't take that battery",
         "wrongCartridge": "It doesn't take that cartridge",
@@ -419,18 +419,14 @@
         "entryCap": 8,
         "labelPaddingRem": 0.5,
         "labelRadiusRem": 0.375,
-        "labels": {
-          "actions": "Actions",
-          "drag": "Drag",
-          "lift": "Lift",
-          "push": "Push"
-        },
         "radiusPixels": 110,
         "selectedLabelScale": 1.25,
         "slots": {
+          "continue": 135,
           "drag": 180,
           "lift": 270,
-          "push": 0
+          "push": 0,
+          "repair": 90
         },
         "strokePixels": 3
       },
@@ -555,6 +551,7 @@
         },
         "interaction": {
           "action": "{key}: {action}",
+          "actions": "actions",
           "bar": "Bar",
           "barDoor": "Bar the {name}",
           "blocked": "{action} — {reason}",
@@ -643,6 +640,7 @@
           "tabActions": "Actions",
           "tabCrafting": "Crafting",
           "tabItems": "Items",
+          "tabRepair": "Repair",
           "tabSkills": "Skills",
           "tabsLabel": "Character screen",
           "taking": "Taking {count} {category} items",
@@ -929,6 +927,11 @@
           "failed": "Unable to load the world: {error}",
           "loading": "Loading world…",
           "reload": "Reload game"
+        },
+        "worldService": {
+          "drag": "Drag",
+          "lift": "Lift",
+          "push": "Push"
         }
       },
       "spacing": 1,

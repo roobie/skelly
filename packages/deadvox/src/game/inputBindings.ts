@@ -1064,11 +1064,8 @@ export class KeyboardInput {
       });
     }
   }
-  private pressRefusal(event: KeyEvent): string | undefined {
-    if (this.blocked.has(event.code)) {
-      return 'blocked';
-    }
-    const browserModifier = REFUSED_MODIFIERS.some((modifier) => {
+  private browserModifier(event: KeyEvent): boolean {
+    return REFUSED_MODIFIERS.some((modifier) => {
       if (modifier === 'alt') {
         const owned = [...this.active].some(
           ([code, action]) => modifierCodes[code] === modifier && isHeld(this.registry.binding(action)!),
@@ -1077,7 +1074,6 @@ export class KeyboardInput {
       }
       return event[flags[modifier]];
     });
-    return browserModifier ? 'browser-modifier' : undefined;
   }
   private stepChoice(event: KeyEvent, text: boolean): boolean {
     const directions = new Map([
@@ -1088,6 +1084,12 @@ export class KeyboardInput {
     ]);
     const direction = directions.get(event.code);
     return !text && direction !== undefined && this.choiceStep(direction);
+  }
+  private refusedDown(event: KeyEvent, text: boolean, browserModifier: boolean): boolean {
+    const blocked = this.blocked.has(event.code);
+    // A rejected held edge must not click a button that acquired focus during the transfer.
+    const blockNativeActivation = blocked && !browserModifier && !text && nativeActivation(event);
+    return this.traceDown(event, blockNativeActivation, blocked ? 'blocked' : 'browser-modifier');
   }
   press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {
     this.sync();
@@ -1102,9 +1104,9 @@ export class KeyboardInput {
       this.escape();
       return false;
     }
-    const refusal = this.pressRefusal(event);
-    if (refusal) {
-      return this.traceDown(event, false, refusal);
+    const browserModifier = this.browserModifier(event);
+    if (this.blocked.has(event.code) || browserModifier) {
+      return this.refusedDown(event, text, browserModifier);
     }
     if (this.stepChoice(event, text)) {
       return this.traceDown(event, true, 'choice-step');

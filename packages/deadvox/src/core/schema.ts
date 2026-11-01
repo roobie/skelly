@@ -541,6 +541,11 @@ const UiScreenTextSchema = strictObject({
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
   prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  worldService: slottedTable({
+    push: [],
+    drag: [],
+    lift: [],
+  }),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -628,6 +633,7 @@ const UiScreenTextSchema = strictObject({
     barDoor: ['name'],
     liftBar: [],
     hold: ['key', 'action'],
+    actions: [],
     climb: ['name'],
     read: ['name'],
     rest: ['name'],
@@ -810,6 +816,7 @@ const UiScreenTextSchema = strictObject({
     tabSkills: [],
     tabCrafting: [],
     tabActions: [],
+    tabRepair: [],
     find: [],
     findLabel: [],
     needsLabel: [],
@@ -889,6 +896,12 @@ const UiScreenTextSchema = strictObject({
 
 export type ScreenText = InferOutput<typeof UiScreenTextSchema>;
 
+const RadialAngle = pipe(
+  number(),
+  minValue(0),
+  check((angle) => angle < 360, 'must be less than 360 degrees'),
+);
+
 const UiTuningSchema = strictObject({
   id: Id,
   screenText: UiScreenTextSchema,
@@ -904,15 +917,13 @@ const UiTuningSchema = strictObject({
     labelPaddingRem: Positive,
     labelRadiusRem: Positive,
     entryCap: pipe(number(), integer(), minValue(1)),
-    slots: record(
-      Id,
-      pipe(
-        number(),
-        minValue(0),
-        check((angle) => angle < 360, 'must be less than 360 degrees'),
-      ),
-    ),
-    labels: strictObject({ lift: Name, push: Name, drag: Name, actions: Name }),
+    slots: strictObject({
+      push: RadialAngle,
+      drag: RadialAngle,
+      lift: RadialAngle,
+      repair: RadialAngle,
+      continue: RadialAngle,
+    }),
   }),
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),

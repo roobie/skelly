@@ -95,9 +95,16 @@ it('rejects colliding or missing radial action slots at content validation', () 
       source: 'radial-fixture.json',
       data: { ui: [{ ...tuning, furnitureRadial: { ...radial, slots: value } }] },
     });
-  expect(issues(slots).map(({ path }) => path)).toContain(`ui[0].furnitureRadial.slots.${second}`);
-  delete slots[first!];
-  expect(issues(slots).map(({ path }) => path)).toContain(`ui[0].furnitureRadial.slots.${first}`);
+  expect(
+    issues(slots).some(({ path }) =>
+      [first, second].some((action) => path === `ui[0].furnitureRadial.slots.${action}`),
+    ),
+  ).toBe(true);
+  for (const action of Object.keys(radial.slots)) {
+    const missing: Record<string, number> = { ...radial.slots };
+    delete missing[action];
+    expect(issues(missing).map(({ path }) => path)).toContain(`ui[0].furnitureRadial.slots.${action}`);
+  }
 });
 
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {

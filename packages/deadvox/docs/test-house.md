@@ -10,6 +10,7 @@ read_if:
   - you change house supply, powered furnishings or player power controls
   - you add a feature's test prop to the showroom, or change its slot row or catalogue
   - you use or change the focus URL parameter
+  - you stage or inspect the debug repair entry
 ---
 
 # Test house
@@ -86,6 +87,21 @@ Derived repair stock and the handling range are debug-only because their purpose
 repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
 `DESIGN.md`, "Debug scenes".
+
+The repair entry is opt-in and debug-only because its staged damage and supplies are
+evaluation setup, not ordinary rewards. It reuses the showroom's authored prop and shared
+recipe admission so evaluating repair does not require a separate world or privileged
+content path. Its recipe must restore the staged damage so completion visibly differs from
+cancellation; a tiny repair can finish within one compressed-time update while leaving the
+same worn appearance. Derive that restoration from the target's authored durability rather
+than maintaining a separate damage budget. The staged prop also exposes ordinary
+movement alongside repair so service availability can be judged in the same spatial
+choice rather than in an isolated widget. See `src/config/repair-look.jsonnet`, `furniture`.
+The target's turnable 3D view waits for #1469; requirements belong to the
+shared panel under `DESIGN.md`, "World repair selection". See
+`src/game/config.ts`, `repairLookEnabled`; `src/game/testHouseRepairLook.ts`,
+`stageRepairLook`; and
+`src/game/play.ts`, `startPlay`.
 
 The ragdoll sample is opt-in and debug-only because staged deaths are evaluation fixtures,
 not residents of the haven. It uses the handling range rather than adding bodies or a

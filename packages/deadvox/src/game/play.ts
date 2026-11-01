@@ -19,7 +19,6 @@ import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
-import { liftableFurniture, slidableFurniture } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
@@ -132,7 +131,7 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
-import { FurnitureActionSelection, type RadialAction, radialEntries } from './furnitureActions.ts';
+import { FurnitureActionSelection, furnitureActionsFor, type RadialAction, radialEntries } from './furnitureActions.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -198,6 +197,7 @@ import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
 import { populateTestHouseRepairCorner } from './testHouseRepair.ts';
+import { faceRepairLookTarget, stageRepairLook } from './testHouseRepairLook.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -515,7 +515,7 @@ const syncReadingProgress = (
     return;
   }
   if (action?.kind === 'reading' && action.ownerUid === bookUid) {
-    setProgress({ value: action.elapsed, max: action.duration });
+    setProgress({ value: action.elapsedGameSeconds, max: action.durationGameSeconds });
     return;
   }
   setProgress(bookIsComplete(bookUid) ? { value: 1, max: 1 } : undefined);
@@ -597,19 +597,22 @@ const handlingPresentationFor = ({
     ...queue,
     cancelLabel: queue.cancelLabel ?? fillHint(cancel, { key: keyCap('handling.stop') }),
   };
-  const craft = runningCraftPresentation(inventory, job);
+  const craft = runningCraftPresentation(inventory, job, { simSeconds, clockRatio, compressionActive });
   if (craft) {
     return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling);
   }
   if (!job || job.stopped || !isTimedLongJob(job)) {
     return inactive;
   }
+  const accrued = elapsedForPresentation(job, simSeconds, clockRatio, compressionActive);
+  const progress =
+    job.jobType === 'reading'
+      ? { kind: job.jobType, durationGameSeconds: job.duration, elapsedGameSeconds: accrued }
+      : { kind: job.jobType, durationSimSeconds: job.duration, elapsedSimSeconds: accrued };
   const action: TimedActionPresentation = {
-    kind: job.jobType,
+    ...progress,
     ...(job.jobType === 'reading' ? { ownerUid: job.bookUid } : {}),
     label: timedActionLabel(job, inventory),
-    duration: job.duration,
-    elapsed: elapsedForPresentation(job, simSeconds, clockRatio, compressionActive),
     stopped: job.stopped,
   };
   return timedActionHandlingPresentation(action, screenTextOf(inventory.registry).handling);
@@ -778,17 +781,7 @@ export const startPlay = (
   const radialTuning = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureRadial;
   const furnitureActions = (entity: BlockEntity): RadialAction[] =>
     radialEntries(
-      [
-        ...((liftableFurniture(entities.defOf(entity)) && !slidableFurniture(inventory, entity, s)) || entity.bar
-          ? [{ id: 'lift', label: entity.bar ? screenText.interaction.liftBar : radialTuning.labels.lift }]
-          : []),
-        ...(slidableFurniture(inventory, entity, s)
-          ? [
-              { id: 'push', label: radialTuning.labels.push },
-              { id: 'drag', label: radialTuning.labels.drag },
-            ]
-          : []),
-      ],
+      furnitureActionsFor(inventory, entity, s, config.debugRepairLook ? session.character.knownRecipes : undefined),
       radialTuning.slots,
     );
   const openFurnitureActionTarget = (): BlockEntity | undefined => {
@@ -1231,6 +1224,7 @@ export const startPlay = (
       source: engine.site,
     });
   }
+  const debugRepairTarget = stageRepairLook(inventory, engine.site, config, options.restore !== undefined);
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {
     terrain: streamer,
@@ -2107,7 +2101,12 @@ export const startPlay = (
     if (reason) {
       return reason;
     }
-    if (payload.kind === 'craft.start' || payload.kind === 'action.wait' || payload.kind === 'vehicle.work') {
+    if (
+      payload.kind === 'craft.start' ||
+      payload.kind === 'craft.repair-entity' ||
+      payload.kind === 'action.wait' ||
+      payload.kind === 'vehicle.work'
+    ) {
       closeInventoryScreen();
       syncMenuState();
     }
@@ -2299,10 +2298,7 @@ export const startPlay = (
     };
   };
 
-  const playContext = (): InputContext => {
-    if (mainMenuOpen || sim.dead) {
-      return 'menu';
-    }
+  const activePlayContext = (): InputContext => {
     if (reading.isOpen) {
       return 'reading';
     }
@@ -2317,6 +2313,7 @@ export const startPlay = (
     }
     return debugTools?.noclip || spectator.enabled ? 'noclip' : footContext();
   };
+  const playContext = (): InputContext => (mainMenuOpen || sim.dead ? 'menu' : activePlayContext());
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
     if (!worldLoading.ready) {
@@ -2773,6 +2770,8 @@ export const startPlay = (
     return target?.kind === 'furniture' ? target.entity : undefined;
   };
 
+  faceRepairLookTarget(input, eye(), debugRepairTarget);
+
   /** The open cell in front of the surface in the crosshair, or at the end of reach when none is near. */
   const aimedCell = (): [number, number, number] => {
     const origin = eye();
@@ -2868,10 +2867,20 @@ export const startPlay = (
     );
   };
 
-  const selectedFurniturePayload = (entity: BlockEntity): ReplayActionPayload | undefined => {
+  const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
     const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
     if (!selected) {
       return undefined;
+    }
+    if (selected.id === 'repair') {
+      quickbarInput.cancel();
+      screen.openRepair(entity.uid);
+      mainMenuOpen = false;
+      syncMenuState();
+      return undefined;
+    }
+    if (selected.workUid !== undefined) {
+      return { kind: 'inventory.work', itemUid: selected.workUid, operation: 'continue' };
     }
     if (selected.id === 'lift') {
       return { kind: 'furniture.lift', entityUid: entity.uid };
@@ -2882,7 +2891,7 @@ export const startPlay = (
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
     if (furnitureActionSelection.isOpen(entity)) {
-      return selectedFurniturePayload(entity);
+      return confirmFurnitureAction(entity);
     }
     if (mode === 'wield' && furnitureActions(entity).length > 0) {
       return { kind: 'furniture.interact', entityUid: entity.uid, alternatives: true };
@@ -2893,7 +2902,6 @@ export const startPlay = (
       : { kind: 'furniture.interact', entityUid: entity.uid };
   };
 
-  /** A hold opens movement choices for furniture rather than performing an accidental lift. */
   function interactionPayload(
     target: Exclude<InteractionTarget, { kind: 'vehicle' }>,
     mode: 'pocket' | 'wield',
@@ -3635,11 +3643,15 @@ export const startPlay = (
       view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
     }
   };
+  const selectedFurnitureHint = (entity: BlockEntity): HintText | undefined => {
+    const selected = furnitureActionSelection.choice(entity, furnitureActions(entity));
+    const name = selected?.id === 'repair' || selected?.workUid !== undefined ? '' : nameOf(entity);
+    return selected ? html`${keyCap('world.interact')}: ${selected.label} ${name}` : undefined;
+  };
   const furnitureInteractionHint = (entity: BlockEntity): HintText | undefined => {
     const key = keyCap('world.interact');
     if (furnitureActionSelection.isOpen(entity)) {
-      const selected = furnitureActionSelection.choice(entity, furnitureActions(entity));
-      return selected ? html`${key}: ${selected.label} ${nameOf(entity)}` : undefined;
+      return selectedFurnitureHint(entity);
     }
     if (entity.bar) {
       const lift = doorPlan(inventory, entity, 'unbar');
@@ -3652,7 +3664,7 @@ export const startPlay = (
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
     return furnitureActions(entity).length > 0
-      ? html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: radialTuning.labels.actions })}`
+      ? html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: screenText.interaction.actions })}`
       : useText(entity);
   };
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
@@ -4308,7 +4320,7 @@ export const startPlay = (
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
-    const visible = hudVisibility(hudOptions, false, menuState.menuPointer);
+    const visible = hudVisibility(hudOptions, false, input.menuPointer);
     let mark = realNow();
     prepareStreaming(now);
     meshingQueueMs = realNow() - mark;
@@ -4401,7 +4413,7 @@ export const startPlay = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead);
+    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.repairTarget : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);

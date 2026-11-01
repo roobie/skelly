@@ -194,18 +194,13 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
     }
   });
   (file.ui ?? []).forEach((tuning, i) => {
-    const { slots, labels } = tuning.furnitureRadial;
+    const { slots } = tuning.furnitureRadial;
     const seen = new Set<number>();
     for (const [action, angle] of Object.entries(slots)) {
       if (seen.has(angle)) {
         out.push([`ui[${i}].furnitureRadial.slots.${action}`, 'two actions claim the same radial slot']);
       }
       seen.add(angle);
-    }
-    for (const action of Object.keys(labels)) {
-      if (action !== 'actions' && slots[action] === undefined) {
-        out.push([`ui[${i}].furnitureRadial.slots.${action}`, 'action has no radial slot']);
-      }
     }
   });
   (file.templates ?? []).forEach((template, i) => {

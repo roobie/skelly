@@ -1,3 +1,10 @@
+import type { BlockEntity } from '../core/blockEntities.ts';
+import { dominantSide } from '../core/character.ts';
+import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { coreLabel } from '../core/coreText.ts';
+import { liftableFurniture, slidableFurniture } from '../core/furnitureMove.ts';
+import type { Inventory } from '../core/inventory.ts';
+import { fillText } from '../core/textTemplate.ts';
 import { type ItemAction, ItemActionSelection } from './itemActions.ts';
 
 export interface RadialAction extends ItemAction {
@@ -37,6 +44,44 @@ export const radialEntryIndex = (
     }
   });
   return nearest;
+};
+
+export const furnitureActionsFor = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  blockSize: number,
+  knownRecipes?: Iterable<string>,
+): ItemAction[] => {
+  const text = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+  const hasRepair = [...(knownRecipes ?? [])].some((id) => {
+    const recipe = inventory.registry.recipes.get(id);
+    const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
+    return repair?.entity === entity.type && inventory.entities.canRepair(entity, repair.amount);
+  });
+  const held = inventory.hands[dominantSide(inventory.character)];
+  const target = held?.work?.repairTarget;
+  const continuing = knownRecipes !== undefined && target?.kind === 'entity' && target.uid === entity.uid;
+  const actions: ItemAction[] = [];
+  if (slidableFurniture(inventory, entity, blockSize)) {
+    actions.push({ id: 'push', label: text.worldService.push }, { id: 'drag', label: text.worldService.drag });
+  } else if (liftableFurniture(inventory.entities.defOf(entity)) || entity.bar) {
+    actions.push({ id: 'lift', label: entity.bar ? text.interaction.liftBar : text.worldService.lift });
+  }
+  if (continuing) {
+    actions.push({
+      id: 'continue',
+      label: coreLabel(inventory.registry, 'continueWork', {
+        item: inventory.entities.defOf(entity).name.toLowerCase(),
+      }),
+      workUid: held!.uid,
+    });
+  } else if (hasRepair) {
+    actions.push({
+      id: 'repair',
+      label: fillText(text.crafting.repair, { item: inventory.entities.defOf(entity).name }),
+    });
+  }
+  return actions;
 };
 
 export class FurnitureActionSelection extends ItemActionSelection {

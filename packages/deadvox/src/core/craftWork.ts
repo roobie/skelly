@@ -116,15 +116,16 @@ export const craftActionHooks = (
     inventory.version += 1;
     return work.elapsed === work.duration;
   },
-  finish: (uid) => {
+  finish: (uid): string | undefined => {
     const item = inventory.itemByUid(uid);
     const work = item?.work;
     if (!(item && work)) {
-      return;
+      return undefined;
     }
-    if (repairTargetRefusal(inventory, item, reach())) {
+    const refusal = repairTargetRefusal(inventory, item, reach());
+    if (refusal) {
       inventory.releaseWork(item, false, feet());
-      return;
+      return refusal;
     }
     const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
     const offset = inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset;
@@ -144,6 +145,7 @@ export const craftActionHooks = (
     for (const entry of practice) {
       character.awardPractice(entry.skill, entry.amount, entry.tier);
     }
+    return undefined;
   },
   cancel: (uid) => {
     const item = inventory.itemByUid(uid);

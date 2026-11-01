@@ -374,7 +374,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
             (row) => row.id === RECIPE,
           ),
           { start: () => undefined, prefer: () => undefined, source: () => undefined },
-          craftingText(registry),
+          { text: craftingText(registry) },
         );
         const draw = root.querySelector('.craft-liquid-draw');
         const [[input]] = registry.recipes.get(RECIPE).components;

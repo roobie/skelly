@@ -32,10 +32,10 @@ export const renderCrafting = (
   root: HTMLElement,
   rows: readonly CraftRow[],
   actions: CraftPanelActions,
-  text: CraftingText,
+  { text, targetName }: { text: CraftingText; targetName?: string },
 ): void => {
   render(
-    html`<header><h2>${factDetail(text.heading, text.headingFact)}</h2></header>
+    html`<header><h2>${targetName === undefined ? factDetail(text.heading, text.headingFact) : fillText(text.repairName, { item: targetName })}</h2></header>
     ${repeat(
       // Keyed by recipe so an open combo box stays with its own recipe when rows change.
       rows,
@@ -75,8 +75,14 @@ export const renderCrafting = (
       ${row.qualities.map((q) => html`<div class=${q.best < q.required ? 'craft-gap' : ''}>${fillText(text.quality, { quality: q.name, best: countText(q.best), required: countText(q.required) })}</div>`)}
       ${row.skills.map((s) => html`<div class=${s.available < s.required ? 'craft-gap' : ''}>${fillText(text.skill, { skill: s.name, level: countText(s.available), required: countText(s.required) })}</div>`)}
       ${row.workstation ? html`<div>${fillText(text.station, { station: row.workstation })}</div>` : nothing}
-      <button class="craft-start" type="button" ?disabled=${row.reason !== undefined} @click=${() => actions.start(row.id)}>${fillText(row.kind === 'repair' ? text.repair : text.craft, { item: row.itemName.toLowerCase() })}</button>
-      ${row.reason ? html`<p class="craft-gap craft-reason">${row.reason}</p>` : nothing}
+      <button class="craft-start" type="button" aria-disabled=${row.reason === undefined ? 'false' : 'true'}
+        aria-describedby=${row.reason === undefined ? nothing : `craft-reason-${row.id}`}
+        @click=${() => {
+          if (row.reason === undefined) {
+            actions.start(row.id);
+          }
+        }}>${fillText(row.kind === 'repair' ? text.repair : text.craft, { item: row.itemName.toLowerCase() })}</button>
+      ${row.reason === undefined ? nothing : html`<p id=${`craft-reason-${row.id}`} class="craft-gap craft-reason">${row.reason}</p>`}
     </article>`,
     )}
   `,
