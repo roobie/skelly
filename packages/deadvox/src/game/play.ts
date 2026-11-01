@@ -597,7 +597,7 @@ const handlingPresentationFor = ({
     ...queue,
     cancelLabel: queue.cancelLabel ?? fillHint(cancel, { key: keyCap('handling.stop') }),
   };
-  const craft = runningCraftPresentation(inventory, job);
+  const craft = runningCraftPresentation(inventory, job, { simSeconds, clockRatio, compressionActive });
   if (craft) {
     return timedActionHandlingPresentation(craft, screenTextOf(inventory.registry).handling);
   }

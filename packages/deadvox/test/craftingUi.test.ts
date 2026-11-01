@@ -232,7 +232,15 @@ describe('crafting read-only presentation', () => {
 
     it('drives handling progress from the work item while the craft runs', () => {
       const { inventory, job } = workItem('hand');
-      const action = runningCraftPresentation(inventory, { ...job, stopped: false });
+      const action = runningCraftPresentation(
+        inventory,
+        { ...job, stopped: false },
+        {
+          simSeconds: job.last,
+          clockRatio: BASE_CLOCK.ratio,
+          compressionActive: true,
+        },
+      );
       expect(action).toBeDefined();
       const { handling } = baseScreenText();
       const model = handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
@@ -243,7 +251,17 @@ describe('crafting read-only presentation', () => {
     it('shows no progress for a paused craft, held or dropped', () => {
       for (const where of ['hand', 'pile'] as const) {
         const { inventory, job } = workItem(where);
-        expect(runningCraftPresentation(inventory, { ...job, stopped: true })).toBeUndefined();
+        expect(
+          runningCraftPresentation(
+            inventory,
+            { ...job, stopped: true },
+            {
+              simSeconds: job.last,
+              clockRatio: BASE_CLOCK.ratio,
+              compressionActive: false,
+            },
+          ),
+        ).toBeUndefined();
       }
     });
   });

@@ -145,9 +145,25 @@ export const worldRepairInGameFlow = async (page, origin) => {
   assert.deepEqual(started.target, { kind: 'entity', uid: pin.uid });
   const finished = await page.evaluate(({ duration, ratio }) => {
     const f = globalThis.pumpHandlingTest;
-    return globalThis.pumpManualFrames.until(() => !f.session.sim.actions.job, Math.ceil((duration / ratio) * 60) + 2);
+    const percents = [];
+    const result = globalThis.pumpManualFrames.until(
+      () => {
+        const root = document.querySelector('#handling');
+        const gauge = root.querySelector('[role="progressbar"]');
+        if (!root.hidden && gauge && f.session.sim.actions.job?.jobType === 'craft') {
+          percents.push(Number(gauge.getAttribute('aria-valuenow')));
+        }
+        return !f.session.sim.actions.job;
+      },
+      Math.ceil((duration / ratio) * 60) + 2,
+    );
+    return { ...result, percents };
   }, started);
   assert.equal(finished.reached, true, 'repair completes through normal player ticks');
+  assert.ok(
+    finished.percents.some((percent) => percent > 0 && percent < 100),
+    `the repair arc moves before completion: ${JSON.stringify(finished.percents)}`,
+  );
   const result = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
     return {

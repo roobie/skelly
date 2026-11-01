@@ -44,6 +44,15 @@ export const workName = (registry: Registry, item: Item): string => {
 export const runningCraftPresentation = (
   inventory: Inventory,
   job: Readonly<LongJob> | undefined,
+  {
+    simSeconds,
+    clockRatio,
+    compressionActive,
+  }: {
+    readonly simSeconds: number;
+    readonly clockRatio: number;
+    readonly compressionActive: boolean;
+  },
 ): TimedActionPresentation | undefined => {
   if (job?.jobType !== 'craft' || job.stopped) {
     return undefined;
@@ -52,7 +61,6 @@ export const runningCraftPresentation = (
   if (!item?.work) {
     return undefined;
   }
-  // The work record already carries the elapsed and duration the presentation reads.
   const text = craftingText(inventory.registry);
   const draws =
     item.work.kind === 'craft'
@@ -69,6 +77,10 @@ export const runningCraftPresentation = (
       : [];
   return {
     ...item.work,
+    elapsed: Math.min(
+      item.work.duration,
+      item.work.elapsed + (compressionActive ? Math.max(0, simSeconds - job.last) * clockRatio : 0),
+    ),
     kind: 'craft',
     label: [workName(inventory.registry, item), ...draws].join(' · '),
     stopped: false,

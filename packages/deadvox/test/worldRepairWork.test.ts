@@ -7,6 +7,8 @@ import { Inventory } from '../src/core/inventory.ts';
 import { snapshotItem } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { realSeconds, simSeconds } from '../src/core/time.ts';
+import { planRealFrame } from '../src/game/frameDriver.ts';
 import { furnitureActionsFor } from '../src/game/furnitureActions.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
@@ -14,9 +16,10 @@ import {
   isReplayActionPayload,
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
-import { workName } from '../src/ui/craftReadout.ts';
+import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
+import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
-import { baseRegistryWith } from './baseRegistry.ts';
+import { baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
@@ -81,6 +84,49 @@ const returned = (r: ReturnType<typeof make>) =>
     .filter(({ item }) => item.type === STOCK)
     .map(({ item }) => snapshotItem(item))
     .sort((a, b) => a.uid - b.uid);
+
+it.each(['normal', 'compressed'] as const)(
+  'advances the repair arc between %s owner ticks without changing owned work',
+  (mode) => {
+    const r = start();
+    if (mode === 'compressed') {
+      planRealFrame(r.sim.compression, realSeconds(1));
+      expect(r.sim.compression.c).toBeGreaterThan(1);
+    }
+    const { handling } = baseScreenText();
+    const arc = () => {
+      const action = runningCraftPresentation(r.inventory, r.sim.actions.job, {
+        simSeconds: r.sim.time,
+        clockRatio: r.sim.clock.ratio,
+        compressionActive: r.sim.compression.active,
+      });
+      expect(action).toBeDefined();
+      return handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+    };
+    const owned = structuredClone(r.work.work);
+    const slice =
+      Math.min(r.work.work!.duration / r.sim.clock.ratio, r.sim.scheduler.stepOf('long-action', r.sim.compression.c)) /
+      4;
+    const initial = arc();
+    r.sim.frame(simSeconds(slice));
+    const first = arc();
+    r.sim.frame(simSeconds(slice));
+    const second = arc();
+    expect(first.visible).toBe(true);
+    expect(first.percent).toBeGreaterThan(initial.percent);
+    expect(second.percent).toBeGreaterThan(first.percent);
+    expect(second.percent).toBeLessThan(100);
+    expect(r.work.work).toEqual(owned);
+    finish(r, r.work.uid);
+    expect(
+      runningCraftPresentation(r.inventory, r.sim.actions.job, {
+        simSeconds: r.sim.time,
+        clockRatio: r.sim.clock.ratio,
+        compressionActive: r.sim.compression.active,
+      }),
+    ).toBeUndefined();
+  },
+);
 
 it('pauses, encodes, restores and resumes entity work without duplicate repair or spend', async () => {
   const r = start();

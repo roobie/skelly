@@ -2,6 +2,7 @@
 read_if:
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
+  - you change the repair progress arc or presentation between compressed scheduler ticks
   - you change furniture repair start, hand admission or completion refusal
   - you change Crafting or pinned Repair row naming, admission or refusal accessibility
   - you change reachability validation or the repair-corner scenario and its authored stock destinations
@@ -51,6 +52,8 @@ Reading a recipe book progresses only while its page is open. Closing the page p
 ## Long actions
 
 Long actions are saved data, not closures. Each retains its own stop/cancel/wake behavior. An emitted interruption drops compression; proximity alone does not refuse or interrupt work, leaving the player to judge safety. Rest/sleep and crafting share the core action owner, but their progress belongs to their respective saved state.
+
+Scheduler batching must not make ongoing repair appear stuck. The arc may account for simulation time accrued since the owner's last tick, but must not advance, spend or complete work or use an independent animation timer. See `src/ui/craftReadout.ts`, `runningCraftPresentation`; `src/ui/hud.ts`, `handlingViewModel`; and `src/core/longAction.ts`, `LongActions.advance`.
 
 ## Appliances and stations
 
