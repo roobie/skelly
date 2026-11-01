@@ -134,10 +134,6 @@ export class FurnitureActionSelection extends ItemActionSelection {
     }
   }
 
-  constructor(openCanLabel: string) {
-    super(openCanLabel);
-  }
-
   open(entity: { uid: number }, actions: readonly ItemAction[], source: 'furniture' | 'held' = 'furniture'): void {
     this.source = source;
     this.regionsOpen = false;

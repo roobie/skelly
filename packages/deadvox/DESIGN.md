@@ -12,7 +12,7 @@ read_if:
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
-  - you change shared radial action choices, treatment region selection or furniture hold interaction
+  - you change shared tap/hold action choices, one-shot held-item operations, treatment region selection or furniture hold interaction
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
@@ -581,9 +581,10 @@ because rearranging a room should not require destroying its contents. See `src/
   `cancelUnreachableDrag`.
 - **Movement choices.** Ordinary use stays on the tap because it is the common
   action. Movement requires a deliberate choice even when only lifting is
-  available, so holding never unexpectedly lifts a piece. Readability does not
-  fasten a board, and fitted placements retain their kind's controls so refusal
-  does not silently change the interaction. Choices are a single confirmation,
+  available, so holding never unexpectedly lifts a piece. Building parts keep
+  direct use because offering impossible moves would obstruct ordinary interaction.
+  Readability does not fasten a board, and fitted placements retain their kind's
+  controls so refusal does not silently change the interaction. Choices are a single confirmation,
   not a persistent mode: returning from pause or another target must not act
   unexpectedly. Repair and paused target-bound work share the movement-choice
   owner so service availability cannot create a second furniture-choice mode.
@@ -3635,7 +3636,9 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 
 ## Action choices
 
-Furniture hold interaction and held-item action choices use one radial gesture and one owner. One menu path carries no debt: adding a held-item operation must not create another selection interface. The radial stays near the target and holds look so choosing cannot lose that target. Its transparent centre is neutral; release cannot run a remembered choice that is not visibly selected. Mouse and keyboard choices share highlight and confirmation. Losing the item, target, focus or gameplay context cancels rather than executing. See `src/game/furnitureActions.ts`, `FurnitureActionSelection`, and `src/game/play.ts`, `releaseHeldMenu` and `confirmFurnitureAction`.
+Ordinary use stays on the tap because it is the common action. A deliberate hold opens choices; furniture and held items share that hold owner and radial gesture because one menu path carries no debt. Look stays free before the hold and is held while choosing so the choice cannot lose its target. The transparent centre is neutral: releasing there cancels rather than running an unseen choice. Losing the item, target, focus or gameplay context also cancels. See `src/game/play.ts`, `interactInput`, `releaseHeldMenu` and `confirmFurnitureAction`, and `src/game/furnitureActions.ts`, `FurnitureActionSelection`.
+
+An explicit choice executes once, without changing later ordinary use or quickbar policy: a hidden remembered operation would compete with the action the player sees. Default treatment therefore still chooses the worst wound rather than remembering a region from the list. See `src/game/survival.ts`, `Survival.withItemAction`.
 
 Each menu owns its directions. Action identity owns its direction within that menu so changing availability does not retrain steering; mutually exclusive menus may reuse directions because their operations cannot compete. Missing or colliding slots and a first-level menu beyond its content cap fail validation rather than silently moving or dropping choices. Overflow behaviour is not chosen. See `src/game/furnitureActions.ts`, `radialEntries`, and `src/core/content.ts`, `fileIssues`.
 

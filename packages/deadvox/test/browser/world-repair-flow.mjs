@@ -31,6 +31,27 @@ export const worldRepairInGameFlow = async (page, origin) => {
   assert.equal(await page.locator('#world-repair').count(), 0, 'tap keeps normal container use');
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !globalThis.pumpHandlingTest.screen.isOpen);
+  const cancelRelease = await holdAction(page, 'world.interact');
+  try {
+    await page.waitForFunction(() => {
+      const f = globalThis.pumpHandlingTest;
+      return f.furnitureActionSelection.isOpen(f.debugRepairTarget);
+    });
+    // Isolate menu cancellation from Chromium's native pointer-unlock behaviour.
+    await page.evaluate(() => {
+      for (const type of ['keydown', 'keyup']) {
+        document.dispatchEvent(new KeyboardEvent(type, { key: 'Escape', code: 'Escape', bubbles: true }));
+      }
+    });
+    await page.waitForFunction(() => globalThis.pumpHandlingTest.furnitureActionSelection.openedUid === undefined);
+  } finally {
+    await cancelRelease();
+  }
+  assert.equal(
+    await page.evaluate(() => globalThis.pumpHandlingTest.screen.isOpen),
+    false,
+    'Escape cancels without ordinary use',
+  );
   const before = await page.evaluate(() => globalThis.pumpHandlingTest.session.inventory.snapshotState());
   const release = await holdAction(page, 'world.interact');
   try {
@@ -39,7 +60,6 @@ export const worldRepairInGameFlow = async (page, origin) => {
       return f.furnitureActionSelection.isOpen(f.debugRepairTarget);
     });
     await page.waitForFunction(() => !document.querySelector('#furniture-radial').hidden);
-    assert.equal(await page.locator('#item-action-list').count(), 0, 'no second furniture list');
     await page.evaluate(() => {
       const f = globalThis.pumpHandlingTest;
       const repair = f.furnitureActions(f.debugRepairTarget).find(({ id }) => id === 'repair');

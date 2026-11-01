@@ -228,7 +228,7 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
   });
 
-  it('uses the explicitly selected treatment region instead of the default worst wound', () => {
+  it('uses an explicit region once, then quickbar activation returns to the worst wound', () => {
     const t = setup();
     t.sim.body.impact(1, 'leftArm', { bleeding: fixtureTier('serious') });
     t.sim.body.impact(3, 'rightArm', { bleeding: fixtureTier('serious') });
@@ -242,11 +242,10 @@ describe('using what you hold', () => {
     expect(beginTreatment.mock.calls[0]?.[1]).toBe(rag.uid);
     const other = t.survival.availableItemActions(rag).find((action) => action.id !== initial?.id && action.treatment);
     expect(other).toBeDefined();
-    expect(t.survival.chooseItemAction(rag, other!.id)).toBe(true);
-    const selected = t.survival.selectedItemAction(rag);
-    expect(selected).not.toBe(initial);
-    expect(t.survival.use(rag)).toBeUndefined();
-    expect(beginTreatment.mock.calls[1]?.[0]).toBe(selected?.treatment?.region);
+    expect(t.survival.withItemAction(rag, other!.id, () => t.survival.use(rag))).toBeUndefined();
+    expect(beginTreatment.mock.calls[1]?.[0]).toBe(other?.treatment?.region);
+    expect(t.survival.useFromQuickbar(rag)).toBeUndefined();
+    expect(beginTreatment.mock.calls[2]?.[0]).toBe(initial?.treatment?.region);
   });
 
   it('passes the read item type to the read hook', () => {
@@ -552,11 +551,11 @@ describe('using what you hold', () => {
 
 describe('taking the battery out of a held light', () => {
   const unload = (t: ReturnType<typeof setup>, light: Item) => {
-    if (!t.survival.chooseItemAction(light, 'battery:unload')) {
+    const selected = t.survival.availableItemActions(light).find((action) => action.battery)?.battery;
+    if (!selected) {
       throw new Error('Fixture light has no battery-removal action');
     }
-    const selected = t.survival.selectedItemAction(light)?.battery;
-    const refusal = t.survival.use(light);
+    const refusal = t.survival.withItemAction(light, 'battery:unload', () => t.survival.use(light));
     const ticked = t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);
     return { selected, refusal, failed: ticked.failed };
   };

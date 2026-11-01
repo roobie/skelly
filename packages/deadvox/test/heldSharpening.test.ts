@@ -62,7 +62,7 @@ describe('held sharpening', () => {
     (side) => {
       const f = fixture(side);
       const { body } = new Simulation({ seed: 1 });
-      const selection = new ItemActionSelection('fixture open can');
+      const selection = new ItemActionSelection();
       const actions = itemActionsFor(f.blade, f.inventory, body);
       expect(selectPrimaryAction(f.inventory, side).kind).toBe('melee');
       expect(selection.step(f.blade, actions, 1)).toBe(true);
@@ -79,12 +79,9 @@ describe('held sharpening', () => {
       }
       expect(f.inventory.move(f.stone, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
       const missingActions = itemActionsFor(f.blade, f.inventory, body);
-      expect(selectPrimaryAction(f.inventory, side, selection.forItem(f.blade, missingActions)?.id).kind).toBe(
-        'sharpen',
-      );
-      expect(f.sharpening.activate(side)).toBeDefined();
-      expect(selection.step(f.blade, missingActions, 1)).toBe(true);
       expect(selectPrimaryAction(f.inventory, side, selection.forItem(f.blade, missingActions)?.id).kind).toBe('melee');
+      expect(f.sharpening.activate(side)).toBeDefined();
+      expect(selection.step(f.blade, missingActions, 1)).toBe(false);
     },
   );
 

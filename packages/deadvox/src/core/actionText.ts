@@ -206,7 +206,6 @@ export const ActionTextSchema = strictObject({
     lightOffDetail: Template('charge'),
     igniterDetail: Line,
   }),
-  /** Labels in the held-item action list whose wording does not depend on the item or wound. */
   itemActions: strictObject({ stripRound: Line, swing: Line, use: Line, openCan: Line }),
   /** What a treatment's action label calls a wound's infection, by stage. */
   infection: strictObject({ none: Line, early: Line, advanced: Line, resolved: Line }),

@@ -1970,6 +1970,25 @@ try {
       leanFeet,
       'held world lean leaves the feet in place',
     );
+    const knifeTap = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      r.setHand(r.dominant, r.inventory.create('kitchen_knife'));
+      return r.swings.length;
+    });
+    await page.mouse.down({ button: 'right' });
+    await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
+    await page.mouse.click(640, 450);
+    await page.waitForFunction((before) => globalThis.primaryActionTest.swings.length > before, knifeTap);
+    await page.mouse.up({ button: 'right' });
+    await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
+    assert.equal(
+      await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
+      true,
+      'a knife tap swings without opening a radial',
+    );
+
     const canOpening = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -2045,7 +2064,7 @@ try {
       const blade = r.inventory.hands[r.dominant];
       return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
     });
-    await chooseHeldAction(page, 'own');
+    await page.mouse.click(640, 450);
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {
       const r = globalThis.primaryActionTest;
@@ -2305,13 +2324,7 @@ try {
     };
     const toggleLight = async (actionId, on) => {
       const before = await observe();
-      const hasChoices = await page.evaluate(() => {
-        const r = globalThis.primaryActionTest;
-        return r.survival.availableItemActions(r.inventory.itemByUid(r.lightUid)).length > 0;
-      });
-      if (hasChoices) {
-        await chooseHeldAction(page, 'own', actionId);
-      } else if (actionId) {
+      if (actionId) {
         await pressAction(page, actionId);
       } else {
         await page.mouse.click(640, 450);
@@ -2457,7 +2470,7 @@ try {
       return { uid: item.uid, profile: tool.weapon.melee.type };
     });
     const first = await strike();
-    assert.deepEqual(first.swings[0], { result: true, profile: loadout.profile, hand: 'left' });
+    assert.deepEqual(first.swings.at(-1), { result: true, profile: loadout.profile, hand: 'left' });
     assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
     await finishedSwing();
     await page.evaluate(async (magazineUrl) => {

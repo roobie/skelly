@@ -112,7 +112,7 @@ export class Survival {
     this.hooks = hooks;
     const text = actionText(inventory.registry);
     this.text = text;
-    this.itemActionSelection = new ItemActionSelection(text.itemActions.openCan);
+    this.itemActionSelection = new ItemActionSelection();
     this.queue.registerAction('survival.consume', (params) => {
       const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
       if (!item || this.handOf(item) === undefined) {
@@ -288,8 +288,16 @@ export class Survival {
     return this.itemActionSelection.forItem(item, this.availableItemActions(item));
   }
 
-  chooseItemAction(item: Item, id: string): boolean {
-    return this.itemActionSelection.select(item, this.availableItemActions(item), id);
+  withItemAction(item: Item, id: string, execute: (action: ItemAction) => string | undefined): string | undefined {
+    const actions = this.availableItemActions(item);
+    if (!this.itemActionSelection.select(item, actions, id)) {
+      return this.text.common.gone;
+    }
+    try {
+      return execute(this.itemActionSelection.forItem(item, actions)!);
+    } finally {
+      this.itemActionSelection.clear(item);
+    }
   }
 
   private applyItemAction(item: Item, action: ItemAction | undefined): string | undefined {

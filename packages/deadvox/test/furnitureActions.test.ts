@@ -49,7 +49,7 @@ it('groups treatment regions behind one operation without dropping direct held a
 });
 
 it('returns from held-region choices to a neutral first-level menu using the shared owner', () => {
-  const selection = new FurnitureActionSelection('fixture opening');
+  const selection = new FurnitureActionSelection();
   const entries = radialEntries([{ id: 'treat', label: 'Fixture treat' }], { treat: 0 });
   selection.open(piece, entries, 'held');
   selection.point(piece, entries, { x: 0, y: -20 }, { radiusPixels: 50, deadZonePixels: 5, entryCap: 8 });
@@ -93,7 +93,7 @@ it('keeps content-authored action slots when another action appears or order cha
 });
 
 it('release runs only the visibly chosen action, never a remembered action in the dead zone', () => {
-  const selection = new FurnitureActionSelection('fixture open can');
+  const selection = new FurnitureActionSelection();
   const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4 };
   selection.open(piece, actions);
   expect(selection.choice(piece, actions)).toBeUndefined();
@@ -172,7 +172,7 @@ describe('furniture service choices', () => {
     const choices = furnitureActionsFor(inventory, target, blockSize, [RECIPE]);
     expect(choices.some(({ id }) => id === 'drag')).toBe(true);
     expect(choices.some(({ id }) => id === 'repair')).toBe(true);
-    const selection = new FurnitureActionSelection('fixture open can');
+    const selection = new FurnitureActionSelection();
     selection.open(target, choices);
     const repairIndex = choices.findIndex(({ id }) => id === 'repair');
     for (const _choice of choices.slice(0, repairIndex)) {
@@ -185,7 +185,7 @@ describe('furniture service choices', () => {
 
 describe('furniture action menu lifetime', () => {
   it('requires reopening after confirming an action', () => {
-    const selection = new FurnitureActionSelection('fixture open can');
+    const selection = new FurnitureActionSelection();
     selection.open(piece, actions);
     selection.step(piece, actions, 1);
     expect(selection.confirm(piece, actions)?.id).toBe('push');
@@ -196,7 +196,7 @@ describe('furniture action menu lifetime', () => {
   });
 
   it('does not preserve an open menu across pause even if aim never changes', () => {
-    const selection = new FurnitureActionSelection('fixture open can');
+    const selection = new FurnitureActionSelection();
     selection.open(piece, actions);
     selection.sync(piece.uid);
     expect(selection.isOpen(piece)).toBe(true);
@@ -206,7 +206,7 @@ describe('furniture action menu lifetime', () => {
   });
 
   it('does not preserve an open menu when aim leaves the piece', () => {
-    const selection = new FurnitureActionSelection('fixture open can');
+    const selection = new FurnitureActionSelection();
     selection.open(piece, actions);
     selection.sync(piece.uid + 1);
     selection.sync(piece.uid);

@@ -19,8 +19,14 @@ describe('selected item actions', () => {
     expect(defaultItemAction(sameTier)?.id).toBe('more-damaged-bleeding');
   });
 
+  it('recomputes an unchosen default when a worse wound becomes available', () => {
+    const selection = new ItemActionSelection();
+    expect(selection.forItem(item, sameTier)?.id).toBe('more-damaged-bleeding');
+    expect(selection.forItem(item, actions)?.id).toBe('worse-bleeding');
+  });
+
   it('selects only an available explicit action without replacing the last valid selection on refusal', () => {
-    const selection = new ItemActionSelection('fixture opening');
+    const selection = new ItemActionSelection();
     expect(selection.select(item, actions, actions[0]!.id)).toBe(true);
     expect(selection.forItem(item, actions)).toBe(actions[0]);
     expect(selection.select(item, actions, 'expired-fixture-action')).toBe(false);
@@ -28,7 +34,7 @@ describe('selected item actions', () => {
   });
 
   it('cycles and wraps without changing the default policy', () => {
-    const selection = new ItemActionSelection('fixture open can');
+    const selection = new ItemActionSelection();
     expect(selection.forItem(item, actions)?.id).toBe('worse-bleeding');
     expect(selection.step(item, actions, 1)).toBe(true);
     const afterStep = selection.forItem(item, actions);

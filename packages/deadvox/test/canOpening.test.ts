@@ -159,19 +159,24 @@ describe('held can opening', () => {
     expect(f.can.type).toBe('test_empty');
   });
 
-  it('an explicit opening selection refuses a lost target instead of becoming a tool swing', () => {
+  it('an unavailable opening choice falls back to the tool own action', () => {
     const f = fixture('left');
     const selected = () => selectPrimaryAction(f.inventory, f.other, f.survival.selectedItemAction(f.tool)?.id);
     expect(selected().kind).toBe('melee');
     expect(f.survival.availableItemActions(f.tool).some((action) => action.opening)).toBe(true);
-    expect(f.survival.chooseItemAction(f.tool, 'open-can')).toBe(true);
-    expect(selected().kind).toBe('open-can');
-    expect(f.inventory.move(f.can, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    expect(
+      f.survival.withItemAction(f.tool, 'open-can', () => {
+        expect(selected().kind).toBe('open-can');
+        expect(f.inventory.move(f.can, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      }),
+    ).toBeUndefined();
     expect(openingTargetForHand(f.inventory, f.other)).toBeUndefined();
-    expect(selected().kind).toBe('open-can');
-    expect(f.survival.chooseItemAction(f.tool, 'open-can')).toBe(false);
-    expect(selected().kind).toBe('open-can');
-    expect(f.survival.chooseItemAction(f.tool, 'own')).toBe(true);
+    expect(selected().kind).toBe('melee');
+    expect(
+      f.survival.withItemAction(f.tool, 'open-can', () => {
+        throw new Error('An unavailable action must not execute');
+      }),
+    ).toBeDefined();
     expect(selected().kind).toBe('melee');
   });
 

@@ -75,7 +75,7 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
   return target ? [...actions, { id: 'open-can', label: labels.openCan, opening: true }] : actions;
 };
 
-/** The light's own click first, so the wheel has to be turned to take the battery out. */
+/** Taking the cell out must not replace the light's ordinary switch action. */
 const lightActions = (item: Item, inventory: Inventory): readonly ItemAction[] => {
   const { registry } = inventory;
   let own: 'switchOff' | 'switchOn' | 'use' = 'use';
@@ -137,19 +137,7 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
 
 export class ItemActionSelection {
   protected readonly selected = new Map<number, string>();
-  private readonly openCanLabel: string;
-
-  constructor(openCanLabel: string) {
-    this.openCanLabel = openCanLabel;
-  }
-
   forItem(item: Pick<Item, 'uid'>, actions: readonly ItemAction[]): ItemAction | undefined {
-    if (this.selected.get(item.uid) === 'sharpen' && !actions.some((action) => action.sharpening)) {
-      return { id: 'sharpen', label: 'Sharpen', sharpening: true };
-    }
-    if (this.selected.get(item.uid) === 'open-can' && !actions.some((action) => action.opening)) {
-      return { id: 'open-can', label: this.openCanLabel, opening: true };
-    }
     if (actions.length === 0) {
       this.selected.delete(item.uid);
       return undefined;
@@ -159,11 +147,8 @@ export class ItemActionSelection {
     if (current) {
       return current;
     }
-    const fallback = defaultItemAction(actions);
-    if (fallback) {
-      this.selected.set(item.uid, fallback.id);
-    }
-    return fallback;
+    this.selected.delete(item.uid);
+    return defaultItemAction(actions);
   }
 
   select(item: Pick<Item, 'uid'>, actions: readonly ItemAction[], id: string): boolean {
@@ -174,17 +159,13 @@ export class ItemActionSelection {
     return true;
   }
 
+  clear(item: Pick<Item, 'uid'>): void {
+    this.selected.delete(item.uid);
+  }
+
   step(item: Pick<Item, 'uid'>, actions: readonly ItemAction[], direction: number): boolean {
     if (direction === 0) {
       return false;
-    }
-    if (
-      actions.length === 1 &&
-      ((this.selected.get(item.uid) === 'open-can' && !actions[0]!.opening) ||
-        (this.selected.get(item.uid) === 'sharpen' && !actions[0]!.sharpening))
-    ) {
-      this.selected.set(item.uid, actions[0]!.id);
-      return true;
     }
     if (actions.length < 2) {
       return false;
