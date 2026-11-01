@@ -7,7 +7,7 @@ export const recoveryFraction = () => ({
   rounding: 'floor' as const,
   toolModifier: { quality: QUALITY, bonusByLevel: [0.25, 0.5] },
 });
-export const liquidRecoveryData = () => {
+export const liquidRecoveryData = (timeGameMinutes = 1) => {
   const data = liquidCraftData();
   return {
     ...data,
@@ -22,12 +22,12 @@ export const liquidRecoveryData = () => {
             ...item,
             disassembly: {
               skill: RECOVERY_SKILL,
-              timeGameMinutes: 1,
+              timeGameMinutes,
               yields: [{ item: STOCK, count: 1, ...recoveryFraction() }],
               liquidRecovery: recoveryFraction(),
             },
             salvage: [{ item: STOCK, count: 1 }],
-            salvageTimeGameMinutes: 1,
+            salvageTimeGameMinutes: timeGameMinutes,
             salvageLiquidRecovery: { skill: SALVAGE_SKILL, ...recoveryFraction() },
           }
         : item,

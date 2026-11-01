@@ -1942,7 +1942,7 @@ export const startPlay = (
 
   const actOnWork = (uid: number, operation: WorkOperation, choices: RecoveryChoices = {}): string | undefined => {
     const reason = session.crafting.act(uid, operation, choices);
-    if (!reason && operation === 'continue') {
+    if (!reason && operation !== 'apart') {
       closeInventoryScreen();
       syncMenuState();
     }

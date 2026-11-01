@@ -361,6 +361,19 @@ const vite = await createServer({
       name: 'foregrip-fit-game-observer',
       enforce: 'pre',
       transform(code, id) {
+        if (id.split('?')[0].endsWith('/src/game/bundledContent.ts')) {
+          const marker = 'const bundle = await BundleAdmission.prepare(';
+          assert.ok(code.includes(marker), 'content admission marker still exists');
+          // Retain live UI/material content rather than the standalone fixture's support source.
+          return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
+import { fixtureSources } from '/test/economyFixtures.ts';
+${code.replace(
+  marker,
+  `const workFixture = liquidRecoveryData(60);
+sources.push(...fixtureSources([{ source: 'inventory-work-fixture', data: { items: workFixture.items, skills: workFixture.skills, liquids: workFixture.liquids } }]).slice(1));
+${marker}`,
+)}`;
+        }
         if (!id.split('?')[0].endsWith('/src/game/play.ts')) {
           return;
         }
@@ -1350,6 +1363,58 @@ try {
         { timeout: 5000 },
       );
     };
+    const recoveryType = await page.evaluate(
+      async (module) => (await import(module)).RESULT,
+      '/test/liquidCraftFixture.ts',
+    );
+    await spawn(recoveryType);
+    await pressAction(page, 'ui.inventory-toggle');
+    const sourceUid = await page.evaluate((type) => {
+      const { session } = globalThis.foregripFitTest;
+      return [...session.inventory.items()].find(({ item }) => item.type === type)?.item.uid;
+    }, recoveryType);
+    assert.ok(Number.isSafeInteger(sourceUid), 'the owned take-apart fixture spawned');
+    await clickThroughMenuCursor(`#inventory [data-uid="${sourceUid}"]`);
+    for (const operation of ['disassemble', 'continue']) {
+      const workButton = page.locator(`#inventory button[data-work-operation="${operation}"]`);
+      await workButton.scrollIntoViewIfNeeded();
+      await clickThroughMenuCursor(workButton);
+      try {
+        await page.waitForFunction(() => {
+          const { job } = globalThis.foregripFitTest.session.sim.actions;
+          return job?.jobType === 'craft' && !job.stopped;
+        });
+      } catch (error) {
+        const state = await page.evaluate(() => ({
+          dispatches: globalThis.foregripFitTest.dispatches,
+          job: globalThis.foregripFitTest.session.sim.actions.job,
+          details: document.querySelector('#inventory .inv-details')?.textContent,
+        }));
+        throw new Error(`Inventory work did not start: ${JSON.stringify(state)}`, { cause: error });
+      }
+      const startedWork = await page.evaluate(() => {
+        const { session, screen } = globalThis.foregripFitTest;
+        const { job } = session.sim.actions;
+        return { inventoryOpen: screen.isOpen, stopped: job.stopped, uid: job.workUid };
+      });
+      assert.equal(startedWork.stopped, false, 'the inventory action started work');
+      assert.equal(startedWork.inventoryOpen, false, 'starting work yields inventory to progress');
+      assert.equal(await page.locator('#inventory').isVisible(), false, 'inventory no longer obscures progress');
+      await page.locator('#handling [role="progressbar"]').waitFor({ state: 'visible' });
+      await pressAction(page, 'handling.stop');
+      await page.waitForFunction(() => globalThis.foregripFitTest.session.sim.actions.job?.stopped);
+      await pressAction(page, 'ui.inventory-toggle');
+      await clickThroughMenuCursor(`#inventory [data-uid="${startedWork.uid}"]`);
+    }
+    const cancelWorkButton = page.locator('#inventory button[data-work-operation="apart"]');
+    await cancelWorkButton.scrollIntoViewIfNeeded();
+    await clickThroughMenuCursor(cancelWorkButton);
+    await page.waitForFunction(() => {
+      const { inventory } = globalThis.foregripFitTest.session;
+      return !(inventory.hands.right || inventory.hands.left);
+    });
+    await pressAction(page, 'ui.inventory-toggle');
+    logPhase('take-apart and Continue yield inventory to progress');
     await spawn('foregrip');
     await spawn('rifle_assault');
     await pressAction(page, 'ui.inventory-toggle');
