@@ -25,7 +25,7 @@ export const furnitureActionsFor = (
   const actions: ItemAction[] = [];
   if (slidableFurniture(inventory, entity, blockSize)) {
     actions.push({ id: 'push', label: text.worldService.push }, { id: 'drag', label: text.worldService.drag });
-  } else if (hasRepair && movableRefusal(inventory, entity, blockSize) === undefined) {
+  } else if (movableRefusal(inventory, entity, blockSize) === undefined) {
     actions.push({ id: 'lift', label: text.worldService.lift });
   }
   if (continuing) {

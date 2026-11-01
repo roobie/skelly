@@ -3,7 +3,7 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: native wheel delivery must settle before the next choice.
 import assert from 'node:assert/strict';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 export const worldRepairInGameFlow = async (page, origin) => {
@@ -89,17 +89,25 @@ export const worldRepairInGameFlow = async (page, origin) => {
   assert.deepEqual(await page.evaluate(() => globalThis.pumpHandlingTest.session.inventory.snapshotState()), before);
   assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.actions.job), undefined);
 
+  const stockBefore = await page.evaluate(() =>
+    [...globalThis.pumpHandlingTest.session.inventory.items()].map(({ item }) => ({
+      type: item.type,
+      count: item.count,
+    })),
+  );
   const condition = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
     return f.session.inventory.entities.conditionOf(f.debugRepairTarget);
   });
-  await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
   const box = await start.boundingBox();
   assert.ok(box, 'Start has a clickable layout box');
   const cursor = await page.evaluate(() => {
     const { input } = globalThis.pumpHandlingTest;
     return { x: input.cursorX, y: input.cursorY };
   });
+  await page.evaluate(() => globalThis.pumpManualFrames.enable());
   await page.evaluate(dispatchMenuPointerMove, {
     canvasSelector: '#view',
     movementX: box.x + box.width / 2 - cursor.x,
@@ -113,19 +121,25 @@ export const worldRepairInGameFlow = async (page, origin) => {
     true,
     'drawn pointer reaches Start',
   );
-  await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
+  await page.mouse.click(0, 0);
   const started = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
     const result = globalThis.pumpManualFrames.until(() => f.session.sim.actions.job?.jobType === 'craft');
     const work = f.session.inventory.hands.right;
     return {
       reached: result.reached,
+      job: f.session.sim.actions.job,
+      notice: f.getNotice(),
+      screenOpen: f.screen.isOpen,
+      condition: f.session.inventory.entities.conditionOf(f.debugRepairTarget),
+      actions: f.getReplayActions().filter(({ payload }) => payload?.kind === 'craft.repair-entity'),
+      inputs: work?.work?.components.map(({ type, count }) => ({ type, count })),
       target: work?.work?.repairTarget,
       duration: work?.work?.duration,
       ratio: f.session.sim.clock.ratio,
     };
   });
-  assert.equal(started.reached, true, 'activating Start through the view begins work');
+  assert.equal(started.reached, true, `activating Start through the view begins work: ${JSON.stringify(started)}`);
   assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.screen.isOpen), false);
   assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.repairTargetUid), undefined);
   assert.deepEqual(started.target, { kind: 'entity', uid: pin.uid });
@@ -138,13 +152,23 @@ export const worldRepairInGameFlow = async (page, origin) => {
     const f = globalThis.pumpHandlingTest;
     return {
       condition: f.session.inventory.entities.conditionOf(f.debugRepairTarget),
+      stock: [...f.session.inventory.items()].map(({ item }) => ({ type: item.type, count: item.count })),
       uid: f.debugRepairTarget.uid,
       hands: f.session.inventory.hands,
       actions: f.getReplayActions().filter(({ payload }) => payload?.kind === 'craft.repair-entity'),
     };
   });
   assert.equal(result.uid, pin.uid);
-  assert.ok(result.condition > condition, 'repair improves the pinned piece');
+  assert.ok(result.condition > condition, `repair improves the pinned piece: ${JSON.stringify(started)}`);
+  assert.ok(started.inputs.length > 0, 'the staged repair has material inputs');
+  for (const type of new Set(started.inputs.map((item) => item.type))) {
+    const count = (stock) => stock.filter((item) => item.type === type).reduce((sum, item) => sum + item.count, 0);
+    assert.equal(
+      count(stockBefore) - count(result.stock),
+      count(started.inputs),
+      'each escrowed material is spent once',
+    );
+  }
   assert.equal(result.actions.length, 1, 'the view records exactly one repair');
   assert.equal(result.actions[0].payload.entityUid, pin.uid);
   assert.ok(!(result.hands.left || result.hands.right));

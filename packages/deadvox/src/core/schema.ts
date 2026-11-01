@@ -633,6 +633,7 @@ const UiScreenTextSchema = strictObject({
     barDoor: ['name'],
     liftBar: [],
     hold: ['key', 'action'],
+    actions: [],
     climb: ['name'],
     read: ['name'],
     rest: ['name'],

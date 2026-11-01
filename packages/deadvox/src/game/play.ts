@@ -19,7 +19,6 @@ import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
-import { movableRefusal } from '../core/furnitureMove.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
@@ -2747,7 +2746,6 @@ export const startPlay = (
       : origin.map((coordinate, axis) => Math.floor(coordinate + direction[axis]! * reach));
     return [cell[0]!, cell[1]!, cell[2]!];
   };
-  const liftable = (entity: BlockEntity): boolean => movableRefusal(inventory, entity, s) === undefined;
 
   const keyLockHint = (entity: BlockEntity): string | undefined => {
     if (!entities.defOf(entity).door) {
@@ -2855,24 +2853,24 @@ export const startPlay = (
       : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
-    const control = session.power?.control(entity);
-    if (control) {
-      return { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled };
-    }
     if (furnitureActionSelection.isOpen(entity)) {
       return confirmFurnitureAction(entity);
     }
     if (mode === 'wield' && furnitureActions(entity).length > 0) {
       return { kind: 'furniture.interact', entityUid: entity.uid, alternatives: true };
     }
-    return mode === 'wield' && liftable(entity)
-      ? { kind: 'furniture.lift', entityUid: entity.uid }
+    if (mode === 'wield' && entity.bar) {
+      return { kind: 'furniture.lift', entityUid: entity.uid };
+    }
+    const control = session.power?.control(entity);
+    return control
+      ? { kind: 'power.set', entityUid: entity.uid, enabled: !control.enabled }
       : { kind: 'furniture.interact', entityUid: entity.uid };
   };
 
   /**
    * A tap pockets an item or finishes off a downed body; a hold wields the item, dismembers
-   * the body or lifts a piece small enough to carry.
+   * the body or opens the movable piece's action list.
    */
   function interactionPayload(
     target: Exclude<InteractionTarget, { kind: 'vehicle' }>,
@@ -2884,9 +2882,7 @@ export const startPlay = (
       case 'body':
         return { kind: 'zombie.downed', zombieId: target.id, way: mode === 'pocket' ? 'finish-off' : 'dismember' };
       default:
-        return mode === 'wield' && target.entity.bar
-          ? { kind: 'furniture.lift', entityUid: target.entity.uid }
-          : furniturePayload(target.entity, mode);
+        return furniturePayload(target.entity, mode);
     }
   }
 
@@ -3623,6 +3619,9 @@ export const startPlay = (
       const selected = furnitureActionSelection.forItem(entity, furnitureActions(entity));
       return html`${key}: ${selected?.label} ${selected?.id === 'repair' ? '' : nameOf(entity)}`;
     }
+    if (furnitureActions(entity).length > 0) {
+      return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action: screenText.interaction.actions })}`;
+    }
     if (entity.bar) {
       const lift = doorPlan(inventory, entity, 'unbar');
       const action = lift.ok
@@ -3633,10 +3632,7 @@ export const startPlay = (
           });
       return html`${useText(entity)} · ${fillHint(screenText.interaction.hold, { key, action })}`;
     }
-    if (furnitureActions(entity).length > 0) {
-      return html`${useText(entity)} · ${key} (hold): actions`;
-    }
-    return liftable(entity) ? html`${useText(entity)} · ${key} (hold): lift` : useText(entity);
+    return useText(entity);
   };
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
     const control = session.power?.control(entity);

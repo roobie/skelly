@@ -535,6 +535,7 @@
         },
         "interaction": {
           "action": "{key}: {action}",
+          "actions": "actions",
           "bar": "Bar",
           "barDoor": "Bar the {name}",
           "blocked": "{action} — {reason}",

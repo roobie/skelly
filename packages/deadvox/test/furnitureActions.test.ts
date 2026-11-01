@@ -46,13 +46,18 @@ describe('furniture service choices', () => {
     );
   });
 
-  it('retains ordinary lift when repair joins a small target’s long-press choices', () => {
-    const { inventory, target } = worldRepairFixture(registry);
-    const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
-    const choices = furnitureActionsFor(inventory, target, blockSize, [RECIPE]);
-    expect(choices.some(({ id }) => id === 'lift')).toBe(true);
-    expect(choices.some(({ id }) => id === 'repair')).toBe(true);
-  });
+  it.each(['damaged', 'intact', 'debug-off'] as const)(
+    'keeps lift in the held list on a small movable piece: %s',
+    (state) => {
+      const { inventory, target } = worldRepairFixture(registry);
+      if (state === 'intact') {
+        expect(inventory.entities.repair(target, DURABILITY)).toBe(true);
+      }
+      const blockSize = reachTuning(registry).furnitureMove.maxSizeMetres / 2;
+      const choices = furnitureActionsFor(inventory, target, blockSize, state === 'debug-off' ? undefined : [RECIPE]);
+      expect(choices.some(({ id }) => id === 'lift')).toBe(true);
+    },
+  );
 
   it('offers repair alongside drag in the same target-bound choice list', () => {
     const { inventory } = worldRepairFixture(registry);

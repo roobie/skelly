@@ -197,6 +197,7 @@
     barDoor: 'Bar the {name}',
     liftBar: 'Lift the bar',
     hold: '{key} (hold): {action}',
+    actions: 'actions',
     climb: 'climb the {name}',
     read: 'read the {name}',
     rest: 'Rest on the {name}',
