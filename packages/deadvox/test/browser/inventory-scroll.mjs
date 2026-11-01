@@ -1403,6 +1403,8 @@ try {
       await page.locator('#handling [role="progressbar"]').waitFor({ state: 'visible' });
       await pressAction(page, 'handling.stop');
       await page.waitForFunction(() => globalThis.foregripFitTest.session.sim.actions.job?.stopped);
+      // Stopped work may still be ramping down compression, which blocks the inventory key.
+      await page.waitForFunction(() => !globalThis.foregripFitTest.session.sim.compression.locksInput);
       await pressAction(page, 'ui.inventory-toggle');
       await clickThroughMenuCursor(`#inventory [data-uid="${startedWork.uid}"]`);
     }
