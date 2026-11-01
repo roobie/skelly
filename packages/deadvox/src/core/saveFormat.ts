@@ -430,6 +430,7 @@ itemSchema = obj({
         }),
       ),
       readying: opt(obj({ elapsed: nonNegative, duration: positive })),
+      adsAcquiring: opt(obj({ elapsedSimSeconds: nonNegative, durationSimSeconds: positive })),
       lastShotAtSimSeconds: opt(nonNegative),
       cycle: opt(
         obj({

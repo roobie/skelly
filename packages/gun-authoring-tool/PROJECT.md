@@ -9,7 +9,8 @@ read_if:
   - you change physical inputs, drawn collision exports or their ownership
   - you author or key a gun part's mass
   - you change Gungen's test or cross-project integration policy
-  - you change trigger-guard geometry, content or validation
+  - you change trigger-guard or trigger geometry, content or validation
+  - you trace a gun part from a reference photo
   - you change the structured Deadvox export recipe or refresh boundary
   - you diagnose platform-dependent export comparisons
   - you share recipe or synchronization mechanisms between authoring tools
@@ -47,9 +48,35 @@ Keep the AR frame and magwell unchanged when correcting magazine seating: adjust
 
 ## Trigger guard
 
-The AK guard must not leave a thick block behind the trigger or duplicate the receiver underside with a top bar. The receiver closes the finger opening above, while a slanted corner joins the bottom bar to the grip, leaving the rear open. See `src/gun/roundedTriggerGuard.ts`, `openTriggerGuard`.
+A guard whose grip stands behind it must not duplicate the receiver underside with a top bar: the receiver closes the finger opening above, and a slanted corner joins the bottom bar to the grip; see `src/gun/roundedTriggerGuard.ts`, `openTriggerGuard`. A gun keeps the closed four-bar guard until #1467 revisits it, and a lower whose body does not reach over the guard's front wall cannot close the opening.
 
-Proportions and corner cuts belong to per-gun content because their size and angles differ between guns; see `src/gun/triggerGuards.jsonnet`. Exports carry neither authoring blocks nor builder arguments, so validation measures bar thickness, identifies the open shape by its part tag and establishes receiver closure geometrically rather than by a body-solid name; see `src/gun/rules.ts`, `triggerGuard`.
+Whether the opening's rear above the corner stays open or is filled by the lower's body follows each gun's reference, because it is a look, not a rule for every gun: the open rear is how the AK(M) looks, and the large AR's photo shows its lower closing the rear in front of the grip. So each corner guard's content declares its rear; see `src/gun/triggerGuards.jsonnet`. Validation checks the declaration by shape, because a solid's name proves nothing about what fills the space. A rear declared open holds no solid of the part, and a rear declared closed is covered by the lower's body across the guard's width; see `src/gun/rules.ts`, `triggerGuard`.
+
+The large AR's guard and grip follow a traced side photo because a family grip and an evenly thick bar did not read as that rifle. The bar bows below the opening, so the bar's depth and the front wall's width are separate content; see `src/gun/arFrames.jsonnet` and `src/gun/triggerGuards.jsonnet`. A traced grip seats only on its own frame's lower, so it carries that action frame.
+
+The stock-grip pump keeps a closed guard shaped to BR's sketch over it, which replaces the rounded loop with a straight rear, a flat bottom and a front ramp up to the receiver; see `src/gun/roundedTriggerGuard.ts`, `rampedTriggerGuardSolids`. The ramp stands steeper than sketched, since its foot must clear the finger space and its top must stay behind the receiver's loading port; the reason sits with its angle in `src/gun/triggerGuards.jsonnet`.
+
+Proportions and corner cuts belong to per-gun content because their size and angles differ between guns; see `src/gun/triggerGuards.jsonnet`. Exports carry neither authoring blocks nor builder arguments, so validation measures bar thickness, identifies the corner shape and its declared rear by its part tag and establishes receiver closure geometrically rather than by a body-solid name; see `src/gun/rules.ts`, `triggerGuard`.
+
+Every exported gun shows a trigger. One shared blade serves guns without a blade of their own, so the shape stays one content entry, and it hangs from whatever closes the opening's top so it never floats; see `src/gun/roundedTriggerGuard.ts`, `triggerBlade`. Where the shared blade is too short to read as a trigger, as in the pump's shallow finger space, a curved blade in content takes its place, shaped like the traced blades BR approved; see `src/gun/roundedTriggerGuard.ts`, `curvedTriggerBlade`. A blade sits inside the finger space by design, so validation exempts trigger blades, named explicitly, from the finger-space check and nothing else: any other solid of the part there blocks the finger, and the engine's keep-out rule checks only other parts; see `src/gun/roundedTriggerGuard.ts`, `isTriggerBlade`.
+
+## Tracing a part from a reference photo
+
+A part traced from a side photo reads as the gun pictured where a family shape does not, but the trace is an estimate: each step below keeps it re-measurable and keeps the fit rules in charge. The large AR's guard and grip were made this way; see `src/gun/arFrames.jsonnet`, `grip`.
+
+1. **Take a side view.** Use a photo with the part square to the camera. Skew turns lengths into guesses, and a side view matches the model's side-on outlines.
+2. **Scale from a length the model already has.** Use a long, crisply ended feature already set in gun units, such as the receiver, so the photo agrees with the parts that stay. A long span keeps pixel error small. Then check a second, independent length against the scale; a mismatch means skew or a misread feature.
+3. **Register on the feature the rules constrain.** For a guard that is the finger opening. Registering there keeps the validated finger space and trigger where they are. The opening's other edges should then land within a grid step of the model's; if they don't, the scale or the registration is wrong. Positions are in bore coordinates, because the bore is the assembly's datum; see `src/gun/units.ts`, `GUN_UNITS`.
+4. **Read edges from marks on the photo.** Work on a scratch copy: crop and enlarge the region, then draw marker lines at candidate pixel positions and move them until each one sits on its edge. A marked value can be checked by looking at the copy, while an eyeballed one cannot. Scratch images and scripts stay untracked.
+5. **Round to the grid.** Convert pixels to gun units and round to the nearest grid step, because the stylized scale and the fit rules work on the grid.
+6. **Put the trace in content, with its provenance.** Values go in the gun's content blocks, with the source, scale, registration and shape notes in a comment beside them, so a later author can re-measure; see `src/gun/arFrames.jsonnet` and `src/gun/triggerGuards.jsonnet`.
+   - A grip outline is a set of convex pieces for `src/gun/parts.ts`, `tracedGrip`. The first piece is the hand's body, since the firing-hand anchor is taken from it.
+   - The grip's lean is the mean of its front and back edges.
+   - Whatever the photo shows as part of the lower or receiver becomes a body solid, not a guard piece, and the guard's content declares the rear the photo shows. The trigger-guard rule then checks that rear by shape; see `src/gun/rules.ts`, `triggerGuard`.
+7. **Check against the rules and the photo.** The trigger-guard rule must pass over the design corpus. Tests assert properties of the trace, never its coordinates; see `test/triggerGuard.test.ts`, "traced AR large lower and grip". Render a side outline from the built solids and compare it with the photo. BR's look on the exported design decides whether it reads as the gun.
+8. **Report the gaps.** For each place where the model departs from the photo, name the rule or part that forces it and the change that would close it. A known gap is then a decision, not a silent loss.
+
+Two choices in the steps above are still judgement, not rules. One is where to split an outline into convex pieces and which small features to drop. The other is how close the rendered outline must come to the photo before it goes to BR's look.
 
 ## Testing
 

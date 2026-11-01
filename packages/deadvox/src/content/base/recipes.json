@@ -872,6 +872,7 @@
     {
       "combat": {
         "firearms": {
+          "adsAcquisitionMaximumSimSeconds": 0.55000000000000004,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
           "breathHold": {
@@ -932,7 +933,7 @@
         "saturationFloor": 0.41999999999999998,
         "saturationHalfLifeLevels": 4
       },
-      "detail": "Improves recoil control, handling and raising. Steadies firearms other than long guns.",
+      "detail": "Improves recoil control, handling, raising and aiming down sights. Steadies firearms other than long guns.",
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
       "training": {

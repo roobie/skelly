@@ -1238,6 +1238,14 @@ export const createSession = (options: SessionOptions) => {
   let firearmReadyWalking = restoredFirearmReadyWalking;
   let snipingAdsUid = restoredPlayer?.snipingAdsUid;
   validateSnipingAdsFirearm(registry, firearmInHands(), snipingAdsUid);
+  /**
+   * Effective ADS: the sights are wanted and a held long gun's acquisition has completed. Other
+   * firearms aim as soon as they are ready, so acquisition never delays them (`DESIGN.md`, "Combat and noise").
+   */
+  const aimingDownSights = (): boolean => {
+    const held = firearmInHands();
+    return held !== undefined && Boolean(controls.aimingDownSights?.()) && firearms.isAdsAcquired(held.uid);
+  };
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
@@ -1255,7 +1263,7 @@ export const createSession = (options: SessionOptions) => {
       lean: currentLean(),
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
-      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
     });
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
@@ -1325,7 +1333,7 @@ export const createSession = (options: SessionOptions) => {
       intent.sprint &&
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid) &&
-      Boolean(controls.aimingDownSights?.()) &&
+      aimingDownSights() &&
       !ladderHold.on &&
       body.onGround &&
       intent.forward === 0 &&
@@ -1411,7 +1419,7 @@ export const createSession = (options: SessionOptions) => {
       pitch,
       stance: playerStance,
       lean: currentLean(),
-      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
     });
     return {
       feet: feet(),
@@ -1434,7 +1442,7 @@ export const createSession = (options: SessionOptions) => {
     return {
       ...pose,
       aimFrame: aim.frame,
-      aimingDownSights: Boolean(controls.aimingDownSights?.()),
+      aimingDownSights: aimingDownSights(),
       ready: controls.firearmReady ? controls.firearmReady(uid) : firearms.isReady(uid),
       sprinting,
       item,
@@ -2066,6 +2074,7 @@ export const createSession = (options: SessionOptions) => {
     const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;
     const readinessHeld = readyUid !== undefined;
     firearms.advanceReadiness(dt, readyUid, readinessHeld);
+    firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
     if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
@@ -2078,7 +2087,7 @@ export const createSession = (options: SessionOptions) => {
       firearms,
       firearm: heldFirearm,
       ready: readinessHeld,
-      aiming: Boolean(controls.aimingDownSights?.()),
+      aiming: aimingDownSights(),
       previousUid: snipingAdsUid,
       dt,
     });
@@ -2092,7 +2101,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const { yaw, pitch } = sampledInput();
     const progress = Object.values(inventory.hands).map((item) => (item ? firearms.readyProgress(item.uid) : 0));
-    const ads = playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame);
+    const ads = playerAdsPose(inventory, aimingDownSights(), aim.frame);
     const aiming = ads !== undefined || progress.some((value) => value >= 1);
     const { loweredPitchRadians } = currentFirearmsCombatTuning();
     return guardPlayerLean({

@@ -6,6 +6,7 @@ import type { Vec3 } from './coords.ts';
 import type { HandSide, Inventory } from './inventory.ts';
 import { type MeleeHand, type MeleePoseFrame, readyHandPair } from './meleePose.ts';
 import type { HeldPosesDef } from './schema.ts';
+import { basisRotation, blendDirection, blendRotation, rotationBasis } from './spatial.ts';
 
 /** A hold authored for the right hand, mirrored across the view's x for the left. */
 const mirrorViewX = (side: HandSide, [x, y, z]: Vec3): Vec3 => [side === 'right' ? x : -x, y, z];
@@ -228,6 +229,54 @@ export const heldAdsEye = (
   side: HandSide,
   eyes: Readonly<Record<HandSide, Vec3>> | undefined,
 ): Vec3 => (model.hands && !model.hands.butt && eyes ? eyes[side] : [0, 0, 0]);
+
+/** Between hip and sighted: the aim's share of the two poses' points, directions and root basis. */
+export const blendHeldFirearmTransforms = (
+  hip: HeldFirearmTransform,
+  sighted: HeldFirearmTransform,
+  aim: number,
+): HeldFirearmTransform => {
+  if (!(Number.isFinite(aim) && aim >= 0 && aim <= 1)) {
+    throw new Error('Invalid held firearm aim blend');
+  }
+  if (aim <= 0) {
+    return hip;
+  }
+  if (aim >= 1) {
+    return sighted;
+  }
+  const lerp = (from: Vec3, to: Vec3): Vec3 => from.map((value, axis) => value + (to[axis]! - value) * aim) as Vec3;
+  // Directions swing along their shortest rotation so antiparallel endpoints (a half turn of the
+  // gun) stay defined, where lerping the vectors would cancel to zero.
+  const blendDirectionBy = (from: Vec3, to: Vec3): Vec3 => blendDirection(from, to, aim);
+  // The root rotation blends as a quaternion: lerping basis columns can cancel a column to zero
+  // (identity against a half turn about an axis), while a rotation blend stays defined and
+  // orthonormal for every right-handed pair of endpoint bases.
+  const rootRotation = rotationBasis(
+    blendRotation(basisRotation(hip.rootRotation), basisRotation(sighted.rootRotation), aim),
+  );
+  return {
+    rootOffset: lerp(hip.rootOffset, sighted.rootOffset),
+    muzzleOffset: lerp(hip.muzzleOffset, sighted.muzzleOffset),
+    muzzleDirection: blendDirectionBy(hip.muzzleDirection, sighted.muzzleDirection),
+    muzzleUp: blendDirectionBy(hip.muzzleUp, sighted.muzzleUp),
+    ...(hip.sightEyeOffset && sighted.sightEyeOffset
+      ? { sightEyeOffset: lerp(hip.sightEyeOffset, sighted.sightEyeOffset) }
+      : {}),
+    ...(hip.sightEyeRangeOffsets && sighted.sightEyeRangeOffsets
+      ? {
+          sightEyeRangeOffsets: hip.sightEyeRangeOffsets.map((from, index) =>
+            lerp(from, sighted.sightEyeRangeOffsets![index]!),
+          ) as [Vec3, Vec3],
+        }
+      : {}),
+    ...(hip.sightDirection && sighted.sightDirection
+      ? { sightDirection: blendDirectionBy(hip.sightDirection, sighted.sightDirection) }
+      : {}),
+    ...(hip.sightUp && sighted.sightUp ? { sightUp: blendDirectionBy(hip.sightUp, sighted.sightUp) } : {}),
+    rootRotation,
+  };
+};
 
 const subGrip = (model: ModelDef, point: Vec3): Vec3 => point.map((v, i) => v - model.grip!.at[i]!) as Vec3;
 
