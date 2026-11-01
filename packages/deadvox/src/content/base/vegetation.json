@@ -7,6 +7,7 @@
         "shambler": "shambler_step_wood"
       },
       "id": "tree_trunk",
+      "material": "timber",
       "name": "Tree trunk",
       "opaque": true,
       "pattern": "rough",
@@ -20,6 +21,7 @@
         "shambler": "shambler_step_wood"
       },
       "id": "tree_branch",
+      "material": "timber",
       "name": "Tree branch",
       "opaque": true,
       "pattern": "rough",
@@ -33,6 +35,7 @@
         "shambler": "shambler_step_leaves"
       },
       "id": "leaves",
+      "material": "textile",
       "name": "Leaves",
       "opaque": true,
       "pattern": "noise",
@@ -50,6 +53,7 @@
         "shambler": "shambler_step_leaves"
       },
       "id": "leaf_litter",
+      "material": "soil",
       "name": "Leaf litter",
       "opaque": true,
       "pattern": "noise",
@@ -63,6 +67,7 @@
         "shambler": "shambler_step_leaves"
       },
       "id": "tall_grass",
+      "material": "textile",
       "name": "Tall grass",
       "opaque": false,
       "pattern": "noise",

@@ -73,7 +73,7 @@ export const craftActionHooks = (
       const recipe = inventory.registry.recipes.get(plan.recipe);
       return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
     }
-    const current = planDisassembly(plan.source, snapshot, character);
+    const current = planDisassembly(plan.source, snapshot, character, plan);
     const sameTools =
       current &&
       Object.keys(current.toolLevels).length === Object.keys(plan.toolLevels).length &&
@@ -84,8 +84,9 @@ export const craftActionHooks = (
       current.duration === plan.duration &&
       current.gather === plan.gather &&
       sameTools &&
-      sameDisassemblyOutputs(current.outputs, plan.outputs)
-      ? undefined
+      sameDisassemblyOutputs(current.outputs, plan.outputs) &&
+      JSON.stringify(current.liquids) === JSON.stringify(plan.liquids)
+      ? inventory.liquidReceiptRefusal(inventory.planLiquidReceipts(plan.liquids, plan))
       : coreMessage(inventory.registry, 'yieldChanged');
   },
   begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,
@@ -116,15 +117,16 @@ export const craftActionHooks = (
     inventory.version += 1;
     return work.elapsed === work.duration;
   },
-  finish: (uid) => {
+  finish: (uid): string | undefined => {
     const item = inventory.itemByUid(uid);
     const work = item?.work;
     if (!(item && work)) {
-      return;
+      return undefined;
     }
-    if (repairTargetRefusal(inventory, item, reach())) {
+    const refusal = repairTargetRefusal(inventory, item, reach());
+    if (refusal) {
       inventory.releaseWork(item, false, feet());
-      return;
+      return refusal;
     }
     const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
     const offset = inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset;
@@ -144,6 +146,7 @@ export const craftActionHooks = (
     for (const entry of practice) {
       character.awardPractice(entry.skill, entry.amount, entry.tier);
     }
+    return undefined;
   },
   cancel: (uid) => {
     const item = inventory.itemByUid(uid);

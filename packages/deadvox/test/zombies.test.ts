@@ -146,6 +146,7 @@ const spawnSite = (spawn: ZombieSpawn): Site => ({
   surface: { height: (_x, _z, natural) => natural, top: () => undefined },
   spawn: { pos: [0, 0, 0], yaw: 0 },
   stamp: () => undefined,
+  supplySourcesIn: () => [],
   lootPointsIn: () => [],
   furnitureIn: () => [],
   zombiesIn: () => [spawn],

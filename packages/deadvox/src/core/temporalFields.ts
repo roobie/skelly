@@ -180,6 +180,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
+    path: 'skills.combat.firearms.adsAcquisitionMaximumSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
+  {
     path: 'skills.combat.firearms.wobbleNoiseReversionRatePerSimSecond',
     clock: 'Sim',
     unit: 'PerSecond',
@@ -227,6 +233,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'saves.checkpointSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'saves.leaveConfirmationRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'figures[].stancePoses.blendRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'figures[].aimPose.ads.viewBlend.blendBackRealSeconds',
+    clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'body.infectionOnsetGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.antisepticWindowGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.knockoutSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

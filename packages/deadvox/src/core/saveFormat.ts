@@ -127,6 +127,7 @@ interface WirePayload {
     blockEntitiesReserved?: number[];
     spawned: string[];
     rolledColumns: string[];
+    blockDamage: SaveSnapshot['world']['blockDamage'];
   };
   character: {
     id: string;
@@ -156,7 +157,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 63;
+export const SAVE_SCHEMA_VERSION = 64;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -429,6 +430,7 @@ itemSchema = obj({
         }),
       ),
       readying: opt(obj({ elapsed: nonNegative, duration: positive })),
+      adsAcquiring: opt(obj({ elapsedSimSeconds: nonNegative, durationSimSeconds: positive })),
       lastShotAtSimSeconds: opt(nonNegative),
       cycle: opt(
         obj({
@@ -468,6 +470,10 @@ itemSchema = obj({
       obj({
         kind: enumeration(['disassembly']),
         source: str({ id: true }),
+        operation: enumeration(['salvage', 'disassembly']),
+        liquids: arr(obj({ liquid: str({ id: true }), volumeMicrolitres: positiveInt })),
+        receivers: arr(obj({ liquid: str({ id: true }), uid: positiveInt })),
+        spillApproval: arr(obj({ liquid: str({ id: true }), volumeMicrolitres: nonNegativeInt })),
         skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
@@ -843,6 +849,11 @@ const powerState = obj({
   links: arr(obj({ from: str({ nonEmpty: true }), to: str({ nonEmpty: true }), itemUid: positiveInt })),
 });
 
+const blockDamageSchema = obj({
+  nextEpoch: positiveInt,
+  entries: arr(obj({ cell: tuple(safeInt, safeInt, safeInt), damage: num(), epoch: safeInt })),
+});
+
 const wirePayloadSchema = obj({
   world: obj({
     id: str({ nonEmpty: true }),
@@ -878,6 +889,7 @@ const wirePayloadSchema = obj({
     blockEntitiesReserved: opt(arr(positiveInt)),
     spawned: arr(str({ nonEmpty: true })),
     rolledColumns: arr(str({ nonEmpty: true })),
+    blockDamage: blockDamageSchema,
   }),
   character: obj({
     id: str({ nonEmpty: true }),
@@ -1292,6 +1304,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       ...(savedInventory.entities.reserved ? { blockEntitiesReserved: [...savedInventory.entities.reserved] } : {}),
       spawned: [...snapshot.world.spawned],
       rolledColumns: [...snapshot.world.rolledColumns],
+      blockDamage: structuredClone(snapshot.world.blockDamage),
     },
     character: {
       id: snapshot.character.id,
@@ -1365,6 +1378,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
       zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
       rolledColumns: [...wire.world.rolledColumns],
+      blockDamage: structuredClone(wire.world.blockDamage),
     },
     character: {
       ...wire.character,
@@ -1860,6 +1874,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         }),
         spawned: arr(str({ nonEmpty: true })),
         rolledColumns: arr(str({ nonEmpty: true })),
+        blockDamage: blockDamageSchema,
       }),
       character: obj({
         id: str({ nonEmpty: true }),

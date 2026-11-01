@@ -30,6 +30,9 @@
           "notHeld": "I'm not holding it",
           "tooFar": "Too far away"
         },
+        "debugBuild": {
+          "target": "{block} · Damage {damage}/{durability} · {stepKey} step · {destroyKey} destroy"
+        },
         "doors": {
           "anyTool": "a suitable tool",
           "lock": "Lock the {door}",
@@ -330,7 +333,7 @@
         "noLightToFit": "I'm not holding a light it fits",
         "noLock": "The door has no lock",
         "noPadlock": "There's no locked padlock",
-        "noRepairTarget": "Nothing in reach needs repair",
+        "noRepairTarget": "I can't find anything to repair",
         "noRoom": "There's no room",
         "noRoomOnMe": "I've no room for it",
         "noRoomThere": "There's no room there",
@@ -355,8 +358,10 @@
         "pocketsFull": "My pockets are full",
         "preferredCompete": "Preferred alternatives compete for the same stock or would consume a required tool",
         "recipeUnknown": "Recipe not known",
-        "repairTargetGone": "The repair target is missing",
-        "repairTargetOutOfReach": "The repair target is out of reach",
+        "recoveryReceiverUnavailable": "I can't pour {liquid} into that vessel",
+        "recoverySpill": "Spill: {volume} ml {liquid}",
+        "repairTargetGone": "I can't repair it now",
+        "repairTargetOutOfReach": "I can't reach it from here",
         "rested": "I feel rested",
         "rightHandHolding": "My right hand is holding the {item}",
         "rightHandOnLadder": "My right hand is holding the ladder",
@@ -372,7 +377,7 @@
         "wearingOther": "I'm already wearing the {item} there",
         "wokenBy": "I wake up: {reason}",
         "workHand": "It stays in my working hand",
-        "workNeedsBothHands": "The work needs both hands",
+        "workNeedsBothHands": "I need both hands for this",
         "workstationNotInReach": "Required workstation not in reach",
         "wrongBattery": "It doesn't take that battery",
         "wrongCartridge": "It doesn't take that cartridge",
@@ -532,6 +537,7 @@
         },
         "interaction": {
           "action": "{key}: {action}",
+          "actions": "actions",
           "bar": "Bar",
           "barDoor": "Bar the {name}",
           "blocked": "{action} — {reason}",
@@ -605,6 +611,12 @@
           "quality": "{quality} {level}",
           "queueLeft": "{span} left · Cancel ({key})",
           "recipe": "Recipe: {recipe}",
+          "recoveryAction": "{action} — {spill}",
+          "recoveryAmount": "{liquid}: {volume} ml",
+          "recoveryNoMatches": "No matching vessels",
+          "recoveryReceiver": "{liquid} receiver",
+          "recoverySpillAll": "No receiver — spill all",
+          "recoveryUnavailable": "Receiver unavailable",
           "regionDamage": "{damage} damage",
           "remove": "Remove",
           "reserved": "Reserved: {item}",
@@ -620,6 +632,7 @@
           "tabActions": "Actions",
           "tabCrafting": "Crafting",
           "tabItems": "Items",
+          "tabRepair": "Repair",
           "tabSkills": "Skills",
           "tabsLabel": "Character screen",
           "taking": "Taking {count} {category} items",
@@ -641,6 +654,7 @@
         },
         "mods": {
           "add": "Add",
+          "discard": "Discard stored selection",
           "down": "Down",
           "emptyResponse": "Empty response",
           "fetchFailed": "Could not fetch URL; the host may not allow browser access",
@@ -649,6 +663,7 @@
           "httpStatus": "HTTP {status}",
           "input": "JSON or URL",
           "inputLabel": "Mod JSON or URL",
+          "invalidSelection": "Stored mod selection unreadable · No mods loaded",
           "jsonFact": "Later JSON files replace whole definitions with the same id; the limit is {maxBytes} bytes per file. Selections are stored in this browser; saves require the same enabled mods in the same order.",
           "jsonLabel": "JSON files",
           "jsonOnly": ".json files only",
@@ -656,6 +671,7 @@
           "moveUp": "Move {mod} up",
           "remove": "Remove",
           "removeLabel": "Remove {mod}",
+          "saveFailed": "Could not save · Change not applied",
           "start": "Start",
           "storageFailed": "Mod storage unavailable · No mods loaded",
           "tooLarge": "File exceeds {maxBytes} bytes",
@@ -906,6 +922,11 @@
           "failed": "Unable to load the world: {error}",
           "loading": "Loading world…",
           "reload": "Reload game"
+        },
+        "worldService": {
+          "drag": "Drag",
+          "lift": "Lift",
+          "push": "Push"
         }
       },
       "spacing": 1,

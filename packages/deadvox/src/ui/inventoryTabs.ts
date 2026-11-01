@@ -1,9 +1,10 @@
-const INVENTORY_TABS = ['items', 'skills', 'crafting', 'actions'] as const;
+const INVENTORY_TABS = ['items', 'skills', 'crafting', 'actions', 'repair'] as const;
 export type InventoryTab = (typeof INVENTORY_TABS)[number];
 
 /** Last-used tab belongs to this runtime screen, not to saved or replayed game state. */
 export class InventoryTabState {
-  private lastUsed: InventoryTab = 'items';
+  private lastUsed: Exclude<InventoryTab, 'repair'> = 'items';
+  private selected: InventoryTab = 'items';
   private openState = false;
 
   get isOpen(): boolean {
@@ -11,7 +12,7 @@ export class InventoryTabState {
   }
 
   get active(): InventoryTab {
-    return this.lastUsed;
+    return this.selected;
   }
 
   open(): void {
@@ -20,12 +21,16 @@ export class InventoryTabState {
 
   close(): void {
     this.openState = false;
+    this.selected = this.lastUsed;
   }
 
   select(tab: InventoryTab): void {
     if (!INVENTORY_TABS.includes(tab)) {
       throw new Error(`Unknown inventory tab: ${tab}`);
     }
-    this.lastUsed = tab;
+    this.selected = tab;
+    if (tab !== 'repair') {
+      this.lastUsed = tab;
+    }
   }
 }

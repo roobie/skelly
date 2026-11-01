@@ -1,8 +1,10 @@
 ---
 read_if:
+  - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
   - you author recipes or item take-apart yields
+  - you change liquid recovery destinations or spill consent
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -29,6 +31,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you change furniture repair admission or the boundary between repair and replacement
+  - you change world-target repair selection or target identity ownership
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -73,6 +76,7 @@ read_if:
   - you're changing firearm recoil, dispersion or aim control
   - you're designing or building holding breath to steady aim
   - you're changing long-gun steadiness, independent Sniping progression or firearm training ownership
+  - you're changing long-gun aim-down-sights timing or its speed floor
   - you're changing firearm attachments, nested item slots or their save behavior
   - you change which item or model mass is authoritative
   - you author item models or decide how medicine quantities should look
@@ -424,32 +428,39 @@ and `src/core/saveFormat.ts`.
 
 ### Edits persist
 
-A block or piece the player removes never comes back, and one they place stays, when its
-column is generated again or the game is reloaded. Base building takes placed and
-authored pieces apart for resources and places a great many blocks and pieces, so a
-removal that undid itself would duplicate resources and erase the player's work, and
-keeping edits must stay cheap at that scale.
+Regeneration must not undo work or duplicate salvage. Damage-only edits need the same
+complete terrain persistence as replacements: saving an isolated damaged chunk would
+lose unrelated authored terrain when the rest of its column returns. Scratch queries
+must not become saved edits merely because an admission check reached them. See
+`src/core/canonicalTerrain.ts`, `CanonicalTerrain`; `src/core/blockDamage.ts`,
+`BlockDamage`; and `src/core/world.ts`, `World.touchColumn`.
 
-A column is furnished once, and its pieces are then saved state, kept in memory for the
-session, so a removed piece has nothing to return from. A column whose blocks have
-changed is saved whole from then on, and its chunks stay in memory for the session, so
-it is never rebuilt from the seed; unchanged columns regenerate. The save is one
-compressed record. See `src/game/session.ts`, `rolledColumns`; `src/core/world.ts`,
-`World`; and `src/core/saveFormat.ts`, `encodeSave`.
+Authored supply must have one truth before and after arrival. A speculative check
+cannot allocate live items, and an emptied source must not regenerate its original
+stock. Owner-controlled publication preserves existing item aliases rather than
+replacing the live inventory with a private copy. See `src/core/columnSupply.ts`,
+`createColumnSupply`; `src/game/session.ts`, `rolledColumns`; and
+`src/core/saveState.ts`, `SaveSnapshot`.
 
-A piece cannot be removed while anything rests or stands on it, while a barricade stands
-in its doorway, or while it holds items, so removal never strands, floats or loses
-anything. Removing through a piece handle taken before a load throws, so the mistake
-shows at once instead of corrupting occupancy. The action that removes a piece first
-cancels the jobs that name it, so a save never refers to a missing piece. Pending
-deconstruction reserves its piece against use until the job is cancelled or finished, so
-paused work keeps its piece; under lockstep the reservation is ordinary simulation state,
-resolved in tick order. See `src/core/blockEntities.ts`, `BlockEntities.remove`.
+Voluntary removal protects what relies on a piece rather than stranding or losing it.
+Stale handles must fail loudly instead of corrupting occupancy, and removing a work
+target must not leave saved jobs naming something absent. Pending deconstruction needs
+a reservation so paused work cannot lose its target to another use. See
+`src/core/furnitureMove.ts`, `removalRefusal`; `src/core/blockEntities.ts`,
+`BlockEntities.remove`; and `src/game/session.ts`, `forgetPiece`.
 
-Destruction is not removal: a blow cannot be refused, so the removal refusals don't
-apply, and everything the piece held or carried drops or falls instead. Destruction
-still cancels the jobs that name the piece. See `src/core/blockEntities.ts`,
-`BlockEntities.destroy`.
+Destruction must not inherit voluntary removal refusals, but damage is not permission
+to lose contents. Whole-plan drop admission keeps a crowded ruin standing until its
+items can be conserved; sharing reservations prevents separate dependants from each
+claiming the same remaining space. The commit resolves private references through the
+real owners so outstanding aliases remain valid. Terrain floor loss and material rubble
+must compete with furniture drops rather than bypass that admission. Discovering more
+authored supply invalidates a plan's references and reservations together; retaining a
+full-damage identity on refusal allows another blow after space is freed without
+publishing rejected supply. Canonical fall paths use the world's vertical extent rather
+than treating a distant unseen floor as missing. See `src/core/furnitureMove.ts`,
+`planRuin` and `commitRuin`; `src/core/terrainStrike.ts`, `strikeTerrain`; and
+`src/core/blockEntities.ts`, `BlockEntities.destroy`.
 
 Because every explored piece stays in memory, a lookup must not cost more as the explored
 area grows, so lookups find pieces through an index by column. See
@@ -1712,6 +1723,27 @@ policy. The item yield/work projection is `src/core/disassembly.ts`,
 replace retained parts with generated copies. See `src/core/content.ts`,
 `checkDisassembly`, `checkMaterialCycles` and `checkRecipes`, and `docs/crafting.md`.
 
+Liquid recovery follows the source's own consumption record and remaining burn,
+not a recipe inferred from its type: found items cannot return liquid they never
+consumed, and spent fuel cannot be recovered again. Salvage uses its own authored
+skill and liquid fractions, independently of disassembly, because destructive
+recovery is a separate capability; its solid yields remain fixed. Recovery is
+snapshotted at the start so later skill, tool or burn changes cannot change the
+promised yield. See `src/core/disassembly.ts`, `planDisassembly` and
+`disassemblyLiquidOutputs`, and `src/core/content.ts`, `checkDisassembly`.
+
+Each recovered liquid kind has a player-chosen receiver because different kinds
+cannot share a vessel. Clicking Take apart or Continue approves the spill stated
+on that button, including spill-all without a receiver. The button already gives
+the consequence and amount, so a separate checkbox adds a step without information.
+Approval remains bounded by that displayed amount: lost room needs another stated
+Continue click or a different receiver, not silent permission to discard more.
+These choices apply equally to salvage and disassembly because changing the
+recovery operation must not hide a consequential liquid transfer. See
+`src/core/inventory.ts`, `Inventory.planLiquidReceipts` and `Inventory.releaseWork`;
+`src/core/craftCommands.ts`, `CraftCommands.recovery` and `CraftCommands.act`; and
+`src/ui/inventoryScreen.ts`, `detailsViewModel` and `render`.
+
 Gainful cycles are forbidden because endless material breaks scarcity. A gainful
 cycle is a finite combination of crafting, disassembly, salvage or unpack
 operations whose total item balance is
@@ -2263,12 +2295,31 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   `firearmSteadinessSkill`, and `src/game/session.ts`, `advanceSessionAim`.
 
   Raising, ready movement, loading, racking and attachment handling stay with
-  Combat because steadiness does not replace handling competence. Recoil kick
-  and recovery have one owner; splitting only kick would quietly move recovery
-  to the wrong skill. Firearm quality owns dispersion. Sniping and Combat must
-  not multiply sway together or compete through separate aim controllers. See
-  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, `steadinessTuning` and
-  `firearmStanceEffects`.
+  Combat because steadiness does not replace handling competence. Aim-down-sights
+  acquisition is Combat-owned handling speed too, so a steadier shooter is not a
+  faster one: a long gun reads the same Combat raise curve for its shouldering
+  time, clamped by a content maximum ADS duration so a novice sights faster than
+  they raise instead of doubling the slowest handling. The clamp bounds ADS only,
+  never raise, and the acquisition is authoritative saved state, not a second
+  raise job. The view blends hip to sights across that acquisition and settles
+  back over a content-owned blend on release, because the simulation owns when
+  the sights arrive while the presentation owns how the move looks: the blend
+  reads the acquisition's progress and never writes simulation state. The optic
+  picture switches at full alignment rather than blending its magnification —
+  the disc read stays exact only once the eye has arrived at the sight line —
+  while the pose, the camera standoff and the look sensitivity ride the carried
+  aim. Sniping has no timing curve of its own. Recoil kick and recovery
+  have one owner; splitting only kick would quietly move recovery to the wrong
+  skill. Firearm quality owns dispersion. Sniping and Combat must not multiply
+  sway together or compete through separate aim controllers. See
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  `firearmStanceEffects`, `adsAcquisitionDuration` and `steadinessTuning`;
+  `src/game/firearmHandling.ts`, `advanceAdsAcquisition`, `isAdsAcquired`,
+  `adsAcquisitionProgress` and `stanceEffectsFor`; `src/game/session.ts`,
+  `advancePlayerReadiness`; `src/game/play.ts`, `advanceAdsAim`;
+  `src/core/playerLookPose.ts`, `blendLookPoses`;
+  `src/core/heldPose.ts`, `blendHeldFirearmTransforms`; and
+  `src/render/playView.ts`, `adsCameraTarget`.
 
   Different guns need different novice endpoints, and automatic follow-ups must
   remain harder to control. Complete per-gun overrides avoid mixing fields from
@@ -2426,23 +2477,23 @@ application rather than weapon-class special cases. See `ZombieSchema` in
     tears limbs off a shambler;
   - a breaching charge (directional, at contact) destroys a steel door and
     little around it.
-- **Blocks and block entities get materials.** Soil, wood, brick, concrete and
-  steel, each with durability and a resistance per damage type, as content-pack
-  data; a block has no material or durability fields (`src/core/schema.ts`,
-  `BlockSchema`). A destroyed block is removed
-  with `World.setBlock`. Saves already store changed cells as an overlay on the
-  regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
-  persists without new save machinery; saves grow with the damage done.
-- **Ruined furniture.** A piece of furniture whose damage reaches its durability is
-  destroyed: what it held, and any debris its content names, falls as piles and
-  whatever rested on it falls, so destruction loses and floats nothing; a door
-  instead breaks and stays as an open leaf. Like a destroyed block, a ruined piece
-  is gone for good; unlike blocks, which do not collapse (next bullet), furniture
-  left unsupported settles, and a piece that cannot come down clear is destroyed in
-  turn. A blow that would ruin a piece whose contents and debris have no room to
-  fall still adds its damage and is heard, but the piece stays standing at full
-  damage until a blow finds room, so nothing is lost. See
-  `src/core/furnitureMove.ts`, `ruinFurniture`.
+- **Material admission.** Explicit block resistances let fragments and pressure
+  differ without weapon-name exceptions or a later schema replacement. Missing
+  metadata must fail admission rather than hide incomplete content behind a default.
+  Resistance precedes the strength gate so an ineffective blow does not accumulate
+  damage. See `src/core/schema.ts`, `BlockMaterialSchema`; `src/core/content.ts`,
+  `buildRegistry`; and `src/core/blockDamage.ts`, `bashBlock`.
+- **Rubble preserves wreckage.** A material's fallen form is solid rubble because
+  wreckage should still provide cover; falling alone is not loose salvage. Strikes
+  and deconstruction are the intended routes to loose resources. See
+  `src/core/schema.ts`, `BlockMaterialSchema`.
+- **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
+  supplies without stranding them. Destructive dependants use spatial ordering so
+  arrival's allocation order cannot decide who takes drop capacity first. A fixed
+  leaf cannot float after what supported it is destroyed; ordinary door breach is
+  different because breaking a leaf need not remove its support. See
+  `src/core/furnitureMove.ts`, `planRuin`, `commitRuin` and `ruinFurniture`; and
+  `src/core/blockEntities.ts`, `BlockEntities.bash`.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
@@ -3106,10 +3157,13 @@ their state.
 
 1. **A car builder, not a car customizer.** Parts attach by capability, not by sockets a
    designer laid out in advance: a wing mirror needs a mountable vertical face, and a
-   door, a halfboard or a plate the player welded on can all provide one. Players can
-   then build things the designers didn't foresee. Vehicles own their fittings
-   rather than switching a designer's list on and off. See `VehicleInstance` in
-   `src/vehicles/model.ts`.
+   door, a halfboard or a plate the player welded on can all provide one. A vehicle
+   built in game can take almost any shape, limited only by which parts exist, so
+   players build things the designers didn't foresee, scratch-built from rails and
+   plates as well as from factory structures. Its shape comes from what the player
+   builds, so collision, crew space and parked-vehicle shape must not assume an
+   authored car shape. Vehicles own their fittings rather than switching a
+   designer's list on and off. See `VehicleInstance` in `src/vehicles/model.ts`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
@@ -3241,8 +3295,9 @@ useful fitted cargo; further compartments extend the same ownership model rather
 than turning the entire wreck into a container.
 
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
-structure, enclosure and arbitrary world objects riding vehicle space. These are
-separate from first-slice impact detachment and fitted cargo. #221 owns finer
+structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built
+frames are in the goal (point 1) but come after factory structures (point 8); #322
+tracks when. These are separate from first-slice impact detachment and fitted cargo. #221 owns finer
 collision grain; the parked approximation must not be mistaken for exact geometry.
 The consumer triggers and reasons are in `SLICE-6.md`, "Deferred work and its trigger".
 
@@ -3582,6 +3637,14 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 `ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
 `ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
 `src/core/saveFormat.ts`, `itemSchema`.
+
+## World repair selection
+
+Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/game/play.ts`, `furniturePayload`.
+
+World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`; `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+
+The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
 
 ## UI principles
 

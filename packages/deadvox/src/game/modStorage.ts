@@ -3,6 +3,12 @@ import type { BrowserMod } from './browserMods.ts';
 const DATABASE = 'deadvox.browser-mods';
 const STORE = 'selection';
 
+// Only this failure is cured by discarding the stored value; an unavailable store is not.
+const INVALID_SELECTION = 'InvalidModSelection';
+
+export const isInvalidModSelection = (error: unknown): boolean =>
+  error instanceof Error && error.name === INVALID_SELECTION;
+
 const selection = (value: unknown): BrowserMod[] => {
   if (
     !Array.isArray(value) ||
@@ -15,7 +21,9 @@ const selection = (value: unknown): BrowserMod[] => {
         typeof row.enabled !== 'boolean',
     )
   ) {
-    throw new Error('Invalid stored mod selection');
+    const error = new Error('Invalid stored mod selection');
+    error.name = INVALID_SELECTION;
+    throw error;
   }
   return value.map(({ source, text, enabled }) => ({ source, text, enabled }));
 };
@@ -51,13 +59,12 @@ export class ModStorage {
     });
   }
 
-  private async transact(mode: IDBTransactionMode, mods?: readonly BrowserMod[]): Promise<unknown> {
+  private async transact(mode: IDBTransactionMode, operation: (store: IDBObjectStore) => IDBRequest): Promise<unknown> {
     const db = await this.database();
     try {
       return await new Promise((resolve, reject) => {
         const transaction = db.transaction(STORE, mode);
-        const store = transaction.objectStore(STORE);
-        const request = mode === 'readonly' ? store.get('active') : store.put(mods, 'active');
+        const request = operation(transaction.objectStore(STORE));
         transaction.oncomplete = () => resolve(request.result);
         transaction.onerror = () => reject(transaction.error);
         transaction.onabort = () => reject(transaction.error ?? new Error('Mod storage aborted'));
@@ -68,11 +75,16 @@ export class ModStorage {
   }
 
   async load(): Promise<BrowserMod[]> {
-    const value = await this.transact('readonly');
+    const value = await this.transact('readonly', (store) => store.get('active'));
     return value === undefined ? [] : selection(value);
   }
 
   async save(mods: readonly BrowserMod[]): Promise<void> {
-    await this.transact('readwrite', selection(mods));
+    const checked = selection(mods);
+    await this.transact('readwrite', (store) => store.put(checked, 'active'));
+  }
+
+  async discard(): Promise<void> {
+    await this.transact('readwrite', (store) => store.delete('active'));
   }
 }

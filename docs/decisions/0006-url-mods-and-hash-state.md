@@ -4,6 +4,7 @@ read_if:
   - you're asking why a demo, bench world or tutorial is a mod rather than a URL preset
   - you're asking why developer view state stays out of save identity
   - you distinguish bundled URL selectors from remote mod intake or tool handoff
+  - you connect a product entry pack to scenario-owned starts
 tags: [deadvox, adr, mods, url, debug, testing]
 ---
 
@@ -28,13 +29,13 @@ Everything that sets up a world or a player comes from mods, and the URL only na
 
 Every caller follows the same homes, the bench and the tutorial included, so no harness keeps a private URL format that a later change has to work around. A prepared game then has one way to start, whether it is a demo, a bench world or the tutorial.
 
-Which packs load and in what order is the pack layering's concern, not this decision's; see `packages/deadvox/docs/pack-split.md`, "Core is the default first pack, not a required one".
+The product entry pack declares its stack and selects its default scenario and start. Start rows belong to scenarios, which may offer several starts; see `docs/decisions/0009-content-defined-products.md`, "Starts and mixing". Pack dependency admission, not URL parsing, owns the composition rules.
 
 The design plan and its slices are in `packages/deadvox/docs/url-mods.md`.
 
 ## Reasons for the details
 
-- **The bundled-id selector names only bundled mods.** It selects reviewed content without remote fetching. Arbitrary sources go through mod intake, not that selector. The authoring tool's separate URL handoff and URL-folder direction must resolve remote-fetch, CORS and trust questions before implementation; see `docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow".
+- **The bundled-id selector names only bundled mods.** It selects reviewed content without remote fetching. Arbitrary sources go through mod intake, not that selector. HTTPS, CORS, source confirmation and own-origin file access follow `docs/decisions/0009-content-defined-products.md`, "Remote intake". The tool's hosted-workspace handoff still needs a transport under `docs/decisions/0008-mod-authoring-tool.md`, "Testing, sharing and start flow".
 - **The start state is content.** A new demo is then a content file, not code, and the kit follows the same validation and save identity as every other definition. Placement errors stop startup rather than dropping an item silently, because a demo that quietly starts without its kit tests the wrong thing.
 - **Hands are named by role, not side.** A kit then follows the player's handedness option, and a left-handed player never has to swap.
 - **The hash overrides the seed.** Exploring other worlds under the same demo stays a hash edit rather than a new mod.

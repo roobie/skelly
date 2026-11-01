@@ -8,7 +8,7 @@ local box(position, size) = { position: position, size: size };
 (import 'furniture-breach.libsonnet').breaking({
   blocks: [
     {
-      id: 'tree_trunk',
+      id: 'tree_trunk', material: 'timber',
       name: 'Tree trunk',
       color: '#62503b',
       solid: true,
@@ -18,7 +18,7 @@ local box(position, size) = { position: position, size: size };
       footsteps: wood,
     },
     {
-      id: 'tree_branch',
+      id: 'tree_branch', material: 'timber',
       name: 'Tree branch',
       color: '#705941',
       solid: true,
@@ -28,7 +28,7 @@ local box(position, size) = { position: position, size: size };
       footsteps: wood,
     },
     {
-      id: 'leaves',
+      id: 'leaves', material: 'textile',
       name: 'Leaves',
       color: '#526b3d',
       solid: false,
@@ -39,7 +39,7 @@ local box(position, size) = { position: position, size: size };
       footsteps: leaves,
     },
     {
-      id: 'leaf_litter',
+      id: 'leaf_litter', material: 'soil',
       name: 'Leaf litter',
       color: '#766047',
       solid: true,
@@ -49,7 +49,7 @@ local box(position, size) = { position: position, size: size };
       footsteps: leaves,
     },
     {
-      id: 'tall_grass',
+      id: 'tall_grass', material: 'textile',
       name: 'Tall grass',
       color: '#7b8444',
       solid: false,

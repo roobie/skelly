@@ -211,22 +211,22 @@ describe('handlingViewModel', () => {
       {
         kind: 'forceDoor',
         label: 'Fixture action',
-        elapsed: 3,
-        duration: 8,
+        elapsedSimSeconds: 3,
+        durationSimSeconds: 8,
         stopped: false,
       },
       {
         kind: 'reading',
         label: 'Fixture action',
-        elapsed: 2,
-        duration: 10,
+        elapsedGameSeconds: 2,
+        durationGameSeconds: 10,
         stopped: false,
       },
       {
         kind: 'treatment',
         label: 'Fixture action',
-        elapsed: 1,
-        duration: 5,
+        elapsedSimSeconds: 1,
+        durationSimSeconds: 5,
         stopped: false,
       },
     ];
@@ -234,7 +234,9 @@ describe('handlingViewModel', () => {
     for (const job of jobs) {
       const vm = handlingViewModel(timedActionHandlingPresentation(job, handlingText), handlingText);
       expect(vm.visible).toBe(true);
-      expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
+      const completed = 'elapsedGameSeconds' in job ? job.elapsedGameSeconds : job.elapsedSimSeconds;
+      const total = 'durationGameSeconds' in job ? job.durationGameSeconds : job.durationSimSeconds;
+      expect(vm.percent).toBe(Math.round((completed / total) * 100));
       const root = document.createElement('div');
       render(vm.cancelLabel, root);
       expect(root.querySelector('.keycap')?.textContent).toBe(labelForAction('handling.stop'));

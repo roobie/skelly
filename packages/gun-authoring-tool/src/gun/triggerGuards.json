@@ -1,12 +1,72 @@
 {
-  "ak": {
-    "clearanceU": 0.5,
-    "fingerY": [-4.5, -1.75],
-    "fingerZ": [-1, 1],
-    "frontCutDegrees": 45,
-    "frontCutU": 0.125,
-    "halfWidthU": 0.625,
-    "rearSlantDegrees": 4,
-    "wallU": 0.25
+  "blades": {
+    "pump": {
+      "halfWidthU": 0.25,
+      "segments": [
+        [[0.5, -0.375], [1, -0.375], [1.25, 0], [0.75, 0]],
+        [[0.5, -0.75], [0.875, -0.75], [1, -0.375], [0.5, -0.375]],
+        [[0.875, -1.25], [1.125, -1.25], [0.875, -0.75], [0.5, -0.75]]
+      ]
+    }
+  },
+  "closed": {
+    "pump": {
+      "clearanceU": 0.75,
+      "frontRampDegrees": 48,
+      "halfWidthU": 0.625,
+      "rearWallU": 0.75,
+      "wallU": 0.25
+    }
+  },
+  "guards": {
+    "ak": {
+      "clearanceU": 0.5,
+      "fingerY": [-4.5, -1.75],
+      "fingerZ": [-1, 1],
+      "frontCutDegrees": 45,
+      "frontCutU": 0.125,
+      "halfWidthU": 0.625,
+      "rear": "open",
+      "rearSlantDegrees": 4,
+      "wallU": 0.25
+    },
+    "ar-large": {
+      "clearanceU": 0.5,
+      "fingerZ": [-1, 1],
+      "frontCutDegrees": 20,
+      "frontCutU": 0.375,
+      "frontWallU": 0.25,
+      "halfWidthU": 0.625,
+      "rear": "lower",
+      "rearSlantDegrees": 35,
+      "wallU": 0.5
+    },
+    "ar-small": {
+      "clearanceU": 0.75,
+      "fingerY": [-4.5, -1.75],
+      "fingerZ": [-1, 1],
+      "frontCutDegrees": 45,
+      "frontCutU": 0.125,
+      "halfWidthU": 0.625,
+      "rear": "open",
+      "rearSlantDegrees": 4,
+      "wallU": 0.25
+    },
+    "conventional": {
+      "clearanceU": 0.75,
+      "fingerY": [-4.5, -1.75],
+      "fingerZ": [-1, 1],
+      "frontCutDegrees": 45,
+      "frontCutU": 0.125,
+      "halfWidthU": 0.625,
+      "rear": "open",
+      "rearSlantDegrees": 4,
+      "wallU": 0.25
+    }
+  },
+  "trigger": {
+    "halfWidthU": 0.25,
+    "lower": [[0.5, 0.25], [1.25, 0.75]],
+    "topX": [1.25, 1]
   }
 }

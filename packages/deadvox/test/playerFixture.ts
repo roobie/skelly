@@ -21,6 +21,7 @@ export const PLAYER: PlayerDef = {
   jump: simRate(playerContent.player[0]!.jump),
   gravityMetresPerSimSecondSquared: playerContent.player[0]!.gravityMetresPerSimSecondSquared,
   reach: 4,
+  debugBlockTool: playerContent.player[0]!.debugBlockTool,
   stepHeight: 0.5,
   movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
   lean: {

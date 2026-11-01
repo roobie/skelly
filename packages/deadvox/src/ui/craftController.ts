@@ -1,5 +1,6 @@
 // UI preferences/control adapter; completed readouts and Lit views live on the F7 side.
 
+import type { BlockEntity } from '../core/blockEntities.ts';
 import type { AlternativeRef, CraftPreference, CraftSources } from '../core/crafting.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import type { Session } from '../game/session.ts';
@@ -16,6 +17,7 @@ export const mountCraftPanel = (
 ) => {
   const preferences: Record<string, CraftPreference> = {};
   const sources: Record<string, CraftSources> = {};
+  let repairTarget: BlockEntity | undefined;
   const dispatch = (payload: ReplayActionPayload): void => {
     const reason = controls.dispatch(payload);
     if (reason) {
@@ -25,12 +27,22 @@ export const mountCraftPanel = (
   const actions = {
     start: (id: string) => {
       const preference = preferences[id];
-      dispatch({
-        kind: 'craft.start',
-        recipeId: id,
-        ...(preference ? { preference } : {}),
-        ...(sources[id] ? { sources: sources[id] } : {}),
-      });
+      dispatch(
+        repairTarget
+          ? {
+              kind: 'craft.repair-entity',
+              recipeId: id,
+              entityUid: repairTarget.uid,
+              preference: preference ?? {},
+              ...(sources[id] ? { sources: sources[id] } : {}),
+            }
+          : {
+              kind: 'craft.start',
+              recipeId: id,
+              ...(preference ? { preference } : {}),
+              ...(sources[id] ? { sources: sources[id] } : {}),
+            },
+      );
     },
     prefer: (id: string, group: number, item: string) => {
       const next = { ...preferences[id] };
@@ -57,9 +69,17 @@ export const mountCraftPanel = (
     },
   };
   return {
-    update: (open: boolean) => {
+    update: (open: boolean, target?: BlockEntity) => {
+      repairTarget = open ? target : undefined;
       panel.hidden = !open;
+      if (target && open) {
+        panel.dataset.repairTarget = String(target.uid);
+      } else {
+        Reflect.deleteProperty(panel.dataset, 'repairTarget');
+      }
       if (open) {
+        const text = craftingText(session.inventory.registry);
+        panel.setAttribute('aria-label', target ? session.inventory.entities.defOf(target).name : text.heading);
         renderCrafting(
           panel,
           craftRows({
@@ -69,9 +89,10 @@ export const mountCraftPanel = (
             preferences,
             sources,
             startReason: session.crafting.startReason(),
+            ...(target ? { entityRepair: { target, crafting: session.crafting } } : {}),
           }),
           actions,
-          craftingText(session.inventory.registry),
+          { text, ...(target ? { targetName: session.inventory.entities.defOf(target).name } : {}) },
         );
       }
     },

@@ -5,9 +5,14 @@ import type { Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import { describe, expect, it } from 'vitest';
 import { gunDomain } from '../src/gun/domain.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
-import { OPEN_TRIGGER_GUARD, openTriggerGuard } from '../src/gun/roundedTriggerGuard.ts';
+import {
+  openTriggerGuard,
+  rampedTriggerGuardSolids,
+  TRIGGER_GUARD_REAR_TAGS,
+  triggerBlade,
+} from '../src/gun/roundedTriggerGuard.ts';
 import { triggerGuard } from '../src/gun/rules.ts';
-import type { TriggerGuardDimensions } from '../src/gun/triggerGuards.ts';
+import { TRIGGER_BLADE, type TriggerGuardDimensions } from '../src/gun/triggerGuards.ts';
 import { loadFixture } from './helpers.ts';
 
 const dimensions: TriggerGuardDimensions = {
@@ -17,6 +22,7 @@ const dimensions: TriggerGuardDimensions = {
   frontCutU: 0.2,
   frontCutDegrees: 40,
   rearSlantDegrees: 10,
+  rear: 'open',
   fingerY: [0, 3],
   fingerZ: [-1, 1],
 };
@@ -34,8 +40,8 @@ const polygon = (id: string, profile: readonly Vec2[]): Solid => ({
   z: [-0.5, 0.5],
 });
 const cornerId = 'trigger-guard-corner';
-const fixture = () => {
-  const built = openTriggerGuard(finger, dimensions, 4, face);
+const fixture = (rear: TriggerGuardDimensions['rear'] = 'open') => {
+  const built = openTriggerGuard(finger, { ...dimensions, rear }, 4, face);
   const lower: PartDef = {
     family: 'lower',
     tags: built.tags,
@@ -99,8 +105,11 @@ const changeCorner = (lower: PartDef, edit: (profile: Vec2[]) => void): PartDef 
     return { ...solid, profile };
   }),
 });
-const issuesWith = (edit: (lower: PartDef, grip: PartDef) => PartDef) => {
-  const { lower, grip, resolved } = fixture();
+const issuesWith = (
+  edit: (lower: PartDef, grip: PartDef) => PartDef,
+  rear: TriggerGuardDimensions['rear'] = 'open',
+) => {
+  const { lower, grip, resolved } = fixture(rear);
   return triggerGuard.check({
     ...resolved,
     defs: new Map([
@@ -113,7 +122,7 @@ const issuesWith = (edit: (lower: PartDef, grip: PartDef) => PartDef) => {
 describe('open trigger guard builder', () => {
   it.each([8, 12])('builds valid pieces on the straight grip face with rear angle %s', (rearSlantDegrees) => {
     const built = openTriggerGuard(finger, { ...dimensions, rearSlantDegrees }, 4, face);
-    expect(built.tags).toContain(OPEN_TRIGGER_GUARD);
+    expect(built.tags).toEqual([TRIGGER_GUARD_REAR_TAGS[dimensions.rear]]);
     expect(built.solids.map(({ id }) => id).sort()).toEqual(
       ['trigger-guard-bottom', cornerId, 'trigger-guard-front'].sort(),
     );
@@ -162,12 +171,58 @@ describe('open trigger guard builder', () => {
   it('rejects a corner outside the straight face domain', () => {
     expect(() => openTriggerGuard(finger, dimensions, 4, { ...face, straightTopY: -0.1 })).toThrow('straight');
   });
-  it('rejects a finger reaching the ceiling', () => {
-    expect(() => openTriggerGuard(finger, dimensions, 3, face)).toThrow('ceiling');
+  it('rejects a finger reaching above the ceiling', () => {
+    expect(() => openTriggerGuard(finger, dimensions, 2.9, face)).toThrow('ceiling');
+  });
+  it('hangs a valid blade inside the finger space from the given top', () => {
+    const blade = triggerBlade(finger, TRIGGER_BLADE, 4);
+    if (blade.kind !== 'extruded-polygon') {
+      throw new Error('Expected polygon');
+    }
+    expect(validateExtrudedPolygon(blade.profile, blade.z)).toBeUndefined();
+    const [min, max] = localSolidBounds(blade);
+    expect(max[1]).toBe(4);
+    expect(min[0]).toBeGreaterThan(0);
+    expect(max[0]).toBeLessThan(2);
+    expect(min[1]).toBeGreaterThan(0);
   });
   it('rejects a front cut larger than the bar', () => {
     expect(() => openTriggerGuard(finger, { ...dimensions, frontCutU: dimensions.wallU * 2 }, 4, face)).toThrow('cut');
     expect(() => openTriggerGuard(finger, { ...dimensions, frontCutDegrees: 1 }, 4, face)).toThrow('cut');
+  });
+});
+
+describe('ramped closed trigger guard builder', () => {
+  const closed = { wallU: 0.3, rearWallU: 0.6, clearanceU: 0.4, frontRampDegrees: 55, halfWidthU: 0.5 };
+  it('builds a closed loop the guard rule accepts, its front ramp leaning forward from a clear foot', () => {
+    const guards = rampedTriggerGuardSolids(finger, closed);
+    for (const guard of guards) {
+      if (guard.kind !== 'extruded-polygon') {
+        throw new Error(`${guard.id} is not a profile`);
+      }
+      expect(validateExtrudedPolygon(guard.profile, guard.z), guard.id).toBeUndefined();
+    }
+    const lower: PartDef = {
+      family: 'lower',
+      solids: [box('plate', [-3, 3 + closed.wallU, -1], [6, 4, 1]), ...guards],
+      keepOuts: [{ id: 'trigger-finger', kind: 'clearance', box: finger }],
+      ports: [],
+      axes: [],
+    };
+    const { resolved } = fixture();
+    expect(triggerGuard.check({ ...resolved, defs: new Map([['lower', lower]]), connections: [] })).toEqual([]);
+    const front = guards.find(({ id }) => id === 'trigger-guard-front')!;
+    if (front.kind !== 'extruded-polygon') {
+      throw new Error('Expected a profile');
+    }
+    const foot = Math.min(...front.profile.map(([x]) => x));
+    const rear = localSolidBounds(guards.find(({ id }) => id === 'trigger-guard-rear')!);
+    const [fingerMin, fingerMax] = localSolidBounds({ id: 'finger', kind: 'box', box: finger });
+    expect(foot - fingerMax[0]).toBeCloseTo(fingerMin[0] - rear[1][0]);
+    const topX = Math.max(
+      ...front.profile.filter(([, y]) => y === Math.max(...front.profile.map(([, py]) => py))).map(([x]) => x),
+    );
+    expect(topX).toBeGreaterThan(foot);
   });
 });
 
@@ -190,6 +245,11 @@ describe('open trigger guard rule', () => {
   });
   it('accepts a receiver-closed open fixture with content-owned thickness', () => {
     expect(issuesWith((lower) => lower)).toEqual([]);
+  });
+  it('accepts a trigger blade hanging from the receiver into the finger space', () => {
+    expect(
+      issuesWith((lower) => ({ ...lower, solids: [...lower.solids, triggerBlade(finger, TRIGGER_BLADE, 4)] })),
+    ).toEqual([]);
   });
   const rows: [string, (lower: PartDef) => PartDef][] = [
     ['tag without corner', (lower) => ({ ...lower, solids: lower.solids.filter(({ id }) => id !== cornerId) })],
@@ -292,6 +352,13 @@ describe('open trigger guard rule', () => {
       }),
     ],
     [
+      'same-part obstruction in the finger space',
+      (lower) => ({
+        ...lower,
+        solids: [...lower.solids, box('receiver-obstruction', [0.2, 0.3, -0.8], [1.8, 2.7, 0.8])],
+      }),
+    ],
+    [
       'bottom disconnected from corner',
       (lower) => ({
         ...lower,
@@ -305,5 +372,38 @@ describe('open trigger guard rule', () => {
   ];
   it.each(rows)('rejects %s', (_name, edit) => {
     expect(issuesWith(edit).length).toBeGreaterThan(0);
+  });
+});
+
+describe('declared trigger guard rear', () => {
+  // The space behind the opening, from the grip face at the bar's top to the corner's front, up to the receiver.
+  const rearBox = (id: string, bottomY = 0, topY = 4, halfZ = 0.5) =>
+    box(id, [face.xAt(0), bottomY, -halfZ], [-dimensions.clearanceU, topY, halfZ]);
+  const adding =
+    (...solids: Solid[]) =>
+    (lower: PartDef): PartDef => ({ ...lower, solids: [...lower.solids, ...solids] });
+  it('rejects a body solid filling a rear declared open, whatever its name', () => {
+    expect(issuesWith(adding(rearBox('body-rear-closure'))).map(({ message }) => message)).toEqual([
+      "lower's trigger guard rear is declared open, but a solid of the part fills it.",
+    ]);
+    expect(issuesWith(adding(rearBox('trigger-guard-rear'))).length).toBeGreaterThan(0);
+  });
+  it.each([
+    ['one body box', [rearBox('body-rear-closure')]],
+    ['two stacked body boxes', [rearBox('lug', 0, 1.5), rearBox('boss', 1.5, 4)]],
+  ])('accepts a rear declared closed by the lower and filled by %s', (_name, solids) => {
+    expect(issuesWith(adding(...solids), 'lower')).toEqual([]);
+  });
+  it.each([
+    ['nothing', []],
+    ['a body box short of the receiver', [rearBox('body-rear-closure', 0, 3)]],
+    ['a body box narrower than the guard', [rearBox('body-rear-closure', 0, 4, 0.25)]],
+    ['a guard-named box', [rearBox('trigger-guard-rear')]],
+  ])('rejects a rear declared closed by the lower and filled by %s', (_name, solids) => {
+    expect(issuesWith(adding(...solids), 'lower').length).toBeGreaterThan(0);
+  });
+  it('rejects a part declaring both rears', () => {
+    const both = (lower: PartDef): PartDef => ({ ...lower, tags: Object.values(TRIGGER_GUARD_REAR_TAGS) });
+    expect(issuesWith(both).length).toBeGreaterThan(0);
   });
 });

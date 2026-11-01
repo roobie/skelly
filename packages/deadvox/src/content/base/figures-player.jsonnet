@@ -134,6 +134,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
           headRollDegrees: 45,
           neckLengthToleranceFraction: 0.05,
           stockShoulderOffset: [-0.06, 0.03, 0.01],
+          viewBlend: { easing: 'smoothstep', blendBackRealSeconds: 0.2 },
         },
       },
       lookDownLean: { startPitchDegrees: 60, torsoForwardDegrees: 15 },

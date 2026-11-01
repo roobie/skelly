@@ -8,6 +8,8 @@ export const playerAdsPose = (
   inventory: Inventory,
   aimingDownSights: boolean,
   aimFrame?: AimFrame,
+  /** How far the view has carried the aim from hip to sights; the descriptor is fully sighted without it. */
+  adsAim = 1,
 ): PlayerAdsPose | undefined => {
   if (!aimingDownSights) {
     return undefined;
@@ -21,6 +23,7 @@ export const playerAdsPose = (
         side,
         model,
         aimFrame,
+        aim: adsAim,
       };
     }
   }

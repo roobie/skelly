@@ -46,6 +46,7 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { solidBlocks } from '../vehicles/solid.ts';
 import { ActionTextSchema } from './actionText.ts';
 import { hasSegment } from './authoredTerrain.mjs';
+import { BLOCK_DAMAGE_KINDS } from './blockDamageKinds.ts';
 import {
   BODY_REGIONS,
   type BodyRegion,
@@ -174,8 +175,34 @@ export const BLOCK_PATTERNS = [
   'camo',
 ] as const;
 
+const BlockMaterialSchema = pipe(
+  strictObject({
+    id: Id,
+    minimumStrength: NonNegative,
+    durability: Positive,
+    resistance: strictObject(
+      Object.fromEntries(BLOCK_DAMAGE_KINDS.map((kind) => [kind, Fraction])) as Record<
+        (typeof BLOCK_DAMAGE_KINDS)[number],
+        typeof Fraction
+      >,
+    ),
+    massKg: Positive,
+    span: Count,
+    fallsTo: Id,
+    rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+    blowSound: Id,
+    broken: strictObject({ tint: Color, strength: Fraction }),
+    damaged: array(strictObject({ from: Fraction, tint: Color, strength: Fraction })),
+  }),
+  check(
+    ({ damaged }) => damaged.every((step, at) => at === 0 || step.from > damaged[at - 1]!.from),
+    'damage looks need strictly rising thresholds',
+  ),
+);
+
 const BlockSchema = strictObject({
   id: Id,
+  material: Id,
   name: Name,
   color: Color,
   /** Blocks movement independently of sight and render geometry. */
@@ -514,6 +541,11 @@ const UiScreenTextSchema = strictObject({
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
   prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  worldService: slottedTable({
+    push: [],
+    drag: [],
+    lift: [],
+  }),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -601,6 +633,7 @@ const UiScreenTextSchema = strictObject({
     barDoor: ['name'],
     liftBar: [],
     hold: ['key', 'action'],
+    actions: [],
     climb: ['name'],
     read: ['name'],
     rest: ['name'],
@@ -617,6 +650,9 @@ const UiScreenTextSchema = strictObject({
     jsonLabel: [],
     jsonFact: ['maxBytes'],
     storageFailed: [],
+    invalidSelection: [],
+    discard: [],
+    saveFailed: [],
     input: [],
     inputLabel: [],
     add: [],
@@ -783,6 +819,7 @@ const UiScreenTextSchema = strictObject({
     tabSkills: [],
     tabCrafting: [],
     tabActions: [],
+    tabRepair: [],
     find: [],
     findLabel: [],
     needsLabel: [],
@@ -805,6 +842,12 @@ const UiScreenTextSchema = strictObject({
     searching: [],
     searchIt: ['key'],
     noSelection: [],
+    recoveryAmount: ['liquid', 'volume'],
+    recoveryReceiver: ['liquid'],
+    recoveryNoMatches: [],
+    recoverySpillAll: [],
+    recoveryUnavailable: [],
+    recoveryAction: ['action', 'spill'],
     inspect: [],
     whereItCanGo: [],
     firearmSlots: [],
@@ -1408,11 +1451,8 @@ const ToolFractionBonus = pipe(
   minLength(1, 'needs a bonus for at least one tool level'),
   check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
 );
-const DisassemblyYieldSchema = strictObject({
-  ...ItemCountSchema.entries,
-  /** Multiplier by skill level: index 0 is skill 0; the last entry is this yield's top level. */
+const LiquidRecoverySchema = strictObject({
   fractions: SkillFractions,
-  /** Applied independently to this yield's scaled count. */
   rounding: YieldRounding,
   toolModifier: optional(
     strictObject({
@@ -1422,11 +1462,16 @@ const DisassemblyYieldSchema = strictObject({
     }),
   ),
 });
+const DisassemblyYieldSchema = strictObject({
+  ...ItemCountSchema.entries,
+  ...LiquidRecoverySchema.entries,
+});
 const DisassemblySchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
+  liquidRecovery: optional(LiquidRecoverySchema),
 });
 /** What one dose of a painkiller does to felt pain (`DESIGN.md`, "Pain"); it heals nothing. */
 const AnalgesicSchema = strictObject({
@@ -1468,12 +1513,15 @@ const TreatmentSchema = pipe(
 );
 
 const LiquidVolumeMicrolitres = pipe(number(), safeInteger(), minValue(0));
+const LiquidAmountSchema = strictObject({
+  liquid: Id,
+  volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+});
 const LiquidContentsSchema = union([
   strictObject({ kind: literal('empty') }),
   strictObject({
     kind: literal('filled'),
-    liquid: Id,
-    volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+    ...LiquidAmountSchema.entries,
   }),
 ]);
 const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMillilitre: pipe(Positive, finite()) });
@@ -1558,6 +1606,7 @@ const ItemSchema = strictObject({
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),
+  salvageLiquidRecovery: optional(strictObject({ skill: Id, ...LiquidRecoverySchema.entries })),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
@@ -2599,6 +2648,8 @@ const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
   /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
   charge: optional(Fraction),
+  craftedLiquids: optional(pipe(array(LiquidAmountSchema), nonEmpty())),
+  liquidContents: optional(LiquidContentsSchema),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -2969,20 +3020,22 @@ const LayoutRect = pipe(
 
 const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
-/** Where new features are shown: an authored row of slots and a derived catalogue of every furniture piece. */
+/** Where new features are shown: authored slots and a derived catalogue of every furniture piece. */
 const ShowroomSchema = strictObject({
-  /** The west end of the slot row's front line, feet on the deck; slots run east from here. */
+  /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
   row: HalfMetrePosition,
   /** Which way every slot's front faces; the row is seen from that side. */
   facing: picklist(['n', 's']),
   /** Gap between neighbouring slots. */
   spacing: PositiveHalfMetres,
-  /** How many slots the row holds; a new slot past it replaces the oldest. */
+  /** How many slots the display holds; a new slot past it replaces the oldest. */
   capacity: pipe(Count, minValue(1)),
   /** Oldest first; the default spawn faces the last. */
   slots: array(
     strictObject({
       furniture: Id,
+      /** An independently placed slot does not consume space in the packed row. */
+      placement: optional(strictObject({ position: HalfMetrePosition, facing: picklist(['n', 's']) })),
       fixed: optional(literal(true)),
       /** The slot's fixture stock. */
       items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
@@ -3800,6 +3853,13 @@ const HeldPosesSchema = strictObject({
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 
 /** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
+/** How the view animates between hip and sights across an aim's acquisition and release. */
+const AdsViewBlendSchema = strictObject({
+  easing: picklist(['linear', 'smoothstep']),
+  /** How long the view takes to settle back to the hip pose after the aim is released. */
+  blendBackRealSeconds: PositiveRealSeconds,
+});
+
 const FigureSchema = strictObject({
   id: Id,
   /** Where the hips stand above the ground; stances pivot about them. */
@@ -3861,6 +3921,7 @@ const FigureSchema = strictObject({
         check((value) => value < 1, 'neck length must remain positive'),
       ),
       stockShoulderOffset: Point,
+      viewBlend: AdsViewBlendSchema,
     }),
   }),
   lookDownLean: strictObject({
@@ -3954,6 +4015,8 @@ const SkillSchema = pipe(
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
+            /** The ADS-only speed floor, as a maximum aim-down-sights acquisition duration. */
+            adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
             readyMovementMinimum: Fraction,
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
@@ -4191,6 +4254,10 @@ const PlayerSchema = strictObject({
   /** Downward acceleration shared by every falling body and effect. */
   gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
+  debugBlockTool: strictObject({
+    reachMetres: Positive,
+    stepDurabilityFraction: pipe(Positive, ltValue(1)),
+  }),
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
   lean: strictObject({
@@ -4285,10 +4352,7 @@ const SenseSchema = strictObject({
     illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
-const RecipeInputSchema = union([
-  ItemCountSchema,
-  strictObject({ liquid: Id, volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)) }),
-]);
+const RecipeInputSchema = union([ItemCountSchema, LiquidAmountSchema]);
 
 const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
   const { min, max } = WEATHERING_RANGES[field];
@@ -4761,6 +4825,7 @@ const LookDefaultsSchema = strictObject({
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
+  blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
@@ -4851,6 +4916,7 @@ const sectionSchemas = Object.fromEntries(
 export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
+export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 type LootTable = InferOutput<typeof LootTableSchema>;

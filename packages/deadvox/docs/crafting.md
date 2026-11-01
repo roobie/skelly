@@ -2,6 +2,9 @@
 read_if:
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
+  - you change the repair progress arc or presentation between compressed scheduler ticks
+  - you change furniture repair start, hand admission or completion refusal
+  - you change Crafting or pinned Repair row naming, admission or refusal accessibility
   - you change reachability validation or the repair-corner scenario and its authored stock destinations
 ---
 
@@ -32,9 +35,13 @@ and tags, because navigation must not disclose knowledge the character lacks. Se
 clears rather than silently choosing another recipe when a query hides it. See
 `src/ui/recipeBrowser.ts`, `recipeBrowser`.
 
+A furniture repair preserves an existing world identity, so it names the piece rather than the recipe's item result. It belongs only in the target-pinned Repair vertical, not in ordinary Crafting: a recipe list cannot choose a world identity for the player. Both admission preview and Start must receive that same pinned UID; a generic item plan cannot establish whether a world piece is repairable. See `src/ui/craftReadout.ts`, `craftRows`; `src/ui/craftController.ts`, `mountCraftPanel`; and `DESIGN.md`, "World repair selection".
+
 ## Work and progression
 
-A craft requires both hands free; stowing is the player's decision. The work item escrows inputs so nothing else can consume them mid-craft. Losing a tool or station stops work without losing progress; the same work can resume when requirements return. Finishing consumes escrow once and creates the result. Cancellation returns exact input identities.
+A craft, including furniture repair, refuses when either hand is occupied and never moves a held item out of the way. Stowing must be the player's active choice rather than an automatic side effect of starting work. See `src/core/craftCommands.ts`, `CraftCommands.startReason`.
+
+Escrow prevents other actions consuming inputs mid-craft. Lost tools or stations must not erase the player's investment, and cancellation owes the exact inputs rather than equivalent replacements. A refused repair completion must return its reason as well as its inputs, because silently losing the work would hide why the piece was not repaired. See `src/core/craftWork.ts`, `craftActionHooks`, and `src/core/longAction.ts`, `LongActions.finishJob`.
 
 Disassembly promises its yield when work starts, so stopping, skill changes or tool changes must not alter it. Repair improves an existing target rather than supplying disassembly results. Craft completion earns practice; take-apart does not. Books and skill levels teach recipes independently, so a book can shortcut the skill grind without changing item ownership. Practice may come from any activity. See `src/core/disassembly.ts`, `planDisassembly`, and `src/core/character.ts`, `Character.awardPractice` and `Character.learnSkillRecipes`.
 
@@ -45,6 +52,8 @@ Reading a recipe book progresses only while its page is open. Closing the page p
 ## Long actions
 
 Long actions are saved data, not closures. Each retains its own stop/cancel/wake behavior. An emitted interruption drops compression; proximity alone does not refuse or interrupt work, leaving the player to judge safety. Rest/sleep and crafting share the core action owner, but their progress belongs to their respective saved state.
+
+Scheduler batching must not make ongoing repair appear stuck. The arc may account for simulation time accrued since the owner's last tick, but must not advance, spend or complete work or use an independent animation timer. See `src/ui/craftReadout.ts`, `runningCraftPresentation`; `src/ui/hud.ts`, `handlingViewModel`; and `src/core/longAction.ts`, `LongActions.advance`.
 
 ## Appliances and stations
 

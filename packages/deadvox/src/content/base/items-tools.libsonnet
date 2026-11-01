@@ -343,6 +343,9 @@ local items = [
     size: [2, 3],
     description: 'A table lamp that burns lamp oil. It keeps burning where it is set down.',
     model: 'oil_lamp',
+    disassembly: disassembly(5, [yield('scrap_metal', 2)]) + {
+      liquidRecovery: { fractions: salvage, rounding: 'floor' },
+    },
     vessel: {
       capacityMicrolitres: 400000,
       pour: { incrementMicrolitres: 10000, microlitresPerSimSecond: 50000 },

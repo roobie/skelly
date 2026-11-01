@@ -11,6 +11,7 @@ import { createWorldSetup, type WorldSetup } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { startupContent } from './baseRegistry.ts';
+import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -28,7 +29,14 @@ registry.furniture.set(crate.type, {
   material: FIXTURE_MATERIAL,
 });
 const floor = registry.blocks.length;
-registry.blocks.push({ id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' });
+registry.blocks.push({
+  id: 'fixture_floor',
+  material: FIXTURE_MATERIAL,
+  name: 'Fixture floor',
+  solid: true,
+  color: '#808080',
+});
+registry.blockMaterials.set(FIXTURE_MATERIAL, fixtureBlockMaterial('fixture_floor'));
 registry.blockIds.set('fixture_floor', floor);
 const cx = toChunk(crate.pos[0]);
 const cz = toChunk(crate.pos[2]);

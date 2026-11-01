@@ -374,7 +374,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
             (row) => row.id === RECIPE,
           ),
           { start: () => undefined, prefer: () => undefined, source: () => undefined },
-          craftingText(registry),
+          { text: craftingText(registry) },
         );
         const draw = root.querySelector('.craft-liquid-draw');
         const [[input]] = registry.recipes.get(RECIPE).components;
@@ -1050,6 +1050,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    // Long-gun ADS arrives through its Combat-owned acquisition, so the pose checks wait for it.
+    await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isAdsAcquired(uid), firearm.uid);
     await page.waitForFunction(() =>
       globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('held-item-left'),
     );

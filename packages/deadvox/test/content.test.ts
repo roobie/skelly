@@ -1706,7 +1706,7 @@ describe('content', () => {
   });
 
   it('reports a duplicate id within a file', () => {
-    const block = { id: 'ok', name: 'Fine', color: '#ffffff', solid: true };
+    const block = { id: 'ok', material: FIXTURE_MATERIAL, name: 'Fine', color: '#ffffff', solid: true };
     const issues = validateContent({ source: 'dup.json', data: { blocks: [block, block] } });
     expect(issues).toEqual([{ source: 'dup.json', path: 'blocks[1].id', message: 'duplicate id "ok" in this file' }]);
   });
@@ -3309,7 +3309,9 @@ describe('content', () => {
   it('reports an unknown block pattern like any other content error', () => {
     const issues = validateContent({
       source: 'a.json',
-      data: { blocks: [{ id: 'x', name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }] },
+      data: {
+        blocks: [{ id: 'x', material: FIXTURE_MATERIAL, name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }],
+      },
     });
     expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
   });
@@ -3321,6 +3323,7 @@ describe('content', () => {
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
       baseBlocks,
+      base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {
         source: 'mod-camo.json',
@@ -3355,6 +3358,7 @@ describe('content', () => {
     const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
       baseBlocks,
+      base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {
         source: 'camo-contract.json',
@@ -3571,12 +3575,13 @@ describe('content', () => {
   });
 
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
-    const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
+    const plain = baseRegistry.blocks.find(({ pattern, solid }) => solid && pattern === undefined)!;
     const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;
     // Camo also needs shader settings, which the camo tests above cover.
     const authored = BLOCK_PATTERNS.filter((pattern) => pattern !== 'camo');
     const { registry, issues } = buildRegistry([
       base.find(({ source }) => source === 'blocks.json')!,
+      base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {
         source: 'pattern-fixture.json',

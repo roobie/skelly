@@ -133,7 +133,10 @@ const layoutValidationBase = [
       // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
       blocks: (base.find(({ source }) => source === 'blocks.json')!.data as { blocks: { id: string }[] }).blocks
         .filter(({ id }) => layout.tracks.some(({ surface }) => surface === id))
-        .map(({ footsteps: _, ...block }: { id: string; footsteps?: unknown }) => block),
+        .map(
+          ({ footsteps: _, material: _material, ...block }: { id: string; footsteps?: unknown; material?: unknown }) =>
+            block,
+        ),
       layouts: baseLayoutIds.map(validationLayout),
     },
   },

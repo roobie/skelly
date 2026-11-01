@@ -105,7 +105,7 @@ export interface Registry extends RegistryMaps {
   contentOrigins: Map<string, { source: string; path: string }>;
 }
 
-const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
+const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -422,6 +422,35 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
   }
   if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
     report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
+  }
+  checkLiquidRecovery(item, registry, qualities, report);
+};
+
+const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
+  const { disassembly } = item;
+  const liquidRecipeResult = [...registry.recipes.values()].some(
+    (recipe) =>
+      recipe.result.item === item.id && recipe.components.some((group) => group.some((row) => 'liquid' in row)),
+  );
+  for (const [path, capability, recovery] of [
+    ['.disassembly.liquidRecovery', disassembly, disassembly?.liquidRecovery],
+    ['.salvageLiquidRecovery', item.salvage, item.salvageLiquidRecovery],
+  ] as const) {
+    if (liquidRecipeResult && capability && !recovery) {
+      report('items', item.id, path, 'a liquid recipe result needs authored liquid recovery');
+    }
+    const quality = recovery?.toolModifier?.quality;
+    if (quality !== undefined && !qualities.has(quality)) {
+      report('items', item.id, `${path}.toolModifier.quality`, `no tool quality "${quality}"`);
+    }
+  }
+  if (item.salvageLiquidRecovery) {
+    if (!item.salvage) {
+      report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
+    }
+    if (!registry.skills.has(item.salvageLiquidRecovery.skill)) {
+      report('items', item.id, '.salvageLiquidRecovery.skill', `no skill "${item.salvageLiquidRecovery.skill}"`);
+    }
   }
 };
 
@@ -2116,6 +2145,28 @@ const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void
   }
 };
 
+const checkBlockMaterials = (registry: Registry, report: Report): void => {
+  for (const block of registry.blocks.slice(1)) {
+    if (!registry.blockMaterials.has(block.material)) {
+      report('blocks', block.id, '.material', `no block material "${block.material}"`);
+    }
+  }
+  for (const material of registry.blockMaterials.values()) {
+    const rubble = registry.blockIds.get(material.fallsTo);
+    if (rubble === undefined || !registry.blocks[rubble]?.solid) {
+      report('blockMaterials', material.id, '.fallsTo', `no solid rubble block "${material.fallsTo}"`);
+    }
+    if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
+      report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
+    }
+    material.rubble.forEach(({ item }, i) => {
+      if (!registry.items.has(item)) {
+        report('blockMaterials', material.id, `.rubble[${i}].item`, `no item "${item}"`);
+      }
+    });
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -2127,6 +2178,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
+  checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

@@ -1221,6 +1221,7 @@
         "section": "ar"
       },
       "params": {
+        "actionFrame": "small",
         "length": "M",
         "section": "ar",
         "well": "none"
@@ -1236,10 +1237,12 @@
       "id": "grip_ar_long",
       "massKg": 0.12,
       "match": {
+        "actionFrame": "large",
         "length": "L",
         "section": "ar"
       },
       "params": {
+        "actionFrame": "large",
         "length": "L",
         "section": "ar",
         "well": "none"
@@ -1267,6 +1270,7 @@
         "section": "ak"
       },
       "params": {
+        "actionFrame": "small",
         "length": "M",
         "section": "ak",
         "well": "none"

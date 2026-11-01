@@ -97,7 +97,7 @@
       },
       "player": {
         "bearing": 90,
-        "position": [-6.25, 21.5, -0.5]
+        "position": [-7.5, 21.5, -0.5]
       },
       "repairStock": "test_house_garage",
       "shamblers": [],
@@ -114,13 +114,6 @@
         "focusDistance": 1,
         "row": [-12, 21.5, -1],
         "slots": [
-          {
-            "furniture": "bedroll"
-          },
-          {
-            "fixed": true,
-            "furniture": "grinding_wheel"
-          },
           {
             "furniture": "crate",
             "items": [
@@ -286,6 +279,57 @@
               {
                 "count": 2,
                 "item": "duct_tape"
+              }
+            ]
+          },
+          {
+            "furniture": "shelf",
+            "items": [
+              {
+                "count": 1,
+                "item": "sledgehammer"
+              },
+              {
+                "count": 1,
+                "item": "paperback"
+              }
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [-6.5, 21.5, 0.5]
+            }
+          },
+          {
+            "furniture": "workbench",
+            "items": [
+              {
+                "craftedLiquids": [
+                  {
+                    "liquid": "lamp_fuel",
+                    "volumeMicrolitres": 400000
+                  }
+                ],
+                "item": "oil_lamp",
+                "liquidContents": {
+                  "kind": "empty"
+                },
+                "placement": "surface"
+              },
+              {
+                "item": "lamp_oil",
+                "liquidContents": {
+                  "kind": "filled",
+                  "liquid": "lamp_fuel",
+                  "volumeMicrolitres": 500000
+                },
+                "placement": "surface"
+              },
+              {
+                "item": "lamp_oil",
+                "liquidContents": {
+                  "kind": "empty"
+                },
+                "placement": "surface"
               }
             ]
           }

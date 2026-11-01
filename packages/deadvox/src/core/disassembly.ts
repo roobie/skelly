@@ -1,9 +1,11 @@
 // Content-owned yields for taking apart a finished item; work progress stays with Inventory.
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
-import type { ItemDef } from './content.ts';
+import type { ItemDef, Registry } from './content.ts';
 import { gatherGameSeconds, indexCraftReach } from './crafting.ts';
 import type { Item } from './items.ts';
 import { isEmpty } from './items.ts';
+import { supplyShare } from './lights.ts';
+import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 
 export type RecoveryOperation = 'salvage' | 'disassembly';
@@ -83,8 +85,10 @@ export interface DisassemblyOutput {
   item: string;
   count: number;
 }
-export interface DisassemblyPlan {
+export interface DisassemblyPlan extends LiquidRecoveryChoices {
   kind: 'disassembly';
+  operation: RecoveryOperation;
+  liquids: LiquidAmount[];
   source: Item;
   outputs: DisassemblyOutput[];
   skillLevel: number;
@@ -93,9 +97,12 @@ export interface DisassemblyPlan {
   duration: number;
 }
 
-/** Authored work time in game seconds; content validation guarantees one for any disassemblable item. */
-export const disassemblyWorkTime = (definition: ItemDef): number => {
-  const time = definition.disassembly?.timeGameMinutes ?? definition.salvageTimeGameMinutes;
+const defaultOperation = (definition: ItemDef): RecoveryOperation =>
+  definition.disassembly ? 'disassembly' : 'salvage';
+
+export const disassemblyWorkTime = (definition: ItemDef, operation = defaultOperation(definition)): number => {
+  const time =
+    operation === 'disassembly' ? definition.disassembly?.timeGameMinutes : definition.salvageTimeGameMinutes;
   if (time === undefined) {
     throw new Error(`Item "${definition.id}" has no disassembly work time`);
   }
@@ -122,10 +129,23 @@ export const sameDisassemblyOutputs = (
   left.length === right.length &&
   left.every((output, index) => output.item === right[index]!.item && output.count === right[index]!.count);
 
-export const validDisassemblyToolLevels = (definition: ItemDef, levels: Record<string, number>): boolean => {
-  const qualities = new Set(
-    definition.disassembly?.yields.flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])) ?? [],
+const recoveryFraction = (definition: ItemDef, operation: RecoveryOperation) =>
+  operation === 'disassembly' ? definition.disassembly?.liquidRecovery : definition.salvageLiquidRecovery;
+
+const recoveryQualities = (definition: ItemDef, operation: RecoveryOperation): Set<string> => {
+  const rows = operation === 'disassembly' ? [...(definition.disassembly?.yields ?? [])] : [];
+  const liquid = recoveryFraction(definition, operation);
+  return new Set(
+    [...rows, ...(liquid ? [liquid] : [])].flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])),
   );
+};
+
+export const validDisassemblyToolLevels = (
+  definition: ItemDef,
+  levels: Record<string, number>,
+  operation = defaultOperation(definition),
+): boolean => {
+  const qualities = recoveryQualities(definition, operation);
   return (
     Object.keys(levels).length === qualities.size &&
     [...qualities].every(
@@ -134,25 +154,65 @@ export const validDisassemblyToolLevels = (definition: ItemDef, levels: Record<s
   );
 };
 
+const recoveryMultiplier = (
+  row: NonNullable<NonNullable<ItemDef['disassembly']>['liquidRecovery']>,
+  skillLevel: number,
+  toolLevel: (quality: string) => number,
+): number => {
+  const effectLevel = skillEffectLevel(skillLevel);
+  const fraction = row.fractions[Math.min(effectLevel, row.fractions.length - 1)]!;
+  const level = row.toolModifier ? toolLevel(row.toolModifier.quality) : 0;
+  const bonus =
+    level > 0 && row.toolModifier
+      ? row.toolModifier.bonusByLevel[Math.min(level - 1, row.toolModifier.bonusByLevel.length - 1)]!
+      : 0;
+  return Math.min(1, fraction + bonus);
+};
+
+export const disassemblyLiquidOutputs = (
+  registry: Registry,
+  source: Item,
+  skillLevel: number,
+  {
+    toolLevel = () => 0,
+    operation = defaultOperation(registry.items.get(source.type)!),
+  }: {
+    toolLevel?: (quality: string) => number;
+    operation?: RecoveryOperation;
+  } = {},
+): LiquidAmount[] => {
+  const definition = registry.items.get(source.type)!;
+  const row = recoveryFraction(definition, operation);
+  if (!source.craftedLiquids) {
+    return [];
+  }
+  if (!row) {
+    throw new Error(`Item "${source.type}" has recorded liquid but no ${operation} liquid recovery`);
+  }
+  const supply = definition.light?.burnTimeGameHours === undefined ? undefined : supplyShare(registry, source);
+  const burnShare = supply?.kind === 'share' ? supply.share : 1;
+  const multiplier = recoveryMultiplier(row, skillLevel, toolLevel);
+  return source.craftedLiquids.flatMap(({ liquid, volumeMicrolitres }) => {
+    const volume = rounded(volumeMicrolitres * burnShare * multiplier, row.rounding);
+    return volume > 0 ? [{ liquid, volumeMicrolitres: volume }] : [];
+  });
+};
+
 export const disassemblyOutputs = (
   definition: ItemDef,
   skillLevel: number,
   toolLevel: (quality: string) => number = () => 0,
+  operation = defaultOperation(definition),
 ): DisassemblyOutput[] => {
   const { disassembly } = definition;
-  if (!disassembly) {
+  if (operation === 'salvage') {
     return (definition.salvage ?? []).map(({ item, count }) => ({ item, count }));
   }
-  const effectLevel = skillEffectLevel(skillLevel);
+  if (!disassembly) {
+    return [];
+  }
   return disassembly.yields.flatMap((yieldItem) => {
-    const skillFraction = yieldItem.fractions[Math.min(effectLevel, yieldItem.fractions.length - 1)]!;
-    const level = yieldItem.toolModifier ? toolLevel(yieldItem.toolModifier.quality) : 0;
-    const toolBonus =
-      level > 0 && yieldItem.toolModifier
-        ? (yieldItem.toolModifier.bonusByLevel[Math.min(level - 1, yieldItem.toolModifier.bonusByLevel.length - 1)] ??
-          0)
-        : 0;
-    const count = rounded(yieldItem.count * Math.min(1, skillFraction + toolBonus), yieldItem.rounding);
+    const count = rounded(yieldItem.count * recoveryMultiplier(yieldItem, skillLevel, toolLevel), yieldItem.rounding);
     return count > 0 ? [{ item: yieldItem.item, count }] : [];
   });
 };
@@ -161,6 +221,7 @@ export const planDisassembly = (
   source: Item,
   reach: ReachSnapshot,
   character: CraftCharacter,
+  choices: LiquidRecoveryChoices & { operation?: RecoveryOperation } = {},
 ): DisassemblyPlan | undefined => {
   if (source.work || !isEmpty(source)) {
     return undefined;
@@ -173,21 +234,30 @@ export const planDisassembly = (
   if (!(definition?.disassembly || definition?.salvage)) {
     return undefined;
   }
-  const skill = definition.disassembly?.skill;
+  const operation = choices.operation ?? defaultOperation(definition);
+  if (selectRecoveryOperation({ kind: 'item', source, reach }, operation).status !== 'ready') {
+    return undefined;
+  }
+  const skill = operation === 'disassembly' ? definition.disassembly?.skill : definition.salvageLiquidRecovery?.skill;
   const skillLevel = skill ? (character.skills[skill] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
   const reachIndex = indexCraftReach(reach);
   const qualityLevel = (quality: string) =>
     Math.max(0, ...(reachIndex.qualities.get(quality) ?? []).map(({ level }) => level));
-  const qualities = new Set(
-    definition.disassembly?.yields.flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])) ?? [],
-  );
+  const qualities = recoveryQualities(definition, operation);
   const toolLevels = Object.fromEntries([...qualities].map((quality) => [quality, qualityLevel(quality)]));
-  const work = disassemblyWorkTime(definition);
+  const work = disassemblyWorkTime(definition, operation);
   const gather = gatherGameSeconds(entry.handlingTime, reach.player.clock.ratio);
   return {
     kind: 'disassembly',
     source,
-    outputs: disassemblyOutputs(definition, skillLevel, (quality) => toolLevels[quality] ?? 0),
+    operation,
+    liquids: disassemblyLiquidOutputs(reach.player.inventory.registry, source, skillLevel, {
+      toolLevel: (quality) => toolLevels[quality] ?? 0,
+      operation,
+    }),
+    receivers: (choices.receivers ?? []).map((receiver) => ({ ...receiver })),
+    spillApproval: (choices.spillApproval ?? []).map((approval) => ({ ...approval })),
+    outputs: disassemblyOutputs(definition, skillLevel, (quality) => toolLevels[quality] ?? 0, operation),
     skillLevel,
     toolLevels,
     gather,

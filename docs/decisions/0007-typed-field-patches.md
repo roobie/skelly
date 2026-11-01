@@ -6,6 +6,7 @@ read_if:
   - you add a derived entry or a keyed list of identified elements
   - you write a mod that needs one value of a base or other mod's entry changed
   - you schedule field-patch implementation or the mod tool's editing prerequisites
+  - you integrate product and theme mods through declared overrides
 tags: [deadvox, adr, mods, content, schema, validation]
 ---
 
@@ -59,9 +60,10 @@ derived entry serves a per-place variant. Patching the base entry stays availabl
 that is meant to be shared by everything built on it. The cost is that a derived entry can
 change when an unrelated mod patches its base, so the origin trail must show every step.
 
-A derived entry extends only an entry of the same kind, in the same layer or a lower one, so a
-setting table may extend a core table and not the reverse (`packages/deadvox/docs/pack-split.md`,
-"Layers"). Dependencies keep pointing down only, and core still loads and checks alone. The
+A derived entry extends only an entry of the same kind, in the same layer or a lower one, so
+product distribution may derive from a shared definition, not the reverse
+(`packages/deadvox/docs/pack-split.md`, "Layers"). Shared topics must validate without their
+product or scenario consumers. The
 restriction is the cheapest to loosen later: loosening breaks nothing, while tightening after
 mods exist would break them. Sharing across kinds waits for a field-mapping rule that
 validation can explain.
@@ -113,16 +115,16 @@ can check before applying and explain afterwards.
 
 ## Implementation ownership
 
-Build the patch merge as a Deadvox engine feature, design-checked against this ADR and against
-the content in `packages/deadvox/src/core/content.ts` before implementation and scheduled ahead of
-other queued Deadvox work. It owns addressing, the refusal category, derive resolution and
-per-address origins. The mod authoring tool's editing slices wait for that feature to merge; its
-overview and read-only inspection can proceed. See `docs/decisions/0008-mod-authoring-tool.md`,
-"Build plan".
+The engine owns the patch merge: addressing, the refusal category, derive resolution and
+per-address origins. Design-check it against this ADR and `packages/deadvox/src/core/content.ts`
+before implementation. It retains priority over queued engine work within the PR gate in
+`docs/decisions/0009-content-defined-products.md`, "Refactor gate"; that priority does not permit
+opening a PR during the freeze. Tool editing waits for the merge, while read-only inspection
+can proceed through the shared API. See `docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
 
 The engine feature must deliver or explicitly depend on conflict enforcement and the
 pack-dependency admission of #637; see
-`packages/deadvox/docs/pack-split.md`, "Round split". Documented conflict rules are not
+`packages/deadvox/docs/pack-split.md`, "Refactor workstreams". Documented conflict rules are not
 loader enforcement: the design must verify those prerequisites so patch admission
 cannot silently accept an undeclared override. The separate literal set-target rule
 belongs to `docs/decisions/0004-content-language.md`, "Mod rules", and its runtime work
