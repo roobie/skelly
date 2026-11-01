@@ -861,6 +861,7 @@ export class KeyboardInput {
   command: (command: InputCommand) => void = () => undefined;
   cancelled: (preservePointer?: boolean, reason?: InputCancellationReason) => void = () => undefined;
   escape: () => void = () => undefined;
+  choiceStep: (direction: number) => boolean = () => false;
   capture: ((chord: Chord | string | undefined) => void) | undefined;
   /** What a mouse press lands on; a locked menu pointer replaces the canvas with the element under its cursor. */
   pointerTarget: (event: MouseEvent) => EventTarget | null = (event) => event.target;
@@ -1063,6 +1064,31 @@ export class KeyboardInput {
       });
     }
   }
+  private pressRefusal(event: KeyEvent): string | undefined {
+    if (this.blocked.has(event.code)) {
+      return 'blocked';
+    }
+    const browserModifier = REFUSED_MODIFIERS.some((modifier) => {
+      if (modifier === 'alt') {
+        const owned = [...this.active].some(
+          ([code, action]) => modifierCodes[code] === modifier && isHeld(this.registry.binding(action)!),
+        );
+        return event.altKey && modifierCodes[event.code] !== 'alt' && !owned;
+      }
+      return event[flags[modifier]];
+    });
+    return browserModifier ? 'browser-modifier' : undefined;
+  }
+  private stepChoice(event: KeyEvent, text: boolean): boolean {
+    const directions = new Map([
+      ['ArrowDown', 1],
+      ['ArrowRight', 1],
+      ['ArrowUp', -1],
+      ['ArrowLeft', -1],
+    ]);
+    const direction = directions.get(event.code);
+    return !text && direction !== undefined && this.choiceStep(direction);
+  }
   press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {
     this.sync();
     this.down.add(event.code);
@@ -1076,17 +1102,12 @@ export class KeyboardInput {
       this.escape();
       return false;
     }
-    const browserModifier = REFUSED_MODIFIERS.some((modifier) => {
-      if (modifier === 'alt') {
-        const owned = [...this.active].some(
-          ([code, action]) => modifierCodes[code] === modifier && isHeld(this.registry.binding(action)!),
-        );
-        return event.altKey && modifierCodes[event.code] !== 'alt' && !owned;
-      }
-      return event[flags[modifier]];
-    });
-    if (this.blocked.has(event.code) || browserModifier) {
-      return this.traceDown(event, false, this.blocked.has(event.code) ? 'blocked' : 'browser-modifier');
+    const refusal = this.pressRefusal(event);
+    if (refusal) {
+      return this.traceDown(event, false, refusal);
+    }
+    if (this.stepChoice(event, text)) {
+      return this.traceDown(event, true, 'choice-step');
     }
     const gate = this.held('debug.gate');
     const matches = this.registry.bindings.filter(

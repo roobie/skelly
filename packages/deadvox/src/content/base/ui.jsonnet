@@ -3,6 +3,12 @@
     id: 'core',
     spacing: 1,
     hudScale: 1,
+    furnitureRadial: {
+      radiusPixels: 110,
+      deadZonePixels: 18,
+      entryCap: 8,
+      labels: { lift: 'Lift', push: 'Push', drag: 'Drag', actions: 'Actions' },
+    },
     refusalSound: 'player_nope',
     audioVolumes: { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 },
     restLabels: { rest: 'Resting', sleep: 'Sleeping' },

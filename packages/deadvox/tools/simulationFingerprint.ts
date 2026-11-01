@@ -139,6 +139,7 @@ export const SIMULATION_EXCLUSIONS = [
   'src/ui/leaveConfirmation.ts',
   // Read-only HUD/status/prompt projection; target selection and execution stay in play.ts.
   'src/ui/playHud.ts',
+  'src/ui/furnitureRadial.ts',
   'src/ui/tutorial.ts',
   // Read-only debug readout formatting and byte-count estimates.
   'src/ui/playReadout.ts',

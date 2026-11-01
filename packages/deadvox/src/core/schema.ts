@@ -896,6 +896,12 @@ const UiTuningSchema = strictObject({
   spacing: Positive,
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
+  furnitureRadial: strictObject({
+    radiusPixels: Positive,
+    deadZonePixels: Positive,
+    entryCap: pipe(number(), integer(), minValue(1)),
+    labels: strictObject({ lift: Name, push: Name, drag: Name, actions: Name }),
+  }),
   /** The sound event played when the player tries an action that cannot be completed. */
   refusalSound: picklist(SOUND_EVENT_IDS),
   /** The audio options' volumes before the player saves any. */

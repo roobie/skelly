@@ -414,6 +414,17 @@
         "tooBig": "It's too big for me to lift",
         "wornOut": "I can't hold it any longer"
       },
+      "furnitureRadial": {
+        "deadZonePixels": 18,
+        "entryCap": 8,
+        "labels": {
+          "actions": "Actions",
+          "drag": "Drag",
+          "lift": "Lift",
+          "push": "Push"
+        },
+        "radiusPixels": 110
+      },
       "hudScale": 1,
       "id": "core",
       "refusalSound": "player_nope",

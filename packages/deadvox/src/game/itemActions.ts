@@ -136,7 +136,7 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
   }, undefined);
 
 export class ItemActionSelection {
-  private readonly selected = new Map<number, string>();
+  protected readonly selected = new Map<number, string>();
   private readonly openCanLabel: string;
 
   constructor(openCanLabel: string) {

@@ -365,6 +365,28 @@ body.unconscious::after {
   pointer-events: none;
 }
 
+#furniture-radial {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  pointer-events: none;
+}
+#furniture-radial[hidden] {
+  display: none;
+}
+.radial-entry {
+  position: absolute;
+  width: max-content;
+  padding: calc(var(--ui-spacing) * 0.5rem);
+  border: 1px solid var(--line);
+  border-radius: 0.375rem;
+  background: var(--panel);
+}
+.radial-entry.selected {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 /* A bound key shown beside its action; every hint draws it through `keyCap` in src/ui/keyCap.ts. */
 .keycap {
   display: inline-block;

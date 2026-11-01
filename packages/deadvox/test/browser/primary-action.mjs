@@ -1604,21 +1604,38 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
     assert.equal(
       await page.locator('#item-action-list').isVisible(),
       false,
-      'a door opens directly without a movement list',
+      'a door opens directly without movement choices',
     );
     const fixedUid = await aimFurnitureFixture('fixed');
     const openAlternatives = async () => {
       const releaseHold = await holdAction(page, 'world.interact');
-      await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
-      await releaseHold();
+      await page.waitForFunction(() => !document.querySelector('#furniture-radial').hidden);
+      return releaseHold;
     };
-    await openAlternatives();
     for (const way of ['push', 'drag']) {
-      if (way === 'drag') {
-        await openAlternatives();
+      const releaseHold = await openAlternatives();
+      if (way === 'push') {
+        const lookBefore = await page.evaluate(() => {
+          const { yaw, pitch } = globalThis.primaryActionTest.input;
+          return { yaw, pitch };
+        });
+        await page.evaluate(() => {
+          document.dispatchEvent(new MouseEvent('mousemove', { movementX: 0, movementY: -200, bubbles: true }));
+        });
+        assert.deepEqual(
+          await page.evaluate(() => {
+            const { yaw, pitch } = globalThis.primaryActionTest.input;
+            return { yaw, pitch };
+          }),
+          lookBefore,
+          'radial mouse selection holds the camera look',
+        );
+      } else {
         await page.mouse.wheel(0, 100);
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowRight');
       }
-      await pressAction(page, 'world.interact');
+      await releaseHold();
       await page.waitForFunction(
         ({ uid, way: expectedWay }) =>
           globalThis.primaryActionTest.inputRecorder

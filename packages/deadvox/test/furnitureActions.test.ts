@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { FurnitureActionSelection } from '../src/game/furnitureActions.ts';
+import { FurnitureActionSelection, radialEntryIndex } from '../src/game/furnitureActions.ts';
 
 const piece = { uid: 7 };
 const actions = [
   { id: 'use', label: 'Use' },
   { id: 'push', label: 'Push' },
 ];
+
+it('maps clockwise directions from the top to entries while the dead zone preserves selection', () => {
+  const radius = 50;
+  const deadZone = 5;
+  for (const count of [1, 2, 3, 7]) {
+    for (let index = 0; index < count; index++) {
+      const angle = (index * Math.PI * 2) / count;
+      expect(radialEntryIndex(Math.sin(angle) * radius, -Math.cos(angle) * radius, count, deadZone)).toBe(index);
+    }
+  }
+  expect(radialEntryIndex(0, 0, 3, deadZone)).toBeUndefined();
+  expect(radialEntryIndex(deadZone, 0, 3, deadZone)).toBeUndefined();
+  expect(radialEntryIndex(0, -radius, 0, deadZone)).toBeUndefined();
+});
 
 describe('furniture action menu lifetime', () => {
   it('requires reopening after confirming an action', () => {

@@ -41,6 +41,7 @@ const tuning = {
   id: CORE_CONTENT_IDS.coreUi,
   spacing: 1,
   hudScale: 1,
+  furnitureRadial: baseUi.ui[0]!.furnitureRadial,
   refusalSound: refusalSound.id,
   audioVolumes: { master: 0.5, world: 0.5, body: 0.5, ui: 0.5 },
   restLabels: { rest: 'fixture rest', sleep: 'fixture sleep' },

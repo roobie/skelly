@@ -576,19 +576,17 @@ because rearranging a room should not require destroying its contents. See `src/
   `liftFurniture`, `placement` and `slideFurniture`, and
   `src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
-- **Movement choices.** A tap on movable furniture does its ordinary use (open,
-  search, rest, read), so the common action stays one tap. A tap-and-hold opens
-  the list of other actions, push and drag, with disassembly joining it later, because rarer actions that move or break the piece sit behind a
-  deliberate hold. Readability does not fasten a board; its ordinary use stays
-  on the tap. The list belongs to movable kinds: building parts keep direct use
-  because offering impossible moves would obstruct their ordinary interaction.
-  A fitted placement of a movable kind still offers the list and explains why
-  it cannot move, so fitting does not silently change that kind's controls.
-  An open list is a single confirmation, not a persistent interaction mode:
-  returning from a pause or another target must not unexpectedly act instead of
-  offering choices. See `src/core/furnitureMove.ts`, `slidableFurniture`,
-  `src/game/play.ts`, `furnitureActions`, and `src/game/furnitureActions.ts`,
-  `FurnitureActionSelection`.
+- **Movement choices.** Ordinary use stays on the tap because it is the common
+  action. Movement requires a deliberate choice even when only lifting is
+  available, so holding never unexpectedly lifts a piece. Readability does not
+  fasten a board, and fitted placements retain their kind's controls so refusal
+  does not silently change the interaction. Choices are a single confirmation,
+  not a persistent mode: returning from pause or another target must not act
+  unexpectedly. The radial spike keeps the choice near the target and holds
+  look so choosing a direction cannot also lose that target. See
+  `src/game/play.ts`, `furnitureActions`, `src/game/furnitureActions.ts`,
+  `FurnitureActionSelection`, and `src/ui/furnitureRadial.ts`,
+  `mountFurnitureRadial`.
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `src/core/furnitureMove.ts`, `turnCarried`,
