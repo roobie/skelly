@@ -25,8 +25,10 @@ and range supply remains logic, not a second copy of the place.
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
 authored placement owner. It stands on the showroom deck beside the spawn, so charging
-needs no walk. Site power reads finished authored placements independently of
-streaming; see `src/core/sitePower.ts`, `placedPowerDevices`.
+needs no walk. Changes to showroom staging must preserve that reach for the charger
+and its service stock, so facing a feature prop does not put charging out of reach.
+Site power reads finished authored placements independently of streaming; see
+`src/core/sitePower.ts`, `placedPowerDevices`.
 
 Keep fixture layouts marked as demos so their containers do not contribute world
 loot supply. The demo flag is an economy boundary, not a save policy; see
@@ -105,6 +107,17 @@ test equipment and pieces the world never stands alone, so in normal mode it wou
 the haven into a warehouse and put evaluation props in play. The focus parameter works
 in both modes because it only chooses where a fresh session starts. See
 `src/game/worldSetup.ts`, `DebugTestHouseSite`.
+
+The destruction slot stays in normal mode because its tool, stock and breakable deck
+exercise ordinary combat and furniture floor loss without privileged setup. See
+`src/content/base/layouts-test-house.jsonnet`, `showroom`.
+
+The build-mode block-strike shortcuts are debug-only: bypassing weapon swings is an
+evaluation convenience, not a player ability. They use the session's ordinary terrain
+strike so floor loss and supply admission remain real. The existing target HUD shows
+stored damage because terrain damage has no rendered appearance; the direct editor
+delete remains separate and does not test destruction. See `src/debug/build.ts`,
+`BuildMode`, and `src/game/session.ts`, `strikeTerrainCell`.
 
 Mixed supply lets the same home demonstrate both direct generation and stored energy;
 a generator-only fixture would hide their independence. Electrical values belong to

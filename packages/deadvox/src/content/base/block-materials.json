@@ -1,0 +1,281 @@
+{
+  "blockMaterials": [
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#685744"
+      },
+      "damaged": [
+        {
+          "from": 0.25,
+          "strength": 0.14999999999999999,
+          "tint": "#685744"
+        },
+        {
+          "from": 0.59999999999999998,
+          "strength": 0.34999999999999998,
+          "tint": "#685744"
+        }
+      ],
+      "durability": 30,
+      "fallsTo": "soil_rubble",
+      "id": "soil",
+      "massKg": 180,
+      "minimumStrength": 2,
+      "resistance": {
+        "blast": 0,
+        "blunt": 0,
+        "breach": 0,
+        "crush": 0,
+        "cut": 0.10000000000000001,
+        "fragment": 0.40000000000000002,
+        "pierce": 0.40000000000000002
+      },
+      "rubble": [],
+      "span": 0
+    },
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#827b71"
+      },
+      "damaged": [
+        {
+          "from": 0.25,
+          "strength": 0.14999999999999999,
+          "tint": "#827b71"
+        },
+        {
+          "from": 0.59999999999999998,
+          "strength": 0.34999999999999998,
+          "tint": "#827b71"
+        }
+      ],
+      "durability": 300,
+      "fallsTo": "masonry_rubble",
+      "id": "masonry",
+      "massKg": 260,
+      "minimumStrength": 9,
+      "resistance": {
+        "blast": 0.10000000000000001,
+        "blunt": 0.10000000000000001,
+        "breach": 0,
+        "crush": 0.10000000000000001,
+        "cut": 0.80000000000000004,
+        "fragment": 0.69999999999999996,
+        "pierce": 0.80000000000000004
+      },
+      "rubble": [],
+      "span": 2
+    },
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#776144"
+      },
+      "damaged": [
+        {
+          "from": 0.25,
+          "strength": 0.14999999999999999,
+          "tint": "#776144"
+        },
+        {
+          "from": 0.59999999999999998,
+          "strength": 0.34999999999999998,
+          "tint": "#776144"
+        }
+      ],
+      "durability": 100,
+      "fallsTo": "timber_rubble",
+      "id": "timber",
+      "massKg": 65,
+      "minimumStrength": 3.5,
+      "resistance": {
+        "blast": 0.10000000000000001,
+        "blunt": 0.10000000000000001,
+        "breach": 0,
+        "crush": 0.10000000000000001,
+        "cut": 0,
+        "fragment": 0.40000000000000002,
+        "pierce": 0.5
+      },
+      "rubble": [],
+      "span": 3
+    },
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#6e6965"
+      },
+      "damaged": [
+        {
+          "from": 0.25,
+          "strength": 0.14999999999999999,
+          "tint": "#6e6965"
+        },
+        {
+          "from": 0.59999999999999998,
+          "strength": 0.34999999999999998,
+          "tint": "#6e6965"
+        }
+      ],
+      "durability": 400,
+      "fallsTo": "metal_rubble",
+      "id": "metal",
+      "massKg": 180,
+      "minimumStrength": 9,
+      "resistance": {
+        "blast": 0.20000000000000001,
+        "blunt": 0.40000000000000002,
+        "breach": 0,
+        "crush": 0.29999999999999999,
+        "cut": 0.69999999999999996,
+        "fragment": 0.59999999999999998,
+        "pierce": 0.59999999999999998
+      },
+      "rubble": [],
+      "span": 4
+    },
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#68604e"
+      },
+      "damaged": [
+        {
+          "from": 0.25,
+          "strength": 0.14999999999999999,
+          "tint": "#68604e"
+        },
+        {
+          "from": 0.59999999999999998,
+          "strength": 0.34999999999999998,
+          "tint": "#68604e"
+        }
+      ],
+      "durability": 15,
+      "fallsTo": "textile_rubble",
+      "id": "textile",
+      "massKg": 8,
+      "minimumStrength": 0,
+      "resistance": {
+        "blast": 0,
+        "blunt": 0.5,
+        "breach": 0,
+        "crush": 0,
+        "cut": 0,
+        "fragment": 0.10000000000000001,
+        "pierce": 0.10000000000000001
+      },
+      "rubble": [],
+      "span": 1
+    },
+    {
+      "blowSound": "door_bash",
+      "broken": {
+        "strength": 0.59999999999999998,
+        "tint": "#52616b"
+      },
+      "damaged": [
+        {
+          "from": 0.25,
+          "strength": 0.14999999999999999,
+          "tint": "#52616b"
+        },
+        {
+          "from": 0.59999999999999998,
+          "strength": 0.34999999999999998,
+          "tint": "#52616b"
+        }
+      ],
+      "durability": 1,
+      "fallsTo": "soil_rubble",
+      "id": "liquid",
+      "massKg": 125,
+      "minimumStrength": 0,
+      "resistance": {
+        "blast": 1,
+        "blunt": 1,
+        "breach": 1,
+        "crush": 1,
+        "cut": 1,
+        "fragment": 1,
+        "pierce": 1
+      },
+      "rubble": [],
+      "span": 0
+    }
+  ],
+  "blocks": [
+    {
+      "color": "#685744",
+      "footsteps": {
+        "player": "footstep_mud",
+        "shambler": "shambler_step_mud"
+      },
+      "id": "soil_rubble",
+      "material": "soil",
+      "name": "Loose earth",
+      "pattern": "rough",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#827b71",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "masonry_rubble",
+      "material": "masonry",
+      "name": "Masonry rubble",
+      "pattern": "rough",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#776144",
+      "footsteps": {
+        "player": "footstep_wood",
+        "shambler": "shambler_step_wood"
+      },
+      "id": "timber_rubble",
+      "material": "timber",
+      "name": "Broken timber",
+      "pattern": "rough",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#6e6965",
+      "footsteps": {
+        "player": "footstep_stone",
+        "shambler": "shambler_step_stone"
+      },
+      "id": "metal_rubble",
+      "material": "metal",
+      "name": "Twisted metal",
+      "pattern": "rough",
+      "solid": true,
+      "weatherable": false
+    },
+    {
+      "color": "#68604e",
+      "footsteps": {
+        "player": "footstep_leaves",
+        "shambler": "shambler_step_leaves"
+      },
+      "id": "textile_rubble",
+      "material": "textile",
+      "name": "Torn fabric",
+      "pattern": "rough",
+      "solid": true,
+      "weatherable": false
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk } from './coords.ts';
 import type { Scale } from './scale.ts';
 import type { HandlingRangeDef } from './schema.ts';
-import { type FurnitureSpawn, grow, type Rect, rectDistance } from './site.ts';
+import { type FurnitureSpawn, grow, type Rect, rectDistance, SupplyFootprints } from './site.ts';
 import { sitePalette, terrainShapeOf } from './sitePalette.ts';
 import type { Facing } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
@@ -147,6 +147,10 @@ export class HandlingRange {
         set(x, this.floor + dy, z + dz, this.blocks.planks);
       }
     }
+  }
+
+  supplySourcesIn(area: Rect) {
+    return new SupplyFootprints([this.table], []).in(area);
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {

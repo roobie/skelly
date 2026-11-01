@@ -7,6 +7,7 @@
         "shambler": "shambler_step_grass"
       },
       "id": "grass",
+      "material": "soil",
       "name": "Grass",
       "pattern": "noise",
       "solid": true,
@@ -19,6 +20,7 @@
         "shambler": "shambler_step_mud"
       },
       "id": "dirt",
+      "material": "soil",
       "name": "Dirt",
       "pattern": "noise",
       "solid": true,
@@ -31,6 +33,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "stone",
+      "material": "masonry",
       "name": "Stone",
       "pattern": "rough",
       "solid": true,
@@ -43,6 +46,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "rock",
+      "material": "masonry",
       "name": "Natural stone",
       "pattern": "rough",
       "solid": true,
@@ -55,6 +59,7 @@
         "shambler": "shambler_step_sand"
       },
       "id": "sand",
+      "material": "soil",
       "name": "Sand",
       "pattern": "noise",
       "solid": true,
@@ -67,6 +72,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "asphalt",
+      "material": "masonry",
       "name": "Asphalt",
       "pattern": "noise",
       "solid": true,
@@ -79,6 +85,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "painted_asphalt",
+      "material": "masonry",
       "name": "Painted asphalt",
       "pattern": "noise",
       "solid": true,
@@ -91,6 +98,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "concrete",
+      "material": "masonry",
       "name": "Concrete",
       "pattern": "noise",
       "solid": true,
@@ -103,6 +111,7 @@
         "shambler": "shambler_step_wood"
       },
       "id": "planks",
+      "material": "timber",
       "name": "Wooden planks",
       "pattern": "planks",
       "solid": true,
@@ -115,6 +124,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "brick",
+      "material": "masonry",
       "name": "Brick",
       "pattern": "brick",
       "solid": true,
@@ -127,6 +137,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "plaster",
+      "material": "masonry",
       "name": "Plaster",
       "pattern": "noise",
       "solid": true,
@@ -139,6 +150,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "tiles",
+      "material": "masonry",
       "name": "Tiles",
       "pattern": "tiles",
       "solid": true,
@@ -151,6 +163,7 @@
         "shambler": "shambler_step_leaves"
       },
       "id": "fabric",
+      "material": "textile",
       "name": "Fabric",
       "solid": true,
       "weatherable": false
@@ -162,6 +175,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "roof",
+      "material": "masonry",
       "name": "Roofing",
       "pattern": "shingles",
       "solid": true,
@@ -174,6 +188,7 @@
         "shambler": "shambler_step_leaves"
       },
       "id": "carpet",
+      "material": "textile",
       "name": "Carpet",
       "pattern": "noise",
       "solid": true,
@@ -186,6 +201,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "window_frame",
+      "material": "timber",
       "name": "Window frame",
       "solid": true,
       "weatherable": false
@@ -197,6 +213,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "siding_red",
+      "material": "timber",
       "name": "Painted siding (faded red)",
       "pattern": "siding",
       "solid": true,
@@ -209,6 +226,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "siding_blue",
+      "material": "timber",
       "name": "Painted siding (faded blue-grey)",
       "pattern": "siding",
       "solid": true,
@@ -221,6 +239,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "galvanized",
+      "material": "metal",
       "name": "Galvanized sheet",
       "pattern": "corrugated",
       "solid": true,
@@ -233,6 +252,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "cobblestone_mossy",
+      "material": "masonry",
       "name": "Mossy cobblestone",
       "pattern": "cobble",
       "solid": true,
@@ -245,6 +265,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "dressed_stone",
+      "material": "masonry",
       "name": "Dressed stone",
       "pattern": "dressed",
       "solid": true,
@@ -257,6 +278,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "hazard_yellow",
+      "material": "metal",
       "name": "Hazard paint",
       "solid": true,
       "weatherable": false
@@ -272,6 +294,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "chain_link",
+      "material": "metal",
       "meleePass": {
         "minimumZombieReachMetres": 1,
         "motions": ["thrust"]
@@ -293,6 +316,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "sandbag",
+      "material": "soil",
       "name": "Sandbag",
       "solid": true,
       "weatherable": false
@@ -304,6 +328,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "camo_woodland",
+      "material": "timber",
       "name": "Weathered woodland camouflage",
       "pattern": "camo",
       "patternPalette": ["#53694d", "#78634d", "#9b8a6b", "#3b4039"],
@@ -319,6 +344,7 @@
       },
       "id": "water",
       "liquid": true,
+      "material": "liquid",
       "name": "Water",
       "opaque": false,
       "solid": false,

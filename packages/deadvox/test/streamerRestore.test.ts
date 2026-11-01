@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Chunk } from '../src/core/chunk.ts';
-import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { SkyFields } from '../src/core/skyField.ts';
@@ -14,6 +13,7 @@ import { generateColumn } from '../src/core/worldgen.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { Skylight } from '../src/render/skylight.ts';
 import { baseTerrainShape } from './baseRegistry.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 
 class QuietWorker {
   onmessage: ((event: MessageEvent) => void) | null = null;
@@ -285,6 +285,20 @@ describe('saved columns', () => {
     expect(columns).not.toContain('0,0');
     streamer.unloadForReplay(0, 0);
     expect(cellsOfColumn00(world)).toEqual(cellsOfColumn00(source));
+  });
+
+  it('refuses an incomplete touched column rather than regenerating saved terrain', () => {
+    const { world } = restoredWorld();
+    world.removeChunk(0, scale.minCy, 0);
+    const { columns, stamp } = stampedColumns();
+    const streamer = streamerFor(world, stamp);
+    const failures: unknown[] = [];
+    streamer.onGenerationError = (error) => failures.push(error);
+    streamer.update(0, 0);
+    expect(failures).toHaveLength(1);
+    expect(streamer.failure).toContain('Incomplete touched column');
+    expect(columns).not.toContain('0,0');
+    expect(world.getChunk(0, scale.minCy, 0)).toBeUndefined();
   });
 
   it('turns a generation failure into a refusal callback instead of throwing from Streamer.update', () => {

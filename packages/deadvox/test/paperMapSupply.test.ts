@@ -77,7 +77,12 @@ describe('seeded regional map supply', () => {
       notice: () => undefined,
       onRead: () => undefined,
     });
-    const site = { furnitureIn: () => [], lootPointsIn: () => [point], zombiesIn: () => [] };
+    const site = {
+      supplySourcesIn: () => [[0, 0] as const],
+      furnitureIn: () => [],
+      lootPointsIn: () => [point],
+      zombiesIn: () => [],
+    };
 
     session.onColumn(0, 0, site);
     const pile = [...session.inventory.piles.values()][0]!;
