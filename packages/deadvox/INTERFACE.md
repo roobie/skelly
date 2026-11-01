@@ -6,7 +6,7 @@ read_if:
   - you're changing prompts, HUD language, feedback or bodily cues
   - you're changing HUD options, UI layering or choice controls
   - you're changing debug/playtest separation or inventory layout
-  - you're changing world-target repair entry, Crafting refusals or requirement presentation
+  - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
   - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
 ---
 
@@ -80,7 +80,7 @@ The drawn cursor stays above ordinary panels while pointer lock is held; otherwi
 
 Keep the nearby inventory pane wide enough for a content-capped container; selected details yield before useful grids are squeezed. See [inventory-layout](docs/inventory-layout.md).
 
-World repair requirements belong with crafting because two presentations of the same stock can disagree. Refused Crafting starts remain focusable so keyboard users can inspect their reasons; see `src/ui/crafting.ts`, `renderCrafting`. The pinned Crafting view and turnable target preview wait for #1469 to settle input selection; selecting Repair is not consent to spend.
+Repair acts on one chosen world piece, so it has its own ephemeral vertical in the inventory/skills/crafting panel rather than appearing among Crafting recipes. Choosing Repair opens the pinned target's requirements; closing the screen or losing the target removes the vertical. It uses the panel's existing navigation and close paths, not a second targeting or keyboard mode. Requirements share the Crafting renderer so two presentations of the same stock cannot disagree. Refused starts remain focusable so keyboard users can inspect their reasons, and Start is explicit because choosing Repair is not consent to spend. See `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`, and `src/ui/crafting.ts`, `renderCrafting`. Only the turnable target preview waits for #1469.
 
 ## Item pictures
 

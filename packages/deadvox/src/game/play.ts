@@ -15,7 +15,6 @@ import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
-import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
@@ -736,22 +735,6 @@ export const startPlay = (
   const s = scale.blockSize;
   const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
 
-  const repairSelection = {
-    targetUid: undefined as number | undefined,
-    start: (
-      recipeId: string,
-      pinnedUid: number,
-      preference: CraftPreference = {},
-      sources?: CraftSources,
-    ): string | undefined =>
-      dispatchScreenCommand({
-        kind: 'craft.repair-entity',
-        recipeId,
-        entityUid: pinnedUid,
-        preference: { ...preference },
-        ...(sources ? { sources } : {}),
-      }),
-  };
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
     focus: config.focus,
@@ -2098,7 +2081,12 @@ export const startPlay = (
     if (reason) {
       return reason;
     }
-    if (payload.kind === 'craft.start' || payload.kind === 'action.wait' || payload.kind === 'vehicle.work') {
+    if (
+      payload.kind === 'craft.start' ||
+      payload.kind === 'craft.repair-entity' ||
+      payload.kind === 'action.wait' ||
+      payload.kind === 'vehicle.work'
+    ) {
       closeInventoryScreen();
       syncMenuState();
     }
@@ -2850,7 +2838,10 @@ export const startPlay = (
       return undefined;
     }
     if (selected.id === 'repair') {
-      repairSelection.targetUid = entity.uid;
+      quickbarInput.cancel();
+      screen.openRepair(entity.uid);
+      mainMenuOpen = false;
+      syncMenuState();
       return undefined;
     }
     if (selected.workUid !== undefined) {
@@ -4393,7 +4384,7 @@ export const startPlay = (
     reading.revalidate((ownerUid) => Object.values(inventory.hands).some((item) => item?.uid === ownerUid));
     closeReadingInDarkness();
     syncReadingProgress(reading.bookUid, currentPresentation.longAction, reading.setProgress, isBookComplete);
-    craftPanel.update(screen.isOpen && !sim.dead);
+    craftPanel.update(screen.isOpen && !sim.dead, screen.activeTab === 'repair' ? screen.repairTarget : undefined);
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(handlingBox, currentPresentation, !screen.isOpen && visible.handling, screenText.handling);

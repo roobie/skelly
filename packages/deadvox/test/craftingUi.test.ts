@@ -1,7 +1,9 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Character } from '../src/core/character.ts';
+import { CraftCommands } from '../src/core/craftCommands.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
+import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
@@ -9,6 +11,7 @@ import { craftingText, craftRows, runningCraftPresentation } from '../src/ui/cra
 import { baseRegistry, baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
 const dom = new Window();
@@ -63,7 +66,7 @@ const repairRegistry = baseRegistryWith(
     },
   ]),
 );
-const repairRows = (withItem = true) => {
+const repairFixture = (withItem = true) => {
   const character = new Character(repairRegistry);
   const inventory = new Inventory(repairRegistry);
   if (!inventory.add(inventory.create(STOCK), { kind: 'pile', pos: [0, 0, 0] })) {
@@ -72,33 +75,55 @@ const repairRows = (withItem = true) => {
   if (withItem && !inventory.add(inventory.create(RESULT, 1, 0.5), { kind: 'pile', pos: [0, 0, 0] })) {
     throw new Error('Fixture repair item did not fit');
   }
-  return craftRows({
-    registry: repairRegistry,
+  const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK });
+  const crafting = new CraftCommands({
+    inventory,
     character,
-    reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5, clock: BASE_CLOCK })(),
-    preferences: {},
-    startReason: undefined,
+    reach,
+    sim: new Simulation({ seed: 1 }),
+    queue: new HandlingQueue(inventory),
   });
+  const target = inventory.entities.add({ type: FURNITURE, pos: [1, 1, 0], size: [1, 1, 1], facing: 'n' })!;
+  inventory.entities.wear(target, 0.5);
+  return {
+    inventory,
+    crafting,
+    target,
+    rows: (repair = false) =>
+      craftRows({
+        registry: repairRegistry,
+        character,
+        reach: reach(),
+        preferences: {},
+        startReason: crafting.startReason(),
+        ...(repair ? { entityRepair: { target, crafting } } : {}),
+      }),
+  };
 };
 
 describe('crafting read-only presentation', () => {
-  it('names entity repair rows after furniture rather than the recipe result item', () => {
-    const row = repairRows().find(({ id }) => id === ENTITY_REPAIR)!;
+  it('names pinned repair rows after furniture and excludes item recipes', () => {
+    const rows = repairFixture().rows(true);
+    const row = rows.find(({ id }) => id === ENTITY_REPAIR)!;
+    expect(row.reason).toBeUndefined();
+    expect(rows.some(({ id }) => id === ITEM_REPAIR)).toBe(false);
     const { name } = repairRegistry.furniture.get(FURNITURE)!;
     expect(row.itemName).toBe(name);
     expect(row.name).toBe(fillText(craftingText(repairRegistry).repairName, { item: name }));
   });
 
-  it('refuses targetless entity Start without dispatch and links a focusable button to its reason', () => {
-    const row = repairRows().find(({ id }) => id === ENTITY_REPAIR)!;
+  it('keeps live repair refusals focusable and does not dispatch Start', () => {
+    const fixture = repairFixture();
+    expect(fixture.inventory.add(fixture.inventory.create(STOCK), { kind: 'hand', side: 'left' })).toBe(true);
+    const row = fixture.rows(true).find(({ id }) => id === ENTITY_REPAIR)!;
     const text = craftingText(repairRegistry);
     expect(row.reason).toBeDefined();
-    expect(row.reason).toBe(text.entityRepairTargetRequired);
+    expect(row.reason).toBe(fixture.crafting.startReason());
     const root = document.createElement('section');
     document.body.append(root);
     const start = vi.fn();
     try {
-      renderCrafting(root, [row], { start, prefer: vi.fn(), source: vi.fn() }, text);
+      renderCrafting(root, [row], { start, prefer: vi.fn(), source: vi.fn() }, { text });
       const button = root.querySelector<HTMLButtonElement>('.craft-start')!;
       expect(button.disabled).toBe(false);
       expect(button.getAttribute('aria-disabled')).toBe('true');
@@ -116,7 +141,9 @@ describe('crafting read-only presentation', () => {
   });
 
   it.each([true, false])('keeps item repair admission and routing based on a damaged item in reach: %s', (withItem) => {
-    const row = repairRows(withItem).find(({ id }) => id === ITEM_REPAIR)!;
+    const rows = repairFixture(withItem).rows();
+    expect(rows.some(({ id }) => id === ENTITY_REPAIR)).toBe(false);
+    const row = rows.find(({ id }) => id === ITEM_REPAIR)!;
     const text = craftingText(repairRegistry);
     const { name } = repairRegistry.items.get(RESULT)!;
     expect(row.itemName).toBe(name);
@@ -124,7 +151,7 @@ describe('crafting read-only presentation', () => {
     expect(row.reason).toBe(withItem ? undefined : text.noRepairTarget);
     const root = document.createElement('section');
     const start = vi.fn();
-    renderCrafting(root, [row], { start, prefer: vi.fn(), source: vi.fn() }, text);
+    renderCrafting(root, [row], { start, prefer: vi.fn(), source: vi.fn() }, { text });
     root.querySelector<HTMLButtonElement>('.craft-start')!.click();
     expect(start.mock.calls).toEqual(withItem ? [[ITEM_REPAIR]] : []);
   });
@@ -185,7 +212,7 @@ describe('crafting read-only presentation', () => {
     expect(torch.reason).toBe('missing' in result ? result.missing.reason : undefined);
     const root = document.createElement('section');
     const start = vi.fn();
-    renderCrafting(root, rows, { start, prefer: vi.fn(), source: vi.fn() }, craftingText(registry));
+    renderCrafting(root, rows, { start, prefer: vi.fn(), source: vi.fn() }, { text: craftingText(registry) });
     const button = root.querySelector<HTMLButtonElement>('[data-recipe="torch"] .craft-start');
     expect(button).toBeDefined();
     expect(button!.disabled).toBe(false);

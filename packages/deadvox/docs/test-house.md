@@ -91,7 +91,8 @@ repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCo
 The repair entry is opt-in and debug-only because its staged damage and supplies are
 evaluation setup, not ordinary rewards. It reuses the showroom's authored prop and shared
 recipe admission so evaluating repair does not require a separate world or privileged
-content path. The requirement view waits for #1469 rather than inventing another panel. See
+content path. The target's turnable 3D view waits for #1469; requirements belong to the
+shared panel under `DESIGN.md`, "World repair selection". See
 `src/game/config.ts`, `repairLookEnabled`; `src/game/testHouseRepairLook.ts`,
 `stageRepairLook`; and
 `src/game/play.ts`, `startPlay`.

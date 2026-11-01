@@ -3,6 +3,7 @@
 // biome-ignore-all lint/performance/noAwaitInLoops: native wheel delivery must settle before the next choice.
 import assert from 'node:assert/strict';
 import { holdAction, pressAction } from './input-actions.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 export const worldRepairInGameFlow = async (page, origin) => {
@@ -63,42 +64,70 @@ export const worldRepairInGameFlow = async (page, origin) => {
     }, selected);
   }
   await pressAction(page, 'world.interact');
+  assert.equal(
+    await page.evaluate(() => globalThis.pumpHandlingTest.screen.isOpen),
+    true,
+    'choosing Repair opens the character screen before any fixture starts work',
+  );
+  assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.screen.activeTab), 'repair');
   const pin = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
-    return { uid: f.repairTargetUid, target: f.debugRepairTarget.uid, yaw: f.input.yaw };
+    return { uid: f.repairTargetUid, target: f.debugRepairTarget.uid };
   });
   assert.equal(pin.uid, pin.target, 'held-list choice pins the target without another aiming step');
-  await page.waitForFunction(() => {
+  const repairView = page.locator(`#crafting[data-repair-target="${pin.uid}"]`);
+  assert.equal(await repairView.isVisible(), true, 'the requirements view shows the selected target');
+  assert.equal(await page.locator('#inventory .inv-tab[data-tab="repair"][aria-selected="true"]').count(), 1);
+  const recipeId = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
-    return f.input.locked && !f.input.menuPointer;
+    return [...f.session.character.knownRecipes].find(
+      (id) => f.engine.registry.recipes.get(id)?.repair?.entity === f.debugRepairTarget.type,
+    );
   });
-  await page.evaluate(() => document.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementX: 120 })));
-  assert.notEqual(await page.evaluate(() => globalThis.pumpHandlingTest.input.yaw), pin.yaw);
-  assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.repairTargetUid), pin.uid);
+  const start = repairView.locator(`[data-recipe="${recipeId}"] .craft-start`);
+  assert.equal(await start.getAttribute('aria-disabled'), 'false');
   assert.deepEqual(await page.evaluate(() => globalThis.pumpHandlingTest.session.inventory.snapshotState()), before);
   assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.actions.job), undefined);
 
+  const condition = await page.evaluate(() => {
+    const f = globalThis.pumpHandlingTest;
+    return f.session.inventory.entities.conditionOf(f.debugRepairTarget);
+  });
   await page.evaluate(() => globalThis.pumpManualFrames.enable());
+  const box = await start.boundingBox();
+  assert.ok(box, 'Start has a clickable layout box');
+  const cursor = await page.evaluate(() => {
+    const { input } = globalThis.pumpHandlingTest;
+    return { x: input.cursorX, y: input.cursorY };
+  });
+  await page.evaluate(dispatchMenuPointerMove, {
+    canvasSelector: '#view',
+    movementX: box.x + box.width / 2 - cursor.x,
+    movementY: box.y + box.height / 2 - cursor.y,
+  });
+  assert.equal(
+    await page.evaluate(() => {
+      const { input } = globalThis.pumpHandlingTest;
+      return Boolean(document.elementFromPoint(input.cursorX, input.cursorY)?.closest('#crafting .craft-start'));
+    }),
+    true,
+    'drawn pointer reaches Start',
+  );
+  await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   const started = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
-    const recipe = [...f.session.character.knownRecipes].find(
-      (id) => f.engine.registry.recipes.get(id)?.repair?.entity === f.debugRepairTarget.type,
-    );
-    const condition = f.session.inventory.entities.conditionOf(f.debugRepairTarget);
-    const refusal = f.repairSelection.start(recipe, f.repairTargetUid, {});
     const result = globalThis.pumpManualFrames.until(() => f.session.sim.actions.job?.jobType === 'craft');
     const work = f.session.inventory.hands.right;
     return {
-      refusal,
       reached: result.reached,
-      condition,
       target: work?.work?.repairTarget,
       duration: work?.work?.duration,
       ratio: f.session.sim.clock.ratio,
     };
   });
-  assert.equal(started.refusal, undefined);
-  assert.equal(started.reached, true);
+  assert.equal(started.reached, true, 'activating Start through the view begins work');
+  assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.screen.isOpen), false);
+  assert.equal(await page.evaluate(() => globalThis.pumpHandlingTest.repairTargetUid), undefined);
   assert.deepEqual(started.target, { kind: 'entity', uid: pin.uid });
   const finished = await page.evaluate(({ duration, ratio }) => {
     const f = globalThis.pumpHandlingTest;
@@ -115,8 +144,8 @@ export const worldRepairInGameFlow = async (page, origin) => {
     };
   });
   assert.equal(result.uid, pin.uid);
-  assert.ok(result.condition > started.condition, 'repair improves the pinned piece');
-  assert.equal(result.actions.length, 1, 'the start seam records exactly one repair');
+  assert.ok(result.condition > condition, 'repair improves the pinned piece');
+  assert.equal(result.actions.length, 1, 'the view records exactly one repair');
   assert.equal(result.actions[0].payload.entityUid, pin.uid);
   assert.ok(!(result.hands.left || result.hands.right));
   await page.evaluate(() => globalThis.pumpManualFrames.disable());

@@ -32,10 +32,10 @@ export const renderCrafting = (
   root: HTMLElement,
   rows: readonly CraftRow[],
   actions: CraftPanelActions,
-  text: CraftingText,
+  { text, targetName }: { text: CraftingText; targetName?: string },
 ): void => {
   render(
-    html`<header><h2>${factDetail(text.heading, text.headingFact)}</h2></header>
+    html`<header><h2>${targetName === undefined ? factDetail(text.heading, text.headingFact) : fillText(text.repairName, { item: targetName })}</h2></header>
     ${repeat(
       // Keyed by recipe so an open combo box stays with its own recipe when rows change.
       rows,

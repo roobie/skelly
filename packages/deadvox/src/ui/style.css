@@ -1838,11 +1838,11 @@ body.bench #quickbar {
   border-radius: 0.625rem;
   background: rgb(16 18 22 / 96%);
 }
-body.inventory-open:not(.inventory-tab-crafting) #crafting,
+body.inventory-open:not(:is(.inventory-tab-crafting, .inventory-tab-repair)) #crafting,
 #crafting[hidden] {
   display: none;
 }
-body.inventory-open.inventory-tab-crafting #crafting {
+body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting {
   position: fixed;
   z-index: var(--ui-layer-crafting);
   top: 7.875rem;

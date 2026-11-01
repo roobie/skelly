@@ -1,7 +1,8 @@
-// Read-only crafting projection: one reach index, no item ownership or commands.
+import type { BlockEntity } from '../core/blockEntities.ts';
 import type { CraftCharacter } from '../core/character.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { CraftCommands } from '../core/craftCommands.ts';
 import {
   type CraftPreference,
   type CraftSources,
@@ -123,6 +124,7 @@ export const craftRows = ({
   preferences,
   sources = {},
   startReason,
+  entityRepair,
 }: {
   registry: Registry;
   character: CraftCharacter;
@@ -130,9 +132,16 @@ export const craftRows = ({
   preferences: Readonly<Record<string, CraftPreference>>;
   sources?: Readonly<Record<string, CraftSources>>;
   startReason: string | undefined;
+  entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
 }): CraftRow[] =>
   [...character.knownRecipes]
-    .filter((id) => !registry.recipes.get(id)!.activation)
+    .filter((id) => {
+      const recipe = registry.recipes.get(id)!;
+      return (
+        !recipe.activation &&
+        (entityRepair ? recipe.repair?.entity === entityRepair.target.type : recipe.repair?.entity === undefined)
+      );
+    })
     .sort()
     .map((id) => {
       const recipe = registry.recipes.get(id)!;
@@ -149,8 +158,8 @@ export const craftRows = ({
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-        reason: recipe.repair?.entity
-          ? text.entityRepairTargetRequired
+        reason: entityRepair
+          ? entityRepair.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]).refusal
           : recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
         components: status.components.map(({ alternatives, group }) => ({
           group,

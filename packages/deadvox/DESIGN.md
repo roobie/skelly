@@ -3618,9 +3618,9 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 
 ## World repair selection
 
-Choosing Repair pins the piece's identity rather than following the crosshair, so looking away cannot silently change the job. Reviewing a repair is not consent to acquire supplies or start work. The command owner revalidates the identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`, and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`; `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-The repair entry stays debug-gated until #1469 settles the Crafting requirement view and its input selection. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
+The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
 
 ## UI principles
 
