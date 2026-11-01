@@ -6,6 +6,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 import { isReadableItem } from '../core/options.ts';
+import type { PlayerCombat } from '../core/playerCombat.ts';
 import type { ItemDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { type MeleeReadinessInput, shouldEnterMeleeReady } from './melee.ts';
@@ -50,6 +51,18 @@ export type PrimaryActionSelection =
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
+
+export const repeatSingleAction = (
+  definition: Pick<ItemDef, 'holdRepeat'>,
+  action: Pick<PrimaryActionSelection, 'kind'>,
+  combat: Pick<PlayerCombat, 'activeMeleeAction'>,
+  dispatch: () => void,
+): void => {
+  if (definition.holdRepeat === false || (action.kind === 'melee' && combat.activeMeleeAction)) {
+    return;
+  }
+  dispatch();
+};
 
 export interface PrimaryMeleeDispatch {
   readonly kind: 'swing';

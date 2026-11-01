@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change how holding the attack builds, releases or drops a melee charge
+  - you change whether a lone weapon action charges or repeats
   - you tune a weapon's `charge` content or the stamina a charge costs
   - you add a hands action, hit or control loss that must interrupt a charge
   - you answer one of the open charged-attack questions (#276)
@@ -8,11 +9,11 @@ read_if:
 
 # Charged attacks
 
-Slice 5 admits charged attacks so committing to a strike has a place in defence (`SLICE-5.md`, "Related issues and admission"). Stagger rewards commitment (`docs/stagger.md`, "Stagger rewards commitment"). Charging is how a player commits with any weapon, while a heavy, slow weapon commits on its ordinary swing. The charge's cost and its interruptions keep stagger a reward rather than a habit. See `src/core/playerCombat.ts`, `PlayerCombat`, `holdCharge`.
+Charged attacks give commitment a place in defence. Stagger rewards commitment (`docs/stagger.md`, "Stagger rewards commitment"). Charging is how a player commits with a charge-capable weapon, while a heavy, slow weapon commits on its ordinary swing. The charge's cost and its interruptions keep stagger a reward rather than a habit. See `src/core/playerCombat.ts`, `PlayerCombat`, `holdCharge`.
 
 ## The rules
 
-**A tap stays the ordinary strike.** Only holding the attack past the wind-up charges, so existing play and every weapon's ordinary tuning are unchanged, and player breach keeps its ordinary strikes (`SLICE-5.md`, "Settled breach rules — decision items #273 and #800"). Charging uses the same control as the strike because it is the same strike committed to, not a second attack to learn.
+**A tap stays the ordinary strike.** A lone charge-capable weapon action keeps hold for charging rather than repeated swings, because the weapon already gives hold a meaning. Only holding the attack past the wind-up charges, so every weapon's ordinary tuning is unchanged, and player breach keeps its ordinary strikes (`SLICE-5.md`, "Settled breach rules — decision items #273 and #800"). Charging uses the same control as the strike because it is the same strike committed to, not a second attack to learn.
 
 **The swing holds at the pulled-back pose.** The charge builds only while the swing waits there, and release resumes the swing's own timing, so the strike reaches contact as late after release as an ordinary swing does after its pull. The held pose is what tells the player, and anything watching, that a heavy strike is coming. See `src/core/meleePose.ts`, `meleePullEnd`.
 

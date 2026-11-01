@@ -196,6 +196,7 @@ import {
   ignitionTargetForHand,
   type PrimaryActionSelection,
   primaryMeleeAction,
+  repeatSingleAction as repeatPrimaryAction,
   selectPrimaryAction,
 } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
@@ -833,7 +834,12 @@ export const startPlay = (
       return false;
     }
     const actions = heldActions(item);
-    if (actions.length === 0) {
+    if (
+      actions.length === 0 ||
+      (actions.length === 1 &&
+        actions[0]!.id === 'own' &&
+        defOf(registry, item.type).weapon?.melee?.charge !== undefined)
+    ) {
       return false;
     }
     cancelActionInput();
@@ -887,13 +893,13 @@ export const startPlay = (
     }
     if (action === 'held.use') {
       const item = heldPressItem();
-      if (
-        item &&
-        heldMenuTrigger === undefined &&
-        heldActions(item).length === 1 &&
-        defOf(registry, item.type).holdRepeat !== false
-      ) {
-        tapHeldUse();
+      if (item && heldPress && heldMenuTrigger === undefined && heldActions(item).length === 1) {
+        repeatPrimaryAction(
+          defOf(registry, item.type),
+          selectPrimaryAction(inventory, heldPress.hand, survival.selectedItemAction(item)?.id),
+          playerCombat,
+          tapHeldUse,
+        );
       }
     } else if (interactionHoldTarget) {
       const target = interactionTargetAt();

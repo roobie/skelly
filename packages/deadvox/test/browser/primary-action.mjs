@@ -2002,19 +2002,24 @@ try {
     await page.mouse.down();
     try {
       await page.waitForFunction(
-        (before) => globalThis.primaryActionTest.swings.filter((swing) => swing.result).length > before + 1,
-        knifeHeld,
+        () => globalThis.primaryActionTest.session.playerCombat.activeMeleeAction?.chargeHeldSimSeconds > 0,
       );
-      assert.equal(
-        await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
-        true,
-        'a one-action hold repeats without a radial',
-      );
+      const charged = await page.evaluate(() => {
+        const r = globalThis.primaryActionTest;
+        return {
+          swings: r.swings.filter((swing) => swing.result).length,
+          contacted: r.session.playerCombat.activeMeleeAction.hitResolved,
+          radialHidden: document.querySelector('#furniture-radial').hidden,
+        };
+      });
+      assert.equal(charged.swings, knifeHeld + 1, 'holding a charge-capable action starts only one swing');
+      assert.equal(charged.contacted, false, 'the charged strike waits for release before contact');
+      assert.equal(charged.radialHidden, true, 'charging does not open a radial');
     } finally {
       await page.mouse.up();
+      await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
       await page.mouse.up({ button: 'right' });
     }
-    await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
 
     for (const route of ['tap', 'radial']) {
       const fixture = await page.evaluate((method) => {
@@ -2094,6 +2099,12 @@ try {
         }
       }
       r.clearHand(r.dominant);
+      if (
+        r.survival.availableItemActions(magazine).length !== 1 ||
+        r.inventory.registry.items.get(magazine.type).weapon?.melee?.charge !== undefined
+      ) {
+        throw new Error('Repeat witness needs a lone action without charge content');
+      }
       return { uid: magazine.uid, before: magazine.cartridges.length };
     });
     await pressAction(page, 'hand.use-off');
@@ -4349,7 +4360,11 @@ try {
         buffer: Buffer.from(replayText),
       });
       await replayRestart;
-      await page.waitForFunction(() => document.querySelector('#input-replay-status')?.dataset.state === 'playing');
+      await page.waitForFunction(
+        () =>
+          document.querySelector('#input-replay-status')?.dataset.state === 'playing' ||
+          document.querySelector('#errors')?.textContent.startsWith('Replay rejected:'),
+      );
       const replayError = await page.locator('#errors').textContent();
       assert(!replayError?.startsWith('Replay rejected:'), `replay import failed: ${replayError}`);
     });

@@ -4,8 +4,10 @@ import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { paperMapAt } from '../src/core/paperMap.ts';
+import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { meleeWeaponFromContent } from '../src/game/melee.ts';
+import { ignitionTargetForHand, repeatSingleAction, selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -186,6 +188,51 @@ const survivalFor = (inventory: Inventory) => {
     },
   });
 };
+
+describe('single-action repetition', () => {
+  const combatOwner = () =>
+    new PlayerCombat({
+      resolvePlayerMelee: () => false,
+      playPlayerMeleeSwing: () => undefined,
+    });
+  const weapon = meleeWeaponFromContent(registry.items.get(capabilities[0].id)!.weapon!.melee!);
+  const hands = { right: 1, left: null };
+  const startSwing = (combat: PlayerCombat): boolean =>
+    combat.beginMeleeSwing({
+      origin: [0, 0, 0],
+      direction: [0, 0, -1],
+      weapon,
+      profile: 'blunt',
+      twoHanded: false,
+      hands,
+    });
+
+  it('waits for the melee owner before dispatching another recorded action', () => {
+    const combat = combatOwner();
+    const recorded: string[] = [];
+    expect(startSwing(combat)).toBe(true);
+    repeatSingleAction({}, { kind: 'melee' }, combat, () => recorded.push('hand.action'));
+    expect(recorded).toEqual([]);
+    combat.tick(weapon.cooldown, hands);
+    expect(combat.activeMeleeAction).toBeUndefined();
+    repeatSingleAction({}, { kind: 'melee' }, combat, () => recorded.push('hand.action'));
+    expect(recorded).toEqual(['hand.action']);
+  });
+
+  it('does not make an unrelated action owner wait for a melee swing', () => {
+    const combat = combatOwner();
+    const recorded: string[] = [];
+    expect(startSwing(combat)).toBe(true);
+    repeatSingleAction({}, { kind: 'magazine' }, combat, () => recorded.push('hand.action'));
+    expect(recorded).toEqual(['hand.action']);
+  });
+
+  it('suppresses an authored holdRepeat false even when the owner is ready', () => {
+    const recorded: string[] = [];
+    repeatSingleAction({ holdRepeat: false }, { kind: 'melee' }, combatOwner(), () => recorded.push('hand.action'));
+    expect(recorded).toEqual([]);
+  });
+});
 
 describe('held-item hand action', () => {
   it.each([
