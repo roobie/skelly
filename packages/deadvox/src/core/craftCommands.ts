@@ -3,12 +3,30 @@ import { type CraftCharacter, dominantSide, SKILL_LEVEL_MIN, skillEffectLevel } 
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
 import { entityRepairRefusal } from './craftWork.ts';
-import { planDisassembly } from './disassembly.ts';
+import { planDisassembly, type RecoveryOperation } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
 import type { Inventory, Plan } from './inventory.ts';
 import { damageWord, type Item } from './items.ts';
+import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
 import type { Simulation } from './sim.ts';
+
+export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
+
+export interface RecoveryProjection {
+  liquids: (LiquidAmount & { name: string })[];
+  choices: RecoveryChoices;
+  vessels: { liquid: string; uid: number; name: string }[];
+  spills: LiquidAmount[];
+  spillLabel?: string;
+  refusal?: string;
+}
+
+const disassemblyChoices = ({ receivers = [], spillApproval = [], recoveryOperation }: RecoveryChoices) => ({
+  receivers,
+  spillApproval,
+  ...(recoveryOperation ? { operation: recoveryOperation } : {}),
+});
 
 export type WorkOperation = 'continue' | 'apart' | 'disassemble';
 export interface WorkOption {
@@ -174,7 +192,7 @@ export class CraftCommands {
     }
     return this.reach().entries.some((entry) => entry.item === item) ? undefined : coreMessage(registry, 'outOfReach');
   }
-  private disassemblyOption(item: Item): WorkOption[] {
+  private disassemblyOption(item: Item, choices: RecoveryChoices): WorkOption[] {
     const { registry } = this.inventory;
     const definition = registry.items.get(item.type)!;
     if (!(definition.disassembly || definition.salvage)) {
@@ -183,7 +201,7 @@ export class CraftCommands {
     const snapshot = this.reach();
     const reachable = snapshot.entries.some((entry) => entry.item === item);
     const reason = reachable ? this.startReason() : coreMessage(registry, 'outOfReach');
-    const plan = planDisassembly(item, snapshot, this.character);
+    const plan = planDisassembly(item, snapshot, this.character, disassemblyChoices(choices));
     let result: Plan;
     if (reason) {
       result = { ok: false, reason };
@@ -236,15 +254,59 @@ export class CraftCommands {
       },
     ];
   }
-  options(uid: number): WorkOption[] {
+  recovery(uid: number, choices: RecoveryChoices = {}): RecoveryProjection | undefined {
+    const item = this.inventory.itemByUid(uid);
+    if (!item || item.work?.kind === 'craft') {
+      return undefined;
+    }
+    const work = item.work?.kind === 'disassembly' ? item.work : undefined;
+    const snapshot = this.reach();
+    const plan = work ?? planDisassembly(item, snapshot, this.character, disassemblyChoices(choices));
+    if (!plan || plan.liquids.length === 0) {
+      return undefined;
+    }
+    const selected: RecoveryChoices = {
+      receivers: choices.receivers ?? work?.receivers ?? [],
+      spillApproval: [],
+      ...(choices.recoveryOperation ? { recoveryOperation: choices.recoveryOperation } : {}),
+    };
+    const receipt = this.inventory.planLiquidReceipts(plan.liquids, selected);
+    const spills = 'spills' in receipt ? receipt.spills.filter(({ volumeMicrolitres }) => volumeMicrolitres > 0) : [];
+    const refusal = this.inventory.liquidReceiptRefusal(receipt);
+    const needsApproval = !receipt.ok && receipt.reason === 'spill-approval';
+    return {
+      liquids: plan.liquids.map((liquid) => ({
+        ...liquid,
+        name: this.inventory.registry.liquids.get(liquid.liquid)!.name,
+      })),
+      choices: { ...selected, spillApproval: spills },
+      vessels: plan.liquids.flatMap((amount) =>
+        snapshot.entries.flatMap(({ item: vessel }) => {
+          if (vessel.uid === item.uid) {
+            return [];
+          }
+          const receive = this.inventory.planLiquidReceipts([amount], {
+            receivers: [{ liquid: amount.liquid, uid: vessel.uid }],
+            spillApproval: [amount],
+          });
+          return receive.ok ? [{ liquid: amount.liquid, uid: vessel.uid, name: this.inventory.name(vessel) }] : [];
+        }),
+      ),
+      spills,
+      ...(needsApproval && refusal ? { spillLabel: refusal } : {}),
+      ...(!needsApproval && refusal ? { refusal } : {}),
+    };
+  }
+
+  options(uid: number, choices: RecoveryChoices = {}): WorkOption[] {
     const item = this.inventory.itemByUid(uid);
     if (!item) {
       return [];
     }
-    return item.work ? this.existingWorkOptions(uid, item) : this.disassemblyOption(item);
+    return item.work ? this.existingWorkOptions(uid, item) : this.disassemblyOption(item, choices);
   }
-  act(uid: number, operation: WorkOperation): string | undefined {
-    const option = this.options(uid).find((candidate) => candidate.operation === operation);
+  act(uid: number, operation: WorkOperation, choices: RecoveryChoices = {}): string | undefined {
+    const option = this.options(uid, choices).find((candidate) => candidate.operation === operation);
     if (!option) {
       return coreMessage(this.inventory.registry, 'gone');
     }
@@ -252,6 +314,13 @@ export class CraftCommands {
       return option.plan.reason;
     }
     if (operation === 'continue') {
+      const work = this.inventory.itemByUid(uid)?.work;
+      if (work?.kind === 'disassembly') {
+        const reason = this.inventory.updateRecovery(uid, choices);
+        if (reason) {
+          return reason;
+        }
+      }
       return this.sim.actions.startCraft(uid);
     }
     if (operation === 'apart') {
@@ -262,7 +331,11 @@ export class CraftCommands {
     if (reason) {
       return reason;
     }
-    const plan = item && planDisassembly(item, this.reach(), this.character);
-    return plan ? this.sim.actions.beginCraft(plan) : coreMessage(this.inventory.registry, 'cantTakeApart');
+    const plan = item && planDisassembly(item, this.reach(), this.character, disassemblyChoices(choices));
+    if (plan) {
+      const refusal = this.inventory.liquidReceiptRefusal(this.inventory.planLiquidReceipts(plan.liquids, plan));
+      return refusal ?? this.sim.actions.beginCraft(plan);
+    }
+    return coreMessage(this.inventory.registry, 'cantTakeApart');
   }
 }

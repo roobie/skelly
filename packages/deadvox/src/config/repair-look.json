@@ -1,6 +1,6 @@
 {
   "damageFraction": 0.5,
-  "furniture": "shelf",
+  "furniture": "crate",
   "mod": {
     "data": {
       "id": "debug-repair-look",
@@ -20,7 +20,7 @@
           "qualities": {},
           "repair": {
             "amount": 30,
-            "entity": "shelf",
+            "entity": "crate",
             "perSkill": 0,
             "skill": "debug_repair"
           },

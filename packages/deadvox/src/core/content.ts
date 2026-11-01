@@ -433,6 +433,35 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
   if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
     report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
   }
+  checkLiquidRecovery(item, registry, qualities, report);
+};
+
+const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
+  const { disassembly } = item;
+  const liquidRecipeResult = [...registry.recipes.values()].some(
+    (recipe) =>
+      recipe.result.item === item.id && recipe.components.some((group) => group.some((row) => 'liquid' in row)),
+  );
+  for (const [path, capability, recovery] of [
+    ['.disassembly.liquidRecovery', disassembly, disassembly?.liquidRecovery],
+    ['.salvageLiquidRecovery', item.salvage, item.salvageLiquidRecovery],
+  ] as const) {
+    if (liquidRecipeResult && capability && !recovery) {
+      report('items', item.id, path, 'a liquid recipe result needs authored liquid recovery');
+    }
+    const quality = recovery?.toolModifier?.quality;
+    if (quality !== undefined && !qualities.has(quality)) {
+      report('items', item.id, `${path}.toolModifier.quality`, `no tool quality "${quality}"`);
+    }
+  }
+  if (item.salvageLiquidRecovery) {
+    if (!item.salvage) {
+      report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
+    }
+    if (!registry.skills.has(item.salvageLiquidRecovery.skill)) {
+      report('items', item.id, '.salvageLiquidRecovery.skill', `no skill "${item.salvageLiquidRecovery.skill}"`);
+    }
+  }
 };
 
 const checkBook = (item: ItemDef, registry: Registry, report: Report) => {

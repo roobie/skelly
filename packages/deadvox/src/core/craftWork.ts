@@ -73,7 +73,7 @@ export const craftActionHooks = (
       const recipe = inventory.registry.recipes.get(plan.recipe);
       return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
     }
-    const current = planDisassembly(plan.source, snapshot, character);
+    const current = planDisassembly(plan.source, snapshot, character, plan);
     const sameTools =
       current &&
       Object.keys(current.toolLevels).length === Object.keys(plan.toolLevels).length &&
@@ -84,8 +84,9 @@ export const craftActionHooks = (
       current.duration === plan.duration &&
       current.gather === plan.gather &&
       sameTools &&
-      sameDisassemblyOutputs(current.outputs, plan.outputs)
-      ? undefined
+      sameDisassemblyOutputs(current.outputs, plan.outputs) &&
+      JSON.stringify(current.liquids) === JSON.stringify(plan.liquids)
+      ? inventory.liquidReceiptRefusal(inventory.planLiquidReceipts(plan.liquids, plan))
       : coreMessage(inventory.registry, 'yieldChanged');
   },
   begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,

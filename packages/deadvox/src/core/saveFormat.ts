@@ -470,6 +470,10 @@ itemSchema = obj({
       obj({
         kind: enumeration(['disassembly']),
         source: str({ id: true }),
+        operation: enumeration(['salvage', 'disassembly']),
+        liquids: arr(obj({ liquid: str({ id: true }), volumeMicrolitres: positiveInt })),
+        receivers: arr(obj({ liquid: str({ id: true }), uid: positiveInt })),
+        spillApproval: arr(obj({ liquid: str({ id: true }), volumeMicrolitres: nonNegativeInt })),
         skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),

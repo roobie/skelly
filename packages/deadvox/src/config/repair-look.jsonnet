@@ -1,4 +1,4 @@
-local target = 'shelf';
+local target = 'crate';
 local damageFraction = 0.5;
 local furniture = [piece for piece in (import '../content/base/furniture.jsonnet').furniture if piece.id == target][0];
 local recipe = 'debug_showroom_repair';

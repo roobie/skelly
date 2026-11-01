@@ -4,6 +4,7 @@ import { BODY_REGIONS, type BodyRegion } from './body.ts';
 import type { Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
+import type { WorkTarget } from './items.ts';
 import { SCHEDULER_TIME_EPSILON } from './scheduler.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -156,7 +157,7 @@ export interface LongActionState {
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftRepair {
-  target: import('./items.ts').WorkTarget;
+  target: WorkTarget;
   amount: number;
 }
 export interface CraftActionHooks {
