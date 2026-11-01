@@ -19,7 +19,7 @@
           "kind": "repair",
           "qualities": {},
           "repair": {
-            "amount": 1,
+            "amount": 30,
             "entity": "crate",
             "perSkill": 0,
             "skill": "debug_repair"

@@ -159,7 +159,8 @@ export const worldRepairInGameFlow = async (page, origin) => {
     };
   });
   assert.equal(result.uid, pin.uid);
-  assert.ok(result.condition > condition, `repair improves the pinned piece: ${JSON.stringify(started)}`);
+  assert.ok(condition < 1, 'the preview starts with visible damage');
+  assert.equal(result.condition, 1, `the preview repair restores the pinned piece: ${JSON.stringify(started)}`);
   assert.ok(started.inputs.length > 0, 'the staged repair has material inputs');
   for (const type of new Set(started.inputs.map((item) => item.type))) {
     const count = (stock) => stock.filter((item) => item.type === type).reduce((sum, item) => sum + item.count, 0);

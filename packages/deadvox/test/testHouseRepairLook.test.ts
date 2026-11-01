@@ -5,6 +5,7 @@ import { Character } from '../src/core/character.ts';
 import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
+import { craftActionHooks } from '../src/core/craftWork.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
@@ -37,7 +38,7 @@ describe('test-house repair look', () => {
     expect(normal.registry.recipes.has(repairLook.recipe)).toBe(false);
   });
 
-  it('keeps the damaged showroom target and reachable requirements when its column arrives', () => {
+  it('preserves the staged target on column arrival and completes its visible repair through the shared recipe', () => {
     const { registry } = admitted.content;
     const character = new Character(registry);
     const inventory = new Inventory(registry, undefined, undefined, character);
@@ -69,10 +70,19 @@ describe('test-house repair look', () => {
       bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
       compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
     });
+    sim.actions.craft = craftActionHooks(inventory, character, reach, {
+      feet: () => position,
+      calendar: () => sim.calendar,
+    });
     const commands = new CraftCommands({ inventory, character, sim, reach, queue: new HandlingQueue(inventory) });
     const preview = commands.previewEntityRepair(repairLook.recipe, target.uid);
     expect(preview.targetName).toBeTruthy();
     expect(preview.requirements).toBeDefined();
     expect(preview.refusal).toBeUndefined();
+    expect(commands.repairEntity(repairLook.recipe, target.uid)).toBeUndefined();
+    const work = inventory.hands.right!;
+    sim.scheduler.advance(work.work!.duration / sim.clock.ratio + 1);
+    expect(inventory.entities.conditionOf(target)).toBe(1);
+    expect(inventory.itemByUid(work.uid)).toBeUndefined();
   });
 });

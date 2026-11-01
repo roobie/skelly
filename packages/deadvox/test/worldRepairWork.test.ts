@@ -227,15 +227,30 @@ it('posts the craft completion owner refusal once', () => {
   expect(notices).toEqual([reason]);
 });
 
-it('cancels paused entity work returning exact input identities and condition without repair', () => {
-  const r = start();
-  r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
-  r.sim.actions.stop();
-  expect(r.commands.act(r.work.uid, 'apart')).toBeUndefined();
-  expect(returned(r)).toEqual(r.exact);
-  expect(r.target.damage).toBe(DURABILITY / 2);
-  expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
-});
+it.each(['active', 'paused'] as const)(
+  'cancels %s entity repair mid-action without consuming inputs or repairing the piece',
+  (state) => {
+    const r = start();
+    r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
+    expect(r.work.work!.elapsed).toBeGreaterThan(0);
+    expect(r.work.work!.elapsed).toBeLessThan(r.work.work!.duration);
+    expect(r.work.work!.components.map((item) => snapshotItem(item)).sort((a, b) => a.uid - b.uid)).toEqual(r.exact);
+    expect(r.target.damage).toBe(DURABILITY / 2);
+    if (state === 'paused') {
+      r.sim.actions.stop();
+    }
+    expect(r.sim.actions.job).toMatchObject({ workUid: r.work.uid, stopped: state === 'paused' });
+    const { duration } = r.work.work!;
+    expect(r.commands.act(r.work.uid, 'apart')).toBeUndefined();
+    expect(returned(r)).toEqual(r.exact);
+    expect(r.target.damage).toBe(DURABILITY / 2);
+    expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
+    expect(r.sim.actions.job).toBeUndefined();
+    r.sim.scheduler.advance(duration / r.sim.clock.ratio + 1);
+    expect(returned(r)).toEqual(r.exact);
+    expect(r.target.damage).toBe(DURABILITY / 2);
+  },
+);
 
 const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
   const unused = (): never => {
