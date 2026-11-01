@@ -541,6 +541,11 @@ const UiScreenTextSchema = strictObject({
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
   prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  worldService: slottedTable({
+    push: [],
+    drag: [],
+    lift: [],
+  }),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -628,6 +633,7 @@ const UiScreenTextSchema = strictObject({
     barDoor: ['name'],
     liftBar: [],
     hold: ['key', 'action'],
+    actions: [],
     climb: ['name'],
     read: ['name'],
     rest: ['name'],
@@ -810,6 +816,7 @@ const UiScreenTextSchema = strictObject({
     tabSkills: [],
     tabCrafting: [],
     tabActions: [],
+    tabRepair: [],
     find: [],
     findLabel: [],
     needsLabel: [],

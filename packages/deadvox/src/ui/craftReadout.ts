@@ -1,7 +1,8 @@
-// Read-only crafting projection: one reach index, no item ownership or commands.
+import type { BlockEntity } from '../core/blockEntities.ts';
 import type { CraftCharacter } from '../core/character.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { CraftCommands } from '../core/craftCommands.ts';
 import {
   type CraftPreference,
   type CraftSources,
@@ -43,6 +44,15 @@ export const workName = (registry: Registry, item: Item): string => {
 export const runningCraftPresentation = (
   inventory: Inventory,
   job: Readonly<LongJob> | undefined,
+  {
+    simSeconds,
+    clockRatio,
+    compressionActive,
+  }: {
+    readonly simSeconds: number;
+    readonly clockRatio: number;
+    readonly compressionActive: boolean;
+  },
 ): TimedActionPresentation | undefined => {
   if (job?.jobType !== 'craft' || job.stopped) {
     return undefined;
@@ -51,7 +61,6 @@ export const runningCraftPresentation = (
   if (!item?.work) {
     return undefined;
   }
-  // The work record already carries the elapsed and duration the presentation reads.
   const text = craftingText(inventory.registry);
   const draws =
     item.work.kind === 'craft'
@@ -67,7 +76,11 @@ export const runningCraftPresentation = (
         )
       : [];
   return {
-    ...item.work,
+    durationGameSeconds: item.work.duration,
+    elapsedGameSeconds: Math.min(
+      item.work.duration,
+      item.work.elapsed + (compressionActive ? Math.max(0, simSeconds - job.last) * clockRatio : 0),
+    ),
     kind: 'craft',
     label: [workName(inventory.registry, item), ...draws].join(' · '),
     stopped: false,
@@ -76,7 +89,7 @@ export const runningCraftPresentation = (
 export interface CraftRow {
   id: string;
   name: string;
-  /** The result's own name, for the start button. */
+  /** The repair subject or craft result name, for the start button. */
   itemName: string;
   kind: 'craft' | 'repair';
   time: string;
@@ -123,6 +136,7 @@ export const craftRows = ({
   preferences,
   sources = {},
   startReason,
+  entityRepair,
 }: {
   registry: Registry;
   character: CraftCharacter;
@@ -130,9 +144,16 @@ export const craftRows = ({
   preferences: Readonly<Record<string, CraftPreference>>;
   sources?: Readonly<Record<string, CraftSources>>;
   startReason: string | undefined;
+  entityRepair?: { target: BlockEntity; crafting: Pick<CraftCommands, 'previewEntityRepair'> };
 }): CraftRow[] =>
   [...character.knownRecipes]
-    .filter((id) => !registry.recipes.get(id)!.activation)
+    .filter((id) => {
+      const recipe = registry.recipes.get(id)!;
+      return (
+        !recipe.activation &&
+        (entityRepair ? recipe.repair?.entity === entityRepair.target.type : recipe.repair?.entity === undefined)
+      );
+    })
     .sort()
     .map((id) => {
       const recipe = registry.recipes.get(id)!;
@@ -140,14 +161,18 @@ export const craftRows = ({
       const result = planCraft(recipe, reach, character, { prefer, sources: sources[id] });
       const status = requirementStatus(recipe, reach, character);
       const text = craftingText(registry);
-      const itemName = registry.items.get(recipe.result.item)!.name;
+      const itemName = recipe.repair?.entity
+        ? registry.furniture.get(recipe.repair.entity)!.name
+        : registry.items.get(recipe.result.item)!.name;
       return {
         id,
         name: recipe.kind === 'repair' ? fillText(text.repairName, { item: itemName }) : itemName,
         itemName,
         kind: recipe.kind === 'repair' ? 'repair' : 'craft',
         time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes, text),
-        reason: recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
+        reason: entityRepair
+          ? entityRepair.crafting.previewEntityRepair(id, entityRepair.target.uid, prefer, sources[id]).refusal
+          : recipeStartReason(recipe, result, reach, { startReason, noRepairTarget: text.noRepairTarget }),
         components: status.components.map(({ alternatives, group }) => ({
           group,
           preferred: prefer?.[group] ? JSON.stringify(prefer[group]) : '',

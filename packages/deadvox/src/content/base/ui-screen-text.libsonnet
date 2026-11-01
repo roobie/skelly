@@ -108,6 +108,11 @@
   rest: { waiting: 'Waiting', fallingAsleep: 'Falling asleep', until: '{rest} until {clock}', stop: 'Stop ({key})' },
   prompt: { interruption: '{reason}.', continue: '{key}: continue', stop: '{key}: stop' },
   reading: { putAway: 'Put away', putAwayLabel: 'Put away reading', progress: 'Reading progress', text: 'Text' },
+  worldService: {
+    push: 'Push',
+    drag: 'Drag',
+    lift: 'Lift',
+  },
   crafting: {
     heading: 'Crafting',
     all: 'All',
@@ -192,6 +197,7 @@
     barDoor: 'Bar the {name}',
     liftBar: 'Lift the bar',
     hold: '{key} (hold): {action}',
+    actions: 'actions',
     climb: 'climb the {name}',
     read: 'read the {name}',
     rest: 'Rest on the {name}',
@@ -372,6 +378,7 @@
     tabSkills: 'Skills',
     tabCrafting: 'Crafting',
     tabActions: 'Actions',
+    tabRepair: 'Repair',
     find: 'Find',
     findLabel: 'Find items',
     needsLabel: 'Needs',

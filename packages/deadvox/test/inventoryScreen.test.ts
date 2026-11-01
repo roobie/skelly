@@ -665,6 +665,35 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
+  it('opens Repair only for a pinned target and forgets it when the screen closes', () => {
+    const { screen, root, entity } = setup();
+    expect(root.querySelector('[data-tab="repair"]')).toBeNull();
+    screen.selectTab('crafting');
+    screen.openRepair(entity.uid);
+    expect(screen.repairTarget).toBe(entity);
+    expect(screen.activeTab).toBe('repair');
+    expect(root.querySelector('[data-tab="repair"][aria-selected="true"]')).not.toBeNull();
+    expect(document.body.classList.contains('inventory-tab-repair')).toBe(true);
+    screen.close();
+    expect(screen.repairTarget).toBeUndefined();
+    screen.open();
+    expect(screen.activeTab).toBe('crafting');
+    expect(root.querySelector('[data-tab="repair"]')).toBeNull();
+    screen.close();
+  });
+
+  it('drops the ephemeral view when its target disappears', () => {
+    const { screen, root, inv, entity } = setup();
+    screen.openRepair(entity.uid);
+    inv.entities.remove(entity);
+    screen.update();
+    expect(screen.repairTarget).toBeUndefined();
+    expect(screen.activeTab).toBe('items');
+    expect(root.querySelector('[data-tab="repair"]')).toBeNull();
+    expect(document.body.classList.contains('inventory-tab-repair')).toBe(false);
+    screen.close();
+  });
+
   it('keeps a find filter while blurred and routes inventory keys to its items', () => {
     const { screen, root, beans, lastPayload } = setup();
     const keyboard = new KeyboardInput(inputBindings);
