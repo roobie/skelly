@@ -3126,10 +3126,13 @@ their state.
 
 1. **A car builder, not a car customizer.** Parts attach by capability, not by sockets a
    designer laid out in advance: a wing mirror needs a mountable vertical face, and a
-   door, a halfboard or a plate the player welded on can all provide one. Players can
-   then build things the designers didn't foresee. Vehicles own their fittings
-   rather than switching a designer's list on and off. See `VehicleInstance` in
-   `src/vehicles/model.ts`.
+   door, a halfboard or a plate the player welded on can all provide one. A vehicle
+   built in game can take almost any shape, limited only by which parts exist, so
+   players build things the designers didn't foresee, scratch-built from rails and
+   plates as well as from factory structures. Its shape comes from what the player
+   builds, so collision, crew space and parked-vehicle shape must not assume an
+   authored car shape. Vehicles own their fittings rather than switching a
+   designer's list on and off. See `VehicleInstance` in `src/vehicles/model.ts`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
@@ -3261,8 +3264,9 @@ useful fitted cargo; further compartments extend the same ownership model rather
 than turning the entire wreck into a container.
 
 **Deferred scope.** #322 carries scratch-built frames, voxel erosion, player-cut
-structure, enclosure and arbitrary world objects riding vehicle space. These are
-separate from first-slice impact detachment and fitted cargo. #221 owns finer
+structure, enclosure and arbitrary world objects riding vehicle space. Scratch-built
+frames are in the goal (point 1) but come after factory structures (point 8); #322
+tracks when. These are separate from first-slice impact detachment and fitted cargo. #221 owns finer
 collision grain; the parked approximation must not be mistaken for exact geometry.
 The consumer triggers and reasons are in `SLICE-6.md`, "Deferred work and its trigger".
 
