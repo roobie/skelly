@@ -514,9 +514,6 @@ const recoveryTemplate = (
 ): TemplateResult =>
   html`<div class="inv-recovery">${recovery.liquids.map((amount) => {
     const receiver = recovery.choices.receivers?.find(({ liquid }) => liquid === amount.liquid)?.uid;
-    const spill = recovery.spills.find(({ liquid }) => liquid === amount.liquid)?.volumeMicrolitres ?? 0;
-    const approved =
-      recovery.choices.spillApproval?.find(({ liquid }) => liquid === amount.liquid)?.volumeMicrolitres ?? 0;
     const vessels = recovery.vessels.filter(({ liquid }) => liquid === amount.liquid);
     return html`<div class="inv-line" data-recovery-liquid=${amount.liquid}>
     <span>${fillText(text.recoveryAmount, { liquid: amount.name, volume: volumeText(amount.volumeMicrolitres / 1000) })}</span>
@@ -540,22 +537,6 @@ const recoveryTemplate = (
           ],
         }),
     })}
-    ${
-      spill > 0
-        ? html`<label><input type="checkbox" data-recovery-approval=${amount.liquid} .checked=${live(approved >= spill)} @change=${(
-            event: Event,
-          ) =>
-            change({
-              ...recovery.choices,
-              spillApproval: [
-                ...(recovery.choices.spillApproval ?? []).filter(({ liquid }) => liquid !== amount.liquid),
-                ...((event.target as HTMLInputElement).checked
-                  ? [{ liquid: amount.liquid, volumeMicrolitres: spill }]
-                  : []),
-              ],
-            })}>${fillText(text.recoveryApproveSpill, { liquid: amount.name, volume: volumeText(spill / 1000) })}</label>`
-        : nothing
-    }
   </div>`;
   })}</div>`;
 
@@ -972,7 +953,7 @@ export class InventoryScreen {
   /** The opened vehicle's service options for each fitted part, for that part's details. */
   private readonly vehicleOptionsByUid = new Map<number, readonly VehicleOptionViewModel[]>();
   private recoveryUid: number | undefined;
-  private recoveryChoices: RecoveryChoices = {};
+  private recoveryChoices: Pick<RecoveryChoices, 'receivers' | 'recoveryOperation'> = {};
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
@@ -1538,7 +1519,8 @@ export class InventoryScreen {
                   kind: 'inventory.work',
                   itemUid: item.uid,
                   operation,
-                  ...(operation === 'apart' ? {} : this.recoveryChoices),
+                  // A fresh projection here could approve room lost since the button was drawn.
+                  ...(operation === 'apart' ? {} : (vm.details.recovery?.choices ?? this.recoveryChoices)),
                 }),
               );
             } else if (target) {
@@ -1546,7 +1528,10 @@ export class InventoryScreen {
             }
           },
           changeRecovery: (choices) => {
-            this.recoveryChoices = choices;
+            this.recoveryChoices = {
+              receivers: choices.receivers ?? [],
+              ...(choices.recoveryOperation ? { recoveryOperation: choices.recoveryOperation } : {}),
+            };
             this.drawn = '';
             this.update();
           },
@@ -1948,24 +1933,27 @@ export class InventoryScreen {
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),
-      ].map(
-        (option): OptionViewModel =>
-          option.plan.ok && !('operation' in option && option.operation !== 'apart' && recovery?.refusal)
-            ? {
-                label: option.label,
-                button: true,
-                time:
-                  'duration' in option && option.duration !== undefined
-                    ? craftTime(option.duration, craftingText(this.inv.registry))
-                    : secs(text, option.plan.time),
-                ...optionAction(option),
-              }
-            : {
-                label: option.label,
-                button: false,
-                reason: (option.plan.ok ? recovery!.refusal! : option.plan.reason).toLowerCase(),
-              },
-      ),
+      ].map((option): OptionViewModel => {
+        const label =
+          'operation' in option && option.operation !== 'apart' && recovery?.spillLabel
+            ? fillText(text.recoveryAction, { action: option.label, spill: recovery.spillLabel })
+            : option.label;
+        return option.plan.ok && !('operation' in option && option.operation !== 'apart' && recovery?.refusal)
+          ? {
+              label,
+              button: true,
+              time:
+                'duration' in option && option.duration !== undefined
+                  ? craftTime(option.duration, craftingText(this.inv.registry))
+                  : secs(text, option.plan.time),
+              ...optionAction(option),
+            }
+          : {
+              label,
+              button: false,
+              reason: (option.plan.ok ? recovery!.refusal! : option.plan.reason).toLowerCase(),
+            };
+      }),
     };
   }
 

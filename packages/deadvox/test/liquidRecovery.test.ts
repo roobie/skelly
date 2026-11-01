@@ -93,14 +93,24 @@ const replay = (r: ReturnType<typeof setup>, action: ReplayActionPayload): strin
 };
 
 describe('recorded liquid recovery', () => {
-  it('does not start or mutate ownership when the spill is not approved', () => {
-    const r = setup();
-    const source = r.source();
-    const before = r.inventory.snapshotState();
-    expect(r.commands.act(source.uid, 'disassemble')).toBeDefined();
-    expect(r.inventory.snapshotState()).toEqual(before);
-    expect(r.sim.actions.job).toBeUndefined();
-  });
+  it.each(['disassembly', 'salvage'] as const)(
+    'the spill-labelled %s click approves spilling all',
+    (recoveryOperation) => {
+      const r = setup();
+      const source = r.source();
+      const projection = r.commands.recovery(source.uid, { recoveryOperation })!;
+      expect(projection.refusal).toBeUndefined();
+      expect(projection.spillLabel).toBeDefined();
+      expect(projection.choices.spillApproval).toEqual(projection.spills);
+      expect(r.commands.act(source.uid, 'disassemble', projection.choices)).toBeUndefined();
+      const { item, work } = payload(r);
+      expect(work.operation).toBe(recoveryOperation);
+      expect(work.spillApproval).toEqual(work.liquids);
+      r.finish(item);
+      expect(item.work).toBeUndefined();
+      expect(r.inventory.itemByUid(source.uid)).toBeUndefined();
+    },
+  );
   it('pours exactly the room and spills only the approved remainder', () => {
     const r = setup();
     const source = r.source();
@@ -149,12 +159,23 @@ describe('recorded liquid recovery', () => {
       expect(snapshotItem(receiver)).toEqual(before);
       expect(r.sim.actions.job).toMatchObject({ stopped: true, workUid: item.uid });
       const replacement = resolution === 'replace' ? r.add(VESSEL) : receiver;
-      const choices =
-        resolution === 'replace'
-          ? { receivers: [{ liquid: STOCK, uid: replacement.uid }] }
-          : { spillApproval: [{ liquid: STOCK, volumeMicrolitres: recovered - room + volume(receiver) }] };
+      const selection = resolution === 'replace' ? { receivers: [{ liquid: STOCK, uid: replacement.uid }] } : {};
+      const projected = r.commands.recovery(item.uid, selection)!;
+      expect(projected.refusal).toBeUndefined();
+      if (resolution === 'approve') {
+        expect(projected.spillLabel).toBeDefined();
+        expect(projected.choices.spillApproval).toEqual([
+          { liquid: STOCK, volumeMicrolitres: recovered - room + volume(receiver) },
+        ]);
+        stage(r.inventory.transferLiquid(donor.uid, receiver.uid, 1).ok);
+        expect(
+          replay(r, { kind: 'inventory.work', itemUid: item.uid, operation: 'continue', ...projected.choices }),
+        ).toBeDefined();
+        expect(item.work).toBe(work);
+      }
+      const refreshed = r.commands.recovery(item.uid, selection)!;
       expect(
-        replay(r, { kind: 'inventory.work', itemUid: item.uid, operation: 'continue', ...choices }),
+        replay(r, { kind: 'inventory.work', itemUid: item.uid, operation: 'continue', ...refreshed.choices }),
       ).toBeUndefined();
       r.sim.scheduler.advance(1);
       expect(item.work).toBeUndefined();
@@ -164,16 +185,6 @@ describe('recorded liquid recovery', () => {
       }
     },
   );
-  it('allows no receiver when the player approves spilling every kind', () => {
-    const r = setup();
-    const source = r.source();
-    const plan = planDisassembly(source, r.reach(), r.character)!;
-    expect(r.commands.act(source.uid, 'disassemble', { spillApproval: plan.liquids })).toBeUndefined();
-    const { item } = payload(r);
-    r.finish(item);
-    expect(item.work).toBeUndefined();
-    expect(r.inventory.itemByUid(source.uid)).toBeUndefined();
-  });
   it('recovers several kinds into separate receivers and never shares one receiver across kinds', () => {
     const r = setup();
     const source = r.source([

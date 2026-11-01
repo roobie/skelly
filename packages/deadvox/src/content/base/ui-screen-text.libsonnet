@@ -399,7 +399,7 @@
     recoveryNoMatches: 'No matching vessels',
     recoverySpillAll: 'No receiver — spill all',
     recoveryUnavailable: 'Receiver unavailable',
-    recoveryApproveSpill: 'Approve spilling {volume} ml {liquid}',
+    recoveryAction: '{action} — {spill}',
     inspect: 'Inspect',
     whereItCanGo: 'Where it can go',
     firearmSlots: 'Firearm slots',

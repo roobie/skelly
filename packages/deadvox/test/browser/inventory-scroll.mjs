@@ -1839,73 +1839,136 @@ try {
   }
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
-  await page.evaluate(
-    async ({ recoveryModule, contentModule }) => {
-      const original = document.querySelector('#inventory');
-      globalThis.scrollFixture.screen.close();
-      original.id = 'inventory-original';
-      const { mountRecoveryProbe } = await import(recoveryModule);
-      const { buildBundledContent } = await import(contentModule);
-      const { registry } = buildBundledContent();
-      globalThis.recoveryProbe = mountRecoveryProbe(registry, {
-        ratio: registry.dayCycle.clockRatio,
-        start: 0,
+  for (const scenario of ['spill-all', 'lost-room']) {
+    await page.evaluate(
+      async ({ recoveryModule, contentModule }) => {
+        const original = document.querySelector('#inventory');
+        globalThis.scrollFixture.screen.close();
+        original.id = 'inventory-original';
+        const { mountRecoveryProbe } = await import(recoveryModule);
+        const { buildBundledContent } = await import(contentModule);
+        const { registry } = buildBundledContent();
+        globalThis.recoveryProbe = mountRecoveryProbe(registry, {
+          ratio: registry.dayCycle.clockRatio,
+          start: 0,
+        });
+      },
+      { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/game/bundledContent.ts' },
+    );
+    const recoveryRoot = page.locator('[data-recovery-probe]');
+    const startButton = recoveryRoot.locator('button[data-work-operation="disassemble"]');
+    assert.equal(await startButton.count(), 1, 'a spill-chosen click can start without a second approval');
+    assert.equal(await recoveryRoot.locator('[data-recovery-approval]').count(), 0, 'no separate approval state');
+    if (scenario === 'lost-room') {
+      const receiverName = await page.evaluate(() => {
+        const { inventory, receiver } = globalThis.recoveryProbe;
+        return inventory.name(receiver);
       });
-    },
-    { recoveryModule: '/test/browser/liquid-recovery-ui.ts', contentModule: '/src/game/bundledContent.ts' },
-  );
-  const recoveryRoot = page.locator('[data-recovery-probe]');
-  assert.equal(
-    await recoveryRoot.locator('button[data-work-operation="disassemble"]').count(),
-    0,
-    'an unapproved spill cannot start',
-  );
-  const receiverName = await page.evaluate(() => {
-    const { inventory, receiver } = globalThis.recoveryProbe;
-    return inventory.name(receiver);
-  });
-  await recoveryRoot.locator('.inv-recovery input[role="combobox"]').click();
-  await page.getByRole('option', { name: receiverName, exact: true }).click();
-  const spillApproval = recoveryRoot.locator('[data-recovery-approval]');
-  assert.equal(await spillApproval.count(), 1, 'partial recovery states a spill for confirmation');
-  await spillApproval.check();
-  await recoveryRoot.locator('button[data-work-operation="disassemble"]').click();
-  const recoveryResult = await page.evaluate(() => {
-    const { inventory, sim, receiver, liquid } = globalThis.recoveryProbe;
-    const workItem = inventory.hands.right;
-    const work = workItem?.work;
-    if (work?.kind !== 'disassembly') {
-      throw new Error('Recovery UI did not start work');
+      await recoveryRoot.locator('.inv-recovery input[role="combobox"]').click();
+      await page.getByRole('option', { name: receiverName, exact: true }).click();
     }
-    const selected = work.receivers.find((entry) => entry.liquid === liquid)?.uid;
-    const approval = work.spillApproval.find((entry) => entry.liquid === liquid)?.volumeMicrolitres;
-    const capacity = inventory.registry.items.get(receiver.type).vessel.capacityMicrolitres;
-    const recovered = work.liquids.find((entry) => entry.liquid === liquid).volumeMicrolitres;
-    sim.scheduler.advance(Math.ceil(work.duration / sim.clock.ratio) + 1);
-    return {
-      selected,
-      receiverUid: receiver.uid,
-      approval,
-      recovered,
-      capacity,
-      contents: receiver.liquidContents,
-      done: workItem.work === undefined,
-    };
-  });
-  assert.equal(recoveryResult.selected, recoveryResult.receiverUid, 'the selected receiver reaches the work payload');
-  assert.equal(
-    recoveryResult.approval,
-    recoveryResult.recovered - recoveryResult.capacity,
-    'approval is the stated spill, not an unlimited discard',
-  );
-  assert.ok(recoveryResult.done, 'approved recovery finishes');
-  assert.equal(recoveryResult.contents.volumeMicrolitres, recoveryResult.capacity, 'the receiver gains only what fits');
-  await page.evaluate(() => {
-    globalThis.recoveryProbe.screen.close();
-    globalThis.recoveryProbe.root.remove();
-    document.querySelector('#inventory-original').id = 'inventory';
-  });
-  logPhase('liquid take-apart recovery');
+    const consequence = await page.evaluate((mode) => {
+      const { commands, source, receiver, liquid } = globalThis.recoveryProbe;
+      return commands.recovery(source.uid, mode === 'lost-room' ? { receivers: [{ liquid, uid: receiver.uid }] } : {})
+        .spillLabel;
+    }, scenario);
+    assert.ok(
+      (await startButton.textContent()).includes(consequence),
+      'the action includes its projected spill amount',
+    );
+    await startButton.click();
+    const started = await page.evaluate((mode) => {
+      const probe = globalThis.recoveryProbe;
+      const { inventory, sim, receiver, donor, liquid, screen } = probe;
+      const item = inventory.hands.right;
+      const work = item?.work;
+      if (work?.kind !== 'disassembly') {
+        throw new Error('Recovery UI did not start work');
+      }
+      probe.startedWork = work;
+      probe.workItem = item;
+      const recovered = work.liquids.find((entry) => entry.liquid === liquid).volumeMicrolitres;
+      const approval = work.spillApproval.find((entry) => entry.liquid === liquid)?.volumeMicrolitres;
+      if (mode === 'lost-room' && !inventory.transferLiquid(donor.uid, receiver.uid, 100).ok) {
+        throw new Error('Cannot take receiver room');
+      }
+      sim.scheduler.advance(Math.ceil(work.duration / sim.clock.ratio) + 1);
+      screen.selected = item;
+      screen.update();
+      return {
+        recovered,
+        approval,
+        retained: item.work === work,
+        capacity: inventory.registry.items.get(receiver.type).vessel.capacityMicrolitres,
+      };
+    }, scenario);
+    if (scenario === 'spill-all') {
+      assert.equal(started.approval, started.recovered, 'the spill-all click carries the complete bounded amount');
+      assert.equal(started.retained, false, 'spill-all finishes');
+    } else {
+      assert.equal(
+        started.approval,
+        started.recovered - started.capacity,
+        'the first click approves only its stated remainder',
+      );
+      assert.equal(started.retained, true, 'lost room retains finished work');
+      const continueButton = recoveryRoot.locator('button[data-work-operation="continue"]');
+      const continuation = await page.evaluate(() => {
+        const { commands, workItem } = globalThis.recoveryProbe;
+        return commands.recovery(workItem.uid);
+      });
+      assert.ok(
+        (await continueButton.textContent()).includes(continuation.spillLabel),
+        'Continue states the larger spill amount',
+      );
+      await page.evaluate(() => {
+        const { inventory, donor, receiver } = globalThis.recoveryProbe;
+        if (!inventory.transferLiquid(donor.uid, receiver.uid, 1).ok) {
+          throw new Error('Cannot stage room loss after drawing Continue');
+        }
+      });
+      await continueButton.click();
+      const refused = await page.evaluate(() => {
+        const { workItem, startedWork, screen } = globalThis.recoveryProbe;
+        const unchanged = JSON.stringify(startedWork.spillApproval);
+        screen.update();
+        return { retained: workItem.work === startedWork, approval: JSON.parse(unchanged) };
+      });
+      assert.equal(refused.retained, true, 'a stale Continue click never silently approves additional spill');
+      assert.equal(
+        refused.approval[0].volumeMicrolitres,
+        started.approval,
+        'refused Continue does not credit a larger approval',
+      );
+      const refreshed = await page.evaluate(() => {
+        const { commands, workItem } = globalThis.recoveryProbe;
+        return commands.recovery(workItem.uid);
+      });
+      assert.ok(
+        (await continueButton.textContent()).includes(refreshed.spillLabel),
+        'redrawn Continue states the new bounded amount',
+      );
+      await continueButton.click();
+      const finished = await page.evaluate(() => {
+        const { sim, workItem, startedWork, receiver } = globalThis.recoveryProbe;
+        sim.scheduler.advance(1);
+        return {
+          done: workItem.work === undefined,
+          approval: startedWork.spillApproval,
+          contents: receiver.liquidContents,
+        };
+      });
+      assert.equal(finished.done, true, 'the spill-labelled Continue click finishes recovery');
+      assert.deepEqual(finished.approval, refreshed.choices.spillApproval, 'only the displayed bound reaches work');
+      assert.equal(finished.contents.volumeMicrolitres, started.capacity, 'the receiver gains only what fits');
+    }
+    await page.evaluate(() => {
+      globalThis.recoveryProbe.screen.close();
+      globalThis.recoveryProbe.root.remove();
+      document.querySelector('#inventory-original').id = 'inventory';
+    });
+  }
+  logPhase('liquid take-apart and Continue recovery');
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
   await page.evaluate(

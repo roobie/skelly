@@ -11,7 +11,7 @@ import { bindReach } from '../../src/core/reach.ts';
 import { Simulation } from '../../src/core/sim.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
-import { RESULT, STOCK, VESSEL } from '../liquidCraftFixture.ts';
+import { FULL, RESULT, STOCK, VESSEL } from '../liquidCraftFixture.ts';
 import { liquidRecoveryData } from '../liquidRecoveryFixture.ts';
 
 export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
@@ -45,7 +45,14 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     craftedLiquids: [{ liquid: STOCK, volumeMicrolitres: 4000 }],
   });
   const receiver = inventory.create(VESSEL);
-  if (!(inventory.add(source, { kind: 'pile', pos: feet }) && inventory.add(receiver, { kind: 'pile', pos: feet }))) {
+  const donor = inventory.create(FULL);
+  if (
+    !(
+      inventory.add(source, { kind: 'pile', pos: feet }) &&
+      inventory.add(receiver, { kind: 'pile', pos: feet }) &&
+      inventory.add(donor, { kind: 'pile', pos: feet })
+    )
+  ) {
     throw new Error('Cannot stage recovery probe');
   }
   const root = document.createElement('section');
@@ -73,5 +80,5 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
   });
   screen.selected = source;
   screen.open();
-  return { root, screen, inventory, sim, receiver, source, liquid: STOCK };
+  return { root, screen, inventory, sim, commands, receiver, donor, source, liquid: STOCK };
 };

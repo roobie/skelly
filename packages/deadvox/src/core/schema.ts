@@ -837,7 +837,7 @@ const UiScreenTextSchema = strictObject({
     recoveryNoMatches: [],
     recoverySpillAll: [],
     recoveryUnavailable: [],
-    recoveryApproveSpill: ['liquid', 'volume'],
+    recoveryAction: ['action', 'spill'],
     inspect: [],
     whereItCanGo: [],
     firearmSlots: [],

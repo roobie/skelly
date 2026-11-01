@@ -15,9 +15,10 @@ export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: Reco
 
 export interface RecoveryProjection {
   liquids: (LiquidAmount & { name: string })[];
-  choices: LiquidRecoveryChoices;
+  choices: RecoveryChoices;
   vessels: { liquid: string; uid: number; name: string }[];
   spills: LiquidAmount[];
+  spillLabel?: string;
   refusal?: string;
 }
 
@@ -264,18 +265,21 @@ export class CraftCommands {
     if (!plan || plan.liquids.length === 0) {
       return undefined;
     }
-    const selected: LiquidRecoveryChoices = {
+    const selected: RecoveryChoices = {
       receivers: choices.receivers ?? work?.receivers ?? [],
-      spillApproval: choices.spillApproval ?? work?.spillApproval ?? [],
+      spillApproval: [],
+      ...(choices.recoveryOperation ? { recoveryOperation: choices.recoveryOperation } : {}),
     };
     const receipt = this.inventory.planLiquidReceipts(plan.liquids, selected);
+    const spills = 'spills' in receipt ? receipt.spills.filter(({ volumeMicrolitres }) => volumeMicrolitres > 0) : [];
     const refusal = this.inventory.liquidReceiptRefusal(receipt);
+    const needsApproval = !receipt.ok && receipt.reason === 'spill-approval';
     return {
       liquids: plan.liquids.map((liquid) => ({
         ...liquid,
         name: this.inventory.registry.liquids.get(liquid.liquid)!.name,
       })),
-      choices: selected,
+      choices: { ...selected, spillApproval: spills },
       vessels: plan.liquids.flatMap((amount) =>
         snapshot.entries.flatMap(({ item: vessel }) => {
           if (vessel.uid === item.uid) {
@@ -288,8 +292,9 @@ export class CraftCommands {
           return receive.ok ? [{ liquid: amount.liquid, uid: vessel.uid, name: this.inventory.name(vessel) }] : [];
         }),
       ),
-      spills: 'spills' in receipt ? receipt.spills : [],
-      ...(refusal ? { refusal } : {}),
+      spills,
+      ...(needsApproval && refusal ? { spillLabel: refusal } : {}),
+      ...(!needsApproval && refusal ? { refusal } : {}),
     };
   }
 

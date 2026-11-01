@@ -4,6 +4,7 @@ read_if:
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
   - you author recipes or item take-apart yields
+  - you change liquid recovery destinations or spill consent
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
@@ -1731,16 +1732,16 @@ promised yield. See `src/core/disassembly.ts`, `planDisassembly` and
 `disassemblyLiquidOutputs`, and `src/core/content.ts`, `checkDisassembly`.
 
 Each recovered liquid kind has a player-chosen receiver because different kinds
-cannot share a vessel. Recovery pours what fits; any remainder needs approval of
-that stated amount, including when no receiver is chosen and all of it spills.
-Neither a hidden destination nor silent discard is an acceptable substitute for
-the player's choice. If room is lost during work, Continue may choose another
-receiver or approve the larger spill: the earlier approval was a bound, not
-permission to discard more. These choices apply equally to salvage and
-disassembly because changing the recovery operation must not hide a consequential
-liquid transfer. See `src/core/inventory.ts`, `Inventory.planLiquidReceipts` and
-`Inventory.releaseWork`; `src/core/craftCommands.ts`, `CraftCommands.recovery` and
-`CraftCommands.act`; and `src/ui/inventoryScreen.ts`, `recoveryTemplate`.
+cannot share a vessel. Clicking Take apart or Continue approves the spill stated
+on that button, including spill-all without a receiver. The button already gives
+the consequence and amount, so a separate checkbox adds a step without information.
+Approval remains bounded by that displayed amount: lost room needs another stated
+Continue click or a different receiver, not silent permission to discard more.
+These choices apply equally to salvage and disassembly because changing the
+recovery operation must not hide a consequential liquid transfer. See
+`src/core/inventory.ts`, `Inventory.planLiquidReceipts` and `Inventory.releaseWork`;
+`src/core/craftCommands.ts`, `CraftCommands.recovery` and `CraftCommands.act`; and
+`src/ui/inventoryScreen.ts`, `detailsViewModel` and `render`.
 
 Gainful cycles are forbidden because endless material breaks scarcity. A gainful
 cycle is a finite combination of crafting, disassembly, salvage or unpack
