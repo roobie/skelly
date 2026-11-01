@@ -86,6 +86,12 @@ export class MagazineHandling {
 
   /** Strips the top round into a pocket, or onto the ground at the player's feet. */
   strip(uid: number, time: number, held = false): string | undefined {
+    return held && this.heldStripUid === uid
+      ? this.advanceHeldStrip(uid, time, true)
+      : this.startStrip(uid, time, held);
+  }
+
+  private startStrip(uid: number, time: number, held: boolean): string | undefined {
     const magazine = this.heldMagazine(uid);
     if (!magazine) {
       this.heldStripUid = undefined;
@@ -124,7 +130,7 @@ export class MagazineHandling {
       this.heldStripUid = undefined;
       return undefined;
     }
-    const reason = this.strip(uid, time, true);
+    const reason = this.startStrip(uid, time, true);
     if (reason) {
       this.heldStripUid = undefined;
     }

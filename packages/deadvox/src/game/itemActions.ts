@@ -7,6 +7,7 @@ import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
 import { canUnloadBattery, chargeOf, lightInHands } from '../core/lights.ts';
 import { magazineSpec } from '../core/magazine.ts';
+import { heldBatteryForLight } from '../core/options.ts';
 import type { TreatmentDef } from '../core/schema.ts';
 import { openingTargetForHand } from './canOpening.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
@@ -86,7 +87,9 @@ const lightActions = (item: Item, inventory: Inventory): readonly ItemAction[] =
   }
   return [
     { id: 'own', label: coreLabel(registry, own) },
-    { id: 'battery:unload', label: coreLabel(registry, 'batteryOut'), battery: 'unload' },
+    ...(canUnloadBattery(registry, item)
+      ? [{ id: 'battery:unload', label: coreLabel(registry, 'batteryOut'), battery: 'unload' as const }]
+      : []),
   ];
 };
 
@@ -95,7 +98,10 @@ const ordinaryItemActions = (item: Item, inventory: Inventory, body: Body): read
     const label = actionText(inventory.registry).itemActions.stripRound;
     return (item.cartridges?.length ?? 0) > 0 ? [{ id: 'magazine:strip', label, magazine: 'strip' }] : [];
   }
-  if (canUnloadBattery(inventory.registry, item) && lightInHands(inventory, item)) {
+  if (
+    (canUnloadBattery(inventory.registry, item) || heldBatteryForLight(inventory, item)) &&
+    lightInHands(inventory, item)
+  ) {
     return lightActions(item, inventory);
   }
   const { treatment } = defOf(inventory.registry, item.type);

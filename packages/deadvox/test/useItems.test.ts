@@ -522,16 +522,32 @@ describe('using what you hold', () => {
     expect(chargeOf(registry, spent)).toBeCloseTo(0.1, 9);
   });
 
-  it('a dead light used with a charged battery in the other hand refuses and loads nothing', () => {
+  it.each([
+    { side: 'right', state: 'empty', route: 'tap' },
+    { side: 'left', state: 'dead', route: 'tap' },
+    { side: 'left', state: 'empty', route: 'slot' },
+    { side: 'right', state: 'dead', route: 'radial' },
+  ] as const)('loads the other-hand battery through $route on an $state light in $side', ({ side, state, route }) => {
     const { inventory, queue, survival, hold } = setup();
-    const light = hold('flashlight');
-    const battery = hold('aa_battery', 'left');
-    const original = batteryOf(light);
-    original.charges = 0;
-    expect(survival.use(light)).toBe(coreMessage(registry, 'batteryDeadNoSpare'));
-    expect(queue.jobs).toEqual([]);
-    expect(light.slots?.battery).toBe(original);
-    expect(inventory.locate(battery)?.kind).toBe('hand');
+    const light = inventory.createRolled({ type: 'flashlight', count: 1, condition: 1, charge: 0 });
+    expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
+    const other = side === 'left' ? 'right' : 'left';
+    const battery = hold('aa_battery', other);
+    if (state === 'empty') {
+      const removed = inventory.fitSlot(light, 'battery', undefined)!;
+      expect(inventory.add(removed, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    const use = {
+      tap: () => survival.use(light),
+      slot: () => survival.loadBattery(light.uid, battery.uid),
+      radial: () => survival.withItemAction(light, 'own', () => survival.use(light)),
+    };
+    expect(use[route]()).toBeUndefined();
+    expect(queue.busy).toBe(true);
+    expect(queue.tick(queue.remaining).failed).toEqual([]);
+    expect(light.slots?.battery).toBe(battery);
+    expect(inventory.hands[other]).toBeUndefined();
+    expect(light.on).not.toBe(true);
   });
 
   it('a hand load refuses once an earlier queued move has put the light down', () => {

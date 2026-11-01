@@ -7,12 +7,13 @@ read_if:
   - you change liquid recovery destinations or spill consent
   - you change recipe discovery through skill progression or books
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
+  - you change held-light battery loading or its consistency with inventory-slot loading
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
-  - you change shared tap/hold action choices, one-shot held-item operations, treatment region selection or furniture hold interaction
+  - you change shared tap/hold action choices, single-action hold repetition, radial acceptance or pull feedback, one-shot held-item operations, treatment region selection or furniture hold interaction
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
@@ -580,9 +581,9 @@ because rearranging a room should not require destroying its contents. See `src/
   `src/game/session.ts`, `liftPiece`, `slidePiece`, `furniturePlacement` and
   `cancelUnreachableDrag`.
 - **Movement choices.** Ordinary use stays on the tap because it is the common
-  action. Movement requires a deliberate choice even when only lifting is
-  available, so holding never unexpectedly lifts a piece. Building parts keep
-  direct use because offering impossible moves would obstruct ordinary interaction.
+  action. Movement alternatives need a visible choice so a hidden operation cannot compete
+  with ordinary use. A lone movement action needs no radial. Building parts keep direct
+  use because offering impossible moves would obstruct ordinary interaction.
   Readability does not fasten a board, and fitted placements retain their kind's
   controls so refusal does not silently change the interaction. Choices are a single confirmation,
   not a persistent mode: returning from pause or another target must not act
@@ -2677,19 +2678,20 @@ The reservoir readout owns the measured balance; the lamp's status reports only
 its switch state so the same oil cannot appear to be a second battery supply.
 See `src/game/survival.ts`, `Survival.describe`.
 
-A battery goes into a light only as the player chooses: dropped onto the battery slot
-on the light's card in the inventory, which shows the battery loaded, or used from one
-hand while the other holds the light. A battery used from a pocket, by the quickbar
-or otherwise, refuses. Only using the battery loads it: a dead or empty light used
-refuses and says so, whatever the other hand holds, because one way to load from the
-hands keeps the rule simple and the player acts with the battery on the light, not the
-other way round. The player chooses which battery goes in, so a fuller battery hidden in
-a bag never overrides the one in hand. The card slot serves a light with no free hand,
-such as one fitted to a gun, whose card shows the same slot. A hand load needs both in
-hands and a slot drop needs both in reach, a fitted light through its gun; the swap
-rechecks the route that admitted it when it completes. See `src/core/options.ts`,
-`batterySlotOption` and `batteryOption`, and `src/ui/inventoryScreen.ts`,
-`batterySlotTemplate`.
+A prepared light-and-battery pair must load the same way whichever member the player
+uses: refusing the light while accepting its battery or card slot makes identical
+preparation appear invalid. The held battery is the explicit choice, so a fuller cell
+hidden in a bag never overrides it. Tap and radial use share the same admission and
+queued swap rather than creating a second loading rule. See `src/core/options.ts`,
+`heldBatteryForLight`, `lightOption` and `batteryOption`.
+
+The inventory card slot serves a light with no free hand, such as one fitted to a gun.
+Its reach requirement differs from hand loading because choosing a reachable slot is
+explicit preparation, not automatic access to pocket stock. Completion rechecks the
+route that admitted the swap so putting the light down or moving away cannot finish
+work that is no longer reachable. See `src/core/options.ts`, `batterySlotOption` and
+`batteryHandRefusal`; `src/game/survival.ts`, `Survival.enqueueBattery`; and
+`src/ui/inventoryScreen.ts`, `batterySlotTemplate`.
 
 A held light offers battery removal through the shared radial because a swap needs
 a spare: without independent removal a player could not move a cell to a charger,
@@ -3638,6 +3640,10 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 
 Ordinary use stays on the tap because it is the common action. A deliberate hold opens choices; furniture and held items share that hold owner and radial gesture because one menu path carries no debt. Look stays free before the hold and is held while choosing so the choice cannot lose its target. The transparent centre is neutral: releasing there cancels rather than running an unseen choice. Losing the item, target, focus or gameplay context also cancels. See `src/game/play.ts`, `interactInput`, `releaseHeldMenu` and `confirmFurnitureAction`, and `src/game/furnitureActions.ts`, `FurnitureActionSelection`.
 
+A radial is only for alternatives. **Rationale:** a menu with one choice adds nothing. A single action repeats while held, for items and furniture alike, while tapping acts once. **Rationale:** hold keeps doing the only thing the item does. Repetition waits for the action's owner to finish its work rather than overlapping it. Repeat exceptions belong in content because an item's safety is an authored property, not an item-type switch. See `src/game/furnitureActions.ts`, `FurnitureActionSelection.open`; `src/game/pressHoldInput.ts`, `PressHoldInput.repeat`; `src/game/play.ts`, `repeatSingleAction`; and `src/core/schema.ts`, `ItemSchema` and `FurnitureSchema`, `holdRepeat`.
+
+Directional acceptance is bounded independently of option count, so removing an option leaves empty space rather than making another option own the wrong side. The acceptance half-angle and pull-dot size are content in `src/content/base/ui.jsonnet`, `furnitureRadial.selectionHalfAngleDegrees` and `furnitureRadial.pullIndicatorPixels`. The angle allows a socket's local sector, not an entire empty hemisphere; nearest-angle choice only resolves overlapping sectors. A discreet dot on the neutral ring follows the actual pull even when no action accepts it, so an empty-side pull is visible without implying confirmation. See `src/game/furnitureActions.ts`, `radialEntryIndex`, and `src/ui/furnitureRadial.ts`, `mountFurnitureRadial`.
+
 An explicit choice executes once, without changing later ordinary use or quickbar policy: a hidden remembered operation would compete with the action the player sees. Default treatment therefore still chooses the worst wound rather than remembering a region from the list. See `src/game/survival.ts`, `Survival.withItemAction`.
 
 Each menu owns its directions. Action identity owns its direction within that menu so changing availability does not retrain steering; mutually exclusive menus may reuse directions because their operations cannot compete. Missing or colliding slots and a first-level menu beyond its content cap fail validation rather than silently moving or dropping choices. Overflow behaviour is not chosen. See `src/game/furnitureActions.ts`, `radialEntries`, and `src/core/content.ts`, `fileIssues`.
@@ -3648,7 +3654,7 @@ Fresh debug looks may equip a registered item by identity so operation coverage 
 
 ## World repair selection
 
-Holding world interaction opens the shared radial on every movable piece, intact or damaged; lifting requires choosing it. One gesture shape keeps lift and repair from competing for the same hold. See `src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/game/play.ts`, `furniturePayload`.
+Movement and repair alternatives share a hold gesture so lift and repair cannot compete for separate choice modes. A lone action does not justify a radial. See `src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/game/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`; `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 

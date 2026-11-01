@@ -382,6 +382,9 @@ export const batteryHandRefusal = (inv: Inventory, light: Item, battery: Item): 
     : coreMessage(inv.registry, 'noLightToFit');
 };
 
+export const heldBatteryForLight = (inv: Inventory, light: Item): Item | undefined =>
+  [inv.hands.left, inv.hands.right].find((battery) => battery && batteryHandRefusal(inv, light, battery) === undefined);
+
 /** A battery used from one hand goes into the light held, or fitted to the gun held, in the other. */
 const batteryOption = (battery: Item, inv: Inventory): UseOption => {
   if (inv.locate(battery)?.kind !== 'hand') {
@@ -427,7 +430,10 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
     if (!defOf(inv.registry, item.type).light?.power) {
       return refuseUse(inv, coreMessage(inv.registry, 'outOfFuel'));
     }
-    return refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBatteryNoSpare'));
+    const battery = heldBatteryForLight(inv, item);
+    return battery
+      ? loadOption(inv, item, battery, 'hands')
+      : refuseUse(inv, coreMessage(inv.registry, item.slots?.battery ? 'batteryDeadNoSpare' : 'noBatteryNoSpare'));
   }
   return {
     kind: 'use',

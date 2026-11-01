@@ -1989,6 +1989,203 @@ try {
       'a knife tap swings without opening a radial',
     );
 
+    assert.equal(
+      await page.evaluate(() => globalThis.primaryActionTest.swings.length),
+      knifeTap + 1,
+      'a one-action tap acts once',
+    );
+    const knifeHeld = await page.evaluate(
+      () => globalThis.primaryActionTest.swings.filter((swing) => swing.result).length,
+    );
+    await page.mouse.down({ button: 'right' });
+    await page.waitForFunction(() => globalThis.primaryActionTest.input.rightMouseActionHeld);
+    await page.mouse.down();
+    try {
+      await page.waitForFunction(
+        (before) => globalThis.primaryActionTest.swings.filter((swing) => swing.result).length > before + 1,
+        knifeHeld,
+      );
+      assert.equal(
+        await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
+        true,
+        'a one-action hold repeats without a radial',
+      );
+    } finally {
+      await page.mouse.up();
+      await page.mouse.up({ button: 'right' });
+    }
+    await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
+
+    for (const route of ['tap', 'radial']) {
+      const fixture = await page.evaluate((method) => {
+        const r = globalThis.primaryActionTest;
+        r.clearHand(r.dominant);
+        r.clearHand(r.off);
+        const side = method === 'tap' ? r.dominant : r.off;
+        const other = method === 'tap' ? r.off : r.dominant;
+        const light = r.inventory.createRolled({ type: 'flashlight', count: 1, condition: 1, charge: 0 });
+        r.setHand(side, light);
+        if (method === 'tap') {
+          const removed = r.inventory.fitSlot(light, 'battery', undefined);
+          if (!r.inventory.add(removed, { kind: 'pile', pos: r.feet() })) {
+            throw new Error('Could not stage an empty held light');
+          }
+        }
+        const battery = r.inventory.create('aa_battery');
+        r.setHand(other, battery);
+        return { light: light.uid, battery: battery.uid, other };
+      }, route);
+      if (route === 'tap') {
+        await page.mouse.click(640, 450);
+      } else {
+        const release = await holdAction(page, 'hand.use-off');
+        try {
+          await page.waitForFunction(() => !document.querySelector('#furniture-radial').hidden);
+          await page.evaluate(async () => {
+            const tuning = (await import('/src/content/base/ui.json?import')).default.ui[0].furnitureRadial;
+            document.dispatchEvent(
+              new MouseEvent('mousemove', { movementX: tuning.radiusPixels, movementY: 0, bubbles: true }),
+            );
+          });
+          await page.waitForFunction(() => document.querySelector('.radial-pull'));
+          assert.equal(await page.locator('.radial-entry.selected').count(), 0, 'an empty-side pull selects no action');
+        } finally {
+          await release();
+        }
+        await page.waitForFunction(() => document.querySelector('#furniture-radial').hidden);
+        assert.equal(
+          await page.evaluate(() => globalThis.primaryActionTest.queue.busy),
+          false,
+          'empty-side release cancels',
+        );
+        await chooseHeldAction(page, 'own', 'hand.use-off');
+      }
+      await page.waitForFunction(({ light, battery }) => {
+        const r = globalThis.primaryActionTest;
+        return r.queue.busy || r.inventory.itemByUid(light).slots?.battery?.uid === battery;
+      }, fixture);
+      const loaded = await page.evaluate(({ light, battery, other }) => {
+        const r = globalThis.primaryActionTest;
+        const failures = r.queue.tick(r.queue.remaining).failed;
+        return {
+          failures,
+          loaded: r.inventory.itemByUid(light).slots?.battery?.uid === battery,
+          otherEmpty: !r.inventory.hands[other],
+        };
+      }, fixture);
+      assert.deepEqual(
+        loaded,
+        { failures: [], loaded: true, otherEmpty: true },
+        `${route} loads the prepared other-hand battery`,
+      );
+    }
+
+    const stripping = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const magazine = r.inventory.create('magazine_stanag_30');
+      r.setHand(r.off, magazine);
+      r.setHand(r.dominant, r.inventory.create('cartridge_5_d_56x45', 4));
+      for (let round = 0; round < 4; round += 1) {
+        const reason = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
+        if (reason || r.queue.tick(r.queue.remaining).failed.length > 0) {
+          throw new Error('Could not load the held-strip fixture');
+        }
+      }
+      r.clearHand(r.dominant);
+      return { uid: magazine.uid, before: magazine.cartridges.length };
+    });
+    await pressAction(page, 'hand.use-off');
+    await page.waitForFunction(({ uid, before }) => {
+      const r = globalThis.primaryActionTest;
+      return r.queue.busy || r.inventory.itemByUid(uid).cartridges.length < before;
+    }, stripping);
+    const strippedOnce = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const failures = r.queue.tick(r.queue.remaining).failed;
+      return { failures, remaining: r.inventory.itemByUid(uid).cartridges.length };
+    }, stripping.uid);
+    assert.deepEqual(strippedOnce, { failures: [], remaining: stripping.before - 1 }, 'a magazine tap strips once');
+    const releaseStrip = await holdAction(page, 'hand.use-off');
+    try {
+      await page.waitForFunction(
+        ({ uid, before }) => globalThis.primaryActionTest.inventory.itemByUid(uid).cartridges.length < before - 1,
+        { uid: stripping.uid, before: strippedOnce.remaining },
+      );
+      assert.equal(
+        await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
+        true,
+        'the shared hold owner repeats off-hand stripping without a radial',
+      );
+    } finally {
+      await releaseStrip();
+    }
+    await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      if (r.queue.tick(r.queue.remaining).failed.length > 0) {
+        throw new Error('Held stripping failed');
+      }
+    });
+
+    const singleFurniture = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const { material, color, breach } = r.inventory.registry.furniture.get('crate');
+      const definition = {
+        id: 'fixture_single_lift',
+        name: 'Fixture lift',
+        size: [1, 1, 1],
+        material,
+        color,
+        breach,
+        massKg: 1,
+      };
+      r.inventory.registry.furniture.set(definition.id, definition);
+      const floor = r.feet();
+      const pos = [floor[0] + 2, floor[1], floor[2]];
+      const entity = r.inventory.entities.add({ type: definition.id, size: definition.size, facing: 'n', pos });
+      if (!entity) {
+        throw new Error('Could not place the single-action furniture fixture');
+      }
+      const eye = [
+        r.session.body.pos[0],
+        r.session.body.pos[1] + r.session.playerEyeHeightMetres / r.scale.blockSize,
+        r.session.body.pos[2],
+      ];
+      const [dx, dy, dz] = pos.map((value, axis) => value + 0.5 - eye[axis]);
+      const look = { yaw: r.input.yaw, pitch: r.input.pitch };
+      r.input.yaw = Math.atan2(-dx, -dz);
+      r.input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      return { uid: entity.uid, pos, look, frame: r.frames };
+    });
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, singleFurniture.frame);
+    const releaseFurniture = await holdAction(page, 'world.interact');
+    try {
+      await page.waitForFunction(
+        (uid) => globalThis.primaryActionTest.inventory.entities.carrying()?.uid === uid,
+        singleFurniture.uid,
+      );
+      assert.equal(
+        await page.evaluate(() => document.querySelector('#furniture-radial').hidden),
+        true,
+        'a lone furniture action executes without an invisible choice',
+      );
+    } finally {
+      await releaseFurniture();
+    }
+    await page.evaluate(({ uid, pos, look }) => {
+      const r = globalThis.primaryActionTest;
+      const reason = r.session.placeFurniture(pos);
+      if (reason) {
+        throw new Error(`Could not set down the fixture: ${reason}`);
+      }
+      r.inventory.entities.remove(r.inventory.entities.byUid(uid));
+      r.input.yaw = look.yaw;
+      r.input.pitch = look.pitch;
+    }, singleFurniture);
+
     const canOpening = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -2022,7 +2219,11 @@ try {
       return { uid: blade.uid, condition: blade.condition };
     });
     for (const trigger of ['click', 'offhand']) {
-      await chooseHeldAction(page, 'sharpen', trigger === 'offhand' ? 'hand.use-off' : undefined);
+      if (trigger === 'offhand') {
+        await pressAction(page, 'hand.use-off');
+      } else {
+        await chooseHeldAction(page, 'sharpen');
+      }
       await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
       const honed = await page.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
@@ -4039,21 +4240,33 @@ try {
       r.session.sim.actions.stop();
       return { chosen: uid };
     });
-    await chooseHeldAction(page, 'continue-work');
+    await page.mouse.click(640, 450);
     await page.waitForFunction((uid) => {
       const { job } = globalThis.primaryActionTest.session.sim.actions;
       return job?.jobType === 'craft' && !job.stopped && job.workUid === uid;
     }, continuedWork.chosen);
     await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.stop());
 
+    await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.compression.locksInput);
     const treatment = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
       r.clearHand(r.off);
-      const rag = r.inventory.create('rag');
+      const definition = {
+        ...r.inventory.registry.items.get('rag'),
+        id: 'fixture_dressing_tool',
+        tool: { qualities: { opening: 1 } },
+      };
+      r.inventory.registry.items.set(definition.id, definition);
+      const rag = r.inventory.create(definition.id);
       r.setHand(r.dominant, rag);
+      r.setHand(r.off, r.inventory.create('canned_beans'));
       r.session.sim.body.impact(1, 'leftArm', { bleeding: 0 });
       r.session.sim.body.impact(3, 'rightArm', { bleeding: 0 });
+      const actions = r.survival.availableItemActions(rag);
+      if (!(actions.some((action) => action.treatment) && actions.some((action) => action.opening))) {
+        throw new Error(`Treatment fixture needs real alternatives: ${JSON.stringify(actions)}`);
+      }
       return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
     });
     await chooseHeldAction(page, 'treat');

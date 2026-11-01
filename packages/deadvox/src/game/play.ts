@@ -23,7 +23,7 @@ import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.t
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
-import { damageWord, type Item } from '../core/items.ts';
+import { damageWord, defOf, type Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
@@ -165,6 +165,7 @@ import {
 import { createReplayPlayStateBinding, routeDominantUse, toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
+import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
@@ -191,7 +192,12 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
-import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
+import {
+  ignitionTargetForHand,
+  type PrimaryActionSelection,
+  primaryMeleeAction,
+  selectPrimaryAction,
+} from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
@@ -782,6 +788,7 @@ export const startPlay = (
   let throwingStance = false;
   const pendingPlayerTickActions = new PlayerTickActions();
   let interactionPressTarget: InteractionTarget | undefined;
+  let interactionHoldTarget: Extract<InteractionTarget, { kind: 'furniture' }> | undefined;
   /** The vehicle opened by interacting with it; presentation only, so it is neither saved nor replayed. */
   let openedVehicleId: number | undefined;
   const furnitureActionSelection = new FurnitureActionSelection();
@@ -850,12 +857,75 @@ export const startPlay = (
     }
   }
 
-  function openHeldMenu(): void {
+  function holdHeldUse(): void {
     const item = heldPressItem();
     if (item && heldPress) {
-      furnitureActionSelection.open(item, heldActions(item), 'held');
-      heldMenuTrigger = heldPress.trigger;
+      const actions = heldActions(item);
+      if (actions.length === 1) {
+        tapHeldUse();
+      } else {
+        furnitureActionSelection.open(item, actions, 'held');
+        heldMenuTrigger = heldPress.trigger;
+      }
     }
+  }
+
+  function holdWorldInteraction(): void {
+    const target = interactionPressTarget;
+    if (target?.kind === 'furniture' && furnitureActions(target.entity).length === 1) {
+      interactionHoldTarget = target;
+      interactionPressTarget = undefined;
+      useSingleFurnitureAction(target.entity);
+    } else {
+      completeWorldInteraction('wield');
+    }
+  }
+
+  function repeatSingleAction(action: string): void {
+    if (queue.busy || sim.actions.job || sim.body.actionRefusal || input.freeLooking) {
+      return;
+    }
+    if (action === 'held.use') {
+      const item = heldPressItem();
+      if (
+        item &&
+        heldMenuTrigger === undefined &&
+        heldActions(item).length === 1 &&
+        defOf(registry, item.type).holdRepeat !== false
+      ) {
+        tapHeldUse();
+      }
+    } else if (interactionHoldTarget) {
+      const target = interactionTargetAt();
+      const { entity } = interactionHoldTarget;
+      if (
+        target?.kind === 'furniture' &&
+        target.entity.uid === entity.uid &&
+        furnitureActions(entity).length === 1 &&
+        entities.defOf(entity).holdRepeat !== false
+      ) {
+        useSingleFurnitureAction(entity);
+      }
+    }
+  }
+
+  function isHeldItemUse(item: Item): boolean {
+    return (
+      (interactInput.isHeld('held.use') && heldPressItem()?.uid === item.uid) ||
+      (inventory.hands[dominantSide(inventory.character)]?.uid === item.uid &&
+        (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld))
+    );
+  }
+
+  function advanceDominantStrip(action: PrimaryActionSelection, time: number, triggerHeld: boolean): void {
+    if (interactInput.isHeld('held.use')) {
+      return;
+    }
+    const uid =
+      action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
+        ? action.item.uid
+        : undefined;
+    refusalReason(magazines.advanceHeldStrip(uid, time, triggerHeld));
   }
 
   function releaseHeldUse(trigger: NonNullable<typeof heldMenuTrigger>, at = performance.now()): void {
@@ -929,6 +999,7 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
+      interactInput.repeat();
       input.advanceFreeLook(0);
       const sample = {
         ...live,
@@ -1076,11 +1147,7 @@ export const startPlay = (
             magazines.advanceHeldStrip(undefined, time, false);
             return;
           }
-          const stripUid =
-            action.kind === 'magazine' && survival.selectedItemAction(action.item)?.magazine === 'strip'
-              ? action.item.uid
-              : undefined;
-          refusalReason(magazines.advanceHeldStrip(stripUid, time, triggerHeld));
+          advanceDominantStrip(action, time, triggerHeld);
         },
         automaticFireHeld: () => {
           const weapon = automaticFireWeapon();
@@ -2357,12 +2424,14 @@ export const startPlay = (
   const interactInput = new PressHoldInput<string>({
     holdRealMs: () => RELOAD_GESTURE_MS.hold,
     tap: (action) => (action === 'held.use' ? tapHeldUse() : completeWorldInteraction('pocket')),
-    hold: (action) => (action === 'held.use' ? openHeldMenu() : completeWorldInteraction('wield')),
+    hold: (action) => (action === 'held.use' ? holdHeldUse() : holdWorldInteraction()),
+    repeat: repeatSingleAction,
   });
   const cancelActionInput = (): void => {
     interactInput.cancel();
     heldPress = undefined;
     interactionPressTarget = undefined;
+    interactionHoldTarget = undefined;
   };
   const wornLightInput = new PressHoldInput<string>({
     holdRealMs: () => wornLightToggleHoldRealSeconds * 1000,
@@ -2642,6 +2711,7 @@ export const startPlay = (
       completeWorldInteraction('pocket');
     }
     interactionPressTarget = undefined;
+    interactionHoldTarget = undefined;
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
     switch (action) {
@@ -3029,11 +3099,7 @@ export const startPlay = (
     );
   };
 
-  const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
-    const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
-    if (!selected) {
-      return undefined;
-    }
+  const furnitureChoicePayload = (entity: BlockEntity, selected: ItemAction): ReplayActionPayload | undefined => {
     if (selected.id === 'repair') {
       quickbarInput.cancel();
       screen.openRepair(entity.uid);
@@ -3051,11 +3117,24 @@ export const startPlay = (
       ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
       : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
   };
+  const confirmFurnitureAction = (entity: BlockEntity): ReplayActionPayload | undefined => {
+    const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
+    return selected ? furnitureChoicePayload(entity, selected) : undefined;
+  };
+
+  function useSingleFurnitureAction(entity: BlockEntity): void {
+    const actions = furnitureActions(entity);
+    const payload = actions.length === 1 ? furnitureChoicePayload(entity, actions[0]!) : undefined;
+    if (payload) {
+      refusalReason(dispatchScreenCommand(payload));
+    }
+  }
+
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
     if (furnitureActionSelection.source === 'furniture' && furnitureActionSelection.isOpen(entity)) {
       return confirmFurnitureAction(entity);
     }
-    if (mode === 'wield' && furnitureActions(entity).length > 0) {
+    if (mode === 'wield' && furnitureActions(entity).length > 1) {
       return { kind: 'furniture.interact', entityUid: entity.uid, alternatives: true };
     }
     const control = session.power?.control(entity);
@@ -3149,7 +3228,7 @@ export const startPlay = (
     if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
       return undefined;
     }
-    if (alternatives && furnitureActions(entity).length > 0) {
+    if (alternatives) {
       furnitureActionSelection.open(entity, furnitureActions(entity));
     } else {
       useTarget(entity);
@@ -3661,7 +3740,7 @@ export const startPlay = (
       case 'magazine':
         refusalReason(
           survival.selectedItemAction(action.item)?.magazine === 'strip'
-            ? magazines.strip(action.item.uid, sim.time, replaySample?.intent.useDominantHeld ?? input.dominantUseHeld)
+            ? magazines.strip(action.item.uid, sim.time, isHeldItemUse(action.item))
             : lines.magazine.empty,
         );
         return;
@@ -3885,6 +3964,9 @@ export const startPlay = (
     const worldUid = target?.kind === 'furniture' && !carry ? target.entity.uid : undefined;
     const uid = furnitureActionSelection.source === 'held' ? openHeldActionItem()?.uid : worldUid;
     furnitureActionSelection.sync(uid, sim.paused);
+    if (!furnitureActionSelection.regionsOpen && radialView().actions.length < 2) {
+      furnitureActionSelection.sync(undefined, true);
+    }
     if (hadRegions && !furnitureActionSelection.regionsOpen) {
       syncMenuState();
     }
@@ -3904,6 +3986,7 @@ export const startPlay = (
       show && target ? actions : [],
       target ? furnitureActionSelection.choice(target, actions)?.id : undefined,
       radialTuning,
+      furnitureActionSelection.pull,
     );
     const held = openHeldActionItem();
     const regions =

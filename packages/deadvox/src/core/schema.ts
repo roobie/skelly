@@ -918,6 +918,8 @@ const UiTuningSchema = strictObject({
   furnitureRadial: strictObject({
     radiusPixels: Positive,
     deadZonePixels: Positive,
+    selectionHalfAngleDegrees: pipe(Positive, maxValue(90)),
+    pullIndicatorPixels: Positive,
     strokePixels: Positive,
     selectedLabelScale: Positive,
     labelPaddingRem: Positive,
@@ -1598,6 +1600,7 @@ const ItemSchema = strictObject({
   stack: optional(pipe(Count, minValue(2, 'must be at least 2'))),
   /** Held in both hands. */
   twoHanded: optional(vBoolean()),
+  holdRepeat: optional(vBoolean()),
   container: optional(strictObject({ ...ContainerSchema.entries, rigid: optional(vBoolean()) })),
   wearable: optional(WearableSchema),
   figureModels: optional(
@@ -2431,6 +2434,7 @@ const FurnitureSchema = pipe(
     material: Id,
     /** Estimated kilograms for a piece that can be lifted or dragged. */
     massKg: optional(NonNegative),
+    holdRepeat: optional(vBoolean()),
     solid: optional(vBoolean()),
     /** A flat piece that may lie on a shut hatch (`DESIGN.md`, "Moving furniture"); it must be non-solid and one block high. */
     cover: optional(literal(true)),

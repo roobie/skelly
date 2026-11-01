@@ -403,6 +403,15 @@ body.unconscious::after {
   border-style: solid;
   border-color: var(--accent);
 }
+.radial-pull {
+  position: absolute;
+  width: var(--radial-pull-size);
+  height: var(--radial-pull-size);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 0 var(--radial-stroke) var(--panel);
+}
 .radial-pointer {
   position: absolute;
   transform-origin: 0 0;

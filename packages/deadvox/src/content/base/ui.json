@@ -424,8 +424,10 @@
           "back": "Back",
           "treat": "Treat"
         },
+        "pullIndicatorPixels": 6,
         "radiusPixels": 110,
         "selectedLabelScale": 1.25,
+        "selectionHalfAngleDegrees": 22.5,
         "slots": {
           "furniture": {
             "continue": 135,

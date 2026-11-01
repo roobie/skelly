@@ -4,7 +4,7 @@ read_if:
   - you're showing a number to the player
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
-  - you're changing HUD options, UI layering, radial action choices or treatment region controls
+  - you're changing HUD options, UI layering, radial action choices, single-action hold repetition or treatment region controls
   - you're changing debug/playtest separation or inventory layout
   - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
   - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
@@ -54,7 +54,7 @@ The interactible outline is an optional spatial HUD aid, separate from interacti
 
 The shared action radial is meta presentation: held geometry cannot express which of several operations release will perform. Its transparent centre preserves the target, and its visibility follows interaction hints. Treatment regions use an explicit list with Back rather than another radial; the open chooser owns input like other menus. One owner avoids competing choices and highlights. See `DESIGN.md`, "Action choices", and `src/game/play.ts`, `drawActionChoices`.
 
-Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft offers continuation in the shared action radial, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
+Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft offers continuation with no progress shown; only alternatives justify an action radial. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
 
 The handling HUD gauge and caption own the space below the crosshair, so the interaction prompt moves above the gauge while handling is shown. Both stay readable, the prompt grows upward when it wraps, and neither is hidden. The rule lives in the stylesheet for the shared panel, so every timed action gets it. See `src/ui/style.css`, "#prompt".
 

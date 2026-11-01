@@ -27,6 +27,24 @@ const actions = radialEntries(
   { use: 0, push: 180 },
 );
 
+it('does not open a radial for a single held action', () => {
+  const selection = new FurnitureActionSelection();
+  selection.open(piece, [actions[0]!], 'held');
+  expect(selection.isOpen(piece)).toBe(false);
+});
+
+it('leaves an empty side unselected but accepts a pull toward an available option', () => {
+  const selection = new FurnitureActionSelection();
+  const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4, selectionHalfAngleDegrees: 30 };
+  selection.open(piece, actions);
+  selection.point(piece, actions, { x: 20, y: 0 }, tuning);
+  expect(selection.choice(piece, actions)).toBeUndefined();
+  expect(selection.confirm(piece, actions)).toBeUndefined();
+  selection.open(piece, actions);
+  selection.point(piece, actions, { x: 0, y: -20 }, tuning);
+  expect(selection.confirm(piece, actions)?.id).toBe(actions[0]!.id);
+});
+
 it('groups treatment regions behind one operation without dropping direct held actions', () => {
   const direct = [{ id: 'fixture-direct', label: 'Direct' }];
   const regions = [
@@ -50,9 +68,20 @@ it('groups treatment regions behind one operation without dropping direct held a
 
 it('returns from held-region choices to a neutral first-level menu using the shared owner', () => {
   const selection = new FurnitureActionSelection();
-  const entries = radialEntries([{ id: 'treat', label: 'Fixture treat' }], { treat: 0 });
+  const entries = radialEntries(
+    [
+      { id: 'treat', label: 'Fixture treat' },
+      { id: 'other', label: 'Other' },
+    ],
+    { treat: 0, other: 180 },
+  );
   selection.open(piece, entries, 'held');
-  selection.point(piece, entries, { x: 0, y: -20 }, { radiusPixels: 50, deadZonePixels: 5, entryCap: 8 });
+  selection.point(
+    piece,
+    entries,
+    { x: 0, y: -20 },
+    { radiusPixels: 50, deadZonePixels: 5, entryCap: 8, selectionHalfAngleDegrees: 30 },
+  );
   expect(selection.choice(piece, entries)?.id).toBe('treat');
   selection.showRegions();
   expect(selection.regionsOpen).toBe(true);
@@ -84,17 +113,24 @@ it('keeps content-authored action slots when another action appears or order cha
   for (const entries of [original, extended]) {
     entries.forEach((action, index) => {
       const angle = action.angleRadians;
-      expect(radialEntryIndex(Math.sin(angle) * radius, -Math.cos(angle) * radius, entries, deadZone)).toBe(index);
+      expect(
+        radialEntryIndex(Math.sin(angle) * radius, -Math.cos(angle) * radius, entries, {
+          deadZonePixels: deadZone,
+          selectionHalfAngleDegrees: 30,
+        }),
+      ).toBe(index);
     });
   }
-  expect(radialEntryIndex(0, 0, extended, deadZone)).toBeUndefined();
-  expect(radialEntryIndex(deadZone, 0, extended, deadZone)).toBeUndefined();
-  expect(radialEntryIndex(0, -radius, [], deadZone)).toBeUndefined();
+  expect(radialEntryIndex(0, 0, extended, { deadZonePixels: deadZone, selectionHalfAngleDegrees: 30 })).toBeUndefined();
+  expect(
+    radialEntryIndex(deadZone, 0, extended, { deadZonePixels: deadZone, selectionHalfAngleDegrees: 30 }),
+  ).toBeUndefined();
+  expect(radialEntryIndex(0, -radius, [], { deadZonePixels: deadZone, selectionHalfAngleDegrees: 30 })).toBeUndefined();
 });
 
 it('release runs only the visibly chosen action, never a remembered action in the dead zone', () => {
   const selection = new FurnitureActionSelection();
-  const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4 };
+  const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4, selectionHalfAngleDegrees: 30 };
   selection.open(piece, actions);
   expect(selection.choice(piece, actions)).toBeUndefined();
   expect(selection.confirm(piece, actions)).toBeUndefined();
@@ -111,10 +147,6 @@ it('release runs only the visibly chosen action, never a remembered action in th
   selection.point(piece, actions, { x: 0, y: 20 }, tuning);
   expect(selection.choice(piece, actions)).toBeUndefined();
   expect(selection.confirm(piece, actions)).toBeUndefined();
-
-  selection.open(piece, [actions[0]!]);
-  selection.step(piece, [actions[0]!], 1);
-  expect(selection.confirm(piece, [actions[0]!])?.id).toBe(actions[0]!.id);
 });
 
 describe('furniture service choices', () => {

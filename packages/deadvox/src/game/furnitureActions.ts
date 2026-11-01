@@ -32,9 +32,9 @@ export const radialEntryIndex = (
   x: number,
   y: number,
   actions: readonly RadialAction[],
-  deadZone: number,
+  tuning: { deadZonePixels: number; selectionHalfAngleDegrees: number },
 ): number | undefined => {
-  if (Math.hypot(x, y) <= deadZone) {
+  if (Math.hypot(x, y) <= tuning.deadZonePixels) {
     return undefined;
   }
   const angle = Math.atan2(x, -y);
@@ -48,7 +48,7 @@ export const radialEntryIndex = (
       nearestDistance = distance;
     }
   });
-  return nearest;
+  return nearestDistance <= (tuning.selectionHalfAngleDegrees * Math.PI) / 180 ? nearest : undefined;
 };
 
 export const furnitureActionsFor = (
@@ -98,7 +98,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
   regionsOpen = false;
 
   choice(entity: { uid: number }, actions: readonly ItemAction[]): ItemAction | undefined {
-    return this.isOpen(entity) && this.armed ? this.forItem(entity, actions) : undefined;
+    return this.isOpen(entity) && this.armed && actions.length > 1 ? this.forItem(entity, actions) : undefined;
   }
 
   override step(entity: { uid: number }, actions: readonly ItemAction[], direction: number): boolean {
@@ -114,11 +114,15 @@ export class FurnitureActionSelection extends ItemActionSelection {
     return this.uid;
   }
 
+  get pull(): Readonly<{ x: number; y: number }> {
+    return { x: this.x, y: this.y };
+  }
+
   point(
     entity: { uid: number },
     actions: readonly RadialAction[],
     movement: { x: number; y: number },
-    tuning: { radiusPixels: number; deadZonePixels: number; entryCap: number },
+    tuning: { radiusPixels: number; deadZonePixels: number; entryCap: number; selectionHalfAngleDegrees: number },
   ): void {
     this.x += movement.x;
     this.y += movement.y;
@@ -127,7 +131,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
       this.x *= tuning.radiusPixels / length;
       this.y *= tuning.radiusPixels / length;
     }
-    const index = radialEntryIndex(this.x, this.y, actions, tuning.deadZonePixels);
+    const index = radialEntryIndex(this.x, this.y, actions, tuning);
     this.armed = index !== undefined;
     if (index !== undefined) {
       this.selected.set(entity.uid, actions[index]!.id);
@@ -135,6 +139,10 @@ export class FurnitureActionSelection extends ItemActionSelection {
   }
 
   open(entity: { uid: number }, actions: readonly ItemAction[], source: 'furniture' | 'held' = 'furniture'): void {
+    if (actions.length < 2) {
+      this.sync(undefined, true);
+      return;
+    }
     this.source = source;
     this.regionsOpen = false;
     this.uid = entity.uid;

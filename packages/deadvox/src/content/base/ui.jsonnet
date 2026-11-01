@@ -6,6 +6,8 @@
     furnitureRadial: {
       radiusPixels: 110,
       deadZonePixels: 30,
+      selectionHalfAngleDegrees: 22.5,
+      pullIndicatorPixels: 6,
       strokePixels: 3,
       selectedLabelScale: 1.25,
       labelPaddingRem: 0.5,
