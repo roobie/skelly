@@ -159,7 +159,7 @@ export class AuthoredSite implements Site {
   readonly seed: number;
   readonly registry: Registry;
   readonly showroom: ShowroomDef | undefined;
-  /** The showroom's slot row, oldest first. */
+  /** The showroom's authored props, oldest first. */
   readonly slots: readonly ShowroomProp[];
 
   constructor(seed: number, registry: Registry, scale: Scale, layout: SiteLayoutDef) {

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { actionText, fillText } from '../src/core/actionText.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { propCentre, type ShowroomProp } from '../src/core/showroom.ts';
+import { propCentre, type ShowroomProp, slotProps } from '../src/core/showroom.ts';
 import { cellsOf } from '../src/core/templates.ts';
 import { DebugTestHouseSite, playerStartFromWorld } from '../src/game/worldSetup.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
@@ -89,6 +89,17 @@ describe('test house showroom', () => {
     for (const spawn of furniture) {
       inventory.furnish(spawn.spec, spawn.loot, spawn.surfaceLoot, spawn.fixedCount);
     }
+  });
+
+  it('keeps displaced looks behind spawn without shifting the packed row', () => {
+    const showroom = house.showroom!;
+    const packed = slotProps(registry, { ...showroom, slots: showroom.slots.filter(({ placement }) => !placement) });
+    const displaced = slots.filter((_, i) => showroom.slots[i]!.placement);
+    expect(displaced.length).toBeGreaterThan(0);
+    for (const prop of displaced) {
+      expect(aim(site.spawn.pos, site.spawn.yaw, propCentre(prop))).toBeLessThan(0);
+    }
+    expect(slots.filter((_, i) => !showroom.slots[i]!.placement)).toEqual(packed);
   });
 
   it('faces the newest slot from the default spawn', () => {

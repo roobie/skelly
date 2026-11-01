@@ -168,7 +168,7 @@ it('sends a crafting material choice to the recipe preference', () => {
   };
   const prefer = vi.fn();
   const text = baseScreenText().crafting;
-  renderCrafting(root, [row], { start: vi.fn(), prefer, source: vi.fn() }, text);
+  renderCrafting(root, [row], { start: vi.fn(), prefer, source: vi.fn() }, { text });
   const field = root.querySelector<HTMLInputElement>('[role="combobox"]')!;
   expect(field.getAttribute('aria-label')).toBe(fillText(text.group, { recipe: 'Bandage', group: '1' }));
 

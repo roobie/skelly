@@ -541,6 +541,11 @@ const UiScreenTextSchema = strictObject({
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
   prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  worldService: slottedTable({
+    push: [],
+    drag: [],
+    lift: [],
+  }),
   crafting: slottedTable({
     heading: [],
     all: [],
@@ -628,6 +633,7 @@ const UiScreenTextSchema = strictObject({
     barDoor: ['name'],
     liftBar: [],
     hold: ['key', 'action'],
+    actions: [],
     climb: ['name'],
     read: ['name'],
     rest: ['name'],
@@ -810,6 +816,7 @@ const UiScreenTextSchema = strictObject({
     tabSkills: [],
     tabCrafting: [],
     tabActions: [],
+    tabRepair: [],
     find: [],
     findLabel: [],
     needsLabel: [],
@@ -3010,20 +3017,22 @@ const LayoutRect = pipe(
 
 const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
-/** Where new features are shown: an authored row of slots and a derived catalogue of every furniture piece. */
+/** Where new features are shown: authored slots and a derived catalogue of every furniture piece. */
 const ShowroomSchema = strictObject({
-  /** The west end of the slot row's front line, feet on the deck; slots run east from here. */
+  /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
   row: HalfMetrePosition,
   /** Which way every slot's front faces; the row is seen from that side. */
   facing: picklist(['n', 's']),
   /** Gap between neighbouring slots. */
   spacing: PositiveHalfMetres,
-  /** How many slots the row holds; a new slot past it replaces the oldest. */
+  /** How many slots the display holds; a new slot past it replaces the oldest. */
   capacity: pipe(Count, minValue(1)),
   /** Oldest first; the default spawn faces the last. */
   slots: array(
     strictObject({
       furniture: Id,
+      /** An independently placed slot does not consume space in the packed row. */
+      placement: optional(strictObject({ position: HalfMetrePosition, facing: picklist(['n', 's']) })),
       fixed: optional(literal(true)),
       /** The slot's fixture stock. */
       items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),

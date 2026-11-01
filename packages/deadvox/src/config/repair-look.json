@@ -1,0 +1,48 @@
+{
+  "damageFraction": 0.5,
+  "furniture": "crate",
+  "mod": {
+    "data": {
+      "id": "debug-repair-look",
+      "recipes": [
+        {
+          "category": "fixtures",
+          "components": [
+            [
+              {
+                "count": 1,
+                "item": "wooden_plank"
+              }
+            ]
+          ],
+          "id": "debug_crate_repair",
+          "kind": "repair",
+          "qualities": {},
+          "repair": {
+            "amount": 30,
+            "entity": "crate",
+            "perSkill": 0,
+            "skill": "debug_repair"
+          },
+          "result": {
+            "count": 1,
+            "item": "wooden_plank"
+          },
+          "searchTerms": [],
+          "skills": {},
+          "tags": [],
+          "timeGameMinutes": 1
+        }
+      ],
+      "skills": [
+        {
+          "id": "debug_repair",
+          "name": "Debug repair",
+          "startingRecipes": ["debug_crate_repair"]
+        }
+      ]
+    },
+    "id": "debug-repair-look"
+  },
+  "recipe": "debug_crate_repair"
+}

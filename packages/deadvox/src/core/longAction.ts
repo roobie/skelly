@@ -166,7 +166,7 @@ export interface CraftActionHooks {
   owns: (uid: number) => boolean;
   validate: (uid: number) => string | undefined;
   advance: (uid: number, gameSeconds: number) => boolean;
-  finish: (uid: number) => void;
+  finish: (uid: number) => string | undefined;
   cancel: (uid: number) => void;
 }
 const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
@@ -952,7 +952,10 @@ export class LongActions {
   private finishJob(job: LongJob): void {
     try {
       if (job.jobType === 'craft') {
-        this.craft!.finish(job.workUid);
+        const reason = this.craft!.finish(job.workUid);
+        if (reason) {
+          this.notice(reason);
+        }
       } else if (job.jobType === 'reading') {
         this.reading!.finish(job.bookUid);
       } else if (job.jobType === 'forceDoor') {

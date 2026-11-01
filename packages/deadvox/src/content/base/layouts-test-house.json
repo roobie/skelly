@@ -115,6 +115,174 @@
         "row": [-12, 21.5, -1],
         "slots": [
           {
+            "furniture": "crate",
+            "items": [
+              {
+                "count": 1,
+                "item": "hand_saw",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "screwdriver",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "copper_wire",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "small_spring",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hinge_set",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "fastener_pack",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "taped_flashlight_mount",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "scrap_foregrip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "camp_craft_book",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "workshop_notes",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "cloth_strip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "cloth_strip",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "flashlight",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "aa_battery",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "baseball_bat",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "hammer",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nails",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "stick",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "kitchen_knife",
+                "placement": "surface"
+              },
+              {
+                "count": 1,
+                "item": "nylon_cord",
+                "placement": "surface"
+              },
+              {
+                "count": 4,
+                "item": "paperback"
+              },
+              {
+                "count": 2,
+                "item": "duct_tape"
+              }
+            ]
+          },
+          {
             "furniture": "shelf",
             "items": [
               {
@@ -125,7 +293,11 @@
                 "count": 1,
                 "item": "paperback"
               }
-            ]
+            ],
+            "placement": {
+              "facing": "n",
+              "position": [-6.5, 21.5, 0.5]
+            }
           },
           {
             "furniture": "workbench",

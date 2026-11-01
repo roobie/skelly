@@ -31,6 +31,7 @@ read_if:
   - you're changing ladders, roof hatches or where the player can climb above a fight
   - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
   - you change furniture repair admission or the boundary between repair and replacement
+  - you change world-target repair selection or target identity ownership
   - you're changing the rules for time, survival, light or zombies
   - you change zombie ability admission or distinguish planned abilities from runtime mechanisms
   - you're implementing electricity networks, portable charging, energy balance or appliance power history
@@ -3636,6 +3637,14 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 `ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
 `ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
 `src/core/saveFormat.ts`, `itemSchema`.
+
+## World repair selection
+
+Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/game/play.ts`, `furniturePayload`.
+
+World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`; `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
+
+The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
 
 ## UI principles
 

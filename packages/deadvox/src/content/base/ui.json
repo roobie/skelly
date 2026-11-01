@@ -333,7 +333,7 @@
         "noLightToFit": "I'm not holding a light it fits",
         "noLock": "The door has no lock",
         "noPadlock": "There's no locked padlock",
-        "noRepairTarget": "Nothing in reach needs repair",
+        "noRepairTarget": "I can't find anything to repair",
         "noRoom": "There's no room",
         "noRoomOnMe": "I've no room for it",
         "noRoomThere": "There's no room there",
@@ -360,8 +360,8 @@
         "recipeUnknown": "Recipe not known",
         "recoveryReceiverUnavailable": "I can't pour {liquid} into that vessel",
         "recoverySpill": "Spill: {volume} ml {liquid}",
-        "repairTargetGone": "The repair target is missing",
-        "repairTargetOutOfReach": "The repair target is out of reach",
+        "repairTargetGone": "I can't repair it now",
+        "repairTargetOutOfReach": "I can't reach it from here",
         "rested": "I feel rested",
         "rightHandHolding": "My right hand is holding the {item}",
         "rightHandOnLadder": "My right hand is holding the ladder",
@@ -377,7 +377,7 @@
         "wearingOther": "I'm already wearing the {item} there",
         "wokenBy": "I wake up: {reason}",
         "workHand": "It stays in my working hand",
-        "workNeedsBothHands": "The work needs both hands",
+        "workNeedsBothHands": "I need both hands for this",
         "workstationNotInReach": "Required workstation not in reach",
         "wrongBattery": "It doesn't take that battery",
         "wrongCartridge": "It doesn't take that cartridge",
@@ -537,6 +537,7 @@
         },
         "interaction": {
           "action": "{key}: {action}",
+          "actions": "actions",
           "bar": "Bar",
           "barDoor": "Bar the {name}",
           "blocked": "{action} — {reason}",
@@ -631,6 +632,7 @@
           "tabActions": "Actions",
           "tabCrafting": "Crafting",
           "tabItems": "Items",
+          "tabRepair": "Repair",
           "tabSkills": "Skills",
           "tabsLabel": "Character screen",
           "taking": "Taking {count} {category} items",
@@ -917,6 +919,11 @@
           "failed": "Unable to load the world: {error}",
           "loading": "Loading world…",
           "reload": "Reload game"
+        },
+        "worldService": {
+          "drag": "Drag",
+          "lift": "Lift",
+          "push": "Push"
         }
       },
       "spacing": 1,

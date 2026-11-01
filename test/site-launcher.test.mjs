@@ -58,6 +58,7 @@ const authoredLayoutIds = () =>
 
 const intentionallyUnofferedDeadvoxParams = {
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
+  repairLook: 'A debug-only showroom repair inspection, not a launcher gameplay option.',
   optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   skyRoute:
