@@ -6,7 +6,7 @@ import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, type PlayerSense
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
+import { createPlayerBody, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -33,7 +33,6 @@ it('draws a background actor partway between its own slice updates when synced o
     dayPhase: () => dayStateAtHour(12),
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
     seed: 1,

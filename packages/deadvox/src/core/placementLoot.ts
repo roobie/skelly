@@ -1,5 +1,5 @@
-import type { Registry } from './content.ts';
-import { couldFit, ItemFactory } from './items.ts';
+import type { ItemDef, Registry } from './content.ts';
+import { assertCraftedLiquids, assertSavedLiquidContents, couldFit, ItemFactory, snapshotItem } from './items.ts';
 import { type LootContext, placedTypeIssue, withLootDepth } from './loot.ts';
 import { slotsReason } from './magazine.ts';
 import { groundPileIssue } from './pileBound.ts';
@@ -7,9 +7,51 @@ import { reachTuning } from './reach.ts';
 import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import { type CompiledTemplate, type Placement, placedPieces } from './templates.ts';
 
+const craftedRecoveryIssue = (item: ItemDef): string | undefined => {
+  if (!(item.disassembly || item.salvage)) {
+    return 'crafted liquid stock needs a recovery capability';
+  }
+  if (item.disassembly && !item.disassembly.liquidRecovery) {
+    return 'crafted liquid stock needs disassembly liquid recovery';
+  }
+  if (item.salvage && !item.salvageLiquidRecovery) {
+    return 'crafted liquid stock needs salvage liquid recovery';
+  }
+  return undefined;
+};
+
+const fixedLiquidIssue = (registry: Registry, fixed: FixedLootItemDef): string | undefined => {
+  if (fixed.craftedLiquids === undefined && fixed.liquidContents === undefined) {
+    return undefined;
+  }
+  try {
+    const item = new ItemFactory().create(registry, fixed.item);
+    if (fixed.craftedLiquids !== undefined) {
+      const recoveryIssue = craftedRecoveryIssue(registry.items.get(fixed.item)!);
+      if (recoveryIssue !== undefined) {
+        return recoveryIssue;
+      }
+      item.craftedLiquids = fixed.craftedLiquids;
+    }
+    if (fixed.liquidContents !== undefined) {
+      item.liquidContents = fixed.liquidContents;
+    }
+    const state = snapshotItem(item);
+    assertSavedLiquidContents(registry, state);
+    assertCraftedLiquids(registry, state);
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
+  return undefined;
+};
+
 const fixedItemIssue = (registry: Registry, fixed: FixedLootItemDef, context: LootContext): string | undefined => {
   if (!registry.items.has(fixed.item)) {
     return `no item "${fixed.item}"`;
+  }
+  const liquidIssue = fixedLiquidIssue(registry, fixed);
+  if (liquidIssue !== undefined) {
+    return liquidIssue;
   }
   if (fixed.fitted) {
     const missing = Object.values(fixed.fitted).find((child) => !registry.items.has(child));

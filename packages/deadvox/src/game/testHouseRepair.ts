@@ -21,22 +21,24 @@ interface TestHouseRepairCornerOptions {
   repairBooks?: RepairBookHook;
 }
 
-const repairCornerStock = (registry: Registry, recipes: readonly RecipeDef[]) => {
+const repairCornerStock = (recipes: readonly RecipeDef[]) => {
   const components = new Map<string, number>();
   const qualities = new Map<string, number>();
+  const liquids = new Map<string, number>();
   for (const recipe of recipes) {
     for (const group of recipe.components) {
-      const alternative = group.find(({ item }) => registry.items.has(item));
-      if (!alternative) {
-        throw new Error(`Repair recipe ${recipe.id} has no component item`);
+      const alternative = group[0]!;
+      if ('item' in alternative) {
+        components.set(alternative.item, (components.get(alternative.item) ?? 0) + 2 * alternative.count);
+      } else {
+        liquids.set(alternative.liquid, (liquids.get(alternative.liquid) ?? 0) + 2 * alternative.volumeMicrolitres);
       }
-      components.set(alternative.item, (components.get(alternative.item) ?? 0) + 2 * alternative.count);
     }
     for (const [quality, level] of Object.entries(recipe.qualities)) {
       qualities.set(quality, Math.max(qualities.get(quality) ?? 0, level));
     }
   }
-  return { components, qualities };
+  return { components, qualities, liquids };
 };
 
 /**
@@ -96,6 +98,7 @@ const placeRepairCornerItem = ({
   type,
   count,
   condition,
+  liquid,
 }: {
   inventory: Inventory;
   registry: Registry;
@@ -103,11 +106,19 @@ const placeRepairCornerItem = ({
   type: string;
   count: number;
   condition: number;
+  liquid?: string;
 }): void => {
   const stackSize = registry.items.get(type)?.stack ?? 1;
   let remaining = count;
   while (remaining > 0) {
     const item = inventory.create(type, Math.min(remaining, stackSize), condition);
+    if (liquid) {
+      item.liquidContents = {
+        kind: 'filled',
+        liquid,
+        volumeMicrolitres: registry.items.get(type)!.vessel!.capacityMicrolitres,
+      };
+    }
     const placed = containers.some((entity) =>
       (entity.pockets ?? []).some((_, pocket) => inventory.add(item, { kind: 'furniture', entity, pocket })),
     );
@@ -163,12 +174,27 @@ export const populateTestHouseRepairCorner = ({
   const containers = pieces
     .filter(({ furniture }) => registry.furniture.get(furniture)?.container)
     .map((piece) => standingContainer(inventory, source, piece));
-  const stock = repairCornerStock(registry, recipes);
+  const stock = repairCornerStock(recipes);
   const tools = repairCornerToolTypes(registry, recipes, stock.qualities, repairBooks);
   for (const type of [...tools].sort()) {
     placeRepairCornerItem({ inventory, registry, containers, type, count: 1, condition: 1 });
   }
   const beside = nearStations(registry, pieces, containers);
+  for (const [liquid, volume] of stock.liquids) {
+    const vessel = [...registry.items.values()].find((item) => item.vessel?.accepts.includes(liquid));
+    if (!vessel) {
+      throw new Error(`No vessel accepts repair liquid ${liquid}`);
+    }
+    placeRepairCornerItem({
+      inventory,
+      registry,
+      containers: beside,
+      type: vessel.id,
+      count: Math.ceil(volume / vessel.vessel!.capacityMicrolitres),
+      condition: 1,
+      liquid,
+    });
+  }
   recipes.forEach((recipe, index) => {
     placeRepairCornerItem({
       inventory,

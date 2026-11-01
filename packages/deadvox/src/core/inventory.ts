@@ -3,7 +3,7 @@
 // handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import { cargoGrid, cargoSpaceItem } from './cargoSpace.ts';
+import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
@@ -19,6 +19,7 @@ import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
 import {
+  disassemblyLiquidOutputs,
   disassemblyOutputs,
   disassemblyWorkTime,
   sameDisassemblyOutputs,
@@ -54,25 +55,41 @@ import {
   type PlacedState,
   restoreItem,
   restorePlaced,
+  sameRecoveryState,
   snapshotItem,
   snapshotPlaced,
   stackRoom,
   weightOf,
 } from './items.ts';
 import { itemIds, itemRoots, savedItemTree, subtreeItems, type TreeLocation, walkItemTree } from './itemTree.ts';
-import { type LiquidTransferPlan, planLiquidTransfer } from './liquids.ts';
+import {
+  type LiquidAmount,
+  type LiquidRecoveryChoices,
+  type LiquidTransferPlan,
+  type LiquidTransferRefusal,
+  planLiquidDraw,
+  planLiquidReceive,
+  planLiquidTransfer,
+  validLiquidRecoveryChoices,
+} from './liquids.ts';
 import type { Rolled } from './loot.ts';
 import { magazineWellCalibre, slotsReason } from './magazine.ts';
-import { countText } from './numberText.ts';
+import { countText, volumeText } from './numberText.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
 import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import { placeFitting } from './vehicleBlueprint.ts';
 import {
   copyVehiclePlacement,
+  copyVehicleWorkPlacement,
+  sameVehiclePlacement,
   type VehicleInstance,
   VehicleInstances,
   type VehicleInstancesState,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
 } from './vehicleInstances.ts';
 
 /** Handling tunables in seconds, authored in content beside the skill that scales them. */
@@ -171,6 +188,7 @@ export type Target =
   | { kind: 'furniture'; entity: BlockEntity; pocket: number; at?: Spot; reserved?: true };
 
 export interface VehicleTransfer {
+  placement: VehicleWorkPlacement;
   kind: 'install' | 'remove';
   vehicleId: number;
   fittingId: string;
@@ -311,6 +329,18 @@ export class Inventory {
     });
   }
 
+  /** Planning gets independent owners and allocators, including vehicle-owned item trees. */
+  project(): Inventory {
+    const projected = Inventory.restoreState(this.registry, this.snapshotState(), undefined, {
+      character: this.character,
+      vehicles: this.vehicles.snapshotState(),
+    });
+    const foodAt = this.foodClock();
+    projected.foodClock = () => foodAt;
+    projected.foodRate = this.foodRate;
+    return projected;
+  }
+
   private restoreQuickbarOrigins(origins: InventoryState['quickbarOrigins']): void {
     for (const [uid, target] of origins) {
       if (![this.hands.right, this.hands.left].some((item) => item?.uid === uid)) {
@@ -387,18 +417,15 @@ export class Inventory {
    * is completely admitted before either owner changes; see `vehicleTransfer`.
    */
   vehicleTransfer(request: VehicleTransfer): string | undefined {
-    const { kind, vehicleId, fittingId, itemUid } = request;
-    const vehicle = this.vehicles.get(vehicleId);
-    const site = vehicle?.sites.find(({ id }) => id === fittingId);
-    const item = this.itemByUid(itemUid);
-    if (!(vehicle && site?.service && item)) {
-      return coreMessage(this.registry, 'gone');
+    const { kind, vehicleId, fittingId, itemUid, placement } = request;
+    const refusal = this.vehiclePlacementRefusal(vehicleId, { id: fittingId, ...placement }, itemUid);
+    if (refusal) {
+      return refusal;
     }
-    if (this.registry.items.get(item.type)?.vehicle?.mount !== site.service.mount || item.count !== 1) {
-      return coreMessage(this.registry, 'partDoesNotFit');
-    }
+    const vehicle = this.vehicles.get(vehicleId)!;
+    const item = this.itemByUid(itemUid)!;
     return kind === 'install'
-      ? this.installVehiclePart(vehicle, site, item, vehicleId)
+      ? this.installVehiclePart(vehicle, { id: fittingId, ...copyVehicleWorkPlacement(placement) }, item, vehicleId)
       : this.removeVehiclePart(vehicle, item, request);
   }
 
@@ -427,17 +454,17 @@ export class Inventory {
 
   private installVehiclePart(
     vehicle: VehicleInstance,
-    site: VehicleInstance['sites'][number],
+    placement: VehicleInstance['sites'][number],
     item: Item,
     vehicleId: number,
   ): string | undefined {
     const from = this.locate(item);
-    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === site.id)) {
+    if (!from || from.kind === 'vehicle' || vehicle.fittings.some(({ id }) => id === placement.id)) {
       return coreMessage(this.registry, 'gone');
     }
     const refusal = this.replaceVehicle(
       vehicleId,
-      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(site), item }]),
+      this.vehicleBuild(vehicle, [...vehicle.fittings, { ...copyVehiclePlacement(placement), item }]),
       'partDoesNotFit',
     );
     if (refusal) {
@@ -488,13 +515,86 @@ export class Inventory {
     itemUid: number,
   ): Readonly<{ durationSimSeconds: number; qualities: Readonly<Record<string, number>> }> | undefined {
     const vehicle = this.vehicles.get(vehicleId);
-    const site = vehicle?.sites.find(({ id }) => id === fittingId);
+    const target =
+      vehicle?.fittings.find(({ id }) => id === fittingId) ?? vehicle?.sites.find(({ id }) => id === fittingId);
+    return target ? this.vehiclePlacementService(vehicleId, target, itemUid) : undefined;
+  }
+
+  vehiclePlacementService(
+    vehicleId: number,
+    target: VehicleWorkTarget,
+    itemUid: number,
+  ): ReturnType<Inventory['vehicleService']> {
+    if (this.vehiclePlacementRefusal(vehicleId, target, itemUid)) {
+      return undefined;
+    }
+    const site = this.vehicles.get(vehicleId)!.sites.find(({ id }) => id === target.id);
+    const part = this.registry.items.get(this.itemByUid(itemUid)!.type)!.vehicle!;
+    return site?.service ?? part.service;
+  }
+
+  private supportsVehiclePlacement(
+    vehicle: VehicleInstance,
+    target: VehicleWorkPlacement,
+    part: NonNullable<ItemDef['vehicle']>,
+  ): boolean {
+    return (
+      (!part.addon || target.supportedBy.length > 0) &&
+      target.supportedBy.every((support) =>
+        vehicle.fittings.some(
+          ({ id, item }) =>
+            id === support &&
+            (!part.addon || this.registry.items.get(item.type)?.vehicle?.capabilities.includes(part.addon.requires)),
+        ),
+      )
+    );
+  }
+
+  vehiclePlacementRefusal(vehicleId: number, target: VehicleWorkTarget, itemUid: number): string | undefined {
+    const vehicle = this.vehicles.get(vehicleId);
     const item = this.itemByUid(itemUid);
-    return site?.service &&
-      item &&
-      site.supportedBy.every((support) => vehicle?.fittings.some(({ id }) => id === support)) &&
-      this.registry.items.get(item.type)?.vehicle?.mount === site.service.mount
-      ? site.service
+    const part = item && this.registry.items.get(item.type)?.vehicle;
+    const site = vehicle?.sites.find(({ id }) => id === target.id);
+    const service = site?.service ?? part?.service;
+    if (!(vehicle && item && service)) {
+      return coreMessage(this.registry, 'gone');
+    }
+    if (
+      !validVehicleWorkPlacement(target) ||
+      item.count !== 1 ||
+      part?.mount !== service.mount ||
+      vehicle.fittings.some(({ id, item: owned }) => id === target.id && owned.uid !== itemUid) ||
+      (site?.service && !sameVehiclePlacement(site, target))
+    ) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    if (!this.supportsVehiclePlacement(vehicle, target, part)) {
+      return coreMessage(this.registry, 'partNeedsSupport');
+    }
+    const fitted = vehicle.fittings.find(({ item: owned }) => owned.uid === itemUid);
+    if (fitted && (fitted.id !== target.id || !sameVehiclePlacement(fitted, target))) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    if (!(site?.service || part.addon)) {
+      return coreMessage(this.registry, 'partDoesNotFit');
+    }
+    const present = vehicle.fittings
+      .filter(({ item: owned }) => owned.uid !== itemUid)
+      .map((entry) =>
+        placeFitting(this.registry, {
+          id: entry.id,
+          ...copyVehicleWorkPlacement(entry),
+          part: entry.item.type,
+          ...(entry.item.cargo ? { cargo: [...entry.item.cargo] } : {}),
+        }),
+      );
+    const candidate = placeFitting(this.registry, {
+      ...target,
+      part: item.type,
+      ...(item.cargo ? { cargo: [...item.cargo] } : {}),
+    });
+    return fitIssue(present, candidate, this.registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres)
+      ? coreMessage(this.registry, 'partDoesNotFit')
       : undefined;
   }
 
@@ -571,11 +671,17 @@ export class Inventory {
     return entity;
   }
 
-  createRolled({ type, count, condition, paperMap, fitted, charge }: Rolled): Item {
+  createRolled({ type, count, condition, paperMap, fitted, charge, craftedLiquids, liquidContents }: Rolled): Item {
     const item = this.factory.create(this.registry, type, count, {
       condition,
       ...(paperMap === undefined ? {} : { paperMap }),
     });
+    if (craftedLiquids !== undefined) {
+      item.craftedLiquids = craftedLiquids.map((amount) => ({ ...amount }));
+    }
+    if (liquidContents !== undefined) {
+      item.liquidContents = { ...liquidContents };
+    }
     for (const [slot, child] of Object.entries(fitted ?? {})) {
       this.fitSlot(item, slot, this.create(child));
     }
@@ -917,6 +1023,171 @@ export class Inventory {
     return { ok: true, item };
   }
 
+  private liquidEndpointRefusal(item: Item): LiquidTransferRefusal | undefined {
+    const at = this.locate(item);
+    if (!at) {
+      return 'missing-endpoint';
+    }
+    const place = this.placeOf(at);
+    if (!this.reachable(place)) {
+      return 'unreachable';
+    }
+    if (heldInPlace(this.registry, item, at) || this.accessRefusal(place, undefined)) {
+      return 'inaccessible';
+    }
+    return undefined;
+  }
+
+  planLiquidDraws(
+    draws: readonly { uid: number; liquid: string; volumeMicrolitres: number }[],
+  ):
+    | { ok: false; reason: LiquidTransferRefusal; uid: number; liquid: string }
+    | { ok: true; balances: { item: Item; contents: NonNullable<Item['liquidContents']> }[] } {
+    const totals = new Map<number, { liquid: string; volumeMicrolitres: number }>();
+    for (const draw of draws) {
+      const previous = totals.get(draw.uid);
+      if (
+        !Number.isSafeInteger(draw.volumeMicrolitres) ||
+        draw.volumeMicrolitres <= 0 ||
+        (previous && previous.liquid !== draw.liquid)
+      ) {
+        return { ok: false, reason: 'invalid-limit', uid: draw.uid, liquid: draw.liquid };
+      }
+      totals.set(draw.uid, {
+        liquid: draw.liquid,
+        volumeMicrolitres: (previous?.volumeMicrolitres ?? 0) + draw.volumeMicrolitres,
+      });
+    }
+    const balances: { item: Item; contents: NonNullable<Item['liquidContents']> }[] = [];
+    for (const [uid, draw] of totals) {
+      const item = this.itemByUid(uid);
+      const plan = planLiquidDraw(this.registry, item, draw.liquid, draw.volumeMicrolitres);
+      if (!plan.ok) {
+        return { ...plan, uid, liquid: draw.liquid };
+      }
+      const reason = this.liquidEndpointRefusal(item!);
+      if (reason) {
+        return { ok: false, reason, uid, liquid: draw.liquid };
+      }
+      balances.push({ item: item!, contents: plan.sourceContents });
+    }
+    return { ok: true, balances };
+  }
+
+  drawLiquids(
+    draws: readonly { uid: number; liquid: string; volumeMicrolitres: number }[],
+  ): ReturnType<Inventory['planLiquidDraws']> {
+    const plan = this.planLiquidDraws(draws);
+    if (!plan.ok) {
+      return plan;
+    }
+    for (const { item, contents } of plan.balances) {
+      item.liquidContents = { ...contents };
+    }
+    this.version += 1;
+    return plan;
+  }
+
+  planLiquidReceipts(
+    liquids: readonly LiquidAmount[],
+    choices: LiquidRecoveryChoices = {},
+  ):
+    | { ok: false; reason: LiquidTransferRefusal; liquid?: string }
+    | { ok: false; reason: 'spill-approval'; spills: LiquidAmount[] }
+    | { ok: true; spills: LiquidAmount[]; balances: { item: Item; contents: NonNullable<Item['liquidContents']> }[] } {
+    if (
+      !validLiquidRecoveryChoices(liquids, choices) ||
+      liquids.some(({ liquid }) => !this.registry.liquids.has(liquid))
+    ) {
+      return { ok: false, reason: 'invalid-limit' };
+    }
+    const spills: LiquidAmount[] = [];
+    const balances: { item: Item; contents: NonNullable<Item['liquidContents']> }[] = [];
+    for (const amount of liquids) {
+      const uid = choices.receivers?.find(({ liquid }) => liquid === amount.liquid)?.uid;
+      let accepted = 0;
+      if (uid !== undefined) {
+        const item = this.itemByUid(uid);
+        const plan = planLiquidReceive(this.registry, item, amount.liquid, amount.volumeMicrolitres);
+        if (!plan.ok) {
+          return { ...plan, liquid: amount.liquid };
+        }
+        const reason = this.liquidEndpointRefusal(item!);
+        if (reason) {
+          return { ok: false, reason, liquid: amount.liquid };
+        }
+        ({ accepted } = plan);
+        balances.push({ item: item!, contents: plan.receiverContents });
+      }
+      spills.push({ liquid: amount.liquid, volumeMicrolitres: amount.volumeMicrolitres - accepted });
+    }
+    if (
+      spills.some(
+        ({ liquid, volumeMicrolitres }) =>
+          volumeMicrolitres >
+          (choices.spillApproval?.find((approval) => approval.liquid === liquid)?.volumeMicrolitres ?? 0),
+      )
+    ) {
+      return { ok: false, reason: 'spill-approval', spills };
+    }
+    return { ok: true, spills, balances };
+  }
+
+  liquidReceiptRefusal(plan: ReturnType<Inventory['planLiquidReceipts']>): string | undefined {
+    if (plan.ok) {
+      return undefined;
+    }
+    if (plan.reason === 'spill-approval') {
+      return plan.spills
+        .filter(({ volumeMicrolitres }) => volumeMicrolitres > 0)
+        .map(({ liquid, volumeMicrolitres }) =>
+          coreMessage(this.registry, 'recoverySpill', {
+            liquid: this.registry.liquids.get(liquid)!.name,
+            volume: volumeText(volumeMicrolitres / 1000),
+          }),
+        )
+        .join('; ');
+    }
+    return plan.liquid
+      ? coreMessage(this.registry, 'recoveryReceiverUnavailable', {
+          liquid: this.registry.liquids.get(plan.liquid)!.name,
+        })
+      : coreMessage(this.registry, 'liquidTransferRefused');
+  }
+
+  updateRecovery(uid: number, choices: LiquidRecoveryChoices): string | undefined {
+    const work = this.itemByUid(uid)?.work;
+    if (work?.kind !== 'disassembly') {
+      return coreMessage(this.registry, 'gone');
+    }
+    const next = {
+      receivers: choices.receivers ?? work.receivers,
+      spillApproval: choices.spillApproval ?? work.spillApproval,
+    };
+    const reason = this.liquidReceiptRefusal(this.planLiquidReceipts(work.liquids, next));
+    if (reason) {
+      return reason;
+    }
+    work.receivers = next.receivers.map((receiver) => ({ ...receiver }));
+    work.spillApproval = next.spillApproval.map((approval) => ({ ...approval }));
+    this.version += 1;
+    return undefined;
+  }
+
+  receiveLiquids(
+    liquids: readonly LiquidAmount[],
+    choices: LiquidRecoveryChoices = {},
+  ): ReturnType<Inventory['planLiquidReceipts']> {
+    const plan = this.planLiquidReceipts(liquids, choices);
+    if (plan.ok) {
+      for (const { item, contents } of plan.balances) {
+        item.liquidContents = { ...contents };
+      }
+      this.version += 1;
+    }
+    return plan;
+  }
+
   planLiquidTransfer(
     sourceUid: number,
     receiverUid: number | undefined,
@@ -928,18 +1199,11 @@ export class Inventory {
     if (!plan.ok) {
       return plan;
     }
-    const from = this.locate(source!)!;
-    const to = this.locate(receiver!)!;
-    const sourcePlace = this.placeOf(from);
-    const receiverPlace = this.placeOf(to);
-    if (!(this.reachable(sourcePlace) && this.reachable(receiverPlace))) {
-      return { ok: false, reason: 'unreachable' };
+    const reason = this.liquidEndpointRefusal(source!) ?? this.liquidEndpointRefusal(receiver!);
+    if (reason) {
+      return { ok: false, reason };
     }
-    if (
-      heldInPlace(this.registry, source!, from) ||
-      heldInPlace(this.registry, receiver!, to) ||
-      this.accessRefusal(sourcePlace, receiverPlace)
-    ) {
+    if (this.accessRefusal(this.placeOf(this.locate(source!)!), this.placeOf(this.locate(receiver!)!))) {
       return { ok: false, reason: 'inaccessible' };
     }
     return plan;
@@ -1090,6 +1354,9 @@ export class Inventory {
     if (!this.sameFood(target, source)) {
       throw new Error('Only an equal food cohort can join a stack');
     }
+    if (!sameRecoveryState(target, source)) {
+      throw new Error('Only equal unlit recovery states can join a stack');
+    }
     target.count += source.count;
     const lootedCount = (target.lootedCount ?? 0) + (source.lootedCount ?? 0);
     if (lootedCount > 0) {
@@ -1115,7 +1382,18 @@ export class Inventory {
       }
       seen.add(item.uid);
     }
-    return !plan.tools.some((tool) => seen.has(tool.item.uid));
+    return (
+      !plan.tools.some((tool) => seen.has(tool.item.uid)) &&
+      this.planLiquidDraws(
+        plan.liquids.flatMap((draw) =>
+          draw.sources.map((source) => ({
+            uid: source.item.uid,
+            liquid: draw.liquid,
+            volumeMicrolitres: source.volumeMicrolitres,
+          })),
+        ),
+      ).ok
+    );
   }
 
   private validRepairPlan(
@@ -1164,7 +1442,9 @@ export class Inventory {
       location.kind !== 'vehicle' &&
       !chargingBattery(location) &&
       !plan.source.work &&
-      isEmpty(plan.source)
+      isEmpty(plan.source) &&
+      !(plan.receivers ?? []).some(({ uid }) => uid === plan.source.uid) &&
+      this.planLiquidReceipts(plan.liquids, plan).ok
     );
   }
 
@@ -1178,6 +1458,10 @@ export class Inventory {
       return {
         kind: 'disassembly',
         source: plan.source.type,
+        operation: plan.operation,
+        liquids: plan.liquids.map((liquid) => ({ ...liquid })),
+        receivers: (plan.receivers ?? []).map((receiver) => ({ ...receiver })),
+        spillApproval: (plan.spillApproval ?? []).map((approval) => ({ ...approval })),
         skillLevel: plan.skillLevel,
         toolLevels: { ...plan.toolLevels },
         gather: plan.gather,
@@ -1190,6 +1474,12 @@ export class Inventory {
     return {
       kind: 'craft',
       recipe: plan.recipe,
+      liquids: plan.liquids.map((draw) => ({
+        group: draw.group,
+        liquid: draw.liquid,
+        volumeMicrolitres: draw.volumeMicrolitres,
+        sources: draw.sources.map((source) => ({ uid: source.item.uid, volumeMicrolitres: source.volumeMicrolitres })),
+      })),
       elapsed: 0,
       duration: plan.gather + plan.work,
       components,
@@ -1372,7 +1662,17 @@ export class Inventory {
       return [];
     }
     const { result } = this.registry.recipes.get(payload.recipe)!;
-    return [this.create(result.item, result.count, 1, calendar)];
+    const output = this.create(result.item, result.count, 1, calendar);
+    const totals = new Map<string, number>();
+    for (const draw of payload.liquids ?? []) {
+      totals.set(draw.liquid, (totals.get(draw.liquid) ?? 0) + draw.volumeMicrolitres / result.count);
+    }
+    if (totals.size > 0) {
+      output.craftedLiquids = [...totals]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([liquid, volumeMicrolitres]) => ({ liquid, volumeMicrolitres }));
+    }
+    return [output];
   }
 
   private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
@@ -1399,6 +1699,44 @@ export class Inventory {
     );
   }
 
+  private workLiquidAdmission(
+    payload: NonNullable<Item['work']>,
+    finish: boolean,
+  ): { item: Item; contents: NonNullable<Item['liquidContents']> }[] {
+    if (!finish) {
+      return [];
+    }
+    if (payload.kind === 'disassembly') {
+      const receipts = this.planLiquidReceipts(payload.liquids, payload);
+      if (!receipts.ok) {
+        throw new Error(this.liquidReceiptRefusal(receipts));
+      }
+      return receipts.balances;
+    }
+    const plan = this.planLiquidDraws(
+      (payload.liquids ?? []).flatMap((draw) => draw.sources.map((source) => ({ ...source, liquid: draw.liquid }))),
+    );
+    if (!plan.ok) {
+      const source = this.itemByUid(plan.uid);
+      const liquid = this.registry.liquids.get(plan.liquid)!.name;
+      throw new Error(
+        source
+          ? coreMessage(this.registry, 'craftLiquidUnavailable', {
+              vessel: this.registry.items.get(source.type)!.name,
+              liquid,
+            })
+          : coreMessage(this.registry, 'craftLiquidSourceMissing', { liquid }),
+      );
+    }
+    return plan.balances;
+  }
+
+  private applyWorkRepair(payload: NonNullable<Item['work']>, target: Item | undefined, finish: boolean): void {
+    if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
+      target.condition = Math.min(1, target.condition + payload.repairAmount);
+    }
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, complete: boolean, feet: Vec3, calendar = 0): void {
     const payload = work.work;
@@ -1406,7 +1744,8 @@ export class Inventory {
     if (!(payload && at)) {
       return;
     }
-    const finish = complete && this.completeEntityRepair(payload);
+    const finish = complete;
+    const balances = this.workLiquidAdmission(payload, finish);
     const repairing = payload.kind === 'craft' && payload.repairTarget !== undefined;
     const target = this.repairTargetForWork(payload, finish);
     const outputs = this.workOutputs(payload, finish, calendar);
@@ -1415,11 +1754,19 @@ export class Inventory {
       throw new Error('An input or result is too large to put down');
     }
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
+    if (finish && !this.completeEntityRepair(payload)) {
+      this.releaseWork(work, false, feet, calendar);
+      return;
+    }
+    if (finish) {
+      // All admissions precede world repair and this non-refusing balance commit.
+      for (const { item, contents } of balances) {
+        item.liquidContents = { ...contents };
+      }
+    }
     this.remove(at);
     work.work = undefined;
-    if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
-      target.condition = Math.min(1, target.condition + payload.repairAmount);
-    }
+    this.applyWorkRepair(payload, target, finish);
     this.version += 1;
     if (resultInHand && at.kind === 'hand') {
       this.put(outputs[0]!, { kind: 'hand', side: at.side });
@@ -2176,8 +2523,75 @@ const validDisassemblySnapshot = (
   const outputsAreValid = work.outputs.every(
     ({ item, count }) => registry.items.has(item) && Number.isSafeInteger(count) && count >= 1,
   );
-  const expected = disassemblyOutputs(source, work.skillLevel, (quality) => work.toolLevels[quality] ?? 0);
-  return outputsAreValid && sameDisassemblyOutputs(expected, work.outputs);
+  const expected = disassemblyOutputs(
+    source,
+    work.skillLevel,
+    (quality) => work.toolLevels[quality] ?? 0,
+    work.operation,
+  );
+  // Escrowed lights can keep burning; restore bounds the snapshot, not the later burn balance.
+  const fullSource = { ...work.components[0]! };
+  Reflect.deleteProperty(fullSource, 'burnRemainingGameSeconds');
+  const liquids = disassemblyLiquidOutputs(registry, fullSource, work.skillLevel, {
+    toolLevel: (quality) => work.toolLevels[quality] ?? 0,
+    operation: work.operation,
+  });
+  return (
+    outputsAreValid &&
+    sameDisassemblyOutputs(expected, work.outputs) &&
+    Array.isArray(work.liquids) &&
+    Array.isArray(work.receivers) &&
+    Array.isArray(work.spillApproval) &&
+    validLiquidRecoveryChoices(work.liquids, work) &&
+    work.liquids.every(
+      ({ liquid, volumeMicrolitres }, index) =>
+        registry.liquids.has(liquid) &&
+        (index === 0 || work.liquids[index - 1]!.liquid.localeCompare(liquid) < 0) &&
+        volumeMicrolitres <= (liquids.find((amount) => amount.liquid === liquid)?.volumeMicrolitres ?? 0),
+    )
+  );
+};
+
+const validateCraftLiquidDraws = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
+) => {
+  const recipe = registry.recipes.get(work.recipe)!;
+  const liquidGroups = new Map<number, NonNullable<typeof work.liquids>[number]>();
+  const perUnit = new Map<string, number>();
+  for (const draw of work.liquids ?? []) {
+    if (
+      !Number.isSafeInteger(draw.group) ||
+      draw.group < 0 ||
+      liquidGroups.has(draw.group) ||
+      !registry.liquids.has(draw.liquid) ||
+      !Number.isSafeInteger(draw.volumeMicrolitres) ||
+      draw.volumeMicrolitres <= 0 ||
+      !recipe.components[draw.group]?.some(
+        (alternative) =>
+          'liquid' in alternative &&
+          alternative.liquid === draw.liquid &&
+          alternative.volumeMicrolitres === draw.volumeMicrolitres,
+      ) ||
+      !Array.isArray(draw.sources) ||
+      draw.sources.length === 0 ||
+      new Set(draw.sources.map(({ uid }) => uid)).size !== draw.sources.length ||
+      draw.sources.some(
+        ({ uid, volumeMicrolitres }) =>
+          !Number.isSafeInteger(uid) || uid < 1 || !Number.isSafeInteger(volumeMicrolitres) || volumeMicrolitres <= 0,
+      ) ||
+      draw.sources.reduce((sum, source) => sum + source.volumeMicrolitres, 0) !== draw.volumeMicrolitres
+    ) {
+      throw new Error('Invalid craft liquid draws');
+    }
+    const volume = (perUnit.get(draw.liquid) ?? 0) + draw.volumeMicrolitres / recipe.result.count;
+    if (!Number.isSafeInteger(volume)) {
+      throw new Error('Invalid per-unit craft liquid volume');
+    }
+    perUnit.set(draw.liquid, volume);
+    liquidGroups.set(draw.group, draw);
+  }
+  return liquidGroups;
 };
 
 const validateCraftWorkItem = (
@@ -2200,6 +2614,7 @@ const validateCraftWorkItem = (
   ) {
     throw new Error('Invalid craft work payload');
   }
+  const liquidGroups = validateCraftLiquidDraws(registry, work);
   const actual = new Map<string, number>();
   for (const component of work.components) {
     actual.set(component.type, (actual.get(component.type) ?? 0) + component.count);
@@ -2209,6 +2624,18 @@ const validateCraftWorkItem = (
       return [...remaining.values()].every((count) => count === 0);
     }
     return recipe.components[group]!.some((alternative) => {
+      const draw = liquidGroups.get(group);
+      if ('liquid' in alternative) {
+        return Boolean(
+          draw &&
+            draw.liquid === alternative.liquid &&
+            draw.volumeMicrolitres === alternative.volumeMicrolitres &&
+            matches(group + 1, remaining),
+        );
+      }
+      if (draw) {
+        return false;
+      }
       const available = remaining.get(alternative.item) ?? 0;
       if (available < alternative.count) {
         return false;
@@ -2234,8 +2661,14 @@ const validateDisassemblyWorkItem = (
   if (!(source.disassembly || source.salvage)) {
     throw new Error('Invalid disassembly work payload');
   }
-  const duration = disassemblyWorkTime(source);
-  if (!validDisassemblyToolLevels(source, work.toolLevels)) {
+  if (
+    (work.operation !== 'salvage' && work.operation !== 'disassembly') ||
+    (work.operation === 'salvage' ? !source.salvage : !source.disassembly)
+  ) {
+    throw new Error('Invalid disassembly work operation');
+  }
+  const duration = disassemblyWorkTime(source, work.operation);
+  if (!validDisassemblyToolLevels(source, work.toolLevels, work.operation)) {
     throw new Error('Invalid disassembly work payload');
   }
   if (

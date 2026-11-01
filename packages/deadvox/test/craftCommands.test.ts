@@ -10,10 +10,12 @@ import { coreMessage } from '../src/core/coreText.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
+import { SLING_SLOT } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -24,10 +26,9 @@ const CRAFT = 'torch';
 const SECOND_CRAFT = 'candle';
 const stockFor = (recipeId: string): [string, number][] => {
   const recipe = registry.recipes.get(recipeId)!;
-  const stock: [string, number][] = recipe.components.map((alternatives) => [
-    alternatives[0]!.item,
-    alternatives[0]!.count,
-  ]);
+  const stock: [string, number][] = recipe.components
+    .map((group) => group.filter((part) => 'item' in part))
+    .map((alternatives) => [alternatives[0]!.item, alternatives[0]!.count]);
   const required = Object.entries(recipe.qualities);
   if (required.length === 0) {
     throw new Error('the recipe demands no tool quality, so no tool can be derived');
@@ -97,6 +98,38 @@ describe('live craft commands', () => {
     );
   });
 
+  it('crafts a sling at its skill gate that fits a long gun', () => {
+    const r = make();
+    const recipe = registry.recipes.get('make_weapon_sling')!;
+    r.character.learnRecipes([recipe.id]);
+
+    expect(r.commands.start(recipe.id)).toBe(coreMessage(registry, 'skillTooLow'));
+
+    while (r.character.skills.crafting! < recipe.skills.crafting!) {
+      r.character.awardPractice(
+        'crafting',
+        practiceForNextLevel(registry, r.character.skills.crafting!),
+        SKILL_LEVEL_LEGENDARY,
+      );
+    }
+    for (const [type, count] of stockFor(recipe.id)) {
+      expect(r.inventory.add(r.inventory.create(type, count), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    expect(r.commands.start(recipe.id)).toBeUndefined();
+    const work = workOf(r);
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+    const sling = r.inventory.hands.right!;
+    expect(sling.type).toBe(recipe.result.item);
+    expect(r.inventory.move(sling, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+
+    const shotgun = r.inventory.create('pump_shotgun');
+    expect(r.inventory.add(shotgun, { kind: 'hand', side: 'right' })).toBe(true);
+    const handling = new FirearmAttachmentHandling(r.inventory, r.queue, () => [0, 0, 0]);
+    expect(handling.fit(shotgun.uid, SLING_SLOT, sling.uid)).toBeUndefined();
+    r.queue.tick(10);
+    expect(shotgun.slots?.[SLING_SLOT]).toBe(sling);
+  });
+
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
     r.character.awardPractice('crafting', practiceForNextLevel(registry, 0), SKILL_LEVEL_LEGENDARY);
@@ -164,7 +197,7 @@ describe('live craft commands', () => {
     const r = make();
     r.inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
     const recipe = r.inventory.registry.recipes.get('door_bar')!;
-    const [component] = recipe.components[0]!;
+    const component = recipe.components[0]!.find((part) => 'item' in part)!;
     expect(
       r.inventory.add(r.inventory.create(component!.item, component!.count - 1), { kind: 'pile', pos: [0, 0, 0] }),
     ).toBe(true);

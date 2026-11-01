@@ -5,6 +5,7 @@
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import {
@@ -14,6 +15,7 @@ import {
   initialFoodExposure,
   projectFoodExposure,
 } from './food.ts';
+import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
@@ -32,11 +34,47 @@ interface WorkProgress<Node> {
   repairTarget?: WorkTarget;
   repairAmount?: number;
 }
+interface RecordedLiquidDraw {
+  group: number;
+  liquid: string;
+  volumeMicrolitres: number;
+  sources: { uid: number; volumeMicrolitres: number }[];
+}
+const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> =>
+  work.kind === 'craft'
+    ? {
+        ...work,
+        ...repairTargetFields(work),
+        ...(work.liquids === undefined
+          ? {}
+          : {
+              liquids: work.liquids.map((draw) => ({
+                ...draw,
+                sources: draw.sources.map((source) => ({ ...source })),
+              })),
+            }),
+      }
+    : {
+        ...work,
+        ...repairTargetFields(work),
+        liquids: work.liquids.map((liquid) => ({ ...liquid })),
+        receivers: work.receivers.map((receiver) => ({ ...receiver })),
+        spillApproval: work.spillApproval.map((approval) => ({ ...approval })),
+        outputs: work.outputs.map((output) => ({ ...output })),
+        toolLevels: { ...work.toolLevels },
+      };
+const craftedLiquidFields = (item: { craftedLiquids?: { liquid: string; volumeMicrolitres: number }[] }) =>
+  item.craftedLiquids === undefined ? {} : { craftedLiquids: item.craftedLiquids.map((liquid) => ({ ...liquid })) };
+
 type CraftWork<Node> =
-  | (WorkProgress<Node> & { kind: 'craft'; recipe: string })
+  | (WorkProgress<Node> & { kind: 'craft'; recipe: string; liquids?: RecordedLiquidDraw[] })
   | (WorkProgress<Node> & {
       kind: 'disassembly';
       source: string;
+      operation: RecoveryOperation;
+      liquids: LiquidAmount[];
+      receivers: NonNullable<LiquidRecoveryChoices['receivers']>;
+      spillApproval: LiquidAmount[];
       skillLevel: number;
       toolLevels: Record<string, number>;
       gather: number;
@@ -56,6 +94,7 @@ export interface ItemFields<Node> {
   batteryMicrojoules?: number;
   liquidContents?: LiquidContents;
   liquidBurnRemainder?: number;
+  craftedLiquids?: { liquid: string; volumeMicrolitres: number }[];
   /** A light that's switched on. */
   on?: boolean;
   /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
@@ -80,7 +119,7 @@ export interface ItemFields<Node> {
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
-  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to salvage (core/cargoSpace.ts). */
+  /** A cargo space's size in inventory cells along x, y and z, kept from fitting to disassembly (core/cargoSpace.ts). */
   cargo?: [x: number, y: number, z: number];
   /** Items fitted to this one, owned by it like work components. Keys are exported mount IDs or named device slots. */
   slots?: ItemSlots<Node>;
@@ -163,6 +202,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
     ...paperMapField(item.paperMap),
     ...liquidContentsField(item.liquidContents),
     ...liquidBurnField(item.liquidBurnRemainder),
+    ...craftedLiquidFields(item),
     ...(item.slots === undefined
       ? {}
       : {
@@ -179,14 +219,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
       ? {}
       : {
           work: {
-            ...item.work,
-            ...repairTargetFields(item.work),
-            ...(item.work.kind === 'disassembly'
-              ? {
-                  outputs: item.work.outputs.map((output) => ({ ...output })),
-                  toolLevels: { ...item.work.toolLevels },
-                }
-              : {}),
+            ...workFields(item.work),
             components: item.work.components.map((component) => snapshotItem(component, foodAt) as ItemState),
           },
         }),
@@ -295,14 +328,7 @@ const restoreFirearmState = (registry: Registry, def: ItemDef, state: ItemState)
 };
 
 const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): NonNullable<Item['work']> => ({
-  ...work,
-  ...repairTargetFields(work),
-  ...(work.kind === 'disassembly'
-    ? {
-        outputs: work.outputs.map((output) => ({ ...output })),
-        toolLevels: { ...work.toolLevels },
-      }
-    : {}),
+  ...workFields(work),
   components: work.components.map((component) => restoreItem(registry, component)),
 });
 
@@ -360,10 +386,27 @@ export const assertSavedLiquidContents = (registry: Registry, state: ItemState):
   }
 };
 
+export const assertCraftedLiquids = (registry: Registry, state: ItemState): void => {
+  if (
+    state.craftedLiquids !== undefined &&
+    (!Array.isArray(state.craftedLiquids) ||
+      state.craftedLiquids.length === 0 ||
+      state.craftedLiquids.some(
+        (entry, index, records) =>
+          !(entry && registry.liquids.has(entry.liquid) && Number.isSafeInteger(entry.volumeMicrolitres)) ||
+          entry.volumeMicrolitres <= 0 ||
+          (index > 0 && records[index - 1]!.liquid.localeCompare(entry.liquid) >= 0),
+      ))
+  ) {
+    throw new Error('Invalid saved crafted liquids');
+  }
+};
+
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertFoodExposure(registry, state);
   assertSavedLiquidContents(registry, state);
+  assertCraftedLiquids(registry, state);
   assertSavedBurnState(def, state);
   assertSavedFuse(def, state);
   assertSavedTrap(def, state);
@@ -400,6 +443,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...paperMapField(state.paperMap),
     ...liquidContentsField(state.liquidContents),
     ...liquidBurnField(state.liquidBurnRemainder),
+    ...craftedLiquidFields(state),
     ...(state.slots === undefined
       ? {}
       : {
@@ -580,6 +624,7 @@ export class ItemFactory {
     if (item.litAtGameTimestamp !== undefined) {
       part.litAtGameTimestamp = item.litAtGameTimestamp;
     }
+    Object.assign(part, craftedLiquidFields(item));
     return part;
   }
 }
@@ -675,13 +720,16 @@ export const isEmpty = (item: Item): boolean =>
   Object.values(item.slots ?? {}).every((child) => child === undefined) &&
   (item.pockets ?? []).every((grid) => grid.length === 0);
 
+const holdsLiquid = (item: Item): boolean =>
+  item.liquidContents?.kind === 'filled' ||
+  Object.values(item.slots ?? {}).some(holdsLiquid) ||
+  (item.pockets ?? []).some((grid) => grid.some(({ item: child }) => holdsLiquid(child))) ||
+  (item.work?.components ?? []).some(holdsLiquid);
+
 /** Recipes may consume fitted parts, but never silently discard liquid, pocket contents or unfinished work. */
 export const craftComponentEligible = (item: Item, consumeFitted = false): boolean =>
   isEmpty(item) ||
-  (consumeFitted &&
-    item.liquidContents?.kind !== 'filled' &&
-    !item.work &&
-    (item.pockets ?? []).every((grid) => grid.length === 0));
+  (consumeFitted && !holdsLiquid(item) && !item.work && (item.pockets ?? []).every((grid) => grid.length === 0));
 
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
@@ -694,6 +742,14 @@ export const damageWord = (registry: Registry, condition: number): string | unde
   const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
   return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
 };
+
+export const sameRecoveryState = (a: Item, b: Item): boolean =>
+  a.on !== true &&
+  b.on !== true &&
+  a.litAtGameTimestamp === undefined &&
+  b.litAtGameTimestamp === undefined &&
+  a.burnRemainingGameSeconds === b.burnRemainingGameSeconds &&
+  JSON.stringify(a.craftedLiquids) === JSON.stringify(b.craftedLiquids);
 
 /** How many of `item` could join the `onto` stack. `sameFood` lets an owner compare under each item's environment. */
 export const stackRoom = (
@@ -711,6 +767,7 @@ export const stackRoom = (
     onto.batteryMicrojoules === item.batteryMicrojoules &&
     onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
     sameFood(onto, item) &&
+    sameRecoveryState(onto, item) &&
     onto.firearm === undefined &&
     item.firearm === undefined &&
     !def.paperMap &&

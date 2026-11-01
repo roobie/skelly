@@ -9,6 +9,8 @@ import { buildRegistry } from '../../deadvox/src/core/content.ts';
 import { exportFileText } from '../src/cli/exportFile.ts';
 import { readCartridge } from '../src/cli/readCartridge.ts';
 import { resolveGunAction } from '../src/gun/actionDescription.ts';
+import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
+import { attachmentSlots } from '../src/gun/attachments.ts';
 import { BOLT_EXTRACTION_CLEARANCE_U, boltCartridge, boltStrokeUnits } from '../src/gun/boltCartridge.ts';
 import { sweepTurningAction } from '../src/gun/boltSweep.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
@@ -205,23 +207,35 @@ it('keeps the sporting front post tip centred and visible between the rear notch
 });
 
 it('removes a design-excluded attachment from both single and pair certificates', () => {
-  const asset = { id: 'exclusion_fixture', file: 'assets/models/exclusion_fixture.glb' as const };
-  const baseline = exportFileText(JSON.stringify({ ...hunting, excludedAttachments: [] }), asset);
-  if (!baseline.ok) {
-    throw new Error(baseline.message);
+  // A pistol has few attachment slots, so its whole-gun certificate sweep stays small; one slot finds the baseline.
+  const pistol = JSON.parse(readFileSync('designs/archetype-pistol.json', 'utf8'));
+  const loadedPistol = loadGunDesign(JSON.stringify(pistol));
+  if (!loadedPistol.ok) {
+    throw new Error(loadedPistol.error.message);
   }
-  const excluded = baseline.modelEntry.gun.compatibilityPairs?.[0]?.[0][1];
-  if (!excluded) {
-    throw new Error('Exclusion fixture needs an accepted attachment pair');
+  const pistolAssembly = loadedPistol.design.assembly;
+  // The certificates' own order puts the muzzle first, an unfitted slot; a fitted default stays in its pairs.
+  const [slot, accepted] =
+    attachmentSlots(resolve(pistolAssembly, gunDomain))
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map((candidate) => [candidate, attachmentCompatibility(pistolAssembly, [candidate])[candidate.id]!] as const)
+      .find(([, ids]) => ids.length >= 2) ?? [];
+  if (!(slot && accepted)) {
+    throw new Error('Exclusion fixture needs a slot that accepts two attachments');
   }
-  const restricted = exportFileText(JSON.stringify({ ...hunting, excludedAttachments: [excluded] }), asset);
+  const [excluded, kept] = accepted;
+  const restricted = exportFileText(JSON.stringify({ ...pistol, excludedAttachments: [excluded] }), {
+    id: 'exclusion_fixture',
+    file: 'assets/models/exclusion_fixture.glb',
+  });
   if (!restricted.ok) {
     throw new Error(restricted.message);
   }
-  expect(Object.values(restricted.modelEntry.gun.compatibility ?? {}).flat()).not.toContain(excluded);
-  expect(restricted.modelEntry.gun.compatibilityPairs?.some((pair) => pair.some(([, id]) => id === excluded))).toBe(
-    false,
-  );
+  const { compatibility = {}, compatibilityPairs = [] } = restricted.modelEntry.gun;
+  expect(compatibility[slot.id]).toContain(kept);
+  expect(Object.values(compatibility).flat()).not.toContain(excluded);
+  expect(compatibilityPairs.some((pair) => pair.some(([slotId, id]) => slotId === slot.id && id === kept))).toBe(true);
+  expect(compatibilityPairs.some((pair) => pair.some(([, id]) => id === excluded))).toBe(false);
 });
 
 it('exports integral capacity from the well, iron or fitted-optic sights, and a validated phased action', () => {

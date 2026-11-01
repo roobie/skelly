@@ -261,6 +261,10 @@ describe('snapshot state components', () => {
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
+    const combatId = CORE_CONTENT_IDS.firearmsCombat;
+    const steadinessId = registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessSkill;
+    actor.awardPractice(combatId, firstThreshold / 3);
+    actor.awardPractice(steadinessId, firstThreshold + firstThreshold / 2);
     const snapshot = capture(runtime);
     actor.awardPractice('crafting', practiceForNextLevel(registry, savedLevel), SKILL_LEVEL_LEGENDARY);
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
@@ -268,6 +272,14 @@ describe('snapshot state components', () => {
     const loaded = loadedRuntime.session.character;
     expect(loaded.skills.crafting).toBe(savedLevel);
     expect(loaded.practice.crafting).toBe(savedPractice);
+    for (const id of [combatId, steadinessId]) {
+      expect(loaded.skills[id]).toBe(snapshot.character.progression.skills[id]);
+      expect(loaded.practice[id]).toBe(snapshot.character.progression.practice[id]);
+    }
+    const mismatched = structuredClone(loaded.snapshotState());
+    delete mismatched.skills[steadinessId];
+    delete mismatched.practice[steadinessId];
+    expect(() => Character.restoreState(registry, mismatched)).toThrow('Saved skills do not match');
     expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
     expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
     expect(actor.skills.crafting).toBe(savedLevel + 1);
@@ -800,6 +812,10 @@ describe('craft job codec and ownership', () => {
       savedWork.work = {
         kind: 'disassembly',
         source: radio.id,
+        operation: radio.disassembly ? 'disassembly' : 'salvage',
+        liquids: [],
+        receivers: [],
+        spillApproval: [],
         skillLevel: SKILL_LEVEL_LEGENDARY,
         toolLevels: {},
         outputs: disassemblyOutputs(radio, SKILL_LEVEL_LEGENDARY),

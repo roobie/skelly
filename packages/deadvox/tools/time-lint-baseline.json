@@ -208,8 +208,6 @@
       "cooldown": 4
     },
     "game/play.ts": {
-      "duration": 1,
-      "elapsed": 1,
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
       "snapshotLastMs": 1,

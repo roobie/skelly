@@ -9,7 +9,7 @@ import { Inventory, SIDES } from '../src/core/inventory.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { actionPartPaths, cloneHeldModel } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
-import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -19,10 +19,9 @@ it('the firing hand follows the exported bolt knob rather than moving the suppor
   const rifle = [...registry.items.values()].find((item) => item.firearm?.bolt)!;
   const model = registry.models.get(rifle.model!)!;
   const bytes = readFileSync(`src/content/base/${model.file}`);
-  const gltf = await new GLTFLoader().parseAsync(
-    bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-    '',
-  );
+  const gltf = await new GLTFLoader()
+    .parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '')
+    .then(indexModelMaterials);
   const paths = actionPartPaths(gltf.scene, model.gun?.action, gltf.parser);
   const prepared = prepareModel(model, gltf.scene);
   for (const side of SIDES) {

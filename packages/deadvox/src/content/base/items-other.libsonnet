@@ -2,6 +2,9 @@
 
 // One pill is one item, so a found pack is a stack of them; loot.jsonnet sizes its pill counts from this.
 local pillPack = 24;
+local salvage = [0.5, 0.6, 0.7, 0.8, 0.9, 1];
+local yield(item, count) = { item: item, count: count, fractions: salvage, rounding: 'floor' };
+local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes, skill: 'crafting', yields: yields };
 
 // A book teaches its recipes and is titled with its own name.
 local book(id, name, weight, readingGameMinutes, recipes, text) = {
@@ -81,6 +84,7 @@ local spentCase(id, name, weight, description, model) = {
       size: [1, 1],
       stack: 4,
       treatment: { bleeding: 8 },
+      disassembly: disassembly(2, [yield('cloth_strip', 1)]),
       description: 'Slows or stops bleeding on one body part.',
     },
     {
@@ -223,6 +227,9 @@ local spentCase(id, name, weight, description, model) = {
         'trim_wood_offcut',
         'assemble_fastener_pack',
         'make_scrap_foregrip',
+        'make_bandage',
+        'make_headlamp_strap',
+        'make_weapon_sling',
       ],
       'Notes on making simple light and shelter from things found nearby.',
     ),
@@ -235,6 +242,7 @@ local spentCase(id, name, weight, description, model) = {
         'repair_kit',
         'make_sewing_kit',
         'make_sewing_repair_kit',
+        'sew_cloth_strip',
         'repair_crowbar',
         'repair_hammer',
         'repair_machete',
@@ -267,6 +275,10 @@ local spentCase(id, name, weight, description, model) = {
         'make_taped_flashlight_mount',
         'make_improvised_suppressor',
         'make_scrap_foregrip',
+        'make_nail_bat',
+        'make_spear',
+        'make_taped_armour',
+        'make_weapon_sling',
       ],
       'Handwritten notes on careful repairs and using salvaged wire.',
     ),

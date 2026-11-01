@@ -9,7 +9,7 @@ read_if:
   - you change runtime escrow roles, severed-part item policy or world liveness tuning
   - you add or change a refusal, notice or option label that core code shows the player
   - you change recipe, skill, workstation or book content, content references, static reachability or disassembly-output contracts
-  - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot
+  - you change item economy metadata, source contexts, loot selection, loot-point descriptions or fixed loot, including authored liquid instance state
   - you're authoring or changing authored sites or gauntlet lots, template geometry, palettes, site-generation tuning, time-windowed spawns, curated map kits, role styles or connector contracts
   - you author standing water, basins or lots over water
   - you're authoring or changing exterior door openings, lab-yard perimeters and dressing, or townhouse aftermath scenes (`packages/deadvox/docs/aftermath.md`)
@@ -203,6 +203,19 @@ Non-wood decks keep wooden flooring from reading as a wooden roof on masonry wal
 The test house is authored content rather than a code-built exception, so the same layout and template mechanisms serve mods and evaluation scenes. See `src/content/base/layouts-test-house.jsonnet`, `layouts`, and `docs/test-house.md`, "Content ownership".
 
 Scenario lead references may carry fixed loot on their template's furniture anchors, so a portable clue uses the same surface or container machinery as other items. Lead admission requires readable furniture or a readable fixed item; the route certificate still proves independent access around solid supports. Surface loot and discovery share furniture-top positioning so an observation identifies the pile actually offered by inventory, rather than the support's corner. See `src/core/furnitureSurface.ts`, `furnitureSurfacePosition`. Unknown placement kinds fail schema validation instead of selecting a fallback. See `src/core/schema.ts`, `FixedLootItem`; `src/core/scenarioComposition.ts`, `extraTemplateIssues`; and `src/core/scenarioCertificate.ts`, `lead`.
+
+Fixed stock may author liquid instance state so test-house looks can begin with a
+crafted recovery source and deliberately filled or empty vessels, without runtime
+fixture injection. It shares ordinary items' liquid representation and instance
+validation, so stock cannot admit unknown liquids or contents an instance cannot
+hold. Authored provenance also requires a recoverable type with liquid recovery
+for every operation it supports: selecting another recovery operation must not
+turn valid stock into an inventory-planning failure. Unrecoverable records are
+refused because they cannot serve the recovery look. This is a narrow authoring
+capability, not permission to embed saved item trees.
+See `src/core/schema.ts`, `FixedLootItem`; `src/core/placementLoot.ts`,
+`fixedItemIssue`; `src/core/loot.ts`, `fixedItems`; and `src/core/inventory.ts`,
+`Inventory.createRolled`.
 
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Point overrides keep a special supply local to its anchor rather than retagging the building; fitted children meet the same resolved context. See `placementLootIssues` in `src/core/placementLoot.ts` and its callers in `src/core/authoredLayout.ts` and `src/core/scenarioComposition.ts`.
 
@@ -415,9 +428,9 @@ ownership so a mod can express the scenario without a code edit.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
-beyond data, such as triggers, timed events and conditional consequences, wait for the
-runtime-function format that `../../../docs/decisions/0004-content-language.md` leaves open
-in #313, so no scenario grows a private rule language first.
+beyond data, such as triggers, timed events and conditional consequences, wait for the CEL
+rules of `../../../docs/decisions/0004-content-language.md`, "Decision", to run in the engine
+(#313), so no scenario grows a private rule language first.
 
 ## Recipes
 
@@ -433,7 +446,7 @@ The initial torch, candle, and repair-kit recipes consume whole solid items and 
 
 Content acceptance checks that authored world sources can provide declared item types through loot, map-kit alternatives, crafting, disassembly, packages, teaching books, fixed loot, and firing output. It also checks required qualities and training sources. This catches content that validates structurally but cannot be reached in play; `npm run validate` reports the result without maintaining a second content list here. Type-source reachability does not prove that a particular authored container can be reached and looted. Fixed-loot tests use the same standing traversal as template validation; see `templateReachableStandingPositions` in `src/core/templateSpatial.ts` and `test/authoredFixedLoot.test.ts`.
 
-Reachability is a type-source contract, not a quantity, seed, or whole-game solver. A site can lack item types the whole game has, so `npm run report:never-spawn -- <site-id>` provides an on-demand per-site report rather than a gate. A recipe cycle without a found source cannot make itself reachable. Disassembly reachability assumes the required skill is attainable, while recipe requirements must have a reachable practice source; workstation qualities must be placed and reachable. Showcase and demo layouts are fixtures, not sources for playable-world reachability. Preserve these distinctions when changing the checker. See `checkReachability` and its source-closure helpers in `src/core/reachability.ts`, and `SiteLayoutSchema.demo` in `src/core/schema.ts`.
+Reachability is a type-source contract, not a quantity, seed, or whole-game solver. A site can lack item types the whole game has, so `npm run report:never-spawn -- <site-id>` provides an on-demand per-site report rather than a gate. A recipe cycle without a found source cannot make itself reachable. Knowledge from a skill must be grounded just like knowledge from a book, because a dead unlock must stay red. A reachable skill counts as reachable at every level, the same test recipe requirements use; training ceilings and non-crafting practice are outside this contract. Level-zero unlocks are starting knowledge and need no practice source. Disassembly assumes the required skill is attainable, unlike recipe requirements and positive-level unlocks, which need reachable practice. Showcase and demo layouts are fixtures, not sources for playable-world reachability. See `src/core/reachability.ts`, `checkReachability` and `reachableKnowledgeAndSkills`, and `src/core/schema.ts`, `SiteLayoutSchema.demo`.
 
 Acquired-content totals exclude types by their authored policy, not their identity, so adding a debug fixture or a creature part needs no checker edit. See `ItemSchema.notLoot` in `src/core/schema.ts` and `checkReachability` in `src/core/reachability.ts`. Runtime escrow selects its definition through `ItemSchema.workInProgress`; exactly one definition must own that role. Creature kinds own their severed-region item policy through `ZombieSchema.severedItems`, including an explicit null for a region that leaves nothing. World liveness belongs to site-generation tuning, not creature identity; see `SiteGenerationSchema.activeZombieRadiusMetres` in `src/core/schema.ts` and `ZombieSystem.tierAt` in `src/core/zombies.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
 

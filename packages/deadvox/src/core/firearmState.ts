@@ -27,6 +27,13 @@ interface FirearmRaiseState {
   duration: number;
 }
 
+/** Long-gun aim-down-sights acquisition: the Combat-owned shouldering motion from ready to sighted. */
+interface FirearmAdsAcquisitionState {
+  elapsedSimSeconds: number;
+  /** Duration sampled when acquisition began; saved so progression resumes under the same handling. */
+  durationSimSeconds: number;
+}
+
 interface FirearmLanding {
   at: number;
   position: Vec3;
@@ -60,6 +67,7 @@ export interface FirearmState {
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
   readying?: FirearmRaiseState | undefined;
+  adsAcquiring?: FirearmAdsAcquisitionState | undefined;
   /** Simulation time of the last committed shot or pull; it gates revolver recovery and names a follow-up shot. */
   lastShotAtSimSeconds?: number | undefined;
 }
@@ -78,6 +86,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
     pendingCase,
     cycle,
     readying,
+    adsAcquiring,
     lastShotAtSimSeconds,
   } = state;
   return {
@@ -92,6 +101,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
     ...(readying === undefined ? {} : { readying: { ...readying } }),
+    ...(adsAcquiring === undefined ? {} : { adsAcquiring: { ...adsAcquiring } }),
     ...(lastShotAtSimSeconds === undefined ? {} : { lastShotAtSimSeconds }),
   };
 };
@@ -117,6 +127,20 @@ const assertFirearmExtras = ({ tube, landings }: FirearmState): void => {
       ))
   ) {
     throw new Error('Invalid firearm landing');
+  }
+};
+
+/** A saved acquisition progress needs a positive duration and elapsed time within it. */
+const assertAdsAcquisitionState = (state: FirearmAdsAcquisitionState | undefined): void => {
+  if (
+    state &&
+    (!Number.isFinite(state.elapsedSimSeconds) ||
+      state.elapsedSimSeconds < 0 ||
+      !Number.isFinite(state.durationSimSeconds) ||
+      state.durationSimSeconds <= 0 ||
+      state.elapsedSimSeconds > state.durationSimSeconds)
+  ) {
+    throw new Error('Invalid firearm ADS acquisition progress');
   }
 };
 
@@ -224,6 +248,7 @@ export const assertFirearmState = (state: FirearmState): void => {
   ) {
     throw new Error('Invalid firearm ready progress');
   }
+  assertAdsAcquisitionState(state.adsAcquiring);
   const shotAt = state.lastShotAtSimSeconds;
   if (shotAt !== undefined && !(Number.isFinite(shotAt) && shotAt >= 0)) {
     throw new Error('Invalid firearm last shot time');

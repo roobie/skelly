@@ -5,7 +5,12 @@ import { REPOSITORY_ROOT } from './jsonnet/index.mjs';
 
 // The recipes and catalogues are static JSON imports, so the tools' own sources compile before their loaders are imported.
 compileJsonnetSources({
-  within: ['packages/thing-core/src', 'packages/thing-authoring-tool', 'packages/gun-authoring-tool'],
+  within: [
+    'packages/thing-core/src',
+    'packages/thing-authoring-tool',
+    'packages/gun-authoring-tool',
+    'packages/deadvox/src/content/base/presentation',
+  ],
 });
 const { loadExportRecipe } = await import('../packages/gun-authoring-tool/src/cli/exportRecipe.ts');
 const { loadThingRecipe } = await import('../packages/thing-authoring-tool/src/exports.ts');
@@ -21,5 +26,7 @@ if (new Set(ids).size !== ids.length) {
 for (const { directory, recipe, index } of jobs) {
   writeRecipeExports(recipe, resolve(REPOSITORY_ROOT, 'packages/deadvox/src/content/base'), directory, { index });
 }
+await import('../packages/deadvox/tools/item-fuel-models.mjs');
+await import('./item-model-metadata.mjs');
 // Content Jsonnet imports the model files written above, so the full compile runs last.
 compileJsonnetSources();

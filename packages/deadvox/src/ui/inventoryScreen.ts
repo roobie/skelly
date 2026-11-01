@@ -13,7 +13,7 @@ import type { ItemDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { coreLabel } from '../core/coreText.ts';
-import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
+import type { RecoveryChoices, RecoveryProjection, WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
@@ -38,6 +38,7 @@ import { fillText } from '../core/textTemplate.ts';
 import { blursFindField, type InputCommand, inputBindings } from '../game/inputBindings.ts';
 import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
+import { comboBox } from './comboBox.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
@@ -113,6 +114,7 @@ export interface ScreenHooks {
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   workOptions: (uid: number) => readonly WorkOption[];
+  recovery?: (uid: number, choices: RecoveryChoices) => RecoveryProjection | undefined;
   character: () => {
     readonly skills: Readonly<Record<string, number>>;
     readonly practice: Readonly<Record<string, number>>;
@@ -122,7 +124,10 @@ export interface ScreenHooks {
   /** The alarm's wake hour (undefined: when rested), or undefined while no alarm is carried. */
   wakeGameHour?: () => { readonly gameHour: number | undefined } | undefined;
   actionRefusal?: () => string | undefined;
-  attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
+  attachmentCandidates?: (
+    firearmUid: number,
+    slotId: string,
+  ) => readonly { readonly item: Item; readonly reason?: string }[];
 }
 
 interface Drag {
@@ -234,7 +239,7 @@ interface AttachmentSlotViewModel {
   readonly occupied?: string;
   readonly attachmentUid?: number;
   readonly battery?: BatterySlotViewModel;
-  readonly candidates: readonly { readonly uid: number; readonly name: string }[];
+  readonly candidates: readonly { readonly uid: number; readonly name: string; readonly reason?: string }[];
 }
 
 /** A powered light's battery slot, which takes a dragged battery. */
@@ -258,6 +263,7 @@ interface DetailsViewModel {
   readonly vehicleOptions?: readonly VehicleOptionViewModel[];
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
   readonly battery?: BatterySlotViewModel;
+  readonly recovery?: RecoveryProjection;
   readonly reservoir?: string;
   readonly pour?: { readonly label: string; readonly receiverUid?: number; readonly reason?: string };
 }
@@ -283,6 +289,7 @@ interface BodyRegionViewModel {
 }
 
 interface SkillViewModel {
+  readonly detail: string | undefined;
   readonly id: string;
   readonly name: string;
   readonly level: number;
@@ -433,12 +440,12 @@ const optionTemplate = (
 ): TemplateResult =>
   option.button
     ? html`
-        <button class="inv-option" type="button" @click=${() => queue(item, option.target, option.operation)}>
+        <button class="inv-option" type="button" data-work-operation=${option.operation ?? ''} @click=${() => queue(item, option.target, option.operation)}>
           <span>${option.label}</span><span class="inv-time">${option.time}</span>
         </button>
       `
     : html`
-        <div class="inv-option inv-option-no">
+        <div class="inv-option inv-option-no" data-work-operation=${option.operation ?? ''}>
           <span>${option.label}</span><span class="inv-reason">${option.reason}</span>
         </div>
       `;
@@ -489,9 +496,10 @@ const attachmentSlotTemplate = (
     <span>${fillText(text.slot, { slot: slot.label, item: slot.occupied ?? text.open })}</span>
     ${
       slot.attachmentUid === undefined
-        ? slot.candidates.map(
-            (candidate) =>
-              html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`,
+        ? slot.candidates.map((candidate) =>
+            candidate.reason === undefined
+              ? html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`
+              : html`<div class="inv-option inv-option-no" data-refused><span>${fillText(text.fit, { item: candidate.name })}</span><span class="inv-reason">${candidate.reason}</span></div>`,
           )
         : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>${text.remove}</button>`
     }
@@ -499,10 +507,50 @@ const attachmentSlotTemplate = (
   ${slot.battery === undefined ? nothing : batterySlotTemplate(slot.battery, text)}
 `;
 
+const recoveryTemplate = (
+  recovery: RecoveryProjection,
+  change: (choices: RecoveryChoices) => void,
+  text: InventoryText,
+): TemplateResult =>
+  html`<div class="inv-recovery">${recovery.liquids.map((amount) => {
+    const receiver = recovery.choices.receivers?.find(({ liquid }) => liquid === amount.liquid)?.uid;
+    const vessels = recovery.vessels.filter(({ liquid }) => liquid === amount.liquid);
+    return html`<div class="inv-line" data-recovery-liquid=${amount.liquid}>
+    <span>${fillText(text.recoveryAmount, { liquid: amount.name, volume: volumeText(amount.volumeMicrolitres / 1000) })}</span>
+    ${comboBox({
+      label: fillText(text.recoveryReceiver, { liquid: amount.name }),
+      emptyLabel: text.recoveryNoMatches,
+      options: [
+        { value: '', label: text.recoverySpillAll },
+        ...vessels.map(({ uid, name }) => ({ value: String(uid), label: name })),
+        ...(receiver !== undefined && !vessels.some(({ uid }) => uid === receiver)
+          ? [{ value: String(receiver), label: text.recoveryUnavailable }]
+          : []),
+      ],
+      value: receiver === undefined ? '' : String(receiver),
+      choose: (value) =>
+        change({
+          ...recovery.choices,
+          receivers: [
+            ...(recovery.choices.receivers ?? []).filter(({ liquid }) => liquid !== amount.liquid),
+            ...(value ? [{ liquid: amount.liquid, uid: Number(value) }] : []),
+          ],
+        }),
+    })}
+  </div>`;
+  })}</div>`;
+
 const detailsTemplate = (
   vm: DetailsViewModel,
-  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
-  attachmentAction: (payload: ReplayActionPayload) => void,
+  {
+    queue,
+    attachmentAction,
+    changeRecovery,
+  }: {
+    queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
+    attachmentAction: (payload: ReplayActionPayload) => void;
+    changeRecovery: (choices: RecoveryChoices) => void;
+  },
   text: InventoryText,
 ): TemplateResult => {
   if (vm.empty) {
@@ -520,6 +568,7 @@ const detailsTemplate = (
       ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
       ${vm.reservoir ? html`<div class="inv-line inv-service-target" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
       ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
+      ${vm.recovery ? recoveryTemplate(vm.recovery, changeRecovery, text) : nothing}
       <div class="inv-kicker">${text.whereItCanGo}</div>
       ${
         vm.vehicleOptions
@@ -565,7 +614,12 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  { tab, splitRatio, text }: { tab: InventoryTab; splitRatio: number; text: InventoryText },
+  {
+    tab,
+    repairAvailable,
+    splitRatio,
+    text,
+  }: { tab: InventoryTab; repairAvailable: boolean; splitRatio: number; text: InventoryText },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
@@ -573,6 +627,7 @@ const inventoryTemplate = (
     search,
     chooseTarget,
     attachmentAction,
+    changeRecovery,
     wait,
     stepWake,
   }: {
@@ -581,6 +636,7 @@ const inventoryTemplate = (
     search: (uid: number) => void;
     chooseTarget: (key: string) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
+    changeRecovery: (choices: RecoveryChoices) => void;
     wait: () => void;
     stepWake: (step: 1 | -1) => void;
   },
@@ -588,10 +644,10 @@ const inventoryTemplate = (
   <header class="inv-head">
     <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
     <nav class="inv-tabs" aria-label=${text.tabsLabel}>
-      ${(['items', 'skills', 'crafting', 'actions'] as const).map(
+      ${(['items', 'skills', 'crafting', 'actions', ...(repairAvailable ? ['repair' as const] : [])] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -707,7 +763,7 @@ const inventoryTemplate = (
         ${vm.vehicle ? vehicleTemplate(vm.vehicle, attachmentAction) : nothing}
       </div>
     </section>
-    ${detailsTemplate(vm.details, queue, attachmentAction, text)}
+    ${detailsTemplate(vm.details, { queue, attachmentAction, changeRecovery }, text)}
   </div>
   <div class="inv-body inv-skills" data-tab-panel="skills" ?hidden=${tab !== 'skills'}>
     <section class="inv-pane inv-body-panel" data-pane="body">
@@ -729,7 +785,7 @@ const inventoryTemplate = (
       ${vm.skills.map(
         (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
-          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
+          <div class="inv-skill-heading"><strong>${skill.detail ? factDetail(skill.name, skill.detail) : skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
           <div class="inv-skill-practice">${
             Number.isFinite(skill.nextLevelPractice)
               ? fillText(text.practice, {
@@ -877,6 +933,7 @@ export class InventoryScreen {
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
     Inventory,
+    | 'canReachEntity'
     | 'carried'
     | 'carriedWeight'
     | 'character'
@@ -897,10 +954,13 @@ export class InventoryScreen {
   private readonly queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>;
   private readonly hooks: ScreenHooks;
   private readonly tabs = new InventoryTabState();
+  private repairUid: number | undefined;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
   private readonly vehicleOptionsByUid = new Map<number, readonly VehicleOptionViewModel[]>();
+  private recoveryUid: number | undefined;
+  private recoveryChoices: Pick<RecoveryChoices, 'receivers' | 'recoveryOperation'> = {};
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
@@ -918,6 +978,7 @@ export class InventoryScreen {
     root: HTMLElement,
     inv: Pick<
       Inventory,
+      | 'canReachEntity'
       | 'carried'
       | 'carriedWeight'
       | 'character'
@@ -997,6 +1058,18 @@ export class InventoryScreen {
     return this.tabs.active;
   }
 
+  get repairTarget(): BlockEntity | undefined {
+    return this.repairUid === undefined ? undefined : this.inv.entities.byUid(this.repairUid);
+  }
+
+  openRepair(uid: number): void {
+    if (!this.inv.entities.byUid(uid)) {
+      return;
+    }
+    this.repairUid = uid;
+    this.openOnTab('repair');
+  }
+
   open(): void {
     this.tabs.open();
     this.root.hidden = false;
@@ -1012,11 +1085,12 @@ export class InventoryScreen {
     this.targetKey = undefined;
     this.currentContainer = undefined;
     this.tabs.close();
+    this.repairUid = undefined;
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
     this.findQuery = '';
     this.root.hidden = true;
-    document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
+    document.body.classList.remove('inventory-open', 'inventory-tab-crafting', 'inventory-tab-repair');
     this.splitDrag = undefined;
     this.endDrag();
     this.viewer.close();
@@ -1040,6 +1114,9 @@ export class InventoryScreen {
   }
 
   selectTab(tab: InventoryTab): void {
+    if (tab === 'repair' && !this.repairTarget) {
+      return;
+    }
     this.cancelInput();
     this.tabs.select(tab);
     this.root.dataset.tab = tab;
@@ -1050,12 +1127,23 @@ export class InventoryScreen {
 
   private syncTabClass(): void {
     document.body.classList.toggle('inventory-tab-crafting', this.tabs.active === 'crafting');
+    document.body.classList.toggle('inventory-tab-repair', this.tabs.active === 'repair');
   }
 
   /** Redraws when something changed; call every frame while open. */
   update(at = performance.now()): void {
     if (!this.isOpen) {
       return;
+    }
+    const { repairTarget } = this;
+    if (this.repairUid !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
+      this.repairUid = undefined;
+      if (this.tabs.active === 'repair') {
+        this.tabs.select('items');
+        this.root.dataset.tab = this.tabs.active;
+        this.syncTabClass();
+      }
+      this.drawn = '';
     }
     if (this.hooks.actionRefusal?.()) {
       this.cancelInput();
@@ -1437,7 +1525,12 @@ export class InventoryScreen {
     render(
       inventoryTemplate(
         vm,
-        { tab: this.tabs.active, splitRatio: this.splitRatio, text: this.text() },
+        {
+          tab: this.tabs.active,
+          repairAvailable: this.repairTarget !== undefined,
+          splitRatio: this.splitRatio,
+          text: this.text(),
+        },
         (tab) => this.selectTab(tab),
         {
           find: {
@@ -1461,10 +1554,26 @@ export class InventoryScreen {
             if (refusal) {
               this.refuse(refusal);
             } else if (operation) {
-              this.report(this.hooks.dispatch({ kind: 'inventory.work', itemUid: item.uid, operation }));
+              this.report(
+                this.hooks.dispatch({
+                  kind: 'inventory.work',
+                  itemUid: item.uid,
+                  operation,
+                  // A fresh projection here could approve room lost since the button was drawn.
+                  ...(operation === 'apart' ? {} : (vm.details.recovery?.choices ?? this.recoveryChoices)),
+                }),
+              );
             } else if (target) {
               this.report(this.tryQueue(item, target));
             }
+          },
+          changeRecovery: (choices) => {
+            this.recoveryChoices = {
+              receivers: choices.receivers ?? [],
+              ...(choices.recoveryOperation ? { recoveryOperation: choices.recoveryOperation } : {}),
+            };
+            this.drawn = '';
+            this.update();
           },
           chooseTarget: (key) => this.chooseTarget(key),
           search: (uid) => {
@@ -1661,6 +1770,7 @@ export class InventoryScreen {
       return {
         id: definition.id,
         name: definition.name,
+        detail: definition.detail,
         level,
         practice,
         nextLevelPractice,
@@ -1830,16 +1940,23 @@ export class InventoryScreen {
         ...(battery ? { battery } : {}),
         candidates: fitted
           ? []
-          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map((candidate) => ({
+          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map(({ item: candidate, reason }) => ({
               uid: candidate.uid,
               name: workName(this.inv.registry, candidate),
+              ...(reason ? { reason } : {}),
             })),
       };
     });
     const text = this.text();
     const name = workName(this.inv.registry, item);
     const battery = this.batterySlot(item);
+    if (this.recoveryUid !== item.uid) {
+      this.recoveryUid = item.uid;
+      this.recoveryChoices = {};
+    }
+    const recovery = this.hooks.recovery?.(item.uid, this.recoveryChoices);
     return {
+      ...(recovery ? { recovery } : {}),
       ...this.reservoirViewModel(item),
       item,
       empty: false,
@@ -1856,20 +1973,27 @@ export class InventoryScreen {
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),
-      ].map(
-        (option): OptionViewModel =>
-          option.plan.ok
-            ? {
-                label: option.label,
-                button: true,
-                time:
-                  'duration' in option && option.duration !== undefined
-                    ? craftTime(option.duration, craftingText(this.inv.registry))
-                    : secs(text, option.plan.time),
-                ...optionAction(option),
-              }
-            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
-      ),
+      ].map((option): OptionViewModel => {
+        const label =
+          'operation' in option && option.operation !== 'apart' && recovery?.spillLabel
+            ? fillText(text.recoveryAction, { action: option.label, spill: recovery.spillLabel })
+            : option.label;
+        return option.plan.ok && !('operation' in option && option.operation !== 'apart' && recovery?.refusal)
+          ? {
+              label,
+              button: true,
+              time:
+                'duration' in option && option.duration !== undefined
+                  ? craftTime(option.duration, craftingText(this.inv.registry))
+                  : secs(text, option.plan.time),
+              ...optionAction(option),
+            }
+          : {
+              label,
+              button: false,
+              reason: (option.plan.ok ? recovery!.refusal! : option.plan.reason).toLowerCase(),
+            };
+      }),
     };
   }
 

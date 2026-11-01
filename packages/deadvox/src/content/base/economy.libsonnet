@@ -33,12 +33,12 @@ local commonItems = [
   'ammo_can', 'shell_12_gauge_00_buck', 'shotshell_box', 'dad_cabin_key', 'baseball_cap', 'evacuation_note', 'hunter_logbook',
   'pharmacy_key', 'medical_research_log', 'lamp_oil', 'glass_shards', 'electrical_tape', 'fastener_pack',
   'wood_offcut', 'rubber_strip', 'circuit_board', 'glass_lens', 'small_spring', 'cloth_strip', 'sewing_thread',
-  'fuse', 'nylon_cord', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
+  'fuse', 'nylon_cord', 'rope', 'wire_strippers', 'adjustable_pliers', 'sewing_kit', 'broken_toaster', 'dead_desk_lamp', 'oil_lamp',
   'broken_table_fan', 'cracked_phone', 'broken_clock', 'sewing_repair_kit', 'electrical_repair_kit',
   'taped_flashlight_mount', 'scrap_foregrip', 'hinge_set', 'glass_bulb', 'hand_saw', 'screwdriver', 'wrench',
   'improvised_suppressor', 'compass', 'crowbar', 'sledgehammer', 'blowtorch', 'scissor_jack', 'bottle_jack', 'gas_canister', 'hammer', 'kitchen_knife', 'kabar', 'machete', 'can_opener', 'whetstone', 'door_bar',
-  'baseball_bat', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
-  'jeans', 'cargo_pants', 'rubber_boots', 'sneakers', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
+  'baseball_bat', 'nail_bat', 'spear', 'steel_pipe', 'flashlight', 'headlamp', 'torch', 'candle', 'glowstick', 'road_flare', 'lighter', 'matches',
+  'jeans', 'taped_armour', 'cargo_pants', 'rubber_boots', 'sneakers', 'hoodie', 'jacket', 'utility_vest', 'fanny_pack', 'school_backpack', 'hiking_backpack',
   'shed_key', 'pump_shotgun', 'regional_map', 'stick', 'wax', 'wooden_plank', 'repair_kit', 'copper_wire', 'field_patch',
 ];
 local residential = [

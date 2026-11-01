@@ -3,7 +3,7 @@ import { boxFromMinMax, clippedExtrudedPolygonPolyhedron, polyhedronVolume } fro
 import type { Box, Solid, Vec2 } from '@skelly/engine/shapes/solid.ts';
 import physical from './physical.json' with { type: 'json' };
 import { type SectionPocket, subtractAxialPockets, subtractConvexSection } from './receiverSection.ts';
-import { roundedTriggerGuardSolids } from './roundedTriggerGuard.ts';
+import { roundedTriggerGuardSolids, TRIGGER_BLADE_ID } from './roundedTriggerGuard.ts';
 import { SPORTER_PROPORTIONS as P } from './sporterProportions.ts';
 
 type Station = readonly [x: number, top: number, bottom: number];
@@ -74,7 +74,7 @@ export const sporterLower = (top: PortDef, magazine: PortDef, path: PartDef['kee
       }),
       ...P.lower.trigger.map(
         (profile, index): Solid => ({
-          id: `trigger-${index}`,
+          id: `${TRIGGER_BLADE_ID}-${index}`,
           kind: 'extruded-polygon',
           profile,
           z: [-wall, wall],

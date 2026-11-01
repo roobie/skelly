@@ -137,7 +137,6 @@ for (const { name, corridor } of scenarios) {
       dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
       blockSize: scale.blockSize,
       physics: physicsFor(scale, PLAYER),
-      jumpSpeed: PLAYER.jump,
       tuning: registry.senses.get(CORE_CONTENT_IDS.player),
       hurtPlayer: () => undefined,
       seed: 17,

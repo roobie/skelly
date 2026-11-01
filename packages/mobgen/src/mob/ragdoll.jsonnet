@@ -20,7 +20,6 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
   stepBudget: 600,
   maxStepsPerFrame: 8,
   footprintMetres: [2.5, 2.5, 2.5],
-  gravity: -9.81,
   friction: 0.8,
   linearDamping: 0.8,
   angularDamping: 1.5,

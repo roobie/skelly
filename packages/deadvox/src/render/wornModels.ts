@@ -3,7 +3,8 @@ import type { FigureDef, ItemDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { type ItemLook, itemLook } from './itemLook.ts';
+import { type ItemLook, itemLook, itemStateLook } from './itemLook.ts';
+import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
 import type { WornPresentation } from './playerFigure.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -25,7 +26,18 @@ const wornEntries = (registry: Registry, item: Item, fit?: string): WornEntry[] 
     return (defOf(registry, owner.type).figureModels ?? []).map((authored) => {
       const model = fit && authored.overTorso ? authored.overTorso[fit]! : authored.model;
       const entry = model === authored.model ? authored : { ...authored, model };
-      return { owner, entry, ...(look && entry.model === look.model ? { look } : {}) };
+      const state = itemStateLook(registry, owner, entry.model);
+      const partLook =
+        look && entry.model === look.model
+          ? look
+          : {
+              model: entry.model,
+              slots: [],
+              hidden: [],
+              state,
+              key: JSON.stringify([entry.model, state]),
+            };
+      return { owner, entry, look: partLook };
     });
   });
 
@@ -65,13 +77,14 @@ export class WornModels {
         continue;
       }
       for (const { group } of previous?.groups ?? []) {
+        disposeItemStateMaterials(group);
         group.removeFromParent();
       }
       this.attachments.delete(slot);
       if (!item || available.length === 0) {
         continue;
       }
-      const groups = available.flatMap((entry) => this.attach(slot, entry) ?? []);
+      const groups = available.flatMap((entry) => this.attach(slot, entry, source!.registry) ?? []);
       this.attachments.set(slot, { item, key, groups });
     }
     this.syncCoverage();
@@ -107,12 +120,15 @@ export class WornModels {
     return [...this.attachments.values()].find((entry) => contains(entry.item))?.groups[0]?.group;
   }
 
-  private attach(slot: WearSlot, { entry, look }: WornEntry): Attachment | undefined {
+  private attach(slot: WearSlot, { entry, look }: WornEntry, registry: Registry): Attachment | undefined {
     const frame = this.frames.get(entry.frame);
     // Self-model entries keep the whole item look, including parts fitted to a slung gun.
     const model = frame && (look ? this.models.partLook(look) : this.models.part(entry.model));
     if (!(frame && model)) {
       return;
+    }
+    if (look) {
+      applyItemStateLook(model, look, registry);
     }
     // Keep the authored item pivot on the frame even when the model is turned.
     model.position.set(...entry.pivot).negate();

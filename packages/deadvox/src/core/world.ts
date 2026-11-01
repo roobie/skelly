@@ -1,3 +1,4 @@
+import { BlockDamage } from './blockDamage.ts';
 import { Chunk } from './chunk.ts';
 import { CHUNK, CHUNK_VOLUME, chunkKey, toChunk, toLocal, type Vec3 } from './coords.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -73,6 +74,8 @@ const decodeChunk = (cx: number, cz: number, saved: SavedChunk, blockId: (conten
 /** Sparse block storage. Missing chunks read as air. */
 export class World {
   readonly chunks = new Map<string, Chunk>();
+  readonly blockDamage = new BlockDamage(this);
+  private readonly columnChunks = new Map<string, number>();
   /** Changes whenever blocks visible to simulation queries change. */
   version = 0;
   /** Columns with any cell changed by play, ever; they are saved whole and never regenerate. */
@@ -85,16 +88,36 @@ export class World {
   }
 
   addChunk(chunk: Chunk): void {
-    this.chunks.set(chunkKey(chunk.cx, chunk.cy, chunk.cz), chunk);
-    this.encoded.delete(columnKey(chunk.cx, chunk.cz));
+    const key = chunkKey(chunk.cx, chunk.cy, chunk.cz);
+    const column = columnKey(chunk.cx, chunk.cz);
+    if (!this.chunks.has(key)) {
+      this.columnChunks.set(column, (this.columnChunks.get(column) ?? 0) + 1);
+    }
+    this.chunks.set(key, chunk);
+    this.encoded.delete(column);
     this.version += 1;
   }
 
   removeChunk(cx: number, cy: number, cz: number): void {
     if (this.chunks.delete(chunkKey(cx, cy, cz))) {
-      this.encoded.delete(columnKey(cx, cz));
+      const column = columnKey(cx, cz);
+      const remaining = this.columnChunks.get(column)! - 1;
+      if (remaining === 0) {
+        this.columnChunks.delete(column);
+      } else {
+        this.columnChunks.set(column, remaining);
+      }
+      this.encoded.delete(column);
       this.version += 1;
     }
+  }
+
+  touchColumn(cx: number, cz: number): void {
+    if (!this.columnChunks.has(columnKey(cx, cz))) {
+      throw new Error(`Cannot touch absent column ${cx},${cz}`);
+    }
+    this.touched.add(columnKey(cx, cz));
+    this.version += 1;
   }
 
   isTouched(cx: number, cz: number): boolean {
@@ -158,6 +181,7 @@ export class World {
       this.addChunk(chunk);
     }
     if (chunk.get(toLocal(x), toLocal(y), toLocal(z)) !== id) {
+      this.blockDamage.clear([x, y, z]);
       chunk.set(toLocal(x), toLocal(y), toLocal(z), id);
       const column = columnKey(cx, cz);
       this.touched.add(column);

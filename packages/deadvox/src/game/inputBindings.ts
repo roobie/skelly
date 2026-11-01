@@ -195,6 +195,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.performance-toggle', 'Performance overlay', all),
   debugRow('debug.interaction-ray-toggle', 'Interaction ray', all),
   debugRow('debug.build-toggle', 'Build tools'),
+  debugRow('debug.build-damage', 'Damage target block', ['build']),
+  debugRow('debug.build-destroy', 'Destroy target block with floor loss', ['build']),
   debugRow('debug.impact-laser', 'Impact laser'),
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu'),
   debugRow('debug.god-toggle', 'God mode'),
@@ -1061,6 +1063,12 @@ export class KeyboardInput {
       });
     }
   }
+  private refusedDown(event: KeyEvent, text: boolean, browserModifier: boolean): boolean {
+    const blocked = this.blocked.has(event.code);
+    // A rejected held edge must not click a button that acquired focus during the transfer.
+    const blockNativeActivation = blocked && !browserModifier && !text && nativeActivation(event);
+    return this.traceDown(event, blockNativeActivation, blocked ? 'blocked' : 'browser-modifier');
+  }
   press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {
     this.sync();
     this.down.add(event.code);
@@ -1084,7 +1092,7 @@ export class KeyboardInput {
       return event[flags[modifier]];
     });
     if (this.blocked.has(event.code) || browserModifier) {
-      return this.traceDown(event, false, this.blocked.has(event.code) ? 'blocked' : 'browser-modifier');
+      return this.refusedDown(event, text, browserModifier);
     }
     const gate = this.held('debug.gate');
     const matches = this.registry.bindings.filter(

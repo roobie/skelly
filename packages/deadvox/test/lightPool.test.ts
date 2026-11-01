@@ -18,7 +18,7 @@ import { LightPool } from '../src/render/lightPool.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -239,7 +239,6 @@ describe('made-light point pool', () => {
       dayPhase: () => dayStateAtHour(0),
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });

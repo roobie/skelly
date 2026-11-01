@@ -1,0 +1,144 @@
+{
+  "itemWear": [
+    {
+      "bands": [
+        {
+          "from": 0,
+          "tints": {
+            "cloth": {
+              "color": "#b0a998",
+              "mix": 0.65000000000000002
+            },
+            "fuel": {
+              "color": "#ba8429",
+              "mix": 0
+            },
+            "glass": {
+              "color": "#b5b5ab",
+              "mix": 0.20000000000000001
+            },
+            "metal": {
+              "color": "#8f5130",
+              "mix": 0.65000000000000002
+            },
+            "mineral": {
+              "color": "#8e8a80",
+              "mix": 0.25
+            },
+            "organic": {
+              "color": "#756752",
+              "mix": 0.34999999999999998
+            },
+            "paper": {
+              "color": "#a9986f",
+              "mix": 0.5
+            },
+            "polymer": {
+              "color": "#aaa89c",
+              "mix": 0.40000000000000002
+            },
+            "wax": {
+              "color": "#998d72",
+              "mix": 0.29999999999999999
+            },
+            "wood": {
+              "color": "#84847c",
+              "mix": 0.65000000000000002
+            }
+          }
+        },
+        {
+          "from": 0.40000000000000002,
+          "tints": {
+            "cloth": {
+              "color": "#b0a998",
+              "mix": 0.32500000000000001
+            },
+            "fuel": {
+              "color": "#ba8429",
+              "mix": 0
+            },
+            "glass": {
+              "color": "#b5b5ab",
+              "mix": 0.10000000000000001
+            },
+            "metal": {
+              "color": "#8f5130",
+              "mix": 0.32500000000000001
+            },
+            "mineral": {
+              "color": "#8e8a80",
+              "mix": 0.125
+            },
+            "organic": {
+              "color": "#756752",
+              "mix": 0.17499999999999999
+            },
+            "paper": {
+              "color": "#a9986f",
+              "mix": 0.25
+            },
+            "polymer": {
+              "color": "#aaa89c",
+              "mix": 0.20000000000000001
+            },
+            "wax": {
+              "color": "#998d72",
+              "mix": 0.14999999999999999
+            },
+            "wood": {
+              "color": "#84847c",
+              "mix": 0.32500000000000001
+            }
+          }
+        },
+        {
+          "from": 0.80000000000000004,
+          "tints": {
+            "cloth": {
+              "color": "#b0a998",
+              "mix": 0
+            },
+            "fuel": {
+              "color": "#ba8429",
+              "mix": 0
+            },
+            "glass": {
+              "color": "#b5b5ab",
+              "mix": 0
+            },
+            "metal": {
+              "color": "#8f5130",
+              "mix": 0
+            },
+            "mineral": {
+              "color": "#8e8a80",
+              "mix": 0
+            },
+            "organic": {
+              "color": "#756752",
+              "mix": 0
+            },
+            "paper": {
+              "color": "#a9986f",
+              "mix": 0
+            },
+            "polymer": {
+              "color": "#aaa89c",
+              "mix": 0
+            },
+            "wax": {
+              "color": "#998d72",
+              "mix": 0
+            },
+            "wood": {
+              "color": "#84847c",
+              "mix": 0
+            }
+          }
+        }
+      ],
+      "id": "core"
+    }
+  ]
+}

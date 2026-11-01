@@ -3,6 +3,7 @@ read_if:
   - you build, review or merge a change and need its steps or merge checks
   - you create or maintain a slice checklist, including surveys and milestone records
   - you record a maintainer's decision and need to know where it goes
+  - you schedule delivery under the framework refactor PR gate (#1532)
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you apply the standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
   - you prepare a feature for a maintainer look and need its placement and spawn-link rules
@@ -25,6 +26,11 @@ because that is local and changes on its own schedule.
 - **Reviewers** review each change and advise whoever merges it.
 
 ## The life of a change
+
+Opening a new PR is subject to the #1532 freeze in
+`docs/decisions/0009-content-defined-products.md`, "Refactor gate". Work uses an
+existing PR or waits until the refactor is executed; the steps below grant no
+exception to that gate.
 
 1. **Spec:** one self-contained item. Its proof uses independent bounds, not values derived
    from the tuning under test.

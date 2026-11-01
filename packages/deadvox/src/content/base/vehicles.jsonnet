@@ -141,7 +141,7 @@ local boxVan = [
   fitting('box_roof', 'box_van_roof', origin, ['box_front', 'box_side_near', 'box_side_far']),
   cargoSpace('box_cargo', [-0.9, 1, 0], [42, 20, 20], 'box_floor'),
 ] + pair('box_side', 'box_van_side', origin, on(['box_floor']));
-(import 'economy.libsonnet').pack({
+(import 'item-presentation.libsonnet').pack((import 'economy.libsonnet').pack({
   models: [
     import 'things/car_battery.model.json',
     import 'things/car_headlamp.model.json',
@@ -209,6 +209,7 @@ local boxVan = [
     import 'things/hoist_hook_block.model.json',
     import 'things/hoist_boom_rest.model.json',
     import 'things/cargo_space.model.json',
+    import 'things/mounting_plate.model.json',
     import 'things/pickup_bed_floor.model.json',
     import 'things/pickup_bed_side.model.json',
     import 'things/pickup_bed_front.model.json',
@@ -287,11 +288,20 @@ local boxVan = [
     part('hoist_boom_rest', 'Crane boom rest', [3, 4], ['structure']),
     part('cargo_space', 'Cargo space', [1, 1], ['storage'], 'Room marked out on a load floor for what the vehicle carries.') + {
       vehicle+: {
+        mount: 'cargo_space',
+        service: { mount: 'cargo_space', durationSimSeconds: 10, qualities: {} },
+        addon: { requires: 'load_floor', openClearanceCells: 20 },
         cargoSpace: {
           handlingSimSeconds: 1.2,
-          openClearanceCells: 20,
           wideReason: 'A cargo space is as wide as the floor it covers, not a carried bag.',
         },
+      },
+    },
+    part('mounting_plate', 'Mounting plate', [5, 5], ['structure', 'load_floor']) + {
+      vehicle+: {
+        mount: 'mounting_plate',
+        service: { mount: 'mounting_plate', durationSimSeconds: 10, qualities: {} },
+        addon: { requires: 'load_floor' },
       },
     },
     part('pickup_bed_floor', 'Pickup bed floor', pileSize, ['structure', 'load_floor']),
@@ -308,4 +318,4 @@ local boxVan = [
     { id: 'box_van', name: 'Box van', fittings: boxVan },
     { id: 'hoist', name: 'Crane truck', fittings: hoist },
   ],
-})
+}))

@@ -2,7 +2,35 @@ import type { Registry } from './content.ts';
 import type { Item } from './items.ts';
 import type { LiquidContents } from './schema.ts';
 
-type LiquidTransferRefusal =
+export interface LiquidAmount {
+  liquid: string;
+  volumeMicrolitres: number;
+}
+export interface LiquidRecoveryChoices {
+  receivers?: { liquid: string; uid: number }[];
+  spillApproval?: LiquidAmount[];
+}
+
+export const validLiquidRecoveryChoices = (
+  liquids: readonly LiquidAmount[],
+  { receivers = [], spillApproval = [] }: LiquidRecoveryChoices,
+): boolean => {
+  const kinds = new Set(liquids.map(({ liquid }) => liquid));
+  return (
+    kinds.size === liquids.length &&
+    liquids.every(({ volumeMicrolitres }) => Number.isSafeInteger(volumeMicrolitres) && volumeMicrolitres > 0) &&
+    new Set(receivers.map(({ liquid }) => liquid)).size === receivers.length &&
+    new Set(receivers.map(({ uid }) => uid)).size === receivers.length &&
+    receivers.every(({ liquid, uid }) => kinds.has(liquid) && Number.isSafeInteger(uid) && uid > 0) &&
+    new Set(spillApproval.map(({ liquid }) => liquid)).size === spillApproval.length &&
+    spillApproval.every(
+      ({ liquid, volumeMicrolitres }) =>
+        kinds.has(liquid) && Number.isSafeInteger(volumeMicrolitres) && volumeMicrolitres >= 0,
+    )
+  );
+};
+
+export type LiquidTransferRefusal =
   | 'missing-endpoint'
   | 'same-endpoint'
   | 'not-vessel'
@@ -13,7 +41,8 @@ type LiquidTransferRefusal =
   | 'incompatible-liquid'
   | 'full-receiver'
   | 'unreachable'
-  | 'inaccessible';
+  | 'inaccessible'
+  | 'short';
 
 export type LiquidTransferPlan =
   | { ok: false; reason: LiquidTransferRefusal }
@@ -45,8 +74,89 @@ const validLimit = (limit: number | undefined): boolean =>
 const sameKind = (contents: LiquidContents, liquid: string): boolean =>
   contents.kind === 'empty' || contents.liquid === liquid;
 const volumeOf = (contents: LiquidContents): number => (contents.kind === 'empty' ? 0 : contents.volumeMicrolitres);
+export const vesselFillShare = (item: Item, vessel: { readonly capacityMicrolitres: number }): number =>
+  (item.liquidContents ? volumeOf(item.liquidContents) : 0) / vessel.capacityMicrolitres;
+
 const afterDebit = (contents: Extract<LiquidContents, { kind: 'filled' }>, remaining: number): LiquidContents =>
   remaining === 0 ? { kind: 'empty' } : { ...contents, volumeMicrolitres: remaining };
+
+export type LiquidDrawPlan =
+  | { ok: false; reason: LiquidTransferRefusal }
+  | { ok: true; sourceContents: LiquidContents };
+
+export const planLiquidDraw = (
+  registry: Registry,
+  source: Item | undefined,
+  liquid: string,
+  volumeMicrolitres: number,
+): LiquidDrawPlan => {
+  if (!source) {
+    return { ok: false, reason: 'missing-endpoint' };
+  }
+  if (!registry.items.get(source.type)?.vessel) {
+    return { ok: false, reason: 'not-vessel' };
+  }
+  if (!serviceable(source)) {
+    return { ok: false, reason: 'unserviceable' };
+  }
+  if (!validContents(registry, source)) {
+    return { ok: false, reason: 'invalid-contents' };
+  }
+  if (!Number.isSafeInteger(volumeMicrolitres) || volumeMicrolitres <= 0) {
+    return { ok: false, reason: 'invalid-limit' };
+  }
+  const contents = source.liquidContents!;
+  if (contents.kind === 'empty') {
+    return { ok: false, reason: 'empty-source' };
+  }
+  if (contents.liquid !== liquid) {
+    return { ok: false, reason: 'incompatible-liquid' };
+  }
+  if (contents.volumeMicrolitres < volumeMicrolitres) {
+    return { ok: false, reason: 'short' };
+  }
+  return { ok: true, sourceContents: afterDebit(contents, contents.volumeMicrolitres - volumeMicrolitres) };
+};
+
+export type LiquidReceivePlan =
+  | { ok: false; reason: LiquidTransferRefusal }
+  | { ok: true; accepted: number; receiverContents: LiquidContents };
+
+export const planLiquidReceive = (
+  registry: Registry,
+  receiver: Item | undefined,
+  liquid: string,
+  volumeMicrolitres: number,
+): LiquidReceivePlan => {
+  if (!receiver) {
+    return { ok: false, reason: 'missing-endpoint' };
+  }
+  const vessel = registry.items.get(receiver.type)?.vessel;
+  if (!vessel) {
+    return { ok: false, reason: 'not-vessel' };
+  }
+  if (!serviceable(receiver)) {
+    return { ok: false, reason: 'unserviceable' };
+  }
+  if (!validContents(registry, receiver)) {
+    return { ok: false, reason: 'invalid-contents' };
+  }
+  if (!Number.isSafeInteger(volumeMicrolitres) || volumeMicrolitres <= 0) {
+    return { ok: false, reason: 'invalid-limit' };
+  }
+  const contents = receiver.liquidContents!;
+  if (!(registry.liquids.has(liquid) && vessel.accepts.includes(liquid) && sameKind(contents, liquid))) {
+    return { ok: false, reason: 'incompatible-liquid' };
+  }
+  const volume = volumeOf(contents);
+  const accepted = Math.min(volumeMicrolitres, vessel.capacityMicrolitres - volume);
+  return {
+    ok: true,
+    accepted,
+    receiverContents:
+      accepted === 0 ? { ...contents } : { kind: 'filled', liquid, volumeMicrolitres: volume + accepted },
+  };
+};
 
 export const planLiquidTransfer = (
   registry: Registry,

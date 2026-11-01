@@ -17,6 +17,10 @@
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },
     {
+      "source": "packages/deadvox/src/config/repair-look.jsonnet",
+      "output": "packages/deadvox/src/config/repair-look.json"
+    },
+    {
       "source": "packages/deadvox/src/config/vehicleFeasibility.jsonnet",
       "output": "packages/deadvox/src/config/vehicleFeasibility.json"
     },
@@ -27,6 +31,10 @@
     {
       "source": "packages/deadvox/src/content/base/benchmark-city.jsonnet",
       "output": "packages/deadvox/src/content/base/benchmark-city.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/block-materials.jsonnet",
+      "output": "packages/deadvox/src/content/base/block-materials.json"
     },
     {
       "source": "packages/deadvox/src/content/base/blocks.jsonnet",
@@ -95,6 +103,10 @@
     {
       "source": "packages/deadvox/src/content/base/inventory.jsonnet",
       "output": "packages/deadvox/src/content/base/inventory.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/item-wear.jsonnet",
+      "output": "packages/deadvox/src/content/base/item-wear.json"
     },
     {
       "source": "packages/deadvox/src/content/base/items-ammunition.jsonnet",
@@ -211,6 +223,10 @@
     {
       "source": "packages/deadvox/src/content/base/power.jsonnet",
       "output": "packages/deadvox/src/content/base/power.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/presentation/fuel-parts.jsonnet",
+      "output": "packages/deadvox/src/content/base/presentation/fuel-parts.json"
     },
     {
       "source": "packages/deadvox/src/content/base/range.jsonnet",
@@ -373,6 +389,10 @@
       "output": "packages/deadvox/test/fixtures/mods/reading-world.json"
     },
     {
+      "source": "packages/deadvox/test/fixtures/packs/lamp/lamp.jsonnet",
+      "output": "packages/deadvox/test/fixtures/packs/lamp/lamp.json"
+    },
+    {
       "source": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.jsonnet",
       "output": "packages/gun-authoring-tool/cartridges/12-gauge-00-buck.json"
     },
@@ -479,6 +499,10 @@
     {
       "source": "packages/gun-authoring-tool/src/gun/sightView.jsonnet",
       "output": "packages/gun-authoring-tool/src/gun/sightView.json"
+    },
+    {
+      "source": "packages/gun-authoring-tool/src/gun/triggerGuards.jsonnet",
+      "output": "packages/gun-authoring-tool/src/gun/triggerGuards.json"
     },
     {
       "source": "packages/gun-authoring-tool/src/gun/unitScale.jsonnet",

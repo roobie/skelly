@@ -1,5 +1,6 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
 import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
+import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, type Registry } from '../core/content.ts';
@@ -15,7 +16,14 @@ import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
 import { focusPose, ShowroomCatalogue } from '../core/showroom.ts';
-import { type ColumnSource, type FurnitureSpawn, fillFurnitureLoot, type Site } from '../core/site.ts';
+import {
+  type ColumnSource,
+  type FurnitureSpawn,
+  fillFurnitureLoot,
+  type Rect,
+  type Site,
+  SupplyFootprints,
+} from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
@@ -34,6 +42,7 @@ export interface WorldSetup extends ColumnSource {
   scenario: ScenarioDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
+  canonicalTerrain: CanonicalTerrain;
   entities: BlockEntities;
   /** The site's sky field cache: the session answers from it and the renderer draws it. */
   skyFields: SkyFields;
@@ -143,6 +152,15 @@ export class DebugTestHouseSite implements Site {
     return [...this.house.lootPointsIn(cx, cz), ...(this.lootPoints.get(`${cx},${cz}`) ?? [])];
   }
 
+  supplySourcesIn(area: Rect) {
+    return [
+      ...this.house.supplySourcesIn(area),
+      ...this.range.supplySourcesIn(area),
+      ...(this.catalogue?.supplySourcesIn(area) ?? []),
+      ...new SupplyFootprints([this.rack, this.target], [...this.lootPoints.values()].flat()).in(area),
+    ];
+  }
+
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     const spawns = [
       ...this.house.furnitureIn(cx, cz),
@@ -215,12 +233,20 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const world = new World();
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
+  const terrain = {
+    seed,
+    blocks: sitePalette(registry).terrain,
+    shape,
+    scale,
+    surface: built?.surface,
+    stamp: built ? (chunk: Parameters<Site['stamp']>[0]) => built.stamp(chunk) : undefined,
+  };
   const streamer = new Streamer({
     world,
     meshes,
     seed,
-    terrain: sitePalette(registry).terrain,
-    shape,
+    terrain: terrain.blocks,
+    shape: terrain.shape,
     colors: blockColors(registry),
     wireMeshes: registry.blocks.map((block) => block.wireMesh),
     liquids: blockLiquids(registry),
@@ -229,8 +255,8 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     weatherable: blockWeatherability(registry),
     scale,
     structures: [],
-    surface: built?.surface,
-    stamp: built ? (chunk) => built.stamp(chunk) : undefined,
+    surface: terrain.surface,
+    stamp: terrain.stamp,
     radius: config.radiusChunks,
     preloadRings: graphicsTuningOf(registry).skyPreloadRings,
     hysteresis: config.streamHysteresisChunks,
@@ -243,6 +269,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     scenario: registry.scenarios.get(config.site),
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
+    canonicalTerrain: new CanonicalTerrain(world, terrain),
     entities,
     skyFields: new SkyFields(
       { world, entities, registry },
@@ -258,6 +285,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     spawn: built?.spawn ?? { pos: [0, groundAt(0, 0), 0], yaw: 0 },
     lootPointsIn: (cx, cz) => built?.lootPointsIn(cx, cz) ?? [],
     furnitureIn: (cx, cz) => built?.furnitureIn(cx, cz) ?? [],
+    supplySourcesIn: (area) => built?.supplySourcesIn(area) ?? [],
     zombiesIn: (cx, cz) => built?.zombiesIn(cx, cz) ?? [],
     hordesIn: (cx, cz) => built?.hordesIn?.(cx, cz) ?? [],
   };

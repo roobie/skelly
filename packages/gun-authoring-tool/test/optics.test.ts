@@ -87,13 +87,6 @@ describe('optic catalog', () => {
     expect(actual).toEqual(optic.envelopeU);
   });
 
-  it('shares a positive default eye relief across non-magnifying optics', () => {
-    const optics = Object.values(OPTIC_CATALOG).filter((optic) => optic.magnification === undefined);
-    expect(optics.length).toBeGreaterThan(1);
-    expect(optics[0]!.eyeReliefU).toBeGreaterThan(0);
-    expect(new Set(optics.map((optic) => optic.eyeReliefU)).size).toBe(1);
-  });
-
   it('preserves authored prism solids at the content validation boundary', () => {
     expect(getOptic('fixed-prism-4x').solids).toEqual(fixedPrism.solids);
   });

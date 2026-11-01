@@ -7,61 +7,26 @@ import { Inventory } from '../src/core/inventory.ts';
 import { snapshotItem } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
+import { realSeconds, simSeconds } from '../src/core/time.ts';
+import { planRealFrame } from '../src/game/frameDriver.ts';
+import { furnitureActionsFor } from '../src/game/furnitureActions.ts';
 import { decodeInputReplay, encodeInputReplay, InputReplayRecorder } from '../src/game/inputReplay.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
-import { workName } from '../src/ui/craftReadout.ts';
+import { runningCraftPresentation, workName } from '../src/ui/craftReadout.ts';
+import { handlingViewModel, timedActionHandlingPresentation } from '../src/ui/hud.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
-import { baseRegistryWith } from './baseRegistry.ts';
+import { baseRegistryWith, baseScreenText } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { fixtureSources } from './economyFixtures.ts';
 import { Simulation } from './simulationFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
+import { AMOUNT, DURABILITY, PIECE, RECIPE, STOCK, worldRepairSources } from './worldRepairFixture.ts';
 
-const STOCK = 'world_repair_stock';
-const PIECE = 'world_repair_piece';
-const RECIPE = 'world_repair_recipe';
-const DURABILITY = 100;
-const AMOUNT = 20;
 const ORIGIN: [number, number, number] = [0, 0, 0];
-const registry = baseRegistryWith(
-  fixtureSources([
-    {
-      source: 'world-repair-fixture',
-      data: {
-        skills: [{ id: 'world_repair_skill', name: 'Fixture repair', startingRecipes: [RECIPE] }],
-        items: [{ id: STOCK, name: 'Fixture stock', category: 'material', size: [1, 1], weight: 1 }],
-        furniture: [
-          {
-            id: PIECE,
-            name: 'Fixture piece',
-            size: [1, 1, 1],
-            color: '#777777',
-            breach: { minimumStrength: 1, durability: DURABILITY },
-          },
-        ],
-        recipes: [
-          {
-            id: RECIPE,
-            category: 'fixture_category',
-            tags: [],
-            searchTerms: [],
-            kind: 'repair',
-            result: { item: STOCK, count: 1 },
-            repair: { entity: PIECE, skill: 'world_repair_skill', amount: AMOUNT, perSkill: 0 },
-            timeGameMinutes: 1,
-            skills: {},
-            qualities: {},
-            components: [[{ item: STOCK, count: 2 }]],
-          },
-        ],
-      },
-    },
-  ]),
-);
+const registry = baseRegistryWith(worldRepairSources());
 
 interface Saved {
   inventory: ReturnType<Inventory['snapshotState']>;
@@ -119,6 +84,49 @@ const returned = (r: ReturnType<typeof make>) =>
     .filter(({ item }) => item.type === STOCK)
     .map(({ item }) => snapshotItem(item))
     .sort((a, b) => a.uid - b.uid);
+
+it.each(['normal', 'compressed'] as const)(
+  'advances the repair arc between %s owner ticks without changing owned work',
+  (mode) => {
+    const r = start();
+    if (mode === 'compressed') {
+      planRealFrame(r.sim.compression, realSeconds(1));
+      expect(r.sim.compression.c).toBeGreaterThan(1);
+    }
+    const { handling } = baseScreenText();
+    const arc = () => {
+      const action = runningCraftPresentation(r.inventory, r.sim.actions.job, {
+        simSeconds: r.sim.time,
+        clockRatio: r.sim.clock.ratio,
+        compressionActive: r.sim.compression.active,
+      });
+      expect(action).toBeDefined();
+      return handlingViewModel(timedActionHandlingPresentation(action!, handling), handling);
+    };
+    const owned = structuredClone(r.work.work);
+    const slice =
+      Math.min(r.work.work!.duration / r.sim.clock.ratio, r.sim.scheduler.stepOf('long-action', r.sim.compression.c)) /
+      4;
+    const initial = arc();
+    r.sim.frame(simSeconds(slice));
+    const first = arc();
+    r.sim.frame(simSeconds(slice));
+    const second = arc();
+    expect(first.visible).toBe(true);
+    expect(first.percent).toBeGreaterThan(initial.percent);
+    expect(second.percent).toBeGreaterThan(first.percent);
+    expect(second.percent).toBeLessThan(100);
+    expect(r.work.work).toEqual(owned);
+    finish(r, r.work.uid);
+    expect(
+      runningCraftPresentation(r.inventory, r.sim.actions.job, {
+        simSeconds: r.sim.time,
+        clockRatio: r.sim.clock.ratio,
+        compressionActive: r.sim.compression.active,
+      }),
+    ).toBeUndefined();
+  },
+);
 
 it('pauses, encodes, restores and resumes entity work without duplicate repair or spend', async () => {
   const r = start();
@@ -190,8 +198,9 @@ it.each(['gone', 'out of reach', 'reserved', 'intact', 'carried', 'ruined'] as c
       r.inventory.entities.bash(r.target, DURABILITY);
     }
     const before = r.inventory.entities.snapshotState();
-    expect(r.hooks.validate(r.work.uid)).toBeDefined();
-    r.hooks.finish(r.work.uid);
+    const reason = r.hooks.validate(r.work.uid);
+    expect(reason).toBeDefined();
+    expect(r.hooks.finish(r.work.uid)).toBe(reason);
     expect(r.inventory.entities.snapshotState()).toEqual(before);
     expect(returned(r)).toEqual(r.exact);
     expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
@@ -200,15 +209,94 @@ it.each(['gone', 'out of reach', 'reserved', 'intact', 'carried', 'ruined'] as c
   },
 );
 
-it('cancels paused entity work returning exact input identities and condition without repair', () => {
+it.each(['left', 'right'] as const)(
+  'refuses entity repair with the %s hand occupied without moving anything',
+  (side) => {
+    const r = prepare();
+    const held = r.inventory.create(STOCK);
+    expect(r.inventory.add(held, { kind: 'hand', side })).toBe(true);
+    const before = r.inventory.snapshotState();
+    expect(dispatch(r, intent(r.target.uid))).toBeDefined();
+    expect(r.inventory.snapshotState()).toEqual(before);
+    expect(r.inventory.hands[side]).toBe(held);
+    expect(r.sim.actions.job).toBeUndefined();
+  },
+);
+
+it('live reach refusal keeps escrow and both Continue routes resume the named held work', () => {
   const r = start();
-  r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
   r.sim.actions.stop();
-  expect(r.commands.act(r.work.uid, 'apart')).toBeUndefined();
-  expect(returned(r)).toEqual(r.exact);
-  expect(r.target.damage).toBe(DURABILITY / 2);
-  expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
+  expect(r.inventory.move(r.work, { kind: 'pile', pos: [...ORIGIN] }).ok).toBe(true);
+  const target = r.inventory.entities.add({ type: PIECE, pos: [1, 1, 1], size: [1, 1, 1], facing: 'n' })!;
+  expect(r.inventory.entities.bash(target, DURABILITY / 2)).toBe('damaged');
+  expect(r.inventory.add(r.inventory.create(STOCK, 2), { kind: 'pile', pos: [...ORIGIN] })).toBe(true);
+  expect(r.commands.repairEntity(RECIPE, target.uid)).toBeUndefined();
+  const held = r.inventory.hands.right!;
+  const inputs = held.work!.components.map((item) => snapshotItem(item));
+  r.sim.scheduler.advance(held.work!.duration / r.sim.clock.ratio / 3);
+  const { elapsed } = held.work!;
+  expect(elapsed).toBeGreaterThan(0);
+  r.position[0] += 100;
+  r.sim.scheduler.advance(1);
+  expect(r.sim.actions.job).toMatchObject({ stopped: true, workUid: held.uid });
+  expect(r.inventory.hands.right).toBe(held);
+  expect(held.work!.components.map((item) => snapshotItem(item))).toEqual(inputs);
+  expect(r.commands.act(held.uid, 'continue')).toBeDefined();
+  r.position[0] = ORIGIN[0];
+  const choices = furnitureActionsFor(r.inventory, target, 0.5, [RECIPE]);
+  const choice = choices.find(({ id }) => id === 'continue');
+  expect(choice?.workUid).toBe(held.uid);
+  expect(furnitureActionsFor(r.inventory, r.target, 0.5, [RECIPE]).some(({ id }) => id === 'continue')).toBe(false);
+  expect(dispatch(r, { kind: 'inventory.work', itemUid: choice!.workUid!, operation: 'continue' })).toBeUndefined();
+  expect(r.sim.actions.job).toMatchObject({ stopped: false, workUid: held.uid });
+  expect(held.work!.elapsed).toBe(elapsed);
+  r.sim.actions.stop();
+  expect(r.commands.act(held.uid, 'continue')).toBeUndefined();
+  expect(held.work!.elapsed).toBe(elapsed);
+  expect(held.work!.components.map((item) => snapshotItem(item))).toEqual(inputs);
 });
+
+it('posts the craft completion owner refusal once', () => {
+  const r = start();
+  const reason = 'fixture completion refusal';
+  const notices: string[] = [];
+  r.sim.actions.notice = (text) => notices.push(text);
+  // The defensive end-check cannot fail between synchronous live validation and finish in ordinary play.
+  r.sim.actions.craft = {
+    ...r.hooks,
+    finish: (uid) => {
+      r.hooks.cancel(uid);
+      return reason;
+    },
+  };
+  finish(r, r.work.uid);
+  expect(notices).toEqual([reason]);
+});
+
+it.each(['active', 'paused'] as const)(
+  'cancels %s entity repair mid-action without consuming inputs or repairing the piece',
+  (state) => {
+    const r = start();
+    r.sim.scheduler.advance(r.work.work!.duration / r.sim.clock.ratio / 3);
+    expect(r.work.work!.elapsed).toBeGreaterThan(0);
+    expect(r.work.work!.elapsed).toBeLessThan(r.work.work!.duration);
+    expect(r.work.work!.components.map((item) => snapshotItem(item)).sort((a, b) => a.uid - b.uid)).toEqual(r.exact);
+    expect(r.target.damage).toBe(DURABILITY / 2);
+    if (state === 'paused') {
+      r.sim.actions.stop();
+    }
+    expect(r.sim.actions.job).toMatchObject({ workUid: r.work.uid, stopped: state === 'paused' });
+    const { duration } = r.work.work!;
+    expect(r.commands.act(r.work.uid, 'apart')).toBeUndefined();
+    expect(returned(r)).toEqual(r.exact);
+    expect(r.target.damage).toBe(DURABILITY / 2);
+    expect(r.inventory.itemByUid(r.work.uid)).toBeUndefined();
+    expect(r.sim.actions.job).toBeUndefined();
+    r.sim.scheduler.advance(duration / r.sim.clock.ratio + 1);
+    expect(returned(r)).toEqual(r.exact);
+    expect(r.target.damage).toBe(DURABILITY / 2);
+  },
+);
 
 const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
   const unused = (): never => {
@@ -218,9 +306,9 @@ const dispatch = (r: ReturnType<typeof make>, payload: ReplayActionPayload) => {
     inventory: r.inventory,
     queue: new HandlingQueue(r.inventory),
     quickbar: { assign: unused },
-    craftRepairEntity: (recipe, uid, preference) => r.commands.repairEntity(recipe, uid, preference),
+    craftRepairEntity: (recipe, uid, preference, sources) => r.commands.repairEntity(recipe, uid, preference, sources),
     search: unused,
-    work: unused,
+    work: (uid, operation) => r.commands.act(uid, operation),
     vehicleWork: unused,
     loadBattery: unused,
     toHands: unused,
@@ -246,13 +334,13 @@ const intent = (uid: number): ReplayActionPayload => ({
   kind: 'craft.repair-entity',
   recipeId: RECIPE,
   entityUid: uid,
-  preference: { 0: STOCK },
+  preference: { 0: { kind: 'item', item: STOCK } },
 });
 
 it('projects the entity name, damage and requirements without owning inputs', () => {
   const r = prepare();
   const before = r.inventory.snapshotState();
-  const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid, { 0: STOCK });
+  const projection = r.commands.previewEntityRepair(RECIPE, r.target.uid, { 0: { kind: 'item', item: STOCK } });
   expect(projection.targetName).toBe(registry.furniture.get(PIECE)!.name);
   expect(projection.targetName).not.toBe(registry.items.get(STOCK)!.name);
   expect(projection.damage).toBeDefined();
@@ -344,7 +432,11 @@ it('recorded repair intent keeps its selected UID and exact escrow instead of th
   expect(work.work).toEqual(r.inventory.hands.right!.work);
   expect(work.work?.repairTarget).toEqual({ kind: 'entity', uid: selected.uid });
   expect(work.work?.components.map((item) => snapshotItem(item)).sort((a, b) => a.uid - b.uid)).toEqual(r.exact);
+  finish(r, r.inventory.hands.right!.uid);
   finish(replay, work.uid);
+  expect(replay.inventory.entities.conditionOf(replay.inventory.entities.byUid(selected.uid)!)).toBe(
+    r.inventory.entities.conditionOf(selected),
+  );
   expect(replay.inventory.entities.byUid(selected.uid)!.damage).toBe(DURABILITY / 2 - AMOUNT);
   expect(replay.inventory.entities.byUid(r.target.uid)!.damage).toBe(DURABILITY / 2);
 });

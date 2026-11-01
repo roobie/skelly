@@ -20,7 +20,14 @@
           "properties": {}
         }
       },
-      "id": "ak_slant_compensator"
+      "id": "ak_slant_compensator",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -52,7 +59,14 @@
           }
         }
       },
-      "id": "foregrip"
+      "id": "foregrip",
+      "itemPresentation": {
+        "materials": ["polymer"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -77,7 +91,14 @@
           }
         }
       },
-      "id": "improvised_suppressor"
+      "id": "improvised_suppressor",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -213,7 +234,14 @@
           }
         }
       },
-      "id": "optic_digital_thermal"
+      "id": "optic_digital_thermal",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -467,7 +495,14 @@
           }
         }
       },
-      "id": "optic_fixed_prism_4x"
+      "id": "optic_fixed_prism_4x",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -694,7 +729,14 @@
           }
         }
       },
-      "id": "optic_high_mag_5_25x"
+      "id": "optic_high_mag_5_25x",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -817,14 +859,21 @@
           "sight": {
             "direction": [1, 0, 0],
             "eye": [-0.043124999999999997, 0.033062500000000002, 0],
-            "eyeReliefMetres": 0.161,
+            "eyeReliefMetres": 0.17020000000000002,
             "kind": "optic",
             "ocularDiameterMetres": 0.031625,
             "up": [0, 1, 0]
           }
         }
       },
-      "id": "optic_holographic"
+      "id": "optic_holographic",
+      "itemPresentation": {
+        "materials": ["glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -967,7 +1016,14 @@
           }
         }
       },
-      "id": "optic_lpvo_1_6x"
+      "id": "optic_lpvo_1_6x",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -1043,14 +1099,21 @@
           "sight": {
             "direction": [1, 0, 0],
             "eye": [-0.025874999999999999, 0.017250000000000001, 0],
-            "eyeReliefMetres": 0.161,
+            "eyeReliefMetres": 0.27600000000000002,
             "kind": "optic",
             "ocularDiameterMetres": 0.028749999999999998,
             "up": [0, 1, 0]
           }
         }
       },
-      "id": "optic_mini_reflex"
+      "id": "optic_mini_reflex",
+      "itemPresentation": {
+        "materials": ["glass", "metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -1106,14 +1169,21 @@
           "sight": {
             "direction": [1, 0, 0],
             "eye": [-0.034500000000000003, 0.023, 0],
-            "eyeReliefMetres": 0.161,
+            "eyeReliefMetres": 0.28749999999999998,
             "kind": "optic",
             "ocularDiameterMetres": 0.028749999999999998,
             "up": [0, 1, 0]
           }
         }
       },
-      "id": "optic_tube_dot"
+      "id": "optic_tube_dot",
+      "itemPresentation": {
+        "materials": ["metal", "glass"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -1152,7 +1222,14 @@
           }
         }
       },
-      "id": "rail_front_sight"
+      "id": "rail_front_sight",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -1177,7 +1254,14 @@
           }
         }
       },
-      "id": "real_suppressor"
+      "id": "real_suppressor",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     },
     {
       "collision": [
@@ -1208,7 +1292,14 @@
           }
         }
       },
-      "id": "tactical_flashlight_mount"
+      "id": "tactical_flashlight_mount",
+      "itemPresentation": {
+        "materials": ["metal"],
+        "supply": {
+          "kind": "none"
+        },
+        "wear": "core"
+      }
     }
   ]
 }

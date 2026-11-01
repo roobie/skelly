@@ -1191,7 +1191,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let readout = emptyReadout;
   let shellKey = '';
   let noclip = false;
-  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize);
+  const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, hooks.strikeTerrainCell);
   const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
@@ -1811,6 +1811,18 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     drawShell();
   }
+  function handleBuildAction(action: string): boolean | undefined {
+    if (action.startsWith('debug.build-slot.')) {
+      return build.selectSlot(Number(action.slice('debug.build-slot.'.length)) - 1);
+    }
+    if (action !== 'debug.build-damage' && action !== 'debug.build-destroy') {
+      return undefined;
+    }
+    if (crosshairRay?.active) {
+      build.strike(action === 'debug.build-damage' ? 'step' : 'destroy', crosshairRay.eye, crosshairRay.dir);
+    }
+    return true;
+  }
   function handleAction(action: string): boolean {
     if (action === 'debug.performance-toggle') {
       f3Open = !f3Open;
@@ -1826,8 +1838,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       drawShell();
       return true;
     }
-    if (action.startsWith('debug.build-slot.')) {
-      return build.selectSlot(Number(action.slice('debug.build-slot.'.length)) - 1);
+    const built = handleBuildAction(action);
+    if (built !== undefined) {
+      return built;
     }
     if (!dispatchDebugAction(actions, action)) {
       return false;

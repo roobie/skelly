@@ -8,11 +8,14 @@ import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import { AimController, type AimWobbleNoiseTuning, aimDirection, breathSteadying, NEUTRAL_AIM } from '../core/aim.ts';
 import { BearTraps } from '../core/bearTrap.ts';
+import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
+import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
+import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
@@ -30,6 +33,7 @@ import {
   type FirearmsSkillZeroHandling,
   firearmsSkillEffects,
   sameFirearmsSkillZeroHandling,
+  steadinessTuning,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import { foodMillisecondsAt } from '../core/food.ts';
@@ -67,7 +71,7 @@ import { climb, LadderHold } from '../core/ladders.ts';
 import { advanceLean, createLeanGuard, leanFrame } from '../core/lean.ts';
 import { playerLeanBoxes } from '../core/leanCollision.ts';
 import { inventoryLightSources, SunExposureCache } from '../core/lights.ts';
-import { corpseLootPoint, lootPointStream, rollLoot } from '../core/loot.ts';
+import { corpseLootPoint, rollLoot } from '../core/loot.ts';
 import { type BlockJolt, blockJolt, meleeBlock } from '../core/meleeCombat.ts';
 import { modified } from '../core/modifiers.ts';
 import { canSprint, spendStamina, stepStamina } from '../core/needs.ts';
@@ -98,14 +102,21 @@ import { Simulation } from '../core/sim.ts';
 import type { ColumnSource } from '../core/site.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
-import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
+import {
+  firearmShotPracticeSkill,
+  firearmSteadinessSkill,
+  skillActivityPractice,
+  skillActivityPracticeRate,
+} from '../core/skillTraining.ts';
 import { type SkyFieldOwner, SkyFields } from '../core/skyField.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import { type SolidBricks, worldBricks } from '../core/solidBricks.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { strikeTerrain } from '../core/terrainStrike.ts';
 import { simTimestamp } from '../core/time.ts';
 import { spendFuel } from '../core/torch.ts';
+import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
@@ -192,12 +203,84 @@ const sessionFirearmTargetName = (registry: Registry, firearmType: string | unde
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
 const isInventoryPracticeAction = (job: Job): boolean =>
   job.kind === 'action' && (job.jobType === UNPACK_ACTION || job.jobType === 'furniture.search');
+const sessionSteadiness = (
+  registry: Registry,
+  character: Character,
+  tuning: FirearmsCombatTuning,
+  firearm: Item | undefined,
+) => {
+  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
+  return {
+    level: skillEffectLevel(character.skills[skillId]!),
+    tuning:
+      skillId === CORE_CONTENT_IDS.firearmsCombat ? tuning : steadinessTuning(tuning, registry.skills.get(skillId)!),
+  };
+};
+
+const initialAimVariance = (
+  registry: Registry,
+  character: Character,
+  tuning: FirearmsCombatTuning,
+  firearm: Item | undefined,
+): number => {
+  const steady = sessionSteadiness(registry, character, tuning, firearm);
+  return firearmsSkillEffects(steady.level, {
+    ...steady.tuning,
+    skillZeroHandling: firearm
+      ? (defOf(registry, firearm.type).firearm?.skillZeroHandling ?? tuning.skillZeroHandling)
+      : tuning.skillZeroHandling,
+  }).variance;
+};
+
+const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined, uid: number | undefined): void => {
+  if (
+    uid !== undefined &&
+    (!firearm ||
+      firearm.uid !== uid ||
+      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) === CORE_CONTENT_IDS.firearmsCombat)
+  ) {
+    throw new Error('Invalid saved Sniping acquisition firearm');
+  }
+};
+
+const advanceSnipingPractice = ({
+  registry,
+  character,
+  firearms,
+  firearm,
+  ready,
+  aiming,
+  previousUid,
+  dt,
+}: {
+  registry: Registry;
+  character: Character;
+  firearms: FirearmMechanics;
+  firearm: Item | undefined;
+  ready: boolean;
+  aiming: boolean;
+  previousUid: number | undefined;
+  dt: number;
+}): number | undefined => {
+  const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
+  if (!(ready && aiming && firearm && firearms.isReady(firearm.uid)) || skillId === CORE_CONTENT_IDS.firearmsCombat) {
+    return undefined;
+  }
+  if (firearm.uid !== previousUid) {
+    const training = skillActivityPractice(registry, skillId, 'acquisition');
+    character.awardPractice(skillId, training.practice, training.tier);
+  }
+  const training = skillActivityPracticeRate(registry, skillId, 'ads');
+  character.awardPractice(skillId, dt * training.practicePerSecond, training.tier);
+  return firearm.uid;
+};
+
 const createSessionAim = ({
   player,
   tuning,
   seed,
   restored,
-  character,
+  variance,
   wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
@@ -205,7 +288,7 @@ const createSessionAim = ({
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
-  character: Character;
+  variance: number;
   wobbleFlatOverride: number | undefined;
   wobbleNoiseScaleOverride: number | undefined;
 }): AimController => {
@@ -234,7 +317,7 @@ const createSessionAim = ({
           breathHoldState: restored.character.aim.breath,
         }
       : {}),
-    variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
+    variance,
     stridePhase: footstepClock.stridePhase,
   });
 };
@@ -244,6 +327,8 @@ const advanceSessionAim = ({
   firearms,
   tuning,
   skillLevel,
+  steadinessLevel,
+  steadiness,
   firearmUid,
   timeSimSeconds,
   dt,
@@ -261,6 +346,8 @@ const advanceSessionAim = ({
   firearms: FirearmMechanics;
   tuning: FirearmsCombatTuning;
   skillLevel: number;
+  steadinessLevel: number;
+  steadiness: FirearmsCombatTuning;
   firearmUid: number | undefined;
   timeSimSeconds: number;
   dt: number;
@@ -281,19 +368,24 @@ const advanceSessionAim = ({
 }): void => {
   const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
   const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
+  const steady = firearmsSkillEffects(
+    steadinessLevel,
+    sessionFirearmsTuning(firearms, steadiness, firearmUid),
+    shotKind,
+  );
   aim.advance({
     breath: {
       wanted: breath.wanted,
       stamina: breath.stamina,
       windedBelow: breath.windedBelow,
-      steadying: breathSteadying(skillEffectLevel(skillLevel), breath.painRatio, tuning.breathHold),
+      steadying: breathSteadying(skillEffectLevel(steadinessLevel), breath.painRatio, steadiness.breathHold),
     },
     dt,
     velocity,
     blockSize,
     yaw,
     pitch,
-    variance: skill.variance * aimSway,
+    variance: steady.variance * aimSway,
     stanceDriftScale: tuning.wobbleStanceDriftScale[stance],
     firing,
     recoilRecoveryRate: skill.recoilRecoveryRate,
@@ -391,6 +483,7 @@ export interface SessionOptions {
   objective?: Readonly<Vec3> | undefined;
   discovery?: Readonly<ScenarioDiscovery> | undefined;
   world: World;
+  terrainDestruction?: { terrain: CanonicalTerrain; source: ColumnSource };
   isSolid: SolidAt;
   isOpaque: SolidAt;
   scale: Scale;
@@ -421,6 +514,8 @@ export interface SessionOptions {
   refusal?: ((text: string) => void) | undefined;
   /** A held paper request selected by a live domain command; presentation owns its view. */
   onRead: (request: ReadRequest) => void;
+  /** Invalid saved overlay entries are discarded before simulation resumes. */
+  onRestoreIssue?: (issue: string) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
   onHandlingOutcomes?: (result: TickResult) => void;
   onConsumed?: ((type: string) => void) | undefined;
@@ -434,6 +529,8 @@ export interface SessionOptions {
   onFirearmCaseLanded?: (seed: number, item: Item, instanceIndex: number) => void;
   /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
   onFirearmTrajectory?: (trajectory: ResolvedFirearmTrajectory, time: number) => void;
+  /** Output only, after admitted terrain removal; includes neighbouring chunks whose meshes read the edited cells. */
+  onTerrainEdited?: (chunks: Vec3[]) => void;
   /** Presentation-only: an explosive went off here, with this blast radius, both in metres. */
   onDetonation?: (at: Vec3, radiusMetres: number) => void;
   /** Presentation-only: a released explosive's fuse lit, so it sheds its lever (`DESIGN.md`, "Hand grenade"). */
@@ -780,21 +877,7 @@ export const createSession = (options: SessionOptions) => {
   const isOpaque = (x: number, y: number, z: number) => options.isOpaque(x, y, z) || vehicleSight.isSolid(x, y, z);
   const isLightBlocking = (x: number, y: number, z: number) =>
     options.isOpaque(x, y, z) || vehicleLight.isSolid(x, y, z);
-  const generateColumnSupply = (cx: number, cz: number, source: ColumnSource): void => {
-    for (const spawn of source.furnitureIn(cx, cz)) {
-      inventory.furnishSpawn(spawn);
-    }
-    for (const point of source.lootPointsIn(cx, cz)) {
-      if (point.channel !== 'ground') {
-        continue;
-      }
-      for (const rolled of rollLoot(registry, point, lootPointStream(seed, point), scale.blockSize)) {
-        if (!inventory.add(inventory.createRolled(rolled), { kind: 'pile', pos: point.destination })) {
-          throw new Error(`ground item "${rolled.type}" does not fit in its pile`);
-        }
-      }
-    }
-  };
+  const columnSupply = createColumnSupply(inventory, rolledColumns, seed, scale.blockSize);
   const fuses = new Fuses(
     registry,
     Array.from(inventory.items(), ({ item }) => item),
@@ -802,12 +885,16 @@ export const createSession = (options: SessionOptions) => {
       inventory.version += 1; // The item now draws with or without its pin.
     },
   );
+  const firearmInHands = () =>
+    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
+      (item) => item && registry.items.get(item.type)?.firearm,
+    );
   const aim = createSessionAim({
     player: Player,
     tuning: currentFirearmsCombatTuning(),
     seed,
     restored,
-    character,
+    variance: initialAimVariance(registry, character, currentFirearmsCombatTuning(), firearmInHands()),
     wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
@@ -1061,8 +1148,6 @@ export const createSession = (options: SessionOptions) => {
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
     handlingSlowdown: () => sim.body.pain.effects.handlingSlowdown,
     onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'shot');
-      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
       const tuning = sessionFirearmsTuning(firearms, currentFirearmsCombatTuning(), firearmUid);
       aim.recordShot(
         shotSeed,
@@ -1074,11 +1159,14 @@ export const createSession = (options: SessionOptions) => {
     onHandlingOutcome: (item, outcome) => options.onHandlingOutcome?.(item, outcome),
     onShot: (shot, time, firearm, sighted) => {
       options.onDischarge?.(firearm, sighted);
+      const skillId = firearmShotPracticeSkill(registry, defOf(registry, firearm.type), sighted);
+      const shotTraining = skillActivityPractice(registry, skillId, 'shot');
+      character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
       const { hits, stops } = zombieSystem.firePellets(shot);
       bodyStops = stops;
-      if (hits > 0 && firearmReadyWalking) {
-        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'hit');
-        character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
+      if (hits > 0 && (skillId !== CORE_CONTENT_IDS.firearmsCombat || firearmReadyWalking)) {
+        const training = skillActivityPractice(registry, skillId, 'hit');
+        character.awardPractice(skillId, training.practice, training.tier);
       }
       const sound = firearmShotSound(registry, firearm);
       playPlayerSound(sound.event, time, {
@@ -1149,6 +1237,16 @@ export const createSession = (options: SessionOptions) => {
   let leanAmount = 0;
   const currentLean = () => leanFrame(leanAmount, Player.lean);
   let firearmReadyWalking = restoredFirearmReadyWalking;
+  let snipingAdsUid = restoredPlayer?.snipingAdsUid;
+  validateSnipingAdsFirearm(registry, firearmInHands(), snipingAdsUid);
+  /**
+   * Effective ADS: the sights are wanted and a held long gun's acquisition has completed. Other
+   * firearms aim as soon as they are ready, so acquisition never delays them (`DESIGN.md`, "Combat and noise").
+   */
+  const aimingDownSights = (): boolean => {
+    const held = firearmInHands();
+    return held !== undefined && Boolean(controls.aimingDownSights?.()) && firearms.isAdsAcquired(held.uid);
+  };
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
@@ -1166,7 +1264,7 @@ export const createSession = (options: SessionOptions) => {
       lean: currentLean(),
       figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
       models: registry.models,
-      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
     });
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
@@ -1196,11 +1294,15 @@ export const createSession = (options: SessionOptions) => {
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), playerStance, sprinting);
   const updateAim = (dt: number, firing: boolean, breathWanted: boolean): void => {
+    const firearm = firearmInHands();
+    const steady = sessionSteadiness(registry, character, currentFirearmsCombatTuning(), firearm);
     advanceSessionAim({
       aim,
       firearms,
       tuning: currentFirearmsCombatTuning(),
       skillLevel: firearmsSkillLevel(character),
+      steadinessLevel: steady.level,
+      steadiness: steady.tuning,
       firearmUid: firearmInHands()?.uid,
       timeSimSeconds: sim.time,
       dt,
@@ -1232,7 +1334,7 @@ export const createSession = (options: SessionOptions) => {
       intent.sprint &&
       heldFirearm !== undefined &&
       firearms.isReady(heldFirearm.uid) &&
-      Boolean(controls.aimingDownSights?.()) &&
+      aimingDownSights() &&
       !ladderHold.on &&
       body.onGround &&
       intent.forward === 0 &&
@@ -1306,10 +1408,6 @@ export const createSession = (options: SessionOptions) => {
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
   });
-  const firearmInHands = () =>
-    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
-      (item) => item && registry.items.get(item.type)?.firearm,
-    );
   /** The one body pose a held firearm's shot, strike and ejection are placed from, read at the player tick. */
   const firearmPose = (uid: number): FirearmPoseInput | undefined => {
     if (inventory.hands.right?.uid !== uid && inventory.hands.left?.uid !== uid) {
@@ -1322,7 +1420,7 @@ export const createSession = (options: SessionOptions) => {
       pitch,
       stance: playerStance,
       lean: currentLean(),
-      ads: playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame),
+      ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
     });
     return {
       feet: feet(),
@@ -1345,7 +1443,7 @@ export const createSession = (options: SessionOptions) => {
     return {
       ...pose,
       aimFrame: aim.frame,
-      aimingDownSights: Boolean(controls.aimingDownSights?.()),
+      aimingDownSights: aimingDownSights(),
       ready: controls.firearmReady ? controls.firearmReady(uid) : firearms.isReady(uid),
       sprinting,
       item,
@@ -1380,12 +1478,45 @@ export const createSession = (options: SessionOptions) => {
     }
     return true;
   };
-  /** A swing that meets no zombie strikes the piece in its reach with the weapon's impulse. */
+  const strikeTerrainCell = (cell: Vec3, blow: BlockBlow): boolean => {
+    const context = options.terrainDestruction;
+    if (!context) {
+      return false;
+    }
+    const block = registry.blocks[context.terrain.getBlock(...cell)];
+    const result = strikeTerrain(
+      {
+        terrain: context.terrain,
+        supply: columnSupply.project(context.source),
+        mover: furnitureMover(),
+        obstructed: (x, y, z) => vehicleOccupancy.isSolid(x, y, z),
+      },
+      cell,
+      blow,
+    );
+    if (!result) {
+      return false;
+    }
+    if (result.outcome === 'broken') {
+      options.onTerrainEdited?.(result.edited);
+    }
+    for (const destroyed of result.destroyed) {
+      forgetPiece(destroyed);
+    }
+    if (block?.solid) {
+      playNoisyWorldSound(registry.blockMaterials.get(block.material)!.blowSound, boxCentre(cell, [1, 1, 1]));
+    }
+    return true;
+  };
+  /** Entity contact takes precedence over a terrain blow. */
   const strikePiece = (origin: Vec3, direction: Vec3, weapon: MeleeWeapon): boolean => {
     const reachBlocks = (PLAYER_ARM_REACH_M + weapon.reach) / s;
     const hit = raycast(origin, direction, reachBlocks, meleeBlocker({ kind: 'player', motion: weapon.motion }));
     const piece = hit && entities.at(...hit.block);
-    return bashPiece(piece && entities.isSolid(...hit.block) ? piece : undefined, weapon.impulse);
+    if (piece && entities.isSolid(...hit.block)) {
+      return bashPiece(piece, weapon.impulse);
+    }
+    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type ?? 'blunt' }) : false;
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
@@ -1408,7 +1539,6 @@ export const createSession = (options: SessionOptions) => {
     bashObstacle: (ahead, strength) => bashPiece(entities.pieceTouching(ahead), strength),
     blockSize: s,
     physics,
-    jumpSpeed: Player.jump,
     tuning: senseTuning,
     player: playerSense,
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
@@ -1945,12 +2075,23 @@ export const createSession = (options: SessionOptions) => {
     const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;
     const readinessHeld = readyUid !== undefined;
     firearms.advanceReadiness(dt, readyUid, readinessHeld);
+    firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
     if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
       const training = skillActivityPracticeRate(registry, CORE_CONTENT_IDS.firearmsCombat, 'readying');
       character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, dt * training.practicePerSecond, training.tier);
     }
+    snipingAdsUid = advanceSnipingPractice({
+      registry,
+      character,
+      firearms,
+      firearm: heldFirearm,
+      ready: readinessHeld,
+      aiming: aimingDownSights(),
+      previousUid: snipingAdsUid,
+      dt,
+    });
     return readyGait;
   };
 
@@ -1961,7 +2102,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const { yaw, pitch } = sampledInput();
     const progress = Object.values(inventory.hands).map((item) => (item ? firearms.readyProgress(item.uid) : 0));
-    const ads = playerAdsPose(inventory, Boolean(controls.aimingDownSights?.()), aim.frame);
+    const ads = playerAdsPose(inventory, aimingDownSights(), aim.frame);
     const aiming = ads !== undefined || progress.some((value) => value >= 1);
     const { loweredPitchRadians } = currentFirearmsCombatTuning();
     return guardPlayerLean({
@@ -2352,6 +2493,7 @@ export const createSession = (options: SessionOptions) => {
       }
       return found;
     });
+    world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
     playerCombat.restoreState(restored.character.playerCombat);
     spawner.restoreState(restored.world.spawned);
@@ -2543,19 +2685,20 @@ export const createSession = (options: SessionOptions) => {
     /** Metres from the chest to the vehicle's nearest part, the distance its reach is judged by. */
     vehicleDistance: (vehicleId: number) => vehicleDistance(reachPlayer, vehicleParts.boxesOf(vehicleId)),
     /** Why the selected part can't be fitted at or removed from the selected site now. */
-    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) =>
-      sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid),
+    vehicleWorkRefusal: (kind: 'install' | 'remove', vehicleId: number, target: VehicleWorkTarget, itemUid: number) =>
+      sim.actions.vehicleWork?.validate(kind, vehicleId, target, itemUid),
     /** Starts, or resumes, service work on one selected site and part; returns why not. */
-    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, fittingId: string, itemUid: number) => {
-      const service = inventory.vehicleService(vehicleId, fittingId, itemUid);
+    beginVehicleWork: (kind: 'install' | 'remove', vehicleId: number, target: VehicleWorkTarget, itemUid: number) => {
+      const service = inventory.vehiclePlacementService(vehicleId, target, itemUid);
       return (
-        sim.actions.vehicleWork?.validate(kind, vehicleId, fittingId, itemUid) ??
+        sim.actions.vehicleWork?.validate(kind, vehicleId, target, itemUid) ??
         sim.actions.beginVehicleWork({
           kind,
           vehicleId,
-          fittingId,
+          fittingId: target.id,
           itemUid,
           durationSimSeconds: service?.durationSimSeconds ?? 0,
+          placement: target,
         })
       );
     },
@@ -2617,14 +2760,11 @@ export const createSession = (options: SessionOptions) => {
     get playerEyeHeightMetres() {
       return playerEyeHeightMetres();
     },
+    strikeTerrainCell,
+    projectSupply: (source: ColumnSource) => columnSupply.project(source),
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {
-      const key = `${cx},${cz}`;
-      if (!rolledColumns.has(key)) {
-        generateColumnSupply(cx, cz, source);
-        // Empty columns also stay rolled: absence of furniture or a surviving pile is not fresh supply.
-        rolledColumns.add(key);
-      }
+      columnSupply.arrive(cx, cz, source);
       spawner.onColumn({ cx, cz, site: source, registry, zombies: zombieSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
@@ -2736,6 +2876,7 @@ export const createSession = (options: SessionOptions) => {
           stance: playerStance,
           sprinting,
           firearmReadyWalking,
+          snipingAdsUid: firearmInHands()?.uid === snipingAdsUid ? snipingAdsUid : undefined,
           handlingPausedForKnockout,
           ladder: ladderHold.snapshotState(),
         }),

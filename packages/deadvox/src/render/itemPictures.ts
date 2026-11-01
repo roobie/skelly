@@ -3,7 +3,9 @@ import { AmbientLight, DirectionalLight, OrthographicCamera, Scene, Vector3, Web
 import type { Registry } from '../core/content.ts';
 import type { GridSize, Item } from '../core/items.ts';
 import { itemLook } from './itemLook.ts';
-import { type ModelLibrary, visibleBounds } from './models.ts';
+import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
+import { ModelFlames } from './modelFlame.ts';
+import { groundModelFrame, type ModelLibrary, visibleBounds } from './models.ts';
 
 /** Where the reference camera sits around a model: radians, and a framing extent per bounding radius for views or a margin over projected still bounds. */
 export interface ReferencePose {
@@ -131,6 +133,7 @@ export const referencePainter = (
 
 export class ItemPictures {
   private readonly cache = new Map<string, string>();
+  private readonly flames = new ModelFlames('picture-light-flame');
 
   private readonly registry: Registry;
   private readonly models: Pick<ModelLibrary, 'version' | 'has' | 'groundLook'>;
@@ -166,6 +169,7 @@ export class ItemPictures {
     this.disposed = true;
     this.cache.clear();
     this.painter.dispose();
+    this.flames.dispose();
   }
 
   picture(item: Item, footprint: GridSize = { w: 1, h: 1 }): string | undefined {
@@ -188,7 +192,12 @@ export class ItemPictures {
     if (!model) {
       return undefined;
     }
-    const picture = this.painter.paint(model, this.pose, size.width, size.height);
+    let picture: string;
+    try {
+      picture = this.painter.paint(model, this.pose, size.width, size.height);
+    } finally {
+      this.disposeModel(model);
+    }
     if (this.cache.size === this.capacity) {
       this.cache.delete(this.cache.keys().next().value!);
     }
@@ -206,7 +215,16 @@ export class ItemPictures {
     ) {
       return undefined;
     }
-    return this.models.groundLook(look);
+    const model = this.models.groundLook(look);
+    if (model) {
+      applyItemStateLook(model, look, this.registry);
+      this.flames.onModel(this.registry, item, model, groundModelFrame);
+    }
+    return model;
+  }
+
+  disposeModel(model: Object3D): void {
+    disposeItemStateMaterials(model);
   }
 
   /** Draws a model from `model` with the pictures' own renderer, so the viewer needs no second context. */

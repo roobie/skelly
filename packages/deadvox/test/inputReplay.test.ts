@@ -500,7 +500,7 @@ const createCraftReplayFixture = () => {
     }
   }
   for (const group of recipe.components) {
-    const component = group[0]!;
+    const component = group.find((part) => 'item' in part)!;
     const item = runtime.inventory.create(component.item, component.count);
     if (!runtime.inventory.add(item, { kind: 'pocket', owner: backpack, pocket: 0 })) {
       throw new Error(`Replay fixture could not add ${component.item}`);
@@ -1003,6 +1003,7 @@ describe('input replay', () => {
       surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
       stamp: (chunk) => fixtureSite.stamp(chunk),
+      supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
@@ -1280,6 +1281,7 @@ describe('input replay', () => {
       surface: fixtureSite.surface,
       spawn: fixtureSite.spawn,
       stamp: (chunk) => fixtureSite.stamp(chunk),
+      supplySourcesIn: (area) => fixtureSite.supplySourcesIn(area),
       lootPointsIn: (columnX, columnZ) => fixtureSite.lootPointsIn(columnX, columnZ),
       furnitureIn: (columnX, columnZ) => fixtureSite.furnitureIn(columnX, columnZ),
       zombiesIn: (columnX, columnZ) =>
@@ -1464,9 +1466,25 @@ describe('input replay', () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     const commands = [
-      { kind: 'vehicle.work', work: 'remove', vehicleId: 1, fittingId: 'site', itemUid: 2 },
-      { kind: 'vehicle.work', work: 'install', vehicleId: 1, fittingId: 'site', itemUid: 2 },
-    ] as const;
+      {
+        kind: 'vehicle.work',
+        work: 'remove',
+        vehicleId: 1,
+        fittingId: 'site',
+        itemUid: 2,
+        at: [1, 2, 3],
+        supportedBy: ['frame'],
+      },
+      {
+        kind: 'vehicle.work',
+        work: 'install',
+        vehicleId: 1,
+        fittingId: 'site',
+        itemUid: 2,
+        at: [1, 2, 3],
+        supportedBy: ['frame'],
+      },
+    ] satisfies ReplayActionPayload[];
     for (const command of commands) {
       recorder.queueAction(command.kind, 'down', 'inventory', { payload: command });
       recorder.recordTick(replaySample);

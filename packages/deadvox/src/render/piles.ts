@@ -24,8 +24,8 @@ import { SPENT_CASE_SCATTER_CAP } from '../core/scatterPile.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
-import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
+import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import { ModelFlames } from './modelFlame.ts';
 import { type GroundModelPart, groundModelFrame, LENS, type ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -125,7 +125,7 @@ export class PileMeshes {
     this.itemBounds.clear();
     this.itemModels.clear();
     this.flamePositions.clear();
-    disposeItemEmissiveMaterials(this.group);
+    disposeItemStateMaterials(this.group);
     this.group.clear();
     const casePlans = new Map<string, CasePlan>();
     const displays = effectivePileDisplays(inventory, {
@@ -167,7 +167,7 @@ export class PileMeshes {
     this.itemBounds.clear();
     this.itemModels.clear();
     this.flamePositions.clear();
-    disposeItemEmissiveMaterials(this.group);
+    disposeItemStateMaterials(this.group);
     this.group.clear();
     this.flames.dispose();
     this.geometry.dispose();
@@ -190,18 +190,12 @@ export class PileMeshes {
     for (const piled of models) {
       const { placed, at, yaw } = piled;
       const { item } = placed;
-      const definition = defOf(inventory.registry, item.type);
       const look = itemLook(inventory.registry, item);
       const model = look && this.models?.groundLook(look);
-      if (!model) {
+      if (!(model && look)) {
         continue;
       }
-      applyItemEmissive(
-        model,
-        item,
-        definition,
-        definition.model ? inventory.registry.models.get(definition.model) : undefined,
-      );
+      applyItemStateLook(model, look, inventory.registry);
       model.position.set(...at);
       model.rotation.y = yaw;
       this.group.add(castsAndReceives(model));

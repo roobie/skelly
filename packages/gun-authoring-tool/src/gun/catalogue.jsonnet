@@ -179,10 +179,14 @@ local item(id, family, selector, params, massKg, profile) =
     item('gas_cylinder_ak', 'gas-cylinder', [], { barrelLength: 'M' }, 0.18, 'ak'),
     item('gas_block_ak', 'gas-block', [], { barrelLength: 'M', bore: 'S' }, 0.07, 'ak'),
     // A grip is built to its lower's section and finished to its gun, so the AR and AK grips are separate items.
-    item('grip_standard', 'grip', ['section', 'length'], { length: 'M', well: 'none', section: 'ar' }, 0.1, 'ar'),
-    item('grip_ar_long', 'grip', ['section', 'length'], { length: 'L', well: 'none', section: 'ar' }, 0.12, 'ar'),
+    item('grip_standard', 'grip', ['section', 'length'], {
+      length: 'M', well: 'none', section: 'ar', actionFrame: 'small',
+    }, 0.1, 'ar'),
+    item('grip_ar_long', 'grip', ['section', 'length', 'actionFrame'], {
+      length: 'L', well: 'none', section: 'ar', actionFrame: 'large',
+    }, 0.12, 'ar'),
     row('grip-ar-short', 'grip', { section: 'ar', length: 'S' }, 0.09),
-    item('grip_ak', 'grip', ['section'], { length: 'M', well: 'none', section: 'ak' }, 0.1, 'ak'),
+    item('grip_ak', 'grip', ['section'], { length: 'M', well: 'none', section: 'ak', actionFrame: 'small' }, 0.1, 'ak'),
     row('grip-standard', 'grip', { section: 'standard' }, 0.1),
     row('grip-pump', 'grip', { section: 'pump' }, 0.1),
     row('grip-sporter', 'grip', { section: 'sporter' }, 0.1),

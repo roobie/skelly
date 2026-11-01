@@ -1,8 +1,9 @@
 ---
 read_if:
-  - you build or scope the mod authoring tool or its Deadvox authoring API
+  - you build or scope the mod authoring tool or its SkellyEngine authoring API
   - you change mod folders, tool-to-game handoff, sharing or default mod selection
   - you schedule typed field patches against the tool's editing slices
+  - you apply the remote-intake rules and framework PR gate to tool delivery
 ---
 
 # 8. A mod authoring tool over the shared loader
@@ -15,8 +16,8 @@ one UI and two storage backends from the first tool slice. Supporting both immed
 costs more to build but avoids making either authoring path a later retrofit.
 
 Its home is a new workspace package, planned at `packages/mod-authoring-tool`, consuming
-a deliberate Deadvox authoring API. This keeps authoring separate from play and geometry
-tools without a later package extraction. Deadvox must not import the tool; the tool must
+a deliberate SkellyEngine authoring API. This keeps authoring separate from play and geometry
+tools without a later package extraction. The runtime must not import the tool; the tool must
 not reach into arbitrary game internals or import other authoring tools, gungen or the
 geometry engine. Existing boundaries still apply under `things/WORK.md`, "Decisions";
 the schema's transitive neutral thing-core contract is not a direct geometry-tool import.
@@ -30,7 +31,7 @@ Browser evaluation is a dependency of editing, not permission to save unevaluabl
 
 ### Loader authority and editing
 
-The Deadvox loader owns merge history, winning origins, conflicts and validation. The
+The shared loader owns merge history, winning origins, conflicts and validation. The
 tool consumes a loader-side report that retains shadowed definitions, rather than
 reimplementing the merge and risking different verdicts. The existing merge owner is
 `packages/deadvox/src/core/content.ts`, `merge`; the authoring report is planned work.
@@ -39,11 +40,11 @@ Retention optimizations must preserve that single authority.
 Editing waits for typed field patches and per-field origins under
 `docs/decisions/0007-typed-field-patches.md`, "Decision". A temporary copy-based override
 editor and drift view would be discarded when patches arrive. Overview and read-only
-inspection need not wait. Schedule the patch merge as a Deadvox engine feature ahead of
-other queued Deadvox work, with a design check against that ADR before implementation;
-there is no product decision left about whether to schedule it. Dependency admission and
-conflict enforcement must be accounted for in that engine feature, not assumed to exist
-because their rules have been documented.
+inspection need not wait. The engine patch merge retains priority over queued work,
+subject to `docs/decisions/0009-content-defined-products.md`, "Refactor gate". Design-check
+it against the patch ADR before implementation. Dependency admission and conflict
+enforcement must be delivered or explicitly depended on, not assumed to exist because
+their rules have been documented.
 
 ### Folder mods and assets
 
@@ -52,7 +53,8 @@ add models and sounds. One manifest contract covers a local folder and a folder 
 web URL from the start, with two fetchers. The manifest enumerates every file; the URL
 fetcher resolves those files relative to the folder URL. This needs no directory listing
 or GitHub API: a repository's raw-file hosting or Pages can serve the same folder.
-An archive transport can be considered later without defining a second mod format.
+GitHub URL distribution is canonical. Archive intake is deferred; a later archive
+fetcher uses this manifest rather than defining another format.
 
 Licence and provenance accompany supplied assets, rather than treating a local or remote
 file as automatically redistributable; see `packages/deadvox/src/core/assets.ts`,
@@ -61,11 +63,13 @@ as well as definitions. Intake limits and other tunables belong in content, neve
 constants, under `PILLARS.md`, "Content forward compatibility". Trusted admission limits
 must not be supplied by the untrusted mod they bound.
 
-Cross-site fetching needs design confirmation before the folder loader is built: raw
-hosting and Pages must permit browser CORS reads of the manifest and every listed file,
-HTTPS pages cannot depend on mixed-content fetches, and local serving needs an explicit
-cross-origin arrangement. A repository browsing API is not implied. Remote-mod trust and
-disclosure, and conveniences such as accepting a repository page URL, remain undecided.
+Remote intake follows `docs/decisions/0009-content-defined-products.md`, "Remote intake":
+HTTPS and CORS-readable sources, source disclosure and confirmation, files from the mod's
+own origin, and size and evaluation-cost bounds. Data-only rules cannot access storage,
+credentials or the network, so host allowlists and proxies add no needed trust boundary.
+A repository browsing API is not implied; conveniences such as accepting a repository
+page URL remain undecided. Browser-only workspace hosting still needs an explicit
+transport for handoff.
 
 ### Testing, sharing and start flow
 
@@ -76,11 +80,11 @@ be resolved before that mode's handoff is built. Arbitrary remote sources enter 
 mod intake, not the bundled-id selector; see
 `packages/deadvox/docs/url-mods.md`, "Demo mods and URL loading".
 
-GitHub integration is a direction to keep possible through URL handoff and URL folders,
-not a scoped integration or authorization workflow. Sharing prepares a PR-ready bundled
-catalogue addition for a human to open and for review before publication. Jsonnet keeps
-that output on the repository's authoring path without a second conversion language.
-A gallery remains a possible later product, not rejected and not part of this build.
+GitHub-hosted URL folders are the canonical sharing path, not an authorization or
+repository-API integration. Catalogue preparation produces a reviewable addition for a
+human to submit when the PR gate permits; it does not publish automatically. Jsonnet
+keeps that output on the repository's authoring path without another conversion language.
+A gallery remains a possible later product, not part of this build.
 
 Mod selection belongs in the ordinary start flow alongside new-game and Continue, rather
 than remaining opt-in behind a URL flag. These paths must use the same admission and save
@@ -89,13 +93,12 @@ Control placement and active-set disclosure belong to that combined UX design.
 
 ## Build plan
 
-Each named slice is one PR, not a claim that the features exist. The independent game
-slice has no tool dependency. The numbered tool slices give a delivery order, with only
-the dependencies stated in each entry acting as prerequisites. Slice 2 is scheduled
-ahead of other queued Deadvox engine work and can run alongside the read-only tool
-work; tool editing cannot overtake it. Each slice's brief supplies implementation
-detail. Remove completed plan entries when code becomes the authority, preserving the
-rules and reasons above.
+These slices describe delivery dependencies, not permission to open new PRs under
+`docs/decisions/0009-content-defined-products.md`, "Refactor gate". Work must use an
+existing PR or wait until the refactor is executed. The independent game slice has no
+tool dependency. The engine field-patch work retains priority over queued engine work
+within that gate and can run beside read-only inspection; editing cannot overtake it.
+Remove completed plan entries when code becomes their authority.
 
 **Independent game slice: Default start flow.** This plan owns integration of mod
 selection alongside new-game and Continue. It depends on shared admission and
@@ -106,16 +109,16 @@ that migration is not a prerequisite for making selection discoverable in the or
 start flow.
 
 1. **Both-mode shell, loader report and read-only overview.** Establish the planned
-   package, hosted/local adapters and a guarded Deadvox authoring API together, so the
+   package, hosted/local adapters and a guarded framework authoring API together, so the
    first tool slice exercises both run modes and the single merge authority. Show only
    data an adapter can actually access; another origin's browser store is not implicitly
    readable. This slice has no editing dependency on field patches. Guard the API-only
    import direction through `packages/engine/test/engineImportBoundary.test.ts`,
    `packageEdges`, including subpath and forbidden reverse/private/tool imports.
-2. **Engine field-patch merge.** Design-check and build the merge, schema marking and
-   per-field origins governed by ADR 0007. This is independently scheduled, not blocked
-   on slice 1. Resolve its dependency-admission and fail-closed enforcement prerequisites
-   against `packages/deadvox/docs/pack-split.md`, "Round split" before building; the
+2. **Engine field-patch merge.** Design-check and build the merge, schema marking
+   and per-field origins governed by ADR 0007. This is independently scheduled within
+   the PR gate, not blocked on slice 1. Resolve dependency-admission and fail-closed
+   enforcement prerequisites against `packages/deadvox/docs/pack-split.md`, "Refactor workstreams"; the
    documented rules alone are not enforcement. This unblocks editing without a throwaway
    whole-entry editor.
 3. **Browser Jsonnet evaluation.** Deliver the #801 prerequisite so both run modes can
@@ -134,9 +137,8 @@ start flow.
    `packages/deadvox/src/cli/validate.ts`, `validate`, so browser and local workspaces do
    not silently pass different checks.
 6. **Local and URL folder admission.** Depends on slice 5 to validate supplied files
-   through the shared provider. Resolve remote trust/disclosure before admitting remote
-   sources and confirm cross-site fetching so both fetchers can read the same manifest
-   contract. No field-patch or editor dependency: intake admits compiled definitions and
+   through the shared provider. Enforce the remote-intake policy and prove both fetchers
+   admit the same manifest contract. No field-patch or editor dependency: intake admits compiled definitions and
    assets, not authoring operations. One manifest with two fetchers avoids a format per
    transport. Keep bounds in trusted content; prove atomic storage and resource
    cleanup before adding asset-editing UI.

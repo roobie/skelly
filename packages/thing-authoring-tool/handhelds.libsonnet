@@ -83,7 +83,16 @@ local held(id, solid, fraction, hold='upright', roll=90) = {
     display: { part: 'compass', solid: 'dial', fraction: [0.5, 1, 0.5], normal: [0, 1, 0], up: [0, 0, -1] },
     anchors: { needle_mount: { part: 'compass', solid: 'dial', fraction: [0.5, 1, 0.5] } },
   },
-  atom('lighter', 'lighter', 0.020, { width: 0.024, height: 0.055, depth: 0.012, capHeight: 0.009 }, { body: 'plastic-red', cap: 'steel-grey', wheel: 'steel-grey' }),
+  local carrier = atom('lighter', 'lighter', 0.019, { width: 0.024, height: 0.055, depth: 0.012, capHeight: 0.009 }, { body: 'plastic-clear-red', cap: 'steel-grey', wheel: 'steel-grey' });
+  local port(id, gender, pos, normal) = { id: id, mount: 'fuel-fill', gender: gender, pos: pos, normal: normal, up: [1, 0, 0], required: true };
+  carrier + {
+    voxelGrain: 0.002,
+    parts: [
+      carrier.parts[0] + { ports: [port('fill', 'female', [0, 0.005, 0], [0, 1, 0])] },
+      { id: 'fuel_fill', family: 'block', massKg: 0.001, params: params({ width: 0.014, height: 0.04, depth: 0.008 }), finish: { body: 'fuel-amber' }, ports: [port('base', 'male', [0, 0, 0], [0, -1, 0])] },
+    ],
+    connections: [{ from: 'lighter.fill', to: 'fuel_fill.base' }],
+  },
   atom('matches', 'matchbox', 0.020, { width: 0.055, height: 0.015, depth: 0.035, sleeve: 0.004 }, { tray: 'paperboard-tan', sleeve: 'paint-terracotta', striker: 'paperboard-brown' }, 'tray'),
   key('dad_cabin_key', 0.010, 0.012, 0.038, 'steel-grey'),
   key('pharmacy_key', 0.010, 0.011, 0.039, 'brass'),

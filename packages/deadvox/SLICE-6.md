@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you distinguish intact vehicle disassembly from destructive salvage
   - you're planning vehicle implementation, authoring or the Wheels playtest
   - you're applying the settled vehicle scope and deferred directions from issue 322
   - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
@@ -16,8 +17,8 @@ claim that the spike already provides the game systems.
 
 ## The smallest useful loop
 
-Find an incomplete vehicle, inspect why it cannot run, salvage a compatible part
-from another wreck, fit it with tools, fuel and start it, carry loot to another
+Find an incomplete vehicle, inspect why it cannot run, recover a compatible part
+by disassembly from another wreck, fit it with tools, fuel and start it, carry loot to another
 stop, suffer a consequential collision, and choose between repair, stripping weight
 and abandoning the vehicle. Save and return to the same build. This tests whether
 mobility and carrying capacity justify the noise, supplies and exposed work, rather
@@ -34,20 +35,20 @@ vehicle is authored twice; see `docs/vehicle-spike.md`, "The hatchback from cont
 Building starts from factory structures with compatible parts and add-ons, not raw
 rails and plates. Factory welded structure is one player-facing assembly while
 retaining its component fittings for local damage and shape. This keeps routine
-work at the grain of a useful salvage action without closing later structural
+work at the grain of useful intact disassembly without closing later structural
 fabrication or cutting.
 
-Heavy salvage uses a mobile heavy-part-hoist that is itself a vehicle, built and
+Heavy disassembly uses a mobile heavy-part-hoist that is itself a vehicle, built and
 driven through the same vehicle systems. It is not a separate equipment kind or a
 workshop-only transfer exception. Lifting is a capability of its fitted crane parts,
 not of a hoist vehicle kind: removing or breaking the crane removes the capability,
-and a salvaged crane stays an ordinary part, so no vehicle-wide flag can outlive the
+and a disassembled crane stays an ordinary part, so no vehicle-wide flag can outlive the
 parts that justify it. Field engine recovery therefore has a physical
 workflow, with lifting, load ownership and clearance to prove. The hoist is required
 utility content alongside the two transport hosts, not a third transport host that
 reopens the roster choice.
 
-The world needs salvageable wrecks and a convoy remnant, fuel, tools and lifting
+The world needs wrecks with recoverable parts and a convoy remnant, fuel, tools and lifting
 access within reach of the loop, cargo worth transporting, enemies that respond to
 engine noise, and a route with a meaningful dismount. Wrecks are vehicle instances
 with missing and damaged parts, not searchable furniture with a second future
@@ -82,7 +83,7 @@ interior visibility. A passing debug route or export tool is not that exit.
 
 ### Things, not a second item universe
 
-Vehicle membership and ordinary inventory ownership are exclusive so salvage can
+Vehicle membership and ordinary inventory ownership are exclusive so disassembly can
 retain the item's condition, resources and contents without reconciling two mutable
 copies. The production owner is `src/core/vehicleInstances.ts`, `VehicleInstances`;
 its parts join ordinary lookup and UID validation through `src/core/itemTree.ts`,
@@ -108,7 +109,7 @@ contribute to the moving assembly's mass distribution.
 
 Parts are unhanded: placement determines the side. Reflection must transform
 physical and interaction datums as well as appearance so fitting does not create a
-visual-only variant. This keeps salvage reusable and the catalogue small without
+visual-only variant. This keeps recovered parts reusable and the catalogue small without
 closing later separately authored handed parts. Capability and geometry still
 decide compatibility; unhanded does not mean universal fit.
 
@@ -248,7 +249,7 @@ leaving saves to an integration finale.
 2. **Authoring-to-game contract.** Settled in
    `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
    #323 rather than making a full editor a prerequisite for reproducible exports.
-3. **Persistent parked instances and light salvage.** Replace selected wreck
+3. **Persistent parked instances and light disassembly.** Replace selected wreck
    placements with vehicle-owned state. Prove independent instances, saved removals
    and contents, deterministic placement and cache invalidation. Add install,
    remove and repair for hand-manageable parts; prove cancellation, changed supports,
@@ -261,7 +262,7 @@ leaving saves to an integration finale.
    placement when exiting a moving vehicle without arresting the vehicle. BR checks
    interior visibility. Compare mass-placement variants while holding
    total mass, power and silhouette fixed; do not pin tuned trajectories.
-5. **Heavy-part-hoist vehicle and heavy salvage.** Build the hoist through the same
+5. **Heavy-part-hoist vehicle and heavy disassembly.** Build the hoist through the same
    authoring, instance and driving path, then add its lifting operation. Prove field
    recovery, loaded clearance, load mass, release refusal and saved ownership through
    lift, transport and refit. Do not substitute a workshop-only transfer or a new
@@ -295,7 +296,7 @@ leaving saves to an integration finale.
   arcade loop is accepted. Aim for as much realism as feasible, judged by play and
   the deterministic performance contract rather than detail for its own sake.
 - **Handed parts:** the #322 content expansion that first needs physical left/right
-  incompatibility. Unhanded salvage leaves that expansion open rather than ruling
+  incompatibility. Unhanded recovered parts leave that expansion open rather than ruling
   every future part permanently interchangeable across sides.
 - **Motorbike driving and stand/lean behaviour:** the motorbike content round under
   #322 after four-wheel handling is accepted. Bike balance is not car tuning.
@@ -335,4 +336,4 @@ unbolting and repair differ without multiplying part types.
 A sealed interior cannot be inferred from a support graph, and vehicle reach cannot
 be inferred from road connectivity. Both depend on occupied and empty space at the
 consumer's scale. Keeping those distinctions explicit avoids building an enclosure
-simulator or regional road generator merely to get the salvage loop into play.
+simulator or regional road generator merely to get the disassembly loop into play.

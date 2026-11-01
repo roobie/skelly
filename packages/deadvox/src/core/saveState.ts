@@ -4,6 +4,7 @@
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
 import type { AimSnapshotState } from './aim.ts';
+import type { SavedBlockDamage } from './blockDamage.ts';
 import type { Character, CharacterState } from './character.ts';
 import type { RustleClock } from './foliageRustle.ts';
 import { assertFoodExposure, foodMillisecondsAt } from './food.ts';
@@ -26,6 +27,7 @@ export interface SaveSnapshot {
   world: {
     id: string;
     columns: SavedColumn[];
+    blockDamage: SavedBlockDamage;
     vehicles: VehicleInstancesState;
     power?: PowerState;
     zombies: ZombieSystemState;
@@ -132,6 +134,7 @@ export const snapshotSession = ({
       id: worldId,
       ...(power ? { power: power.snapshot() } : {}),
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
+      blockDamage: world.blockDamage.snapshotState() as SavedBlockDamage,
       vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,
       zombies: zombies.snapshotState() as ZombieSystemState,
       spawned: [...spawner.snapshotState()],

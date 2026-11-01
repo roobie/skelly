@@ -315,6 +315,95 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       'verified',
       'a clean look, movement, inventory and crafting recording reproduces its end state',
     );
+    const liquidRow = await page.evaluate(
+      async (modules) => {
+        const [
+          { liquidCraftData, STOCK, FULL, RECIPE },
+          { buildFixtureRegistry },
+          { Inventory },
+          { Character },
+          { bindReach },
+          { craftRows, craftingText },
+          { renderCrafting },
+          { volumeText },
+        ] = await Promise.all([
+          import(modules.fixture),
+          import(modules.economy),
+          import(modules.inventory),
+          import(modules.character),
+          import(modules.reach),
+          import(modules.readout),
+          import(modules.view),
+          import(modules.numbers),
+        ]);
+        const built = buildFixtureRegistry([{ source: 'liquid-browser-fixture', data: liquidCraftData() }]);
+        if (built.issues.length > 0) {
+          throw new Error(JSON.stringify(built.issues));
+        }
+        const base = globalThis.primaryActionTest.inventory.registry;
+        const registry = {
+          ...base,
+          items: new Map([...base.items, ...built.registry.items]),
+          liquids: new Map([...base.liquids, ...built.registry.liquids]),
+          recipes: new Map([...base.recipes, ...built.registry.recipes]),
+        };
+        const inventory = new Inventory(registry);
+        const character = new Character(registry);
+        character.learnRecipes([RECIPE]);
+        const vessel = inventory.create(FULL);
+        if (
+          !(
+            inventory.add(vessel, { kind: 'pile', pos: [0, 0, 0] }) &&
+            inventory.add(inventory.create(STOCK), { kind: 'pile', pos: [0, 0, 0] })
+          )
+        ) {
+          throw new Error('Cannot stage liquid browser stock');
+        }
+        const reach = bindReach({
+          inventory,
+          position: [0, 0, 0],
+          blockSize: 0.5,
+          clock: globalThis.primaryActionTest.session.sim.clock,
+        })();
+        const root = document.createElement('section');
+        root.style.cssText = 'position:fixed;inset:0;z-index:9999;background:black;overflow:auto';
+        document.body.append(root);
+        renderCrafting(
+          root,
+          craftRows({ registry, character, reach, preferences: {}, startReason: undefined }).filter(
+            (row) => row.id === RECIPE,
+          ),
+          { start: () => undefined, prefer: () => undefined, source: () => undefined },
+          { text: craftingText(registry) },
+        );
+        const draw = root.querySelector('.craft-liquid-draw');
+        const [[input]] = registry.recipes.get(RECIPE).components;
+        const witness = {
+          draw: draw?.textContent,
+          visible: Boolean(draw?.getClientRects().length),
+          liquid: registry.liquids.get(STOCK).name,
+          vessel: registry.items.get(vessel.type).name,
+          amount: volumeText(input.volumeMicrolitres / 1000),
+          picker: Boolean(root.querySelector('.craft-sources input')),
+        };
+        root.remove();
+        return witness;
+      },
+      {
+        fixture: '/test/liquidCraftFixture.ts',
+        economy: '/test/economyFixtures.ts',
+        inventory: '/src/core/inventory.ts',
+        character: '/src/core/character.ts',
+        reach: '/src/core/reach.ts',
+        readout: '/src/ui/craftReadout.ts',
+        view: '/src/ui/crafting.ts',
+        numbers: '/src/core/numberText.ts',
+      },
+    );
+    assert(liquidRow.visible && liquidRow.picker, 'the crafting flow renders a liquid draw and its source picker');
+    for (const value of [liquidRow.liquid, liquidRow.vessel, liquidRow.amount]) {
+      assert(liquidRow.draw.includes(value), 'the liquid readout includes the kind, measured amount and vessel');
+    }
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -961,6 +1050,8 @@ const verifyAdsFireReplay = async (browserInstance, port, renderOverride) => {
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid);
     await page.mouse.click(640, 450, { button: 'middle' });
     await page.waitForFunction(() => globalThis.primaryActionTest.input.aimingDownSights);
+    // Long-gun ADS arrives through its Combat-owned acquisition, so the pose checks wait for it.
+    await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isAdsAcquired(uid), firearm.uid);
     await page.waitForFunction(() =>
       globalThis.primaryActionTest.view.playerMeshes.group.getObjectByName('held-item-left'),
     );
@@ -1820,6 +1911,16 @@ try {
       saved: 'left',
       gestures: [{ trusted: true, actorExists: false }],
       creationHidden: true,
+    });
+    // Spawn settling must finish before lean's unchanged-feet baseline is sampled.
+    await page.waitForFunction(async () => {
+      const { session, frames } = globalThis.primaryActionTest;
+      if (!session.body.onGround) {
+        return false;
+      }
+      const [, height] = session.body.pos;
+      await new Promise((done) => requestAnimationFrame(done));
+      return globalThis.primaryActionTest.frames > frames && session.body.onGround && session.body.pos[1] === height;
     });
     const leanFeet = await page.evaluate(() => [...globalThis.primaryActionTest.session.body.pos]);
     await page.keyboard.down('KeyQ');

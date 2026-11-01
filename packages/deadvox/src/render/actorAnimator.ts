@@ -8,6 +8,7 @@ import { firearmAimHandPose } from '../core/firearmAimPose.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
 import type { Job } from '../core/handling.ts';
 import {
+  blendHeldFirearmTransforms,
   heldAnchorOffset,
   heldLoweredPitch,
   modelToView,
@@ -137,6 +138,20 @@ export interface ActorItemPose {
 }
 
 /** Physical movers shared by world and transitional view presentations. */
+/** The held gun's readiness state: whether this item is the readiness item, and how far the aim is carried. */
+const heldReadinessState = (
+  readiness: HeldPresentationFrame['readiness'],
+  item: Item | undefined,
+  readyAmount: number,
+) => {
+  const isReadinessItem = readiness?.uid === item?.uid;
+  const aimingDownSights = Boolean(item && isReadinessItem && readiness?.aimingDownSights);
+  // The view carries the aim from hip to sights by the acquisition's share, so the gun rises with it
+  // instead of switching poses when the sights complete.
+  const adsAim = item && isReadinessItem ? (readiness?.adsAim ?? (aimingDownSights ? 1 : 0)) : 0;
+  return { firearmReadiness: isReadinessItem ? readyAmount : 0, aimingDownSights, adsAim };
+};
+
 export class ActorAnimator {
   private readonly flames = new ModelFlames('held-light-flame');
   inventory: Pick<Inventory, 'registry' | 'hands'>;
@@ -508,6 +523,37 @@ export class ActorAnimator {
     }
   }
 
+  /** The view's firearm pose: the aim's share of the hip pose and the sighted one, handling turn included. */
+  private blendedFirearmPose(
+    poseInput:
+      | {
+          model: ModelDef;
+          holds: FigureDef['holds'];
+          side: HandSide;
+          leadingSide: HandSide;
+          twoHanded: boolean;
+          progress: number;
+          aimFrame: AimFrame;
+          lookPitchRadians: number;
+          loweredPitchRadians: number;
+        }
+      | undefined,
+    adsAim: number,
+    handlingTurn: Vec3 | undefined,
+  ) {
+    const poseAt = (aiming: boolean) =>
+      poseInput
+        ? this.presentation.firearmTransform({
+            ...poseInput,
+            aimingDownSights: aiming,
+            ...(handlingTurn ? { handlingTurn } : {}),
+          })
+        : undefined;
+    const hip = poseAt(false);
+    const sighted = adsAim > 0 ? poseAt(true) : undefined;
+    return hip && sighted ? blendHeldFirearmTransforms(hip, sighted, adsAim) : hip;
+  }
+
   private heldFirearmPresentation({
     side,
     lookPitchRadians,
@@ -530,10 +576,7 @@ export class ActorAnimator {
     const baseModel = itemDefinition?.model ? this.inventory.registry.models.get(itemDefinition.model) : undefined;
     const modelDefinition =
       item && itemDefinition?.firearm ? sightedFirearmModel(this.inventory.registry, item) : baseModel;
-    const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
-    const aimingDownSights = Boolean(
-      item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
-    );
+    const { firearmReadiness, aimingDownSights, adsAim } = heldReadinessState(handling.readiness, item, readyAmount);
     const poseInput =
       itemDefinition?.firearm && modelDefinition
         ? {
@@ -543,19 +586,18 @@ export class ActorAnimator {
             leadingSide,
             twoHanded: Boolean(itemDefinition.twoHanded),
             progress: firearmReadiness,
-            aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             lookPitchRadians,
             loweredPitchRadians,
           }
         : undefined;
-    const basePose = poseInput ? this.presentation.firearmTransform(poseInput) : undefined;
+    const shown = this.blendedFirearmPose(poseInput, adsAim, undefined);
     const frame = item && handling.firearms.find((entry) => entry.uid === item.uid);
     const handlingTurn = handlingRotation(modelDefinition, side, frame, {
-      x: basePose?.rootOffset[0] ?? 0,
-      y: basePose?.rootOffset[1] ?? 0,
+      x: shown?.rootOffset[0] ?? 0,
+      y: shown?.rootOffset[1] ?? 0,
     });
-    const firearmPose = poseInput ? this.presentation.firearmTransform({ ...poseInput, handlingTurn }) : undefined;
+    const firearmPose = this.blendedFirearmPose(poseInput, adsAim, handlingTurn);
     return { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition };
   }
 

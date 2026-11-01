@@ -177,18 +177,6 @@
     },
     {
       "category": "material",
-      "disassembly": {
-        "skill": "crafting",
-        "timeGameMinutes": 3,
-        "yields": [
-          {
-            "count": 1,
-            "fractions": [0.5, 1],
-            "item": "rag",
-            "rounding": "floor"
-          }
-        ]
-      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -239,6 +227,33 @@
       "id": "nylon_cord",
       "model": "cord_coil",
       "name": "Nylon cord",
+      "notLoot": false,
+      "size": [1, 2],
+      "stack": 5,
+      "workInProgress": false
+    },
+    {
+      "category": "material",
+      "description": "A coil of sturdy braided cord.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 4,
+        "yields": [
+          {
+            "count": 4,
+            "fractions": [0.5, 1],
+            "item": "cloth_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
+      "economy": {
+        "tiers": ["Tier1", "Tier2", "Tier3"],
+        "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
+      },
+      "id": "rope",
+      "model": "cord_coil",
+      "name": "Rope",
       "notLoot": false,
       "size": [1, 2],
       "stack": 5,
@@ -854,6 +869,95 @@
       "searchTerms": [],
       "skills": {
         "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 4
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 3,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "sewing_thread"
+          }
+        ]
+      ],
+      "id": "sew_cloth_strip",
+      "qualities": {
+        "sewing": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "rag"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
+    },
+    {
+      "category": "materials",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "cloth_strip"
+          }
+        ]
+      ],
+      "id": "make_rope",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "rope"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 4
+    },
+    {
+      "category": "attachments",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "rope"
+          },
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "fastener_pack"
+          }
+        ]
+      ],
+      "id": "make_weapon_sling",
+      "qualities": {
+        "cutting": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "weapon_sling"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 2
       },
       "tags": ["textile"],
       "timeGameMinutes": 4

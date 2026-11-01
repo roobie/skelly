@@ -78,6 +78,18 @@
     {
       "category": "medical",
       "description": "Slows or stops bleeding on one body part.",
+      "disassembly": {
+        "skill": "crafting",
+        "timeGameMinutes": 2,
+        "yields": [
+          {
+            "count": 1,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "cloth_strip",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]
@@ -309,7 +321,10 @@
           "rag_to_cloth_strip",
           "trim_wood_offcut",
           "assemble_fastener_pack",
-          "make_scrap_foregrip"
+          "make_scrap_foregrip",
+          "make_bandage",
+          "make_headlamp_strap",
+          "make_weapon_sling"
         ],
         "title": "Camp Craft"
       },
@@ -337,6 +352,7 @@
           "repair_kit",
           "make_sewing_kit",
           "make_sewing_repair_kit",
+          "sew_cloth_strip",
           "repair_crowbar",
           "repair_hammer",
           "repair_machete",
@@ -383,7 +399,11 @@
           "assemble_fastener_pack",
           "make_taped_flashlight_mount",
           "make_improvised_suppressor",
-          "make_scrap_foregrip"
+          "make_scrap_foregrip",
+          "make_nail_bat",
+          "make_spear",
+          "make_taped_armour",
+          "make_weapon_sling"
         ],
         "title": "Workshop Notes"
       },

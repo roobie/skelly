@@ -20,9 +20,11 @@ import {
   rigidPocketScaleIssue,
   rolledFitIssue,
 } from './inventoryScale.ts';
+import { itemPresentationIssues } from './itemPresentation.ts';
 import { lootTypeIssue } from './loot.ts';
 import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import { mapKitIssues } from './mapKit.ts';
+import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
@@ -103,7 +105,7 @@ export interface Registry extends RegistryMaps {
   contentOrigins: Map<string, { source: string; path: string }>;
 }
 
-const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
+const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -421,8 +423,34 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
   if (!item.salvage && item.salvageTimeGameMinutes !== undefined) {
     report('items', item.id, '.salvageTimeGameMinutes', 'a salvage work time needs a salvage list');
   }
-  if (disassembly && item.salvage) {
-    report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
+  checkLiquidRecovery(item, registry, qualities, report);
+};
+
+const checkLiquidRecovery = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
+  const { disassembly } = item;
+  const liquidRecipeResult = [...registry.recipes.values()].some(
+    (recipe) =>
+      recipe.result.item === item.id && recipe.components.some((group) => group.some((row) => 'liquid' in row)),
+  );
+  for (const [path, capability, recovery] of [
+    ['.disassembly.liquidRecovery', disassembly, disassembly?.liquidRecovery],
+    ['.salvageLiquidRecovery', item.salvage, item.salvageLiquidRecovery],
+  ] as const) {
+    if (liquidRecipeResult && capability && !recovery) {
+      report('items', item.id, path, 'a liquid recipe result needs authored liquid recovery');
+    }
+    const quality = recovery?.toolModifier?.quality;
+    if (quality !== undefined && !qualities.has(quality)) {
+      report('items', item.id, `${path}.toolModifier.quality`, `no tool quality "${quality}"`);
+    }
+  }
+  if (item.salvageLiquidRecovery) {
+    if (!item.salvage) {
+      report('items', item.id, '.salvageLiquidRecovery', 'salvage liquid recovery needs a salvage capability');
+    }
+    if (!registry.skills.has(item.salvageLiquidRecovery.skill)) {
+      report('items', item.id, '.salvageLiquidRecovery.skill', `no skill "${item.salvageLiquidRecovery.skill}"`);
+    }
   }
 };
 
@@ -1640,7 +1668,19 @@ const checkRecipe = ({
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
-      checkItem(component.item, `.components[${g}][${c}].item`);
+      if ('item' in component) {
+        checkItem(component.item, `.components[${g}][${c}].item`);
+        return;
+      }
+      const path = `.components[${g}][${c}]`;
+      if (!registry.liquids.has(component.liquid)) {
+        report('recipes', recipe.id, `${path}.liquid`, `no liquid "${component.liquid}"`);
+      } else if (![...registry.items.values()].some((item) => item.vessel?.accepts.includes(component.liquid))) {
+        report('recipes', recipe.id, `${path}.liquid`, 'no vessel accepts this liquid');
+      }
+      if (component.volumeMicrolitres % recipe.result.count !== 0) {
+        report('recipes', recipe.id, `${path}.volumeMicrolitres`, 'volume must divide by result count');
+      }
     });
   });
   for (const id of Object.keys(recipe.skills)) {
@@ -1663,6 +1703,79 @@ const checkRecipe = ({
   if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
     report('recipes', recipe.id, '.workstation', `no workstation "${recipe.workstation}"`);
   }
+};
+
+const addMaterialBalance = (balance: Map<string, bigint>, item: string, count: number): void => {
+  const total = (balance.get(item) ?? 0n) + BigInt(count);
+  if (total === 0n) {
+    balance.delete(item);
+  } else {
+    balance.set(item, total);
+  }
+};
+
+const itemMaterialTransformations = (item: ItemDef): MaterialOperation[] => {
+  const transformations: MaterialOperation[] = [];
+  for (const [path, yields] of [
+    ['.disassembly.yields', item.disassembly?.yields],
+    ['.salvage', item.salvage],
+    ['.unpack', item.unpack ? [item.unpack] : undefined],
+  ] as const) {
+    if (!yields) {
+      continue;
+    }
+    const balance = new Map([[item.id, -1n]]);
+    for (const output of yields) {
+      addMaterialBalance(balance, output.item, output.count);
+    }
+    transformations.push({ balance, section: 'items', id: item.id, path });
+  }
+  return transformations;
+};
+
+const materialTransformations = (registry: Registry): MaterialOperation[] => {
+  const transformations = [...registry.items.values()].flatMap(itemMaterialTransformations);
+  for (const recipe of registry.recipes.values()) {
+    if (recipe.kind === 'repair') {
+      continue;
+    }
+    const solidGroups = recipe.components.map((group) => group.filter((input) => 'item' in input));
+    if (solidGroups.some((group) => group.length === 0)) {
+      continue;
+    }
+    let balances = [new Map<string, bigint>()];
+    for (const group of solidGroups) {
+      balances = balances.flatMap((balance) =>
+        group.map(({ item, count }) => {
+          const next = new Map(balance);
+          addMaterialBalance(next, item, -count);
+          return next;
+        }),
+      );
+    }
+    for (const balance of balances) {
+      addMaterialBalance(balance, recipe.result.item, recipe.result.count);
+      transformations.push({ balance, section: 'recipes', id: recipe.id, path: '.components' });
+    }
+  }
+  return transformations;
+};
+
+const checkMaterialCycles = (registry: Registry, report: Report): void => {
+  const transformations = materialTransformations(registry);
+  const result = materialCycle(transformations);
+  if (result.kind === 'balanced') {
+    return;
+  }
+  const origin = result.kind === 'gain' ? result.operations[0]! : transformations[0]!;
+  report(
+    origin.section,
+    origin.id,
+    origin.path,
+    result.kind === 'gain'
+      ? `craft-and-take-apart cycle returns more material than it consumes: ${result.operations.map(({ id, path }) => `${id}${path}`).join(', ')}`
+      : 'material-cycle analysis exceeded its work limit; item stock could not be validated',
+  );
 };
 
 const checkRecipeCategories = (registry: Registry, report: Report): void => {
@@ -1691,6 +1804,7 @@ const checkRecipeCategories = (registry: Registry, report: Report): void => {
 
 const checkRecipes = (registry: Registry, report: Report) => {
   checkRecipeCategories(registry, report);
+  checkMaterialCycles(registry, report);
   const qualities = new Set([
     ...[...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})),
     ...[...registry.furniture.values()].flatMap((furniture) => Object.keys(furniture.workstation?.qualities ?? {})),
@@ -1700,20 +1814,6 @@ const checkRecipes = (registry: Registry, report: Report) => {
   );
   for (const recipe of registry.recipes.values()) {
     checkRecipe({ registry, recipe, qualities, workstations, report });
-  }
-  for (const id of new Set(
-    [...registry.recipes.values()].filter((recipe) => recipe.kind !== 'repair').map((recipe) => recipe.result.item),
-  )) {
-    const item = registry.items.get(id);
-    if (!item) {
-      continue;
-    }
-    if (!item.disassembly) {
-      report('items', id, '.disassembly', 'recipe result needs an explicit disassembly yield');
-    }
-    if (item.salvage) {
-      report('items', id, '.salvage', 'recipe results use a disassembly yield, not a salvage list');
-    }
   }
 };
 
@@ -1859,6 +1959,15 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
 
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
   for (const skill of registry.skills.values()) {
+    const steadinessSkill = skill.combat?.firearms?.longGunSteadinessSkill;
+    if (steadinessSkill !== undefined && !registry.skills.get(steadinessSkill)?.steadiness) {
+      report(
+        'skills',
+        skill.id,
+        '.combat.firearms.longGunSteadinessSkill',
+        `no steadiness tuning on skill "${steadinessSkill}"`,
+      );
+    }
     skill.startingRecipes?.forEach((id, index) => {
       if (!registry.recipes.has(id)) {
         report('skills', skill.id, `.startingRecipes[${index}]`, `no recipe "${id}"`);
@@ -2036,14 +2145,40 @@ const checkHands = (modelId: string, hands: HandsModelDef, report: Report): void
   }
 };
 
+const checkBlockMaterials = (registry: Registry, report: Report): void => {
+  for (const block of registry.blocks.slice(1)) {
+    if (!registry.blockMaterials.has(block.material)) {
+      report('blocks', block.id, '.material', `no block material "${block.material}"`);
+    }
+  }
+  for (const material of registry.blockMaterials.values()) {
+    const rubble = registry.blockIds.get(material.fallsTo);
+    if (rubble === undefined || !registry.blocks[rubble]?.solid) {
+      report('blockMaterials', material.id, '.fallsTo', `no solid rubble block "${material.fallsTo}"`);
+    }
+    if (!registry.sounds.get(material.blowSound)?.noise.enabled) {
+      report('blockMaterials', material.id, '.blowSound', 'blows need a sound that alerts hearing');
+    }
+    material.rubble.forEach(({ item }, i) => {
+      if (!registry.items.has(item)) {
+        report('blockMaterials', material.id, `.rubble[${i}].item`, `no item "${item}"`);
+      }
+    });
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
     const origin = origins.get(`${section}:${id}`)!;
     issues.push({ source: origin.source, path: `${origin.path}${path}`, message });
   };
+  for (const issue of itemPresentationIssues(registry)) {
+    report(issue.section, issue.id, '.itemPresentation', issue.message);
+  }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
+  checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
       const sound = registry.sounds.get(event);

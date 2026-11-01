@@ -221,6 +221,8 @@ export interface Rolled {
   fitted?: Readonly<Record<string, string>>;
   /** Battery charge as a share of full; only authored fixed loot sets it. */
   charge?: number;
+  craftedLiquids?: FixedLootItemDef['craftedLiquids'];
+  liquidContents?: FixedLootItemDef['liquidContents'];
 }
 
 const pick = <T extends { weight: number }>(entries: readonly T[], rng: Rng): T => {
@@ -307,7 +309,7 @@ interface RollContext {
 }
 
 const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], context: RollContext): Rolled[] =>
-  items.flatMap(({ item, count = 1, condition = 1, fitted, charge }) => {
+  items.flatMap(({ item, count = 1, condition = 1, fitted, charge, craftedLiquids, liquidContents }) => {
     const type = selectLootType(
       registry,
       context.point,
@@ -327,6 +329,8 @@ const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[], cont
       ...rolled,
       ...(fitted ? { fitted } : {}),
       ...(charge === undefined ? {} : { charge }),
+      ...(craftedLiquids === undefined ? {} : { craftedLiquids: craftedLiquids.map((amount) => ({ ...amount })) }),
+      ...(liquidContents === undefined ? {} : { liquidContents: { ...liquidContents } }),
     }));
   });
 

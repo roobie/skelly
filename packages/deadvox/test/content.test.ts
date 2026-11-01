@@ -93,6 +93,14 @@ describe('content-owned item and world policies', () => {
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(false);
   });
 
+  it('requires a positive finite takeoff speed on each zombie type', () => {
+    const zombie = [...baseRegistry.zombies.values()][0]!;
+    expect(safeParse(ContentFileSchema, { zombies: [zombie] }).success).toBe(true);
+    for (const jumpMetresPerSimSecond of [undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(safeParse(ContentFileSchema, { zombies: [{ ...zombie, jumpMetresPerSimSecond }] }).success).toBe(false);
+    }
+  });
+
   it('validates severed-item references and complete region policy', () => {
     const zombie = { ...structuredClone(baseRegistry.zombies.get('shambler')!), loot: undefined };
     zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
@@ -1698,7 +1706,7 @@ describe('content', () => {
   });
 
   it('reports a duplicate id within a file', () => {
-    const block = { id: 'ok', name: 'Fine', color: '#ffffff', solid: true };
+    const block = { id: 'ok', material: FIXTURE_MATERIAL, name: 'Fine', color: '#ffffff', solid: true };
     const issues = validateContent({ source: 'dup.json', data: { blocks: [block, block] } });
     expect(issues).toEqual([{ source: 'dup.json', path: 'blocks[1].id', message: 'duplicate id "ok" in this file' }]);
   });
@@ -2027,6 +2035,27 @@ describe('content references', () => {
     expect(issues.some((issue) => issue.message.includes('must be untiered'))).toBe(true);
   });
 
+  it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
+    const combat = baseRegistry.skills.get(CORE_CONTENT_IDS.firearmsCombat)!;
+    const tuning = combat.combat!.firearms!;
+    const precision = { ...baseRegistry.skills.get(tuning.longGunSteadinessSkill)!, id: 'fixture_precision' };
+    const firearms = {
+      ...combat,
+      combat: { ...combat.combat, firearms: { ...tuning, longGunSteadinessSkill: precision.id } },
+    };
+    const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
+    expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
+    const { steadiness: _steadiness, ...unconfigured } = precision;
+    expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
+      expect.objectContaining({
+        source: 'fixture-steadiness',
+        path: expect.stringContaining('longGunSteadinessSkill'),
+      }),
+    ]);
+    const { activities: _activities, ...training } = precision.training!;
+    expect(buildRegistry(source([firearms, { ...precision, training }])).issues.length).toBeGreaterThan(0);
+  });
+
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);
@@ -2035,6 +2064,165 @@ describe('content references', () => {
       timeGameMinutes: gameMinutes(recipePack.recipes[0]!.timeGameMinutes),
     });
     expect(registry.skills.get('fixture_skill')).toEqual(recipePack.skills[0]);
+  });
+
+  it('rejects a growing solid craft cycle even when its recipe offers a liquid alternative', () => {
+    const source = {
+      source: 'material-cycle-fixture.json',
+      data: {
+        liquids: [{ id: 'fixture_liquid', name: 'Fixture liquid', densityGramsPerMillilitre: 1 }],
+        items: [
+          {
+            id: 'fixture_vessel',
+            name: 'Fixture vessel',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            vessel: { capacityMicrolitres: 10, accepts: ['fixture_liquid'], initialContents: { kind: 'empty' } },
+          },
+          { id: 'fixture_fabric', name: 'Fixture fabric', category: 'material', weight: 1, size: [1, 1] },
+          {
+            id: 'fixture_strip',
+            name: 'Fixture strip',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            disassembly: {
+              timeGameMinutes: 1,
+              skill: 'fixture_crafting',
+              yields: [{ item: 'fixture_fabric', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+            },
+          },
+        ],
+        skills: [{ id: 'fixture_crafting', name: 'Fixture crafting', training: { craftingTierOffset: 1 } }],
+        recipeCategories: [{ id: 'fixture_materials', label: 'Fixture materials', order: 1 }],
+        recipes: [
+          {
+            id: 'fixture_cut_fabric',
+            category: 'fixture_materials',
+            tags: [],
+            searchTerms: [],
+            result: { item: 'fixture_strip', count: 2 },
+            timeGameMinutes: 1,
+            skills: Object.fromEntries([['fixture_crafting', 0]]),
+            qualities: {},
+            components: [
+              [
+                { item: 'fixture_fabric', count: 1 },
+                { liquid: 'fixture_liquid', volumeMicrolitres: 2 },
+              ],
+            ],
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([source]).issues).toContainEqual(
+      expect.objectContaining({
+        source: source.source,
+        message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+      }),
+    );
+  });
+
+  const materialCycleSource = (recovery: 'disassembly' | 'salvage' | 'unpack' | undefined, fasteners: number) => {
+    const yields = [
+      { item: 'fixture_material', count: 2 },
+      ...(fasteners > 0 ? [{ item: 'fixture_fastener', count: 1 }] : []),
+    ];
+    return {
+      source: 'material-stock-fixture.json',
+      data: {
+        items: [
+          { id: 'fixture_material', name: 'Material', category: 'material', weight: 1, size: [1, 1], stack: 10 },
+          { id: 'fixture_fastener', name: 'Fastener', category: 'material', weight: 1, size: [1, 1] },
+          {
+            id: 'fixture_assembly',
+            name: 'Assembly',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            ...(recovery === 'disassembly'
+              ? {
+                  disassembly: {
+                    timeGameMinutes: 1,
+                    skill: 'fixture_crafting',
+                    yields: yields.map((output) => ({ ...output, fractions: [0.5, 1], rounding: 'floor' })),
+                  },
+                }
+              : {}),
+            ...(recovery === 'salvage' ? { salvage: yields, salvageTimeGameMinutes: 1 } : {}),
+            ...(recovery === 'unpack' ? { unpack: { ...yields[0]!, simSeconds: 1 } } : {}),
+          },
+        ],
+        skills: [{ id: 'fixture_crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+        recipeCategories: [{ id: 'fixture_materials', label: 'Materials', order: 1 }],
+        recipes: [
+          {
+            id: 'fixture_assemble',
+            category: 'fixture_materials',
+            tags: [],
+            searchTerms: [],
+            result: { item: 'fixture_assembly', count: 1 },
+            timeGameMinutes: 1,
+            skills: {},
+            qualities: {},
+            components: [
+              [{ item: 'fixture_material', count: 1 }],
+              ...(fasteners > 0 ? [[{ item: 'fixture_fastener', count: fasteners }]] : []),
+            ],
+          },
+        ],
+      },
+    };
+  };
+
+  it('rejects a multi-input cycle that replenishes every input and gains one stock', () => {
+    const { issues } = buildRegistry([materialCycleSource('disassembly', 1)]);
+    expect(issues).toEqual([
+      expect.objectContaining({
+        source: 'material-stock-fixture.json',
+        message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+      }),
+    ]);
+  });
+
+  it('accepts a loop that gains material but depletes fasteners even though it also produces fasteners', () => {
+    expect(buildRegistry([materialCycleSource('disassembly', 2)]).issues).toEqual([]);
+  });
+
+  it.each([
+    { returned: 2, gain: false },
+    { returned: 3, gain: true },
+  ])('checks joint recovery recipes at $returned returned per input', ({ returned, gain }) => {
+    const source = materialCycleSource(undefined, 1);
+    const recipe = source.data.recipes[0]!;
+    source.data.recipes.push(
+      ...['fixture_material', 'fixture_fastener'].map((item) => ({
+        ...recipe,
+        id: `fixture_recover_${item}`,
+        result: { item, count: returned },
+        components: [[{ item: 'fixture_assembly', count: 1 }]],
+      })),
+    );
+    const { issues } = buildRegistry([source]);
+    if (gain) {
+      expect(issues).toEqual([
+        expect.objectContaining({
+          message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+        }),
+      ]);
+    } else {
+      expect(issues).toEqual([]);
+    }
+  });
+
+  it.each(['salvage', 'unpack'] as const)('rejects a gainful recipe and %s cycle', (recovery) => {
+    expect(buildRegistry([materialCycleSource(recovery, 0)]).issues).toEqual([
+      expect.objectContaining({
+        source: 'material-stock-fixture.json',
+        message: expect.stringContaining('craft-and-take-apart cycle returns more material than it consumes:'),
+      }),
+    ]);
   });
 
   it('checks result, skill, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
@@ -2160,18 +2348,28 @@ describe('content references', () => {
     expect(displayIssues({ ...needle, display, dial })).toEqual([]);
   });
 
-  it('requires an explicit disassembly yield for a recipe result', () => {
-    const missingYield = {
+  it.each([
+    { salvage: false, disassembly: false },
+    { salvage: true, disassembly: false },
+    { salvage: false, disassembly: true },
+    { salvage: true, disassembly: true },
+  ])('does not infer recovery capabilities from a recipe: %j', ({ salvage, disassembly }) => {
+    const { disassembly: composition, ...item } = structuredClone(recipePack.items[0]!);
+    const data = {
       ...structuredClone(recipePack),
-      items: [Object.fromEntries(Object.entries(recipePack.items[0]!).filter(([key]) => key !== 'disassembly'))],
+      items: [
+        {
+          ...item,
+          ...(disassembly ? { disassembly: composition } : {}),
+          ...(salvage ? { salvage: [{ item: 'nails', count: 1 }], salvageTimeGameMinutes: 1 } : {}),
+        },
+      ],
     };
-    const source = 'missing-disassembly.json';
-    const { issues } = buildRegistry([recipeDependencies, { source, data: missingYield }]);
-    expect(issues).toContainEqual({
-      source,
-      path: 'items[0].disassembly',
-      message: 'recipe result needs an explicit disassembly yield',
-    });
+    const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recovery-recipe.json', data }]);
+    expect(issues).toEqual([]);
+    const result = registry.items.get(data.recipes[0]!.result.item)!;
+    expect(Boolean(result.salvage)).toBe(salvage);
+    expect(Boolean(result.disassembly)).toBe(disassembly);
   });
 
   it('reports a loot entry for a missing item, and drops the whole file', () => {
@@ -2605,6 +2803,7 @@ describe('content references', () => {
             figureSeeds: [1],
             spawnWeight: 1,
             canJumpObstacles: true,
+            jumpMetresPerSimSecond: 3,
             strength: 1,
             idleSound: baseRegistry.zombies.get('shambler')!.idleSound,
             sounds: zombieSounds,
@@ -3110,7 +3309,9 @@ describe('content', () => {
   it('reports an unknown block pattern like any other content error', () => {
     const issues = validateContent({
       source: 'a.json',
-      data: { blocks: [{ id: 'x', name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }] },
+      data: {
+        blocks: [{ id: 'x', material: FIXTURE_MATERIAL, name: 'X', color: '#ffffff', solid: true, pattern: 'marble' }],
+      },
     });
     expect(issues.map((i) => i.path)).toEqual(['blocks[0].pattern']);
   });
@@ -3122,6 +3323,7 @@ describe('content', () => {
     const palette = ['#123456', '#234567', '#345678', '#456789'] as const;
     const { registry, issues } = buildRegistry([
       baseBlocks,
+      base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {
         source: 'mod-camo.json',
@@ -3156,6 +3358,7 @@ describe('content', () => {
     const baseBlocks = base.find(({ source }) => source === 'blocks.json')!;
     const issues = buildRegistry([
       baseBlocks,
+      base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {
         source: 'camo-contract.json',
@@ -3372,12 +3575,13 @@ describe('content', () => {
   });
 
   it('maps each authored pattern to its own pattern id, and none for a block that authors none', () => {
-    const plain = baseRegistry.blocks.find(({ pattern }) => pattern === undefined)!;
+    const plain = baseRegistry.blocks.find(({ pattern, solid }) => solid && pattern === undefined)!;
     const { pattern: _pattern, patternPalette: _palette, patternWashout: _washout, ...template } = plain;
     // Camo also needs shader settings, which the camo tests above cover.
     const authored = BLOCK_PATTERNS.filter((pattern) => pattern !== 'camo');
     const { registry, issues } = buildRegistry([
       base.find(({ source }) => source === 'blocks.json')!,
+      base.find(({ source }) => source === 'block-materials.json')!,
       baseSounds,
       {
         source: 'pattern-fixture.json',

@@ -15,6 +15,7 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import player from '../../../deadvox/src/content/base/player.json' with { type: 'json' };
 import { type Ragdoll, RagdollWorld, ragdollContent } from '../../../deadvox/src/render/ragdoll.ts';
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
@@ -860,7 +861,7 @@ const applyDeathFrame = (loaded: Loaded, dt: number): void => {
     return;
   }
   if (!deathPhysics) {
-    const world = new RagdollWorld();
+    const world = new RagdollWorld(player.player[0]!.gravityMetresPerSimSecondSquared);
     deathPhysics = {
       world,
       body: world.spawn({

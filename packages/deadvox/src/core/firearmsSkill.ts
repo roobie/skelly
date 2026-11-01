@@ -8,6 +8,7 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { PlayerStance } from './playerStance.ts';
+import type { SkillDef } from './schema.ts';
 
 export const FIREARMS_SKILL_ZERO_RANGES = {
   variance: { min: 0.1, max: 100, step: 0.1 },
@@ -39,9 +40,12 @@ export const sameFirearmsSkillZeroHandling = (
 ): boolean => canonicalJson(left) === canonicalJson(right);
 
 export interface FirearmsCombatTuning {
+  readonly longGunSteadinessSkill: string;
   readonly raiseMinimumSimSeconds: number;
   readonly raiseRangeSimSeconds: number;
   readonly raiseHalfLifeLevels: number;
+  /** The ADS-only speed floor, as the longest allowed aim-down-sights acquisition; bounds ADS, not raise. */
+  readonly adsAcquisitionMaximumSimSeconds: number;
   readonly readyMovementMinimum: number;
   readonly readyMovementRange: number;
   readonly readyMovementHalfLifeLevels: number;
@@ -82,6 +86,7 @@ export interface FirearmsSkillEffects {
 
 export interface FirearmStanceEffects {
   readonly raiseDurationSimSeconds: number;
+  readonly adsAcquisitionDurationSimSeconds: number;
   readonly readyMovementFactor: number;
 }
 
@@ -122,13 +127,32 @@ export const firearmsSkillEffects = (
   };
 };
 
+export const steadinessTuning = (tuning: FirearmsCombatTuning, skill: SkillDef): FirearmsCombatTuning => {
+  if (!(skill.steadiness && skill.curve)) {
+    throw new Error(`Missing steadiness tuning on skill ${skill.id}`);
+  }
+  const { wobbleSkillTenVariance, ...breath } = skill.steadiness;
+  return {
+    ...tuning,
+    curve: skill.curve,
+    wobbleSkillTenVariance,
+    breathHold: { ...tuning.breathHold, ...breath },
+  };
+};
+
+/** The ADS-only speed floor: acquisition reads the raise duration, clamped to a content maximum. */
+export const adsAcquisitionDuration = (raiseDurationSimSeconds: number, tuning: FirearmsCombatTuning): number =>
+  Math.min(raiseDurationSimSeconds, tuning.adsAcquisitionMaximumSimSeconds);
+
 /** Stance time and ready gait are read from the firearms-combat skill's content tuning. */
 export const firearmStanceEffects = (level: number, tuning: FirearmsCombatTuning): FirearmStanceEffects => {
   const effectLevel = effectLevelFor(level);
+  const raiseDurationSimSeconds =
+    tuning.raiseMinimumSimSeconds +
+    tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels);
   return {
-    raiseDurationSimSeconds:
-      tuning.raiseMinimumSimSeconds +
-      tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels),
+    raiseDurationSimSeconds,
+    adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
     readyMovementFactor:
       tuning.readyMovementMinimum +
       tuning.readyMovementRange * (effectLevel / (effectLevel + tuning.readyMovementHalfLifeLevels)),
