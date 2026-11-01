@@ -376,14 +376,6 @@
       ]
     },
     {
-      "id": "inventory.cycle-target",
-      "keys": [
-        {
-          "code": "KeyC"
-        }
-      ]
-    },
-    {
       "id": "inventory.put-target",
       "keys": [
         {
@@ -395,7 +387,7 @@
       "id": "inventory.find",
       "keys": [
         {
-          "code": "KeyF"
+          "code": "Slash"
         }
       ]
     },
@@ -427,7 +419,7 @@
       "id": "inventory.rotate",
       "keys": [
         {
-          "code": "KeyR"
+          "code": "Space"
         }
       ]
     },
@@ -440,7 +432,7 @@
       ]
     },
     {
-      "id": "inventory.take-all-like",
+      "id": "inventory.take",
       "keys": [
         {
           "code": "KeyA"
@@ -448,10 +440,10 @@
       ]
     },
     {
-      "id": "inventory.quick-action-gate",
+      "id": "inventory.activate",
       "keys": [
         {
-          "code": "KeyT"
+          "code": "KeyF"
         }
       ]
     },
@@ -609,6 +601,22 @@
       "keys": [
         {
           "code": "KeyB"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-damage",
+      "keys": [
+        {
+          "code": "KeyD"
+        }
+      ]
+    },
+    {
+      "id": "debug.build-destroy",
+      "keys": [
+        {
+          "code": "KeyX"
         }
       ]
     },

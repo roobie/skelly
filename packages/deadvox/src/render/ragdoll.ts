@@ -162,11 +162,14 @@ export class RagdollWorld {
   private remainder = 0;
   private disposed = false;
 
-  constructor() {
+  constructor(gravityMetresPerSimSecondSquared: number) {
+    if (!Number.isFinite(gravityMetresPerSimSecondSquared)) {
+      throw new Error('RagdollWorld requires world gravity');
+    }
     this.ready = initializeRagdollPhysics()
       .then(() => {
         if (!this.disposed) {
-          this.world = new RAPIER.World({ x: 0, y: content.gravity, z: 0 });
+          this.world = new RAPIER.World({ x: 0, y: -gravityMetresPerSimSecondSquared, z: 0 });
           this.world.timestep = content.timestep;
         }
       })

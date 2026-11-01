@@ -9,8 +9,8 @@ import { effectivePileDisplay, effectivePileItemPosition } from '../core/pileDis
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
-import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
+import { applyItemStateLook, disposeItemStateMaterials } from './itemStateLook.ts';
 import type { ModelLibrary } from './models.ts';
 
 const UP = new Vector3(0, 1, 0);
@@ -76,7 +76,7 @@ export class ItemThrows {
     flight.landingAt = landingAt;
     flight.start.set(...from);
     flight.end.set(...from);
-    disposeItemEmissiveMaterials(flight.group);
+    disposeItemStateMaterials(flight.group);
     flight.group.clear();
     flight.modelVisual = false;
     flight.emissive.visible = false;
@@ -166,7 +166,7 @@ export class ItemThrows {
 
   dispose(): void {
     for (const flight of this.flights) {
-      disposeItemEmissiveMaterials(flight.group);
+      disposeItemStateMaterials(flight.group);
       flight.emissiveMaterial.dispose();
     }
     this.bundleMaterial.dispose();
@@ -207,14 +207,8 @@ export class ItemThrows {
     if (!(look && model)) {
       return false;
     }
-    const definition = defOf(this.registry, item.type);
     model.name = look.key;
-    applyItemEmissive(
-      model,
-      item,
-      definition,
-      definition.model ? this.registry.models.get(definition.model) : undefined,
-    );
+    applyItemStateLook(model, look, this.registry);
     flight.group.add(model);
     return true;
   }
@@ -224,7 +218,7 @@ export class ItemThrows {
     if (!(item && flight.modelVisual) || itemLook(this.registry, item)?.key === flight.group.children[0]?.name) {
       return;
     }
-    disposeItemEmissiveMaterials(flight.group);
+    disposeItemStateMaterials(flight.group);
     flight.group.clear();
     this.addModel(flight, item);
   }

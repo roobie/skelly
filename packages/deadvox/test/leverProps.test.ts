@@ -7,6 +7,7 @@ import { baseRegistry } from './baseRegistry.ts';
 const registry = baseRegistry();
 const lever = registry.models.get(registry.items.get('frag_grenade')!.model!)!.lever!;
 const BLOCK = 0.5;
+const GRAVITY = registry.player.get('player')!.gravityMetresPerSimSecondSquared;
 const FLOOR = (_x: number, y: number) => y < 0;
 
 /** A throwable resting above the floor: a body mesh and a lever mesh tagged with the content's piece. */
@@ -27,7 +28,7 @@ const flying = (props: LeverProps) => props.group.children.filter((holder) => ho
 
 describe('lever props', () => {
   it('flies one copy of the shed lever and lets it go after its lifetime', () => {
-    const props = new LeverProps(BLOCK, FLOOR);
+    const props = new LeverProps(BLOCK, GRAVITY, FLOOR);
     props.spawn(throwable(), lever);
     expect(flying(props)).toHaveLength(1);
     expect(flying(props)[0]!.children.every((child) => child.visible)).toBe(true);
@@ -37,8 +38,18 @@ describe('lever props', () => {
     expect(flying(props)).toHaveLength(0);
   });
 
+  it('uses supplied gravity while a lever is airborne', () => {
+    const light = new LeverProps(BLOCK, GRAVITY, FLOOR);
+    const heavy = new LeverProps(BLOCK, GRAVITY * 2, FLOOR);
+    light.spawn(throwable(), lever);
+    heavy.spawn(throwable(), lever);
+    light.update(1 / 60);
+    heavy.update(1 / 60);
+    expect(flying(heavy)[0]!.position.y).toBeLessThan(flying(light)[0]!.position.y);
+  });
+
   it('comes to rest on the floor it falls onto', () => {
-    const props = new LeverProps(BLOCK, FLOOR);
+    const props = new LeverProps(BLOCK, GRAVITY, FLOOR);
     // Long-lived, so it is still drawn when it has landed whatever the content lifetime.
     props.spawn(throwable(), { ...lever, lifetimeRealSeconds: realSeconds(60) });
     const [holder] = flying(props);
@@ -49,7 +60,7 @@ describe('lever props', () => {
   });
 
   it('launches nothing from a throwable drawn without a lever mesh', () => {
-    const props = new LeverProps(BLOCK, FLOOR);
+    const props = new LeverProps(BLOCK, GRAVITY, FLOOR);
     props.spawn(new Group().add(new Mesh(new BoxGeometry(), new MeshBasicMaterial())), lever);
     props.spawn(undefined, lever);
     expect(flying(props)).toHaveLength(0);

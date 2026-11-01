@@ -86,18 +86,21 @@ const INVENTORY_TAB_BINDINGS = [
   { action: 'ui.inventory-tab-crafting', description: 'Open / select Crafting tab', tab: 'crafting' },
   { action: 'ui.inventory-tab-actions', description: 'Open / select Actions tab', tab: 'actions' },
 ] as const;
-const INVENTORY_FIND_BINDINGS: ReadonlySet<string> = new Set(['inventory.best-pocket']);
-const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set([
-  ...INVENTORY_FIND_BINDINGS,
-  'inventory.previous',
-  'inventory.next',
-]);
+const INVENTORY_FIND_ARROW_BINDINGS: ReadonlySet<string> = new Set(['inventory.previous', 'inventory.next']);
 const INVENTORY_COMBO_BOX_BINDINGS: ReadonlySet<string> = new Set([
   'ui.inventory-toggle',
   ...INVENTORY_TAB_BINDINGS.map(({ action }) => action),
 ]);
 export const inventoryTabForAction = (action: string) =>
   INVENTORY_TAB_BINDINGS.find((binding) => binding.action === action)?.tab;
+
+const inventoryGesture = (id: string, description: string, held: string): Action =>
+  row(id, description, ['inventory'], 'tap-or-hold', {
+    commands: [
+      { id, kind: 'tap-or-hold' },
+      { id: held, kind: 'hold' },
+    ],
+  });
 
 const INPUT_ACTIONS: readonly Action[] = [
   row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, 'held-state', { device: 'pointer' }),
@@ -159,18 +162,19 @@ const INPUT_ACTIONS: readonly Action[] = [
   row('inventory.previous', 'Select previous item', ['inventory'], 'press', { repeat: true }),
   row('inventory.next', 'Select next item', ['inventory'], 'press', { repeat: true }),
   row('inventory.search', 'Search next container', ['inventory']),
-  row('inventory.cycle-target', 'Choose the next container to put into', ['inventory']),
-  row('inventory.put-target', 'Put selected item into the chosen container', ['inventory']),
-  row('inventory.find', 'Find items by name or keyword', ['inventory']),
-  row('inventory.hands', 'Wield selected item', ['inventory']),
+  inventoryGesture(
+    'inventory.put-target',
+    'Put selected item into the chosen container; hold to select or clear put-target',
+    'inventory.select-target',
+  ),
+  inventoryGesture('inventory.find', 'Find items by name or keyword; hold to clear filter', 'inventory.clear-find'),
+  inventoryGesture('inventory.hands', 'Wield selected item; hold to hold in offhand', 'inventory.offhand'),
   row('inventory.wear', 'Wear or remove', ['inventory']),
   row('inventory.drop', 'Drop selected item', ['inventory']),
   row('inventory.rotate', 'Rotate selected or dragged item', ['inventory']),
   row('inventory.best-pocket', 'Move to best pocket', ['inventory']),
-  row('inventory.take-all-like', 'Take all like selected item', ['inventory']),
-  row('inventory.quick-action-gate', 'Hold and click an item for its quick action', ['inventory'], 'held-state', {
-    plainKey: true,
-  }),
+  inventoryGesture('inventory.take', 'Take selected item; hold to take all like it', 'inventory.take-all-like'),
+  row('inventory.activate', 'Activate selected item', ['inventory']),
   // Pressed over an item card it views that card; as a key it views the selected item.
   row('inventory.view-item', 'View an item in 3D', ['inventory'], 'press', { device: 'pointer' }),
   row('reading.close', 'Put away reading', ['reading']),
@@ -191,6 +195,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.performance-toggle', 'Performance overlay', all),
   debugRow('debug.interaction-ray-toggle', 'Interaction ray', all),
   debugRow('debug.build-toggle', 'Build tools'),
+  debugRow('debug.build-damage', 'Damage target block', ['build']),
+  debugRow('debug.build-destroy', 'Destroy target block with floor loss', ['build']),
   debugRow('debug.impact-laser', 'Impact laser'),
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu'),
   debugRow('debug.god-toggle', 'God mode'),
@@ -259,10 +265,14 @@ const BASE_DEFAULT_KEYS: BindingMap = new Map(
   ]),
 );
 export const INPUT_BINDINGS: readonly Binding[] = withDefaults(BASE_DEFAULT_KEYS);
+const INVENTORY_CHECKBOX_BINDINGS: ReadonlySet<string> = new Set(
+  INPUT_BINDINGS.filter((binding) => binding.contexts.includes('inventory')).map(({ id }) => id),
+);
 export const POINTER_ACTIONS = [
   { id: 'hand.use-dominant', description: 'Use dominant hand; hold to fire automatically when ready' },
   { id: 'hand.off-instant', description: 'Instant off-hand use' },
   { id: 'pointer.look', description: 'Look' },
+  { id: 'inventory.wield-or-pocket', description: 'Wield item if possible, otherwise stow in inventory (inventory)' },
 ] as const;
 // Escape is left out so a tap still frees the pointer and the browser's own fullscreen exit stays.
 export const BROWSER_CHORD_LOCK_CODES: string[] = ['KeyW', 'KeyT', 'KeyN', 'Tab'];
@@ -792,7 +802,8 @@ export const comboBoxKey = (event: Event): ComboBoxKey | undefined => {
   return event.key === 'Escape' || event.key === 'Tab' ? 'close' : undefined;
 };
 /** Whether a key leaves the inventory find field without changing its filter (`src/ui/inventoryScreen.ts`). */
-export const blursFindField = (event: Event): boolean => event instanceof KeyboardEvent && event.key === 'Escape';
+export const blursFindField = (event: Event): boolean =>
+  event instanceof KeyboardEvent && (event.key === 'Escape' || event.key === 'Enter');
 const typesCharacter = (event: Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'altKey'>): boolean =>
   event.key.length === 1 && !(event.ctrlKey || event.metaKey || event.altKey);
 const pageControl = (target: EventTarget | null): boolean =>
@@ -801,14 +812,18 @@ const pageControl = (target: EventTarget | null): boolean =>
     target.closest('button,a[href],input,select,textarea,summary,label,[role="button"],[contenteditable="true"]'),
   );
 const focusedInventoryBindings = (event: KeyboardEvent): ReadonlySet<string> | undefined => {
-  if (!(event.target instanceof HTMLElement) || typesCharacter(event)) {
+  if (!(event.target instanceof HTMLElement)) {
+    return undefined;
+  }
+  if (event.target.matches('input[type="checkbox"][data-put-target]')) {
+    return INVENTORY_CHECKBOX_BINDINGS;
+  }
+  if (typesCharacter(event)) {
     return undefined;
   }
   if (event.target.matches('[data-inventory-find]')) {
     // Vertical arrows can select an item; horizontal arrows still belong to native caret editing.
-    return event.code === 'ArrowUp' || event.code === 'ArrowDown'
-      ? INVENTORY_FIND_ARROW_BINDINGS
-      : INVENTORY_FIND_BINDINGS;
+    return event.code === 'ArrowUp' || event.code === 'ArrowDown' ? INVENTORY_FIND_ARROW_BINDINGS : undefined;
   }
   return event.target.matches('[role="combobox"]') ? INVENTORY_COMBO_BOX_BINDINGS : undefined;
 };
@@ -1048,6 +1063,12 @@ export class KeyboardInput {
       });
     }
   }
+  private refusedDown(event: KeyEvent, text: boolean, browserModifier: boolean): boolean {
+    const blocked = this.blocked.has(event.code);
+    // A rejected held edge must not click a button that acquired focus during the transfer.
+    const blockNativeActivation = blocked && !browserModifier && !text && nativeActivation(event);
+    return this.traceDown(event, blockNativeActivation, blocked ? 'blocked' : 'browser-modifier');
+  }
   press(event: KeyEvent, text = false, allowWhileEditing?: ReadonlySet<string>): boolean {
     this.sync();
     this.down.add(event.code);
@@ -1071,7 +1092,7 @@ export class KeyboardInput {
       return event[flags[modifier]];
     });
     if (this.blocked.has(event.code) || browserModifier) {
-      return this.traceDown(event, false, this.blocked.has(event.code) ? 'blocked' : 'browser-modifier');
+      return this.refusedDown(event, text, browserModifier);
     }
     const gate = this.held('debug.gate');
     const matches = this.registry.bindings.filter(

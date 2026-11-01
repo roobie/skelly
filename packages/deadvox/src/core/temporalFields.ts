@@ -44,6 +44,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'mapPieces.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'items.container.pockets[].handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'items.vehicle.cargoSpace.handlingSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'items.vehicle.service.durationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
     path: 'vehicleBlueprints[].fittings[].service.durationSimSeconds',
     clock: 'Sim',
@@ -63,9 +64,16 @@ export const TEMPORAL_FIELDS = [
   { path: 'items.weapon.melee.charge.fullSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'meleeClasses[].unarmed.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'meleeClasses[].unarmed.windupCapSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'inventory[].keyHoldRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].search.minSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].search.maxSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'inventory[].throwFlightSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'player[].gravityMetresPerSimSecondSquared',
+    clock: 'Sim',
+    unit: 'PerSecondSquared',
+    dimension: 'acceleration',
+  },
   { path: 'inventory[].furnitureMove.slide.stepSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills[].inventory.handlingPerCellSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills[].inventory.handlingGroundSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
@@ -146,6 +154,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'sounds.minIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.training.practicePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   {
+    path: 'skills.training.activities.ads.practicePerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  {
     path: 'skills.training.activities.readying.practicePerSimSecond',
     clock: 'Sim',
     unit: 'PerSecond',
@@ -165,6 +179,12 @@ export const TEMPORAL_FIELDS = [
   },
   { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'skills.combat.firearms.adsAcquisitionMaximumSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   {
     path: 'skills.combat.firearms.wobbleNoiseReversionRatePerSimSecond',
     clock: 'Sim',
@@ -213,6 +233,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'saves.checkpointSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'saves.leaveConfirmationRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'figures[].stancePoses.blendRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'figures[].aimPose.ads.viewBlend.blendBackRealSeconds',
+    clock: 'Real',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'body.infectionOnsetGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.antisepticWindowGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.knockoutSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
@@ -263,6 +289,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.speed.wanderMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.speed.crawlMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.speed.chaseMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  { path: 'zombies.jumpMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   {
     path: 'zombies.wander.movementAccelerationMetresPerSimSecondSquared',
     clock: 'Sim',
@@ -292,12 +319,6 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.acidSpit.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidSpit.globMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
-  {
-    path: 'zombies.acidSpit.globGravityMetresPerSimSecondSquared',
-    clock: 'Sim',
-    unit: 'PerSecondSquared',
-    dimension: 'acceleration',
-  },
   { path: 'zombies.acidSpit.presentation.splashRealSeconds', clock: 'Real', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.acidBody.drips.perRealSecond', clock: 'Real', unit: 'PerSecond', dimension: 'rate' },
   {

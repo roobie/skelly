@@ -8,7 +8,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf } from '../src/core/items.ts';
-import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
+import { type Body, bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
@@ -25,13 +25,19 @@ import {
 } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { CaseEffects, caseFlightPoint } from '../src/render/caseEffects.ts';
-import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer } from './playerFixture.ts';
+import { createPlayerBody, type MoveIntent, PLAYER, physicsFor, steer, WORLD_GRAVITY } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const { registry } = BUNDLED_CONTENT;
 const CASE_LANDING_LIFT = firearmsCombatTuning(registry).caseEjection.landingLiftMetres;
 const scale = makeScale(0.5);
 const pitch = (-20 * Math.PI) / 180;
+
+const groundBody = (body: Body, isSolid: Parameters<typeof stepBody>[2]): void => {
+  for (let frame = 0; frame < 30 && !body.onGround; frame++) {
+    stepBody(body, 1 / 60, isSolid, physicsFor(scale));
+  }
+};
 
 const makeWallShot = (yaw: number, wallX: number | undefined, startX: number, side: 'left' | 'right' = 'right') => {
   const world = new World();
@@ -227,7 +233,7 @@ interface SessionScene {
 const makeCaseSession = ({ world, spawn, intent: startingIntent, crouched = false }: SessionScene) => {
   const entities = new BlockEntities(registry);
   const isSolid = worldSolid(world, registry, entities);
-  const renderer = new CaseEffects(scale.blockSize);
+  const renderer = new CaseEffects(scale.blockSize, WORLD_GRAVITY);
   const effects: FirearmShotEffect[] = [];
   const spawnResults: boolean[] = [];
   const yaw = (-80 * Math.PI) / 180;
@@ -358,7 +364,8 @@ describe('firearm case wall contact', () => {
     const faceEyeX = (wallX + 1) * scale.blockSize - portOffsetX;
     const firstStep = (PLAYER.walk / scale.blockSize / 60) * Math.sin(yaw);
     const body = createPlayerBody(scale, faceEyeX / scale.blockSize + firstStep, 1.01, 0);
-    body.onGround = true;
+    groundBody(body, isSolid);
+    expect(body.onGround).toBe(true);
     steer(body, scale, yaw, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
     stepBody(body, 1 / 60, isSolid, physicsFor(scale));
     for (let frame = 0; frame < 10; frame++) {
@@ -467,6 +474,7 @@ describe('firearm case wall contact', () => {
       const point = caseFlightPoint(effect.origin, landing, sample / 64, {
         durationSimSeconds: duration,
         initialVelocity,
+        gravityMetresPerSimSecondSquared: WORLD_GRAVITY,
       });
       expect(shot.isSolid(...(point.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
     }
@@ -520,6 +528,7 @@ describe('firearm case wall contact', () => {
       const point = caseFlightPoint(blockedEffect.origin, landing, sample / 64, {
         durationSimSeconds: duration,
         initialVelocity,
+        gravityMetresPerSimSecondSquared: WORLD_GRAVITY,
       });
       expect(shot.isSolid(...(point.map((value) => Math.floor(value / scale.blockSize)) as Vec3))).toBe(false);
     }

@@ -7,6 +7,7 @@
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { requireDayCycle } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { CHUNK } from '../core/coords.ts';
 import { skyAt } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
@@ -107,10 +108,20 @@ export function createEngine(
     skyFields.fields.length > 0
       ? new Skylight(
           skyFields,
-          { blockSize: scale.blockSize, viewRadiusM: radiusM, unbuiltCap: graphicsTuning.unbuiltSkyCap },
+          {
+            blockSize: scale.blockSize,
+            viewRadiusM: radiusM,
+            unbuiltCap: graphicsTuning.unbuiltSkyCap,
+            skyJobsInFlight: graphicsTuning.skyJobsInFlight,
+            buildRadiusM: (config.radiusChunks + graphicsTuning.skyPreloadRings) * CHUNK * scale.blockSize,
+          },
           { submit: (input, receive) => worldSetup.streamer.requestSky(input, receive) },
         )
       : undefined;
+  if (skylight) {
+    worldSetup.streamer.onTerrainReady = (x, z) => skylight.prepare([x, 0, z]);
+    worldSetup.streamer.onBeforeReveal = (cx, cz) => skyFields.finishColumn(cx, cz);
+  }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
     skylight?.update(scene, [
       camera.position.x / scale.blockSize,

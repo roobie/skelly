@@ -9,6 +9,7 @@ import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts'
 import { ATTACHMENT_IDS } from '../src/gun/attachments.ts';
 import { type GunDesign, loadGunDesign, loadGunDesignValue } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_FINISH_SLOTS } from '../src/gun/palette.ts';
 import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar, TEMPLATES } from '../src/gun/templates.ts';
@@ -312,10 +313,12 @@ describe('loadDesign: finish validation', () => {
       return;
     }
     expect(saved.design.finish).toEqual(finish);
-    const exported = exportFileText(saved.text, {
-      id: 'finish-slot-roundtrip',
-      file: 'assets/models/finish-slot-roundtrip.glb',
-    });
+    // The finish reaches the model writer; attachment certificates have no finish input, so they are left out.
+    const exported = exportGunGlb(
+      saved.design.assembly,
+      { id: 'finish-slot-roundtrip', file: 'assets/models/finish-slot-roundtrip.glb' },
+      { appearanceProfile: saved.design.template, finish },
+    );
     expect(exported.ok).toBe(true);
   });
 

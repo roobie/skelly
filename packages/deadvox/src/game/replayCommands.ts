@@ -1,8 +1,14 @@
 import { actionText } from '../core/actionText.ts';
-import type { WorkOperation } from '../core/craftCommands.ts';
-import type { CraftPreference } from '../core/crafting.ts';
+import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
+import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, TargetState } from '../core/inventory.ts';
+import {
+  copyVehicleWorkPlacement,
+  type VehicleWorkPlacement,
+  type VehicleWorkTarget,
+  validVehicleWorkPlacement,
+} from '../core/vehicleInstances.ts';
 import { type DownedBodyWay, isDownedBodyWay } from './downedBody.ts';
 import { QUICKBAR_SLOTS, type Quickbar } from './quickbar.ts';
 
@@ -11,6 +17,8 @@ export type ReplayActionPayload =
   | { kind: 'inventory.move'; itemUid: number; target: TargetState; count: number }
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'inventory.inspect'; itemUid: number }
+  | { kind: 'inventory.activate'; itemUid: number }
+  | { kind: 'inventory.wield-or-pocket'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
   | { kind: 'furniture.lift'; entityUid: number; floorLocked?: boolean }
@@ -24,14 +32,27 @@ export type ReplayActionPayload =
   | { kind: 'furniture.tip' }
   | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
   | { kind: 'inventory.search'; entityUid: number }
-  | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
+  | ({ kind: 'inventory.work'; itemUid: number; operation: WorkOperation } & RecoveryChoices)
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
   | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
-  | { kind: 'vehicle.work'; work: 'install' | 'remove'; vehicleId: number; fittingId: string; itemUid: number }
+  | ({
+      kind: 'vehicle.work';
+      work: 'install' | 'remove';
+      vehicleId: number;
+      fittingId: string;
+      itemUid: number;
+    } & VehicleWorkPlacement)
   | { kind: 'light.battery.load'; lightUid: number; batteryUid: number }
-  | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
+  | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference; sources?: CraftSources }
+  | {
+      kind: 'craft.repair-entity';
+      recipeId: string;
+      entityUid: number;
+      preference: CraftPreference;
+      sources?: CraftSources;
+    }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
   | { kind: 'action.wait' }
@@ -88,6 +109,38 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
 
+const isRecoveryChoices = (payload: Record<string, unknown>): boolean => {
+  const { receivers, spillApproval: approval } = payload;
+  return (
+    (payload.recoveryOperation === undefined ||
+      payload.recoveryOperation === 'salvage' ||
+      payload.recoveryOperation === 'disassembly') &&
+    (receivers === undefined ||
+      (Array.isArray(receivers) &&
+        receivers.every((row: unknown) => {
+          if (!row || typeof row !== 'object') {
+            return false;
+          }
+          const entry = row as Record<string, unknown>;
+          return typeof entry.liquid === 'string' && entry.liquid.length > 0 && isUid(entry.uid);
+        }))) &&
+    (approval === undefined ||
+      (Array.isArray(approval) &&
+        approval.every((row: unknown) => {
+          if (!row || typeof row !== 'object') {
+            return false;
+          }
+          const entry = row as Record<string, unknown>;
+          return (
+            typeof entry.liquid === 'string' &&
+            entry.liquid.length > 0 &&
+            Number.isSafeInteger(entry.volumeMicrolitres) &&
+            (entry.volumeMicrolitres as number) >= 0
+          );
+        })))
+  );
+};
+
 const isPourPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.sourceUid) && isUid(payload.receiverUid);
 
@@ -108,7 +161,8 @@ const isVehicleWorkPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.vehicleId) &&
   typeof payload.fittingId === 'string' &&
   payload.fittingId !== '' &&
-  isUid(payload.itemUid);
+  isUid(payload.itemUid) &&
+  validVehicleWorkPlacement(payload);
 
 /** An hour of the day, or null to sleep until rested. */
 const isWakeGameHour = (value: unknown): boolean =>
@@ -121,7 +175,35 @@ const isCraftStartPayload = (payload: Record<string, unknown>): boolean =>
       typeof payload.preference === 'object' &&
       !Array.isArray(payload.preference) &&
       Object.entries(payload.preference).every(
-        ([group, item]) => Number.isSafeInteger(Number(group)) && Number(group) >= 0 && typeof item === 'string',
+        ([group, ref]) =>
+          Number.isSafeInteger(Number(group)) &&
+          Number(group) >= 0 &&
+          ref !== null &&
+          typeof ref === 'object' &&
+          !Array.isArray(ref) &&
+          Object.keys(ref).length === 2 &&
+          (('kind' in ref &&
+            ref.kind === 'item' &&
+            'item' in ref &&
+            typeof ref.item === 'string' &&
+            ref.item.length > 0) ||
+            ('kind' in ref &&
+              ref.kind === 'liquid' &&
+              'liquid' in ref &&
+              typeof ref.liquid === 'string' &&
+              ref.liquid.length > 0)),
+      ))) &&
+  (payload.sources === undefined ||
+    (payload.sources !== null &&
+      typeof payload.sources === 'object' &&
+      !Array.isArray(payload.sources) &&
+      Object.entries(payload.sources).every(
+        ([group, uids]) =>
+          Number.isSafeInteger(Number(group)) &&
+          Number(group) >= 0 &&
+          Array.isArray(uids) &&
+          uids.every(isUid) &&
+          new Set(uids).size === uids.length,
       )));
 
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
@@ -140,7 +222,9 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.count as number) > 0
       );
     case 'inventory.to-hands':
+    case 'inventory.wield-or-pocket':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'inventory.activate':
     case 'inventory.inspect':
       return isUid(payload.itemUid);
     case 'power.set':
@@ -165,7 +249,11 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         isUid(payload.itemUid) && (payload.mode === 'pocket' || payload.mode === 'wield') && isTriple(payload.feet)
       );
     case 'inventory.work':
-      return isUid(payload.itemUid) && ['continue', 'apart', 'disassemble'].includes(payload.operation as string);
+      return (
+        isUid(payload.itemUid) &&
+        ['continue', 'apart', 'disassemble'].includes(payload.operation as string) &&
+        isRecoveryChoices(payload)
+      );
     case 'inventory.assign':
       return (
         Number.isSafeInteger(payload.slot) &&
@@ -200,6 +288,13 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
       );
     case 'craft.start':
       return isCraftStartPayload(payload);
+    case 'craft.repair-entity':
+      return (
+        isUid(payload.entityUid) &&
+        payload.preference !== undefined &&
+        isCraftStartPayload(payload) &&
+        Object.keys(payload).every((key) => ['kind', 'recipeId', 'entityUid', 'preference', 'sources'].includes(key))
+      );
     default:
       return false;
   }
@@ -211,16 +306,18 @@ export interface ReplayCommandOwners {
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
   inspect?: (itemUid: number) => void;
+  activate?: (itemUid: number) => string | undefined;
+  wieldOrPocket?: (itemUid: number, feet: [number, number, number]) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
-  work: (itemUid: number, operation: WorkOperation) => string | undefined;
+  work: (itemUid: number, operation: WorkOperation, choices?: RecoveryChoices) => string | undefined;
   pour?: (sourceUid: number, receiverUid: number) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   vehicleWork: (
     work: 'install' | 'remove',
     vehicleId: number,
-    fittingId: string,
+    target: VehicleWorkTarget,
     itemUid: number,
   ) => string | undefined;
   /** Puts a battery into a light from the light's battery slot on its item card. */
@@ -238,7 +335,13 @@ export interface ReplayCommandOwners {
   /** Tips the carried piece onto its next face. */
   tip: () => string | undefined;
   clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
-  craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
+  craftStart: (recipeId: string, preference?: CraftPreference, sources?: CraftSources) => string | undefined;
+  craftRepairEntity: (
+    recipeId: string,
+    entityUid: number,
+    preference: CraftPreference,
+    sources?: CraftSources,
+  ) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   wait: () => string | undefined;
@@ -247,6 +350,16 @@ export interface ReplayCommandOwners {
   cancelItemThrow: () => void;
   throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
+
+const applyInventoryItemAction = (
+  payload: Extract<ReplayActionPayload, { kind: 'inventory.activate' | 'inventory.wield-or-pocket' }>,
+  owners: ReplayCommandOwners,
+): string | undefined => {
+  if (payload.kind === 'inventory.activate') {
+    return owners.activate ? owners.activate(payload.itemUid) : 'Item activation is unavailable';
+  }
+  return owners.wieldOrPocket ? owners.wieldOrPocket(payload.itemUid, payload.feet) : 'Item handling is unavailable';
+};
 
 export const applyReplayActionPayload = (
   payload: ReplayActionPayload,
@@ -266,6 +379,9 @@ export const applyReplayActionPayload = (
     }
     case 'inventory.to-hands':
       return owners.toHands(payload.itemUid, payload.feet);
+    case 'inventory.activate':
+    case 'inventory.wield-or-pocket':
+      return applyInventoryItemAction(payload, owners);
     case 'inventory.inspect':
       owners.inspect?.(payload.itemUid);
       return undefined;
@@ -295,7 +411,7 @@ export const applyReplayActionPayload = (
     case 'inventory.search':
       return owners.search(payload.entityUid);
     case 'inventory.work':
-      return owners.work(payload.itemUid, payload.operation);
+      return owners.work(payload.itemUid, payload.operation, payload);
     case 'inventory.assign': {
       const item = owners.inventory.carriedByUid(payload.itemUid);
       if (!item) {
@@ -313,14 +429,21 @@ export const applyReplayActionPayload = (
         ? owners.removeAttachment(payload.firearmUid, payload.slotId)
         : 'Attachment handling is unavailable';
     case 'vehicle.work':
-      return owners.vehicleWork(payload.work, payload.vehicleId, payload.fittingId, payload.itemUid);
+      return owners.vehicleWork(
+        payload.work,
+        payload.vehicleId,
+        { id: payload.fittingId, ...copyVehicleWorkPlacement(payload) },
+        payload.itemUid,
+      );
     case 'light.battery.load':
       return owners.loadBattery(payload.lightUid, payload.batteryUid);
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;
     case 'craft.start':
-      return owners.craftStart(payload.recipeId, payload.preference);
+      return owners.craftStart(payload.recipeId, payload.preference, payload.sources);
+    case 'craft.repair-entity':
+      return owners.craftRepairEntity(payload.recipeId, payload.entityUid, payload.preference, payload.sources);
     case 'craft.continue':
       return owners.craftContinue();
     case 'craft.stop':

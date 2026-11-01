@@ -8,7 +8,7 @@ import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry } from './content.ts';
-import { toChunk, type Vec3 } from './coords.ts';
+import { CHUNK, toChunk, type Vec3 } from './coords.ts';
 import { furnitureSurfacePosition } from './furnitureSurface.ts';
 import {
   type LootPointSource,
@@ -102,13 +102,53 @@ export interface Site {
   lootPointsIn: (cx: number, cz: number) => readonly LootSpawnPoint[];
   /** Furniture anchored in the column (cx, cz), with its loot. */
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
+  /** Source columns whose furniture or loot destinations intersect the block rectangle. */
+  supplySourcesIn: (area: Rect) => readonly (readonly [number, number])[];
   /** Zombie spawns anchored in the column, deterministic for the site seed. */
   zombiesIn: (cx: number, cz: number) => ZombieSpawn[];
   /** Optional group spawns anchored in a single column, deterministic for the site seed. */
   hordesIn?: ((cx: number, cz: number) => HordeSpawn[]) | undefined;
 }
 
-export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'zombiesIn' | 'hordesIn'>;
+export type ColumnSource = Pick<Site, 'furnitureIn' | 'lootPointsIn' | 'supplySourcesIn' | 'zombiesIn' | 'hordesIn'>;
+
+/** Spatial source ownership is independent of which pieces have arrived or survived. */
+export class SupplyFootprints {
+  private readonly entries: { area: Rect; source: readonly [number, number] }[] = [];
+
+  constructor(pieces: readonly Pick<EntitySpec, 'pos' | 'size'>[], points: Iterable<LootSpawnPoint>) {
+    for (const { pos, size } of pieces) {
+      this.entries.push({
+        area: { x0: pos[0], z0: pos[2], x1: pos[0] + size[0], z1: pos[2] + size[2] },
+        source: [toChunk(pos[0]), toChunk(pos[2])],
+      });
+    }
+    for (const point of points) {
+      const pos = point.destination;
+      this.entries.push({
+        area: { x0: pos[0], z0: pos[2], x1: pos[0] + 1, z1: pos[2] + 1 },
+        source: [toChunk(pos[0]), toChunk(pos[2])],
+      });
+    }
+  }
+
+  in(area: Rect): readonly (readonly [number, number])[] {
+    const sources = new Map<string, readonly [number, number]>();
+    for (const entry of this.entries) {
+      if (rectsOverlap(area, entry.area)) {
+        sources.set(entry.source.join(','), entry.source);
+      }
+    }
+    return [...sources.values()].sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
+  }
+}
+
+export const columnArea = (cx: number, cz: number): Rect => ({
+  x0: cx * CHUNK,
+  z0: cz * CHUNK,
+  x1: (cx + 1) * CHUNK,
+  z1: (cz + 1) * CHUNK,
+});
 
 const pointSupply = (table: string | undefined, items: readonly FixedLootItemDef[]): LootPointSource['supply'] => {
   if (items.length > 0) {

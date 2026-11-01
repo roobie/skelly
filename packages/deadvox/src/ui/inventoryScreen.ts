@@ -8,12 +8,12 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
-import { practiceForNextLevel } from '../core/character.ts';
+import { offSide, practiceForNextLevel } from '../core/character.ts';
 import type { ItemDef, Registry } from '../core/content.ts';
 import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { coreLabel } from '../core/coreText.ts';
-import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
+import type { RecoveryChoices, RecoveryProjection, WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import { firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, type Pile, sameGrid, spotOf, type Target, wornSlotOf } from '../core/inventory.ts';
@@ -25,18 +25,20 @@ import {
   batterySlotRefusal,
   bestPocket,
   dropTarget,
+  inventoryPocket,
   type Option,
   options,
   otherHandPour,
   pourRefusal,
   quickestPockets,
-  quickMove,
 } from '../core/options.ts';
 import { type ReachSnapshot, reachTuning } from '../core/reach.ts';
 import type { ScreenText, WearSlot } from '../core/schema.ts';
 import { fillText } from '../core/textTemplate.ts';
-import { blursFindField, inputBindings, keyboardInput } from '../game/inputBindings.ts';
+import { blursFindField, type InputCommand, inputBindings } from '../game/inputBindings.ts';
+import { PressHoldInput } from '../game/pressHoldInput.ts';
 import type { ReplayActionPayload } from '../game/replayCommands.ts';
+import { comboBox } from './comboBox.ts';
 import { craftingText, craftTime, workName } from './craftReadout.ts';
 import { factDetail } from './factDetail.ts';
 import { matchesFind, queryWords } from './inventoryFind.ts';
@@ -86,7 +88,7 @@ export interface ScreenHooks {
   chargerRevision?: () => number;
   /** The vehicle the player opened by interacting with it, while it stays in reach. */
   openedVehicle?: () => { readonly view: VehicleInspectionViewModel; readonly distanceMetres: number } | undefined;
-  pictures?: { readonly version: number; picture: (item: Item) => string | undefined } | undefined;
+  pictures?: { readonly version: number; picture: (item: Item, size?: GridSize) => string | undefined } | undefined;
   /** Draws an item's model for the item viewer; without it the viewer does not open. */
   itemView?: ItemViewSource | undefined;
   /** What each wear slot is called; from the core ui content. */
@@ -112,6 +114,7 @@ export interface ScreenHooks {
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   workOptions: (uid: number) => readonly WorkOption[];
+  recovery?: (uid: number, choices: RecoveryChoices) => RecoveryProjection | undefined;
   character: () => {
     readonly skills: Readonly<Record<string, number>>;
     readonly practice: Readonly<Record<string, number>>;
@@ -121,7 +124,10 @@ export interface ScreenHooks {
   /** The alarm's wake hour (undefined: when rested), or undefined while no alarm is carried. */
   wakeGameHour?: () => { readonly gameHour: number | undefined } | undefined;
   actionRefusal?: () => string | undefined;
-  attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
+  attachmentCandidates?: (
+    firearmUid: number,
+    slotId: string,
+  ) => readonly { readonly item: Item; readonly reason?: string }[];
 }
 
 interface Drag {
@@ -175,7 +181,12 @@ interface SlotViewModel {
 interface PileViewModel {
   readonly label: string;
   readonly grids: readonly GridViewModel[];
-  readonly bags: readonly { readonly name: string; readonly pockets: readonly PocketViewModel[] }[];
+  readonly bags: readonly {
+    readonly uid: number;
+    readonly chosen: boolean;
+    readonly name: string;
+    readonly pockets: readonly PocketViewModel[];
+  }[];
 }
 
 interface FurnitureViewModel {
@@ -184,6 +195,7 @@ interface FurnitureViewModel {
   readonly label: string;
   readonly searching: boolean;
   readonly targeted: boolean;
+  readonly chosen: boolean;
   readonly searchLabel?: string | undefined;
   readonly grids: readonly { readonly label?: string | undefined; readonly grid: GridViewModel }[];
 }
@@ -227,7 +239,7 @@ interface AttachmentSlotViewModel {
   readonly occupied?: string;
   readonly attachmentUid?: number;
   readonly battery?: BatterySlotViewModel;
-  readonly candidates: readonly { readonly uid: number; readonly name: string }[];
+  readonly candidates: readonly { readonly uid: number; readonly name: string; readonly reason?: string }[];
 }
 
 /** A powered light's battery slot, which takes a dragged battery. */
@@ -251,6 +263,7 @@ interface DetailsViewModel {
   readonly vehicleOptions?: readonly VehicleOptionViewModel[];
   readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
   readonly battery?: BatterySlotViewModel;
+  readonly recovery?: RecoveryProjection;
   readonly reservoir?: string;
   readonly pour?: { readonly label: string; readonly receiverUid?: number; readonly reason?: string };
 }
@@ -276,6 +289,7 @@ interface BodyRegionViewModel {
 }
 
 interface SkillViewModel {
+  readonly detail: string | undefined;
   readonly id: string;
   readonly name: string;
   readonly level: number;
@@ -426,12 +440,12 @@ const optionTemplate = (
 ): TemplateResult =>
   option.button
     ? html`
-        <button class="inv-option" type="button" @click=${() => queue(item, option.target, option.operation)}>
+        <button class="inv-option" type="button" data-work-operation=${option.operation ?? ''} @click=${() => queue(item, option.target, option.operation)}>
           <span>${option.label}</span><span class="inv-time">${option.time}</span>
         </button>
       `
     : html`
-        <div class="inv-option inv-option-no">
+        <div class="inv-option inv-option-no" data-work-operation=${option.operation ?? ''}>
           <span>${option.label}</span><span class="inv-reason">${option.reason}</span>
         </div>
       `;
@@ -482,9 +496,10 @@ const attachmentSlotTemplate = (
     <span>${fillText(text.slot, { slot: slot.label, item: slot.occupied ?? text.open })}</span>
     ${
       slot.attachmentUid === undefined
-        ? slot.candidates.map(
-            (candidate) =>
-              html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`,
+        ? slot.candidates.map((candidate) =>
+            candidate.reason === undefined
+              ? html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>${fillText(text.fit, { item: candidate.name })}</button>`
+              : html`<div class="inv-option inv-option-no" data-refused><span>${fillText(text.fit, { item: candidate.name })}</span><span class="inv-reason">${candidate.reason}</span></div>`,
           )
         : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>${text.remove}</button>`
     }
@@ -492,10 +507,50 @@ const attachmentSlotTemplate = (
   ${slot.battery === undefined ? nothing : batterySlotTemplate(slot.battery, text)}
 `;
 
+const recoveryTemplate = (
+  recovery: RecoveryProjection,
+  change: (choices: RecoveryChoices) => void,
+  text: InventoryText,
+): TemplateResult =>
+  html`<div class="inv-recovery">${recovery.liquids.map((amount) => {
+    const receiver = recovery.choices.receivers?.find(({ liquid }) => liquid === amount.liquid)?.uid;
+    const vessels = recovery.vessels.filter(({ liquid }) => liquid === amount.liquid);
+    return html`<div class="inv-line" data-recovery-liquid=${amount.liquid}>
+    <span>${fillText(text.recoveryAmount, { liquid: amount.name, volume: volumeText(amount.volumeMicrolitres / 1000) })}</span>
+    ${comboBox({
+      label: fillText(text.recoveryReceiver, { liquid: amount.name }),
+      emptyLabel: text.recoveryNoMatches,
+      options: [
+        { value: '', label: text.recoverySpillAll },
+        ...vessels.map(({ uid, name }) => ({ value: String(uid), label: name })),
+        ...(receiver !== undefined && !vessels.some(({ uid }) => uid === receiver)
+          ? [{ value: String(receiver), label: text.recoveryUnavailable }]
+          : []),
+      ],
+      value: receiver === undefined ? '' : String(receiver),
+      choose: (value) =>
+        change({
+          ...recovery.choices,
+          receivers: [
+            ...(recovery.choices.receivers ?? []).filter(({ liquid }) => liquid !== amount.liquid),
+            ...(value ? [{ liquid: amount.liquid, uid: Number(value) }] : []),
+          ],
+        }),
+    })}
+  </div>`;
+  })}</div>`;
+
 const detailsTemplate = (
   vm: DetailsViewModel,
-  queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
-  attachmentAction: (payload: ReplayActionPayload) => void,
+  {
+    queue,
+    attachmentAction,
+    changeRecovery,
+  }: {
+    queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
+    attachmentAction: (payload: ReplayActionPayload) => void;
+    changeRecovery: (choices: RecoveryChoices) => void;
+  },
   text: InventoryText,
 ): TemplateResult => {
   if (vm.empty) {
@@ -513,6 +568,7 @@ const detailsTemplate = (
       ${vm.battery ? batterySlotTemplate(vm.battery, text) : nothing}
       ${vm.reservoir ? html`<div class="inv-line inv-service-target" data-target=${`reservoir:${item.uid}`}>${vm.reservoir}</div>` : nothing}
       ${vm.pour ? html`<button class="inv-pour" ?disabled=${vm.pour.reason !== undefined} title=${vm.pour.reason ?? ''} @click=${() => attachmentAction({ kind: 'liquid.pour', sourceUid: item.uid, receiverUid: vm.pour!.receiverUid! })}>${vm.pour.label}</button>` : nothing}
+      ${vm.recovery ? recoveryTemplate(vm.recovery, changeRecovery, text) : nothing}
       <div class="inv-kicker">${text.whereItCanGo}</div>
       ${
         vm.vehicleOptions
@@ -558,20 +614,29 @@ const furnitureBodyTemplate = (
 
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
-  { tab, splitRatio, text }: { tab: InventoryTab; splitRatio: number; text: InventoryText },
+  {
+    tab,
+    repairAvailable,
+    splitRatio,
+    text,
+  }: { tab: InventoryTab; repairAvailable: boolean; splitRatio: number; text: InventoryText },
   selectTab: (tab: InventoryTab) => void,
   {
     find,
     queue,
     search,
+    chooseTarget,
     attachmentAction,
+    changeRecovery,
     wait,
     stepWake,
   }: {
     find: { query: string; change: (query: string) => void; key: (e: Event) => void };
     queue: (item: Item, target?: Target, operation?: WorkOperation) => void;
     search: (uid: number) => void;
+    chooseTarget: (key: string) => void;
     attachmentAction: (payload: ReplayActionPayload) => void;
+    changeRecovery: (choices: RecoveryChoices) => void;
     wait: () => void;
     stepWake: (step: 1 | -1) => void;
   },
@@ -579,10 +644,10 @@ const inventoryTemplate = (
   <header class="inv-head">
     <div class="inv-title"><h2>${factDetail(text.heading, text.headingFact)}</h2><span class="inv-weight">${fillText(text.carrying, { weight: vm.weight })}</span></div>
     <nav class="inv-tabs" aria-label=${text.tabsLabel}>
-      ${(['items', 'skills', 'crafting', 'actions'] as const).map(
+      ${(['items', 'skills', 'crafting', 'actions', ...(repairAvailable ? ['repair' as const] : [])] as const).map(
         (name) => html`
         <button type="button" class="inv-tab" data-tab=${name} aria-selected=${tab === name} @click=${() => selectTab(name)}>
-          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions } satisfies Record<InventoryTab, string>)[name]}
+          ${({ items: text.tabItems, skills: text.tabSkills, crafting: text.tabCrafting, actions: text.tabActions, repair: text.tabRepair } satisfies Record<InventoryTab, string>)[name]}
         </button>
       `,
       )}
@@ -601,7 +666,7 @@ const inventoryTemplate = (
     <div class="inv-needs" aria-label=${text.needsLabel}>${vm.needs}</div>
     <details class="inv-help">
       <summary>${text.controls}</summary>
-      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.cycle-target', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
+      <span>${['inventory.find', 'inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.view-item', 'inventory.search', 'inventory.take', 'inventory.activate', 'inventory.put-target', 'handling.stop', 'ui.inventory-toggle'].map((id) => fillHint(text.controlLine, { key: keyCap(id), action: inputBindings.binding(id)!.description })).flatMap((line, i) => (i === 0 ? [line] : [' · ', line]))} · ${fillHint(text.assignQuickbar, { keys: html`${Array.from({ length: 5 }, (_, i) => keyCap(`quickbar.assign.${i + 1}`)).flatMap((cap, i) => (i === 0 ? [cap] : [' / ', cap]))}` })}</span>
     </details>
   </header>
   <div
@@ -661,8 +726,8 @@ const inventoryTemplate = (
           </div>
           ${pile.bags.map(
             (bag) => html`
-            <div class="inv-around-section inv-around-container" data-around-section="container">
-              <div class="inv-pile-label">${fillText(text.bagOnFloor, { bag: bag.name })}</div>
+            <div class="inv-around-section inv-around-container" data-around-section="container" data-put-container=${`item:${bag.uid}`}>
+              <label class="inv-pile-label"><input type="checkbox" data-put-target=${`item:${bag.uid}`} .checked=${bag.chosen} @change=${() => chooseTarget(`item:${bag.uid}`)}>${fillText(text.bagOnFloor, { bag: bag.name })}</label>
               <div class="inv-pockets">${bag.pockets.map(pocketTemplate)}</div>
             </div>
           `,
@@ -680,8 +745,8 @@ const inventoryTemplate = (
         }
         ${vm.furniture.map(
           (furniture) => html`
-          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
-            <div class="inv-pile-label">${furniture.targeted ? '▸ ' : ''}${furniture.label}</div>
+          <div class="inv-around-section inv-around-container inv-pile${furniture.targeted ? ' inv-target' : ''}" data-around-section="container" data-put-container=${`furniture:${furniture.uid}`} data-entity-uid=${furniture.uid} data-target=${furniture.targeted ? 'true' : 'false'}>
+            <label class="inv-pile-label"><input type="checkbox" data-put-target=${`furniture:${furniture.uid}`} .checked=${furniture.chosen} @change=${() => chooseTarget(`furniture:${furniture.uid}`)}>${furniture.label}</label>
             ${furnitureBodyTemplate(furniture, search, text)}
             ${
               furniture.charger
@@ -698,7 +763,7 @@ const inventoryTemplate = (
         ${vm.vehicle ? vehicleTemplate(vm.vehicle, attachmentAction) : nothing}
       </div>
     </section>
-    ${detailsTemplate(vm.details, queue, attachmentAction, text)}
+    ${detailsTemplate(vm.details, { queue, attachmentAction, changeRecovery }, text)}
   </div>
   <div class="inv-body inv-skills" data-tab-panel="skills" ?hidden=${tab !== 'skills'}>
     <section class="inv-pane inv-body-panel" data-pane="body">
@@ -720,7 +785,7 @@ const inventoryTemplate = (
       ${vm.skills.map(
         (skill) => html`
         <div class="inv-skill" data-skill=${skill.id} data-level=${skill.level}>
-          <div class="inv-skill-heading"><strong>${skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
+          <div class="inv-skill-heading"><strong>${skill.detail ? factDetail(skill.name, skill.detail) : skill.name}</strong><span>${fillText(text.level, { level: countText(skill.level) })}</span></div>
           <div class="inv-skill-practice">${
             Number.isFinite(skill.nextLevelPractice)
               ? fillText(text.practice, {
@@ -861,13 +926,17 @@ const scrollbarWidth = (root: HTMLElement): number | undefined => {
 export class InventoryScreen {
   selected: Item | undefined;
   /** The container keyboard puts go to; not kept across a reload of the screen. */
-  private targetUid: number | undefined;
+  private targetKey: string | undefined;
+  private currentContainer: string | undefined;
+  private readonly gestures: PressHoldInput<string>;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
   private readonly inv: Pick<
     Inventory,
+    | 'canReachEntity'
     | 'carried'
     | 'carriedWeight'
+    | 'character'
     | 'entities'
     | 'hands'
     | 'landing'
@@ -885,10 +954,13 @@ export class InventoryScreen {
   private readonly queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>;
   private readonly hooks: ScreenHooks;
   private readonly tabs = new InventoryTabState();
+  private repairUid: number | undefined;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
   /** The opened vehicle's service options for each fitted part, for that part's details. */
   private readonly vehicleOptionsByUid = new Map<number, readonly VehicleOptionViewModel[]>();
+  private recoveryUid: number | undefined;
+  private recoveryChoices: Pick<RecoveryChoices, 'receivers' | 'recoveryOperation'> = {};
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
@@ -906,8 +978,10 @@ export class InventoryScreen {
     root: HTMLElement,
     inv: Pick<
       Inventory,
+      | 'canReachEntity'
       | 'carried'
       | 'carriedWeight'
+      | 'character'
       | 'entities'
       | 'hands'
       | 'landing'
@@ -930,6 +1004,16 @@ export class InventoryScreen {
     this.inv = inv;
     this.queue = queue;
     this.hooks = hooks;
+    this.gestures = new PressHoldInput({
+      holdRealMs: () => reachTuning(this.inv.registry).keyHoldRealSeconds * 1000,
+      tap: (action) => this.onAction(action),
+      hold: (action) => {
+        const command = inputBindings.binding(action)?.commands.find(({ kind }) => kind === 'hold');
+        if (command) {
+          this.onAction(command.id);
+        }
+      },
+    });
     this.viewer = new ItemViewer(
       () => root.querySelector<HTMLElement>('.inv-viewer-host'),
       () => this.hooks.itemView,
@@ -937,6 +1021,24 @@ export class InventoryScreen {
       () => this.text().viewerClose,
     );
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
+    root.addEventListener('dblclick', (e) => {
+      if (e.button !== 0) {
+        return;
+      }
+      const node = (e.target as Element).closest<HTMLElement>('[data-uid]');
+      const item = node && this.byUid.get(Number(node.dataset.uid));
+      if (item && this.viewer.viewedUid === undefined) {
+        this.endDrag();
+        this.report(
+          this.hooks.actionRefusal?.() ??
+            this.hooks.dispatch({
+              kind: 'inventory.wield-or-pocket',
+              itemUid: item.uid,
+              feet: this.hooks.feet(),
+            }),
+        );
+      }
+    });
     // A middle press would otherwise start the browser's autoscroll while the pointer is free.
     root.addEventListener('mousedown', (e) => {
       if (e.button !== 0 && isViewItemPress(e)) {
@@ -956,6 +1058,18 @@ export class InventoryScreen {
     return this.tabs.active;
   }
 
+  get repairTarget(): BlockEntity | undefined {
+    return this.repairUid === undefined ? undefined : this.inv.entities.byUid(this.repairUid);
+  }
+
+  openRepair(uid: number): void {
+    if (!this.inv.entities.byUid(uid)) {
+      return;
+    }
+    this.repairUid = uid;
+    this.openOnTab('repair');
+  }
+
   open(): void {
     this.tabs.open();
     this.root.hidden = false;
@@ -967,12 +1081,16 @@ export class InventoryScreen {
   }
 
   close(): void {
+    this.cancelInput();
+    this.targetKey = undefined;
+    this.currentContainer = undefined;
     this.tabs.close();
+    this.repairUid = undefined;
     this.revealedSelectionUid = undefined;
     this.inspectedUid = undefined;
     this.findQuery = '';
     this.root.hidden = true;
-    document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
+    document.body.classList.remove('inventory-open', 'inventory-tab-crafting', 'inventory-tab-repair');
     this.splitDrag = undefined;
     this.endDrag();
     this.viewer.close();
@@ -996,6 +1114,10 @@ export class InventoryScreen {
   }
 
   selectTab(tab: InventoryTab): void {
+    if (tab === 'repair' && !this.repairTarget) {
+      return;
+    }
+    this.cancelInput();
     this.tabs.select(tab);
     this.root.dataset.tab = tab;
     this.syncTabClass();
@@ -1005,12 +1127,28 @@ export class InventoryScreen {
 
   private syncTabClass(): void {
     document.body.classList.toggle('inventory-tab-crafting', this.tabs.active === 'crafting');
+    document.body.classList.toggle('inventory-tab-repair', this.tabs.active === 'repair');
   }
 
   /** Redraws when something changed; call every frame while open. */
-  update(): void {
+  update(at = performance.now()): void {
     if (!this.isOpen) {
       return;
+    }
+    const { repairTarget } = this;
+    if (this.repairUid !== undefined && !(repairTarget && this.inv.canReachEntity(repairTarget))) {
+      this.repairUid = undefined;
+      if (this.tabs.active === 'repair') {
+        this.tabs.select('items');
+        this.root.dataset.tab = this.tabs.active;
+        this.syncTabClass();
+      }
+      this.drawn = '';
+    }
+    if (this.hooks.actionRefusal?.()) {
+      this.cancelInput();
+    } else {
+      this.gestures.update(at);
     }
     const piles = this.hooks
       .nearby()
@@ -1025,7 +1163,7 @@ export class InventoryScreen {
     const characterKey = JSON.stringify(this.hooks.character());
     const needsKey = this.hooks.needs();
     const wakeKey = JSON.stringify(this.hooks.wakeGameHour?.() ?? null);
-    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetUid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
+    const key = `${openedVehicleKey(this.hooks.openedVehicle?.())}|${this.hooks.chargerRevision?.()}|${this.hooks.pictures?.version}|${this.findQuery}|${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${this.drag ? `card${this.drag.card?.uid}` : ''}|${this.targetKey}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}|${characterKey}|${needsKey}|${wakeKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -1078,14 +1216,55 @@ export class InventoryScreen {
     return true;
   }
 
+  cancelInput(): void {
+    this.gestures.cancel();
+  }
+
+  onInputCommand({ action, phase, at }: InputCommand): boolean {
+    if (
+      !(
+        this.isOpen &&
+        action.startsWith('inventory.') &&
+        inputBindings.binding(action)?.commands.some(({ kind }) => kind === 'tap-or-hold')
+      )
+    ) {
+      return false;
+    }
+    if (phase === 'down') {
+      this.gestures.keyDown(action, at);
+    } else {
+      this.gestures.keyUp(action, at);
+    }
+    return true;
+  }
+
   /** The shared input owner has already selected an inventory command. */
   onAction(action: string): boolean {
     if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action) || this.viewerHoldsAction(action)) {
       return true;
     }
+    if (this.navigationAction(action)) {
+      return true;
+    }
     const digit = this.quickbarDigit(action);
     const item = this.actionItem();
+    if (action === 'inventory.select-target') {
+      this.toggleCurrentTarget(item);
+      return true;
+    }
+    if (!item) {
+      return action.startsWith('inventory.') || digit !== undefined;
+    }
+    if (digit !== undefined) {
+      this.report(this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid }));
+      return true;
+    }
+    return this.selectedAction(action, item);
+  }
+
+  private navigationAction(action: string): boolean {
     if (action === 'handling.stop') {
+      this.cancelInput();
       this.report(this.hooks.dispatch({ kind: 'inventory.cancel-handling' }));
       return true;
     }
@@ -1104,18 +1283,36 @@ export class InventoryScreen {
       );
       return true;
     }
-    if (action === 'inventory.cycle-target') {
-      this.cycleTarget();
+    if (action === 'inventory.clear-find') {
+      this.findQuery = '';
+      this.drawn = '';
+      this.update();
       return true;
     }
-    if (!item) {
-      return action.startsWith('inventory.') || digit !== undefined;
+    return false;
+  }
+
+  private currentTargetKey(item: Item | undefined): string | undefined {
+    if (this.currentContainer) {
+      return this.currentContainer;
     }
-    if (digit !== undefined) {
-      this.report(this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid }));
-      return true;
+    if (item?.pockets) {
+      return `item:${item.uid}`;
     }
-    return this.selectedAction(action, item);
+    const at = item && this.inv.locate(item);
+    if (at?.kind === 'furniture') {
+      return `furniture:${at.entity.uid}`;
+    }
+    return at?.kind === 'pocket' ? `item:${at.owner.uid}` : undefined;
+  }
+
+  private toggleCurrentTarget(item: Item | undefined): void {
+    const key = this.currentTargetKey(item);
+    if (key) {
+      this.chooseTarget(key);
+    } else {
+      this.refuse(this.text().noPutTarget);
+    }
   }
 
   private actionItem(): Item | undefined {
@@ -1126,6 +1323,17 @@ export class InventoryScreen {
     switch (action) {
       case 'inventory.hands':
         this.report(this.hooks.dispatch({ kind: 'inventory.to-hands', itemUid: item.uid, feet: this.hooks.feet() }));
+        return true;
+      case 'inventory.offhand':
+        this.report(this.tryQueue(item, { kind: 'hand', side: offSide(this.inv.character) }));
+        return true;
+      case 'inventory.take': {
+        const target = inventoryPocket(this.hooks.reach().player.inventory, item);
+        this.report(target ? this.tryQueue(item, target) : this.text().noRoom);
+        return true;
+      }
+      case 'inventory.activate':
+        this.report(this.hooks.dispatch({ kind: 'inventory.activate', itemUid: item.uid }));
         return true;
       case 'inventory.wear':
         this.wearOrTakeOff(item);
@@ -1206,33 +1414,51 @@ export class InventoryScreen {
     }
   }
 
-  /** The chosen container if it is still within reach, else the nearest one. */
-  private targetEntity(): BlockEntity | undefined {
-    const containers = this.hooks.containers();
-    return containers.find((c) => c.uid === this.targetUid) ?? containers[0];
+  private putTargets(): { key: string; distance: number; pockets: Target[] }[] {
+    return [
+      ...this.hooks.containers().map((entity) => ({
+        key: `furniture:${entity.uid}`,
+        distance: this.hooks.entityDistance(entity),
+        pockets: (this.inv.entities.defOf(entity).container?.pockets ?? []).map(
+          (_, pocket): Target => ({ kind: 'furniture', entity, pocket }),
+        ),
+      })),
+      ...this.hooks.nearby().flatMap((pile) =>
+        pile.items
+          .filter(({ item }) => item.pockets)
+          .map(({ item }) => ({
+            key: `item:${item.uid}`,
+            distance: this.hooks.distance(pile),
+            pockets: item.pockets!.map((_, pocket): Target => ({ kind: 'pocket', owner: item, pocket })),
+          })),
+      ),
+    ].sort((a, b) => a.distance - b.distance);
   }
 
-  private cycleTarget(): void {
-    const containers = this.hooks.containers();
-    if (containers.length === 0) {
-      this.refuse('No container in reach');
+  private chooseTarget(key: string): void {
+    if (!this.putTargets().some((target) => target.key === key)) {
+      this.refuse(this.text().noPutTarget);
       return;
     }
-    const at = containers.findIndex((c) => c.uid === this.targetEntity()?.uid);
-    this.targetUid = containers[(at + 1) % containers.length]!.uid;
+    this.targetKey = this.targetKey === key ? undefined : key;
+    this.drawn = '';
+    this.update();
+  }
+
+  private putTarget() {
+    const targets = this.putTargets();
+    return targets.find(({ key }) => key === this.targetKey) ?? targets[0];
   }
 
   /** The mouse path's move into a container pocket, with the whole stack going to the first pocket that takes it. */
   private putInTarget(item: Item): void {
-    const entity = this.targetEntity();
-    if (!entity) {
-      this.refuse('No container in reach');
+    const chosen = this.putTarget();
+    if (!chosen) {
+      this.refuse(this.text().noPutTarget);
       return;
     }
-    const pockets = this.inv.entities.defOf(entity).container?.pockets ?? [];
     let refusal: string | undefined;
-    for (let pocket = 0; pocket < pockets.length; pocket += 1) {
-      const target: Target = { kind: 'furniture', entity, pocket };
+    for (const target of chosen.pockets) {
       const plan = this.inv.plan(item, target);
       if (plan.ok) {
         this.report(this.tryQueue(item, target));
@@ -1240,7 +1466,7 @@ export class InventoryScreen {
       }
       refusal ??= plan.reason;
     }
-    this.refuse(refusal ?? 'No room there');
+    this.refuse(refusal ?? this.text().noRoom);
   }
 
   /** Takes every item of the same category from the piles within reach. */
@@ -1273,6 +1499,7 @@ export class InventoryScreen {
   }
 
   private step(dir: number): void {
+    this.currentContainer = undefined;
     if (this.order.length === 0) {
       return;
     }
@@ -1298,7 +1525,12 @@ export class InventoryScreen {
     render(
       inventoryTemplate(
         vm,
-        { tab: this.tabs.active, splitRatio: this.splitRatio, text: this.text() },
+        {
+          tab: this.tabs.active,
+          repairAvailable: this.repairTarget !== undefined,
+          splitRatio: this.splitRatio,
+          text: this.text(),
+        },
         (tab) => this.selectTab(tab),
         {
           find: {
@@ -1322,11 +1554,28 @@ export class InventoryScreen {
             if (refusal) {
               this.refuse(refusal);
             } else if (operation) {
-              this.report(this.hooks.dispatch({ kind: 'inventory.work', itemUid: item.uid, operation }));
+              this.report(
+                this.hooks.dispatch({
+                  kind: 'inventory.work',
+                  itemUid: item.uid,
+                  operation,
+                  // A fresh projection here could approve room lost since the button was drawn.
+                  ...(operation === 'apart' ? {} : (vm.details.recovery?.choices ?? this.recoveryChoices)),
+                }),
+              );
             } else if (target) {
               this.report(this.tryQueue(item, target));
             }
           },
+          changeRecovery: (choices) => {
+            this.recoveryChoices = {
+              receivers: choices.receivers ?? [],
+              ...(choices.recoveryOperation ? { recoveryOperation: choices.recoveryOperation } : {}),
+            };
+            this.drawn = '';
+            this.update();
+          },
+          chooseTarget: (key) => this.chooseTarget(key),
           search: (uid) => {
             const refusal = this.hooks.actionRefusal?.();
             const entity = this.entityByUid.get(uid);
@@ -1470,7 +1719,12 @@ export class InventoryScreen {
         grids: [this.gridViewModel(PILE_GRID, pile.items, `pile:${pile.pos.join(',')}`, true)],
         bags: pile.items
           .filter(({ item }) => item.pockets)
-          .map(({ item }) => ({ name: this.inv.name(item), pockets: this.pocketsViewModel(item) })),
+          .map(({ item }) => ({
+            uid: item.uid,
+            chosen: this.targetKey === `item:${item.uid}`,
+            name: this.inv.name(item),
+            pockets: this.pocketsViewModel(item),
+          })),
       }),
     );
     const feet = this.hooks.feet();
@@ -1499,7 +1753,8 @@ export class InventoryScreen {
         charger: this.hooks.charger?.(entity),
         label: fillText(text.furniture, { name: def.name, distance: decimalText(this.hooks.entityDistance(entity)) }),
         searching: !entity.searched && this.hooks.searching(entity),
-        targeted: entity.uid === this.targetEntity()?.uid,
+        targeted: this.putTarget()?.key === `furniture:${entity.uid}`,
+        chosen: this.targetKey === `furniture:${entity.uid}`,
         searchLabel:
           entity.searched || this.hooks.searching(entity)
             ? undefined
@@ -1515,6 +1770,7 @@ export class InventoryScreen {
       return {
         id: definition.id,
         name: definition.name,
+        detail: definition.detail,
         level,
         practice,
         nextLevelPractice,
@@ -1605,6 +1861,7 @@ export class InventoryScreen {
                 width: `calc(${w * CELL_REM}rem - 2px)`,
                 height: `calc(${h * CELL_REM}rem - 2px)`,
               },
+          { w, h },
         );
       }),
     };
@@ -1622,7 +1879,12 @@ export class InventoryScreen {
     return true;
   }
 
-  private itemViewModel(item: Item, className: string, style?: Record<string, string>): ItemViewModel {
+  private itemViewModel(
+    item: Item,
+    className: string,
+    style?: Record<string, string>,
+    pictureSize?: GridSize,
+  ): ItemViewModel {
     const def = defOf(this.inv.registry, item.type);
     const text = this.text();
     const itemStyle = style ?? {};
@@ -1641,7 +1903,7 @@ export class InventoryScreen {
         condition: conditionWord(this.inv.registry, item.condition),
       }),
       name: workName(this.inv.registry, item),
-      picture: this.hooks.pictures?.picture(item),
+      picture: this.hooks.pictures?.picture(item, pictureSize),
       count: item.count > 1 ? fillText(text.countBadge, { count: countText(item.count) }) : undefined,
       style:
         Object.keys(itemStyle).length > 0
@@ -1678,16 +1940,23 @@ export class InventoryScreen {
         ...(battery ? { battery } : {}),
         candidates: fitted
           ? []
-          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map((candidate) => ({
+          : (this.hooks.attachmentCandidates?.(item.uid, slotId) ?? []).map(({ item: candidate, reason }) => ({
               uid: candidate.uid,
               name: workName(this.inv.registry, candidate),
+              ...(reason ? { reason } : {}),
             })),
       };
     });
     const text = this.text();
     const name = workName(this.inv.registry, item);
     const battery = this.batterySlot(item);
+    if (this.recoveryUid !== item.uid) {
+      this.recoveryUid = item.uid;
+      this.recoveryChoices = {};
+    }
+    const recovery = this.hooks.recovery?.(item.uid, this.recoveryChoices);
     return {
+      ...(recovery ? { recovery } : {}),
       ...this.reservoirViewModel(item),
       item,
       empty: false,
@@ -1704,20 +1973,27 @@ export class InventoryScreen {
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),
-      ].map(
-        (option): OptionViewModel =>
-          option.plan.ok
-            ? {
-                label: option.label,
-                button: true,
-                time:
-                  'duration' in option && option.duration !== undefined
-                    ? craftTime(option.duration, craftingText(this.inv.registry))
-                    : secs(text, option.plan.time),
-                ...optionAction(option),
-              }
-            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
-      ),
+      ].map((option): OptionViewModel => {
+        const label =
+          'operation' in option && option.operation !== 'apart' && recovery?.spillLabel
+            ? fillText(text.recoveryAction, { action: option.label, spill: recovery.spillLabel })
+            : option.label;
+        return option.plan.ok && !('operation' in option && option.operation !== 'apart' && recovery?.refusal)
+          ? {
+              label,
+              button: true,
+              time:
+                'duration' in option && option.duration !== undefined
+                  ? craftTime(option.duration, craftingText(this.inv.registry))
+                  : secs(text, option.plan.time),
+              ...optionAction(option),
+            }
+          : {
+              label,
+              button: false,
+              reason: (option.plan.ok ? recovery!.refusal! : option.plan.reason).toLowerCase(),
+            };
+      }),
     };
   }
 
@@ -1864,7 +2140,13 @@ export class InventoryScreen {
       this.refuse(refusal);
       return;
     }
-    const node = (e.target as HTMLElement).closest<HTMLElement>('[data-uid]');
+    const element = e.target as HTMLElement;
+    const container = element.closest<HTMLElement>('[data-put-container]');
+    this.currentContainer = container?.dataset.putContainer;
+    if (element.closest('input,button,label')) {
+      return;
+    }
+    const node = element.closest<HTMLElement>('[data-uid]');
     const item = node ? this.byUid.get(Number(node.dataset.uid)) : undefined;
     if (node && item && isViewItemPress(e)) {
       e.preventDefault();
@@ -1877,13 +2159,6 @@ export class InventoryScreen {
     e.preventDefault();
     const card = this.selected;
     this.selected = item;
-    if (keyboardInput.held('inventory.quick-action-gate')) {
-      const option = quickMove(item, this.hooks.reach());
-      this.report(option.plan.ok ? this.tryQueue(item, option.target) : option.plan.reason);
-      this.drawn = '';
-      this.update();
-      return;
-    }
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;

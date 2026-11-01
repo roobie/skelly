@@ -7,7 +7,7 @@ import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePos
 import { ARM_NODE } from '../src/render/armRig.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import type { ItemLook } from '../src/render/itemLook.ts';
-import { type ModelLibrary, prepareModel } from '../src/render/models.ts';
+import { indexModelMaterials, type ModelLibrary, prepareModel } from '../src/render/models.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -24,7 +24,7 @@ await Promise.all(
   ['baseball_bat', 'steel_pipe', 'kitchen_knife', 'machete', 'kabar'].map(async (id) => {
     const def = registry.models.get(id)!;
     const bytes = readFileSync(`${BASE}/${def.file}`);
-    const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '');
+    const gltf = await gltfLoader.parseAsync(Uint8Array.from(bytes).buffer, '').then(indexModelMaterials);
     realHeldModels.set(id, prepareModel(def, gltf.scene).held);
   }),
 );

@@ -26,6 +26,16 @@ const hitBuild = buildRegistry([
     data: JSON.parse(readFileSync('src/content/base/models-items.json', 'utf8')) as unknown,
   },
   {
+    source: 'taped-armour-inputs.json',
+    data: {
+      skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+      items: [
+        { id: 'paperback', name: 'Paperback', category: 'book', weight: 300, size: [1, 1] },
+        { id: 'duct_tape', name: 'Duct tape', category: 'material', weight: 100, size: [1, 1] },
+      ],
+    },
+  },
+  {
     source: 'test-headwear.json',
     data: {
       items: [

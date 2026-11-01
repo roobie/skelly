@@ -87,6 +87,13 @@ describe('stepBody', () => {
     expect(body.vel[1]).toBe(0);
   });
 
+  it('uses the fixture gravity for player fall speed', () => {
+    const body = createPlayerBody(metre, 0.5, 20, 0.5);
+    const gravity = PLAYER.gravityMetresPerSimSecondSquared * 2;
+    stepBody(body, 0.25, () => false, physicsFor(metre, { ...PLAYER, gravityMetresPerSimSecondSquared: gravity }));
+    expect(body.vel[1]).toBeCloseTo(-gravity * 0.25);
+  });
+
   it('reports impact speed even when the body walks off the landing within the same step', () => {
     const body = createPlayerBody(metre, 0.5, 1.1, 0.5);
     body.vel = [8, -10, 0];

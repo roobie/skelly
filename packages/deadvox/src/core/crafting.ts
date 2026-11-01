@@ -3,6 +3,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import type { RecipeDef, Registry } from './content.ts';
 import { coreMessage } from './coreText.ts';
+import { allocateLiquids, type CraftLiquid, type LiquidDemand } from './craftLiquids.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
 import { craftComponentEligible, type Item, isEmpty } from './items.ts';
@@ -18,6 +19,7 @@ interface CraftPlan {
   kind: 'craft';
   recipe: string;
   components: CraftComponent[];
+  liquids: CraftLiquid[];
   tools: { item: Item; quality: string }[];
   workstation?: BlockEntity;
   /** Game seconds, not simulation seconds. */
@@ -32,15 +34,22 @@ interface CraftMissing {
   qualities: { quality: string; required: number; available: number }[];
   workstation?: string;
   /** Raw stock per alternative; groups and tools may compete for it. */
-  components: { group: number; alternatives: { item: string; needed: number; available: number }[] }[];
+  components: { group: number; alternatives: (AlternativeRef & { needed: number; available: number })[] }[];
 }
 export type CraftRequirements = Omit<CraftMissing, 'reason'>;
 export type CraftResult = { plan: CraftPlan } | { missing: CraftMissing };
-/** Optional alternative item id for each component group, never a silent fallback. */
-export type CraftPreference = Readonly<Record<number, string>>;
+export type AlternativeRef = { kind: 'item'; item: string } | { kind: 'liquid'; liquid: string };
+export type CraftPreference = Readonly<Record<number, AlternativeRef>>;
+export type CraftSources = Readonly<Record<number, readonly number[]>>;
+const alternativeRef = (input: RecipeDef['components'][number][number]): AlternativeRef =>
+  'item' in input ? { kind: 'item', item: input.item } : { kind: 'liquid', liquid: input.liquid };
+const sameAlternative = (a: AlternativeRef, b: AlternativeRef): boolean =>
+  a.kind === b.kind &&
+  ('item' in a && 'item' in b ? a.item === b.item : 'liquid' in a && 'liquid' in b && a.liquid === b.liquid);
 
 interface ReachIndex {
   byType: Map<string, ReachEntry[]>;
+  byLiquid: Map<string, ReachEntry[]>;
   qualities: Map<string, { entry: ReachEntry; level: number }[]>;
 }
 const indexes = new WeakMap<ReachSnapshot, Map<boolean, ReachIndex>>();
@@ -63,7 +72,39 @@ const copyPlan = (plan: CraftPlan): CraftPlan => ({
   ...plan,
   components: plan.components.map((component) => ({ ...component, from: { ...component.from } })),
   tools: plan.tools.map((tool) => ({ ...tool })),
+  liquids: plan.liquids.map((draw) => ({
+    ...draw,
+    sources: draw.sources.map((source) => ({ ...source, from: { ...source.from } })),
+  })),
 });
+const liquidVolume = (item: Item): number =>
+  item.liquidContents?.kind === 'filled' ? item.liquidContents.volumeMicrolitres : 0;
+const indexLiquidReach = (snapshot: ReachSnapshot): Map<string, ReachEntry[]> => {
+  const byLiquid = new Map<string, ReachEntry[]>();
+  for (const entry of snapshot.entries) {
+    const { item } = entry;
+    const contents = item.liquidContents;
+    if (
+      contents?.kind !== 'filled' ||
+      !snapshot.player.inventory.planLiquidDraws([
+        { uid: item.uid, liquid: contents.liquid, volumeMicrolitres: contents.volumeMicrolitres },
+      ]).ok
+    ) {
+      continue;
+    }
+    const vessels = byLiquid.get(contents.liquid) ?? [];
+    vessels.push(entry);
+    byLiquid.set(contents.liquid, vessels);
+  }
+  for (const entries of byLiquid.values()) {
+    entries.sort(
+      (a, b) =>
+        a.handlingTime - b.handlingTime || liquidVolume(a.item) - liquidVolume(b.item) || a.item.uid - b.item.uid,
+    );
+  }
+  return byLiquid;
+};
+
 /** Derived per-snapshot index, not an owning UID lookup or a global item registry. */
 export const indexCraftReach = (snapshot: ReachSnapshot, consumeFitted = false): ReachIndex => {
   const cached = indexes.get(snapshot)?.get(consumeFitted);
@@ -72,6 +113,7 @@ export const indexCraftReach = (snapshot: ReachSnapshot, consumeFitted = false):
   }
   const byType = new Map<string, ReachEntry[]>();
   const qualities = new Map<string, { entry: ReachEntry; level: number }[]>();
+  let byLiquid: Map<string, ReachEntry[]> | undefined;
   for (const entry of snapshot.entries) {
     const { item } = entry;
     if (craftComponentEligible(item, consumeFitted)) {
@@ -93,7 +135,14 @@ export const indexCraftReach = (snapshot: ReachSnapshot, consumeFitted = false):
   for (const entries of byType.values()) {
     entries.sort((a, b) => a.handlingTime - b.handlingTime || stackTie(a.item, b.item));
   }
-  const index = { byType, qualities };
+  const index = {
+    byType,
+    qualities,
+    get byLiquid() {
+      byLiquid ??= indexLiquidReach(snapshot);
+      return byLiquid;
+    },
+  };
   const variants = indexes.get(snapshot) ?? new Map<boolean, ReachIndex>();
   variants.set(consumeFitted, index);
   indexes.set(snapshot, variants);
@@ -150,12 +199,7 @@ const allocate = (
   return undefined;
 };
 
-/** Raw requirement status shared by admission and readouts, before filtering shortages. */
-export const requirementStatus = (
-  recipe: RecipeDef,
-  snapshot: ReachSnapshot,
-  character: CraftCharacter,
-): CraftRequirements => {
+const equipmentStatus = (recipe: RecipeDef, snapshot: ReachSnapshot, character: CraftCharacter): CraftRequirements => {
   const index = indexCraftReach(snapshot, recipe.consumeFitted);
   return {
     knowledge: !character.knownRecipes.has(recipe.id),
@@ -176,34 +220,86 @@ export const requirementStatus = (
     ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, station))
       ? { workstation: recipe.workstation }
       : {}),
+    components: [],
+  };
+};
+
+/** Raw requirement status shared by planning and readouts, before filtering shortages. */
+export const requirementStatus = (
+  recipe: RecipeDef,
+  snapshot: ReachSnapshot,
+  character: CraftCharacter,
+): CraftRequirements => {
+  const index = indexCraftReach(snapshot, recipe.consumeFitted);
+  return {
+    ...equipmentStatus(recipe, snapshot, character),
     components: recipe.components.map((group, number) => ({
       group: number,
-      alternatives: group.map((alternative) => ({
-        item: alternative.item,
-        needed: alternative.count,
-        available: (index.byType.get(alternative.item) ?? []).reduce((sum, entry) => sum + entry.item.count, 0),
-      })),
+      alternatives: group.map((alternative) =>
+        'item' in alternative
+          ? {
+              kind: 'item' as const,
+              item: alternative.item,
+              needed: alternative.count,
+              available: (index.byType.get(alternative.item) ?? []).reduce((sum, entry) => sum + entry.item.count, 0),
+            }
+          : {
+              kind: 'liquid' as const,
+              liquid: alternative.liquid,
+              needed: alternative.volumeMicrolitres,
+              available: (index.byLiquid.get(alternative.liquid) ?? []).reduce(
+                (sum, entry) =>
+                  sum +
+                  (entry.item.liquidContents!.kind === 'filled' ? entry.item.liquidContents!.volumeMicrolitres : 0),
+                0,
+              ),
+            },
+      ),
     })),
   };
 };
 
+interface CraftSelection {
+  prefer?: CraftPreference | undefined;
+  sources?: CraftSources | undefined;
+}
+interface Combination {
+  group: number;
+  requirements: Map<string, number>;
+  demands: LiquidDemand[];
+}
 function* componentAlternatives(
-  recipe: RecipeDef,
-  prefer: CraftPreference,
-  group = 0,
-  requirements = new Map<string, number>(),
-): Generator<Map<string, number>> {
+  context: { recipe: RecipeDef; index: ReachIndex; prefer: CraftPreference; sources: CraftSources },
+  { group, requirements, demands }: Combination = { group: 0, requirements: new Map(), demands: [] },
+): Generator<Omit<Combination, 'group'>> {
+  const { recipe, index, prefer, sources } = context;
   if (group === recipe.components.length) {
-    yield requirements;
+    yield { requirements, demands };
     return;
   }
   for (const alternative of recipe.components[group]!) {
-    if (prefer[group] !== undefined && prefer[group] !== alternative.item) {
+    if (prefer[group] !== undefined && !sameAlternative(prefer[group]!, alternativeRef(alternative))) {
       continue;
     }
     const next = new Map(requirements);
-    next.set(alternative.item, (next.get(alternative.item) ?? 0) + alternative.count);
-    yield* componentAlternatives(recipe, prefer, group + 1, next);
+    if ('item' in alternative) {
+      next.set(alternative.item, (next.get(alternative.item) ?? 0) + alternative.count);
+      yield* componentAlternatives(context, { group: group + 1, requirements: next, demands });
+    } else {
+      const candidates = index.byLiquid.get(alternative.liquid) ?? [];
+      const allowed =
+        sources[group] === undefined
+          ? candidates
+          : [...new Set(sources[group])].flatMap((uid) => candidates.filter((entry) => entry.item.uid === uid));
+      yield* componentAlternatives(context, {
+        group: group + 1,
+        requirements: next,
+        demands: [
+          ...demands,
+          { group, liquid: alternative.liquid, volumeMicrolitres: alternative.volumeMicrolitres, allowed },
+        ],
+      });
+    }
   }
 }
 
@@ -308,6 +404,7 @@ const craftPlan = (
   return {
     kind: 'craft',
     recipe: recipe.id,
+    liquids: [],
     ...allocation,
     tools,
     ...(workstation ? { workstation: workstation.entity } : {}),
@@ -321,9 +418,9 @@ const refusalReason = (
   prefer: CraftPreference,
   missing: CraftRequirements,
 ): string | undefined => {
-  for (const [number, item] of Object.entries(prefer)) {
-    if (!recipe.components[Number(number)]?.some((alternative) => alternative.item === item)) {
-      return `Preferred ${item} is not an alternative for group ${number}`;
+  for (const [number, ref] of Object.entries(prefer)) {
+    if (!recipe.components[Number(number)]?.some((alternative) => sameAlternative(ref, alternativeRef(alternative)))) {
+      return `Invalid alternative for group ${number}`;
     }
   }
   if (missing.knowledge) {
@@ -347,13 +444,18 @@ const componentRefusal = (snapshot: ReachSnapshot, status: CraftRequirements, pr
   const shortage = status.components.find(
     ({ group, alternatives }) =>
       !alternatives.some(
-        ({ item, available, needed }) => (prefer[group] === undefined || prefer[group] === item) && available >= needed,
+        (candidate) =>
+          (prefer[group] === undefined || sameAlternative(prefer[group]!, candidate)) &&
+          candidate.available >= candidate.needed,
       ),
   );
   const alternative = shortage?.alternatives.find(
-    ({ item }) => prefer[shortage.group] === undefined || prefer[shortage.group] === item,
+    (candidate) => prefer[shortage.group] === undefined || sameAlternative(prefer[shortage.group]!, candidate),
   );
-  if (alternative) {
+  if (alternative?.kind === 'liquid') {
+    return coreMessage(registry, 'craftLiquidShort', { liquid: registry.liquids.get(alternative.liquid)!.name });
+  }
+  if (alternative?.kind === 'item') {
     return coreMessage(registry, 'componentsShort', {
       count: countText(alternative.needed),
       item: registry.items.get(alternative.item)!.name.toLowerCase(),
@@ -369,7 +471,7 @@ export const admissionRefusal = (
   snapshot: ReachSnapshot,
   character: CraftCharacter,
 ): string | undefined =>
-  refusalReason(snapshot.player.inventory.registry, recipe, {}, requirementStatus(recipe, snapshot, character));
+  refusalReason(snapshot.player.inventory.registry, recipe, {}, equipmentStatus(recipe, snapshot, character));
 
 const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
   Boolean(recipe.workstation) && station.id === recipe.workstation;
@@ -379,7 +481,7 @@ export const planCraft = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
   character: CraftCharacter,
-  prefer: CraftPreference = {},
+  { prefer = {}, sources = {} }: CraftSelection = {},
 ): CraftResult => {
   const index = indexCraftReach(snapshot, recipe.consumeFitted);
   const status = requirementStatus(recipe, snapshot, character);
@@ -399,24 +501,70 @@ export const planCraft = (
   const skillKey = Object.keys(recipe.skills)
     .sort()
     .map((skill) => [skill, skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)]);
-  const key = JSON.stringify([Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)), skillKey]);
+  const key = JSON.stringify([
+    Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)),
+    Object.entries(sources).sort(([a], [b]) => Number(a) - Number(b)),
+    skillKey,
+  ]);
   const componentReason = componentRefusal(snapshot, status, prefer);
+  const componentFailure = (): CraftResult => {
+    // Blame the selected vessels only if the craft is feasible without that restriction.
+    const sourcesShort =
+      Object.keys(sources).length > 0 && 'plan' in planCraft(recipe, snapshot, character, { prefer });
+    return refusal(
+      sourcesShort ? coreMessage(snapshot.player.inventory.registry, 'craftSourcesShort') : componentReason,
+    );
+  };
   const cached = cache.get(key);
   if (cached !== undefined) {
-    return cached ? { plan: copyPlan(cached) } : refusal(componentReason);
+    return cached ? { plan: copyPlan(cached) } : componentFailure();
   }
+  const best = bestCraftAllocation({ recipe, snapshot, index, character }, { prefer, sources });
+  cache.set(key, best ?? null);
+  return best ? { plan: copyPlan(best) } : componentFailure();
+};
+
+const liquidGather = (liquids: CraftLiquid[], allocation: Allocation, snapshot: ReachSnapshot): number => {
+  const handled = new Set(allocation.components.map(({ item }) => item.uid));
+  let gather = 0;
+  for (const source of liquids.flatMap((draw) => draw.sources)) {
+    if (handled.has(source.item.uid)) {
+      continue;
+    }
+    handled.add(source.item.uid);
+    const entry = snapshot.entries.find(({ item }) => item === source.item)!;
+    gather += gatherGameSeconds(entry.handlingTime, snapshot.player.clock.ratio);
+  }
+  return gather;
+};
+const bestCraftAllocation = (
+  {
+    recipe,
+    snapshot,
+    index,
+    character,
+  }: { recipe: RecipeDef; snapshot: ReachSnapshot; index: ReachIndex; character: CraftCharacter },
+  { prefer, sources }: { prefer: CraftPreference; sources: CraftSources },
+): CraftPlan | undefined => {
   let best: CraftPlan | undefined;
   const toolNeeds = Object.entries(recipe.qualities)
     .filter(([quality, level]) => !snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level))
     .sort(([a], [b]) => a.localeCompare(b));
-  for (const requirements of componentAlternatives(recipe, prefer)) {
+  for (const { requirements, demands } of componentAlternatives({ recipe, prefer, index, sources })) {
+    const liquids = allocateLiquids(demands);
+    if (!liquids) {
+      continue;
+    }
     for (const tools of toolSelections(toolNeeds, index, requirements)) {
       const allocation = allocateCombination(requirements, index, tools, snapshot.player.clock.ratio);
-      if (allocation && (!best || compareAllocation(allocation, best) < 0)) {
-        best = craftPlan(recipe, snapshot, { allocation, tools, character });
+      if (!allocation) {
+        continue;
+      }
+      allocation.gather += liquidGather(liquids, allocation, snapshot);
+      if (!best || compareAllocation(allocation, best) < 0) {
+        best = { ...craftPlan(recipe, snapshot, { allocation, tools, character }), liquids };
       }
     }
   }
-  cache.set(key, best ?? null);
-  return best ? { plan: copyPlan(best) } : refusal(componentReason);
+  return best;
 };

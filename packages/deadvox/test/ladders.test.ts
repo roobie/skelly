@@ -231,10 +231,19 @@ describe('ladders', () => {
     const runtime = houseWithLadder([-3, 1, 1]);
     grabAndClimbTo(runtime, LADDER_FOOT, roofTop - 3);
     const { body } = runtime.session;
+    const gravity = registry.player.get('player')!.gravityMetresPerSimSecondSquared;
+    const climbSpeed = registry.furniture.get('ladder')!.climbable!.speedMetresPerSimSecond;
+    const dt = 1 / 60;
+    const [, climbVelocity] = body.vel;
     runtime.set({ ...IDLE, jump: true });
     runtime.advance(1);
+    expect(runtime.session.ladderHold.on).toBe(false);
+    expect(body.vel[1]).toBeCloseTo(climbVelocity - (gravity * dt) / scale.blockSize);
     const [, letGo] = body.pos;
-    runtime.advance(10);
+    const returnFrames = Math.ceil((2 * climbSpeed) / gravity / dt) + 2;
+    for (let frame = 0; frame < returnFrames && body.pos[1] >= letGo; frame++) {
+      runtime.advance(1);
+    }
     expect(body.pos[1]).toBeLessThan(letGo);
   });
 

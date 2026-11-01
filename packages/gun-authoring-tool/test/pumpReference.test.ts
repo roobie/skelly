@@ -2,7 +2,7 @@ import { resolve } from '@skelly/engine/assembly/resolve.ts';
 import type { Assembly } from '@skelly/engine/assembly/schema.ts';
 import { validate } from '@skelly/engine/assembly/validate.ts';
 import { applyPoint, IDENTITY } from '@skelly/engine/foundation/math.ts';
-import { localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
+import { distanceWorld, localSolidBounds, penetrationWorld, worldSolid } from '@skelly/engine/shapes/geometry.ts';
 import { meshForSolidGroup } from '@skelly/engine/shapes/mesh.ts';
 import type { ExtrudedPolygonSolid, Solid } from '@skelly/engine/shapes/solid.ts';
 import type { Mesh, MeshStandardMaterial } from 'three';
@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { RECEIVER_SECTION } from '../src/gun/parts.ts';
+import { isTriggerBlade } from '../src/gun/roundedTriggerGuard.ts';
 import { buildLayers, disposeGroup } from '../src/viewer/scene.ts';
 import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
@@ -36,6 +37,16 @@ const sectionYs = (solids: readonly ExtrudedPolygonSolid[], x: number) =>
     }),
   );
 
+/** Where a profile's outline crosses the height `y`. */
+const sectionXs = (solid: ExtrudedPolygonSolid, y: number) =>
+  solid.profile.flatMap((a, i) => {
+    const b = solid.profile[(i + 1) % solid.profile.length]!;
+    if (y < Math.min(a[1], b[1]) - 1e-8 || y > Math.max(a[1], b[1]) + 1e-8 || Math.abs(a[1] - b[1]) < 1e-8) {
+      return [];
+    }
+    return [a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0])];
+  });
+
 describe('870-derived pump silhouette', () => {
   it('has a narrow upper and a faceted rear roof instead of a single sharp ramp', () => {
     const resolved = resolve(assemblyFor(), gunDomain);
@@ -58,7 +69,7 @@ describe('870-derived pump silhouette', () => {
     expect(materialAt(receiver.solids, [x, y, z - hz - 0.125]), 'port centre').toBe(false);
   });
 
-  it('uses a thin trigger plate, a compact rounded loop and a trigger inside it', () => {
+  it('uses a thin trigger plate, a compact closed loop and a trigger inside it', () => {
     const resolved = resolve(assemblyFor(), gunDomain);
     const lower = resolved.defs.get('lower')!;
     const frame = lower.solids.find((s) => s.id === 'frame')!;
@@ -81,8 +92,44 @@ describe('870-derived pump silhouette', () => {
       'finger keep-out clears guard material',
     ).toBe(true);
     expect(guards.every((s) => s.kind === 'extruded-polygon')).toBe(true);
-    expectWatertightMesh(meshForSolidGroup(guards), 'rounded trigger loop');
-    expect(lower.solids.some((s) => s.id === 'trigger')).toBe(true);
+    expectWatertightMesh(meshForSolidGroup(guards), 'closed trigger loop');
+    expect(lower.solids.some((s) => isTriggerBlade(s.id))).toBe(true);
+  });
+
+  it('hangs a curved blade from the loop top with its concave finger face forward', () => {
+    const lower = resolve(assemblyFor(), gunDomain).defs.get('lower')!;
+    const blades = lower.solids.filter((s): s is ExtrudedPolygonSolid => isTriggerBlade(s.id));
+    expect(blades.length).toBeGreaterThan(1);
+    const bounds = blades.map((blade) => localSolidBounds(blade));
+    const bladeMin = [0, 1].map((axis) => Math.min(...bounds.map(([min]) => min[axis]!)));
+    const bladeMax = [0, 1].map((axis) => Math.max(...bounds.map(([, max]) => max[axis]!)));
+    const top = localSolidBounds(lower.solids.find((s) => s.id === 'trigger-guard-top')!);
+    expect(bladeMax[1], 'hangs from the loop top').toBeCloseTo(top[0][1]);
+    const frontAt = (y: number) => Math.max(...blades.flatMap((blade) => sectionXs(blade, y)));
+    const middle = (bladeMin[1]! + bladeMax[1]!) / 2;
+    const near = (bladeMax[1]! - bladeMin[1]!) * 0.05;
+    expect(frontAt(middle), 'front face bows back below the top').toBeLessThan(frontAt(bladeMax[1]! - near));
+    expect(frontAt(middle), 'front face curves forward to the tip').toBeLessThan(frontAt(bladeMin[1]! + near));
+    const finger = lower.keepOuts.find((v) => v.id === 'trigger-finger')!.box;
+    expect(bladeMax[0], 'leaves the finger room in front').toBeLessThan(finger.center[0] + finger.half[0]);
+    const guards = lower.solids.filter((s) => s.id.startsWith('trigger-guard-') && s.id !== 'trigger-guard-top');
+    expect(
+      guards.every((guard) =>
+        blades.every((blade) => distanceWorld(worldSolid(IDENTITY, guard), worldSolid(IDENTITY, blade)) > 0),
+      ),
+      'clear of the rear, front and bottom walls',
+    ).toBe(true);
+  });
+
+  it("keeps the trigger plate clear of the receiver's loading port face", () => {
+    const resolved = resolve(assemblyFor(), gunDomain);
+    const plate = resolved.defs.get('lower')!.solids.find((s) => s.id === 'frame')!;
+    const port = resolved.defs.get('receiver')!.keepOuts.find((v) => v.id === 'loading-port')!;
+    const gap = distanceWorld(
+      worldSolid(resolved.placed.get('lower')!, plate),
+      worldSolid(resolved.placed.get('receiver')!, { id: port.id, kind: 'box', box: port.box }),
+    );
+    expect(gap).toBeGreaterThan(0);
   });
 
   it('exposes separate grip, joint and comb roles without splitting the finished wood surface', () => {

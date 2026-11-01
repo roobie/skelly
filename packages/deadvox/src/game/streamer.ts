@@ -4,6 +4,7 @@
 // and AO at chunk borders (including the wide occlusion, which reaches half a chunk) are correct
 // and never need a second pass.
 
+import { installColumn } from '../core/canonicalTerrain.ts';
 import type { Chunk } from '../core/chunk.ts';
 import { CHUNK, chunkKey, toChunk, type Vec3 } from '../core/coords.ts';
 import type { FencePostDefs } from '../core/fencePosts.ts';
@@ -83,6 +84,8 @@ export interface StreamerOptions {
   stamp?: ((chunk: Chunk) => void) | undefined;
   /** Mesh radius in chunks (a disc). Terrain is generated for every neighbour of a meshed column. */
   radius: number;
+  /** Extra terrain rings for sky prebuilding, without expanding mesh/reveal admission. */
+  preloadRings: number;
   /** Chunks beyond the rings that meshes and chunk data stay, so a column on the edge does not churn. */
   hysteresis: number;
   /** When given, per-column and per-chunk timings are appended here. */
@@ -121,43 +124,51 @@ export class Streamer {
   private readonly offsetKeys: Set<string>;
   /** The meshed disc, nearest first. */
   private readonly meshOffsets: [number, number][];
+  private readonly revealOffsets: [number, number][];
   private readonly discs = new Map<number, [number, number][]>();
   private nextWorker = 0;
-  private skyReply: ((result: SkyResult, ms: number) => void) | undefined;
-  private pendingSky: SkySnapshot | undefined;
+  private nextSkyId = 0;
+  private readonly skyReplies = new Map<number, (result: SkyResult, ms: number) => void>();
+  private readonly pendingSky: { id: number; input: SkySnapshot }[] = [];
+  /** Prebuild after terrain arrives, before refilling the mesh queue. */
+  onTerrainReady: ((x: number, z: number) => void) | undefined;
+  /** Admission seam for lighting; neighbour residency policy is separate. */
+  onBeforeReveal: ((cx: number, cz: number) => void) | undefined;
+  private revealed = new Set<string>();
   private firstMeshDelivered = false;
   private readonly workerLoads = new Map<Worker, number>();
   onSkyService: ((realMs: number) => void) | undefined;
 
-  /** One copied request can await admission without occupying a startup mesh slot. */
+  /** Copied requests await admission without occupying startup mesh slots. */
   requestSky(input: SkySnapshot, receive: (result: SkyResult, ms: number) => void): boolean {
-    if (this.skyReply) {
+    if (this.skyReplies.size >= this.maxInFlight) {
       return false;
     }
-    this.skyReply = receive;
-    this.pendingSky = input;
+    const id = this.nextSkyId;
+    this.nextSkyId += 1;
+    this.skyReplies.set(id, receive);
+    this.pendingSky.push({ id, input });
     this.dispatchSky();
     return true;
   }
 
   private dispatchSky(): void {
-    if (!(this.pendingSky && this.firstMeshDelivered) || this.inFlight.size >= this.maxInFlight) {
+    if (!(this.pendingSky.length > 0 && this.firstMeshDelivered) || this.occupied >= this.maxInFlight) {
       return;
     }
     const worker = this.workers.reduce((least, candidate) =>
       (this.workerLoads.get(candidate) ?? 0) < (this.workerLoads.get(least) ?? 0) ? candidate : least,
     );
-    const input = this.pendingSky;
-    this.pendingSky = undefined;
+    const { id, input } = this.pendingSky.shift()!;
     const startedRealMs = this.onSkyService ? performance.now() : undefined;
-    this.send(worker, { type: 'sky', input });
+    this.send(worker, { type: 'sky', id, input });
     if (startedRealMs !== undefined) {
       this.onSkyService?.(performance.now() - startedRealMs);
     }
   }
 
   private get occupied(): number {
-    return this.inFlight.size + Number(Boolean(this.skyReply) && !this.pendingSky);
+    return this.inFlight.size + this.skyReplies.size - this.pendingSky.length;
   }
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
@@ -198,7 +209,8 @@ export class Streamer {
     this.maxInFlight = count * 2;
 
     this.meshOffsets = discOffsets(opts.radius);
-    this.offsets = grownOffsets(this.meshOffsets);
+    this.revealOffsets = grownOffsets(this.meshOffsets);
+    this.offsets = grownOffsets(discOffsets(opts.radius + opts.preloadRings));
     this.offsetKeys = new Set(this.offsets.map(([dx, dz]) => `${dx},${dz}`));
   }
 
@@ -351,6 +363,8 @@ export class Streamer {
     if (this.generationFailed) {
       return;
     }
+    this.onTerrainReady?.(x, z);
+    this.dispatchSky();
     for (const [dx, dz] of this.meshOffsets) {
       if (this.occupied >= this.maxInFlight) {
         break;
@@ -386,7 +400,7 @@ export class Streamer {
   }
 
   private refreshReveal(): void {
-    for (const [dx, dz] of this.offsets) {
+    for (const [dx, dz] of this.revealOffsets) {
       const cx = this.center[0] + dx;
       const cz = this.center[1] + dz;
       const key = `${cx},${cz}`;
@@ -394,9 +408,17 @@ export class Streamer {
         this.completeColumns.add(key);
       }
     }
-    this.opts.meshes.setRevealedColumns(
-      revealedColumns(this.center, this.offsets, (cx, cz) => this.completeColumns.has(`${cx},${cz}`)),
+    const columns = revealedColumns(this.center, this.revealOffsets, (cx, cz) =>
+      this.completeColumns.has(`${cx},${cz}`),
     );
+    for (const key of columns) {
+      if (!this.revealed.has(key)) {
+        const [cx, cz] = key.split(',').map(Number);
+        this.onBeforeReveal?.(cx!, cz!);
+      }
+    }
+    this.revealed = columns;
+    this.opts.meshes.setRevealedColumns(columns);
   }
 
   /**
@@ -404,9 +426,9 @@ export class Streamer {
    * the player returns; touched ones stay in memory for the session (`DESIGN.md`, "Edits persist").
    */
   private unloadFar(): void {
-    const { world, scale, radius, hysteresis } = this.opts;
-    // The generated ring reaches less than a diagonal step past the mesh disc.
-    for (const col of farColumns(this.generated, this.center, radius + Math.SQRT2 + hysteresis)) {
+    const { world, scale, radius, preloadRings, hysteresis } = this.opts;
+    // The meshing dependency shell reaches less than a diagonal step past the preload disc.
+    for (const col of farColumns(this.generated, this.center, radius + preloadRings + Math.SQRT2 + hysteresis)) {
       const [cx, cz] = col.split(',').map(Number) as [number, number];
       const pinned = world.isTouched(cx, cz);
       for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
@@ -477,12 +499,7 @@ export class Streamer {
   private addGenerated(cx: number, cz: number): Chunk[] {
     const { world, seed, terrain, shape, scale, structures, surface, stamp } = this.opts;
     const column = generateColumn({ seed, blocks: terrain, shape, scale, surface, stamp }, cx, cz, structures);
-    // A chunk edited before its column generated is kept.
-    const added = column.filter((chunk) => !world.getChunk(chunk.cx, chunk.cy, chunk.cz));
-    for (const chunk of added) {
-      world.addChunk(chunk);
-    }
-    return added;
+    return installColumn(world, column);
   }
 
   /** A touched column's chunks when every one is resident, so it is installed instead of generated. */
@@ -495,7 +512,7 @@ export class Streamer {
     for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
       const chunk = world.getChunk(cx, cy, cz);
       if (!chunk) {
-        return undefined;
+        throw new Error(`Incomplete touched column ${cx},${cz}`);
       }
       chunks.push(chunk);
     }
@@ -526,9 +543,10 @@ export class Streamer {
   private receive(worker: Worker, msg: FromMesher): void {
     this.workerLoads.set(worker, (this.workerLoads.get(worker) ?? 1) - 1);
     if (msg.type === 'sky') {
-      const callback = this.skyReply;
-      this.skyReply = undefined;
+      const callback = this.skyReplies.get(msg.id);
+      this.skyReplies.delete(msg.id);
       callback?.(msg.result, msg.workerRealMs);
+      this.dispatchSky();
       return;
     }
     if (msg.type === 'vehicle') {

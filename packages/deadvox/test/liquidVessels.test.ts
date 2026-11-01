@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
-import { craftComponentEligible, ItemFactory, isEmpty, stackRoom, weightOf } from '../src/core/items.ts';
+import { craftComponentEligible, type Item, ItemFactory, isEmpty, stackRoom, weightOf } from '../src/core/items.ts';
 import type { LiquidContents } from '../src/core/schema.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
@@ -92,6 +92,24 @@ describe('liquid vessel foundation', () => {
     expect(craftComponentEligible(partial, true)).toBe(false);
     expect(isEmpty(empty)).toBe(true);
     expect(craftComponentEligible(empty, true)).toBe(true);
+  });
+
+  it('refuses liquid in a fitted subtree when consuming fitted components', () => {
+    const child: Item = {
+      uid: 2,
+      type: 'fixture-mounted-vessel',
+      count: 1,
+      condition: 1,
+      liquidContents: filled(100),
+    };
+    const component: Item = {
+      uid: 1,
+      type: 'fixture-parent',
+      count: 1,
+      condition: 1,
+      slots: { 'light-mount': child },
+    };
+    expect(craftComponentEligible(component, true)).toBe(false);
   });
 
   it.each([

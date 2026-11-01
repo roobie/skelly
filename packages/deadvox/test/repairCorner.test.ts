@@ -25,6 +25,9 @@ const fixtureRecipe = (): RecipeDef => {
   const skill = baseRegistry.skills.keys().next().value ?? 'fixture_skill';
   return {
     id: 'fixture_repair_corner',
+    category: 'fixture_category',
+    tags: [],
+    searchTerms: [],
     kind: 'repair',
     result: { item: target.id, count: 1 },
     repair: { skill, amount: 0.2, perSkill: 0 },
@@ -75,7 +78,10 @@ const authoredStockFixture = () => {
     return def?.container && def.size[1] === def.size[2];
   })!;
   const stockTypes = new Set(
-    repairRecipes.flatMap(({ result, components }) => [result.item, ...components.flat().map((part) => part.item)]),
+    repairRecipes.flatMap(({ result, components }) => [
+      result.item,
+      ...components.flat().flatMap((part) => ('item' in part ? [part.item] : [])),
+    ]),
   );
   const item = [...scenarioRegistry.items.values()]
     .sort((a, b) => a.id.localeCompare(b.id))

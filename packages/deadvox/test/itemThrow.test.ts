@@ -1,6 +1,7 @@
 import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
+import { worldGravity } from '../src/core/gravity.ts';
 import type { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import {
@@ -12,13 +13,12 @@ import {
 } from '../src/core/itemThrow.ts';
 import { pileItemPosition } from '../src/core/pileLayout.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
-import { reachTuning } from '../src/core/reach.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
 
 const base = baseRegistry();
-const { throwArcHeightMetres: arcHeightMetres } = reachTuning(base);
+const gravityMetresPerSimSecondSquared = worldGravity(base);
 
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
@@ -26,6 +26,7 @@ const testRegistry = (weights: Record<string, number>): Registry =>
     items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight, size: [1, 1] }])),
     models: new Map(),
     inventory: base.inventory,
+    player: base.player,
   }) as unknown as Registry;
 const presentationInventory = (item: Item): Inventory => {
   const pile = { pos: [2, 0, 0] as [number, number, number], items: [{ item, x: 0, y: 0, rotated: false }] };
@@ -78,7 +79,7 @@ describe('held-item throws', () => {
     );
   });
 
-  it('flies lower and for less simulated time when the same mass pushes more air', () => {
+  it('flies less far when the same mass pushes more air', () => {
     const registry = testRegistry({ compact: 100, flimsy: 100 });
     registry.items.set('flimsy', { id: 'flimsy', weight: 100, size: [2, 3] } as never);
     const fly = (type: string) =>
@@ -88,15 +89,11 @@ describe('held-item throws', () => {
         distanceMetres: throwDistanceForItem(testItem(type), registry, tuning, tuning.chargeSimSeconds),
         blockSize: 1,
         minY: -2,
-        isSolid: (_x, y) => y < 1,
+        isSolid: (_x, y) => y < 0,
       });
     const compact = fly('compact');
     const flimsy = fly('flimsy');
-    expect(flimsy.landing![0]).toBeLessThan(compact.landing![0]);
-    expect(flimsy.durationSimSeconds).toBeLessThan(compact.durationSimSeconds);
-    expect(Math.max(...flimsy.points.map((point) => point[1]))).toBeLessThan(
-      Math.max(...compact.points.map((point) => point[1])),
-    );
+    expect(flimsy.points.at(-1)![0]).toBeLessThan(compact.points.at(-1)![0]);
   });
 
   it('never lengthens a throw as drag rises, and lands however light the item', () => {
@@ -106,12 +103,12 @@ describe('held-item throws', () => {
         from: [0, 1, 0],
         direction: [1, 0, 0],
         distanceMetres: 8,
-        arcHeightMetres: 1,
+        gravityMetresPerSimSecondSquared: 1,
         flightSimSeconds: 1,
         drag,
         blockSize: 1,
         minY: -2,
-        isSolid: (_x, y) => y < 1,
+        isSolid: (_x, y) => y < 0,
       });
       expect(flight.landing).toBeDefined();
       expect(Number.isFinite(flight.durationSimSeconds)).toBe(true);
@@ -121,6 +118,38 @@ describe('held-item throws', () => {
       expect(ranges[index]).toBeGreaterThan(0);
       expect(ranges[index]).toBeLessThanOrEqual(ranges[index - 1]!);
     }
+  });
+
+  it('starts a level throw without upward velocity beyond the look direction', () => {
+    const flight = steppedItemFlight({
+      from: [0, 1, 0],
+      direction: [1, 0, 0],
+      distanceMetres: 1,
+      gravityMetresPerSimSecondSquared: 1,
+      flightSimSeconds: 1,
+      drag: 0,
+      blockSize: 1,
+      minY: -2,
+      isSolid: (_x, y) => y < 0,
+    });
+
+    expect(flight.points.every((point) => point[1] <= flight.points[0]![1])).toBe(true);
+  });
+
+  it('never rises when aimed downward', () => {
+    const flight = steppedItemFlight({
+      from: [0, 1, 0],
+      direction: [1, -0.1, 0],
+      distanceMetres: 1,
+      gravityMetresPerSimSecondSquared: 1,
+      flightSimSeconds: 1,
+      drag: 0,
+      blockSize: 1,
+      minY: -2,
+      isSolid: (_x, y) => y < 0,
+    });
+
+    expect(flight.points.every((point, index) => index === 0 || point[1] <= flight.points[index - 1]![1])).toBe(true);
   });
 
   it('changes dragged range with pitch and draws the stepped path', () => {
@@ -134,7 +163,7 @@ describe('held-item throws', () => {
         distanceMetres,
         blockSize: 1,
         minY: -2,
-        isSolid: (_x, y) => y < 1,
+        isSolid: (_x, y) => y < 0,
       });
     const down = fly(-0.3);
     const level = fly(0);
@@ -192,7 +221,7 @@ describe('held-item throws', () => {
       model: 'rifle_model',
       slots: [{ slot: 'magazine', model: 'magazine_model' }],
     });
-    expect(throws.group.getObjectByName('rifle_model+magazine=magazine_model')).toBe(rifleModel);
+    expect(throws.group.getObjectByName(requestedLook!.key)).toBe(rifleModel);
     throws.dispose();
   });
 
@@ -298,6 +327,30 @@ describe('held-item throws', () => {
     throws.dispose();
   });
 
+  it('uses the shared content gravity for an item flight', () => {
+    const stronger = {
+      ...base,
+      player: new Map(
+        [...base.player].map(([id, player]) => [
+          id,
+          { ...player, gravityMetresPerSimSecondSquared: player.gravityMetresPerSimSecondSquared * 2 },
+        ]),
+      ),
+    };
+    const options = {
+      from: [0, 8, 0] as [number, number, number],
+      direction: [1, 0, 0] as [number, number, number],
+      distanceMetres: 4,
+      blockSize: 1,
+      minY: -8,
+      isSolid: () => false,
+    };
+
+    expect(flightForItem(testItem('rag'), stronger, options).points[1]![1]).toBeLessThan(
+      flightForItem(testItem('rag'), base, options).points[1]![1],
+    );
+  });
+
   it('settles an elevated throw onto the first solid surface below instead of retaining release height', () => {
     const from: [number, number, number] = [1.5, 8.5, 1.5];
     const isSolid: SolidAt = (_x, y) => y === 5 || y === 0;
@@ -307,7 +360,7 @@ describe('held-item throws', () => {
       from,
       direction: [1, 0, 0],
       distanceMetres: 4,
-      arcHeightMetres,
+      gravityMetresPerSimSecondSquared,
       blockSize: 1,
       minY: -8,
       isSolid,
@@ -326,7 +379,7 @@ describe('held-item throws', () => {
       from: [1.5, 8.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 4,
-      arcHeightMetres,
+      gravityMetresPerSimSecondSquared,
       blockSize: 1,
       minY: -8,
       isSolid: () => false,
@@ -343,7 +396,7 @@ describe('held-item throws', () => {
       from: [1.5, 1.5, 1.5],
       direction: [1, 0, 0],
       distanceMetres: 8,
-      arcHeightMetres,
+      gravityMetresPerSimSecondSquared,
       blockSize: 1,
       minY: -8,
       isSolid,
@@ -354,15 +407,15 @@ describe('held-item throws', () => {
     expect(landing![1]).toBe(1);
   });
 
-  it('stops the charged arc at a low ceiling and settles below it', () => {
+  it('stops an upward throw at a low ceiling and settles below it', () => {
     const isSolid: SolidAt = (x, y) => y === 0 || (y === 2 && x < 6);
     const { landing } = steppedItemFlight({
       drag: 0,
       flightSimSeconds: 1,
       from: [1.5, 1.5, 1.5],
-      direction: [1, 0, 0],
+      direction: [1, 1, 0],
       distanceMetres: 8,
-      arcHeightMetres,
+      gravityMetresPerSimSecondSquared,
       blockSize: 1,
       minY: -8,
       isSolid,

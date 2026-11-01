@@ -145,6 +145,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
         "head": {
@@ -398,6 +399,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "soldier_pockets",
       "meleeDamageResistance": {
         "head": {
@@ -651,6 +653,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "farmer_pockets",
       "meleeDamageResistance": {
         "head": {
@@ -904,6 +907,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "worker_pockets",
       "meleeDamageResistance": {
         "head": {
@@ -1157,6 +1161,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "medic_pockets",
       "meleeDamageResistance": {
         "head": {
@@ -1410,6 +1415,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
         "head": {
@@ -1657,6 +1663,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "runner",
       "name": "Runner",
@@ -1839,6 +1846,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "model": "crawler",
       "name": "Crawler",
@@ -2024,6 +2032,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "locomotion": "omnidirectional",
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
@@ -2158,8 +2167,7 @@
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
         "cooldownSimSeconds": 5,
-        "globGravityMetresPerSimSecondSquared": 4,
-        "globMetresPerSimSecond": 14,
+        "globMetresPerSimSecond": 21.924600000000002,
         "moves": [
           {
             "damage": 6,
@@ -2348,6 +2356,7 @@
           "min": 8
         }
       },
+      "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
       "meleeDamageResistance": {
         "head": {

@@ -119,7 +119,7 @@ export const advanceBreathHold = (
   return { state: { held: false, recoveryRemainingSimSeconds } };
 };
 
-/** Firearms skill strengthens the hold and felt pain weakens it; the result is the share of drift removed. */
+/** The steadiness skill strengthens the hold and felt pain weakens it. */
 export const breathSteadying = (effectLevel: number, painRatio: number, tuning: BreathHoldTuning): number => {
   const skilled =
     tuning.steadyingMinimum +

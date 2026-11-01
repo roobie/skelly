@@ -9,6 +9,8 @@ import { ReticleSchema } from '@skelly/thing-core/reticle';
 import { ModelPointSchema, modelSchema } from '@skelly/thing-core/schema';
 import {
   array,
+  type BaseIssue,
+  type BaseSchema,
   check,
   exactOptional,
   finite,
@@ -44,6 +46,7 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { solidBlocks } from '../vehicles/solid.ts';
 import { ActionTextSchema } from './actionText.ts';
 import { hasSegment } from './authoredTerrain.mjs';
+import { BLOCK_DAMAGE_KINDS } from './blockDamageKinds.ts';
 import {
   BODY_REGIONS,
   type BodyRegion,
@@ -53,7 +56,7 @@ import {
   TOUCHES,
   type Touch,
 } from './body.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { SPAWN_TIME_NAMES } from './clock.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from './coreText.ts';
@@ -172,8 +175,34 @@ export const BLOCK_PATTERNS = [
   'camo',
 ] as const;
 
+const BlockMaterialSchema = pipe(
+  strictObject({
+    id: Id,
+    minimumStrength: NonNegative,
+    durability: Positive,
+    resistance: strictObject(
+      Object.fromEntries(BLOCK_DAMAGE_KINDS.map((kind) => [kind, Fraction])) as Record<
+        (typeof BLOCK_DAMAGE_KINDS)[number],
+        typeof Fraction
+      >,
+    ),
+    massKg: Positive,
+    span: Count,
+    fallsTo: Id,
+    rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+    blowSound: Id,
+    broken: strictObject({ tint: Color, strength: Fraction }),
+    damaged: array(strictObject({ from: Fraction, tint: Color, strength: Fraction })),
+  }),
+  check(
+    ({ damaged }) => damaged.every((step, at) => at === 0 || step.from > damaged[at - 1]!.from),
+    'damage looks need strictly rising thresholds',
+  ),
+);
+
 const BlockSchema = strictObject({
   id: Id,
+  material: Id,
   name: Name,
   color: Color,
   /** Blocks movement independently of sight and render geometry. */
@@ -266,7 +295,7 @@ const VEHICLE_CAPABILITIES = [
   'lift',
   /** Braces a lifting vehicle against the ground; a vehicle that lifts needs one. */
   'stabiliser',
-  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `freeFloor`). */
+  /** A floor a cargo space can rest on (`src/core/cargoSpace.ts`, `placementRegion`). */
   'load_floor',
 ] as const;
 export type VehicleCapability = (typeof VEHICLE_CAPABILITIES)[number];
@@ -323,8 +352,11 @@ const InventoryTuningSchema = strictObject({
   cellMetres: Positive,
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
+  keyHoldRealSeconds: Positive,
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
+  /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */
+  autoPlacementTallMinFreeAreaGainCells: pipe(number(), integer(), minValue(0)),
   /** Metres from the chest to the nearest point of a pile, furniture box or body for inventory actions. */
   reachMetres: Positive,
   /** Metres above the feet at which reach is measured. */
@@ -335,8 +367,6 @@ const InventoryTuningSchema = strictObject({
   search: strictObject({ minSimSeconds: SimSeconds, maxSimSeconds: SimSeconds, cellsForMax: Cells }),
   /** Sim seconds a thrown item takes from the hand to where it lands. */
   throwFlightSimSeconds: Positive,
-  /** Metres a thrown item rises above the straight line from hand to landing, at mid-flight. */
-  throwArcHeightMetres: NonNegative,
   /** Air resistance on a thrown item (`DESIGN.md`, "Held-item throws"). */
   throwDrag: strictObject({
     airDensityKgPerCubicMetre: NonNegative,
@@ -443,7 +473,12 @@ const UiScreenTextSchema = strictObject({
   /** What the audio options call each volume. */
   audioVolumeLabels: strictObject({ master: Name, world: Name, body: Name, ui: Name }),
   /** The fixed pointer input each unbindable pointer action names. */
-  pointerButtonLabels: strictObject({ 'hand.use-dominant': Name, 'hand.off-instant': Name, 'pointer.look': Name }),
+  pointerButtonLabels: strictObject({
+    'hand.use-dominant': Name,
+    'hand.off-instant': Name,
+    'pointer.look': Name,
+    'inventory.wield-or-pocket': Name,
+  }),
   /** What the win card says about saving the completed attempt. */
   winCheckpointMessages: strictObject({ saved: Name, pending: Name, failed: Name, unavailable: Name }),
   /** The HUD, audio, graphics and fullscreen options in the menu. */
@@ -506,8 +541,18 @@ const UiScreenTextSchema = strictObject({
   /** The continue-or-stop prompt an interruption raises, on the rest card and in the world prompt. */
   prompt: slottedTable({ interruption: ['reason'], continue: ['key'], stop: ['key'] }),
   reading: slottedTable({ putAway: [], putAwayLabel: [], progress: [], text: [] }),
+  worldService: slottedTable({
+    push: [],
+    drag: [],
+    lift: [],
+  }),
   crafting: slottedTable({
     heading: [],
+    all: [],
+    categories: [],
+    find: [],
+    tags: [],
+    clearFind: [],
     headingFact: [],
     length: ['span'],
     found: ['item', 'found', 'needed'],
@@ -520,6 +565,11 @@ const UiScreenTextSchema = strictObject({
     repair: ['item'],
     repairName: ['item'],
     cheapestAvailable: [],
+    liquidFound: ['item', 'found', 'needed'],
+    liquidDraw: ['liquid', 'volume', 'vessel'],
+    sources: [],
+    defaultSources: [],
+    sourceVessel: ['vessel', 'volume'],
     noMatches: [],
     noRepairTarget: [],
     repairing: ['item'],
@@ -583,6 +633,7 @@ const UiScreenTextSchema = strictObject({
     barDoor: ['name'],
     liftBar: [],
     hold: ['key', 'action'],
+    actions: [],
     climb: ['name'],
     read: ['name'],
     rest: ['name'],
@@ -599,6 +650,9 @@ const UiScreenTextSchema = strictObject({
     jsonLabel: [],
     jsonFact: ['maxBytes'],
     storageFailed: [],
+    invalidSelection: [],
+    discard: [],
+    saveFailed: [],
     input: [],
     inputLabel: [],
     add: [],
@@ -622,7 +676,8 @@ const UiScreenTextSchema = strictObject({
   tutorial: slottedTable({
     inventory: [],
     closeInventory: [],
-    quickAction: [],
+    findItems: [],
+    wieldOrStow: [],
     wieldSelectedItem: [],
     eatBeans: [],
     openedBeans: [],
@@ -764,6 +819,7 @@ const UiScreenTextSchema = strictObject({
     tabSkills: [],
     tabCrafting: [],
     tabActions: [],
+    tabRepair: [],
     find: [],
     findLabel: [],
     needsLabel: [],
@@ -786,6 +842,12 @@ const UiScreenTextSchema = strictObject({
     searching: [],
     searchIt: ['key'],
     noSelection: [],
+    recoveryAmount: ['liquid', 'volume'],
+    recoveryReceiver: ['liquid'],
+    recoveryNoMatches: [],
+    recoverySpillAll: [],
+    recoveryUnavailable: [],
+    recoveryAction: ['action', 'spill'],
     inspect: [],
     whereItCanGo: [],
     firearmSlots: [],
@@ -832,6 +894,7 @@ const UiScreenTextSchema = strictObject({
     nothingQueued: [],
     nothingToSearch: [],
     noRoom: [],
+    noPutTarget: [],
     taking: ['count', 'category'],
     noneToTake: ['category'],
     secs: ['value'],
@@ -1388,11 +1451,8 @@ const ToolFractionBonus = pipe(
   minLength(1, 'needs a bonus for at least one tool level'),
   check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
 );
-const DisassemblyYieldSchema = strictObject({
-  ...ItemCountSchema.entries,
-  /** Multiplier by skill level: index 0 is skill 0; the last entry is this yield's top level. */
+const LiquidRecoverySchema = strictObject({
   fractions: SkillFractions,
-  /** Applied independently to this yield's scaled count. */
   rounding: YieldRounding,
   toolModifier: optional(
     strictObject({
@@ -1402,11 +1462,16 @@ const DisassemblyYieldSchema = strictObject({
     }),
   ),
 });
+const DisassemblyYieldSchema = strictObject({
+  ...ItemCountSchema.entries,
+  ...LiquidRecoverySchema.entries,
+});
 const DisassemblySchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
+  liquidRecovery: optional(LiquidRecoverySchema),
 });
 /** What one dose of a painkiller does to felt pain (`DESIGN.md`, "Pain"); it heals nothing. */
 const AnalgesicSchema = strictObject({
@@ -1448,12 +1513,15 @@ const TreatmentSchema = pipe(
 );
 
 const LiquidVolumeMicrolitres = pipe(number(), safeInteger(), minValue(0));
+const LiquidAmountSchema = strictObject({
+  liquid: Id,
+  volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+});
 const LiquidContentsSchema = union([
   strictObject({ kind: literal('empty') }),
   strictObject({
     kind: literal('filled'),
-    liquid: Id,
-    volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+    ...LiquidAmountSchema.entries,
   }),
 ]);
 const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMillilitre: pipe(Positive, finite()) });
@@ -1470,6 +1538,17 @@ const VesselSchema = strictObject({
 });
 
 export type LiquidContents = InferOutput<typeof LiquidContentsSchema>;
+
+export const VEHICLE_ADDON_FACES = {
+  // biome-ignore lint/style/useNamingConvention: keys are content capability words.
+  load_floor: { normal: 1, tangents: [0, 2] },
+} as const;
+
+const VehicleServiceFields = {
+  mount: Id,
+  durationSimSeconds: PositiveSimSeconds,
+  qualities: record(Id, QualityLevel),
+};
 
 const ItemSchema = strictObject({
   id: Id,
@@ -1523,10 +1602,11 @@ const ItemSchema = strictObject({
   ),
   /** An authored yield for a finished item; never inferred from recipe alternatives. */
   disassembly: optional(DisassemblySchema),
-  /** Fixed outputs for found items with no recipe. */
+  /** Destructive recovery outputs, independent of recipes and disassembly support. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),
+  salvageLiquidRecovery: optional(strictObject({ skill: Id, ...LiquidRecoverySchema.entries })),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
@@ -1583,6 +1663,14 @@ const ItemSchema = strictObject({
     strictObject({
       /** Content identity of the service interface this loose part can occupy. */
       mount: optional(Id),
+      service: optional(strictObject(VehicleServiceFields)),
+      addon: optional(
+        strictObject({
+          requires: picklist(Object.keys(VEHICLE_ADDON_FACES) as (keyof typeof VEHICLE_ADDON_FACES)[]),
+          /** An omitted clearance leaves open sky unbounded; fitted collision still limits height. */
+          openClearanceCells: optional(Cells),
+        }),
+      ),
       capabilities: pipe(
         array(picklist(VEHICLE_CAPABILITIES)),
         check((list) => new Set(list).size === list.length, 'capabilities must be distinct'),
@@ -1604,8 +1692,6 @@ const ItemSchema = strictObject({
         strictObject({
           /** Sim seconds to take an item out or put one in, before the per-cell part. */
           handlingSimSeconds: SimSeconds,
-          /** The clearance above a free-floor cell with nothing over it, in cells. */
-          openClearanceCells: Cells,
           /** Why its pocket may be wider than the inventory width tuning allows. */
           wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
         }),
@@ -1626,14 +1712,12 @@ const VehicleFittingSchema = strictObject({
   supportedBy: array(Id),
   /** A factory cargo space's size in inventory cells along x, y and z; its pocket is x by z. */
   cargo: optional(tuple([Cells, Cells, Cells])),
-  /** Requirements for servicing this site; omitted sites are not player-serviceable. */
+  /** Overrides the part's work requirements at this authored site. */
   service: optional(
     strictObject({
       /** What the opened vehicle calls this site while it is empty. */
       name: Name,
-      mount: Id,
-      durationSimSeconds: PositiveSimSeconds,
-      qualities: record(Id, QualityLevel),
+      ...VehicleServiceFields,
     }),
   ),
 });
@@ -2180,8 +2264,41 @@ const HandsModelSchema = strictObject({
 });
 export type HandsModelDef = InferOutput<typeof HandsModelSchema>;
 
+const PresentationBands = <T extends BaseSchema<unknown, unknown, BaseIssue<unknown>>>(entry: T) =>
+  pipe(array(entry), minLength(1));
+
+const ItemWearSchema = strictObject({
+  id: Id,
+  bands: PresentationBands(
+    strictObject({
+      from: pipe(number(), minValue(0), maxValue(1)),
+      tints: record(Id, strictObject({ color: Color, mix: pipe(number(), minValue(0), maxValue(1)) })),
+    }),
+  ),
+});
+
 export const ModelSchema = pipe(
   modelSchema({
+    itemPresentation: optional(
+      strictObject({
+        materials: array(Id),
+        wear: Id,
+        supply: union([
+          strictObject({ kind: literal('none') }),
+          strictObject({
+            kind: literal('fill'),
+            piece: pipe(string(), nonEmpty()),
+            axis: picklist(['x', 'y', 'z']),
+            bands: PresentationBands(
+              strictObject({
+                from: pipe(number(), minValue(0), maxValue(1)),
+                scale: pipe(number(), minValue(0), maxValue(1)),
+              }),
+            ),
+          }),
+        ]),
+      }),
+    ),
     gun: optional(GunModelSchema),
     dial: optional(CompassDialSchema),
     lever: optional(LeverModelSchema),
@@ -2531,6 +2648,8 @@ const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
   /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
   charge: optional(Fraction),
+  craftedLiquids: optional(pipe(array(LiquidAmountSchema), nonEmpty())),
+  liquidContents: optional(LiquidContentsSchema),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -2901,20 +3020,22 @@ const LayoutRect = pipe(
 
 const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
-/** Where new features are shown: an authored row of slots and a derived catalogue of every furniture piece. */
+/** Where new features are shown: authored slots and a derived catalogue of every furniture piece. */
 const ShowroomSchema = strictObject({
-  /** The west end of the slot row's front line, feet on the deck; slots run east from here. */
+  /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
   row: HalfMetrePosition,
   /** Which way every slot's front faces; the row is seen from that side. */
   facing: picklist(['n', 's']),
   /** Gap between neighbouring slots. */
   spacing: PositiveHalfMetres,
-  /** How many slots the row holds; a new slot past it replaces the oldest. */
+  /** How many slots the display holds; a new slot past it replaces the oldest. */
   capacity: pipe(Count, minValue(1)),
   /** Oldest first; the default spawn faces the last. */
   slots: array(
     strictObject({
       furniture: Id,
+      /** An independently placed slot does not consume space in the packed row. */
+      placement: optional(strictObject({ position: HalfMetrePosition, facing: picklist(['n', 's']) })),
       fixed: optional(literal(true)),
       /** The slot's fixture stock. */
       items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
@@ -3358,7 +3479,6 @@ const AcidSpitSchema = pipe(
     cancelPenaltyFraction: Fraction,
     spreadDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
     globMetresPerSimSecond: SimRate,
-    globGravityMetresPerSimSecondSquared: SimAcceleration,
     presentation: strictObject({
       color: Color,
       radiusMetres: Positive,
@@ -3448,6 +3568,7 @@ const ZombieSchema = strictObject({
   footstepSound: optional(picklist(['shambler'])),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
+  jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
   /**
    * Force of a bash against a closed door it is pressed against, in the N·s of a melee weapon's `impulse`, so a
    * player's strike and a bash meet the same door gate. It bashes once per attack cooldown; 0 never damages a door.
@@ -3732,6 +3853,13 @@ const HeldPosesSchema = strictObject({
 export type HeldPosesDef = InferOutput<typeof HeldPosesSchema>;
 
 /** Actor models and poses are content so appearance doesn't live in renderer code; `DESIGN.md`, "Models". */
+/** How the view animates between hip and sights across an aim's acquisition and release. */
+const AdsViewBlendSchema = strictObject({
+  easing: picklist(['linear', 'smoothstep']),
+  /** How long the view takes to settle back to the hip pose after the aim is released. */
+  blendBackRealSeconds: PositiveRealSeconds,
+});
+
 const FigureSchema = strictObject({
   id: Id,
   /** Where the hips stand above the ground; stances pivot about them. */
@@ -3793,6 +3921,7 @@ const FigureSchema = strictObject({
         check((value) => value < 1, 'neck length must remain positive'),
       ),
       stockShoulderOffset: Point,
+      viewBlend: AdsViewBlendSchema,
     }),
   }),
   lookDownLean: strictObject({
@@ -3836,7 +3965,16 @@ const SkillSchema = pipe(
   strictObject({
     id: Id,
     name: Name,
+    detail: optional(Name),
     curve: optional(SkillCurveSchema),
+    steadiness: optional(
+      strictObject({
+        wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
+        steadyingMinimum: Fraction,
+        steadyingSkillRange: Fraction,
+        steadyingSkillHalfLifeLevels: Positive,
+      }),
+    ),
     /** Recipes a new character knows from the start. */
     startingRecipes: optional(array(Id)),
     training: optional(
@@ -3873,9 +4011,12 @@ const SkillSchema = pipe(
       strictObject({
         firearms: optional(
           strictObject({
+            longGunSteadinessSkill: Id,
             raiseMinimumSimSeconds: PositiveSimSeconds,
             raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
+            /** The ADS-only speed floor, as a maximum aim-down-sights acquisition duration. */
+            adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
             readyMovementMinimum: Fraction,
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
@@ -3942,7 +4083,7 @@ const SkillSchema = pipe(
       }),
     ),
   }),
-  check(({ training, id, combat, inventory }) => {
+  check(({ training, id, combat, inventory, steadiness, curve }) => {
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
@@ -3961,6 +4102,13 @@ const SkillSchema = pipe(
     const melee = combat?.melee;
     return (
       complete &&
+      (!steadiness ||
+        (curve !== undefined &&
+          steadiness.steadyingMinimum + steadiness.steadyingSkillRange <= 1 &&
+          activity('acquisition', 'practice') &&
+          activity('ads', 'practicePerSimSecond') &&
+          activity('shot', 'practice') &&
+          activity('hit', 'practice'))) &&
       (!firearm ||
         (firearm.readyMovementMinimum + firearm.readyMovementRange <= 1 &&
           firearm.breathHold.steadyingMinimum + firearm.breathHold.steadyingSkillRange <= 1)) &&
@@ -4103,7 +4251,13 @@ const PlayerSchema = strictObject({
   jog: SimRate,
   sprint: SimRate,
   jump: SimRate,
+  /** Downward acceleration shared by every falling body and effect. */
+  gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
+  debugBlockTool: strictObject({
+    reachMetres: Positive,
+    stepDurabilityFraction: pipe(Positive, ltValue(1)),
+  }),
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
   lean: strictObject({
@@ -4198,8 +4352,7 @@ const SenseSchema = strictObject({
     illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
-/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
-const RecipeItemSchema = ItemCountSchema;
+const RecipeInputSchema = union([ItemCountSchema, LiquidAmountSchema]);
 
 const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
   const { min, max } = WEATHERING_RANGES[field];
@@ -4531,9 +4684,24 @@ const BodyTuningSchema = pipe(
   }),
 );
 
+const RecipeCategorySchema = strictObject({
+  id: Id,
+  label: Name,
+  parent: optional(Id),
+  order: pipe(number(), finite()),
+});
+const RecipeTagSchema = strictObject({
+  id: Id,
+  label: Name,
+  searchTerms: array(Name),
+});
+
 const RecipeSchema = strictObject({
   id: Id,
-  result: RecipeItemSchema,
+  category: Id,
+  tags: array(Id),
+  searchTerms: array(Name),
+  result: ItemCountSchema,
   /** Omitted means an ordinary craft. Item repair uses the result type; world repair names its entity type. */
   kind: optional(picklist(['craft', 'repair'])),
   /** `amount` is the repair at the lowest skill, so it must be more than 0 for every repair to restore something. */
@@ -4541,9 +4709,15 @@ const RecipeSchema = strictObject({
   activation: optional(literal('sharpen')),
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
+  skillUnlock: optional(
+    strictObject({
+      skill: Id,
+      level: pipe(number(), integer(), minValue(SKILL_LEVEL_MIN), maxValue(SKILL_LEVEL_LEGENDARY)),
+    }),
+  ),
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
-  components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
+  components: array(pipe(array(RecipeInputSchema), nonEmpty('needs at least one alternative'))),
   consumeFitted: optional(vBoolean()),
   workstation: optional(nullable(Id)),
 });
@@ -4566,7 +4740,11 @@ const GraphicsTuningSchema = strictObject({
    */
   fogFarPlaneScale: pipe(number(), finite(), minValue(1)),
   itemPictureCacheCapacity: pipe(number(), integer(), minValue(1)),
+  /** The inventory picture camera's margin around a model's fitted bounds. */
+  itemPicture: strictObject({ framing: Positive }),
   modelLoadConcurrency: pipe(number(), integer(), minValue(1)),
+  skyJobsInFlight: pipe(number(), integer(), minValue(2)),
+  skyPreloadRings: Count,
   /** Diffuse sky visibility drawn where a sky field has no answer yet (`DESIGN.md`, "Light"). */
   unbuiltSkyCap: Fraction,
   /** The inventory item viewer: opening pose, drag and wheel response, and zoom range around the opening zoom of 1. */
@@ -4647,6 +4825,7 @@ const LookDefaultsSchema = strictObject({
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
+  blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
@@ -4695,10 +4874,13 @@ const SECTION_DESCRIPTOR = {
   },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
+  itemWear: { schema: optional(array(ItemWearSchema)), label: 'item wear looks', order: 7.1 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
+  recipeCategories: { schema: optional(array(RecipeCategorySchema)), label: 'recipe categories', order: 10.1 },
+  recipeTags: { schema: optional(array(RecipeTagSchema)), label: 'recipe tags', order: 10.2 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
@@ -4734,6 +4916,7 @@ const sectionSchemas = Object.fromEntries(
 export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
+export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 type LootTable = InferOutput<typeof LootTableSchema>;
@@ -4763,6 +4946,7 @@ export type VehicleFittingDef = InferOutput<typeof VehicleBlueprintSchema>['fitt
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SoundRecipe = InferOutput<typeof SoundRecipeSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type RecipeCategoryDef = InferOutput<typeof RecipeCategorySchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
@@ -4776,6 +4960,7 @@ export type GraphicsTuningDef = InferOutput<typeof GraphicsTuningSchema>;
 export type LookDefaultsDef = InferOutput<typeof LookDefaultsSchema>;
 export type TreeConeCrown = Extract<InferOutput<typeof TreeCrownSchema>, { kind: 'cone' }>;
 export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
+export type SkillDef = InferOutput<typeof SkillSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
 

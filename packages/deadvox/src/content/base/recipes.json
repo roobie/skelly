@@ -153,8 +153,95 @@
       "workInProgress": false
     }
   ],
+  "recipeCategories": [
+    {
+      "id": "supplies",
+      "label": "Supplies",
+      "order": 10
+    },
+    {
+      "id": "materials",
+      "label": "Materials",
+      "order": 10,
+      "parent": "supplies"
+    },
+    {
+      "id": "tools",
+      "label": "Tools and kits",
+      "order": 20,
+      "parent": "supplies"
+    },
+    {
+      "id": "lighting",
+      "label": "Lighting",
+      "order": 30,
+      "parent": "supplies"
+    },
+    {
+      "id": "attachments",
+      "label": "Weapon attachments",
+      "order": 40,
+      "parent": "supplies"
+    },
+    {
+      "id": "fixtures",
+      "label": "Fixtures",
+      "order": 20
+    },
+    {
+      "id": "repairs",
+      "label": "Repairs",
+      "order": 30
+    },
+    {
+      "id": "repair_tools",
+      "label": "Tools and weapons",
+      "order": 10,
+      "parent": "repairs"
+    },
+    {
+      "id": "repair_clothing",
+      "label": "Clothing and bags",
+      "order": 20,
+      "parent": "repairs"
+    },
+    {
+      "id": "repair_electrical",
+      "label": "Electrical equipment",
+      "order": 30,
+      "parent": "repairs"
+    }
+  ],
+  "recipeTags": [
+    {
+      "id": "wood",
+      "label": "Wood",
+      "searchTerms": ["timber"]
+    },
+    {
+      "id": "metal",
+      "label": "Metal",
+      "searchTerms": []
+    },
+    {
+      "id": "textile",
+      "label": "Textiles",
+      "searchTerms": ["cloth", "fabric"]
+    },
+    {
+      "id": "electrical",
+      "label": "Electrical",
+      "searchTerms": ["wiring"]
+    },
+    {
+      "id": "edge",
+      "label": "Sharpening",
+      "searchTerms": ["blade", "edge"]
+    }
+  ],
   "recipes": [
     {
+      "category": "lighting",
       "components": [
         [
           {
@@ -183,12 +270,181 @@
         "count": 1,
         "item": "torch"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["wood", "textile"],
       "timeGameMinutes": 20
     },
     {
+      "category": "supplies",
+      "components": [
+        [
+          {
+            "count": 2,
+            "item": "cloth_strip"
+          }
+        ]
+      ],
+      "id": "make_bandage",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "bandage"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 5
+    },
+    {
+      "category": "lighting",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "flashlight"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "cloth_strip"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "consumeFitted": true,
+      "id": "make_headlamp_strap",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "headlamp"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 10
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "baseball_bat"
+          }
+        ],
+        [
+          {
+            "count": 12,
+            "item": "nails"
+          }
+        ]
+      ],
+      "id": "make_nail_bat",
+      "qualities": {
+        "hammering": 1
+      },
+      "result": {
+        "count": 1,
+        "item": "nail_bat"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood", "metal"],
+      "timeGameMinutes": 15
+    },
+    {
+      "category": "tools",
+      "components": [
+        [
+          {
+            "count": 1,
+            "item": "stick"
+          },
+          {
+            "count": 1,
+            "item": "wooden_plank"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "kitchen_knife"
+          },
+          {
+            "count": 2,
+            "item": "glass_shards"
+          }
+        ],
+        [
+          {
+            "count": 1,
+            "item": "nylon_cord"
+          },
+          {
+            "count": 1,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "make_spear",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "spear"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["wood", "textile"],
+      "timeGameMinutes": 20
+    },
+    {
+      "category": "supplies",
+      "components": [
+        [
+          {
+            "count": 4,
+            "item": "paperback"
+          }
+        ],
+        [
+          {
+            "count": 2,
+            "item": "duct_tape"
+          }
+        ]
+      ],
+      "id": "make_taped_armour",
+      "qualities": {},
+      "result": {
+        "count": 1,
+        "item": "taped_armour"
+      },
+      "searchTerms": [],
+      "skills": {
+        "crafting": 0
+      },
+      "tags": ["textile"],
+      "timeGameMinutes": 30
+    },
+    {
+      "category": "lighting",
       "components": [
         [
           {
@@ -211,13 +467,16 @@
         "count": 1,
         "item": "candle"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": [],
       "timeGameMinutes": 10,
       "workstation": null
     },
     {
+      "category": "tools",
       "components": [
         [
           {
@@ -246,12 +505,15 @@
         "count": 1,
         "item": "repair_kit"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 1
       },
+      "tags": ["metal", "textile"],
       "timeGameMinutes": 30
     },
     {
+      "category": "materials",
       "components": [
         [
           {
@@ -268,12 +530,15 @@
         "count": 1,
         "item": "copper_wire"
       },
+      "searchTerms": ["strip"],
       "skills": {
         "mechanics": 0
       },
+      "tags": ["electrical", "metal"],
       "timeGameMinutes": 8
     },
     {
+      "category": "materials",
       "components": [
         [
           {
@@ -294,12 +559,15 @@
         "count": 1,
         "item": "field_patch"
       },
+      "searchTerms": [],
       "skills": {
         "mechanics": 2
       },
+      "tags": ["electrical"],
       "timeGameMinutes": 12
     },
     {
+      "category": "repair_tools",
       "components": [
         [
           {
@@ -328,12 +596,15 @@
         "count": 1,
         "item": "crowbar"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["metal"],
       "timeGameMinutes": 15
     },
     {
+      "category": "materials",
       "components": [
         [
           {
@@ -350,13 +621,16 @@
         "count": 1,
         "item": "wooden_plank"
       },
+      "searchTerms": ["saw"],
       "skills": {
         "crafting": 0
       },
+      "tags": ["wood"],
       "timeGameMinutes": 4,
       "workstation": "workbench"
     },
     {
+      "category": "fixtures",
       "components": [
         [
           {
@@ -373,14 +647,17 @@
         "count": 1,
         "item": "door_bar"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["wood"],
       "timeGameMinutes": 10,
       "workstation": "workbench"
     },
     {
       "activation": "sharpen",
+      "category": "repair_tools",
       "components": [],
       "id": "grind_kitchen_knife",
       "kind": "repair",
@@ -394,14 +671,17 @@
         "count": 1,
         "item": "kitchen_knife"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["edge"],
       "timeGameMinutes": 10,
       "workstation": "grinding_wheel"
     },
     {
       "activation": "sharpen",
+      "category": "repair_tools",
       "components": [],
       "id": "hone_kitchen_knife",
       "kind": "repair",
@@ -417,14 +697,17 @@
         "count": 1,
         "item": "kitchen_knife"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["edge"],
       "timeGameMinutes": 20,
       "workstation": null
     },
     {
       "activation": "sharpen",
+      "category": "repair_tools",
       "components": [],
       "id": "grind_kabar",
       "kind": "repair",
@@ -438,14 +721,17 @@
         "count": 1,
         "item": "kabar"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["edge"],
       "timeGameMinutes": 10,
       "workstation": "grinding_wheel"
     },
     {
       "activation": "sharpen",
+      "category": "repair_tools",
       "components": [],
       "id": "hone_kabar",
       "kind": "repair",
@@ -461,14 +747,17 @@
         "count": 1,
         "item": "kabar"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["edge"],
       "timeGameMinutes": 20,
       "workstation": null
     },
     {
       "activation": "sharpen",
+      "category": "repair_tools",
       "components": [],
       "id": "grind_machete",
       "kind": "repair",
@@ -482,14 +771,17 @@
         "count": 1,
         "item": "machete"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["edge"],
       "timeGameMinutes": 10,
       "workstation": "grinding_wheel"
     },
     {
       "activation": "sharpen",
+      "category": "repair_tools",
       "components": [],
       "id": "hone_machete",
       "kind": "repair",
@@ -505,9 +797,11 @@
         "count": 1,
         "item": "machete"
       },
+      "searchTerms": [],
       "skills": {
         "crafting": 0
       },
+      "tags": ["edge"],
       "timeGameMinutes": 20,
       "workstation": null
     }
@@ -533,6 +827,7 @@
         "repair_crowbar",
         "sawn_plank",
         "door_bar",
+        "make_rope",
         "grind_kitchen_knife",
         "hone_kitchen_knife",
         "grind_kabar",
@@ -577,6 +872,7 @@
     {
       "combat": {
         "firearms": {
+          "adsAcquisitionMaximumSimSeconds": 0.55000000000000004,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
           "breathHold": {
@@ -593,6 +889,7 @@
             "landingLiftMetres": 0.0060000000000000001,
             "speedMetresPerSimSecond": 3.5
           },
+          "longGunSteadinessSkill": "sniping",
           "loweredPitchRadians": 0.29999999999999999,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
@@ -636,6 +933,7 @@
         "saturationFloor": 0.41999999999999998,
         "saturationHalfLifeLevels": 4
       },
+      "detail": "Improves recoil control, handling, raising and aiming down sights. Steadies firearms other than long guns.",
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
       "training": {
@@ -655,6 +953,41 @@
           "readying": {
             "practicePerSimSecond": 0.10000000000000001,
             "tier": 1
+          },
+          "shot": {
+            "practice": 1,
+            "tier": 3
+          }
+        }
+      }
+    },
+    {
+      "curve": {
+        "saturationFloor": 0.41999999999999998,
+        "saturationHalfLifeLevels": 4
+      },
+      "detail": "Reduces long-gun sway and look lag. Improves breath steadying with long guns.",
+      "id": "sniping",
+      "name": "Sniping",
+      "steadiness": {
+        "steadyingMinimum": 0.5,
+        "steadyingSkillHalfLifeLevels": 5,
+        "steadyingSkillRange": 0.40000000000000002,
+        "wobbleSkillTenVariance": 0.050000000000000003
+      },
+      "training": {
+        "activities": {
+          "acquisition": {
+            "practice": 0.10000000000000001,
+            "tier": 1
+          },
+          "ads": {
+            "practicePerSimSecond": 0.10000000000000001,
+            "tier": 1
+          },
+          "hit": {
+            "practice": 1,
+            "tier": 5
           },
           "shot": {
             "practice": 1,

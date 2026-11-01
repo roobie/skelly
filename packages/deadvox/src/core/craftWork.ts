@@ -21,14 +21,14 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
   }
 };
 
-const entityRepairRefusal = (inventory: Inventory, item: Item, uid: number): string | undefined => {
+export const entityRepairRefusal = (
+  inventory: Inventory,
+  uid: number,
+  entityType: string | undefined,
+  amount: number,
+): string | undefined => {
   const entity = inventory.entities.byUid(uid);
-  const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
-  if (
-    !entity ||
-    entity.type !== recipe?.repair?.entity ||
-    !inventory.entities.canRepair(entity, item.work?.repairAmount ?? 0)
-  ) {
+  if (!entity || entity.type !== entityType || !inventory.entities.canRepair(entity, amount)) {
     return coreMessage(inventory.registry, 'repairTargetGone');
   }
   return (
@@ -43,7 +43,8 @@ const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnaps
     return undefined;
   }
   if (destination.kind === 'entity') {
-    return entityRepairRefusal(inventory, item, destination.uid);
+    const recipe = item.work?.kind === 'craft' ? inventory.registry.recipes.get(item.work.recipe) : undefined;
+    return entityRepairRefusal(inventory, destination.uid, recipe?.repair?.entity, item.work?.repairAmount ?? 0);
   }
   const target = inventory.itemByUid(destination.uid);
   const { work } = item;
@@ -72,7 +73,7 @@ export const craftActionHooks = (
       const recipe = inventory.registry.recipes.get(plan.recipe);
       return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
     }
-    const current = planDisassembly(plan.source, snapshot, character);
+    const current = planDisassembly(plan.source, snapshot, character, plan);
     const sameTools =
       current &&
       Object.keys(current.toolLevels).length === Object.keys(plan.toolLevels).length &&
@@ -83,8 +84,9 @@ export const craftActionHooks = (
       current.duration === plan.duration &&
       current.gather === plan.gather &&
       sameTools &&
-      sameDisassemblyOutputs(current.outputs, plan.outputs)
-      ? undefined
+      sameDisassemblyOutputs(current.outputs, plan.outputs) &&
+      JSON.stringify(current.liquids) === JSON.stringify(plan.liquids)
+      ? inventory.liquidReceiptRefusal(inventory.planLiquidReceipts(plan.liquids, plan))
       : coreMessage(inventory.registry, 'yieldChanged');
   },
   begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,
@@ -115,15 +117,16 @@ export const craftActionHooks = (
     inventory.version += 1;
     return work.elapsed === work.duration;
   },
-  finish: (uid) => {
+  finish: (uid): string | undefined => {
     const item = inventory.itemByUid(uid);
     const work = item?.work;
     if (!(item && work)) {
-      return;
+      return undefined;
     }
-    if (repairTargetRefusal(inventory, item, reach())) {
+    const refusal = repairTargetRefusal(inventory, item, reach());
+    if (refusal) {
       inventory.releaseWork(item, false, feet());
-      return;
+      return refusal;
     }
     const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
     const offset = inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset;
@@ -143,6 +146,7 @@ export const craftActionHooks = (
     for (const entry of practice) {
       character.awardPractice(entry.skill, entry.amount, entry.tier);
     }
+    return undefined;
   },
   cancel: (uid) => {
     const item = inventory.itemByUid(uid);

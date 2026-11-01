@@ -17,6 +17,7 @@ import type { Inventory, Location, Pile, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { putDownRefusal } from './itemThrow.ts';
 import { isInHeldItemSlotTree, itemRoots, walkItemTree } from './itemTree.ts';
+import { vesselFillShare } from './liquids.ts';
 import type { SolidAt } from './raycast.ts';
 import type { NightVision, SenseDef, WearSlot } from './schema.ts';
 import { sunDirection } from './sky.ts';
@@ -245,6 +246,29 @@ export const chargeShare = (registry: Registry, item: Item): number | undefined 
     (item.slots?.canister ? defOf(registry, item.slots.canister.type).canister?.capacity : undefined);
   const charge = chargeOf(registry, item);
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
+};
+
+export type SupplyShare = { readonly kind: 'absent' } | { readonly kind: 'share'; readonly share: number };
+
+/** Reads the owned supply without revealing it as geometry; never-lit burn clocks are full. */
+export const supplyShare = (registry: Registry, item: Item): SupplyShare | undefined => {
+  const def = defOf(registry, item.type);
+  let share: number | undefined;
+  if (def.light?.liquidFuel) {
+    share = chargeShare(registry, item);
+  } else if (def.light?.burnTimeGameHours !== undefined) {
+    share = (item.burnRemainingGameSeconds ?? def.light.burnTimeGameHours) / def.light.burnTimeGameHours;
+  } else if (def.vessel) {
+    share = vesselFillShare(item, def.vessel);
+  } else if (def.battery || def.canister || def.igniter) {
+    share = chargeShare(registry, item);
+  } else if (def.light?.power || def.tool?.fuel) {
+    if (!(def.light?.power ? item.slots?.battery : item.slots?.canister)) {
+      return { kind: 'absent' };
+    }
+    share = chargeShare(registry, item);
+  }
+  return share === undefined ? undefined : { kind: 'share', share: Math.max(0, Math.min(1, share)) };
 };
 
 /** Starts a consumable light's burn clock. Returns why it can't light, or undefined. */

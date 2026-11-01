@@ -22,16 +22,30 @@ const STAMINA = fixtureBody.staminaRules;
 const base = (file: string): ContentSource => {
   const source = `src/content/base/${file}`;
   const data = JSON.parse(readFileSync(source, 'utf8'));
+  if (file === 'items-other.json') {
+    data.items = data.items.filter(
+      (item: { id: string; category: string }) => item.id !== 'bandage' && item.category !== 'book',
+    );
+  }
   if (file === 'items-tools.json') {
     data.items = data.items.filter(
-      (item: { id: string }) => !['torch', 'candle', 'door_bar', 'oil_lamp'].includes(item.id),
+      (item: { id: string }) =>
+        !['torch', 'candle', 'door_bar', 'oil_lamp', 'headlamp', 'nail_bat', 'spear'].includes(item.id),
     );
+  }
+  if (file === 'items-wearables.json') {
+    data.items = data.items.filter((item: { id: string }) => item.id !== 'taped_armour');
+  }
+  if (file === 'items-attachments.json') {
+    data.items = data.items.filter((item: { id: string }) => item.id !== 'weapon_sling');
   }
   return { source, data };
 };
 const { registry } = buildRegistry(
   [
     'ui.json',
+    'item-wear.json',
+    'inventory.json',
     'sounds.json',
     'sounds-pump.json',
     'sounds-weapons.json',
@@ -264,8 +278,9 @@ describe('flashlight', () => {
   it('refuses a swap when the piles nearby are full, rather than losing the old battery', () => {
     const { inventory, light, old, batteries } = halfSpent();
     const pile: Target = { kind: 'pile', pos: [0, 0, 0] };
-    while (inventory.add(inventory.create('flashlight'), pile)) {
-      // Fill the pile until it refuses.
+    const filler = () => Object.assign(inventory.create('aa_battery'), { charges: old.charges });
+    while (inventory.add(filler(), pile)) {
+      // Fill with the displaced footprint, without merging charged batteries.
     }
     expect(swapBattery(inventory, light, batteries, () => pile)).toBe(coreMessage(inventory.registry, 'noGroundRoom'));
     expect(light.slots!.battery).toBe(old);

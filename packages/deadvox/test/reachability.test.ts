@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { RecipeDef } from '../src/core/content.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
@@ -26,6 +27,39 @@ const fresh = () => ({
   ),
 });
 
+const knowledgeFixture = (
+  definitions: { id: string; skills: RecipeDef['skills']; skillUnlock?: RecipeDef['skillUnlock'] }[],
+) => {
+  const registry = fresh();
+  registry.recipes.clear();
+  for (const definition of definitions) {
+    const item = `${definition.id}_result`;
+    registry.items.set(item, {
+      id: item,
+      workInProgress: false,
+      notLoot: false,
+      economy: fixtureEconomy(),
+      name: item,
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    registry.recipes.set(definition.id, {
+      ...definition,
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
+      result: { item, count: 1 },
+      timeGameMinutes: gameMinutes(1),
+      components: [],
+      qualities: {},
+    });
+  }
+  return registry;
+};
+
+const noWorldSources = { sites: new Set<string>() };
+
 describe('static reachability', () => {
   it('keeps whole-game reachability when its scope names every site', () => {
     const sites = new Set([...baseline.layouts.keys(), ...baseline.scenarios.keys()]);
@@ -46,6 +80,9 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('fixture_recipe', {
       id: 'fixture_recipe',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'wooden_plank', count: 1 },
       timeGameMinutes: gameMinutes(1),
       components: [[{ item: 'stick', count: 1 }]],
@@ -97,6 +134,9 @@ describe('static reachability', () => {
     ] as const) {
       registry.recipes.set(id, {
         id,
+        category: 'fixture_category',
+        tags: [],
+        searchTerms: [],
         result: { item: result, count: 1 },
         timeGameMinutes: gameMinutes(1),
         components: [[{ item: input, count: 1 }]],
@@ -128,6 +168,9 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('fixture_practice', {
       id: 'fixture_practice',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'wooden_plank', count: 1 },
       timeGameMinutes: gameMinutes(1),
       components: [[{ item: 'stick', count: 1 }]],
@@ -158,6 +201,9 @@ describe('static reachability', () => {
     });
     const supplier = {
       id: 'unlearned',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'unlearned_tool', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -194,11 +240,67 @@ describe('static reachability', () => {
     expect(known.toolReachable.has('torch')).toBe(true);
   });
 
+  it('learns every unlock level once its skill has a reachable level-zero practice source', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_practice', skills: { fixtureSkill: 0 } },
+      { id: 'fixture_unlock', skills: {}, skillUnlock: { skill: 'fixtureSkill', level: 11 } },
+    ]);
+    const result = checkReachability(registry, new Set(['fixture_practice']), noWorldSources);
+    expect(result.issues).toEqual([]);
+    expect(result.components.has('fixture_unlock_result')).toBe(true);
+    expect(result.toolReachable.has('fixture_unlock_result')).toBe(true);
+  });
+
+  it('rejects an unlock that is its own skill practice source and identifies that skill', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_self_unlock', skills: { fixtureSkill: 0 }, skillUnlock: { skill: 'fixtureSkill', level: 1 } },
+    ]);
+    const result = checkReachability(registry, new Set(), noWorldSources);
+    expect(result.issues).toContainEqual({
+      recipe: 'fixture_self_unlock',
+      path: '.skillUnlock',
+      message: expect.stringContaining('fixtureSkill'),
+    });
+    expect(result.components.has('fixture_self_unlock_result')).toBe(false);
+    expect(result.toolReachable.has('fixture_self_unlock_result')).toBe(false);
+  });
+
+  it('seeds level-zero unlock knowledge without any practice source', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_zero_unlock', skills: {}, skillUnlock: { skill: 'fixture_untrained', level: 0 } },
+    ]);
+    const result = checkReachability(registry, new Set(), noWorldSources);
+    expect(result.issues).toEqual([]);
+    expect(result.toolReachable.has('fixture_zero_unlock_result')).toBe(true);
+  });
+
+  it('propagates knowledge through an unlocked recipe that alone grounds the next skill', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_second_unlock', skills: {}, skillUnlock: { skill: 'fixtureSecondSkill', level: 1 } },
+      {
+        id: 'fixture_first_unlock',
+        skills: { fixtureSecondSkill: 0 },
+        skillUnlock: { skill: 'fixtureFirstSkill', level: 1 },
+      },
+      { id: 'fixture_practice', skills: { fixtureFirstSkill: 0 } },
+    ]);
+    const result = checkReachability(registry, new Set(['fixture_practice']), noWorldSources);
+    expect(result.issues).toEqual([]);
+    for (const item of ['fixture_first_unlock_result', 'fixture_second_unlock_result']) {
+      expect(result.components.has(item)).toBe(true);
+      expect(result.toolReachable.has(item)).toBe(true);
+    }
+  });
+
   it('accepts book knowledge only when a teaching book is reachable in placed loot', () => {
     const registry = fresh();
     registry.recipes.clear();
     registry.recipes.set('learned_from_book', {
       id: 'learned_from_book',
+      skillUnlock: { skill: 'fixture_untrained', level: 1 },
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'torch', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -218,7 +320,7 @@ describe('static reachability', () => {
     }
     expect(checkReachability(registry).issues).toContainEqual({
       recipe: 'learned_from_book',
-      path: '.knowledge',
+      path: '.skillUnlock',
       message: expect.stringContaining('knowledge source'),
     });
   });
@@ -542,6 +644,9 @@ describe('static reachability', () => {
     });
     registry.recipes.set('fixture_make_package', {
       id: 'fixture_make_package',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'fixture_crafted_package', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -600,6 +705,9 @@ describe('static reachability', () => {
     registry.items.get('hammer')!.tool = { qualities: { fixturePounding: 2 } };
     registry.recipes.set('candle', {
       id: 'candle',
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: 'hammer', count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},
@@ -644,6 +752,9 @@ describe('static reachability', () => {
     }
     const recipe = (id: string, product: string, input: string, quality?: string) => ({
       id,
+      category: 'fixture_category',
+      tags: [],
+      searchTerms: [],
       result: { item: product, count: 1 },
       timeGameMinutes: gameMinutes(1),
       skills: {},

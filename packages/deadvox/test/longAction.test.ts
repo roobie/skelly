@@ -34,6 +34,7 @@ const readingFixtureRegistry = buildRegistry([
     source: 'reading-fixture.json',
     data: {
       items: [
+        { id: 'reading_fixture_result', name: 'Fixture result', category: 'material', weight: 1, size: [1, 1] },
         {
           id: 'reading_fixture_book',
           name: 'Fixture manual',
@@ -46,7 +47,7 @@ const readingFixtureRegistry = buildRegistry([
       recipes: [
         {
           id: 'reading_fixture',
-          result: { item: 'torch', count: 1 },
+          result: { item: 'reading_fixture_result', count: 1 },
           timeGameMinutes: 1,
           skills: {},
           qualities: {},
@@ -157,6 +158,7 @@ describe('core long actions', () => {
         kind: 'install',
         vehicleId: 1,
         fittingId: 'fixture_site',
+        placement: { at: [0, 0, 0], supportedBy: [] },
         itemUid: 7,
         durationSimSeconds: 10,
       }),
@@ -616,13 +618,21 @@ describe('core long actions', () => {
     expect(restored.character.knownRecipes.size).toBe(new Character(fixtureRegistry).knownRecipes.size + 1);
   });
   it('insufficient bounded drop room retains all cancel inputs and a stopped descriptor', () => {
-    const runtime = start();
+    const content = { ...registry, items: new Map(registry.items) };
+    for (const [type, size] of [
+      ['kitchen_knife', [1, 1]],
+      ['rag', [1, 1]],
+      ['stick', [1, 4]],
+    ] as const) {
+      content.items.set(type, { ...defOf(registry, type), size: [...size] });
+    }
+    const runtime = start(content);
     for (const pos of dropSpots([0, 0, 0])) {
       while (runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos })) {
         /* fill without stack merging */
       }
     }
-    // One 1×3 hole admits the first rag, but not the next 1×4 stick. No partial transfer.
+    // Leave room for only part of the cancellation output to prove there is no partial transfer.
     const filler = runtime.inv.pileAt([0, 0, 0])!.items[0]!.item;
     expect(runtime.inv.consume(filler)).toBe(true);
     const before = runtime.inv.snapshotState();

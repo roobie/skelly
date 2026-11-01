@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import {
   advanceFootsteps,
   footstepEventAt,
@@ -9,6 +8,7 @@ import {
   isHardLanding,
   stepDistanceMetres,
 } from '../src/core/footsteps.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 const tuning = BASE_SENSE_TUNING.footsteps;

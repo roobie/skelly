@@ -9,4 +9,4 @@ local models = [
   import 'things/wrench.model.json',
   import 'things/steel_pipe.model.json',
 ];
-{ models: models }
+(import 'item-presentation.libsonnet').pack({ models: models })

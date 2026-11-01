@@ -3,7 +3,6 @@ import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import {
   advanceStanceWeight,
   HIT_FLINCH_DURATION,
@@ -13,12 +12,11 @@ import {
 } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
-import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -46,7 +44,6 @@ const livePoseZombie = (type = SHAMBLER) => {
     dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
-    jumpSpeed: PLAYER.jump,
     hurtPlayer: (amount) => {
       damage += amount;
     },
@@ -74,8 +71,7 @@ const startTurnedAttack = () => {
 
 const rendererFor = (zombie: Zombie) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
-    zombies: registry.zombies,
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
+    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
   });
 
 const offsetForBox = ({
@@ -239,7 +235,6 @@ describe('rendered and hit shambler poses', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       hurtPlayer: () => undefined,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
@@ -276,7 +271,6 @@ describe('rendered and hit shambler poses', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       hurtPlayer: () => undefined,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
@@ -307,7 +301,6 @@ describe('rendered and hit shambler poses', () => {
       dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
-      jumpSpeed: PLAYER.jump,
       hurtPlayer: () => undefined,
     });
     const freshId = freshSystem.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);

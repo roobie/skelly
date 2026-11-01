@@ -2,12 +2,16 @@
 
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
+import { actionText, fillText } from '../core/actionText.ts';
+import type { BlockBlow } from '../core/blockDamage.ts';
 import { blockId } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { decimalText } from '../core/numberText.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
 import type { Engine } from '../game/engine.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import { playerTuning } from '../game/player.ts';
 
 const hotbarTemplate = (blocks: readonly { color: string; name: string }[], selected: number) => html`
   ${blocks.slice(0, 9).map(
@@ -27,9 +31,16 @@ export class BuildMode {
   private readonly body: Body;
   private readonly reach: number;
   private readonly outline: LineSegments;
+  private readonly strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean;
 
-  constructor(engine: Engine, body: Body, reachBlocks: number) {
+  constructor(
+    engine: Engine,
+    body: Body,
+    reachBlocks: number,
+    strikeTerrainCell: (cell: Vec3, blow: BlockBlow) => boolean,
+  ) {
     this.engine = engine;
+    this.strikeTerrainCell = strikeTerrainCell;
     inputBindings.subscribe(() => this.draw());
     this.body = body;
     this.reach = reachBlocks;
@@ -93,17 +104,50 @@ export class BuildMode {
     }
   }
 
-  /** Outlines the targeted block; returns its name for the HUD. */
+  strike(mode: 'step' | 'destroy', eye: Vec3, dir: Vec3): boolean {
+    const { config, registry, world, isOpaque } = this.engine;
+    if (!(config.debug && this.on)) {
+      return false;
+    }
+    const tuning = playerTuning(registry).debugBlockTool;
+    const hit = raycast(eye, dir, tuning.reachMetres / config.scale.blockSize, isOpaque);
+    if (!hit) {
+      return false;
+    }
+    const block = registry.blocks[world.getBlock(...hit.block)];
+    const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
+    if (!material) {
+      return false;
+    }
+    const effective = Math.max(
+      material.minimumStrength,
+      material.durability * (mode === 'step' ? tuning.stepDurabilityFraction : 1),
+    );
+    const admitted = 1 - material.resistance.blunt;
+    return this.strikeTerrainCell(hit.block, { kind: 'blunt', strength: admitted > 0 ? effective / admitted : 0 });
+  }
+
   target(eye: Vec3, dir: Vec3, active: boolean): string {
-    const { world, registry, isOpaque: isSolid } = this.engine;
-    const hit = this.on && active ? raycast(eye, dir, this.reach, isSolid) : undefined;
+    const { world, registry, config, isOpaque: isSolid } = this.engine;
+    const reach = playerTuning(registry).debugBlockTool.reachMetres / config.scale.blockSize;
+    const hit = this.on && active ? raycast(eye, dir, reach, isSolid) : undefined;
     this.outline.visible = hit !== undefined;
     if (!hit) {
       return '';
     }
     const s = this.engine.config.scale.blockSize;
     this.outline.position.set((hit.block[0] + 0.5) * s, (hit.block[1] + 0.5) * s, (hit.block[2] + 0.5) * s);
-    return registry.blocks[world.getBlock(...hit.block)]?.name ?? '';
+    const block = registry.blocks[world.getBlock(...hit.block)];
+    const material = block?.solid ? registry.blockMaterials.get(block.material) : undefined;
+    return block && material
+      ? fillText(actionText(registry).debugBuild.target, {
+          block: block.name,
+          damage: decimalText(world.blockDamage.get(hit.block)?.damage ?? 0),
+          durability: decimalText(material.durability),
+          stepKey: labelForAction('debug.build-damage'),
+          destroyKey: labelForAction('debug.build-destroy'),
+        })
+      : (block?.name ?? '');
   }
 
   private draw(): void {

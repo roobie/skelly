@@ -871,7 +871,9 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   expect(zombie.investigationTier).toBe('near');
   expect(zombie.lastPerceived).toEqual(noise.pos);
 
-  const renderer = new MobActorMeshes(scale.blockSize, 2, { zombies: registry.zombies });
+  const renderer = new MobActorMeshes(scale.blockSize, 2, {
+    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
+  });
   try {
     const camera = new PerspectiveCamera(55, 1, 0.01, 50);
     camera.position.set(4, 2, -3);

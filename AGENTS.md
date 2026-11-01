@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're an agent starting any task in this repository (always)
+  - you check whether the framework refactor gate permits a new PR
 ---
 
 # Notes for coding agents
@@ -96,6 +97,11 @@ GitHub artifact without private tooling, so references point only from the priva
   so each review has one target. Existing letter-suffix IDs remain unchanged.
 
 ## Git workflow and worktrees
+
+The #1532 freeze overrides instructions to open a new PR until the framework refactor
+is executed. Work may use an existing PR. See
+`docs/decisions/0009-content-defined-products.md`, "Refactor gate", for the in-flight
+closure trigger and its reason.
 
 One topic branch per feature, in a worktree at `.claude/worktrees/<name>` from
 `origin/main`, merged through a reviewed PR. Run the full install under "Installing check

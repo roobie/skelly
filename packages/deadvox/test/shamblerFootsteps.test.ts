@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {
@@ -15,7 +14,8 @@ import { makeScale } from '../src/core/scale.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { PLAYER, physicsFor } from './playerFixture.ts';
+import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
@@ -45,7 +45,6 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
     isOpaque: isSolid,
     blockSize: BLOCK_SIZE,
     physics: PHYSICS,
-    jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
     player: () => player,
     dayPhase: () => dayStateAtHour(12),

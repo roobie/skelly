@@ -31,6 +31,9 @@ const recipeInputs = (definition: RecipeDef, source: Registry): Map<string, numb
   const required = new Map<string, number>();
   for (const alternatives of definition.components) {
     for (const component of alternatives) {
+      if (!('item' in component)) {
+        continue;
+      }
       required.set(component.item, (required.get(component.item) ?? 0) + component.count);
     }
   }
@@ -71,6 +74,9 @@ const benchmarkEntries = (source: Registry): BenchmarkEntry[] => {
 
 const recipe = (components: RecipeDef['components'], qualities: RecipeDef['qualities'] = {}): RecipeDef => ({
   id: 'fixture',
+  category: 'fixture_category',
+  tags: [],
+  searchTerms: [],
   result: { item: 'torch', count: 1 },
   timeGameMinutes: gameMinutes(20),
   skills: {},
@@ -190,6 +196,9 @@ describe('pure craft planner', () => {
           recipes: [
             {
               id: 'fixture_instant',
+              category: 'fixture_category',
+              tags: [],
+              searchTerms: [],
               result: { item: 'fixture_result', count: 1 },
               timeGameMinutes: gameMinutes(1),
               skills: {},
@@ -203,6 +212,7 @@ describe('pure craft planner', () => {
     const plan = (work: number): WorkPlan => ({
       kind: 'craft',
       recipe: 'fixture_instant',
+      liquids: [],
       components: [],
       tools: [],
       gather: 0,
@@ -369,12 +379,12 @@ describe('pure craft planner', () => {
       ],
       [{ item: 'rag', count: 2 }],
     ]);
-    const preferred = planCraft(definition, snapshot, character, { 0: 'stick' });
+    const preferred = planCraft(definition, snapshot, character, { prefer: { 0: { kind: 'item', item: 'stick' } } });
     expect('plan' in preferred && preferred.plan.components.map((component) => component.item)).toEqual([
       items[0],
       items[2],
     ]);
-    const refused = planCraft(definition, snapshot, character, { 0: 'rag' });
+    const refused = planCraft(definition, snapshot, character, { prefer: { 0: { kind: 'item', item: 'rag' } } });
     expect('missing' in refused).toBe(true);
     if (!('missing' in refused)) {
       throw new Error('impossible preference unexpectedly fell back to another plan');
@@ -490,17 +500,21 @@ describe('pure craft planner', () => {
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
     actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
-    actor.awardPractice(
-      'crafting',
-      practiceForNextLevel(benchmarkRegistry, actor.skills.crafting!),
-      SKILL_LEVEL_LEGENDARY,
-    );
-    actor.awardPractice(
-      'mechanics',
-      practiceForNextLevel(benchmarkRegistry, actor.skills.mechanics!) +
-        practiceForNextLevel(benchmarkRegistry, actor.skills.mechanics! + 1),
-      SKILL_LEVEL_LEGENDARY,
-    ); // Timings exercise successful plans, including skill-gated recipes.
+    const skillGates = new Map<string, number>();
+    for (const definition of benchmarkRegistry.recipes.values()) {
+      for (const [skill, required] of Object.entries(definition.skills)) {
+        skillGates.set(skill, Math.max(skillGates.get(skill) ?? 0, required));
+      }
+    }
+    for (const [skill, required] of skillGates) {
+      while (actor.skills[skill]! < required) {
+        actor.awardPractice(
+          skill,
+          practiceForNextLevel(benchmarkRegistry, actor.skills[skill]!),
+          SKILL_LEVEL_LEGENDARY,
+        );
+      }
+    } // Timings exercise successful plans, including skill-gated recipes.
     const started = performance.now();
     const index = indexCraftReach(snapshot);
     const indexMs = performance.now() - started;

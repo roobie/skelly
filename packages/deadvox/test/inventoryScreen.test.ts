@@ -13,16 +13,16 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { swapBattery } from '../src/core/lights.ts';
 import { countText, decimalText } from '../src/core/numberText.ts';
+import { toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { ATTACHMENT_WORK_SKILL, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
   INPUT_BINDINGS,
   inputBindings,
   inventoryTabForAction,
   KeyboardInput,
-  keyboardInput,
 } from '../src/game/inputBindings.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';
 import { PlayerTickActions } from '../src/game/playerTickActions.ts';
@@ -84,9 +84,10 @@ const { InventoryScreen, targetForPackedFloorDrop } = await import('../src/ui/in
 
 afterAll(() => dom.happyDOM.abort());
 
-function setup(contentRegistry = registry) {
+function setup(contentRegistry = registry, handedness: 'left' | 'right' = 'right') {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
-  const inv = new Inventory(contentRegistry);
+  const character = new Character(contentRegistry, { handedness });
+  const inv = new Inventory(contentRegistry, undefined, undefined, character);
   const queue = new HandlingQueue(inv);
   const quickbar = new Quickbar();
   const jeans = inv.create('jeans');
@@ -111,7 +112,6 @@ function setup(contentRegistry = registry) {
   }
   const searching = new Set<typeof entity>();
   const body = new Body(BODY_TUNING_FIXTURE);
-  const character = new Character(registry);
   queue.registerAction('furniture.search', () => {
     searching.delete(entity);
     inv.entities.markSearched(entity);
@@ -137,7 +137,8 @@ function setup(contentRegistry = registry) {
     },
     work: (uid, operation) => workHandler(uid, operation),
     loadBattery: (lightUid, batteryUid) => loadHandler(lightUid, batteryUid),
-    toHands: () => undefined,
+    toHands: (uid, feet) => toHands(inv, queue, inv.itemByUid(uid)!, feet),
+    wieldOrPocket: (uid, feet) => wieldOrPocket(inv, queue, inv.itemByUid(uid)!, feet),
     pickup: () => undefined,
     interact: () => undefined,
     lift: () => undefined,
@@ -148,6 +149,7 @@ function setup(contentRegistry = registry) {
     tip: () => undefined,
     clearDownedBody: () => undefined,
     craftStart: () => undefined,
+    craftRepairEntity: () => undefined,
     craftContinue: () => undefined,
     craftStop: () => undefined,
     wait: () => undefined,
@@ -163,7 +165,7 @@ function setup(contentRegistry = registry) {
     nearby: () => [...inv.piles.values()],
     distance: () => 0,
     containers: () => [entity],
-    entityDistance: () => 1,
+    entityDistance: (_entity: typeof entity) => 1,
     dispatch: (payload: ReplayActionPayload) => {
       lastPayload = payload;
       return applyReplayActionPayload(payload, commandOwners);
@@ -190,7 +192,7 @@ function setup(contentRegistry = registry) {
     },
     wakeGameHour: () => alarm,
     actionRefusal: () => body.actionRefusal,
-    attachmentCandidates: (_firearmUid: number, _slotId: string) => [beans],
+    attachmentCandidates: (_firearmUid: number, _slotId: string) => [{ item: beans }],
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
@@ -260,7 +262,7 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
         groundLook: () => new Group(),
       },
       2,
-      { paint: () => 'still', view: vi.fn(), dispose: vi.fn() },
+      { painter: { paint: () => 'still', view: vi.fn(), dispose: vi.fn() } },
     ),
   });
   test.screen.update();
@@ -269,28 +271,81 @@ it('keeps a model-less item as a text tile when pictures are enabled', () => {
   expect(tile.querySelector('img')).toBeNull();
 });
 
-const holdQuickGate = () => {
-  const previous = { context: keyboardInput.context, command: keyboardInput.command };
-  keyboardInput.cancel();
-  keyboardInput.context = () => ({ context: 'inventory', debug: false });
-  keyboardInput.command = () => undefined;
-  const issue = inputBindings.rebind('inventory.quick-action-gate', [{ code: 'KeyJ' }]);
-  if (issue) {
-    throw new Error(issue);
-  }
-  const event = new KeyboardEvent('keydown', inputBindings.chords('inventory.quick-action-gate')[0]);
-  if (!keyboardInput.press(event)) {
-    throw new Error('Quick-action fixture gate was not admitted');
-  }
-  return () => {
-    keyboardInput.release(event);
-    inputBindings.reset();
-    keyboardInput.context = previous.context;
-    keyboardInput.command = previous.command;
-  };
-};
+it.each([
+  ['inventory.hands', 'inventory.offhand'],
+  ['inventory.find', 'inventory.clear-find'],
+  ['inventory.put-target', 'inventory.select-target'],
+  ['inventory.take', 'inventory.take-all-like'],
+])('classifies %s as tap on release or hold without running both verbs', (tap, hold) => {
+  const { screen, inv } = setup();
+  const action = vi.spyOn(screen, 'onAction').mockReturnValue(true);
+  const start = performance.now();
+  const threshold = inv.registry.inventory.get(CORE_CONTENT_IDS.player)!.keyHoldRealSeconds * 1000;
+  screen.onInputCommand({ action: tap, phase: 'down', at: start });
+  screen.update(start + threshold / 2);
+  expect(action).not.toHaveBeenCalled();
+  screen.onInputCommand({ action: tap, phase: 'up', at: start + threshold / 2 });
+  expect(action.mock.calls).toEqual([[tap]]);
+  action.mockClear();
+  screen.onInputCommand({ action: tap, phase: 'down', at: start });
+  screen.update(start + threshold);
+  screen.update(start + threshold * 2);
+  screen.onInputCommand({ action: tap, phase: 'up', at: start + threshold * 2 });
+  expect(action.mock.calls).toEqual([[hold]]);
+  action.mockClear();
+  screen.onInputCommand({ action: tap, phase: 'down', at: start });
+  screen.cancelInput();
+  screen.onInputCommand({ action: tap, phase: 'up', at: start + threshold / 2 });
+  expect(action).not.toHaveBeenCalled();
+  screen.close();
+});
 
 describe('inventory screen Lit rendering', () => {
+  it.each(['right', 'left'] as const)(
+    'holds an item in the %s-dominant character’s offhand through ordinary handling',
+    (handedness) => {
+      const t = setup(registry, handedness);
+      const item = t.inv.create('chocolate_bar');
+      expect(t.inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+      t.screen.update();
+      t.screen.selected = item;
+      t.screen.onAction('inventory.offhand');
+      expect(t.lastPayload()).toMatchObject({
+        kind: 'inventory.move',
+        target: { kind: 'hand', side: handedness === 'right' ? 'left' : 'right' },
+      });
+      expect(t.inv.locate(item)?.kind).toBe('pile');
+      t.queue.tick(t.queue.remaining);
+      expect(t.inv.locate(item)).toMatchObject({ kind: 'hand', side: handedness === 'right' ? 'left' : 'right' });
+    },
+  );
+
+  it('double-clicks an item through the locked pointer adapter without also taking it on a single click', () => {
+    const t = setup();
+    const item = t.inv.create('chocolate_bar');
+    expect(t.inv.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    t.screen.update();
+    const canvas = document.createElement('canvas');
+    document.body.append(canvas);
+    const input = { locked: true, menuPointer: true, cursorX: 100, cursorY: 100, moveMenuCursor: () => undefined };
+    const adapter = mountMenuPointer({ input, canvas, cursor: document.createElement('div') });
+    const node = t.root.querySelector(`[data-uid="${item.uid}"]`)!;
+    const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(node);
+    try {
+      canvas.dispatchEvent(new MouseEvent('click', { bubbles: true, button: 0, detail: 1 }));
+      expect(t.queue.jobs).toEqual([]);
+      canvas.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, button: 0, detail: 2 }));
+      expect(t.lastPayload()).toMatchObject({ kind: 'inventory.wield-or-pocket', itemUid: item.uid });
+      t.queue.tick(t.queue.remaining);
+      expect(t.inv.locate(item)).toMatchObject({ kind: 'hand', side: 'right' });
+    } finally {
+      input.locked = false;
+      adapter.releaseCaptures();
+      hit.mockRestore();
+      t.screen.close();
+    }
+  });
+
   it('drops a packed floor stack onto the visible stack at its stored spot', () => {
     const items = new Map(registry.items);
     items.set('fixture_floor_stack', {
@@ -442,7 +497,9 @@ describe('inventory screen Lit rendering', () => {
     const test = setup();
     const { root, screen, inv, queue, beans } = test;
     const model = vi.fn(() => new Group());
-    Object.assign(test.hooks, { itemView: { model, view: vi.fn() } });
+    const disposeModel = vi.fn();
+    const pictures = { version: 0, picture: () => undefined };
+    Object.assign(test.hooks, { pictures, itemView: { model, view: vi.fn(), disposeModel } });
     // Selected, so a drop that leaked past the viewer would move it.
     screen.selected = beans;
     screen.update();
@@ -467,6 +524,7 @@ describe('inventory screen Lit rendering', () => {
     expect(viewer).not.toBeNull();
     // Focus leaves the covered button, which stays out of reach through a redraw.
     expect(document.activeElement).toBe(viewer);
+    pictures.version += 1;
     screen.update();
     expect(covered.closest('[inert]')).not.toBeNull();
     expect(viewer!.closest('[inert]')).toBeNull();
@@ -482,6 +540,8 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector('[inert]')).toBeNull();
     expect(document.activeElement).toBe(covered);
     expect({ state: inv.snapshotState(), selected: screen.selected, jobs: queue.jobs.length }).toEqual(before);
+    expect(model.mock.results.length).toBeGreaterThan(1);
+    expect(disposeModel.mock.calls.map(([disposed]) => disposed)).toEqual(model.mock.results.map(({ value }) => value));
     screen.close();
   });
 
@@ -489,7 +549,7 @@ describe('inventory screen Lit rendering', () => {
     const test = setup();
     const { root, screen, beans } = test;
     const view = vi.fn();
-    Object.assign(test.hooks, { itemView: { model: () => new Group(), view } });
+    Object.assign(test.hooks, { itemView: { model: () => new Group(), view, disposeModel: vi.fn() } });
     screen.update();
     const issue = inputBindings.rebind('inventory.view-item', [{ code: 'Mouse0' }]);
     try {
@@ -605,13 +665,42 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
+  it('opens Repair only for a pinned target and forgets it when the screen closes', () => {
+    const { screen, root, entity } = setup();
+    expect(root.querySelector('[data-tab="repair"]')).toBeNull();
+    screen.selectTab('crafting');
+    screen.openRepair(entity.uid);
+    expect(screen.repairTarget).toBe(entity);
+    expect(screen.activeTab).toBe('repair');
+    expect(root.querySelector('[data-tab="repair"][aria-selected="true"]')).not.toBeNull();
+    expect(document.body.classList.contains('inventory-tab-repair')).toBe(true);
+    screen.close();
+    expect(screen.repairTarget).toBeUndefined();
+    screen.open();
+    expect(screen.activeTab).toBe('crafting');
+    expect(root.querySelector('[data-tab="repair"]')).toBeNull();
+    screen.close();
+  });
+
+  it('drops the ephemeral view when its target disappears', () => {
+    const { screen, root, inv, entity } = setup();
+    screen.openRepair(entity.uid);
+    inv.entities.remove(entity);
+    screen.update();
+    expect(screen.repairTarget).toBeUndefined();
+    expect(screen.activeTab).toBe('items');
+    expect(root.querySelector('[data-tab="repair"]')).toBeNull();
+    expect(document.body.classList.contains('inventory-tab-repair')).toBe(false);
+    screen.close();
+  });
+
   it('keeps a find filter while blurred and routes inventory keys to its items', () => {
     const { screen, root, beans, lastPayload } = setup();
     const keyboard = new KeyboardInput(inputBindings);
     keyboard.context = () => ({ context: 'inventory', debug: false });
-    keyboard.command = ({ action, phase }) => {
-      if (phase === 'down') {
-        screen.onAction(action);
+    keyboard.command = (command) => {
+      if (!screen.onInputCommand(command) && command.phase === 'down') {
+        screen.onAction(command.action);
       }
     };
     const remove = keyboard.install();
@@ -640,8 +729,14 @@ describe('inventory screen Lit rendering', () => {
         expect(press(code!, key!).defaultPrevented).toBe(false);
         expect(screen.selected).toBe(beans);
       }
-      expect(press('Enter').defaultPrevented).toBe(true);
+      const beforeEnter = lastPayload();
+      expect(press('Enter', 'Enter').defaultPrevented).toBe(true);
+      expect(lastPayload()).toBe(beforeEnter);
+      expect(document.activeElement).not.toBe(field);
+      globalThis.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', key: 'Enter', bubbles: true }));
+      globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', key: 'Enter', bubbles: true }));
       expect(lastPayload()).toMatchObject({ kind: 'inventory.move', itemUid: beans.uid });
+      field.focus();
       expect(press('ArrowDown').defaultPrevented).toBe(true);
       expect(screen.selected).not.toBe(beans);
 
@@ -700,6 +795,9 @@ describe('inventory screen Lit rendering', () => {
       globalThis.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyW', key: 'w', bubbles: true }));
       expect(dimmedAction.defaultPrevented).toBe(true);
       expect(lastPayload()).toMatchObject({ kind: 'inventory.to-hands', itemUid: dimmedUid });
+      screen.onAction('inventory.clear-find');
+      expect(field.value).toBe('');
+      expect(root.querySelector('.inv-item-unmatched')).toBeNull();
     } finally {
       remove();
       screen.close();
@@ -882,6 +980,18 @@ describe('inventory screen Lit rendering', () => {
     setNeeds('health 80% · stamina 60% · food 40% · water 20% · fatigue 130');
     screen.update();
     expect(needs()).toContain('fatigue 130');
+  });
+
+  it('exposes authored skill effects on a focusable label and its tooltip', () => {
+    const skill = { id: 'fixture_skill_detail', name: 'Fixture skill', detail: 'Fixture effect.' };
+    const content = baseRegistryWith([{ source: 'fixture-detail', data: { skills: [skill] } }]);
+    const { screen, root } = setup(content);
+    screen.selectTab('skills');
+    const label = root.querySelector<HTMLElement>(`[data-skill="${skill.id}"] .fact-detail`)!;
+    expect(label.tabIndex).toBe(0);
+    const tooltip = label.querySelector<HTMLElement>('[role="tooltip"]')!;
+    expect(tooltip.getAttribute('role')).toBe('tooltip');
+    expect(tooltip.textContent).toBe(skill.detail);
   });
 
   it('renders a skill level from the live character progression', () => {
@@ -1132,7 +1242,7 @@ describe('inventory screen Lit rendering', () => {
       throw new Error('Fixture could not place the AR in hand and foregrip in an inventory pocket');
     }
     const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
-    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.candidates(firearmUid, slotId);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
     test.hooks.dispatch = (payload) =>
       applyReplayActionPayload(payload, {
         inventory: test.inv,
@@ -1155,6 +1265,7 @@ describe('inventory screen Lit rendering', () => {
         tip: () => undefined,
         clearDownedBody: () => undefined,
         craftStart: () => undefined,
+        craftRepairEntity: () => undefined,
         craftContinue: () => undefined,
         craftStop: () => undefined,
         wait: () => undefined,
@@ -1165,9 +1276,7 @@ describe('inventory screen Lit rendering', () => {
     const paint = vi.fn(() => `data:image/png;base64,${paint.mock.calls.length}`);
     const models = { version: 0, has: () => models.version > 0, groundLook: () => new Group() };
     const pictures = new ItemPictures(registry, models, registry.graphics.get('core')!.itemPictureCacheCapacity, {
-      paint,
-      view: vi.fn(),
-      dispose: vi.fn(),
+      painter: { paint, view: vi.fn(), dispose: vi.fn() },
     });
     Object.assign(test.hooks, { pictures });
     test.screen.selected = firearm;
@@ -1282,6 +1391,44 @@ describe('inventory screen Lit rendering', () => {
     expect(test.refusals).toEqual([reason]);
     expect(test.notices).toEqual([]);
     expect(test.queue.jobs).toHaveLength(0);
+  });
+
+  it('offers a suppressor below its fit level as a refused row with the reason, and as a button once trained', () => {
+    const test = setup();
+    const firearm = test.inv.create('rifle_assault');
+    const suppressor = test.inv.create('real_suppressor');
+    const gun = registry.models.get('rifle_assault')!.gun!;
+    const suppressorId = registry.models.get('real_suppressor')!.gun!.attachment!.id;
+    const slot = gun.attachmentSlots!.find((candidate) => gun.compatibility?.[candidate.id]?.includes(suppressorId));
+    if (!(slot && test.inv.consume(test.beans))) {
+      throw new Error('Fixture AR needs a suppressor mount and a free hand');
+    }
+    if (
+      !(
+        test.inv.add(firearm, { kind: 'hand', side: 'right' }) &&
+        test.inv.add(suppressor, { kind: 'pile', pos: [0, 0, 0] })
+      )
+    ) {
+      throw new Error('Fixture could not place the AR and suppressor');
+    }
+    const handling = new FirearmAttachmentHandling(test.inv, test.queue, () => [0, 0, 0]);
+    test.hooks.attachmentCandidates = (firearmUid, slotId) => handling.offers(firearmUid, slotId);
+    const effects = registry.items.get('real_suppressor')?.firearmAttachmentEffects;
+    if (effects?.kind !== 'suppressor' || effects.fitSkillLevel < 1) {
+      throw new Error('Fixture suppressor needs a readable fit level above the minimum');
+    }
+    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel - 1;
+    test.screen.selected = firearm;
+    test.screen.update();
+
+    const row = `[data-attachment-slot="${slot.id}"]`;
+    expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
+    expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(effects.fitRefusal);
+
+    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel;
+    test.screen.update();
+    expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
+    expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
   });
 
   it('refuses inventory actions while unconscious and permits them after waking', () => {
@@ -1414,10 +1561,11 @@ describe('inventory screen Lit rendering', () => {
     buttons.find((button) => button.textContent!.includes('Take apart'))!.click();
     expect(calls).toEqual([[item.uid, 'apart']]);
   });
-  it('cycles the container target and puts the selected item into it through the move path', () => {
+  it('selects one put-target checkbox, toggles it with hold-P, and falls back to nearest in reach', () => {
     const t = setup();
     const second = t.inv.entities.add({ type: t.entity.type, pos: [0, 0, 1], size: [1, 1, 1], facing: 'n' })!;
     t.hooks.containers = () => [t.entity, second];
+    t.hooks.entityDistance = (entity) => (entity === second ? 0.5 : 1.5);
     t.inv.entities.markSearched(t.entity);
     t.inv.entities.markSearched(second);
     const targeted = () =>
@@ -1425,18 +1573,62 @@ describe('inventory screen Lit rendering', () => {
     t.screen.update();
     t.screen.selected = t.beans;
 
-    expect(targeted()).toEqual([t.entity.uid]);
-    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
-    t.screen.update();
+    expect(targeted()).toEqual([second.uid]);
+    const check = (uid: number) => t.root.querySelector<HTMLInputElement>(`[data-put-target="furniture:${uid}"]`)!;
+    check(t.entity.uid).click();
+    check(second.uid).click();
+    expect(check(second.uid).checked).toBe(true);
+    expect(check(t.entity.uid).checked).toBe(false);
     expect(targeted()).toEqual([second.uid]);
 
     expect(t.screen.onAction('inventory.put-target')).toBe(true);
     t.queue.tick(t.queue.remaining);
     expect(t.inv.locate(t.beans)).toMatchObject({ kind: 'furniture', entity: second });
 
-    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    expect(t.screen.onAction('inventory.select-target')).toBe(true);
+    t.screen.update();
+    expect(check(second.uid).checked).toBe(false);
+    expect(targeted()).toEqual([second.uid]);
+    check(second.uid).click();
+    t.hooks.containers = () => [t.entity];
     t.screen.update();
     expect(targeted()).toEqual([t.entity.uid]);
+  });
+
+  it('dispatches put-target while its checkbox retains keyboard focus', () => {
+    const t = setup();
+    t.inv.entities.markSearched(t.entity);
+    t.screen.selected = t.beans;
+    t.screen.update();
+    const checkbox = t.root.querySelector<HTMLInputElement>('[data-put-target]')!;
+    checkbox.focus();
+    checkbox.click();
+    expect(document.activeElement).toBe(checkbox);
+    expect(checkbox.checked).toBe(true);
+    const keyboard = new KeyboardInput(inputBindings);
+    keyboard.context = () => ({ context: 'inventory', debug: false });
+    keyboard.command = (command) => {
+      if (!t.screen.onInputCommand(command) && command.phase === 'down') {
+        t.screen.onAction(command.action);
+      }
+    };
+    const remove = keyboard.install();
+    try {
+      const chord = inputBindings.chords('inventory.put-target')[0]!;
+      const key = inputBindings.label('inventory.put-target').toLowerCase();
+      const down = new KeyboardEvent('keydown', { ...chord, key, bubbles: true, cancelable: true });
+      checkbox.dispatchEvent(down);
+      checkbox.dispatchEvent(new KeyboardEvent('keyup', { ...chord, key, bubbles: true }));
+      expect(down.defaultPrevented).toBe(true);
+      expect(t.lastPayload()).toMatchObject({
+        kind: 'inventory.move',
+        itemUid: t.beans.uid,
+        target: { kind: 'furniture', entityUid: t.entity.uid },
+      });
+    } finally {
+      remove();
+      t.screen.close();
+    }
   });
 
   it('takes all like items into every pocket with room and counts only what was queued with room', () => {
@@ -1489,11 +1681,11 @@ describe('inventory screen Lit rendering', () => {
     expect(t.notices).toEqual([fillText(inventory.taking, { count: countText(pocketed.length), category: 'misc' })]);
   });
 
-  it('refuses to cycle or put when no container is in reach', () => {
+  it('refuses to select or put when no container is in reach', () => {
     const t = setup();
     t.hooks.containers = () => [];
     t.screen.selected = t.beans;
-    expect(t.screen.onAction('inventory.cycle-target')).toBe(true);
+    expect(t.screen.onAction('inventory.select-target')).toBe(true);
     expect(t.screen.onAction('inventory.put-target')).toBe(true);
     expect(t.refusals).toHaveLength(2);
     expect(t.inv.locate(t.beans)?.kind).toBe('hand');
@@ -1521,9 +1713,7 @@ describe('inventory screen Lit rendering', () => {
       metaKey: true,
       shiftKey: true,
       altKey: true,
-      quick: false,
     },
-    { name: 'held quick gate auto-moves', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, quick: true },
   ])('$name through the locked-menu adapter', (binding) => {
     const t = setup();
     const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
@@ -1532,7 +1722,6 @@ describe('inventory screen Lit rendering', () => {
     const input = { locked: true, menuPointer: true, cursorX: 100, cursorY: 100, moveMenuCursor: () => undefined };
     const adapter = mountMenuPointer({ input, canvas, cursor: document.createElement('div') });
     const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(node);
-    const releaseGate = binding.quick ? holdQuickGate() : () => undefined;
     const modifiers = {
       ctrlKey: binding.ctrlKey,
       metaKey: binding.metaKey,
@@ -1554,18 +1743,13 @@ describe('inventory screen Lit rendering', () => {
       });
       expect(t.screen.selected).toBe(t.beans);
       expect(t.inv.hands.right).toBe(t.beans);
-      expect(t.queue.jobs).toHaveLength(binding.quick ? 1 : 0);
+      expect(t.queue.jobs).toHaveLength(0);
       input.cursorX += 10;
       canvas.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 1 }));
-      expect(document.querySelector('.inv-ghost') !== null).toBe(!binding.quick);
+      expect(document.querySelector('.inv-ghost')).not.toBeNull();
       canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
-      if (binding.quick) {
-        t.queue.tick(t.queue.remaining);
-        expect(t.inv.locate(t.beans)?.kind).toBe('pocket');
-      }
       expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
     } finally {
-      releaseGate();
       input.locked = false;
       adapter.releaseCaptures();
       t.screen.close();
@@ -1574,9 +1758,8 @@ describe('inventory screen Lit rendering', () => {
     }
   });
 
-  it('repeated quick-clicks keep one owned move and emit refusal feedback for every duplicate', () => {
+  it('repeated take commands keep one owned move and emit refusal feedback for every duplicate', () => {
     const t = setup();
-    const releaseGate = holdQuickGate();
     try {
       expect(t.inv.move(t.beans, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
       t.screen.update();
@@ -1584,13 +1767,13 @@ describe('inventory screen Lit rendering', () => {
       for (let click = 0; click < attempts; click++) {
         const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
         expect(node).not.toBeNull();
-        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+        t.screen.selected = t.beans;
+        t.screen.onAction('inventory.take');
       }
       expect.soft(t.queue.jobs).toHaveLength(1);
       expect(t.refusals).toHaveLength(attempts - 1);
       expect(t.refusals.every((refusal) => refusal.length > 0)).toBe(true);
     } finally {
-      releaseGate();
       t.screen.close();
       vi.unstubAllGlobals();
     }

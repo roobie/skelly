@@ -85,6 +85,8 @@ export interface PlayCameraFrame {
   readonly headYaw?: number;
   readonly headPitch?: number;
   readonly ads?: PlayerAdsPose | undefined;
+  /** How far the view has carried the aim from hip to sights; the camera slides with it. */
+  readonly adsAim?: number;
   readonly stance: PlayerStance;
   readonly lean?: import('../core/lean.ts').LeanFrame | undefined;
   readonly eye: Vec3;
@@ -227,6 +229,7 @@ export const createPlayView = (
   const look = lookDefaultsOf(registry);
   const graphics = graphicsTuningOf(registry);
   const s = config.scale.blockSize;
+  const { gravityMetresPerSimSecondSquared } = playerTuning(registry);
   const models = new ModelLibrary(registry, report, undefined, graphics.modelLoadConcurrency);
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
@@ -235,6 +238,7 @@ export const createPlayView = (
       registry,
       models,
       registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
+      { framing: graphics.itemPicture.framing },
     );
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');
@@ -251,8 +255,8 @@ export const createPlayView = (
   const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
-  const caseEffects = new CaseEffects(s, models);
-  const gore = new Gore(s, graphics.gore, config.seed);
+  const caseEffects = new CaseEffects(s, gravityMetresPerSimSecondSquared, models);
+  const gore = new Gore(s, gravityMetresPerSimSecondSquared, graphics.gore, config.seed);
   const decals =
     engine.scenario && config.authoredDecals
       ? new AuthoredDecals(engine.site?.authoredPlacements ?? [], {
@@ -274,8 +278,8 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, targetCell);
   const blastFlashes = new BlastFlashes();
-  const leverProps = new LeverProps(s, engine.isSolid);
-  const acidEffects = new AcidEffects(s, config.seed);
+  const leverProps = new LeverProps(s, gravityMetresPerSimSecondSquared, engine.isSolid);
+  const acidEffects = new AcidEffects(s, gravityMetresPerSimSecondSquared, config.seed);
   const held = new HeldItems(inventory, models, playerFigure, {
     nearPlaneMetres: engine.camera.near,
     playerViewFovDegrees: graphicsTuningOf(registry).playerViewFovDegrees,
@@ -348,6 +352,7 @@ export const createPlayView = (
       ? new MobActorMeshes(s, undefined, {
           ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
           handlingReachMetres: reachTuning(registry).reachMetres,
+          gravityMetresPerSimSecondSquared,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           zombies: registry.zombies,
@@ -418,16 +423,20 @@ export const createPlayView = (
     if (!ads || frame.spectator || frame.thirdPerson) {
       return target;
     }
+    // The camera rides the aim's share between the hip eye (already `eye` at aim 0) and the sighted
+    // camera eye, so the view slides onto the sight line instead of cutting to it.
+    const sightedAds = { ...ads, aim: 1 };
     const pose = playerLookPose({
       figure: playerFigure,
       models: registry.models,
       pitch,
       stance,
-      ads,
+      ads: sightedAds,
       lean: frame.lean,
     });
-    const placed = adsCameraEye({ figure: playerFigure, pose, ads, pitch });
-    const delta = placed.eye.map((value, axis) => value - pose.eye[axis]!) as Vec3;
+    const placed = adsCameraEye({ figure: playerFigure, pose, ads: sightedAds, pitch });
+    const aim = frame.adsAim ?? 1;
+    const delta = placed.eye.map((value, axis) => (value - pose.eye[axis]!) * aim) as Vec3;
     const bodyEye: Vec3 = [eye[0], eye[1] + stepOffset / s, eye[2]];
     const cameraEye: Vec3 = [
       bodyEye[0] + (delta[0] * Math.cos(yaw) + delta[2] * Math.sin(yaw)) / s,

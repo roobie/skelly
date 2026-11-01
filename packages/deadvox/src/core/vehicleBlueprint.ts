@@ -5,10 +5,12 @@
 import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
-import { type CargoCells, cargoGrid, fitIssue } from './cargoSpace.ts';
+import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { Item } from './items.ts';
 import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
+import type { VehicleInstance, VehicleWorkPlacement } from './vehicleInstances.ts';
 
 type Vec3 = readonly [number, number, number];
 
@@ -48,6 +50,21 @@ const ratingIssue = ({
 };
 
 type PathIssue = readonly [path: string, message: string];
+
+const partMetadataIssues = (part: NonNullable<ItemDef['vehicle']>): PathIssue[] => {
+  const issues: PathIssue[] = [];
+  if (part.cargoSpace && !part.addon) {
+    issues.push(['.vehicle.addon', 'a cargo space needs an add-on face requirement']);
+  }
+  if (part.service && part.service.mount !== part.mount) {
+    issues.push(['.vehicle.service.mount', 'work requirements must match the part mount']);
+  }
+  const rating = ratingIssue(part);
+  if (rating) {
+    issues.push(['.vehicle', rating]);
+  }
+  return issues;
+};
 
 const cargoSizeIssue = (item: ItemDef, fitting: VehicleFittingDef): string | undefined => {
   if (item.vehicle?.cargoSpace) {
@@ -113,15 +130,25 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
     if (item.vehicle && (message || !registry.models.get(item.model!)?.parts)) {
       unsound.add(item.id);
     }
-    const rating = item.vehicle && ratingIssue(item.vehicle);
-    if (rating) {
-      issues.push({ section: 'items', id: item.id, path: '.vehicle', message: rating });
+    if (item.vehicle) {
+      issues.push(
+        ...partMetadataIssues(item.vehicle).map(([path, problem]) => ({
+          section: 'items' as const,
+          id: item.id,
+          path,
+          message: problem,
+        })),
+      );
     }
   }
   const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
   for (const { id, fittings } of registry.vehicleBlueprints.values()) {
     let found = fittingIssues(registry, fittings);
-    if (found.length === 0 && fittings.some(({ cargo }) => cargo) && fittings.every(({ part }) => !unsound.has(part))) {
+    if (
+      found.length === 0 &&
+      fittings.some(({ part }) => registry.items.get(part)?.vehicle?.addon) &&
+      fittings.every(({ part }) => !unsound.has(part))
+    ) {
       found = placementIssues(registry, fittings, cellMetres);
     }
     issues.push(...found.map(([path, message]) => ({ section: 'vehicleBlueprints' as const, id, path, message })));
@@ -142,11 +169,11 @@ export interface PlacedFitting {
   readonly datums: Readonly<Record<string, Vec3>>;
   /** The voxel lattice its drawn collision lies on: planes `grain` metres apart through `origin`. */
   readonly lattice?: { readonly grain: number; readonly origin: Vec3 };
-  /** A cargo space's size, its pocket and the clearance it assumes where nothing is above. */
+  readonly addon?: NonNullable<NonNullable<ItemDef['vehicle']>['addon']>;
+  /** A cargo space's size and pocket. */
   readonly cargo?: {
     readonly cells: CargoCells;
     readonly grid: ReturnType<typeof cargoGrid>;
-    readonly openClearanceCells: number;
   };
 }
 
@@ -234,16 +261,77 @@ export const placeFitting = (registry: Registry, fitting: VehicleFittingDef): Pl
     id: fitting.id,
     part: fitting.part,
     capabilities: item.vehicle.capabilities,
+    ...(item.vehicle.addon ? { addon: item.vehicle.addon } : {}),
     supportedBy: fitting.supportedBy,
     massKg: modelMassKg({ parts: model.parts }),
     ...(cells ? cargoBody(registry, fitting, cells) : partBody(fitting, Object.values(model.parts))),
     datums: Object.fromEntries(
       Object.entries(model.anchors ?? {}).map(([id, point]) => [id, place(fitting, grow(point))]),
     ),
-    ...(cells && space
-      ? { cargo: { cells, grid: cargoGrid(cells, space), openClearanceCells: space.openClearanceCells } }
-      : {}),
+    ...(cells && space ? { cargo: { cells, grid: cargoGrid(cells, space) } } : {}),
   };
+};
+
+export interface LegalAddonPlacements {
+  readonly support: string;
+  readonly cells: readonly VehicleWorkPlacement[];
+}
+
+export const legalAddonPlacements = (
+  registry: Registry,
+  item: Item,
+  vehicle: VehicleInstance,
+): LegalAddonPlacements[] => {
+  const part = registry.items.get(item.type)?.vehicle;
+  if (!part?.addon || (part.cargoSpace && !item.cargo)) {
+    return [];
+  }
+  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+  const prototype = placeFitting(registry, {
+    id: `addon:${item.uid}`,
+    part: item.type,
+    at: [0, 0, 0],
+    supportedBy: [],
+    ...(item.cargo ? { cargo: [...item.cargo] } : {}),
+  });
+  const min = [0, 1, 2].map((axis) => Math.min(...prototype.collision.map((box) => box.min[axis]!)));
+  const present = vehicle.fittings
+    .filter((fitting) => fitting.item.uid !== item.uid)
+    .map((fitting) =>
+      placeFitting(registry, {
+        id: fitting.id,
+        at: fitting.at,
+        mirror: fitting.mirror,
+        supportedBy: fitting.supportedBy,
+        part: fitting.item.type,
+        ...(fitting.item.cargo ? { cargo: [...fitting.item.cargo] } : {}),
+      }),
+    );
+  return present.flatMap(({ id }) => {
+    const floor = placementRegion(present, id, cell, prototype.addon!);
+    if (!floor) {
+      return [];
+    }
+    const cells: VehicleWorkPlacement[] = [];
+    for (const key of floor.clearance.keys()) {
+      const [i, k] = key.split(',').map(Number) as [number, number];
+      const at: [number, number, number] = [0, 0, 0];
+      at[floor.face.normal] = floor.plane - min[floor.face.normal]!;
+      at[floor.face.tangents[0]] = i * cell - min[floor.face.tangents[0]]!;
+      at[floor.face.tangents[1]] = k * cell - min[floor.face.tangents[1]]!;
+      const placement: VehicleWorkPlacement = { at, supportedBy: [id] };
+      const candidate = placeFitting(registry, {
+        id: prototype.id,
+        part: item.type,
+        ...placement,
+        ...(item.cargo ? { cargo: [...item.cargo] } : {}),
+      });
+      if (!fitIssue(present, candidate, cell)) {
+        cells.push(placement);
+      }
+    }
+    return [{ support: id, cells }];
+  });
 };
 
 /** A vehicle of these placed fittings, such as a blueprint with some of its fittings taken off. */

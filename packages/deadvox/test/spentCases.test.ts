@@ -9,6 +9,7 @@ import { PileMeshes } from '../src/render/piles.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
+import { WORLD_GRAVITY } from './playerFixture.ts';
 
 const registry = baseRegistry();
 
@@ -18,7 +19,7 @@ describe('spent-case presentation', () => {
     const landing: [number, number, number] = [2, 0.5, 1];
     const duration = 0.48;
     const initialVelocity: [number, number, number] = [3.15, 0.7, 0];
-    const flight = { durationSimSeconds: duration, initialVelocity };
+    const flight = { durationSimSeconds: duration, initialVelocity, gravityMetresPerSimSecondSquared: WORLD_GRAVITY };
     expect(caseFlightPoint(origin, landing, 1, flight)).toEqual(landing);
     const progress = 0.001;
     const elapsed = duration * progress;
@@ -116,7 +117,7 @@ describe('spent-case presentation', () => {
     expect(piles.group.children[0]).toBeInstanceOf(InstancedMesh);
     expect((piles.group.children[0] as InstancedMesh).count).toBe(3);
 
-    const effects = new CaseEffects(1, models);
+    const effects = new CaseEffects(1, WORLD_GRAVITY, models);
     expect(
       effects.spawn({
         origin: [0, 1.2, 0],
@@ -146,7 +147,7 @@ describe('spent-case presentation', () => {
         return new Group();
       },
     } as unknown as ModelLibrary;
-    const effects = new CaseEffects(1, models);
+    const effects = new CaseEffects(1, WORLD_GRAVITY, models);
     const shot: FirearmShotEffect = {
       origin: [0, 1.2, 0],
       direction: [0.9, 0.15, 0],
@@ -278,7 +279,7 @@ describe('spent-case presentation', () => {
       has: () => loaded,
       ground: () => (loaded ? new Group() : undefined),
     } as unknown as ModelLibrary;
-    const effects = new CaseEffects(1, models);
+    const effects = new CaseEffects(1, WORLD_GRAVITY, models);
     const shot: FirearmShotEffect = {
       origin: [0, 1.2, 0],
       direction: [1, 0, 0],
@@ -300,7 +301,7 @@ describe('spent-case presentation', () => {
   });
 
   it('caps flying-case effects and hides their visuals after they settle', () => {
-    const effects = new CaseEffects(1);
+    const effects = new CaseEffects(1, WORLD_GRAVITY);
     const shot: FirearmShotEffect = {
       origin: [0, 1.2, 0],
       direction: [0.9, 0.15, 0],

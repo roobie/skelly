@@ -138,11 +138,22 @@ export interface HandlingPresentationSource {
   readonly movementLabel?: string;
 }
 
-export type TimedActionPresentation = HandlingPresentationSource['jobs'][number] & {
-  readonly kind: 'craft' | 'forceDoor' | 'reading' | 'treatment' | 'vehicleWork';
+export type TimedActionPresentation = {
+  readonly label: string;
   readonly ownerUid?: number;
   readonly stopped: boolean;
-};
+} & (
+  | {
+      readonly kind: 'craft' | 'reading';
+      readonly elapsedGameSeconds: number;
+      readonly durationGameSeconds: number;
+    }
+  | {
+      readonly kind: 'forceDoor' | 'treatment' | 'vehicleWork';
+      readonly elapsedSimSeconds: number;
+      readonly durationSimSeconds: number;
+    }
+);
 
 export const timedActionHandlingPresentation = (
   action: TimedActionPresentation,
@@ -180,7 +191,15 @@ export const handlingViewModel = (queue: HandlingPresentationSource, text: Handl
     };
   }
   if (queue.longAction) {
-    const { label, elapsed, duration } = queue.longAction;
+    const { label } = queue.longAction;
+    const elapsed =
+      'elapsedGameSeconds' in queue.longAction
+        ? queue.longAction.elapsedGameSeconds
+        : queue.longAction.elapsedSimSeconds;
+    const duration =
+      'durationGameSeconds' in queue.longAction
+        ? queue.longAction.durationGameSeconds
+        : queue.longAction.durationSimSeconds;
     return {
       visible: true,
       label,
