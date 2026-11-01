@@ -417,13 +417,17 @@
       "furnitureRadial": {
         "deadZonePixels": 18,
         "entryCap": 8,
+        "labelPaddingRem": 0.5,
+        "labelRadiusRem": 0.375,
         "labels": {
           "actions": "Actions",
           "drag": "Drag",
           "lift": "Lift",
           "push": "Push"
         },
-        "radiusPixels": 110
+        "radiusPixels": 110,
+        "selectedLabelScale": 1.25,
+        "strokePixels": 3
       },
       "hudScale": 1,
       "id": "core",

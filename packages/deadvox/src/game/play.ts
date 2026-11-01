@@ -2865,15 +2865,21 @@ export const startPlay = (
     );
   };
 
-  const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload => {
+  const selectedFurniturePayload = (entity: BlockEntity): ReplayActionPayload | undefined => {
+    const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity));
+    if (!selected) {
+      return undefined;
+    }
+    if (selected.id === 'lift') {
+      return { kind: 'furniture.lift', entityUid: entity.uid };
+    }
+    return selected.id === 'drag'
+      ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
+      : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+  };
+  const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
     if (furnitureActionSelection.isOpen(entity)) {
-      const selected = furnitureActionSelection.confirm(entity, furnitureActions(entity))!;
-      if (selected.id === 'lift') {
-        return { kind: 'furniture.lift', entityUid: entity.uid };
-      }
-      return selected.id === 'drag'
-        ? { kind: 'furniture.lift', entityUid: entity.uid, floorLocked: true }
-        : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
+      return selectedFurniturePayload(entity);
     }
     if (mode === 'wield' && furnitureActions(entity).length > 0) {
       return { kind: 'furniture.interact', entityUid: entity.uid, alternatives: true };
@@ -2888,7 +2894,7 @@ export const startPlay = (
   function interactionPayload(
     target: Exclude<InteractionTarget, { kind: 'vehicle' }>,
     mode: 'pocket' | 'wield',
-  ): ReplayActionPayload {
+  ): ReplayActionPayload | undefined {
     switch (target.kind) {
       case 'item':
         return { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() };
@@ -3626,10 +3632,11 @@ export const startPlay = (
       view.furniture.markBounds(undefined, [0, 0, 0], [0, 0, 0]);
     }
   };
-  const furnitureInteractionHint = (entity: BlockEntity): HintText => {
+  const furnitureInteractionHint = (entity: BlockEntity): HintText | undefined => {
     const key = keyCap('world.interact');
     if (furnitureActionSelection.isOpen(entity)) {
-      return html`${key}: ${furnitureActionSelection.forItem(entity, furnitureActions(entity))?.label} ${nameOf(entity)}`;
+      const selected = furnitureActionSelection.choice(entity, furnitureActions(entity));
+      return selected ? html`${key}: ${selected.label} ${nameOf(entity)}` : undefined;
     }
     if (entity.bar) {
       const lift = doorPlan(inventory, entity, 'unbar');
@@ -3646,6 +3653,9 @@ export const startPlay = (
       : useText(entity);
   };
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
+    if (furnitureActionSelection.isOpen(entity)) {
+      return undefined;
+    }
     const control = session.power?.control(entity);
     return control
       ? html`${keyCap('world.interact')}: ${screenText.powerControl[control.enabled ? 'off' : 'on']} ${nameOf(entity)}`
@@ -3695,8 +3705,8 @@ export const startPlay = (
       showActions && radialEntity
         ? furnitureActionSelection.page(radialEntity, radialActions, radialTuning.entryCap)
         : [],
-      radialEntity ? furnitureActionSelection.forItem(radialEntity, radialActions)?.id : undefined,
-      radialTuning.radiusPixels,
+      radialEntity ? furnitureActionSelection.choice(radialEntity, radialActions)?.id : undefined,
+      radialTuning,
     );
     const actions = showActions && !radialEntity ? survival.wieldedItemActionHint() : undefined;
     itemActionList.textContent = actions ?? '';

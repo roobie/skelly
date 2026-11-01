@@ -6,6 +6,10 @@
     furnitureRadial: {
       radiusPixels: 110,
       deadZonePixels: 18,
+      strokePixels: 3,
+      selectedLabelScale: 1.25,
+      labelPaddingRem: 0.5,
+      labelRadiusRem: 0.375,
       entryCap: 8,
       labels: { lift: 'Lift', push: 'Push', drag: 'Drag', actions: 'Actions' },
     },

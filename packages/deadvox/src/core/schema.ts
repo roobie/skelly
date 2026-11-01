@@ -899,6 +899,10 @@ const UiTuningSchema = strictObject({
   furnitureRadial: strictObject({
     radiusPixels: Positive,
     deadZonePixels: Positive,
+    strokePixels: Positive,
+    selectedLabelScale: Positive,
+    labelPaddingRem: Positive,
+    labelRadiusRem: Positive,
     entryCap: pipe(number(), integer(), minValue(1)),
     labels: strictObject({ lift: Name, push: Name, drag: Name, actions: Name }),
   }),

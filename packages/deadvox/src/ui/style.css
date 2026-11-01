@@ -374,17 +374,45 @@ body.unconscious::after {
 #furniture-radial[hidden] {
   display: none;
 }
+.radial-centre {
+  position: absolute;
+  width: calc(var(--radial-dead-zone) * 2);
+  height: calc(var(--radial-dead-zone) * 2);
+  transform: translate(-50%, -50%);
+  border: var(--radial-stroke) dashed var(--muted);
+  border-radius: 50%;
+  background: var(--panel);
+}
+.radial-centre.armed {
+  border-style: solid;
+  border-color: var(--accent);
+}
+.radial-pointer {
+  position: absolute;
+  transform-origin: 0 0;
+}
+.radial-spoke {
+  position: absolute;
+  left: var(--radial-dead-zone);
+  width: max(0px, calc(var(--radial-radius) - var(--radial-dead-zone)));
+  height: var(--radial-stroke);
+  transform: translateY(-50%);
+  background: var(--accent);
+}
 .radial-entry {
   position: absolute;
   width: max-content;
-  padding: calc(var(--ui-spacing) * 0.5rem);
-  border: 1px solid var(--line);
-  border-radius: 0.375rem;
+  padding: calc(var(--ui-spacing) * var(--radial-label-padding));
+  border: var(--radial-stroke) solid var(--line);
+  border-radius: var(--radial-label-radius);
   background: var(--panel);
+  color: var(--muted);
 }
 .radial-entry.selected {
   border-color: var(--accent);
-  color: var(--accent);
+  background: var(--accent);
+  color: var(--panel);
+  font-size: calc(1em * var(--radial-selected-label-scale));
 }
 
 /* A bound key shown beside its action; every hint draws it through `keyCap` in src/ui/keyCap.ts. */

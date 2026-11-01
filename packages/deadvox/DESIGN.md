@@ -583,7 +583,9 @@ because rearranging a room should not require destroying its contents. See `src/
   does not silently change the interaction. Choices are a single confirmation,
   not a persistent mode: returning from pause or another target must not act
   unexpectedly. The radial spike keeps the choice near the target and holds
-  look so choosing a direction cannot also lose that target. See
+  look so choosing a direction cannot also lose that target. The centre is
+  neutral so release cannot run a remembered choice that is not visibly selected;
+  mouse and keyboard choices share the same highlight and confirmation owner. See
   `src/game/play.ts`, `furnitureActions`, `src/game/furnitureActions.ts`,
   `FurnitureActionSelection`, and `src/ui/furnitureRadial.ts`,
   `mountFurnitureRadial`.

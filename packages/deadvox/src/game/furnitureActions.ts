@@ -13,6 +13,20 @@ export class FurnitureActionSelection extends ItemActionSelection {
   private uid: number | undefined;
   private x = 0;
   private y = 0;
+  private armed = false;
+
+  choice(entity: { uid: number }, actions: readonly ItemAction[]): ItemAction | undefined {
+    return this.isOpen(entity) && this.armed ? this.forItem(entity, actions) : undefined;
+  }
+
+  override step(entity: { uid: number }, actions: readonly ItemAction[], direction: number): boolean {
+    if (!this.isOpen(entity) || direction === 0 || actions.length === 0) {
+      return false;
+    }
+    super.step(entity, actions, direction);
+    this.armed = true;
+    return true;
+  }
 
   get openedUid(): number | undefined {
     return this.uid;
@@ -39,6 +53,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
     }
     const page = this.page(entity, actions, tuning.entryCap);
     const index = radialEntryIndex(this.x, this.y, page.length, tuning.deadZonePixels);
+    this.armed = index !== undefined;
     if (index !== undefined) {
       this.selected.set(entity.uid, page[index]!.id);
     }
@@ -52,6 +67,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
     this.uid = entity.uid;
     this.x = 0;
     this.y = 0;
+    this.armed = false;
     this.forItem(entity, actions);
   }
 
@@ -66,7 +82,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
   }
 
   confirm(entity: { uid: number }, actions: readonly ItemAction[]): ItemAction | undefined {
-    const action = this.isOpen(entity) ? this.forItem(entity, actions) : undefined;
+    const action = this.choice(entity, actions);
     this.uid = undefined;
     return action;
   }

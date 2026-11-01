@@ -7,7 +7,7 @@ const actions = [
   { id: 'push', label: 'Push' },
 ];
 
-it('maps clockwise directions from the top to entries while the dead zone preserves selection', () => {
+it('maps clockwise directions from the top to entries and leaves the dead zone unmapped', () => {
   const radius = 50;
   const deadZone = 5;
   for (const count of [1, 2, 3, 7]) {
@@ -19,6 +19,31 @@ it('maps clockwise directions from the top to entries while the dead zone preser
   expect(radialEntryIndex(0, 0, 3, deadZone)).toBeUndefined();
   expect(radialEntryIndex(deadZone, 0, 3, deadZone)).toBeUndefined();
   expect(radialEntryIndex(0, -radius, 0, deadZone)).toBeUndefined();
+});
+
+it('release runs only the visibly chosen action, never a remembered action in the dead zone', () => {
+  const selection = new FurnitureActionSelection('fixture open can');
+  const tuning = { radiusPixels: 50, deadZonePixels: 5, entryCap: 4 };
+  selection.open(piece, actions);
+  expect(selection.choice(piece, actions)).toBeUndefined();
+  expect(selection.confirm(piece, actions)).toBeUndefined();
+
+  selection.open(piece, actions);
+  selection.point(piece, actions, { x: 0, y: -20 }, tuning);
+  expect(selection.choice(piece, actions)?.id).toBe(actions[0]!.id);
+  expect(selection.confirm(piece, actions)?.id).toBe(actions[0]!.id);
+
+  selection.open(piece, actions);
+  selection.step(piece, actions, 1);
+  expect(selection.choice(piece, actions)?.id).toBe(actions[1]!.id);
+  selection.point(piece, actions, { x: 0, y: -20 }, tuning);
+  selection.point(piece, actions, { x: 0, y: 20 }, tuning);
+  expect(selection.choice(piece, actions)).toBeUndefined();
+  expect(selection.confirm(piece, actions)).toBeUndefined();
+
+  selection.open(piece, [actions[0]!]);
+  selection.step(piece, [actions[0]!], 1);
+  expect(selection.confirm(piece, [actions[0]!])?.id).toBe(actions[0]!.id);
 });
 
 describe('furniture action menu lifetime', () => {
