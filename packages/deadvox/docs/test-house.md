@@ -5,10 +5,10 @@ read_if:
   - you change the haven's rooms, landscape, lake or south-facing view
   - you add a feature demonstration near the test-house spawn
   - you change the opt-in ragdoll sample's staging or normal/debug boundary
-  - you change the liquid-service demonstration's normal-mode boundary
+  - you change the liquid-service demonstration's normal-mode boundary or the authored liquid-recovery look
   - you benchmark the test house at a different block scale
   - you change house supply, powered furnishings or player power controls
-  - you add a feature's test prop to the showroom, or change its slot row or catalogue
+  - you add a feature's test prop to the showroom, or change its slot placement or catalogue
   - you use or change the focus URL parameter
   - you stage or inspect the debug repair entry
 ---
@@ -83,6 +83,9 @@ house supply makes charging respond to the same blackout as other appliances, wh
 nearby portable equipment avoids debug inventory edits or travel. Liquid service shares
 the charging corner so the player can compare portable light sources without privileged
 setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+The liquid-recovery look also belongs in normal mode: authored instance state lets
+ordinary inventory choices be inspected without privileged setup. See
+`src/content/base/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
 Derived repair stock and the handling range are debug-only because their purpose is
 repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
 `src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
@@ -141,36 +144,27 @@ content so balancing the haven does not change its mechanisms. See
 
 ## Showroom
 
-The showroom is where a new feature's prop is tried first, so it stands at spawn: the
-open-sided pavilion on the lot holds a short authored row of slots, and the default
-spawn faces the newest slot. The pavilion has no lights of its own: they would light the
-ground around the spawn, and light tests need it dark at night. See
-`src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
+Keep feature looks in showroom slots at spawn, not in the home, garage or yard. Changing
+those zones needs a design round so an evaluation prop does not repurpose the haven.
+Retiring older slots keeps the display small enough to take in at a glance. The pavilion
+stays unlit because light tests need dark
+ground at night. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom`.
 
-A feature's test prop goes in the layout's slot list, never inside the house, garage or
-yard, because zone content changes only by a design round and the home must stay a
-home. A slot holds one prop and its fixture stock. The list is oldest first and has a
-fixed capacity; when it is full, adding a slot removes the oldest, so the row stays
-short enough to take in at a glance. A slot's furniture is an ordinary authored
-placement, so house power, the demo loot rule and fixture stock reach it as they reach
-the house. Content owns the row's position, spacing and capacity; game logic lays the
-slots out and `validate` rejects a slot that leaves the deck. See
-`src/content/base/layouts-test-house.jsonnet`, `showroom`, and `src/core/showroom.ts`,
-`slotPlacement`.
+The crate is the approved repair-look target and the workbench owns the liquid-recovery
+look. Keep the shelf reachable behind the player's starting point instead of crowding
+their row. Its independent placement remains a showroom slot so fixture stock, focus,
+house power and deck validation retain their existing owners rather than gaining a runtime
+staging overlay. Content owns the placement; see
+`src/content/base/layouts-test-house.jsonnet`, `showroom`; `src/core/schema.ts`,
+`ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
-The catalogue shows every furniture piece in content, so a new piece of furniture needs
-no slot: it appears by being content. Derivation is game logic and placement settings
-are content, as with the repair stock: content says where the floor lies and how the
-rows are spaced, and code packs the pieces into rows, each facing its own aisle so a
-focus has somewhere to stand. The catalogue shows furniture, not supply, so its
-pieces stand empty and stay off the house grid. It lies west of the haven on a levelled
-floor, clear of the lake and range, because its warehouse-like scale must not fill
-the home's view. Keeping it beyond the startup ring avoids delaying every debug
-session with wholesale catalogue construction; a focus reaches it directly. `validate`
-rejects a catalogue inside that ring; see `src/core/authoredLayout.ts`, `showroomIssues`.
-See `src/core/showroom.ts`, `ShowroomCatalogue`. Features
-that are not furniture, such as an item or a vehicle, still need a slot or their owning
-zone.
+The catalogue needs no per-feature slot because its purpose is to expose furniture
+content wholesale, not stage a feature's supplies. Keeping it beyond the startup ring
+avoids delaying every debug session, while its separation from the haven preserves the
+home's view. Its empty pieces stay off the house grid so the catalogue cannot change
+house supply. See `src/core/showroom.ts`, `ShowroomCatalogue`, and
+`src/core/authoredLayout.ts`, `showroomIssues`. Item and vehicle looks still belong to a
+slot or their owning zone.
 
 ## Focus
 

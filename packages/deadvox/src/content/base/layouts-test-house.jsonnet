@@ -3,6 +3,19 @@ local bays = [
   { position: [-19, 21, -7], facing: 'e' },
   { position: [-14, 21, -7], facing: 'e' },
 ];
+local liquidRecoveryStock = [
+  {
+    item: 'oil_lamp', placement: 'surface',
+    craftedLiquids: [{ liquid: 'lamp_fuel', volumeMicrolitres: 400000 }],
+    // Provenance is the recovery input; the independent reservoir is not part of it.
+    liquidContents: { kind: 'empty' },
+  },
+  {
+    item: 'lamp_oil', placement: 'surface',
+    liquidContents: { kind: 'filled', liquid: 'lamp_fuel', volumeMicrolitres: 500000 },
+  },
+  { item: 'lamp_oil', placement: 'surface', liquidContents: { kind: 'empty' } },
+];
 {
   layouts: [{
     id: 'testHouse', demo: true,
@@ -49,7 +62,6 @@ local bays = [
       // A feature's test prop goes here, never in the house, garage or hall. Oldest first: past capacity, the first
       // entry leaves.
       slots: [
-        { furniture: 'grinding_wheel', fixed: true },
         {
           furniture: 'crate',
           items: [
@@ -67,11 +79,13 @@ local bays = [
         },
         {
           furniture: 'shelf',
+          placement: { position: [-6.5, 21.5, 0.5], facing: 'n' },
           items: [
             { item: 'sledgehammer', count: 1 },
             { item: 'paperback', count: 1 },
           ],
         },
+        { furniture: 'workbench', items: liquidRecoveryStock },
       ],
       focusDistance: 1,
       // West of the haven, clear of the lake and beyond the startup ring; debug only (`docs/test-house.md`, "Showroom").

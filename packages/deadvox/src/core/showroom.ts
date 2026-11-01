@@ -1,4 +1,4 @@
-// The test house showroom (`docs/test-house.md`, "Showroom"): an authored slot row and a catalogue derived from
+// The test house showroom (`docs/test-house.md`, "Showroom"): authored slots and a catalogue derived from
 // content furniture. Content owns where they stand and how far apart; this module owns the packing.
 
 import { smoothstep } from './authoredTerrain.mjs';
@@ -57,19 +57,21 @@ const facingPose = (prop: ShowroomProp, distance: number): ShowroomPose => {
   return { pos, yaw: yawToward(pos, centre) };
 };
 
-/** The slot row, oldest first: fronts on the row line, each slot east of the one before. */
+/** Slots retain author order; independently placed slots do not advance the packed row. */
 export const slotProps = (registry: Registry, showroom: ShowroomDef): ShowroomProp[] => {
   const [x0, y, z] = showroom.row.map(toBlocks) as Vec3;
   let x = x0;
-  return showroom.slots.map(({ furniture }) => {
+  return showroom.slots.map(({ furniture, placement }) => {
     const size = sizeOf(registry, furniture);
     const prop: ShowroomProp = {
       furniture,
-      pos: [x, y, showroom.facing === 's' ? z - size[2] : z],
+      pos: placement ? (placement.position.map(toBlocks) as Vec3) : [x, y, showroom.facing === 's' ? z - size[2] : z],
       size,
-      facing: showroom.facing,
+      facing: placement?.facing ?? showroom.facing,
     };
-    x += size[0] + toBlocks(showroom.spacing);
+    if (!placement) {
+      x += size[0] + toBlocks(showroom.spacing);
+    }
     return prop;
   });
 };

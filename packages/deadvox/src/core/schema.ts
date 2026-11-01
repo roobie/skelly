@@ -839,6 +839,12 @@ const UiScreenTextSchema = strictObject({
     searching: [],
     searchIt: ['key'],
     noSelection: [],
+    recoveryAmount: ['liquid', 'volume'],
+    recoveryReceiver: ['liquid'],
+    recoveryNoMatches: [],
+    recoverySpillAll: [],
+    recoveryUnavailable: [],
+    recoveryAction: ['action', 'spill'],
     inspect: [],
     whereItCanGo: [],
     firearmSlots: [],
@@ -1442,11 +1448,8 @@ const ToolFractionBonus = pipe(
   minLength(1, 'needs a bonus for at least one tool level'),
   check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
 );
-const DisassemblyYieldSchema = strictObject({
-  ...ItemCountSchema.entries,
-  /** Multiplier by skill level: index 0 is skill 0; the last entry is this yield's top level. */
+const LiquidRecoverySchema = strictObject({
   fractions: SkillFractions,
-  /** Applied independently to this yield's scaled count. */
   rounding: YieldRounding,
   toolModifier: optional(
     strictObject({
@@ -1456,11 +1459,16 @@ const DisassemblyYieldSchema = strictObject({
     }),
   ),
 });
+const DisassemblyYieldSchema = strictObject({
+  ...ItemCountSchema.entries,
+  ...LiquidRecoverySchema.entries,
+});
 const DisassemblySchema = strictObject({
   /** Game minutes. */
   timeGameMinutes: PositiveGameMinutes,
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
+  liquidRecovery: optional(LiquidRecoverySchema),
 });
 /** What one dose of a painkiller does to felt pain (`DESIGN.md`, "Pain"); it heals nothing. */
 const AnalgesicSchema = strictObject({
@@ -1502,12 +1510,15 @@ const TreatmentSchema = pipe(
 );
 
 const LiquidVolumeMicrolitres = pipe(number(), safeInteger(), minValue(0));
+const LiquidAmountSchema = strictObject({
+  liquid: Id,
+  volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+});
 const LiquidContentsSchema = union([
   strictObject({ kind: literal('empty') }),
   strictObject({
     kind: literal('filled'),
-    liquid: Id,
-    volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)),
+    ...LiquidAmountSchema.entries,
   }),
 ]);
 const LiquidSchema = strictObject({ id: Id, name: Name, densityGramsPerMillilitre: pipe(Positive, finite()) });
@@ -1592,6 +1603,7 @@ const ItemSchema = strictObject({
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   /** Work time to salvage; required with `salvage`, forbidden without it. */
   salvageTimeGameMinutes: optional(PositiveGameMinutes),
+  salvageLiquidRecovery: optional(strictObject({ skill: Id, ...LiquidRecoverySchema.entries })),
   light: optional(LightSchema),
   igniter: optional(IgniterSchema),
   explosive: optional(ExplosiveSchema),
@@ -2633,6 +2645,8 @@ const FixedLootItem = strictObject({
   fitted: optional(record(Id, Id)),
   /** Battery charge at spawn as a share of full, for the item if it is a battery and for its fitted batteries. */
   charge: optional(Fraction),
+  craftedLiquids: optional(pipe(array(LiquidAmountSchema), nonEmpty())),
+  liquidContents: optional(LiquidContentsSchema),
 });
 const GroundLootSupplySchema = union([
   strictObject({ kind: literal('empty') }),
@@ -3003,20 +3017,22 @@ const LayoutRect = pipe(
 
 const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
-/** Where new features are shown: an authored row of slots and a derived catalogue of every furniture piece. */
+/** Where new features are shown: authored slots and a derived catalogue of every furniture piece. */
 const ShowroomSchema = strictObject({
-  /** The west end of the slot row's front line, feet on the deck; slots run east from here. */
+  /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
   row: HalfMetrePosition,
   /** Which way every slot's front faces; the row is seen from that side. */
   facing: picklist(['n', 's']),
   /** Gap between neighbouring slots. */
   spacing: PositiveHalfMetres,
-  /** How many slots the row holds; a new slot past it replaces the oldest. */
+  /** How many slots the display holds; a new slot past it replaces the oldest. */
   capacity: pipe(Count, minValue(1)),
   /** Oldest first; the default spawn faces the last. */
   slots: array(
     strictObject({
       furniture: Id,
+      /** An independently placed slot does not consume space in the packed row. */
+      placement: optional(strictObject({ position: HalfMetrePosition, facing: picklist(['n', 's']) })),
       fixed: optional(literal(true)),
       /** The slot's fixture stock. */
       items: optional(pipe(array(omit(FixedLootItem, ['key'])), nonEmpty())),
@@ -4333,10 +4349,7 @@ const SenseSchema = strictObject({
     illumination: strictObject({ pointDecay: NonNegative, nearFieldMetres: NonNegative, readingThreshold: Positive }),
   }),
 });
-const RecipeInputSchema = union([
-  ItemCountSchema,
-  strictObject({ liquid: Id, volumeMicrolitres: pipe(LiquidVolumeMicrolitres, minValue(1)) }),
-]);
+const RecipeInputSchema = union([ItemCountSchema, LiquidAmountSchema]);
 
 const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
   const { min, max } = WEATHERING_RANGES[field];

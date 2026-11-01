@@ -1,5 +1,5 @@
 import { actionText } from '../core/actionText.ts';
-import type { WorkOperation } from '../core/craftCommands.ts';
+import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
 import type { CraftPreference, CraftSources } from '../core/crafting.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory, TargetState } from '../core/inventory.ts';
@@ -32,7 +32,7 @@ export type ReplayActionPayload =
   | { kind: 'furniture.tip' }
   | { kind: 'zombie.downed'; zombieId: number; way: DownedBodyWay }
   | { kind: 'inventory.search'; entityUid: number }
-  | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
+  | ({ kind: 'inventory.work'; itemUid: number; operation: WorkOperation } & RecoveryChoices)
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
   | { kind: 'inventory.cancel-handling' }
   | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
@@ -108,6 +108,38 @@ const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.firearmUid) &&
   typeof payload.slotId === 'string' &&
   (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
+
+const isRecoveryChoices = (payload: Record<string, unknown>): boolean => {
+  const { receivers, spillApproval: approval } = payload;
+  return (
+    (payload.recoveryOperation === undefined ||
+      payload.recoveryOperation === 'salvage' ||
+      payload.recoveryOperation === 'disassembly') &&
+    (receivers === undefined ||
+      (Array.isArray(receivers) &&
+        receivers.every((row: unknown) => {
+          if (!row || typeof row !== 'object') {
+            return false;
+          }
+          const entry = row as Record<string, unknown>;
+          return typeof entry.liquid === 'string' && entry.liquid.length > 0 && isUid(entry.uid);
+        }))) &&
+    (approval === undefined ||
+      (Array.isArray(approval) &&
+        approval.every((row: unknown) => {
+          if (!row || typeof row !== 'object') {
+            return false;
+          }
+          const entry = row as Record<string, unknown>;
+          return (
+            typeof entry.liquid === 'string' &&
+            entry.liquid.length > 0 &&
+            Number.isSafeInteger(entry.volumeMicrolitres) &&
+            (entry.volumeMicrolitres as number) >= 0
+          );
+        })))
+  );
+};
 
 const isPourPayload = (payload: Record<string, unknown>): boolean =>
   isUid(payload.sourceUid) && isUid(payload.receiverUid);
@@ -217,7 +249,11 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         isUid(payload.itemUid) && (payload.mode === 'pocket' || payload.mode === 'wield') && isTriple(payload.feet)
       );
     case 'inventory.work':
-      return isUid(payload.itemUid) && ['continue', 'apart', 'disassemble'].includes(payload.operation as string);
+      return (
+        isUid(payload.itemUid) &&
+        ['continue', 'apart', 'disassemble'].includes(payload.operation as string) &&
+        isRecoveryChoices(payload)
+      );
     case 'inventory.assign':
       return (
         Number.isSafeInteger(payload.slot) &&
@@ -274,7 +310,7 @@ export interface ReplayCommandOwners {
   wieldOrPocket?: (itemUid: number, feet: [number, number, number]) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
-  work: (itemUid: number, operation: WorkOperation) => string | undefined;
+  work: (itemUid: number, operation: WorkOperation, choices?: RecoveryChoices) => string | undefined;
   pour?: (sourceUid: number, receiverUid: number) => string | undefined;
   fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
   removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
@@ -375,7 +411,7 @@ export const applyReplayActionPayload = (
     case 'inventory.search':
       return owners.search(payload.entityUid);
     case 'inventory.work':
-      return owners.work(payload.itemUid, payload.operation);
+      return owners.work(payload.itemUid, payload.operation, payload);
     case 'inventory.assign': {
       const item = owners.inventory.carriedByUid(payload.itemUid);
       if (!item) {

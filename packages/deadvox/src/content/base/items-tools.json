@@ -881,6 +881,22 @@
     {
       "category": "light",
       "description": "A table lamp that burns lamp oil. It keeps burning where it is set down.",
+      "disassembly": {
+        "liquidRecovery": {
+          "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+          "rounding": "floor"
+        },
+        "skill": "crafting",
+        "timeGameMinutes": 5,
+        "yields": [
+          {
+            "count": 2,
+            "fractions": [0.5, 0.59999999999999998, 0.69999999999999996, 0.80000000000000004, 0.90000000000000002, 1],
+            "item": "scrap_metal",
+            "rounding": "floor"
+          }
+        ]
+      },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
         "usage": ["Residential", "Industrial", "Medical", "Hunting", "Police", "Military", "Infected"]

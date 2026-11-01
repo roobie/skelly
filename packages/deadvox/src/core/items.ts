@@ -5,6 +5,7 @@
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
 import { CORE_CONTENT_IDS } from './contentIds.ts';
+import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import {
@@ -14,6 +15,7 @@ import {
   initialFoodExposure,
   projectFoodExposure,
 } from './food.ts';
+import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { assertPaperMapItem, type PaperMapCoverage } from './paperMap.ts';
@@ -32,16 +34,35 @@ interface WorkProgress<Node> {
   repairTarget?: WorkTarget;
   repairAmount?: number;
 }
-export interface RecordedLiquidDraw {
+interface RecordedLiquidDraw {
   group: number;
   liquid: string;
   volumeMicrolitres: number;
   sources: { uid: number; volumeMicrolitres: number }[];
 }
-const drawFields = (work: { kind: string; liquids?: RecordedLiquidDraw[] }) =>
-  work.kind === 'craft' && work.liquids !== undefined
-    ? { liquids: work.liquids.map((draw) => ({ ...draw, sources: draw.sources.map((source) => ({ ...source })) })) }
-    : {};
+const workFields = <Node>(work: CraftWork<Node>): CraftWork<Node> =>
+  work.kind === 'craft'
+    ? {
+        ...work,
+        ...repairTargetFields(work),
+        ...(work.liquids === undefined
+          ? {}
+          : {
+              liquids: work.liquids.map((draw) => ({
+                ...draw,
+                sources: draw.sources.map((source) => ({ ...source })),
+              })),
+            }),
+      }
+    : {
+        ...work,
+        ...repairTargetFields(work),
+        liquids: work.liquids.map((liquid) => ({ ...liquid })),
+        receivers: work.receivers.map((receiver) => ({ ...receiver })),
+        spillApproval: work.spillApproval.map((approval) => ({ ...approval })),
+        outputs: work.outputs.map((output) => ({ ...output })),
+        toolLevels: { ...work.toolLevels },
+      };
 const craftedLiquidFields = (item: { craftedLiquids?: { liquid: string; volumeMicrolitres: number }[] }) =>
   item.craftedLiquids === undefined ? {} : { craftedLiquids: item.craftedLiquids.map((liquid) => ({ ...liquid })) };
 
@@ -50,6 +71,10 @@ type CraftWork<Node> =
   | (WorkProgress<Node> & {
       kind: 'disassembly';
       source: string;
+      operation: RecoveryOperation;
+      liquids: LiquidAmount[];
+      receivers: NonNullable<LiquidRecoveryChoices['receivers']>;
+      spillApproval: LiquidAmount[];
       skillLevel: number;
       toolLevels: Record<string, number>;
       gather: number;
@@ -194,15 +219,7 @@ export const snapshotItem = (item: Item, foodAt?: number): Readonly<ItemState> =
       ? {}
       : {
           work: {
-            ...item.work,
-            ...repairTargetFields(item.work),
-            ...drawFields(item.work),
-            ...(item.work.kind === 'disassembly'
-              ? {
-                  outputs: item.work.outputs.map((output) => ({ ...output })),
-                  toolLevels: { ...item.work.toolLevels },
-                }
-              : {}),
+            ...workFields(item.work),
             components: item.work.components.map((component) => snapshotItem(component, foodAt) as ItemState),
           },
         }),
@@ -311,15 +328,7 @@ const restoreFirearmState = (registry: Registry, def: ItemDef, state: ItemState)
 };
 
 const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): NonNullable<Item['work']> => ({
-  ...work,
-  ...repairTargetFields(work),
-  ...drawFields(work),
-  ...(work.kind === 'disassembly'
-    ? {
-        outputs: work.outputs.map((output) => ({ ...output })),
-        toolLevels: { ...work.toolLevels },
-      }
-    : {}),
+  ...workFields(work),
   components: work.components.map((component) => restoreItem(registry, component)),
 });
 
@@ -377,7 +386,7 @@ export const assertSavedLiquidContents = (registry: Registry, state: ItemState):
   }
 };
 
-const assertCraftedLiquids = (registry: Registry, state: ItemState): void => {
+export const assertCraftedLiquids = (registry: Registry, state: ItemState): void => {
   if (
     state.craftedLiquids !== undefined &&
     (!Array.isArray(state.craftedLiquids) ||
