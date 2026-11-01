@@ -33,6 +33,13 @@ test('an aborted replacement leaves the previous entire selection intact', async
   expect(await new ModStorage(factory).load()).toEqual(mods);
 });
 
+test('discarding removes the stored selection so the next load is empty', async () => {
+  const storage = new ModStorage(new IDBFactory());
+  await storage.save(mods);
+  await storage.discard();
+  expect(await storage.load()).toEqual([]);
+});
+
 test('malformed selections are refused whole rather than retaining valid rows', async () => {
   const storage = new ModStorage(new IDBFactory());
   await expect(storage.save([...mods, { source: 'bad', text: 3, enabled: true }] as never)).rejects.toThrow();
