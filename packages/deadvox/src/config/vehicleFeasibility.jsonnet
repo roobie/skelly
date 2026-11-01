@@ -51,9 +51,7 @@
     restitution: 0,
     gravity: [0, -9.81, 0],
     driveAcceleration: 3,
-    skin: 0.00001,
     maxColliders: 4,
-    maxImpacts: 4,
     solverIterations: 4,
     internalIterations: 1,
     ccdSubsteps: 4,
@@ -62,6 +60,7 @@
     scenarios: [
       {
         id: 'slope',
+        behaviour: 'reverses',
         viewAxis: 1,
         position: [-4, 0.25, 0],
         velocity: [5, 0, 0],
@@ -69,6 +68,7 @@
       },
       {
         id: 'edge-drop',
+        behaviour: 'falls',
         viewAxis: 1,
         position: [-4, 0.51, 0],
         velocity: [5, 0, 0],
@@ -76,6 +76,7 @@
       },
       {
         id: 'thin-obstacle',
+        behaviour: 'wall-stop',
         viewAxis: 1,
         position: [-4, 0.51, 0],
         velocity: [80, 0, 0],
@@ -86,6 +87,7 @@
       },
       {
         id: 'scrape',
+        behaviour: 'scrape',
         viewAxis: 2,
         position: [-4, 0.51, 0],
         velocity: [8, 0, 2],

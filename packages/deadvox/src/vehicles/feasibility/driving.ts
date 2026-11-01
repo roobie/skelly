@@ -11,9 +11,6 @@ export interface Sample {
   velocity: Vector;
   penetration: number;
   outsideEnvelope: boolean;
-  tests: number | null;
-  impacts: number | null;
-  saturated: boolean | null;
 }
 export interface Driver {
   step: (throttle: number) => Sample;
@@ -73,106 +70,6 @@ function admit(scenario: Scenario) {
     throw new Error('Initially penetrating collider');
   }
 }
-function sample(
-  scenario: Scenario,
-  position: Vector,
-  velocity: Vector,
-  work: Pick<Sample, 'tests' | 'impacts' | 'saturated'>,
-): Sample {
-  return {
-    position: [...position],
-    velocity: [...velocity],
-    ...work,
-    penetration: Math.max(...scenario.boxes.map((box) => penetration(position, box))),
-    outsideEnvelope: position[1] < driving.lowerEnvelope,
-  };
-}
-
-// Expanded box corners deliberately over-approximate the sphere: conservative, not a rounded-corner solver.
-function sweep(position: Vector, displacement: Vector, box: Box) {
-  const relative = add(position, vector(box.centre), -1);
-  let enter = 0;
-  let leave = 1;
-  let normal: Vector | undefined;
-  for (const [index, axis] of axes(box).entries()) {
-    const origin = dot(relative, axis);
-    const speed = dot(displacement, axis);
-    const half = box.half[index]! + driving.radius;
-    if (speed === 0) {
-      if (Math.abs(origin) > half) {
-        return;
-      }
-      continue;
-    }
-    const first = (-half - origin) / speed;
-    const second = (half - origin) / speed;
-    const near = Math.min(first, second);
-    leave = Math.min(leave, Math.max(first, second));
-    if (near >= enter) {
-      enter = near;
-      normal = axis.map((value) => value * (speed > 0 ? -1 : 1)) as Vector;
-    }
-    if (enter > leave) {
-      return;
-    }
-  }
-  return normal && enter >= 0 && enter <= 1 ? { fraction: enter, normal } : undefined;
-}
-function firstHit(position: Vector, displacement: Vector, boxes: Box[]) {
-  let earliest: ReturnType<typeof sweep>;
-  for (const box of boxes) {
-    const hit = sweep(position, displacement, box);
-    if (hit && (!earliest || hit.fraction < earliest.fraction)) {
-      earliest = hit;
-    }
-  }
-  return earliest;
-}
-export function ownedDriver(scenario: Scenario): Driver {
-  admit(scenario);
-  if (driving.friction !== 0) {
-    throw new Error('Owned candidate supports frictionless contacts only');
-  }
-  const initial = vector(scenario.position);
-  if (
-    scenario.boxes.some((box) => {
-      const relative = add(initial, vector(box.centre), -1);
-      return axes(box).every((axis, index) => Math.abs(dot(relative, axis)) < box.half[index]! + driving.radius);
-    })
-  ) {
-    throw new Error('Initially inside conservative collision envelope');
-  }
-  let position = initial;
-  let velocity = vector(scenario.velocity);
-  return {
-    step(throttle) {
-      velocity = add(velocity, vector(driving.gravity), 1 / driving.tickHz);
-      velocity[0] += (Math.max(-1, Math.min(1, throttle)) * driving.driveAcceleration) / driving.tickHz;
-      let remaining = 1 / driving.tickHz;
-      let tests = 0;
-      let impacts = 0;
-      for (; impacts < driving.maxImpacts && remaining > 0; impacts += 1) {
-        const displacement = velocity.map((value) => value * remaining) as Vector;
-        tests += scenario.boxes.length;
-        const earliest = firstHit(position, displacement, scenario.boxes);
-        if (!earliest) {
-          position = add(position, displacement);
-          remaining = 0;
-          break;
-        }
-        position = add(add(position, displacement, earliest.fraction), earliest.normal, driving.skin);
-        const inward = dot(velocity, earliest.normal);
-        if (inward < 0) {
-          velocity = add(velocity, earliest.normal, -(1 + driving.restitution) * inward);
-        }
-        remaining *= 1 - earliest.fraction;
-      }
-      // A saturated tick discards remaining displacement, never an unchecked collision step.
-      return sample(scenario, position, velocity, { tests, impacts, saturated: remaining > 0 });
-    },
-    dispose: () => undefined,
-  };
-}
 export function rapierDriver(api: RapierApi, scenario: Scenario): Driver {
   admit(scenario);
   const world = new api.World({ x: driving.gravity[0]!, y: driving.gravity[1]!, z: driving.gravity[2]! });
@@ -215,7 +112,13 @@ export function rapierDriver(api: RapierApi, scenario: Scenario): Driver {
       world.step();
       const { x, y, z } = body.translation();
       const { x: vx, y: vy, z: vz } = body.linvel();
-      return sample(scenario, [x, y, z], [vx, vy, vz], { tests: null, impacts: null, saturated: null });
+      const position: Vector = [x, y, z];
+      return {
+        position,
+        velocity: [vx, vy, vz],
+        penetration: Math.max(...scenario.boxes.map((box) => penetration(position, box))),
+        outsideEnvelope: y < driving.lowerEnvelope,
+      };
     },
     dispose() {
       world.free();
@@ -234,39 +137,28 @@ export function traceBits(value: unknown): string {
 }
 export function runDriving(api: RapierApi) {
   return Object.fromEntries(
-    driving.scenarios.map((scenario) => [
-      scenario.id,
-      Object.fromEntries(
-        (
-          [
-            ['owned', () => ownedDriver(scenario)],
-            ['rapier', () => rapierDriver(api, scenario)],
-          ] as const
-        ).map(([name, factory]) => {
-          const driver = factory();
-          try {
-            const trajectory = Array.from({ length: driving.ticks }, () => driver.step(0));
-            return [
-              name,
-              {
-                trajectory,
-                properties: {
-                  terminal: trajectory.at(-1)!,
-                  maximumPenetration: Math.max(...trajectory.map((tick) => tick.penetration)),
-                  minimumY: Math.min(...trajectory.map((tick) => tick.position[1])),
-                  maximumX: Math.max(...trajectory.map((tick) => tick.position[0])),
-                  maximumZ: Math.max(...trajectory.map((tick) => tick.position[2])),
-                  outsideEnvelope: trajectory.some((tick) => tick.outsideEnvelope),
-                  saturatedTicks: name === 'owned' ? trajectory.filter((tick) => tick.saturated).length : null,
-                  maximumTests: name === 'owned' ? Math.max(...trajectory.map((tick) => tick.tests!)) : null,
-                },
-              },
-            ];
-          } finally {
-            driver.dispose();
-          }
-        }),
-      ),
-    ]),
+    driving.scenarios.map((scenario) => {
+      const driver = rapierDriver(api, scenario);
+      try {
+        const trajectory = Array.from({ length: driving.ticks }, () => driver.step(0));
+        return [
+          scenario.id,
+          {
+            trajectory,
+            properties: {
+              terminal: trajectory.at(-1)!,
+              maximumPenetration: Math.max(...trajectory.map((tick) => tick.penetration)),
+              minimumY: Math.min(...trajectory.map((tick) => tick.position[1])),
+              maximumX: Math.max(...trajectory.map((tick) => tick.position[0])),
+              maximumZ: Math.max(...trajectory.map((tick) => tick.position[2])),
+              outsideEnvelope: trajectory.some((tick) => tick.outsideEnvelope),
+              internalWork: 'unmeasured',
+            },
+          },
+        ];
+      } finally {
+        driver.dispose();
+      }
+    }),
   );
 }

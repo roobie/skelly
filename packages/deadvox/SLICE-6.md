@@ -5,7 +5,7 @@ read_if:
   - you're applying the settled vehicle scope and deferred directions from issue 322
   - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
-  - you're comparing presentation physics with vehicle simulation
+  - you're integrating the selected Rapier f64 build across driving, parked collision and presentation physics
 ---
 
 # Slice 6 — Wheels
@@ -194,10 +194,11 @@ motion and recovery. Greater realism remains the long-term direction, not a reas
 to delay the playable loop. Fuel and electricity retain pools rather than cable
 and pipe graphs.
 
-Rapier remains a candidate for vehicle simulation. Compare it with a bounded
-project-owned solver before selecting an implementation. Presentation-only corpse
-contact is not evidence that car suspension, tunnelling or deterministic replay is
-solved; see `src/render/ragdoll.ts`, `RagdollWorld`.
+Driving and parked collision use the project-owned Rapier f64 build; ragdolls
+migrate to that same build rather than retaining npm Rapier. The build and upgrade
+rule is in `docs/decisions/0009-rapier-f64-build.md`, "Decision". Presentation-only
+corpse contact is not evidence that car suspension, tunnelling or deterministic
+replay is solved; see `src/render/ragdoll.ts`, `RagdollWorld`.
 
 Leaving a moving car permits unattended coasting, collision and bystander damage.
 Budget and prove its deterministic coarse transition after regional departure;
@@ -205,11 +206,11 @@ unloading is never an emergency brake. Do not keep extra regions locally simulat
 until a vehicle stops as an unrecorded exception to the residency contract.
 
 Deadvox owns pause and compression. Driving uses simulation time and bounded steps,
-not render frame time. A physics choice must satisfy
+not render frame time. Physics integration must satisfy
 `docs/decisions/0008-deterministic-world.md`, "Decision", including cross-browser
 agreement and position-driven residency. A WASM physics library does not establish
-that contract by itself. A failed deterministic prototype stops physics selection;
-it does not silently weaken the contract.
+that contract by itself. A failed deterministic prototype blocks production
+integration; it does not silently weaken the contract.
 
 ## What must survive a save
 

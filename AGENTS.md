@@ -2,6 +2,7 @@
 read_if:
   - you're an agent starting any task in this repository (always)
   - you check whether the framework refactor gate permits a new PR
+  - you add or upgrade a dependency, including the pinned Rapier f64 build
 ---
 
 # Notes for coding agents
@@ -115,7 +116,7 @@ rebase or force-push a published branch. The steps and their reasons are in
 
 ## Dependency age
 
-- For the vehicle feasibility spike, deterministic Rapier is exempt from the one-month rule and tracks the latest release because the spike evaluates upstream's current deterministic build.
+- Rapier f64 is pinned and upgraded only on maintainer demand under the same age rule; see `packages/deadvox/docs/decisions/0009-rapier-f64-build.md`, "Decision". Explicit demand avoids silently changing physics results and binary identity.
 - Covers adding or upgrading any project dependency or tool: npm packages in
   `package.json` or lockfiles, Python packages, project-work CLIs, and GitHub
   Actions versions in workflows.

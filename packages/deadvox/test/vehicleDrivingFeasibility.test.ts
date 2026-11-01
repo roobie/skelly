@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { driving, ownedDriver, rapierDriver, type Scenario, traceBits } from '../src/vehicles/feasibility/driving.ts';
+import { driving, rapierDriver, type Scenario, traceBits } from '../src/vehicles/feasibility/driving.ts';
 import { ColliderDesc, RigidBodyDesc, type Voxels, World } from '../vendor/rapier-f64/rapier.js';
 import init from '../vendor/rapier-f64/rapier_wasm3d.js';
 
@@ -11,48 +11,44 @@ beforeAll(async () => {
   await init({ module_or_path: readFileSync(new URL('../vendor/rapier-f64/rapier_wasm3d_bg.wasm', import.meta.url)) });
 });
 const wall = { centre: [0, 0, 0], half: [0.001, 5, 5], rotation: [0, 0, 0, 1] };
-const fixture: Scenario = { id: 'fixture', viewAxis: 1, position: [-2, 0, 0], velocity: [1000, 0, 0], boxes: [wall] };
+const fixture: Scenario = {
+  id: 'fixture',
+  behaviour: 'wall-stop',
+  viewAxis: 1,
+  position: [-2, 0, 0],
+  velocity: [1000, 0, 0],
+  boxes: [wall],
+};
 
 describe('driving collision envelope', () => {
-  for (const [name, create] of [
-    ['owned', ownedDriver],
-    ['rapier-f64', (scenario: Scenario) => rapierDriver(api, scenario)],
-  ] as const) {
-    it(`${name} cannot tunnel through a wall thinner than a tick's travel`, () => {
-      const driver = create(fixture);
-      try {
-        const sample = driver.step(0);
-        expect(sample.position[0]).toBeLessThan(-wall.half[0]!);
-      } finally {
-        driver.dispose();
-      }
-    });
-    it(`${name} refuses collider admission beyond its bounded scene`, () => {
-      expect(() => create({ ...fixture, boxes: Array.from({ length: driving.maxColliders + 1 }, () => wall) })).toThrow(
-        'admission',
-      );
-    });
-  }
-  it('owned sweep retains tangential movement after wall contact with bounded work', () => {
-    const driver = ownedDriver({ ...fixture, velocity: [1000, 0, 3] });
+  it('Rapier cannot tunnel through a wall thinner than a tick’s travel', () => {
+    const driver = rapierDriver(api, fixture);
+    try {
+      expect(driver.step(0).position[0]).toBeLessThan(-wall.half[0]!);
+    } finally {
+      driver.dispose();
+    }
+  });
+  it('Rapier refuses collider admission beyond its bounded scene', () => {
+    expect(() =>
+      rapierDriver(api, { ...fixture, boxes: Array.from({ length: driving.maxColliders + 1 }, () => wall) }),
+    ).toThrow('admission');
+  });
+  it('Rapier retains tangential movement after wall contact', () => {
+    const driver = rapierDriver(api, { ...fixture, velocity: [1000, 0, 3] });
     try {
       const sample = driver.step(0);
       expect(sample.position[0]).toBeLessThan(0);
       expect(sample.position[2]).toBeGreaterThan(0);
       expect(sample.velocity[0]).toBeLessThanOrEqual(0);
-      expect(sample.velocity[2]).toBe(3);
-      expect(sample.tests).toBeGreaterThan(0);
-      expect(sample.tests).toBeLessThanOrEqual(fixture.boxes.length * driving.maxImpacts);
+      expect(sample.velocity[2]).toBeGreaterThan(0);
     } finally {
       driver.dispose();
     }
   });
-  it('owned admission refuses the conservative corner region instead of starting inside its sweep', () => {
-    expect(() => ownedDriver({ ...fixture, position: [-0.4, 5.4, 0] })).toThrow('conservative collision envelope');
-  });
-  it('edge departure continues falling instead of clamping to a missing surface', () => {
+  it('Rapier edge departure continues falling instead of clamping to a missing surface', () => {
     const platform = { centre: [-4, -1, 0], half: [1, 0.5, 1], rotation: [0, 0, 0, 1] };
-    const driver = ownedDriver({ ...fixture, position: [0, 0, 0], velocity: [1, -1, 0], boxes: [platform] });
+    const driver = rapierDriver(api, { ...fixture, position: [0, 0, 0], velocity: [1, -1, 0], boxes: [platform] });
     try {
       const sample = driver.step(0);
       expect(sample.position[1]).toBeLessThan(0);

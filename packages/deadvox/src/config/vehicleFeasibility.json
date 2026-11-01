@@ -8,12 +8,12 @@
     "lowerEnvelope": -4,
     "massKg": 1200,
     "maxColliders": 4,
-    "maxImpacts": 4,
     "penetrationLimit": 0.02,
     "radius": 0.5,
     "restitution": 0,
     "scenarios": [
       {
+        "behaviour": "reverses",
         "boxes": [
           {
             "centre": [0, -1, 0],
@@ -27,6 +27,7 @@
         "viewAxis": 1
       },
       {
+        "behaviour": "falls",
         "boxes": [
           {
             "centre": [-6, -0.5, 0],
@@ -40,6 +41,7 @@
         "viewAxis": 1
       },
       {
+        "behaviour": "wall-stop",
         "boxes": [
           {
             "centre": [0, -0.5, 0],
@@ -58,6 +60,7 @@
         "viewAxis": 1
       },
       {
+        "behaviour": "scrape",
         "boxes": [
           {
             "centre": [0, -0.5, 0],
@@ -76,7 +79,6 @@
         "viewAxis": 2
       }
     ],
-    "skin": 1.0000000000000001e-5,
     "solverIterations": 4,
     "tickHz": 120,
     "ticks": 360
