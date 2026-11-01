@@ -46,6 +46,7 @@ import { BLUEPRINTS } from '../vehicles/catalogue.ts';
 import { solidBlocks } from '../vehicles/solid.ts';
 import { ActionTextSchema } from './actionText.ts';
 import { hasSegment } from './authoredTerrain.mjs';
+import { BLOCK_DAMAGE_KINDS } from './blockDamageKinds.ts';
 import {
   BODY_REGIONS,
   type BodyRegion,
@@ -174,8 +175,34 @@ export const BLOCK_PATTERNS = [
   'camo',
 ] as const;
 
+const BlockMaterialSchema = pipe(
+  strictObject({
+    id: Id,
+    minimumStrength: NonNegative,
+    durability: Positive,
+    resistance: strictObject(
+      Object.fromEntries(BLOCK_DAMAGE_KINDS.map((kind) => [kind, Fraction])) as Record<
+        (typeof BLOCK_DAMAGE_KINDS)[number],
+        typeof Fraction
+      >,
+    ),
+    massKg: Positive,
+    span: Count,
+    fallsTo: Id,
+    rubble: array(strictObject({ item: Id, count: pipe(Count, minValue(1)) })),
+    blowSound: Id,
+    broken: strictObject({ tint: Color, strength: Fraction }),
+    damaged: array(strictObject({ from: Fraction, tint: Color, strength: Fraction })),
+  }),
+  check(
+    ({ damaged }) => damaged.every((step, at) => at === 0 || step.from > damaged[at - 1]!.from),
+    'damage looks need strictly rising thresholds',
+  ),
+);
+
 const BlockSchema = strictObject({
   id: Id,
+  material: Id,
   name: Name,
   color: Color,
   /** Blocks movement independently of sight and render geometry. */
@@ -4215,6 +4242,10 @@ const PlayerSchema = strictObject({
   /** Downward acceleration shared by every falling body and effect. */
   gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
+  debugBlockTool: strictObject({
+    reachMetres: Positive,
+    stepDurabilityFraction: pipe(Positive, ltValue(1)),
+  }),
   stepHeight: Positive,
   movement: strictObject({ sidewaysSpeedScale: Fraction, backwardSpeedScale: Fraction }),
   lean: strictObject({
@@ -4782,6 +4813,7 @@ const LookDefaultsSchema = strictObject({
 /** Native schemas and section metadata live here, not in parallel loader/validator lists. */
 const SECTION_DESCRIPTOR = {
   blocks: { schema: optional(array(BlockSchema)), label: 'blocks', order: 0 },
+  blockMaterials: { schema: optional(array(BlockMaterialSchema)), label: 'block materials', order: 0.1 },
   items: { schema: optional(array(ItemSchema)), label: 'items', order: 1 },
   liquids: { schema: optional(array(LiquidSchema)), label: 'liquids', order: 34 },
   furnitureMaterials: { schema: optional(array(FurnitureMaterialSchema)), label: 'furniture materials', order: 32 },
@@ -4872,6 +4904,7 @@ const sectionSchemas = Object.fromEntries(
 export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
+export type BlockMaterialDef = InferOutput<typeof BlockMaterialSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
 type LootTable = InferOutput<typeof LootTableSchema>;

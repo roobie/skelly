@@ -85,7 +85,24 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
       lower: {
         rearX: -20.25,
         wellCenterX: -5,
-        gripX: -15.5,
+        // Traced from BR's side photo of an AR-10-pattern lower with an A2-style grip, scaled by the receiver's
+        // length (461.5 px for 20.25u, 22.79 px/u) and registered on the guard opening: its front on the
+        // magwell's rear at the finger space's front clearance, its floor on the finger space's bottom. To the
+        // nearest grid step. The grip's top block meets the lower 1.5u below the frame (the lower's body comes
+        // down to it) and its front face drops straight past the guard bar; below it the front leans back about
+        // 25 degrees to a finger-groove bump, then to the toe; the back is hollow under the top and swells to a
+        // flared heel. The lean is the mean of the front and back edges.
+        grip: {
+          mount: [-14, -5.5],
+          leanDegrees: 28,
+          halfWidthU: 1.25,
+          pieces: [
+            [[-18.25, -7.75], [-19.25, -9.5], [-15.5, -10.25], [-14.5, -8.25]],
+            [[-17, -5.5], [-17.5, -6.25], [-18.25, -7.75], [-14.5, -8.25], [-14, -8], [-14, -5.5]],
+            [[-19.25, -9.5], [-21, -12], [-21.25, -12.5], [-21, -13], [-17.5, -13.75], [-17, -13.5], [-15.5, -10.25]],
+            [[-15, -9.25], [-15.5, -10.25], [-14.75, -10], [-14.75, -9.75]],
+          ],
+        },
         housingFrontBottomU: -6.5,
         housingRearBottomU: -7.75,
         // Not visible in a side photo: flush with the receiver's sides.
@@ -93,7 +110,7 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
         // The trigger group, traced from the same photo. The guard's opening runs -13.4u to -8.71u and -5.0u to -7.7u
         // with its bottom bar's underside near -8u; the lower's pinned body fills the space above it. The opening's
         // front stops at -9.25u, 0.54u short of the photo's, because the magazine's well clearance and the housing's
-        // and guard's 0.25u walls sit in front of it. The finger space keeps the guard's 0.5u clearance each side.
+        // and guard's 0.25u walls sit in front of it. The guard's wall and clearance are in triggerGuards.jsonnet.
         // The blade curves forward from the opening's top at -12.2u to its tip at -11.7u, -7.35u, about 0.4u thick,
         // traced in two convex segments; a real trigger is about 0.25 in (0.5u) wide.
         trigger: {
@@ -101,7 +118,6 @@ local derivation(measure, clearanceUnits, snap, description, multiplier=null) =
           fingerFrontX: -9.75,
           fingerTopU: -5,
           fingerBottomU: -7.75,
-          guardWallU: 0.25,
           housingRearWallU: 0.25,
           blade: {
             segments: [

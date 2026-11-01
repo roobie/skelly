@@ -1,6 +1,7 @@
 // What the player's actions say: refusals in the character's voice, handling labels and held-item
 // details. A {placeholder} is filled by the game; each line must use exactly the ones it is given.
 {
+  debugBuild: { target: '{block} · Damage {damage}/{durability} · {stepKey} step · {destroyKey} destroy' },
   common: {
     tooFar: 'Too far away',
     busy: 'My hands are busy',

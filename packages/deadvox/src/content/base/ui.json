@@ -30,6 +30,9 @@
           "notHeld": "I'm not holding it",
           "tooFar": "Too far away"
         },
+        "debugBuild": {
+          "target": "{block} · Damage {damage}/{durability} · {stepKey} step · {destroyKey} destroy"
+        },
         "doors": {
           "anyTool": "a suitable tool",
           "lock": "Lock the {door}",

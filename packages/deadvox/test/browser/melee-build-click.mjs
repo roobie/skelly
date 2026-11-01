@@ -87,6 +87,36 @@ try {
     assert.equal(build.staminaAfter, build.staminaBefore);
   });
 
+  const downwardFrame = await page.evaluate(() => {
+    globalThis.d7Review.input.pitch = -Math.PI / 2;
+    return globalThis.d7Review.session.sim.time;
+  });
+  await page.waitForFunction((before) => globalThis.d7Review.session.sim.time > before, downwardFrame);
+  await pressAction(page, 'debug.build-damage');
+  await page.waitForFunction(() => globalThis.d7Review.engine.world.blockDamage.snapshotState().entries.length > 0);
+  const damaged = await page.evaluate(async (numberTextModule) => {
+    const { world, registry } = globalThis.d7Review.engine;
+    const [entry] = world.blockDamage.snapshotState().entries;
+    const block = registry.blocks[world.getBlock(...entry.cell)];
+    const material = registry.blockMaterials.get(block.material);
+    const { decimalText } = await import(numberTextModule);
+    globalThis.d7ToolDamage = { ...entry, text: decimalText(entry.damage) };
+    return { damage: entry.damage, durability: material.durability, solid: block.solid };
+  }, '/src/core/numberText.ts');
+  await page.waitForFunction(() => document.querySelector('#hud').textContent.includes(globalThis.d7ToolDamage.text));
+  await pressAction(page, 'debug.build-destroy');
+  await page.waitForFunction(() => globalThis.d7Review.engine.world.getBlock(...globalThis.d7ToolDamage.cell) === 0);
+  const tool = await page.evaluate(() => ({
+    remainingDamage: globalThis.d7Review.engine.world.blockDamage.get(globalThis.d7ToolDamage.cell),
+    starts: globalThis.d7Observed.starts,
+  }));
+  await test('Gated build strike keys show stored partial damage and remove terrain without a melee swing', () => {
+    assert.equal(damaged.solid, true);
+    assert.ok(damaged.damage > 0 && damaged.damage < damaged.durability);
+    assert.equal(tool.remainingDamage, undefined);
+    assert.deepEqual(tool.starts, []);
+  });
+
   await pressAction(page, 'debug.build-toggle');
   assert.equal(await page.evaluate(() => globalThis.d7Review.debugTools.buildOn), false);
   const meleeAdded = await page.evaluate(() => {

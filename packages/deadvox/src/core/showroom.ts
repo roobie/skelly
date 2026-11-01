@@ -6,7 +6,7 @@ import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
-import { type FurnitureSpawn, type Rect, rectDistance } from './site.ts';
+import { type FurnitureSpawn, type Rect, rectDistance, SupplyFootprints } from './site.ts';
 import type { CompiledTemplate, Placement } from './templates.ts';
 
 export type ShowroomDef = NonNullable<SiteLayoutDef['showroom']>;
@@ -184,6 +184,10 @@ export class ShowroomCatalogue {
 
   top(x: number, z: number): number | undefined {
     return rectDistance(this.rect, x, z) === 0 ? this.floorBlock : undefined;
+  }
+
+  supplySourcesIn(area: Rect) {
+    return new SupplyFootprints(this.props, []).in(area);
   }
 
   /** Each piece stands empty: the catalogue shows furniture, not supply. */

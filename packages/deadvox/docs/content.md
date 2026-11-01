@@ -428,9 +428,9 @@ ownership so a mod can express the scenario without a code edit.
 
 A scenario adds no mission runtime: its goal is ordinary interaction with furniture whose
 definition carries `scenarioGoal`, under the rules in `../DESIGN.md`, "Gauntlet". Rules
-beyond data, such as triggers, timed events and conditional consequences, wait for the
-runtime-function format that `../../../docs/decisions/0004-content-language.md` leaves open
-in #313, so no scenario grows a private rule language first.
+beyond data, such as triggers, timed events and conditional consequences, wait for the CEL
+rules of `../../../docs/decisions/0004-content-language.md`, "Decision", to run in the engine
+(#313), so no scenario grows a private rule language first.
 
 ## Recipes
 

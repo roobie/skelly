@@ -74,6 +74,10 @@ export class DebugWeatheringTestSite implements Site {
     return [];
   }
 
+  supplySourcesIn() {
+    return [];
+  }
+
   furnitureIn(): ReturnType<Site['furnitureIn']> {
     return [];
   }

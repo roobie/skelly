@@ -53,7 +53,7 @@ local liquidRecoveryStock = [
     ],
     // On the showroom deck, on the path's line to the house door; the bearing applies only while the slot row is empty,
     // since spawn faces the newest slot.
-    player: { position: [-6.25, 21.5, -0.5], bearing: 90 },
+    player: { position: [-7.5, 21.5, -0.5], bearing: 90 },
     showroom: {
       row: [-12, 21.5, -1],
       facing: 's',
@@ -62,20 +62,11 @@ local liquidRecoveryStock = [
       // A feature's test prop goes here, never in the house, garage or hall. Oldest first: past capacity, the first
       // entry leaves.
       slots: [
-        { furniture: 'grinding_wheel', fixed: true },
         {
-          furniture: 'crate',
+          furniture: 'shelf',
           items: [
-            { item: item, count: 1, placement: 'surface' }
-            for item in [
-              'hand_saw', 'screwdriver', 'copper_wire', 'small_spring', 'hinge_set', 'fastener_pack', 'taped_flashlight_mount', 'scrap_foregrip',
-              'camp_craft_book', 'workshop_notes', 'cloth_strip', 'cloth_strip', 'flashlight', 'aa_battery', 'baseball_bat', 'hammer',
-              'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails', 'nails',
-              'stick', 'kitchen_knife', 'nylon_cord',
-            ]
-          ] + [
-            { item: 'paperback', count: 4 },
-            { item: 'duct_tape', count: 2 },
+            { item: 'sledgehammer', count: 1 },
+            { item: 'paperback', count: 1 },
           ],
         },
         { furniture: 'workbench', items: liquidRecoveryStock },
