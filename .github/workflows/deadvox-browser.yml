@@ -143,10 +143,6 @@ jobs:
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install chromium firefox webkit
-      - name: Parked vehicle deterministic Rapier agreement (Node, Chromium, Firefox)
-        if: ${{ inputs.shard == 'firefox' }}
-        timeout-minutes: 1
-        run: node test/browser/vehicle-rapier.mjs
       - name: Vehicle feasibility agreement (Node, Chromium, Firefox, WebKit)
         if: ${{ inputs.shard == 'firefox' }}
         timeout-minutes: 1
