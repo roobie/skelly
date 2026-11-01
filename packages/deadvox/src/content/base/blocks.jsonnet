@@ -11,8 +11,16 @@ local footstepEvents = {
   wade: { player: 'footstep_mud', shambler: 'shambler_step_mud' },
 };
 
+local materials = {
+  grass: 'soil', dirt: 'soil', stone: 'masonry', rock: 'masonry', sand: 'soil',
+  asphalt: 'masonry', concrete: 'masonry', planks: 'timber', brick: 'masonry',
+  plaster: 'masonry', tiles: 'masonry', fabric: 'textile', roof: 'masonry',
+  carpet: 'textile', window_frame: 'timber', siding_red: 'timber', siding_blue: 'timber',
+  galvanized: 'metal', cobblestone_mossy: 'masonry', dressed_stone: 'masonry',
+  hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber', water: 'liquid',
+};
 local block(id, name, color, surface, extra={}) =
-  { id: id, name: name, color: color, solid: true, footsteps: footstepEvents[surface] } + extra;
+  { id: id, material: materials[id], name: name, color: color, solid: true, footsteps: footstepEvents[surface] } + extra;
 
 local asphalt = block('asphalt', 'Asphalt', '#3b3d40', 'stone', { pattern: 'noise', weatherable: true });
 local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt', color: '#b9bcba' };

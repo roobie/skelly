@@ -40,10 +40,11 @@ import {
   type Rect,
   rectsOverlap,
   type Site,
+  SupplyFootprints,
   type ZombieSpawn,
 } from './site.ts';
 import { sitePalette } from './sitePalette.ts';
-import { type Placement, placedSpawns, stampPlacement } from './templates.ts';
+import { type Placement, placedPieces, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -152,6 +153,7 @@ export class AuthoredSite implements Site {
   private readonly hordes: readonly HordeSpawn[];
   private treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
+  private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
   readonly lightPractice?: LightPracticeDef;
   readonly seed: number;
@@ -188,6 +190,10 @@ export class AuthoredSite implements Site {
         const sources = lootSourcesOf(registry, layout.id, placement, layout.buildings[i]?.fixedLoot);
         return layout.demo ? sources.map((source) => ({ ...source, fixture: true as const })) : sources;
       }),
+    );
+    this.supplyFootprints = new SupplyFootprints(
+      this.placements.flatMap(placedPieces),
+      [...this.lootColumns.values()].flat(),
     );
     this.playtestMarks = {
       beats: (layout.beats ?? []).map((beat) => ({ id: beat.id, area: rectBlocks(beat.area) })),
@@ -484,6 +490,10 @@ export class AuthoredSite implements Site {
     for (const placement of this.placements) {
       stampPlacement(chunk, placement);
     }
+  }
+
+  supplySourcesIn(area: Rect) {
+    return this.supplyFootprints.in(area);
   }
 
   lootPointsIn(cx: number, cz: number): readonly LootSpawnPoint[] {

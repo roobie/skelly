@@ -319,6 +319,18 @@ export class Inventory {
     });
   }
 
+  /** Planning gets independent owners and allocators, including vehicle-owned item trees. */
+  project(): Inventory {
+    const projected = Inventory.restoreState(this.registry, this.snapshotState(), undefined, {
+      character: this.character,
+      vehicles: this.vehicles.snapshotState(),
+    });
+    const foodAt = this.foodClock();
+    projected.foodClock = () => foodAt;
+    projected.foodRate = this.foodRate;
+    return projected;
+  }
+
   private restoreQuickbarOrigins(origins: InventoryState['quickbarOrigins']): void {
     for (const [uid, target] of origins) {
       if (![this.hands.right, this.hands.left].some((item) => item?.uid === uid)) {

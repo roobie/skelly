@@ -7,6 +7,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_blue",
+      "material": "metal",
       "name": "Shop paint (police blue)",
       "solid": true,
       "weatherable": false
@@ -18,6 +19,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_green",
+      "material": "metal",
       "name": "Shop paint (grocer green)",
       "solid": true,
       "weatherable": false
@@ -29,6 +31,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_orange",
+      "material": "metal",
       "name": "Shop paint (gun-shop orange)",
       "solid": true,
       "weatherable": false
@@ -40,6 +43,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_yellow",
+      "material": "metal",
       "name": "Shop paint (hardware yellow)",
       "solid": true,
       "weatherable": false
@@ -51,6 +55,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_red",
+      "material": "metal",
       "name": "Shop paint (medical red)",
       "solid": true,
       "weatherable": false
@@ -62,6 +67,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_white",
+      "material": "metal",
       "name": "Shop paint (awning white)",
       "solid": true,
       "weatherable": false
@@ -73,6 +79,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_produce",
+      "material": "timber",
       "name": "Produce crates",
       "solid": true,
       "weatherable": false
@@ -84,6 +91,7 @@
         "shambler": "shambler_step_stone"
       },
       "id": "shop_grille",
+      "material": "metal",
       "name": "Shopfront grille",
       "opaque": false,
       "solid": true,

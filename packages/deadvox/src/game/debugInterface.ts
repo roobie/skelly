@@ -56,6 +56,7 @@ export interface DebugHooks {
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;
   readonly spawnItem: (type: string) => string;
+  readonly strikeTerrainCell: Session['strikeTerrainCell'];
   readonly compress: () => void;
   /** Fast-forwards through compression; real interruptions still end the skip. */
   readonly skipGameHours: (hours: number) => void;

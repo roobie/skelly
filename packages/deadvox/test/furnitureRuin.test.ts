@@ -4,8 +4,9 @@ import { safeParse } from 'valibot';
 import { expect, it } from 'vitest';
 import type { BashOutcome, BlockEntity } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { type FurnitureMover, ruinFurniture } from '../src/core/furnitureMove.ts';
+import { commitRuin, type FurnitureMover, planRuin, ruinFurniture } from '../src/core/furnitureMove.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
 import type { Body } from '../src/core/physics.ts';
 import { ContentFileSchema } from '../src/core/schema.ts';
 import { buildFixtureRegistry, FIXTURE_MATERIAL } from './economyFixtures.ts';
@@ -46,10 +47,19 @@ const { registry, issues } = buildFixtureRegistry([
         box('ruin_fixture_box', [1, 1, 1]),
         box('ruin_fixture_plank', [2, 1, 1]),
         { id: 'ruin_fixture_door', ...DOOR_LEAF },
+        {
+          ...box('ruin_fixture_crate', [4, 4, 4]),
+          container: {
+            wideReason: 'Fixture holds a complete pile',
+            pockets: [{ grid: [PILE_GRID.w, PILE_GRID.h], handlingSimSeconds: 0.5 }],
+          },
+          ruin: { debris: [] },
+        },
       ],
       items: [
         { id: 'ruin_fixture_item', name: 'Fixture item', category: 'material', size: [1, 1], weight: 1 },
         { id: DEBRIS.item, name: 'Fixture debris', category: 'material', size: [1, 1], weight: 1, stack: 2 },
+        { id: 'ruin_fixture_bulk', name: 'Bulk', category: 'material', size: [PILE_GRID.w, PILE_GRID.h], weight: 1 },
       ],
     },
   },
@@ -216,6 +226,93 @@ it('breaks a door leaf at its durability and keeps it standing broken, never des
   expect(door.broken).toBe(true);
   expect(runtime.session.bashFurniture(door, BREACH.durability)).toBe(false);
   expect(runtime.entities.byUid(door.uid)).toBe(door);
+});
+
+it('plans without owner writes and commits scratch references through the real owners, preserving item aliases', () => {
+  const inventory = new Inventory(registry);
+  const target = piece(inventory, 'ruin_fixture_box', [0, FLOOR, 0], 1);
+  const stock = target.pockets![0]![0]!.item;
+  const surface = inventory.create('ruin_fixture_item');
+  expect(inventory.add(surface, { kind: 'pile', pos: [0, FLOOR + 1, 0] })).toBe(true);
+  const before = inventory.snapshotState();
+  const scratch = inventory.project();
+  const projectedTarget = scratch.entities.byUid(target.uid)!;
+  const planned = planRuin(mover(scratch), [projectedTarget]);
+  expect(planned).toBeDefined();
+  expect(scratch.snapshotState()).toEqual(before);
+  expect(inventory.snapshotState()).toEqual(before);
+  expect(inventory.entities.byUid(target.uid)).toBe(target);
+
+  expect(commitRuin(mover(inventory), planned!)).toEqual([target]);
+
+  expect(inventory.itemByUid(stock.uid)).toBe(stock);
+  expect(inventory.itemByUid(surface.uid)).toBe(surface);
+  const drops = piled(inventory);
+  expect(drops.filter(({ item }) => item === stock)).toHaveLength(1);
+  expect(drops.filter(({ item }) => item === surface)).toHaveLength(1);
+  expect(drops.filter(({ item }) => item.type === DEBRIS.item).reduce((n, { item }) => n + item.count, 0)).toBe(
+    DEBRIS.count,
+  );
+  expect([...planned!.standIns].every(({ item }) => item.uid === 0)).toBe(true);
+  expect(buried(inventory)).toEqual([]);
+});
+
+it('shares drop capacity between roots instead of admitting two independent reservations', () => {
+  const inventory = new Inventory(registry);
+  const roots = [0, 4].map(
+    (x) =>
+      inventory.furnish({ type: 'ruin_fixture_crate', pos: [x, 2, 0], size: [4, 4, 4], facing: 'n' }, [
+        { type: 'ruin_fixture_bulk', count: 1, condition: 1 },
+      ])!,
+  );
+  expect(roots.every((root) => root.pockets?.[0]?.length === 1)).toBe(true);
+  // Connected floor, one free pile cell: either crate fits alone, never both together.
+  const cells = Array.from({ length: 8 }, (_, x): Vec3 => [x, 1, 0]);
+  for (const pos of cells.slice(1)) {
+    expect(inventory.add(inventory.create('ruin_fixture_bulk'), { kind: 'pile', pos })).toBe(true);
+  }
+  const context = {
+    ...mover(inventory),
+    terrainSolid: (x: number, y: number, z: number) => y === 0 && z === 0 && x >= 0 && x < 8,
+  };
+  const before = inventory.snapshotState();
+  const { version } = inventory;
+  const entityVersion = inventory.entities.version;
+  expect(planRuin(context, [roots[0]!])).toBeDefined();
+  expect(planRuin(context, [roots[1]!])).toBeDefined();
+  expect(planRuin(context, roots)).toBeUndefined();
+  expect(inventory.snapshotState()).toEqual(before);
+  expect(inventory.version).toBe(version);
+  expect(inventory.entities.version).toBe(entityVersion);
+});
+
+it('orders ruin dependants by position rather than allocation', () => {
+  const inventory = new Inventory(registry);
+  const root = piece(inventory, 'ruin_fixture_plank', [0, FLOOR, 0]);
+  const right = piece(inventory, 'ruin_fixture_box', [1, FLOOR + 1, 0], 1);
+  const left = piece(inventory, 'ruin_fixture_box', [0, FLOOR + 1, 0], 1);
+  const bystander: Body = { pos: [1, FLOOR, 0.5], vel: [0, 0, 0], halfWidth: 1, height: 0.9, onGround: true };
+  const context = mover(inventory, [bystander]);
+  const plan = planRuin(context, [root])!;
+  expect(plan.destroyed).toEqual([root.uid, left.uid, right.uid]);
+  expect(plan.falls).toEqual([]);
+  expect(commitRuin(context, plan)).toEqual([root, left, right]);
+  expect([...inventory.entities.all]).toEqual([]);
+  expect(piled(inventory).filter(({ item }) => item.type === 'ruin_fixture_item')).toHaveLength(2);
+});
+
+it('ruins a fixed door leaf when destruction takes away its last support instead of leaving it floating', () => {
+  const inventory = new Inventory(registry);
+  const root = piece(inventory, 'ruin_fixture_plank', [0, FLOOR, 0]);
+  const door = inventory.entities.add({
+    type: 'ruin_fixture_door',
+    pos: [0, FLOOR + 1, 0],
+    size: [2, 4, 1],
+    facing: 'n',
+    fixed: true,
+  })!;
+  expect(ruinFurniture(mover(inventory), root)).toEqual([root, door]);
+  expect(inventory.entities.byUid(door.uid)).toBeUndefined();
 });
 
 it('refuses debris naming no item', () => {

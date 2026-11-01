@@ -195,6 +195,8 @@ const INPUT_ACTIONS: readonly Action[] = [
   debugRow('debug.performance-toggle', 'Performance overlay', all),
   debugRow('debug.interaction-ray-toggle', 'Interaction ray', all),
   debugRow('debug.build-toggle', 'Build tools'),
+  debugRow('debug.build-damage', 'Damage target block', ['build']),
+  debugRow('debug.build-destroy', 'Destroy target block with floor loss', ['build']),
   debugRow('debug.impact-laser', 'Impact laser'),
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu'),
   debugRow('debug.god-toggle', 'God mode'),

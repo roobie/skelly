@@ -901,6 +901,7 @@ export const startPlay = (
     discovery: scenarioDiscovery(engine.site),
     handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
+    terrainDestruction: { terrain: engine.canonicalTerrain, source: engine },
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
     scale,
@@ -1064,6 +1065,7 @@ export const startPlay = (
       }
     },
     onFirearmTrajectory: ({ traces }) => view.impactEffects.fire(traces, config.debug && debugLaserEnabled),
+    onTerrainEdited: (chunks) => streamer.markEdited(chunks),
     onDetonation: (at, radiusMetres) => view.blastFlashes.spawn(at, radiusMetres),
     onFuseLit: (item) => {
       const model = registry.items.get(item.type)?.model;
@@ -1771,6 +1773,7 @@ export const startPlay = (
     feet,
     showNotice,
     spawnItem,
+    strikeTerrainCell: (cell, blow) => !replayPlayer && session.strikeTerrainCell(cell, blow),
     compress: () => compress(),
     skipGameHours: (hours) => skipGameHours(hours),
     setTimeOfDay: (hour, minute) => {

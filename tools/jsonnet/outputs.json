@@ -33,6 +33,10 @@
       "output": "packages/deadvox/src/content/base/benchmark-city.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/block-materials.jsonnet",
+      "output": "packages/deadvox/src/content/base/block-materials.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/blocks.jsonnet",
       "output": "packages/deadvox/src/content/base/blocks.json"
     },

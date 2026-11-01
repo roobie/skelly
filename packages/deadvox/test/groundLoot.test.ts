@@ -6,24 +6,26 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFor
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ContentFile } from '../src/core/schema.ts';
-import { furnitureOf, lootSourcesOf, type Site } from '../src/core/site.ts';
+import { furnitureOf, lootSourcesOf, type Site, SupplyFootprints } from '../src/core/site.ts';
 import { templateGroundLootIssues, templateGroundLootReservations } from '../src/core/templateSpatial.ts';
-import { compileTemplate, type Placement, stackTemplate } from '../src/core/templates.ts';
+import { compileTemplate, type Placement, placedPieces, stackTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
-const floor = { id: 'fixture_floor', name: 'Fixture floor', solid: true, color: '#808080' };
+const floor = { id: 'fixture_floor', material: FIXTURE_MATERIAL, name: 'Fixture floor', solid: true, color: '#808080' };
 const fixtureData = (): ContentFile => ({
   furnitureMaterials: fixtureMaterials(),
   sounds: fixtureSounds(),
   blocks: [floor],
+  blockMaterials: [fixtureBlockMaterial(floor.id)],
   inventory: [...base.inventory.values()],
   items: [
     {
@@ -117,6 +119,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     ...base,
     blocks: [...base.blocks, parsed.registry.blocks[parsed.registry.blockIds.get(floor.id)!]!],
     blockIds: new Map([...base.blockIds, [floor.id, base.blocks.length]]),
+    blockMaterials: new Map([...base.blockMaterials, ...parsed.registry.blockMaterials]),
     items: new Map([...base.items, ...parsed.registry.items]),
     furniture: new Map([...base.furniture, ...parsed.registry.furniture]),
     loot: new Map([...base.loot, ...parsed.registry.loot]),
@@ -132,6 +135,7 @@ const fixture = (withFurniture = true, supply: 'table' | 'fixed' = 'table') => {
     surface: { height: () => 0, top: () => registry.blockIds.get(floor.id) },
     spawn: { pos: [2.5, 1, 3.5], yaw: 0 },
     stamp: () => undefined,
+    supplySourcesIn: (area) => new SupplyFootprints(placedPieces(placement), [...points.values()].flat()).in(area),
     lootPointsIn: (cx, cz) => points.get(`${cx},${cz}`) ?? [],
     furnitureIn: (cx, cz) => furnitureOf({ registry, seed }, placement, [cx, cz], site.lootPointsIn(cx, cz)),
     zombiesIn: () => [],

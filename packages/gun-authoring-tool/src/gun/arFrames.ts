@@ -5,6 +5,7 @@ import {
   getDotPath,
   type InferOutput,
   integer,
+  maxValue,
   minLength,
   minValue,
   nonEmpty,
@@ -64,7 +65,17 @@ const FrameSchema = strictObject({
     strictObject({
       rearX: Finite,
       wellCenterX: Finite,
-      gripX: Finite,
+      /** A traced grip's mount replaces the family grip's port x. */
+      gripX: optional(Finite),
+      grip: optional(
+        strictObject({
+          mount: tuple([Finite, Finite]),
+          leanDegrees: pipe(Finite, minValue(0), maxValue(60)),
+          halfWidthU: Positive,
+          // Convex side profiles; the first is the hand's body.
+          pieces: pipe(array(pipe(array(tuple([Finite, Finite])), minLength(3))), minLength(1)),
+        }),
+      ),
       housingFrontBottomU: Finite,
       housingRearBottomU: Finite,
       halfWidthU: Positive,
@@ -74,7 +85,6 @@ const FrameSchema = strictObject({
           fingerFrontX: Finite,
           fingerTopU: Finite,
           fingerBottomU: Finite,
-          guardWallU: Positive,
           housingRearWallU: Positive,
           blade: strictObject({
             // Convex side profiles that together trace the curved blade.
