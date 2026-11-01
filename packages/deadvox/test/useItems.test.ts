@@ -154,7 +154,7 @@ const setup = (
   return { sim, inventory, queue, survival, notices, hold, reach, player };
 };
 
-describe('a paused craft in the held-item list', () => {
+describe('a paused craft in held-item actions', () => {
   const heldWork = (t: ReturnType<typeof setup>, where: 'hand' | 'pile') => {
     const item = t.inventory.create('work_in_progress');
     item.work = { kind: 'craft', recipe: 'torch', elapsed: 1, duration: 120, components: [] };
@@ -166,7 +166,6 @@ describe('a paused craft in the held-item list', () => {
     const t = setup();
     const item = heldWork(t, 'hand');
     expect(t.survival.availableItemActions(item).some((action) => action.continuing)).toBe(true);
-    expect(t.survival.wieldedItemActionHint()).toBeDefined();
   });
 
   it('offers nothing for a dropped paused work item', () => {
@@ -229,7 +228,7 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
   });
 
-  it('uses the selected wound for held treatment and lets the wheel change that target', () => {
+  it('uses the explicitly selected treatment region instead of the default worst wound', () => {
     const t = setup();
     t.sim.body.impact(1, 'leftArm', { bleeding: fixtureTier('serious') });
     t.sim.body.impact(3, 'rightArm', { bleeding: fixtureTier('serious') });
@@ -241,7 +240,9 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeUndefined();
     expect(beginTreatment.mock.calls[0]?.[0]).toBe(initial?.treatment?.region);
     expect(beginTreatment.mock.calls[0]?.[1]).toBe(rag.uid);
-    expect(t.survival.cycleItemAction(rag, 1)).toBe(true);
+    const other = t.survival.availableItemActions(rag).find((action) => action.id !== initial?.id && action.treatment);
+    expect(other).toBeDefined();
+    expect(t.survival.chooseItemAction(rag, other!.id)).toBe(true);
     const selected = t.survival.selectedItemAction(rag);
     expect(selected).not.toBe(initial);
     expect(t.survival.use(rag)).toBeUndefined();
@@ -550,9 +551,10 @@ describe('using what you hold', () => {
 });
 
 describe('taking the battery out of a held light', () => {
-  // The player turns the wheel once from the light's own action, then activates.
   const unload = (t: ReturnType<typeof setup>, light: Item) => {
-    t.survival.cycleItemAction(light, 1);
+    if (!t.survival.chooseItemAction(light, 'battery:unload')) {
+      throw new Error('Fixture light has no battery-removal action');
+    }
     const selected = t.survival.selectedItemAction(light)?.battery;
     const refusal = t.survival.use(light);
     const ticked = t.queue.tick(registry.items.get(light.type)!.light!.power!.swapSimSeconds + 0.1);
@@ -607,7 +609,6 @@ describe('taking the battery out of a held light', () => {
     unload(t, light);
 
     expect(t.survival.availableItemActions(light).some((action) => action.battery === 'unload')).toBe(false);
-    expect(t.survival.wieldedItemActionHint()).toBeUndefined();
   });
 
   it('leaves the light empty: it says so, and a battery goes back in through the slot', () => {

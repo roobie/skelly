@@ -39,7 +39,7 @@ export const worldRepairInGameFlow = async (page, origin) => {
       return f.furnitureActionSelection.isOpen(f.debugRepairTarget);
     });
     await page.waitForFunction(() => !document.querySelector('#furniture-radial').hidden);
-    assert.equal(await page.locator('#item-action-list').isVisible(), false, 'no second furniture list');
+    assert.equal(await page.locator('#item-action-list').count(), 0, 'no second furniture list');
     await page.evaluate(() => {
       const f = globalThis.pumpHandlingTest;
       const repair = f.furnitureActions(f.debugRepairTarget).find(({ id }) => id === 'repair');
@@ -76,7 +76,7 @@ export const worldRepairInGameFlow = async (page, origin) => {
     const f = globalThis.pumpHandlingTest;
     return { uid: f.repairTargetUid, target: f.debugRepairTarget.uid };
   });
-  assert.equal(pin.uid, pin.target, 'held-list choice pins the target without another aiming step');
+  assert.equal(pin.uid, pin.target, 'radial choice pins the target without another aiming step');
   const repairView = page.locator(`#crafting[data-repair-target="${pin.uid}"]`);
   assert.equal(await repairView.isVisible(), true, 'the requirements view shows the selected target');
   assert.equal(await page.locator('#inventory .inv-tab[data-tab="repair"][aria-selected="true"]').count(), 1);

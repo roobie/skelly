@@ -355,14 +355,31 @@ body.unconscious::after {
   display: none;
 }
 
-#item-action-list {
+#treatment-choices {
   position: fixed;
-  left: 1rem;
-  bottom: 4rem;
-  padding: calc(var(--ui-spacing) * 0.5rem);
-  background: var(--panel);
-  white-space: pre;
+  inset: 0;
+  display: grid;
+  place-items: center;
   pointer-events: none;
+  z-index: var(--ui-layer-inventory);
+}
+#treatment-choices[hidden] {
+  display: none;
+}
+#treatment-choices .card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--ui-spacing) * 0.5rem);
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: auto;
+  padding: calc(var(--ui-spacing) * 1rem);
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.treatment-choice-title {
+  margin: 0;
 }
 
 #furniture-radial {

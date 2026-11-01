@@ -45,13 +45,43 @@ export const equipDebugLoadout = (
   search: string,
 ): boolean => {
   const choice = new URLSearchParams(search).get('loadout');
-  if (!(isLoadoutChoice(choice) && debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
+  const itemType = previewItemType(inventory, choice);
+  if (
+    !(debugMode && newGame) ||
+    inventory.hands.left ||
+    inventory.hands.right ||
+    !(isLoadoutChoice(choice) || itemType)
+  ) {
     return false;
   }
   const backpack = wornBackpack(inventory);
   if (!backpack) {
     throw new Error('Could not equip preview backpack');
   }
+  if (itemType) {
+    equipItemPreview(inventory, itemType);
+  } else if (isLoadoutChoice(choice)) {
+    equipNamedLoadout(inventory, backpack, choice);
+  }
+  const optic = new URLSearchParams(search).get('optic');
+  if (optic) {
+    equipPreviewOptic(inventory, optic);
+  }
+  return true;
+};
+
+const previewItemType = (inventory: Inventory, choice: string | null): string | undefined => {
+  const type = choice?.startsWith('item:') ? choice.slice('item:'.length) : undefined;
+  return type && inventory.registry.items.has(type) ? type : undefined;
+};
+
+const equipItemPreview = (inventory: Inventory, type: string): void => {
+  if (!inventory.add(inventory.create(type), { kind: 'hand', side: dominantSide(inventory.character) })) {
+    throw new Error('Could not equip item preview');
+  }
+};
+
+const equipNamedLoadout = (inventory: Inventory, backpack: Item, choice: LoadoutChoice): void => {
   if (choice === 'revolver' || choice === 'revolver-open') {
     equipRevolver(inventory, backpack, choice === 'revolver-open');
   } else if (choice === 'pistol') {
@@ -69,11 +99,6 @@ export const equipDebugLoadout = (
   } else {
     equipRifles(inventory, backpack, choice);
   }
-  const optic = new URLSearchParams(search).get('optic');
-  if (optic) {
-    equipPreviewOptic(inventory, optic);
-  }
-  return true;
 };
 
 const equipPreviewOptic = (inventory: Inventory, type: string): void => {

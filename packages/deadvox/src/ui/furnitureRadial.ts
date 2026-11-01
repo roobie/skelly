@@ -32,6 +32,7 @@ export const mountFurnitureRadial =
           const x = Math.sin(angle) * tuning.radiusPixels;
           const y = -Math.cos(angle) * tuning.radiusPixels;
           return html`<div
+            data-action=${action.id}
             class=${action.id === selectedId ? 'radial-entry selected' : 'radial-entry'}
             style=${`transform: translate(-50%, -50%) translate(${x}px, ${y}px)`}
           >${action.label}</div>`;

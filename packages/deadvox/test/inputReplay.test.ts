@@ -1515,6 +1515,21 @@ describe('input replay', () => {
     );
   });
 
+  it('round-trips an explicitly chosen held operation with its item identity', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    const payload = { kind: 'hand.action', itemUid: 7, actionId: 'fixture-treatment:head' } as const;
+    recorder.queueAction(payload.kind, 'down', 'play', { payload });
+    recorder.recordTick(replaySample);
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions).toEqual([
+      { tick: 0, action: payload.kind, phase: 'down', context: 'play', payload },
+    ]);
+    expect(isReplayActionPayload({ ...payload, itemUid: 0 })).toBe(false);
+    expect(isReplayActionPayload({ ...payload, actionId: '' })).toBe(false);
+  });
+
   it('validates replay command identities and pickup modes', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 0 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);

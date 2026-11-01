@@ -6,7 +6,6 @@
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import { canonicalJson } from '../core/canonicalJson.ts';
-import { dominantSide } from '../core/character.ts';
 import { coreLabel, coreMessage } from '../core/coreText.ts';
 import { freshnessWord, isRotten, servingDef } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
@@ -289,25 +288,8 @@ export class Survival {
     return this.itemActionSelection.forItem(item, this.availableItemActions(item));
   }
 
-  cycleItemAction(item: Item, direction: number): boolean {
-    return this.itemActionSelection.step(item, this.availableItemActions(item), direction);
-  }
-
-  wieldedItemActionHint(): string | undefined {
-    const item = this.inventory.hands[dominantSide(this.inventory.character)];
-    if (!item) {
-      return undefined;
-    }
-    const actions = this.availableItemActions(item);
-    if (actions.length === 0 || (actions.length < 2 && (actions[0]!.opening || actions[0]!.id === 'own'))) {
-      return undefined;
-    }
-    const selectedId = this.selectedItemAction(item)?.id;
-    const { name } = defOf(this.inventory.registry, item.type);
-    return [
-      fillText(this.text.survival.actionListHeading, { item: name }),
-      ...actions.map((action) => `${action.id === selectedId ? '›' : ' '} ${action.label}`),
-    ].join('\n');
+  chooseItemAction(item: Item, id: string): boolean {
+    return this.itemActionSelection.select(item, this.availableItemActions(item), id);
   }
 
   private applyItemAction(item: Item, action: ItemAction | undefined): string | undefined {

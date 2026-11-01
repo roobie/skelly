@@ -55,6 +55,8 @@ export class Input {
   private rightMousePressed = false;
   private rightMouseSuppressed = false;
   private aimingDownSightsAllowed: () => boolean = () => true;
+  heldMenuPress: () => boolean = () => false;
+  heldMenuRelease: () => void = () => undefined;
   private dominantUsePressed = false;
   private dominantUseDown = false;
   private offUsePressed = false;
@@ -93,7 +95,8 @@ export class Input {
         !this.dominantUseDown &&
         this.locked &&
         !this.menuPointer &&
-        this.dominantUseAllowed()
+        this.dominantUseAllowed() &&
+        !this.heldMenuPress()
       ) {
         this.dominantUsePressed = true;
         this.dominantUseDown = true;
@@ -110,6 +113,7 @@ export class Input {
         this.rightMouseSuppressed = false;
       }
       if (button === 0) {
+        this.heldMenuRelease();
         this.dominantUseDown = false;
       }
     });

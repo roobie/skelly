@@ -164,7 +164,6 @@
           "pull": "Trigger pull"
         },
         "survival": {
-          "actionListHeading": "{item}:",
           "batteryDetail": "Battery {percent}%",
           "burnedOut": "It has burned out",
           "cantUseFromHere": "I can't use the {item} from here",
@@ -421,14 +420,29 @@
         "entryCap": 8,
         "labelPaddingRem": 0.5,
         "labelRadiusRem": 0.375,
+        "labels": {
+          "back": "Back",
+          "treat": "Treat"
+        },
         "radiusPixels": 110,
         "selectedLabelScale": 1.25,
         "slots": {
-          "continue": 135,
-          "drag": 180,
-          "lift": 270,
-          "push": 0,
-          "repair": 90
+          "furniture": {
+            "continue": 135,
+            "drag": 180,
+            "lift": 270,
+            "push": 0,
+            "repair": 90
+          },
+          "held": {
+            "battery:unload": 180,
+            "continue-work": 225,
+            "magazine:strip": 135,
+            "open-can": 90,
+            "own": 0,
+            "sharpen": 45,
+            "treat": 270
+          }
         },
         "strokePixels": 3
       },

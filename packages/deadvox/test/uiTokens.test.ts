@@ -83,28 +83,42 @@ const tuning = {
   ),
 };
 
-it('rejects colliding or missing radial action slots at content validation', () => {
+it('validates radial slots per menu, requires every operation and rejects overflow', () => {
   const radial = tuning.furnitureRadial;
-  const [first, second] = Object.keys(radial.slots);
-  expect(first).toBeDefined();
-  expect(second).toBeDefined();
-  const slots: Record<string, number> = { ...radial.slots };
-  slots[second!] = slots[first!]!;
-  const issues = (value: Record<string, number>) =>
+  const issues = (slots: unknown, entryCap = radial.entryCap) =>
     validateContent({
       source: 'radial-fixture.json',
-      data: { ui: [{ ...tuning, furnitureRadial: { ...radial, slots: value } }] },
+      data: { ui: [{ ...tuning, furnitureRadial: { ...radial, slots, entryCap } }] },
     });
-  expect(
-    issues(slots).some(({ path }) =>
-      [first, second].some((action) => path === `ui[0].furnitureRadial.slots.${action}`),
-    ),
-  ).toBe(true);
-  for (const action of Object.keys(radial.slots)) {
-    const missing: Record<string, number> = { ...radial.slots };
-    delete missing[action];
-    expect(issues(missing).map(({ path }) => path)).toContain(`ui[0].furnitureRadial.slots.${action}`);
+  expect(issues(radial.slots)).toEqual([]);
+  for (const [menu, directions] of Object.entries(radial.slots)) {
+    const [first, second] = Object.keys(directions);
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    const collision = { ...directions, [second!]: directions[first as keyof typeof directions] };
+    expect(
+      issues({ ...radial.slots, [menu]: collision }).some(({ path }) =>
+        [first, second].some((action) => path === `ui[0].furnitureRadial.slots.${menu}.${action}`),
+      ),
+    ).toBe(true);
+    for (const action of Object.keys(directions)) {
+      const missing: Record<string, number> = { ...directions };
+      delete missing[action];
+      expect(issues({ ...radial.slots, [menu]: missing }).map(({ path }) => path)).toContain(
+        `ui[0].furnitureRadial.slots.${menu}.${action}`,
+      );
+    }
+    expect(issues(radial.slots, Object.keys(directions).length - 1).map(({ path }) => path)).toContain(
+      'ui[0].furnitureRadial.entryCap',
+    );
   }
+  const sharedDirections = Object.fromEntries(
+    Object.entries(radial.slots).map(([menu, directions]) => [
+      menu,
+      Object.fromEntries(Object.keys(directions).map((action, index) => [action, index * 30])),
+    ]),
+  );
+  expect(issues(sharedDirections)).toEqual([]);
 });
 
 it('applies validated core-mod UI tuning to document-root CSS properties', () => {

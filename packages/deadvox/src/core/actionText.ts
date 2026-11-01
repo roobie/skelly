@@ -205,7 +205,6 @@ export const ActionTextSchema = strictObject({
     lightOnDetail: Template('charge'),
     lightOffDetail: Template('charge'),
     igniterDetail: Line,
-    actionListHeading: Template('item'),
   }),
   /** Labels in the held-item action list whose wording does not depend on the item or wound. */
   itemActions: strictObject({ stripRound: Line, swing: Line, use: Line, openCan: Line }),

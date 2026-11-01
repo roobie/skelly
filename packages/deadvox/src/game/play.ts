@@ -104,6 +104,7 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
+import { mountTreatmentChoices } from '../ui/treatmentChoices.ts';
 import { mountTutorial } from '../ui/tutorial.ts';
 import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
@@ -131,7 +132,13 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
-import { FurnitureActionSelection, furnitureActionsFor, type RadialAction, radialEntries } from './furnitureActions.ts';
+import {
+  FurnitureActionSelection,
+  furnitureActionsFor,
+  heldMenuActions,
+  type RadialAction,
+  radialEntries,
+} from './furnitureActions.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -782,12 +789,82 @@ export const startPlay = (
   const furnitureActions = (entity: BlockEntity): RadialAction[] =>
     radialEntries(
       furnitureActionsFor(inventory, entity, s, config.debugRepairLook ? session.character.knownRecipes : undefined),
-      radialTuning.slots,
+      radialTuning.slots.furniture,
     );
   const openFurnitureActionTarget = (): BlockEntity | undefined => {
     const uid = furnitureActionSelection.openedUid;
-    return uid === undefined ? undefined : entities.byUid(uid);
+    return uid === undefined || furnitureActionSelection.source !== 'furniture' ? undefined : entities.byUid(uid);
   };
+  const openHeldActionItem = (): Item | undefined => {
+    const uid = furnitureActionSelection.openedUid;
+    const item = uid === undefined || furnitureActionSelection.source !== 'held' ? undefined : inventory.itemByUid(uid);
+    return item && survival.handOf(item) !== undefined ? item : undefined;
+  };
+  const heldActions = (item: Item): RadialAction[] =>
+    radialEntries(
+      heldMenuActions(survival.availableItemActions(item), radialTuning.labels.treat),
+      radialTuning.slots.held,
+    );
+  let heldMenuTrigger: 'dominant' | 'off' | 'forward' | undefined;
+
+  function openHeldMenu(hand: HandSide, trigger: typeof heldMenuTrigger): boolean {
+    const item = inventory.hands[hand];
+    if (
+      !item ||
+      replayPlayer ||
+      throwingStance ||
+      compression.locksInput ||
+      sim.body.actionRefusal ||
+      debugTools?.buildOn
+    ) {
+      return false;
+    }
+    const actions = heldActions(item);
+    if (actions.length === 0) {
+      return false;
+    }
+    if (furnitureActionSelection.source !== 'held' || !furnitureActionSelection.isOpen(item)) {
+      furnitureActionSelection.open(item, actions, 'held');
+    }
+    heldMenuTrigger = trigger;
+    return true;
+  }
+
+  function releaseHeldMenu(trigger: typeof heldMenuTrigger): void {
+    if (heldMenuTrigger !== trigger || furnitureActionSelection.regionsOpen) {
+      return;
+    }
+    heldMenuTrigger = undefined;
+    const item = openHeldActionItem();
+    if (!item) {
+      furnitureActionSelection.sync(undefined, true);
+      return;
+    }
+    const choice = furnitureActionSelection.confirm(item, heldActions(item));
+    if (choice?.id === 'treat') {
+      furnitureActionSelection.open(item, heldActions(item), 'held');
+      furnitureActionSelection.showRegions();
+      syncMenuState();
+    } else if (choice) {
+      dispatchScreenCommand({ kind: 'hand.action', itemUid: item.uid, actionId: choice.id });
+    }
+  }
+
+  function chooseTreatment(id: string | undefined): void {
+    const item = openHeldActionItem();
+    if (!item) {
+      furnitureActionSelection.sync(undefined, true);
+    } else if (id === undefined) {
+      furnitureActionSelection.open(item, heldActions(item), 'held');
+    } else {
+      const applicable = survival.availableItemActions(item).some((action) => action.id === id && action.treatment);
+      furnitureActionSelection.sync(undefined, true);
+      if (applicable) {
+        dispatchScreenCommand({ kind: 'hand.action', itemUid: item.uid, actionId: id });
+      }
+    }
+    syncMenuState();
+  }
   let audio: GameAudio;
   const playSessionSound = (sound: Readonly<SoundEmission>): void =>
     audio.play(sound, sound.position.map((v) => v * s) as Vec3);
@@ -1272,9 +1349,9 @@ export const startPlay = (
     { poweredLights: () => session.power?.lights() ?? [], physicalSolid: session.physicalSolid },
   );
   input.setMouseLookOverride((movementX, movementY) => {
-    const entity = openFurnitureActionTarget();
-    if (entity) {
-      furnitureActionSelection.point(entity, furnitureActions(entity), { x: movementX, y: movementY }, radialTuning);
+    const { target, actions } = radialView();
+    if (target && !furnitureActionSelection.regionsOpen) {
+      furnitureActionSelection.point(target, actions, { x: movementX, y: movementY }, radialTuning);
       return true;
     }
     return thirdPersonOrbit.rotate(
@@ -1319,8 +1396,8 @@ export const startPlay = (
     });
   drawHudOptions();
   const prompt = $('prompt');
-  const itemActionList = $('item-action-list');
   const drawFurnitureRadial = mountFurnitureRadial($('furniture-radial'));
+  const drawTreatmentChoices = mountTreatmentChoices($('treatment-choices'), chooseTreatment);
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
   const restBox = $('rest');
@@ -1816,11 +1893,17 @@ export const startPlay = (
   let resumeRequested = false;
   const titleMenuOptions = () =>
     started || !options.saveController ? {} : { titleNewWorldLabel: options.saveController.titleNewWorldLabel };
+  const syncActionPause = (paused: boolean): void => {
+    if (paused || screen.isOpen || reading.isOpen || debugTools?.menuOpen || reviewMapOpen) {
+      furnitureActionSelection.sync(undefined, true);
+      heldMenuTrigger = undefined;
+    }
+  };
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
       started,
       mainMenuOpen,
-      inventoryOpen: screen.isOpen,
+      inventoryOpen: screen.isOpen || furnitureActionSelection.regionsOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
       reviewMapOpen,
@@ -1833,9 +1916,7 @@ export const startPlay = (
       titleActive: Boolean(options.saveController && !options.saveController.isEntered),
     });
     ({ started, mainMenuOpen } = state);
-    if (state.paused) {
-      furnitureActionSelection.sync(undefined, true);
-    }
+    syncActionPause(state.paused);
     if (pointerLockChanged || state.closeOtherMenus) {
       resumeRequested = false;
     }
@@ -2061,6 +2142,18 @@ export const startPlay = (
     activate: (uid) => {
       const item = inventory.itemByUid(uid);
       return item ? survival.activateHeld(item) : lines.common.gone;
+    },
+    handAction: (uid, actionId): string | undefined => {
+      const item = inventory.itemByUid(uid);
+      const hand = item && survival.handOf(item);
+      if (!item || hand === undefined || !survival.chooseItemAction(item, actionId)) {
+        return lines.common.gone;
+      }
+      if (survival.selectedItemAction(item)?.continuing) {
+        return actOnWork(uid, 'continue');
+      }
+      performHandUse(hand);
+      return undefined;
     },
     pickup: pickupGroundItem,
     interact: interactFurniture,
@@ -2317,6 +2410,9 @@ export const startPlay = (
   const playContext = (): InputContext => (mainMenuOpen || sim.dead ? 'menu' : activePlayContext());
   const footContext = (): InputContext => (entities.carrying() ? 'carrying' : 'play');
   const inputContext = (): InputContext => {
+    if (furnitureActionSelection.regionsOpen) {
+      return 'inventory';
+    }
     if (!worldLoading.ready) {
       return 'title';
     }
@@ -2340,6 +2436,10 @@ export const startPlay = (
     if (!shouldCancelForViewerFocus(reason ?? 'manual')) {
       return;
     }
+    if (reason !== 'context-change' || (!furnitureActionSelection.regionsOpen && inputContext() !== 'play')) {
+      furnitureActionSelection.sync(undefined, true);
+      heldMenuTrigger = undefined;
+    }
     input.cancel(preservePointer);
     screen.cancelInput();
     cancelBackquoteGesture(backquoteGesture);
@@ -2349,6 +2449,12 @@ export const startPlay = (
     quickbarInput.cancel();
   };
   keyboardInput.escape = () => {
+    if (furnitureActionSelection.source === 'held' && furnitureActionSelection.openedUid !== undefined) {
+      furnitureActionSelection.sync(undefined, true);
+      heldMenuTrigger = undefined;
+      syncMenuState();
+      return;
+    }
     if (sim.dead) {
       if (reviewMapOpen) {
         toggleReviewMap(false);
@@ -2441,7 +2547,7 @@ export const startPlay = (
         withUnlockedInput(() => wornLightInput.keyDown(action, at));
         break;
       case 'hand.use-off':
-        if (!replayPlayer) {
+        if (!(replayPlayer || openHeldMenu(offSide(inventory.character), 'off'))) {
           input.useOff();
         }
         break;
@@ -2490,24 +2596,31 @@ export const startPlay = (
     interactionPressTarget = undefined;
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
-    if (action === 'stance.ready') {
-      input.rightMouseHeld = false;
-      input.aimingDownSights = false;
-    }
-    if (action === 'firearm.reload') {
-      input.reload.keyUp(at);
-    }
-    if (action === 'world.interact') {
-      releaseInteraction(at);
-    }
-    if (action === 'player.crouch-toggle') {
-      crouchProneInput.keyUp(action, at);
-    }
-    if (action === 'player.throw') {
-      throwStanceInput.keyUp(action, at);
-    }
-    if (action === 'light.worn-toggle') {
-      wornLightInput.keyUp(action, at);
+    switch (action) {
+      case 'hand.use-off':
+        releaseHeldMenu('off');
+        break;
+      case 'stance.ready':
+        input.rightMouseHeld = false;
+        input.aimingDownSights = false;
+        break;
+      case 'firearm.reload':
+        input.reload.keyUp(at);
+        break;
+      case 'world.interact':
+        releaseInteraction(at);
+        break;
+      case 'player.crouch-toggle':
+        crouchProneInput.keyUp(action, at);
+        break;
+      case 'player.throw':
+        throwStanceInput.keyUp(action, at);
+        break;
+      case 'light.worn-toggle':
+        wornLightInput.keyUp(action, at);
+        break;
+      default:
+        break;
     }
     if (slot !== undefined) {
       quickbarInput.keyUp(slot, at);
@@ -2670,24 +2783,27 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
+  input.heldMenuPress = () => openHeldMenu(dominantSide(inventory.character), 'dominant');
+  input.heldMenuRelease = () => releaseHeldMenu('dominant');
   const cycleFurnitureAction = (deltaY: number): boolean => {
+    const held = openHeldActionItem();
+    if (held && !furnitureActionSelection.regionsOpen) {
+      return furnitureActionSelection.step(held, heldActions(held), Math.sign(deltaY));
+    }
     const target = interactionTargetAt();
     return (
       target?.kind === 'furniture' &&
+      furnitureActionSelection.source === 'furniture' &&
       furnitureActionSelection.isOpen(target.entity) &&
       furnitureActionSelection.step(target.entity, furnitureActions(target.entity), Math.sign(deltaY))
     );
   };
   keyboardInput.choiceStep = (direction) => {
-    if (!input.locked || input.menuPointer || !openFurnitureActionTarget()) {
+    if (!input.locked || input.menuPointer || !(openFurnitureActionTarget() ?? openHeldActionItem())) {
       return false;
     }
     cycleFurnitureAction(direction);
     return true;
-  };
-  const cycleWieldedAction = (deltaY: number): boolean => {
-    const item = inventory.hands[dominantSide(inventory.character)];
-    return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
   };
   globalThis.addEventListener(
     'wheel',
@@ -2698,10 +2814,8 @@ export const startPlay = (
       } else if (input.locked && !input.menuPointer && !spectator.enabled) {
         if (cycleFurnitureAction(e.deltaY) || opticZoom.wheel(zoomFirearm(), isAimedDownSights(), e.deltaY)) {
           e.preventDefault();
-        } else if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
-          debugTools?.wheel(e.deltaY);
         } else {
-          e.preventDefault();
+          debugTools?.wheel(e.deltaY);
         }
       }
     },
@@ -2891,7 +3005,7 @@ export const startPlay = (
       : { kind: 'furniture.slide', entityUid: entity.uid, way: 'push' };
   };
   const furniturePayload = (entity: BlockEntity, mode: 'pocket' | 'wield'): ReplayActionPayload | undefined => {
-    if (furnitureActionSelection.isOpen(entity)) {
+    if (furnitureActionSelection.source === 'furniture' && furnitureActionSelection.isOpen(entity)) {
       return confirmFurnitureAction(entity);
     }
     if (mode === 'wield' && furnitureActions(entity).length > 0) {
@@ -3547,8 +3661,21 @@ export const startPlay = (
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
-    useForwardButton();
+    const item = offHandUse(registry, inventory);
+    const hand = item && survival.handOf(item);
+    if (hand === undefined || !openHeldMenu(hand, 'forward')) {
+      useForwardButton();
+    }
   };
+  document.addEventListener(
+    'mouseup',
+    (event) => {
+      if (event.button === 4) {
+        releaseHeldMenu('forward');
+      }
+    },
+    true,
+  );
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
   inputTarget.addEventListener('mousedown', (e) => {
@@ -3651,7 +3778,7 @@ export const startPlay = (
   };
   const furnitureInteractionHint = (entity: BlockEntity): HintText | undefined => {
     const key = keyCap('world.interact');
-    if (furnitureActionSelection.isOpen(entity)) {
+    if (furnitureActionSelection.source === 'furniture' && furnitureActionSelection.isOpen(entity)) {
       return selectedFurnitureHint(entity);
     }
     if (entity.bar) {
@@ -3669,7 +3796,7 @@ export const startPlay = (
       : useText(entity);
   };
   const powerControlHint = (entity: BlockEntity): HintText | undefined => {
-    if (furnitureActionSelection.isOpen(entity)) {
+    if (furnitureActionSelection.source === 'furniture' && furnitureActionSelection.isOpen(entity)) {
       return undefined;
     }
     const control = session.power?.control(entity);
@@ -3706,34 +3833,53 @@ export const startPlay = (
         return undefined;
     }
   };
+  const syncActionChoice = (target: InteractionTarget | undefined, carry: ReturnType<typeof carryPreview>): void => {
+    const hadRegions = furnitureActionSelection.regionsOpen;
+    const worldUid = target?.kind === 'furniture' && !carry ? target.entity.uid : undefined;
+    const uid = furnitureActionSelection.source === 'held' ? openHeldActionItem()?.uid : worldUid;
+    furnitureActionSelection.sync(uid, sim.paused);
+    if (hadRegions && !furnitureActionSelection.regionsOpen) {
+      syncMenuState();
+    }
+  };
+  const radialView = () => {
+    const item = openHeldActionItem();
+    if (item) {
+      return { target: item, actions: heldActions(item) };
+    }
+    const entity = openFurnitureActionTarget();
+    return { target: entity, actions: entity ? furnitureActions(entity) : [] };
+  };
+  const drawActionChoices = (visible: Readonly<HudOptionsState>): void => {
+    const { target, actions } = radialView();
+    const show = visible.interaction && input.locked && !debugTools?.buildOn && !furnitureActionSelection.regionsOpen;
+    drawFurnitureRadial(
+      show && target ? actions : [],
+      target ? furnitureActionSelection.choice(target, actions)?.id : undefined,
+      radialTuning,
+    );
+    const held = openHeldActionItem();
+    const regions =
+      furnitureActionSelection.regionsOpen && held
+        ? survival.availableItemActions(held).filter((action) => action.treatment)
+        : undefined;
+    drawTreatmentChoices(regions, radialTuning.labels);
+  };
   const promptText = (
     now: number,
     visible: Readonly<HudOptionsState>,
     target: InteractionTarget | undefined,
     carry: ReturnType<typeof carryPreview>,
   ) => {
-    furnitureActionSelection.sync(target?.kind === 'furniture' && !carry ? target.entity.uid : undefined, sim.paused);
+    syncActionChoice(target, carry);
     const interactionHint = interactionHintFor(target, carry);
-    const radialEntity = openFurnitureActionTarget();
-    const radialActions = radialEntity ? furnitureActions(radialEntity) : [];
-    const showActions = visible.interaction && input.locked && !debugTools?.buildOn;
-    drawFurnitureRadial(
-      showActions && radialEntity
-        ? furnitureActionSelection.page(radialEntity, radialActions, radialTuning.entryCap)
-        : [],
-      radialEntity ? furnitureActionSelection.choice(radialEntity, radialActions)?.id : undefined,
-      radialTuning,
-    );
-    const actions = showActions && !radialEntity ? survival.wieldedItemActionHint() : undefined;
-    itemActionList.textContent = actions ?? '';
-    itemActionList.hidden = !actions;
+    drawActionChoices(visible);
     return playPromptText(
       {
         now,
         notice,
         noticeUntil,
         interactionHint,
-        itemActionHint: undefined,
         interruption: compression.interruption,
         resting: rest.action !== undefined,
       },
@@ -4476,7 +4622,7 @@ export const startPlay = (
       inventoryPanel.hidden = true;
       syncMenuState();
       prompt.hidden = true;
-      itemActionList.hidden = true;
+      $('treatment-choices').hidden = true;
       if (!options.restore || options.restore.character.scenarioRun?.completedAtGameTimestamp === null) {
         options.saveController?.finishWin();
       }
@@ -4506,7 +4652,7 @@ export const startPlay = (
     inventoryPanel.hidden = true;
     syncMenuState();
     prompt.hidden = true;
-    itemActionList.hidden = true;
+    $('treatment-choices').hidden = true;
     const summary = {
       cause,
       worldSeed: sim.seed,

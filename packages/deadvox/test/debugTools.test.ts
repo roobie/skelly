@@ -14,8 +14,9 @@ import { equipDebugBackpack, equipDebugLoadout } from '../src/debug/debugLoadout
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { fixtureSources } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -219,6 +220,28 @@ describe('debug starting equipment', () => {
     expect(occupied.add(pack, { kind: 'worn' })).toBe(true);
     equipDebugBackpack(occupied, true, true);
     expect(Array.from(occupied.items(), ({ item }) => item)).toEqual([pack]);
+  });
+
+  it('item previews admit registered items only for fresh debug hands and do not replace an existing item', () => {
+    const type = 'fixture_preview_item';
+    const preview = baseRegistryWith(
+      fixtureSources([
+        {
+          source: 'preview-fixture',
+          data: { items: [{ id: type, name: 'Fixture preview', category: 'material', size: [1, 1], weight: 1 }] },
+        },
+      ]),
+    );
+    const inventory = new Inventory(preview);
+    const query = `?loadout=item:${type}`;
+    expect(equipDebugLoadout(inventory, false, true, query)).toBe(false);
+    expect(equipDebugLoadout(inventory, true, false, query)).toBe(false);
+    expect(equipDebugLoadout(inventory, true, true, '?loadout=item:unregistered_fixture')).toBe(false);
+    expect(equipDebugLoadout(inventory, true, true, query)).toBe(true);
+    const held = inventory.hands[dominantSide(inventory.character)];
+    expect(held?.type).toBe(type);
+    expect(equipDebugLoadout(inventory, true, true, query)).toBe(false);
+    expect(inventory.hands[dominantSide(inventory.character)]).toBe(held);
   });
 
   it('loadout=grenade holds a grenade in the dominant hand with a couple more packed', () => {

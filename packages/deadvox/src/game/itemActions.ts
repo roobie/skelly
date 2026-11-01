@@ -24,7 +24,6 @@ export interface ItemAction {
   readonly battery?: 'unload';
   readonly opening?: true;
   readonly sharpening?: true;
-  /** Resuming a held, paused craft: the action list is where a paused craft's status lives. */
   readonly continuing?: true;
   readonly workUid?: number;
 }
@@ -165,6 +164,14 @@ export class ItemActionSelection {
       this.selected.set(item.uid, fallback.id);
     }
     return fallback;
+  }
+
+  select(item: Pick<Item, 'uid'>, actions: readonly ItemAction[], id: string): boolean {
+    if (!actions.some((action) => action.id === id)) {
+      return false;
+    }
+    this.selected.set(item.uid, id);
+    return true;
   }
 
   step(item: Pick<Item, 'uid'>, actions: readonly ItemAction[], direction: number): boolean {

@@ -12,6 +12,7 @@ read_if:
   - you change the test-house normal or debug-only boundary
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
+  - you change shared radial action choices, treatment region selection or furniture hold interaction
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
@@ -584,18 +585,9 @@ because rearranging a room should not require destroying its contents. See `src/
   fasten a board, and fitted placements retain their kind's controls so refusal
   does not silently change the interaction. Choices are a single confirmation,
   not a persistent mode: returning from pause or another target must not act
-  unexpectedly. The radial spike keeps the choice near the target and holds
-  look so choosing a direction cannot also lose that target. The centre is
-  neutral so release cannot run a remembered choice that is not visibly selected;
-  mouse and keyboard choices share the same highlight and confirmation owner.
-  Action identity owns direction so changing availability does not retrain the
-  player's steering. Repair and paused target-bound work share that owner so
-  service availability cannot create a second furniture-choice mode. Colliding
-  or missing slots fail content validation rather than silently moving choices.
-  See `src/game/play.ts`, `furnitureActions`,
-  `src/game/furnitureActions.ts`, `radialEntries` and `FurnitureActionSelection`,
-  and `src/ui/furnitureRadial.ts`,
-  `mountFurnitureRadial`.
+  unexpectedly. Repair and paused target-bound work share the movement-choice
+  owner so service availability cannot create a second furniture-choice mode.
+  See `src/game/play.ts`, `furnitureActions`, and `DESIGN.md`, "Action choices".
 - **Held pieces turn and tip.** A dragged piece is a held piece with its floor
   height fixed, so it turns and tips like any held piece; only setting down
   needs the level floor. See `src/core/furnitureMove.ts`, `turnCarried`,
@@ -2698,15 +2690,13 @@ rechecks the route that admitted it when it completes. See `src/core/options.ts`
 `batterySlotOption` and `batteryOption`, and `src/ui/inventoryScreen.ts`,
 `batterySlotTemplate`.
 
-A held light's battery can be taken out on its own, as an action chosen on the wheel
-and then activated, because a swap needs a spare: without one a player could not move
-a cell to a charger, another light or a pocket. It follows magazine removal: the light
-must be in hand, the battery keeps its charge and goes to the first pocket with room,
-else the ground, and with nowhere to put it, it stays fitted. A dead primary cell is
-thrown away, as in a swap. Taking the battery out switches the light off, and an empty
-light is a valid item that takes a battery back as a dead one does. See
-`src/core/lights.ts`, `unloadBattery`; `src/game/itemActions.ts`, `itemActionsFor`;
-and `src/core/options.ts`, `stowTarget`.
+A held light offers battery removal through the shared radial because a swap needs
+a spare: without independent removal a player could not move a cell to a charger,
+another light or a pocket. A usable cell keeps its identity and charge; refusal leaves
+it fitted because moving it is not consent to discard it. Removal shares ordinary
+inventory destinations and spent-cell disposal with swaps rather than inventing a
+removal-only rule. See `src/core/lights.ts`, `unloadBattery`, `src/game/itemActions.ts`,
+`itemActionsFor`, and `src/core/options.ts`, `stowTarget`.
 
 Zombies see light farther than they see a player in darkness, and see a player
 lit by any source. Aimed-down or covered flashlights shorten that reach. Light
@@ -3643,13 +3633,23 @@ and render caches are not durable knowledge. See `src/core/schema.ts`,
 `ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
 `src/core/saveFormat.ts`, `itemSchema`.
 
+## Action choices
+
+Furniture hold interaction and held-item action choices use one radial gesture and one owner. One menu path carries no debt: adding a held-item operation must not create another selection interface. The radial stays near the target and holds look so choosing cannot lose that target. Its transparent centre is neutral; release cannot run a remembered choice that is not visibly selected. Mouse and keyboard choices share highlight and confirmation. Losing the item, target, focus or gameplay context cancels rather than executing. See `src/game/furnitureActions.ts`, `FurnitureActionSelection`, and `src/game/play.ts`, `releaseHeldMenu` and `confirmFurnitureAction`.
+
+Each menu owns its directions. Action identity owns its direction within that menu so changing availability does not retrain steering; mutually exclusive menus may reuse directions because their operations cannot compete. Missing or colliding slots and a first-level menu beyond its content cap fail validation rather than silently moving or dropping choices. Overflow behaviour is not chosen. See `src/game/furnitureActions.ts`, `radialEntries`, and `src/core/content.ts`, `fileIssues`.
+
+Treatment's second-level menu is a list, not a radial. Region availability varies independently of operation identity, so only treatable regions appear in body order; Back returns to the first level without treating. A region choice names both item and region, and execution revalidates availability rather than trusting an earlier view. See `src/game/furnitureActions.ts`, `heldMenuActions`, `src/ui/treatmentChoices.ts`, `mountTreatmentChoices`, and `src/game/play.ts`, `chooseTreatment`.
+
+Fresh debug looks may equip a registered item by identity so operation coverage does not require a hard-coded preview loadout for each capability. Restored hands and non-debug games are not staged. See `src/debug/debugLoadout.ts`, `equipDebugLoadout`.
+
 ## World repair selection
 
-Holding world interaction opens the action list on every movable piece, intact or damaged; lifting requires choosing it from that list. One gesture shape keeps lift and repair from competing for the same hold. See `src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/game/play.ts`, `furniturePayload`.
+Holding world interaction opens the shared radial on every movable piece, intact or damaged; lifting requires choosing it. One gesture shape keeps lift and repair from competing for the same hold. See `src/game/furnitureActions.ts`, `furnitureActionsFor`, and `src/game/play.ts`, `furniturePayload`.
 
 World repair acts on one chosen world piece, so it belongs in its own short-lived Repair vertical in the inventory/skills/crafting panel, not among ordinary crafting recipes. Choosing Repair pins that identity and opens its requirements; looking elsewhere cannot silently change the job. Closing the screen or losing the target discards the view. Reviewing requirements is not consent to acquire supplies or start work: Start is explicit, and the command owner revalidates identity and choices rather than trusting a preview's permission. See `src/game/play.ts`, `confirmFurnitureAction`; `src/ui/inventoryScreen.ts`, `InventoryScreen.openRepair`; and `src/core/craftCommands.ts`, `CraftCommands.previewEntityRepair`.
 
-The repair entry stays debug-gated while #1469 settles input selection. The turnable 3D target view also waits for #1469. Keyboard arrow aiming is not a second target-selection path: the held-list choice already names the piece.
+Repair recipe availability remains debug-gated. The turnable 3D target view waits for #1469; it does not need another target-selection path because the radial choice already names the piece.
 
 ## UI principles
 

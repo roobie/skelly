@@ -9,8 +9,9 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium } from './chromium.mjs';
+import { chooseHeldAction } from './held-action-menu.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
-import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { dispatchMenuPointerClick, dispatchMenuPointerMove, pressWithDrawnCursor } from './menu-pointer.mjs';
 import { cleanReplayRadiusM, logPhase, observationPlugin, timePhase } from './primary-action-observation.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
@@ -578,9 +579,11 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       r.clearHand(r.dominant);
       r.clearHand(r.off);
       const light = r.inventory.create('glowstick');
+      const selectable = r.inventory.create('flashlight');
       r.setHand(r.off, light);
+      r.setHand(r.dominant, selectable);
       r.startInputReplayRecording();
-      return { uid: light.uid, start: r.session.sim.time };
+      return { uid: light.uid, selectableUid: selectable.uid, start: r.session.sim.time };
     });
     const litInEvent = await page.evaluate((uid) => {
       document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
@@ -590,6 +593,11 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     await page.waitForFunction(
       (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
       fixture.uid,
+    );
+    await chooseHeldAction(page, 'own');
+    await page.waitForFunction(
+      (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
+      fixture.selectableUid,
     );
     await waitForSimulation(
       page,
@@ -629,6 +637,10 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
     });
     const artifact = JSON.parse(replayText);
     assert.equal(artifact.actions.filter(({ action }) => action === 'hand.use-forward').length, 1);
+    assert.deepEqual(
+      artifact.actions.filter(({ action }) => action === 'hand.action').map(({ payload }) => payload),
+      [{ kind: 'hand.action', itemUid: fixture.selectableUid, actionId: 'own' }],
+    );
     const replayRestart = page.waitForEvent('load');
     await command('debug.input-replay-import');
     await page.locator('#input-replay-file').setInputFiles({
@@ -653,6 +665,11 @@ const verifyForwardButtonReplay = async (browserInstance, port, renderOverride) 
       };
     }, fixture.uid);
     assert.equal(replay.lightOn, true, 'replaying the recorded forward-button press lights the off-hand light');
+    assert.equal(
+      await page.evaluate((uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on, fixture.selectableUid),
+      true,
+      'replay executes the chosen held action without reopening its menu',
+    );
     assert.equal(replay.state, 'verified', 'the replay reproduces the recorded end state');
     assert.deepEqual(replay.endSnapshot, liveEndSnapshot);
     assert.deepEqual(pageErrors, []);
@@ -1602,7 +1619,7 @@ const verifyGroundPickup = async (browserInstance, port, renderOverride) => {
       doorUid,
     );
     assert.equal(
-      await page.locator('#item-action-list').isVisible(),
+      await page.locator('#furniture-radial').isVisible(),
       false,
       'a door opens directly without movement choices',
     );
@@ -1962,15 +1979,7 @@ try {
       r.setHand(r.off, can);
       return { uid: can.uid, opened: r.inventory.registry.items.get(can.type).unpack.item };
     });
-    await page.waitForFunction(() => !document.querySelector('#item-action-list').hidden);
-    const actionListBounds = await page.locator('#item-action-list').boundingBox();
-    assert(actionListBounds.x < 640 && actionListBounds.y > 360, 'action choices stay in the lower left');
-    await page.mouse.wheel(0, 100);
-    await page.waitForFunction(() => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.opening === true;
-    });
-    await page.mouse.click(640, 450);
+    await chooseHeldAction(page, 'open-can');
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const openedInHand = await page.evaluate((uid) => {
       const r = globalThis.primaryActionTest;
@@ -1981,9 +1990,9 @@ try {
     assert.deepEqual(
       openedInHand,
       { failures: [], type: canOpening.opened, held: true },
-      'the wheel-selected click opens rather than swings',
+      'the radial-selected release opens rather than swings',
     );
-    await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
+    await page.waitForFunction(() => document.querySelector('#furniture-radial').hidden);
     const honing = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -1993,17 +2002,8 @@ try {
       r.setHand(r.off, r.inventory.create('whetstone'));
       return { uid: blade.uid, condition: blade.condition };
     });
-    await page.mouse.wheel(0, 100);
-    await page.waitForFunction(() => {
-      const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.hands[r.dominant])?.sharpening === true;
-    });
     for (const trigger of ['click', 'offhand']) {
-      if (trigger === 'click') {
-        await page.mouse.click(640, 450);
-      } else {
-        await pressAction(page, 'hand.use-off');
-      }
+      await chooseHeldAction(page, 'sharpen', trigger === 'offhand' ? 'hand.use-off' : undefined);
       await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
       const honed = await page.evaluate((uid) => {
         const r = globalThis.primaryActionTest;
@@ -2045,7 +2045,7 @@ try {
       const blade = r.inventory.hands[r.dominant];
       return { uid: blade.uid, condition: blade.condition, wheelUid: wheel.uid, look };
     });
-    await page.mouse.click(640, 450);
+    await chooseHeldAction(page, 'own');
     await page.waitForFunction(() => globalThis.primaryActionTest.queue.busy);
     const groundAtWheel = await page.evaluate(({ uid, wheelUid, look }) => {
       const r = globalThis.primaryActionTest;
@@ -2305,7 +2305,13 @@ try {
     };
     const toggleLight = async (actionId, on) => {
       const before = await observe();
-      if (actionId) {
+      const hasChoices = await page.evaluate(() => {
+        const r = globalThis.primaryActionTest;
+        return r.survival.availableItemActions(r.inventory.itemByUid(r.lightUid)).length > 0;
+      });
+      if (hasChoices) {
+        await chooseHeldAction(page, 'own', actionId);
+      } else if (actionId) {
         await pressAction(page, actionId);
       } else {
         await page.mouse.click(640, 450);
@@ -3997,6 +4003,36 @@ try {
       logPhase('locked-door-input-case', lockedDoorStart);
     }
 
+    const continuedWork = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const recipeId = 'fixture_radial_work';
+      r.inventory.registry.recipes.set(recipeId, {
+        id: recipeId,
+        kind: 'craft',
+        result: { item: 'rag', count: 1 },
+        timeGameMinutes: 60,
+        skills: {},
+        qualities: {},
+        components: [],
+      });
+      r.session.character.knownRecipes.add(recipeId);
+      const reason = r.session.crafting.start(recipeId);
+      if (reason) {
+        throw new Error(`Could not begin radial work fixture: ${reason}`);
+      }
+      const uid = r.session.sim.actions.job.workUid;
+      r.session.sim.actions.stop();
+      return { chosen: uid };
+    });
+    await chooseHeldAction(page, 'continue-work');
+    await page.waitForFunction((uid) => {
+      const { job } = globalThis.primaryActionTest.session.sim.actions;
+      return job?.jobType === 'craft' && !job.stopped && job.workUid === uid;
+    }, continuedWork.chosen);
+    await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.stop());
+
     const treatment = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       r.clearHand(r.dominant);
@@ -4007,48 +4043,39 @@ try {
       r.session.sim.body.impact(3, 'rightArm', { bleeding: 0 });
       return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
     });
-    await page.evaluate(() => {
-      globalThis.primaryActionTest.hudOptions.interaction = false;
-    });
-    await page.waitForFunction(() => document.querySelector('#item-action-list').hidden);
-    await page.evaluate(() => {
-      globalThis.primaryActionTest.hudOptions.interaction = true;
-    });
-    let hintWaitError;
-    try {
-      await page.waitForFunction(
-        () => document.querySelector('#item-action-list')?.textContent?.includes('›') === true,
-        undefined,
-        { timeout: 5000 },
-      );
-    } catch (error) {
-      hintWaitError = error;
-    }
-    const actionHint = await page.locator('#item-action-list').textContent();
-    const hintCount = (actionHint?.match(/›/g) ?? []).length;
-    const hintWaitFailure = hintWaitError ? `; hint wait failed: ${hintWaitError}` : '';
-    assert.equal(
-      hintWaitError === undefined && hintCount === 1,
-      true,
-      `expected exactly one treatment hint marker within 5 seconds; prompt was ${JSON.stringify(actionHint)}${hintWaitFailure}`,
-    );
-    const selectedBeforeWheel = await page.evaluate((uid) => {
+    await chooseHeldAction(page, 'treat');
+    await page.locator('#treatment-choices').waitFor({ state: 'visible' });
+    const regions = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
-    }, treatment.uid);
-    await page.evaluate(() => globalThis.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, cancelable: true })));
+      return r.survival
+        .availableItemActions(r.inventory.hands[r.dominant])
+        .filter((action) => action.treatment)
+        .map((action) => action.id);
+    });
+    assert(regions.length > 0, 'fixture exposes treatable regions');
+    assert.deepEqual(
+      await page
+        .locator('#treatment-choices button:not([data-action="back"])')
+        .evaluateAll((buttons) => buttons.map((button) => button.dataset.action)),
+      regions,
+    );
+    await pressWithDrawnCursor(page, '#treatment-choices [data-action="back"]');
     await page.waitForFunction(
-      (args) => {
-        const r = globalThis.primaryActionTest;
-        return r.survival.selectedItemAction(r.inventory.itemByUid(args.uid))?.treatment?.region !== args.before;
-      },
-      { uid: treatment.uid, before: selectedBeforeWheel },
+      () => document.querySelector('#treatment-choices').hidden && !document.querySelector('#furniture-radial').hidden,
     );
-    const selected = await page.evaluate((uid) => {
+    assert.notEqual(
+      await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job?.jobType),
+      'treatment',
+      'Back does not treat',
+    );
+    await chooseHeldAction(page, 'treat');
+    const chosen = regions.at(-1);
+    const selected = await page.evaluate((id) => {
       const r = globalThis.primaryActionTest;
-      return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
-    }, treatment.uid);
-    await page.mouse.click(640, 450);
+      return r.survival.availableItemActions(r.inventory.hands[r.dominant]).find((action) => action.id === id).treatment
+        .region;
+    }, chosen);
+    await pressWithDrawnCursor(page, `#treatment-choices [data-action="${chosen}"]`);
     await page.waitForFunction(
       (uid) => {
         const { sim } = globalThis.primaryActionTest.session;

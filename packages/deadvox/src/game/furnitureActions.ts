@@ -23,6 +23,11 @@ export const radialEntries = (
     return { ...action, angleRadians: (degrees * Math.PI) / 180 };
   });
 
+export const heldMenuActions = (actions: readonly ItemAction[], treatLabel: string): readonly ItemAction[] => {
+  const direct = actions.filter((action) => !action.treatment);
+  return actions.some((action) => action.treatment) ? [...direct, { id: 'treat', label: treatLabel }] : direct;
+};
+
 export const radialEntryIndex = (
   x: number,
   y: number,
@@ -89,6 +94,8 @@ export class FurnitureActionSelection extends ItemActionSelection {
   private x = 0;
   private y = 0;
   private armed = false;
+  source: 'furniture' | 'held' = 'furniture';
+  regionsOpen = false;
 
   choice(entity: { uid: number }, actions: readonly ItemAction[]): ItemAction | undefined {
     return this.isOpen(entity) && this.armed ? this.forItem(entity, actions) : undefined;
@@ -107,13 +114,6 @@ export class FurnitureActionSelection extends ItemActionSelection {
     return this.uid;
   }
 
-  page<Action extends ItemAction>(entity: { uid: number }, actions: readonly Action[], cap: number): readonly Action[] {
-    const selected = this.forItem(entity, actions);
-    const index = actions.findIndex((action) => action.id === selected?.id);
-    const start = Math.floor(Math.max(0, index) / cap) * cap;
-    return actions.slice(start, start + cap);
-  }
-
   point(
     entity: { uid: number },
     actions: readonly RadialAction[],
@@ -127,11 +127,10 @@ export class FurnitureActionSelection extends ItemActionSelection {
       this.x *= tuning.radiusPixels / length;
       this.y *= tuning.radiusPixels / length;
     }
-    const page = this.page(entity, actions, tuning.entryCap);
-    const index = radialEntryIndex(this.x, this.y, page, tuning.deadZonePixels);
+    const index = radialEntryIndex(this.x, this.y, actions, tuning.deadZonePixels);
     this.armed = index !== undefined;
     if (index !== undefined) {
-      this.selected.set(entity.uid, page[index]!.id);
+      this.selected.set(entity.uid, actions[index]!.id);
     }
   }
 
@@ -139,12 +138,19 @@ export class FurnitureActionSelection extends ItemActionSelection {
     super(openCanLabel);
   }
 
-  open(entity: { uid: number }, actions: readonly ItemAction[]): void {
+  open(entity: { uid: number }, actions: readonly ItemAction[], source: 'furniture' | 'held' = 'furniture'): void {
+    this.source = source;
+    this.regionsOpen = false;
     this.uid = entity.uid;
     this.x = 0;
     this.y = 0;
     this.armed = false;
     this.forItem(entity, actions);
+  }
+
+  showRegions(): void {
+    this.regionsOpen = true;
+    this.armed = false;
   }
 
   isOpen(entity: { uid: number }): boolean {
@@ -154,6 +160,7 @@ export class FurnitureActionSelection extends ItemActionSelection {
   sync(targetUid: number | undefined, paused = false): void {
     if (paused || targetUid !== this.uid) {
       this.uid = undefined;
+      this.regionsOpen = false;
     }
   }
 

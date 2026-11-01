@@ -18,6 +18,7 @@ export type ReplayActionPayload =
   | { kind: 'inventory.to-hands'; itemUid: number; feet: [number, number, number] }
   | { kind: 'inventory.inspect'; itemUid: number }
   | { kind: 'inventory.activate'; itemUid: number }
+  | { kind: 'hand.action'; itemUid: number; actionId: string }
   | { kind: 'inventory.wield-or-pocket'; itemUid: number; feet: [number, number, number] }
   | { kind: 'item.pickup'; itemUid: number; mode: 'pocket' | 'wield'; feet: [number, number, number] }
   | { kind: 'furniture.interact'; entityUid: number; alternatives?: true }
@@ -224,6 +225,8 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.to-hands':
     case 'inventory.wield-or-pocket':
       return isUid(payload.itemUid) && isTriple(payload.feet);
+    case 'hand.action':
+      return isUid(payload.itemUid) && typeof payload.actionId === 'string' && payload.actionId.length > 0;
     case 'inventory.activate':
     case 'inventory.inspect':
       return isUid(payload.itemUid);
@@ -307,6 +310,7 @@ export interface ReplayCommandOwners {
   search: (entityUid: number) => string | undefined;
   inspect?: (itemUid: number) => void;
   activate?: (itemUid: number) => string | undefined;
+  handAction?: (itemUid: number, actionId: string) => string | undefined;
   wieldOrPocket?: (itemUid: number, feet: [number, number, number]) => string | undefined;
   charger?: (entityUid: number, operation: 'start' | 'stop') => string | undefined;
   power?: (entityUid: number, enabled: boolean) => string | undefined;
@@ -361,6 +365,12 @@ const applyInventoryItemAction = (
   return owners.wieldOrPocket ? owners.wieldOrPocket(payload.itemUid, payload.feet) : 'Item handling is unavailable';
 };
 
+const applyHandAction = (
+  payload: Extract<ReplayActionPayload, { kind: 'hand.action' }>,
+  owners: ReplayCommandOwners,
+): string | undefined =>
+  owners.handAction ? owners.handAction(payload.itemUid, payload.actionId) : 'Hand action is unavailable';
+
 export const applyReplayActionPayload = (
   payload: ReplayActionPayload,
   owners: ReplayCommandOwners,
@@ -379,6 +389,8 @@ export const applyReplayActionPayload = (
     }
     case 'inventory.to-hands':
       return owners.toHands(payload.itemUid, payload.feet);
+    case 'hand.action':
+      return applyHandAction(payload, owners);
     case 'inventory.activate':
     case 'inventory.wield-or-pocket':
       return applyInventoryItemAction(payload, owners);

@@ -194,13 +194,21 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
     }
   });
   (file.ui ?? []).forEach((tuning, i) => {
-    const { slots } = tuning.furnitureRadial;
-    const seen = new Set<number>();
-    for (const [action, angle] of Object.entries(slots)) {
-      if (seen.has(angle)) {
-        out.push([`ui[${i}].furnitureRadial.slots.${action}`, 'two actions claim the same radial slot']);
+    const { slots, entryCap } = tuning.furnitureRadial;
+    for (const [menu, directions] of Object.entries(slots)) {
+      const seen = new Set<number>();
+      for (const [action, angle] of Object.entries(directions)) {
+        if (seen.has(angle)) {
+          out.push([
+            `ui[${i}].furnitureRadial.slots.${menu}.${action}`,
+            'two actions claim the same radial slot in one menu',
+          ]);
+        }
+        seen.add(angle);
       }
-      seen.add(angle);
+      if (Object.keys(directions).length > entryCap) {
+        out.push([`ui[${i}].furnitureRadial.entryCap`, 'menu slots exceed one radial page']);
+      }
     }
   });
   (file.templates ?? []).forEach((template, i) => {

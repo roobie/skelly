@@ -4,7 +4,7 @@ read_if:
   - you're showing a number to the player
   - you're deciding what the interface may tell the player and in what voice
   - you're changing prompts, HUD language, feedback or bodily cues
-  - you're changing HUD options, UI layering or choice controls
+  - you're changing HUD options, UI layering, radial action choices or treatment region controls
   - you're changing debug/playtest separation or inventory layout
   - you're changing world-target repair entry, ephemeral Repair tabs or requirement refusals
   - you're implementing or refining inventory item pictures, lighting, clear fuel fill or material wear
@@ -52,9 +52,9 @@ A bound key in a hint or label is drawn as a key cap, a small bordered capital, 
 
 The interactible outline is an optional spatial HUD aid, separate from interaction hints. It compensates for objects whose appearance does not make their usable parts clear; it is not a substitute for diegetic affordances. Prefer making objects look interactible so players can discover actions without this crutch. The outline must not become a glowing substitute for seeing the object: it receives the scene's surface lighting, without emission or a minimum visibility floor. Its edge normals bisect the adjacent faces, so an edge cannot receive direct light when neither adjoining face faces the light. This keeps its yellow cue responsive to lamps and flashlights as well as the sky, rather than treating a sky-intensity estimate as surface brightness. See `src/render/interactionMarker.ts`, `markInteractionTarget`, and `src/render/furniture.ts`, `markerEdges`.
 
-The held-item action list is meta presentation: the held geometry cannot express which of several valid operations a click will perform. It shares the interaction-hint visibility policy but stays in the lower left so a choice does not cover the target. See `src/game/survival.ts`, `Survival.wieldedItemActionHint`, and `src/game/play.ts`, `promptText`.
+The shared action radial is meta presentation: held geometry cannot express which of several operations release will perform. Its transparent centre preserves the target, and its visibility follows interaction hints. Treatment regions use an explicit list with Back rather than another radial; the open chooser owns input like other menus. One owner avoids competing choices and highlights. See `DESIGN.md`, "Action choices", and `src/game/play.ts`, `drawActionChoices`.
 
-Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft is a "Continue" entry in the held-item action list, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
+Craft status has no panel of its own. A running craft is progress in the handling HUD, like reading, forcing a door and treatment. A held paused craft offers continuation in the shared action radial, with no progress shown. A dropped work item shows neither, because it may never be finished and its status must not follow the player; continuing it is an option on the item itself. One shared panel family avoids the overlaps that unique panels cause, and new UI is not invented where an existing element serves. See `src/ui/craftReadout.ts`, `runningCraftPresentation`, and `src/game/survival.ts`, `Survival.availableItemActions`.
 
 The handling HUD gauge and caption own the space below the crosshair, so the interaction prompt moves above the gauge while handling is shown. Both stay readable, the prompt grows upward when it wraps, and neither is hidden. The rule lives in the stylesheet for the shared panel, so every timed action gets it. See `src/ui/style.css`, "#prompt".
 

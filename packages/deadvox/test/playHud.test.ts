@@ -375,20 +375,18 @@ it('keeps an in-view firearm crosshair beyond the camera far plane', () => {
   expect(playCrosshairFrame(true, true, beyondFarPlane, false)).toMatchObject({ visible: true });
 });
 
-it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {
+it('omits expired notices and the duplicated rest interruption but retains the interaction hint', () => {
   const visible = hudVisibility({ ...DEFAULT_HUD_OPTIONS, shown: true, messages: true, interaction: true });
   const state = Object.freeze({
     now: 20,
     notice: 'old',
     noticeUntil: 10,
     interactionHint: 'F: search the cupboard',
-    itemActionHint: 'Rag:\n› left arm · bleeding',
     interruption: 'Hurt',
     resting: true,
   });
   const restingPrompt = drawn(playPromptText(state, visible, text.prompt)).textContent;
   expect(restingPrompt).toContain(state.interactionHint);
-  expect(restingPrompt).toContain(state.itemActionHint);
   expect(restingPrompt).not.toContain(state.interruption);
   const interruptedPrompt = drawn(playPromptText({ ...state, resting: false }, visible, text.prompt)).textContent;
   expect(interruptedPrompt).toContain(state.interactionHint);
@@ -404,7 +402,6 @@ it('draws the live turn and tip keys as key caps in the carry hint, follows a re
           notice: '',
           noticeUntil: 0,
           interactionHint: playCarryText('fixture set down', text.interaction),
-          itemActionHint: undefined,
           interruption: undefined,
           resting: false,
         },
@@ -435,7 +432,6 @@ it('shows a refusal reason only when the messages option is on', () => {
     notice: `Can't sleep: ${reason}`,
     noticeUntil: 2,
     interactionHint: undefined,
-    itemActionHint: undefined,
     interruption: undefined,
     resting: false,
   });

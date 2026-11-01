@@ -19,6 +19,14 @@ describe('selected item actions', () => {
     expect(defaultItemAction(sameTier)?.id).toBe('more-damaged-bleeding');
   });
 
+  it('selects only an available explicit action without replacing the last valid selection on refusal', () => {
+    const selection = new ItemActionSelection('fixture opening');
+    expect(selection.select(item, actions, actions[0]!.id)).toBe(true);
+    expect(selection.forItem(item, actions)).toBe(actions[0]);
+    expect(selection.select(item, actions, 'expired-fixture-action')).toBe(false);
+    expect(selection.forItem(item, actions)).toBe(actions[0]);
+  });
+
   it('cycles and wraps without changing the default policy', () => {
     const selection = new ItemActionSelection('fixture open can');
     expect(selection.forItem(item, actions)?.id).toBe('worse-bleeding');

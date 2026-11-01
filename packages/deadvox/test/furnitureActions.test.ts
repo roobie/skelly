@@ -3,6 +3,7 @@ import { reachTuning } from '../src/core/reach.ts';
 import {
   FurnitureActionSelection,
   furnitureActionsFor,
+  heldMenuActions,
   radialEntries,
   radialEntryIndex,
 } from '../src/game/furnitureActions.ts';
@@ -25,6 +26,42 @@ const actions = radialEntries(
   ],
   { use: 0, push: 180 },
 );
+
+it('groups treatment regions behind one operation without dropping direct held actions', () => {
+  const direct = [{ id: 'fixture-direct', label: 'Direct' }];
+  const regions = [
+    {
+      id: 'fixture-treatment:head',
+      label: 'Head',
+      treatment: { itemType: 'fixture-treatment', region: 'head' as const },
+    },
+    {
+      id: 'fixture-treatment:torso',
+      label: 'Torso',
+      treatment: { itemType: 'fixture-treatment', region: 'torso' as const },
+    },
+  ];
+  expect(heldMenuActions(direct, 'Fixture treat')).toEqual(direct);
+  expect(heldMenuActions([...regions, ...direct], 'Fixture treat')).toEqual([
+    ...direct,
+    { id: 'treat', label: 'Fixture treat' },
+  ]);
+});
+
+it('returns from held-region choices to a neutral first-level menu using the shared owner', () => {
+  const selection = new FurnitureActionSelection('fixture opening');
+  const entries = radialEntries([{ id: 'treat', label: 'Fixture treat' }], { treat: 0 });
+  selection.open(piece, entries, 'held');
+  selection.point(piece, entries, { x: 0, y: -20 }, { radiusPixels: 50, deadZonePixels: 5, entryCap: 8 });
+  expect(selection.choice(piece, entries)?.id).toBe('treat');
+  selection.showRegions();
+  expect(selection.regionsOpen).toBe(true);
+  expect(selection.choice(piece, entries)).toBeUndefined();
+  selection.open(piece, entries, 'held');
+  expect(selection.regionsOpen).toBe(false);
+  expect(selection.source).toBe('held');
+  expect(selection.confirm(piece, entries)).toBeUndefined();
+});
 
 it('keeps content-authored action slots when another action appears or order changes', () => {
   const pair = [

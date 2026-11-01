@@ -200,7 +200,6 @@ export interface PlayPromptState {
   readonly notice: string;
   readonly noticeUntil: number;
   readonly interactionHint: HintText | undefined;
-  readonly itemActionHint: string | undefined;
   readonly interruption: string | undefined;
   readonly resting: boolean;
 }
@@ -210,13 +209,10 @@ export const playPromptText = (
   visible: Readonly<HudOptionsState>,
   text: ScreenText['prompt'],
 ): TemplateResult | '' => {
-  const { now, notice, noticeUntil, interactionHint, itemActionHint, interruption, resting } = state;
+  const { now, notice, noticeUntil, interactionHint, interruption, resting } = state;
   const lines: HintText[] = visible.messages && now < noticeUntil ? [notice] : [];
   if (visible.interaction && interactionHint !== undefined) {
     lines.push(interactionHint);
-  }
-  if (visible.interaction && itemActionHint !== undefined) {
-    lines.push(itemActionHint);
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {

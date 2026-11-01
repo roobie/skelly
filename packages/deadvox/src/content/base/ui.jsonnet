@@ -11,7 +11,11 @@
       labelPaddingRem: 0.5,
       labelRadiusRem: 0.375,
       entryCap: 8,
-      slots: { push: 0, drag: 180, lift: 270, repair: 90, continue: 135 },
+      slots: {
+        furniture: { push: 0, drag: 180, lift: 270, repair: 90, continue: 135 },
+        held: { own: 0, sharpen: 45, 'open-can': 90, 'magazine:strip': 135, 'battery:unload': 180, 'continue-work': 225, treat: 270 },
+      },
+      labels: { treat: 'Treat', back: 'Back' },
     },
     refusalSound: 'player_nope',
     audioVolumes: { master: 0.8, world: 0.8, body: 0.8, ui: 0.8 },
