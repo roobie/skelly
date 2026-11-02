@@ -63,7 +63,7 @@ The parts it takes from Magiclysm's design, in engine terms:
 The resolver and its carriers exist, but no content reaches them. Player and creature bodies
 carry modifier lists that nothing fills, content cannot declare a modifier, and skills apply
 their effects through a separate saturation curve at each consumer. See
-`src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `src/core/sim.ts`, `Sim`;
+`src/core/modifiers.ts`, `modified` and `MODIFIED_EFFECTS`; `src/core/sim.ts`, `Simulation`;
 and `src/core/character.ts`, `skillSaturation`.
 
 Needed:
@@ -377,7 +377,7 @@ own, checked as the base pack's are.
 
 #### Pack requirements
 
-The mod declares the packs it requires, and loading refuses a stack that lacks them
+The mod declares the packs it requires, and loading will refuse a stack that lacks them
 (`docs/pack-split.md`, "Layers"; #637). A compatibility mod requires both the magic mod
 and the product it brings it into, which is what lets it settle their clashes.
 
