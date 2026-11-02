@@ -5,6 +5,7 @@ import { buildRegistry, type ContentSource } from '../../deadvox/src/core/conten
 import { loadVehicleBlueprint, vehicleContentIssues } from '../../deadvox/src/core/vehicleBlueprint.ts';
 import { exportVehicleBlueprint, type VehicleBlueprintInput } from '../src/export.ts';
 import { registryIssueText } from '../src/issues.ts';
+import { DROP_SOUND } from './fixtures/parts.ts';
 
 const PART = 'vat_round_trip_part';
 const HOST = 'vat_round_trip_host';
@@ -18,6 +19,7 @@ const input: VehicleBlueprintInput = {
 const sourceFor = (blueprint: VehicleBlueprintInput): ContentSource => ({
   source: 'vat/round-trip.json',
   data: {
+    sounds: [DROP_SOUND],
     models: [{ ...battery, id: PART }],
     items: [
       {
@@ -30,6 +32,7 @@ const sourceFor = (blueprint: VehicleBlueprintInput): ContentSource => ({
         size: [1, 1],
         economy: { usage: [], tiers: [] },
         vehicle: {
+          drops: { default: DROP_SOUND.id },
           capabilities: ['structure'],
           obstruction: { sight: true, light: true, sound: true, combat: true },
         },

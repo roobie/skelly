@@ -11,6 +11,17 @@ export const CARGO = 'vat_fx_cargo';
 export const DATUM = 'mark';
 export const DATUM_LOCAL: readonly [number, number, number] = [0.1, 0.2, 0.3];
 export const MOUNT = 'vat_fx_mount';
+export const DROP_SOUND = {
+  id: 'vat_fx_drop',
+  description: 'Fixture drop',
+  variants: ['assets/audio/fixture.ogg'],
+  gain: 1,
+  pitchJitter: [1, 1],
+  gainJitter: [1, 1],
+  minIntervalSimSeconds: 0,
+  category: 'world',
+  noise: { enabled: true, radiusMetres: 1 },
+};
 
 const model = (id: string, box: { min: number[]; max: number[] }) => ({
   ...battery,
@@ -28,7 +39,12 @@ const part = (id: string, capabilities: string[], vehicle: object = {}) => ({
   model: id,
   size: [1, 1],
   economy: { usage: [], tiers: [] },
-  vehicle: { capabilities, obstruction: { sight: true, light: true, sound: true, combat: true }, ...vehicle },
+  vehicle: {
+    drops: { default: DROP_SOUND.id },
+    capabilities,
+    obstruction: { sight: true, light: true, sound: true, combat: true },
+    ...vehicle,
+  },
 });
 
 /** Lopsided in z, so a mirrored collision box is told from an unmirrored one. */
@@ -38,6 +54,7 @@ const raised = { min: [-0.1, 0.5, -0.1], max: [0.1, 0.6, 0.2] };
 export const partSource: ContentSource = {
   source: 'vat/fixture-parts.json',
   data: {
+    sounds: [DROP_SOUND],
     models: [
       model(FRAME, raised),
       model(PANEL, raised),
