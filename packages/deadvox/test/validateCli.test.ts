@@ -18,6 +18,19 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
   try {
     const base = join(root, 'src/content/base');
     mkdirSync(join(base, 'assets'), { recursive: true });
+    mkdirSync(join(base, 'pack'), { recursive: true });
+    writeFileSync(
+      join(base, 'pack/manifest.json'),
+      JSON.stringify({
+        id: 'fixture.base',
+        version: '1',
+        tier: 'product',
+        product: true,
+        dependencies: [],
+        overrides: [],
+        files: [{ path: 'sounds.json', kind: 'content' }],
+      }),
+    );
     writeFileSync(join(base, 'sounds.json'), JSON.stringify({ sounds: [] }));
     writeFileSync(join(base, 'assets/manifest.json'), JSON.stringify({ sources: [] }));
     const fixtures = join(root, 'test/fixtures');

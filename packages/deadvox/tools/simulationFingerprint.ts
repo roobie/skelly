@@ -194,7 +194,7 @@ const MODULE_QUERY_PATTERN = /[?#].*$/;
 const GLOB_REFERENCE = /\bimport\.meta\.glob\b/g;
 const GLOB_CALL = /\bimport\.meta\.glob(?:<[^>]*>)?\s*\(\s*(['"])(.*?)\1/g;
 const CONTENT_GLOB_PATTERNS = new Set([
-  '../content/base/*.json',
+  '../content/base/**/*.json',
   '../content/base/assets/audio/**/*.ogg',
   '../config/bundled/*.json',
 ]);

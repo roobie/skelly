@@ -32,14 +32,14 @@ Use the repository-wide authoring and conversion rule in `../../../docs/jsonnet.
 
 ## Browser mod identity
 
-Give each browser mod a required top-level `id`, independent of its delivery URL
-or filename. Missing identities and repeat selections are refused so a renamed
-upload or mirrored URL cannot silently admit the same mod twice. Identity is not a
-definition-id collision rule; which mod may override another's definition is
-`../../../docs/decisions/0007-typed-field-patches.md`, "Conflicts".
-The intake shape and diagnostics belong to `src/game/browserMods.ts`, `readMod`
-and `evaluateMods`. Bundled core-pack fragments remain content files rather than
-independent mods; see `src/game/bundledContent.ts`, `buildBundledContent`.
+Browser mods carry explicit pack metadata independently of their delivery URL or
+filename, so a mirror or renamed upload cannot silently select one mod twice.
+Their inline definitions pass through the bundled stack's dependency and entry-conflict
+boundary, rather than gaining override rights from selection order. See
+`src/game/browserMods.ts`, `readMod` and `evaluateMods`, and
+`src/core/packAdmission.ts`, `admitPacks`.
+Bundled fragments belong to their manifest's pack, not separate mods; see
+`src/game/bundledPacks.ts`, `bundledPacks`.
 
 The pre-start panel rejects invalid files whole and keeps their diagnostics visible.
 An enabled invalid file blocks Start rather than silently starting a different world;
@@ -54,13 +54,12 @@ order and enabled state. An unavailable or failed store leaves the panel with no
 loaded and a visible storage error, never a partially restored selection. See
 `src/game/modStorage.ts`, `ModStorage`, and `src/ui/modsPanel.ts`, `chooseMods`.
 
-Each admitted browser mod contributes its explicit identity, version and canonical
-content hash to the save's ordered pack identity. An omitted mod version denotes the
-initial version; changing content still changes its hash. Delivery names and JSON
-object key order are not identity. Selection order is identity because later files
-can override earlier definitions; disabled files are not admitted packs. Continue
-refuses missing, changed, additional or reordered packs rather than resuming a world
-under different definitions. See `src/game/browserMods.ts`, `evaluateMods`, and
+Admitted packs contribute separately to save identity, including their metadata and
+canonical content. Delivery names and JSON object key order are not identity. Dependency
+order determines the effective stack; selection order breaks ties between independent
+packs and remains part of identity. Disabled files supply neither dependencies nor save
+identity. Continue refuses pack differences rather than resuming under different
+content. See `src/game/browserMods.ts`, `evaluateMods`, and
 `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and `contentPackDifferences`.
 The pack-list identity is the rule until #1395 moves identity to the evaluated
 content, as `docs/decisions/0008-deterministic-world.md`, "Decision" rules.
@@ -103,7 +102,30 @@ no menu switch exists for it: a world loads only when started with the same `?mo
 
 ## Core-pack integrity
 
-Reject removal of required rows when validating core or modded packs. Keeping this check at the pack-validation boundary lets focused tests and tools construct partial registries without accepting an incomplete playable pack. See `requiredContentIssues` in `src/core/content.ts` and `validate` in `src/cli/validate.ts`.
+Bundled packs use the common manifest contract so dependency ownership and deliberate
+entry replacement survive extraction into topics. A missing dependency, cycle or
+undeclared cross-pack override refuses the stack; filename order must never choose a
+winner between packs. The tier grants no privilege. See `src/core/packAdmission.ts`,
+`PackManifestSchema` and `admitPacks`, and `src/game/bundledPacks.ts`, `bundledPacks`.
+
+Each pack's identity covers its manifest and enumerated files, including exporter
+models, so changing a model cannot leave its world's content identity unchanged.
+A bundle stamp certifies that exact pack input and the admission implementation;
+a missing or stale stamp requires full reference checks rather than granting trust.
+See `src/core/packAdmission.ts`, `packContentHash`, `src/core/bundleAdmission.ts`,
+`BundleAdmission`, and `tools/stampBundle.ts`, `stampPacks`.
+
+This boundary covers bundled packs and inline mod definitions, not local or remote
+folder fetchers. HTTPS/origin enforcement, binary provenance and atomic cleanup belong
+to folder intake under `docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
+No URL-folder support is implied by sharing the manifest schema.
+
+Require zero validation issues, not merely a constructed registry: broken files can
+be discarded during registry construction. Required-row checks stay at playable-pack
+validation so focused tools and tests can construct partial registries without admitting
+an incomplete game. See `src/core/content.ts`, `buildRegistry` and
+`requiredContentIssues`, and `src/cli/validate.ts`, `validate`.
+CLI fragment arguments exercise content validation; they do not admit folder mods.
 
 ## Graphics policy
 

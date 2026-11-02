@@ -3,6 +3,11 @@ local factors = { damage: 0.5, speed: 0.5, detection: 0.5, health: 0.5 };
 
 {
   id: 'beginner',
+  version: '1',
+  tier: 'product',
+  product: false,
+  dependencies: ['base'],
+  overrides: [{ pack: 'base', entry: 'zombies:' + zombie.id } for zombie in zombies],
   zombies: [
     zombie + {
       attack+: {

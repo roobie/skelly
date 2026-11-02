@@ -46,7 +46,7 @@ export const bundledModIdsFromUrl = (params: URLSearchParams): string[] => {
 export interface BundledSelection {
   content: StartupContent;
   /** Data of each admitted bundled mod, for the save identity. */
-  admitted: { id: string; data: Record<string, unknown> }[];
+  admitted: { id: string; version: string; data: unknown }[];
   issues: ContentIssue[];
 }
 
@@ -54,7 +54,6 @@ export interface BundledSelection {
 export const selectBundledMods = (ids: readonly string[], additional: readonly BundledMod[] = []): BundledSelection => {
   const issues: ContentIssue[] = [];
   const mods: BrowserMod[] = [];
-  const admitted: BundledSelection['admitted'] = [];
   for (const id of ids) {
     const found = BUNDLED_MODS.find((mod) => mod.id === id);
     const source = `mods=${id}`;
@@ -67,16 +66,18 @@ export const selectBundledMods = (ids: readonly string[], additional: readonly B
       continue;
     }
     const { data } = found;
-    admitted.push({ id, data });
     mods.push({ source, text: JSON.stringify(data), enabled: true });
   }
   for (const { id, data } of additional) {
-    admitted.push({ id, data });
     mods.push({ source: id, text: JSON.stringify(data), enabled: true });
   }
   const result = evaluateMods(mods);
   for (const list of result.issues.values()) {
     issues.push(...list);
   }
-  return { content: result.content, admitted, issues };
+  return {
+    content: result.content,
+    admitted: result.admitted,
+    issues,
+  };
 };

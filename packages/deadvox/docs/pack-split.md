@@ -178,11 +178,14 @@ model and sound checks apply per pack; static reachability applies to playable s
 #1532 delivers runtime extraction and content separation together after its PR gate.
 These workstreams preserve #637's proof obligations within that one refactor:
 
-- **Pack intake and boundaries:** explicit topic/product/scenario sources, dependency
-  admission, requirement ownership and shared-provider validation. Coordinate with the
-  field-patch feature's fail-closed enforcement; documented rules alone are not loader
-  enforcement. See `src/game/bundledContent.ts`, `buildBundledContent`, and
-  `src/cli/validate.ts`, `validate`.
+- **Pack boundaries:** replace setting requirements with capability ownership and prove
+  shared-provider validation. Bundled intake uses the common manifest and fail-closed
+  entry conflicts in `src/core/packAdmission.ts`, `admitPacks`; topic extraction must
+  preserve that boundary rather than flattening packs into files. Typed field patches
+  remain separate work under `docs/decisions/0007-typed-field-patches.md`, "Implementation ownership".
+  Folder fetchers, remote-origin policy, binary provenance and atomic cleanup remain
+  prerequisites of folder intake under `docs/decisions/0008-mod-authoring-tool.md`, "Build plan";
+  bundled admission is not URL-folder support.
 - **Sound selection:** an entry naming an absent sound must be rejected at that entry;
   shared content must validate without product sound rows.
 - **Actors and damage:** prove a new actor id using an existing body plan is admitted

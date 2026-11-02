@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
+import { bundledPacks } from '../src/game/bundledPacks.ts';
 import { capture, contentLookup, createRuntime, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const mods = [
@@ -17,9 +18,16 @@ test('a save round-trip preserves the admitted ordered browser mod identity', as
   });
   const decoded = await decodeSave(bytes, { version: identity.components, contentLookup });
   expect(decoded.snapshot).toEqual(snapshot);
-  expect(decoded.versionIdentity.components.contentPacks.slice(1).map(({ id, version }) => ({ id, version }))).toEqual(
-    mods.map(({ id, version }) => ({ id: `browser.${id}`, version })),
-  );
+  expect(
+    decoded.versionIdentity.components.contentPacks
+      .slice(0, bundledPacks.length)
+      .map(({ id, version }) => ({ id, version })),
+  ).toEqual(bundledPacks.map(({ manifest: { id, version } }) => ({ id, version })));
+  expect(
+    decoded.versionIdentity.components.contentPacks
+      .slice(bundledPacks.length)
+      .map(({ id, version }) => ({ id, version })),
+  ).toEqual(mods.map(({ id, version }) => ({ id: `browser.${id}`, version })));
   expect(decoded.versionIdentity.digest).toBe(identity.digest);
 });
 

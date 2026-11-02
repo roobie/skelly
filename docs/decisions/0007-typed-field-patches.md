@@ -122,11 +122,12 @@ before implementation. It retains priority over queued engine work within the PR
 opening a PR during the freeze. Tool editing waits for the merge, while read-only inspection
 can proceed through the shared API. See `docs/decisions/0008-mod-authoring-tool.md`, "Build plan".
 
-The engine feature must deliver or explicitly depend on conflict enforcement and the
-pack-dependency admission of #637; see
-`packages/deadvox/docs/pack-split.md`, "Refactor workstreams". Documented conflict rules are not
-loader enforcement: the design must verify those prerequisites so patch admission
-cannot silently accept an undeclared override. The separate literal set-target rule
+Patch admission must retain the bundled loader's dependency and entry-conflict boundary
+and extend enforcement to typed addresses, rather than assuming that entry checks prove
+field-patch safety. See `packages/deadvox/src/core/packAdmission.ts`, `admitPacks`.
+The common manifest and bundled admission do not implement folder fetchers or remote
+intake; those retain their separate prerequisites in
+`docs/decisions/0008-mod-authoring-tool.md`, "Build plan". The separate literal set-target rule
 belongs to `docs/decisions/0004-content-language.md`, "Mod rules", and its runtime work
 in #313, not to patch application. Nothing needs migrating before v1.0 beta (#1023).
 

@@ -48,7 +48,7 @@ describe('browser mod admission', () => {
       expect.objectContaining({ path: 'id', message: expect.stringContaining(fixture.id) }),
     ]);
     expect(result.canStart).toBe(false);
-    expect(result.content.origins.get(`items:${fixture.items[0]!.id}`)?.source).toBe(first.source);
+    expect(result.content.origins.get(`items:${fixture.items[0]!.id}`)?.source).toBe(`${first.source}/content.json`);
     expect(result.content.registry.items.get(fixture.items[0]!.id)?.name).toBe(fixture.items[0]!.name);
     expect(result.issues.has(first.source)).toBe(false);
   });
@@ -61,16 +61,26 @@ describe('browser mod admission', () => {
     ]);
   });
 
-  it('allows different mod ids to override the same definitions', () => {
+  it('allows a different mod to override a declared dependency entry', () => {
     const result = evaluateMods([
       mod(fixture),
       {
-        ...mod({ ...fixture, id: 'different-mod', items: [{ ...fixture.items[0], name: 'Distinct override' }] }),
+        ...mod({
+          ...fixture,
+          id: 'different-mod',
+          dependencies: [...fixture.dependencies, fixture.id],
+          overrides: [
+            ...fixture.overrides,
+            { pack: fixture.id, entry: `items:${fixture.items[0]!.id}` },
+            { pack: fixture.id, entry: `zombies:${fixture.zombies[0]!.id}` },
+          ],
+          items: [{ ...fixture.items[0], name: 'Distinct override' }],
+        }),
         source: 'override.json',
       },
     ]);
     expect(result.canStart).toBe(true);
-    expect(result.content.origins.get(`items:${fixture.items[0]!.id}`)?.source).toBe('override.json');
+    expect(result.content.origins.get(`items:${fixture.items[0]!.id}`)?.source).toBe('override.json/content.json');
     expect(result.content.registry.items.get(fixture.items[0]!.id)?.name).toBe('Distinct override');
   });
   it('caps UTF-8 bytes rather than character count before parsing', () => {
@@ -86,12 +96,27 @@ describe('browser mod admission', () => {
     const result = evaluateMods([mod(data)]);
     expect(result.canStart).toBe(true);
     expect(result.admitted).toEqual([
-      { id: data.id, version: '1', data: { items: data.items, zombies: data.zombies } },
+      {
+        id: data.id,
+        version: data.version,
+        data: {
+          manifest: {
+            id: data.id,
+            version: data.version,
+            tier: data.tier,
+            product: data.product,
+            dependencies: data.dependencies,
+            overrides: data.overrides,
+            files: [{ path: 'content.json', kind: 'content' }],
+          },
+          content: { items: data.items, zombies: data.zombies },
+        },
+      },
     ]);
     expect(result.content.registry.items.has(data.items[0]!.id)).toBe(true);
     const zombie = data.zombies[0]!;
     expect(result.content.registry.zombies.get(zombie.id)?.speed).toEqual(zombie.speed);
-    expect(result.content.origins.get(`zombies:${zombie.id}`)?.source).toBe('fixture.json');
+    expect(result.content.origins.get(`zombies:${zombie.id}`)?.source).toBe('fixture.json/content.json');
     vi.stubGlobal(
       'Worker',
       class {
