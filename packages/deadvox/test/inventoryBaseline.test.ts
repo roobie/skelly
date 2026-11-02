@@ -35,8 +35,8 @@ it('handles inventory at its authored baseline without an inventory skill', () =
   const baseline = claimed(registry.inventory, 'player')!.handling;
   expect(handlingWeights(registry)).toEqual(baseline);
   expect(inventory.handlingTime(item, { kind: 'hand', side: 'right' }, { kind: 'pile', pos: [0, 0, 0] })).toBe(
-    baseline.ground + baseline.perCell,
+    baseline.groundSimSeconds + baseline.perCellSimSeconds,
   );
-  expect(inventory.scaleHandlingTime(baseline.wear)).toBe(baseline.wear);
+  expect(inventory.scaleHandlingTime(baseline.wearSimSeconds)).toBe(baseline.wearSimSeconds);
   expect(character.snapshotState()).toMatchObject({ skills: {}, practice: {} });
 });

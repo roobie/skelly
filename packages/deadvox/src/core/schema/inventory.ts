@@ -32,7 +32,7 @@ export const InventoryTuningSchema = strictObject({
   /** Maximum width, in cells, for a container pocket without a content-owned exception. */
   containerMaxWidthCells: Cells,
   keyHoldRealSeconds: Positive,
-  handling: strictObject({ perCell: NonNegative, ground: NonNegative, wear: NonNegative }),
+  handling: strictObject({ perCellSimSeconds: SimSeconds, groundSimSeconds: SimSeconds, wearSimSeconds: SimSeconds }),
   /** Most pile states validation explores for one ground supply before calling it unproven (`DESIGN.md`, "Loot"). */
   groundPileStateCap: Cells,
   /** Tall placement's free-rectangle gain over its empty-grid baseline must exceed this many cells. */

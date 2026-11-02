@@ -13,6 +13,8 @@ it('resolves firearm baselines, mechanism tuning and expert endpoints from their
   const ranged = claimed(registry.rangedTuning, 'ranged')!;
   const skill = claimed(registry.skills, 'firearmsCombat')!;
   const tuning = firearmsCombatTuning(registry);
+  expect(tuning).not.toHaveProperty('id');
+  expect(tuning).not.toHaveProperty('capability');
   expect(tuning.skillZeroHandling).toBe(policy.skillZeroHandling);
   expect(tuning.caseEjection).toBe(ranged.caseEjection);
   expect(tuning.shotTraceRangeBlocks).toBe(ranged.shotTraceRangeBlocks);
@@ -26,6 +28,9 @@ it('resolves firearm baselines, mechanism tuning and expert endpoints from their
 it('starts and completes baseline inventory handling without combat or inventory skills', () => {
   const { registry, issues } = withoutCombatSkills();
   expect(issues).toEqual([]);
+  expect(claimed(registry.skills, 'inventoryManagement')).toBeUndefined();
+  expect(claimed(registry.skills, 'firearmsCombat')).toBeUndefined();
+  expect(claimed(registry.skills, 'meleeCombat')).toBeUndefined();
   const tuning = firearmsCombatTuning(registry);
   const baseline = claimed(registry.combatPolicy, 'player')!.firearms!;
   const effects = firearmsSkillEffects(0, tuning);
@@ -48,7 +53,7 @@ it('starts and completes baseline inventory handling without combat or inventory
   if (!result.ok) {
     throw new Error(result.reason);
   }
-  expect(result.job.duration).toBeGreaterThanOrEqual(handlingWeights(registry).ground);
+  expect(result.job.duration).toBeGreaterThanOrEqual(handlingWeights(registry).groundSimSeconds);
   handling.tick(result.job.duration);
   advance(runtime, 1);
   expect(inventory.locate(item)?.kind).toBe('pile');

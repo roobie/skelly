@@ -38,12 +38,12 @@ export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'actio
 const attachmentWorkSeconds = (inventory: Inventory): number => {
   const skill = claimed(inventory.registry.skills, 'firearmsCombat');
   if (!skill) {
-    return handlingWeights(inventory.registry).ground;
+    return handlingWeights(inventory.registry).groundSimSeconds;
   }
   const tuning = firearmsCombatTuning(inventory.registry);
   const level = skillEffectLevel(inventory.character.skills?.[skill.id] ?? SKILL_LEVEL_MIN);
   return (
-    handlingWeights(inventory.registry).ground *
+    handlingWeights(inventory.registry).groundSimSeconds *
     skillSaturation(level, tuning.attachmentFactorFloor!, tuning.attachmentFactorHalfLifeLevels!)
   );
 };

@@ -138,6 +138,8 @@ describe('long-gun skill ownership', () => {
     {
       source: 'fixture-sniping',
       data: {
+        // Fixture timing puts the novice raise above the ADS maximum, so the clamp bites,
+        // but the trained raise below it, so ADS follows the skill-scaled raise instead.
         combatPolicy: [...registry.combatPolicy.values()].map((policy) => ({
           ...policy,
           firearms: { ...policy.firearms!, raiseSimSeconds: 0.3 + 0.3, adsAcquisitionMaximumSimSeconds: 0.45 },

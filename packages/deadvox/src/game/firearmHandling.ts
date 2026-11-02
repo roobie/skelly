@@ -40,7 +40,7 @@ import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { makeScale } from '../core/scale.ts';
-import { firearmsCombatTuning, rangedTuning } from '../core/skillTraining.ts';
+import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
@@ -290,6 +290,7 @@ export class FirearmMechanics {
     firearmUid: number,
   ) => void;
   private readonly firearmsSkillLevel: () => number;
+  private readonly combatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   private readonly handlingSlowdown: () => number;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
@@ -359,8 +360,11 @@ export class FirearmMechanics {
     this.firearmsSkillLevel = firearmsSkillLevel;
     this.handlingSlowdown = handlingSlowdown;
     this.shotInput = shotInput;
-    this.firearmsSkillZeroHandling =
-      firearmsSkillZeroHandling ?? (() => firearmsCombatTuning(inventory.registry).skillZeroHandling);
+    // An unannotated held gun can be admitted without enabling firearm mechanics.
+    this.combatTuning = claimed(inventory.registry.combatPolicy, 'player')?.firearms
+      ? firearmsCombatTuning(inventory.registry)
+      : undefined;
+    this.firearmsSkillZeroHandling = firearmsSkillZeroHandling ?? (() => this.requiredCombatTuning().skillZeroHandling);
     for (const { item } of inventory.items()) {
       if (item.firearm?.cycle || item.firearm?.landings?.length) {
         this.active.add(item.uid);
@@ -582,12 +586,19 @@ export class FirearmMechanics {
     return Math.max(0, Math.min(1, acquiring.elapsedSimSeconds / acquiring.durationSimSeconds));
   }
 
+  private requiredCombatTuning(): FirearmsCombatTuning {
+    if (!this.combatTuning) {
+      throw new Error('Missing firearms combat policy');
+    }
+    return this.combatTuning;
+  }
+
   private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
-    return { ...firearmsCombatTuning(this.inventory.registry), skillZeroHandling: this.firearmsSkillZeroHandling() };
+    return { ...this.requiredCombatTuning(), skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
   private caseEjection(): FirearmsCombatTuning['caseEjection'] {
-    return rangedTuning(this.inventory.registry).caseEjection;
+    return this.requiredCombatTuning().caseEjection;
   }
 
   skillZeroHandlingSettingFor(uid: number): FirearmsSkillZeroHandling {
@@ -625,7 +636,8 @@ export class FirearmMechanics {
   /** Attachment load slows raising and ready movement using the same per-firearm mass moment. */
   stanceEffectsFor(uid: number): FirearmStanceEffects {
     const item = this.inventory.itemByUid(uid);
-    const stance = firearmStanceEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning());
+    const tuning = this.requiredCombatTuning();
+    const stance = firearmStanceEffects(this.firearmsSkillLevel(), tuning);
     if (!item) {
       return stance;
     }
@@ -635,10 +647,7 @@ export class FirearmMechanics {
     return {
       raiseDurationSimSeconds,
       // The clamp bounds the final duration, attachment load included, so ADS never exceeds the floor's maximum.
-      adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(
-        raiseDurationSimSeconds,
-        this.requiredFirearmsCombatTuning(),
-      ),
+      adsAcquisitionDurationSimSeconds: adsAcquisitionDuration(raiseDurationSimSeconds, tuning),
       readyMovementFactor: (stance.readyMovementFactor * response.swingScale) / loadScale,
     };
   }

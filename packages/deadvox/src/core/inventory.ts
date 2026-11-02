@@ -1792,19 +1792,19 @@ export class Inventory {
   handlingTime(item: Item, from: Location, target: Target): number {
     const cells = cellCount(defOf(this.registry, item.type));
     const weights = handlingWeights(this.registry);
-    const perCell = weights.perCell * cells;
+    const perCell = weights.perCellSimSeconds * cells;
     const out = (() => {
       switch (from.kind) {
         case 'hand':
           return 0;
         case 'worn':
-          return weights.wear;
+          return weights.wearSimSeconds;
         case 'pocket':
           return this.pocketHandling(from.owner, from.pocket) + perCell;
         case 'furniture':
           return this.furnitureHandling(from.entity, from.pocket) + perCell;
         default:
-          return weights.ground + perCell;
+          return weights.groundSimSeconds + perCell;
       }
     })();
     const into = (() => {
@@ -1812,13 +1812,13 @@ export class Inventory {
         case 'hand':
           return 0;
         case 'worn':
-          return weights.wear;
+          return weights.wearSimSeconds;
         case 'pocket':
           return this.pocketHandling(target.owner, target.pocket) + perCell;
         case 'furniture':
           return this.furnitureHandling(target.entity, target.pocket) + perCell;
         default:
-          return weights.ground + perCell;
+          return weights.groundSimSeconds + perCell;
       }
     })();
     return this.scaleHandlingTime(out + into);

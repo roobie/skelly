@@ -34,8 +34,10 @@ export const firearmsCombatTuning = (registry: Registry): FirearmsCombatTuning =
   }
   const skill = claimed(registry.skills, 'firearmsCombat');
   const effects = skill?.combat?.firearms;
+  const { caseEjection, shotTraceRangeBlocks } = rangedTuning(registry);
   return {
-    ...rangedTuning(registry),
+    caseEjection,
+    shotTraceRangeBlocks,
     ...policy,
     ...effects,
     curve: skill?.curve,

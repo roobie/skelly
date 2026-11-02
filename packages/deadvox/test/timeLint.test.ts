@@ -60,6 +60,20 @@ describe('time lint boundary and naming rules', () => {
     ]);
   });
 
+  it('recognizes authored inventory handling durations and rejects missing clocks', () => {
+    const source = readFileSync('src/content/base/inventory.json', 'utf8');
+    const data = JSON.parse(source) as { inventory: { handling: Record<string, number> }[] };
+    const { handling } = data.inventory[0]!;
+    expect(Object.keys(handling).length).toBeGreaterThan(0);
+    expect(temporalNameFindings('inventory.json', source, 'json')).toEqual([]);
+    expect(temporalCatalogueFindings(['inventory.json'], () => source)).toEqual([]);
+    const missingClocks = Object.fromEntries(
+      Object.entries(handling).map(([name, value]) => [name.replace('Sim', ''), value]),
+    );
+    const findings = temporalNameFindings('fixture.json', JSON.stringify(missingClocks), 'json');
+    expect(findings.map((finding) => finding.match(FIELD_NAME)?.[1])).toEqual(Object.keys(missingClocks));
+  });
+
   it('catalogues action phases in standalone model records and packs without allowing unknown phases', () => {
     const action = {
       hand: { durationSimSeconds: 1, unlockSimSeconds: 0.1, lockSimSeconds: 0.1 },

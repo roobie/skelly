@@ -56,9 +56,9 @@
       },
       "groundPileStateCap": 65536,
       "handling": {
-        "ground": 1,
-        "perCell": 0.050000000000000003,
-        "wear": 2
+        "groundSimSeconds": 1,
+        "perCellSimSeconds": 0.050000000000000003,
+        "wearSimSeconds": 2
       },
       "id": "player",
       "keyHoldRealSeconds": 0.34999999999999998,
