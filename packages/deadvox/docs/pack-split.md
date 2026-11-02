@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you split Deadvox content into core, theme, product and scenario mods (#637)
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
@@ -158,6 +157,11 @@ required data are invalid. See `src/core/capabilities.ts`, `CONTENT_CAPABILITIES
 `claimed` and `capabilityIssues`; `src/core/schema/capability.ts`, `capabilityField`;
 and `src/core/content.ts`, `requiredContentIssues`.
 
+Provider identity must not widen mechanism dispatch: weapon melee classes still
+name supported damage kinds so a typo fails admission instead of the first swing.
+The unarmed provider may have an independent id; see `src/core/schema/items.ts`,
+`MeleeClassSchema`.
+
 A neutral weathering profile belongs in shared content: it is engine-level
 presentation that every product needs. Overgrown and benchmark profiles belong to
 Deadvox because they express its flavour. The default is a capability, not a profile
@@ -208,6 +212,12 @@ These workstreams preserve #637's proof obligations within that one refactor:
 - **Ranged content and policy:** shared content validates without firearms. Preserve
   full-product firing and grenade behavior in an existing browser flow while product
   skills read through roles and debug kits become content.
+- **Skill providers:** shared mechanisms must not depend on product skill progression;
+  products supply their training policies.
+- **Core extraction:** shared content must validate independently of product entries,
+  so lower-layer reuse cannot silently depend on a particular product.
+- **Theme extraction:** product flavour stays product-owned rather than becoming a
+  prerequisite for shared mechanisms.
 - **Scenario starts and reuse:** each playable stack validates with reachability, while
   its lower-layer dependencies validate without a scenario. Starts, including initial
   recipe knowledge, belong to scenarios; several starts can share one scenario. The

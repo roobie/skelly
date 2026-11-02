@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change how holding the attack builds, releases or drops a melee charge
   - you tune a weapon's `charge` content or the stamina a charge costs
   - you add a hands action, hit or control loss that must interrupt a charge

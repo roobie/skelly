@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change player or debug input bindings, their default keys or their labels
   - you change input ownership, browser-native behavior or pointer actions
   - you change stances, lateral lean, firearm handling, throwing, treatment or long-action controls

@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change the held compass's look, readability, lighting or placement
   - you change the debug compass loadout or its hand preferences
 ---

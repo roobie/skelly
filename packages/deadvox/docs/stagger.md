@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change how a melee hit interrupts a zombie, or a type's `stagger` content
   - you tune charged strikes or a weapon's impulse against zombie stagger thresholds
   - you add knockback, knockdown or any other hit response that moves a zombie

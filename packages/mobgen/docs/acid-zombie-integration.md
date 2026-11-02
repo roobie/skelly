@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you build any round of the acid zombie's integration
   - you change the acid body's standing-height fitting or shape measurements
   - you change mobgen's material, budget or carve contracts while the acid zombie lands

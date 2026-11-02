@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change or consume the revolver model export, shared writer or moving-part transforms
   - you refresh the revolver or its ammunition in Deadvox
   - you change the structured Deadvox export recipe

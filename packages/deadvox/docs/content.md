@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you author or change Deadvox content sources or their build pipeline
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
@@ -195,7 +194,7 @@ rather than clamping it silently. See `src/core/schema/handlingRange.ts`, `Handl
 
 ## Weathering profiles
 
-Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `WeatheringSchema` in `src/core/schema.ts` and `referenceIssues` in `src/core/content.ts`. `configFromUrl` in `src/game/config.ts` selects the site profile.
+Weathering is a render-only content choice, not saved world state. Named profiles let sites share the shader while selecting their own material response; layouts without a profile use the shared default. See `src/core/schema/weathering.ts`, `WeatheringSchema`; `src/core/content.ts`, `referenceIssues`; and `src/game/config.ts`, `configFromUrl`.
 
 ## Day cycle
 
@@ -247,7 +246,7 @@ See `src/core/schema/layouts.ts`, `FixedLootItem`; `src/core/placementLoot.ts`,
 
 Fixed loot takes eligibility from its resolved authored source context, not a compiled placement's ID. Stacking changes that ID without changing the source's authority. Point overrides keep a special supply local to its anchor rather than retagging the building; fitted children meet the same resolved context. See `placementLootIssues` in `src/core/placementLoot.ts` and its callers in `src/core/authoredLayout.ts` and `src/core/scenarioComposition.ts`.
 
-Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `siteGeneration` in `src/core/schema.ts`, `site-generation.json`, and `AuthoredSite` in `src/core/authoredSite.ts`.
+Keep authored-site terrain and vegetation controls in base content rather than mixing generator settings into authored layouts. This keeps layout geometry about the authored place and generation settings about its terrain. See `src/core/schema/siteGeneration.ts`, `SiteGenerationSchema`, and `src/core/authoredSite.ts`, `AuthoredSite`.
 
 Terrain shape and the tree and forest tunables are required `siteGeneration` fields (see `src/core/schema/siteGeneration.ts`, `siteGeneration`) with no code default, so a mod can reshape the landscape and woods without touching logic and a missing value fails validation instead of silently using a stale one. Code receives the terrain values as one explicit shape (`terrainShapeOf` in `src/core/sitePalette.ts`) rather than reading module constants, so every caller names the world it generates. Geometry, such as tree crowns and placement jitter, and bench-only mechanism values stay in code because they are not tuning a mod should change.
 
@@ -255,9 +254,9 @@ Every site kind shares one block palette so a block choice has a single content 
 
 A site's standing water is authored as layout water rows, its hollows as `basin` terrain primitives, and a lot meant to stand in water says `overWater`; see `src/core/schema/layouts.ts`, `SiteLayoutSchema` and `TerrainPrimitive`, and the rules and reasons in `DESIGN.md`, "Water". A row's level is the water's top face, not a block's lower face like `ground`, because the author sets the plane a swimmer floats at. Its polygon only bounds where water may stand, as a woodland polygon bounds trees: the terrain decides the shoreline, so draw the polygon loosely around the basin and shape the shore with the basin's falloff. Generation fills with the palette's water block, which must be a `liquid` block; see `src/core/content.ts`, `checkSiteGeneration`. The debug scene with a lake is `src/content/base/layouts-water.jsonnet`, `lake_demo`.
 
-Procedural surface pattern IDs are schema-checked; the shader implementation remains in code. All camouflage blocks share one palette and washout; distinct looks require a per-block shader lookup. World-anchored blotches avoid texture assets and repeated seams, while block-owned palette and washout keep the shared look tunable. See `BLOCK_PATTERNS` in `src/core/schema.ts` and `surfacePatterns.ts` in `src/render`.
+World-anchored surface patterns avoid texture assets and repeated seams; palette and washout remain content-owned so shared looks stay tunable. See `src/core/schema/blocks.ts`, `BLOCK_PATTERNS`, and `src/render/surfacePatterns.ts`, `camoShaderConfig` and `SURFACE_PATTERN_GLSL`.
 
-Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `PaletteThingSchema` in `src/core/schema.ts` and `resolveSpawnTime` in `src/core/clock.ts`, which gives the names their times from the day cycle content.
+Windowed template spawns use named game-clock boundaries. Keep their rule and reason in `DESIGN.md`, "Spawning"; see `src/core/schema/templates.ts`, `PaletteThingSchema`, and `src/core/clock.ts`, `resolveSpawnTime`, which gives the names their times from the day cycle content.
 
 A map piece makes a cell a spawn point through a palette `spawn` entry with an optional `chance`; a 1x1x1 marker piece is air that claims its cell and carries one such entry. A slot offers weighted marker pieces, and its pick, drawn once when the assembly compiles, decides the zombie type, while `chance` rolls per world. Lab threat varies by overriding the slot choices; see `src/content/base/gauntlet-lab-threat.libsonnet`, `markerPiece`.
 
@@ -462,9 +461,9 @@ rules of `../../../docs/decisions/0004-content-language.md`, "Decision", to run 
 
 ## Recipes
 
-Recipe data names the result, inputs, skill and quality requirements, and optional workstation; `RecipeSchema` in `src/core/schema.ts` owns its shape and bounds. Keep alternative inputs bounded so validation cannot expand without limit.
+Keep alternative recipe inputs bounded so validation cannot expand without limit; see `src/core/schema/recipes.ts`, `RecipeSchema`.
 
-Skill definitions own their effects and training activities. Quality requirements refer to qualities declared by loaded items or workstations, rather than a separate top-level content section. A reachable provider is a separate reachability requirement. See `SkillSchema`, `src/core/character.ts`, and `src/core/reach.ts`.
+Skill definitions own their effects and training activities. Quality requirements refer to qualities declared by loaded items or workstations, rather than a separate top-level content section. A reachable provider is a separate reachability requirement. See `src/core/schema/skills.ts`, `SkillSchema`; `src/core/character.ts`, `Character`; and `src/core/reach.ts`, `bindReach`.
 
 Validate recipe and component references against the effective ordered pack. Disassembly yields and salvage are authored for the item rather than inferred by reversing every recipe; see `planDisassembly` in `src/core/disassembly.ts` and `docs/crafting.md`.
 
@@ -476,7 +475,7 @@ Content acceptance checks that authored world sources can provide declared item 
 
 Reachability is a type-source contract, not a quantity, seed, or whole-game solver. A site can lack item types the whole game has, so `npm run report:never-spawn -- <site-id>` provides an on-demand per-site report rather than a gate. A recipe cycle without a found source cannot make itself reachable. Knowledge from a skill must be grounded just like knowledge from a book, because a dead unlock must stay red. A reachable skill counts as reachable at every level, the same test recipe requirements use; training ceilings and non-crafting practice are outside this contract. Level-zero unlocks are starting knowledge and need no practice source. Disassembly assumes the required skill is attainable, unlike recipe requirements and positive-level unlocks, which need reachable practice. Showcase and demo layouts are fixtures, not sources for playable-world reachability. See `src/core/reachability.ts`, `checkReachability` and `reachableKnowledgeAndSkills`, and `src/core/schema/layouts.ts`, `SiteLayoutSchema.demo`.
 
-Acquired-content totals exclude types by their authored policy, not their identity, so adding a debug fixture or a creature part needs no checker edit. See `ItemSchema.notLoot` in `src/core/schema.ts` and `checkReachability` in `src/core/reachability.ts`. Runtime escrow selects its definition through `ItemSchema.workInProgress`; exactly one definition must own that role. Creature kinds own their severed-region item policy through `ZombieSchema.severedItems`, including an explicit null for a region that leaves nothing. World liveness belongs to site-generation tuning, not creature identity; see `SiteGenerationSchema.activeZombieRadiusMetres` in `src/core/schema.ts` and `ZombieSystem.tierAt` in `src/core/zombies.ts`. Reachability stores no runtime state; progression, crafting, and disassembly remain separate owners. Winning-override diagnostics retain source-file provenance so a broken effective definition can be traced to its authoring source.
+Acquired-content totals follow authored policy rather than identity so adding a debug fixture or creature part needs no checker edit. See `src/core/schema/items.ts`, `ItemSchema.notLoot`, and `src/core/reachability.ts`, `checkReachability`. Escrow and severed-part policy also belong to content; see `src/core/schema/items.ts`, `ItemSchema.workInProgress`, and `src/core/schema/zombies.ts`, `ZombieSchema.severedItems`. World liveness must not follow creature identity; see `src/core/schema/siteGeneration.ts`, `SiteGenerationSchema.activeZombieRadiusMetres`, and `src/core/zombies.ts`, `ZombieSystem.tierAt`. Reachability remains separate from runtime progression, crafting and disassembly. Diagnostics need source-file provenance so a broken effective definition can be traced to its authoring source.
 
 ## Loot economy descriptions
 
@@ -547,7 +546,8 @@ Keep them sparse rather than covering every surface.
 Scenario content owns time since the outbreak because different scenarios may be days,
 months or years afterward. The gauntlet authors months, so blood reads dried rather
 than fresh. Definitions own the ageing response instead of a renderer-wide age default.
-See `src/core/schema.ts`, `DecalSchema` and `ScenarioSchema`; the closed kind dispatch
+See `src/core/schema/templates.ts`, `DecalSchema`, and `src/core/schema/scenarios.ts`,
+`ScenarioSchema`; the closed kind dispatch
 is `src/core/decalKinds.ts`, `DECAL_KINDS`.
 
 Templates and kit pieces own surface placements independently of occupied cells. A door

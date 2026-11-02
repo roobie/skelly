@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you build or change how a zombie holds the player, or a move's `grapple` content
   - you add a hit response, a fall, a ladder or a knockback that should end a hold or throw the player
   - you tune how a held player moves, turns or breaks free

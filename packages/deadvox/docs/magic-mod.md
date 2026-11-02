@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you're planning the magic mod inspired by Cataclysm's Magiclysm, or the engine work it needs
   - you're planning the high-fantasy product the magic mod is a big piece of
   - you're writing a compatibility mod that brings the magic mod into another product, such as Deadvox

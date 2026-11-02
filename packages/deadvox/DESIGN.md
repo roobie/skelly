@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
@@ -1337,8 +1336,8 @@ An item is an instance. Identical stateless items stack; anything with its own
 state is unique, so its condition, contents, and fitted parts remain the same
 item in a hand, pocket, container, or pile. Item types declare components that
 own behavior; the game must not branch on item IDs, including when drawing an
-item. See `ItemSchema` in `src/core/schema.ts` and `itemLook` in
-`src/render/itemLook.ts`.
+item. See `src/core/schema/items.ts`, `ItemSchema`, and
+`src/render/itemLook.ts`, `itemLook`.
 
 Inventory space is a grid of rotatable item footprints and pockets. One cell is
 a real length, named once in content (the `inventory` tuning's `cellMetres`),
@@ -2471,8 +2470,8 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
 Damage should be interesting, not just bigger numbers. When armor is introduced,
 its different resistances should enter through per-region, per-type damage
-application rather than weapon-class special cases. See `ZombieSchema` in
-`src/core/schema.ts` and `ZombieSystem.applyMeleeHit` in `src/core/zombies.ts`.
+application rather than weapon-class special cases. See `src/core/schema/zombies.ts`,
+`ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`.
 
 - **Damage comes in types.** Every hit deals a mix of types, and every target
   resists each type differently. The melee types above (blunt, cut, pierce) are
@@ -3030,7 +3029,7 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema/zombies.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
-- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.
+- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `src/core/schema/zombies.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.updateHordes`.
 - **Background cadence persistence:** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `zombie-background` in `src/game/session.ts`.
 
 - **Level of detail:**

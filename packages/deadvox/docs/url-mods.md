@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
   - you author a demo mod or change how a URL selects mods
   - you change scenario-owned starts, product defaults or the starting kit

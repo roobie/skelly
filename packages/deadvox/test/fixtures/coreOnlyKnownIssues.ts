@@ -1,6 +1,6 @@
 import type { ContentIssue } from '../../src/core/content.ts';
 
-type Owner = 'R3' | 'R5' | 'R6' | 'R8b' | 'R8c';
+type Owner = 'sound selection' | 'skill providers' | 'scenario starts' | 'core extraction' | 'theme extraction';
 interface KnownIssue {
   owner: Owner;
   issue: ContentIssue;
@@ -12,27 +12,37 @@ const known = (owner: Owner, source: string, path: string, message: string): Kno
 const missing = (owner: Owner, section: string, capability: string): KnownIssue =>
   known(owner, 'core content', section, `missing required capability "${capability}"`);
 
-// R9 removes this exact ledger; it must not derive expectations from the validator's dispatch tables.
+// #1532 removes this exact ledger; it must not derive expectations from the validator's dispatch tables.
 export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
-  known('R8b', 'core-only/figures-player.json', 'figures[0].body.model', 'no model "player_bust"'),
-  known('R8b', 'core-only/figures-player.json', 'figures[0].limbs.leftArm.model', 'no model "player_arm"'),
-  known('R8b', 'core-only/figures-player.json', 'figures[0].limbs.rightArm.model', 'no model "player_arm"'),
-  known('R8b', 'core-only/figures-player.json', 'figures[0].limbs.leftLeg.model', 'no model "player_leg"'),
-  known('R8b', 'core-only/figures-player.json', 'figures[0].limbs.rightLeg.model', 'no model "player_leg"'),
-  known('R3', 'core-only/ui.json', 'ui[0].refusalSound', 'no sound event "player_nope"'),
-  known('R3', 'core-only/body.json', 'body[0].heartbeat.sounds.slow', 'no sound event "player_heartbeat_slow"'),
-  known('R3', 'core-only/body.json', 'body[0].heartbeat.sounds.fast', 'no sound event "player_heartbeat_fast"'),
-  missing('R3', 'body', 'player'),
-  missing('R8b', 'figures', 'player'),
-  missing('R6', 'handlingRange', 'testRange'),
-  missing('R8b', 'meleeClasses', 'unarmed'),
-  missing('R6', 'siteGeneration', 'authoredSite'),
-  missing('R5', 'skillProgression', 'progression'),
-  missing('R5', 'skills', 'firearmsCombat'),
-  missing('R5', 'skills', 'meleeCombat'),
-  missing('R5', 'skills', 'inventoryManagement'),
-  missing('R3', 'ui', 'interface'),
-  missing('R8c', 'powerTuning', 'power'),
+  known('core extraction', 'core-only/figures-player.json', 'figures[0].body.model', 'no model "player_bust"'),
+  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.leftArm.model', 'no model "player_arm"'),
+  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.rightArm.model', 'no model "player_arm"'),
+  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.leftLeg.model', 'no model "player_leg"'),
+  known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.rightLeg.model', 'no model "player_leg"'),
+  known('sound selection', 'core-only/ui.json', 'ui[0].refusalSound', 'no sound event "player_nope"'),
+  known(
+    'sound selection',
+    'core-only/body.json',
+    'body[0].heartbeat.sounds.slow',
+    'no sound event "player_heartbeat_slow"',
+  ),
+  known(
+    'sound selection',
+    'core-only/body.json',
+    'body[0].heartbeat.sounds.fast',
+    'no sound event "player_heartbeat_fast"',
+  ),
+  missing('sound selection', 'body', 'player'),
+  missing('core extraction', 'figures', 'player'),
+  missing('scenario starts', 'handlingRange', 'testRange'),
+  missing('core extraction', 'meleeClasses', 'unarmed'),
+  missing('scenario starts', 'siteGeneration', 'authoredSite'),
+  missing('skill providers', 'skillProgression', 'progression'),
+  missing('skill providers', 'skills', 'firearmsCombat'),
+  missing('skill providers', 'skills', 'meleeCombat'),
+  missing('skill providers', 'skills', 'inventoryManagement'),
+  missing('sound selection', 'ui', 'interface'),
+  missing('theme extraction', 'powerTuning', 'power'),
   ...[
     'player_hurt_light',
     'player_nope',
@@ -105,6 +115,6 @@ export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
     'door_bash',
     'furniture_scrape',
     'furniture_drag',
-  ].map((id) => known('R3', 'core content', 'sounds', `missing required sound event "${id}"`)),
-  known('R8b', 'core content', 'items', 'expected exactly one work-in-progress item definition'),
+  ].map((id) => known('sound selection', 'core content', 'sounds', `missing required sound event "${id}"`)),
+  known('core extraction', 'core content', 'items', 'expected exactly one work-in-progress item definition'),
 ];

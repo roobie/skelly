@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you're changing the Gungen-to-Deadvox firearm model contract
   - you're changing mechanical firearm state or its presentation boundary
   - you're evaluating firearm attachment effects

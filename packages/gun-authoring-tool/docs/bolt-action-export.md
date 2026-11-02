@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change turn-bolt geometry, staggered integral capacity or hunting-rifle exports
   - you change the shared manual-action model contract consumed by Deadvox
   - you regenerate the hunting rifle, its civilian cartridge or its optional scope

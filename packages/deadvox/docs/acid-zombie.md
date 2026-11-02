@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you build the acid zombie, the `acidSpit` ability, its glob or its puddle
   - you add a ranged zombie attack, a zombie projectile or acid damage
   - you add a later tier of the acid evolution line

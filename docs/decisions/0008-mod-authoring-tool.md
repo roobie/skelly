@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you build or scope the mod authoring tool or its SkellyEngine authoring API
   - you change mod folders, tool-to-game handoff, sharing or default mod selection
   - you schedule typed field patches against the tool's editing slices

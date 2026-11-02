@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change inventory grouping, pane sizing or container scrolling
   - you change floor-pile drop targeting or item hit testing
   - you diagnose an inventory item's DOM bounds or selection visibility

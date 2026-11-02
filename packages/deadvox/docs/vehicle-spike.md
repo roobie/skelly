@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you distinguish intact vehicle disassembly from destructive salvage
   - you change the vehicle part model, build page or vehicle exports
   - you add a vehicle part, capability or vehicle blueprint to content

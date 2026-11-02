@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change bolt-rifle handling, magazine-plus-chamber capacity or open-action saves
   - you change turn-bolt posing or integral-magazine loading presentation
 ---

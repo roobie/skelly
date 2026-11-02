@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you add or change the neutral model schema or the material and physical-property model
   - you decide whether code belongs in the core or in one of the tools
   - you add a domain pack's fields to the model entry

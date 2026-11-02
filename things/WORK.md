@@ -2,7 +2,7 @@
 read_if:
   - you plan or pick up work on the things suite or on retiring gungen
   - you wonder which gungen names remain to retire
-  - you decide where a shared concept, schema field or tool UI part belongs
+  - you decide where a shared concept, consumer schema extension or tool UI part belongs
   - you move the engine's export layer, the material data or mass out of gungen or the engine
   - you change the recipe defining the gun tool's reproduction exit
   - you turn gun parts into Deadvox items
@@ -24,10 +24,9 @@ Why each boundary matters, and where it is checked:
 - Import edges between packages are enforced by `packages/engine/test/engineImportBoundary.test.ts`,
   `packageEdges`. Deadvox must not import the engine or export package, so the game's
   dependency graph stays free of authoring geometry (see `things/WORK.md`, "Decisions").
-- Neutral fields have one definition in `packages/thing-core/src/schema.ts`,
-  `NeutralModelSchema`. Deadvox composes them with the gun pack's named block in
-  `packages/deadvox/src/core/schema.ts`, `ModelSchema`; `GunModelSchema` owns the
-  firearm and attachment contract.
+- Shared fields need one owner so tool and consumer contracts cannot diverge. See
+  `packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
+  `packages/deadvox/src/core/schema/models.ts`, `ModelSchema` and `GunModelSchema`.
 - Gungen's output must keep validating against deadvox's schema: `test/gungen-deadvox-contract.test.mjs`,
   "gungen exports satisfy deadvox model validation".
 
@@ -44,7 +43,7 @@ Why each boundary matters, and where it is checked:
 One neutral, shared model envelope lets Deadvox consume every tool's output without
 making the core know which kind of thing it describes. See
 `packages/thing-core/src/schema.ts`, `NeutralModelSchema`, and
-`packages/deadvox/src/core/schema.ts`, `ModelSchema`. Domain packs own their extensions;
+`packages/deadvox/src/core/schema/models.ts`, `ModelSchema`. Domain packs own their extensions;
 sharing a field requires an intentional promotion rather than leaking one pack's vocabulary
 into another.
 

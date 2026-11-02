@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change the test house, its garage, its fixture stock or its debug gate
   - you change parking bays or where the test house places vehicles
   - you change the haven's rooms, landscape, lake or south-facing view

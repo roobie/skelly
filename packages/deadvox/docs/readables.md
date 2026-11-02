@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you're authoring readable item or furniture content, or changing the player tuning used for plaque mounting height
   - you're changing how authored text enters play or how reading owns time
   - you're changing gameplay input while a readable is open

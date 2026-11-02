@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
   - you change the repair progress arc or presentation between compressed scheduler ticks

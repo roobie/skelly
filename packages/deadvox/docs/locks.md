@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you change door-lock content, forcing, interaction or save ownership
   - you use the `lock_test` first-look fixture
 ---

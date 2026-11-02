@@ -1,6 +1,5 @@
 ---
 read_if:
-  - you locate or change a schema contract cited here
   - you're writing or changing any player-visible text
   - you're showing a number to the player
   - you're deciding what the interface may tell the player and in what voice
