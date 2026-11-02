@@ -25,7 +25,7 @@ import {
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 
@@ -651,7 +651,7 @@ describe('one finished city plan', () => {
     const other = [...registry.blockIds.keys()].find((name) => name !== entry.palette.paving)!;
     const repaved = {
       ...registry,
-      siteGeneration: new Map(registry.siteGeneration).set(CORE_CONTENT_IDS.authoredSite, {
+      siteGeneration: new Map(registry.siteGeneration).set(fixtureIds.authoredSite, {
         ...entry,
         palette: { ...entry.palette, paving: other },
       }),

@@ -15,7 +15,7 @@ import { countText, decimalText } from '../src/core/numberText.ts';
 import { toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
-import { ATTACHMENT_WORK_SKILL, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
+import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 import {
   BindingRegistry,
   INPUT_BINDINGS,
@@ -39,7 +39,7 @@ import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -280,7 +280,7 @@ it.each([
   const { screen, inv } = setup();
   const action = vi.spyOn(screen, 'onAction').mockReturnValue(true);
   const start = performance.now();
-  const threshold = inv.registry.inventory.get(CORE_CONTENT_IDS.player)!.keyHoldRealSeconds * 1000;
+  const threshold = inv.registry.inventory.get(fixtureIds.player)!.keyHoldRealSeconds * 1000;
   screen.onInputCommand({ action: tap, phase: 'down', at: start });
   screen.update(start + threshold / 2);
   expect(action).not.toHaveBeenCalled();
@@ -1022,7 +1022,7 @@ describe('inventory screen Lit rendering', () => {
     character.awardPractice(skill.id, 2.5 * 0.46);
     screen.selectTab('skills');
 
-    const text = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.inventory;
+    const text = registry.ui.get(fixtureIds.ui)!.screenText.inventory;
     const practice = character.practice[skill.id]!;
     const next = practiceForNextLevel(registry, character.skills[skill.id]!);
     const expected = fillText(text.practice, { practice: decimalText(practice), next: countText(next) });
@@ -1342,7 +1342,7 @@ describe('inventory screen Lit rendering', () => {
   it('names every firearm slot from its mount kind in content, never by its raw id', () => {
     const { screen, inv, root, beans } = setup();
     inv.consume(beans);
-    const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+    const { screenText } = registry.ui.get(fixtureIds.ui)!;
     const rowPattern = templatePattern(screenText.inventory.slot, { slot: '(.+)', item: '.*' });
     const firearms = [...registry.items.values()].filter(
       (def) => def.firearm && def.model && registry.models.get(def.model)?.gun?.attachmentSlots?.length,
@@ -1417,7 +1417,7 @@ describe('inventory screen Lit rendering', () => {
     if (effects?.kind !== 'suppressor' || effects.fitSkillLevel < 1) {
       throw new Error('Fixture suppressor needs a readable fit level above the minimum');
     }
-    test.character.skills[ATTACHMENT_WORK_SKILL(test.inv.registry)] = effects.fitSkillLevel - 1;
+    test.character.skills[attachmentWorkSkill(test.inv.registry)] = effects.fitSkillLevel - 1;
     test.screen.selected = firearm;
     test.screen.update();
 
@@ -1425,7 +1425,7 @@ describe('inventory screen Lit rendering', () => {
     expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
     expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(effects.fitRefusal);
 
-    test.character.skills[ATTACHMENT_WORK_SKILL(test.inv.registry)] = effects.fitSkillLevel;
+    test.character.skills[attachmentWorkSkill(test.inv.registry)] = effects.fitSkillLevel;
     test.screen.update();
     expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
     expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();
@@ -1677,7 +1677,7 @@ describe('inventory screen Lit rendering', () => {
 
     const pocketed = like.filter((item) => t.inv.locate(item)?.kind === 'pocket');
     expect(pocketed).toHaveLength(half * 2);
-    const { inventory } = fixture.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+    const { inventory } = fixture.ui.get(fixtureIds.ui)!.screenText;
     expect(t.notices).toEqual([fillText(inventory.taking, { count: countText(pocketed.length), category: 'misc' })]);
   });
 

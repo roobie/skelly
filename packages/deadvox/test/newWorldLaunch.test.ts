@@ -10,7 +10,7 @@ import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { ScenarioRun } from '../src/core/scenarioRun.ts';
 import { realTimestamp } from '../src/core/time.ts';
 import { startupContent } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -26,7 +26,7 @@ import { SaveController } from '../src/ui/saveController.ts';
 import { showWin } from '../src/ui/win.ts';
 import { capture, createRuntime, registry as saveFixtureRegistry } from './snapshotTestSupport.ts';
 
-const { screenText } = saveFixtureRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+const { screenText } = saveFixtureRegistry.ui.get(fixtureIds.ui)!;
 const FULL_HASH = /[a-f0-9]{64}/;
 const BODY_MARKUP = /<body\b[^>]*>([\s\S]*)<\/body>/;
 const SCRIPT_MARKUP = /<script\b[^>]*>[\s\S]*?<\/script>/g;

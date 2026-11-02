@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 let context: SuspendedAudioContext | undefined;
@@ -31,7 +31,7 @@ describe('listening sheet', () => {
   it('loads the player sense tuning that its audio previews with', () => {
     const { registry } = buildSoundsPageContent();
 
-    expect(registry.senses.get(CORE_CONTENT_IDS.player)).toBeDefined();
+    expect(registry.senses.get(fixtureIds.player)).toBeDefined();
   });
 
   it('previews a recorded variant from the bundled pack files', async () => {

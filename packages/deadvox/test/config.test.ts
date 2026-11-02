@@ -2,10 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { chunksFor } from '../src/core/scale.ts';
 import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '../src/game/config.ts';
-import {
-  fixtureIds as CORE_CONTENT_IDS,
-  defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID,
-} from './fixtures/capabilityIds.ts';
+import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;
@@ -28,7 +25,7 @@ it('starts the gauntlet when no world is selected, including debug previews', ()
 
 it('takes the ready ring from content and caps it at the requested view', () => {
   const graphics = new Map(BUNDLED_CONTENT.registry.graphics);
-  const tuning = graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const tuning = graphics.get(fixtureIds.graphics)!;
   const content = { ...BUNDLED_CONTENT, registry: { ...BUNDLED_CONTENT.registry, graphics } };
   for (const readyRadiusM of [0, 24, 120]) {
     graphics.set(tuning.id, { ...tuning, readyRadiusM });
@@ -62,7 +59,7 @@ it('restricts ragdoll staging and viewer placement to debug test-house URLs', ()
 
 it('copies site-selected weathering into replay and resumed configurations', () => {
   const profiles = BUNDLED_CONTENT.registry.weathering;
-  const defaultProfile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const defaultProfile = profiles.get(defaultWeatheringId)!;
   const siteProfile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
   const config = makeConfig(1, 96);
   config.site = 'fixture-site';

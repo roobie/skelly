@@ -55,7 +55,9 @@ describe('validate CLI', () => {
     try {
       const run = validateAt(root);
       expect(run.status).toBe(1);
-      expect(run.stdout).toContain(`FAIL  core content ${section}: missing required capability "${capabilities[0]}"`);
+      expect(run.stdout).toContain(
+        `FAIL  core content ${section}: missing required capability "${Object.keys(capabilities)[0]}"`,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

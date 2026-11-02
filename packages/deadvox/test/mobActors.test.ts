@@ -50,7 +50,7 @@ import RAPIER from '../src/render/ragdollRapier.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 import { CORPSE_LIFECYCLE, HEARING_GAZE_JITTER, MobActorMeshes } from './mobActorsFixture.ts';
@@ -1214,7 +1214,7 @@ describe('fallDirectionAwayFromPlayer', () => {
 describe('MobActorMeshes reactions', () => {
   it('honours validated zero drip and dead-thing budgets while retaining live downed bodies', () => {
     const graphics = {
-      ...registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!,
+      ...registry.graphics.get(fixtureIds.graphics)!,
       mobActors: { maxCorpses: 0 },
       gore: { dropletCap: 3, splatCap: 3, dropletSpawnsPerFrame: 3, dripSourceCap: 0 },
     };

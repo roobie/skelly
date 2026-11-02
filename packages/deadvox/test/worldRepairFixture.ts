@@ -7,7 +7,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 export const STOCK = 'world_repair_stock';
 export const PIECE = 'world_repair_piece';
@@ -52,8 +52,8 @@ export const worldRepairFixture = (registry: Registry) => {
     seed: 1,
     registry,
     clock: BASE_CLOCK,
-    bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
-    compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+    bodyTuning: registry.body.get(fixtureIds.player)!,
+    compressionCaps: registry.compression.get(fixtureIds.player)!.caps,
   });
   const position: [number, number, number] = [0, 0, 0];
   const reach = bindReach({ inventory, position, blockSize: 0.5, clock: BASE_CLOCK });

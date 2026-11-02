@@ -9,7 +9,7 @@ import { createEngine } from '../src/game/engine.ts';
 import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
 import { Mood } from '../src/render/mood.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
 vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
@@ -48,7 +48,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       data: {
         graphics: [
           {
-            id: CORE_CONTENT_IDS.coreGraphics,
+            id: fixtureIds.graphics,
             capability: 'graphics',
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
@@ -101,7 +101,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
   const view = { clientWidth: 1, clientHeight: 1 } as HTMLElement;
   const player = createEngine(config, view, undefined, { render: false });
   expect(player.graphics.values.fastCamo).toBe(false);
-  const graphics = content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!;
+  const graphics = content.registry.graphics.get(fixtureIds.graphics)!;
   expect(player.camera.near).toBe(graphics.nearPlaneMetres);
   expect(player.camera.fov).toBe(graphics.playerViewFovDegrees);
   storage.getItem.mockClear();

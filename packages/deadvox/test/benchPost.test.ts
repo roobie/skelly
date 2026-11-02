@@ -15,10 +15,7 @@ import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
 import { heightFogUniforms, setHeightFogTuning } from '../src/render/heightFog.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
-import {
-  fixtureIds as CORE_CONTENT_IDS,
-  defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID,
-} from './fixtures/capabilityIds.ts';
+import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
 const params = (query: string) => new URLSearchParams(query);
@@ -29,7 +26,7 @@ describe('benchmark weathering', () => {
   it('uses its own registry profile, not the play default, so retuning the default leaves the bench workload alone', () => {
     const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
     applyBenchWeathering(config);
-    expect(config.weatheringProfileId).not.toBe(DEFAULT_WEATHERING_PROFILE_ID);
+    expect(config.weatheringProfileId).not.toBe(defaultWeatheringId);
     expect(config.weathering).toBeDefined();
     expect(config.weathering).toEqual(registry.weathering.get(config.weatheringProfileId));
   });
@@ -75,7 +72,7 @@ describe('benchmark post-processing option', () => {
 
   it.each([false, true])('initializes authored fog independently of prior play with post=%s', (post) => {
     const { registry: contentRegistry } = startupContent();
-    const look = contentRegistry.look.get(CORE_CONTENT_IDS.coreLook)!;
+    const look = contentRegistry.look.get(fixtureIds.defaultLook)!;
     const fog = LOOK_FIXTURE.heightFog;
     const fixtureRegistry = {
       ...contentRegistry,

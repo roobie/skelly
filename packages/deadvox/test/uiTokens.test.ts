@@ -4,7 +4,7 @@ import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const refusalSound = {
   id: 'player_nope',
@@ -38,7 +38,7 @@ const PLACEHOLDER = /\{\w+\}/;
 /** Base content's action text: its placeholders are what validation checks, so a fixture copy would only drift. */
 const baseActionText = baseUi.ui[0]!.actionText as TextTable;
 const tuning = {
-  id: CORE_CONTENT_IDS.coreUi,
+  id: fixtureIds.ui,
   capability: 'interface',
   spacing: 1,
   hudScale: 1,

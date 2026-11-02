@@ -4,7 +4,7 @@ import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
-import { defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID } from './fixtures/capabilityIds.ts';
+import { defaultWeatheringId } from './fixtures/capabilityIds.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
@@ -14,7 +14,7 @@ import { LOOK_FIXTURE } from './lookFixture.ts';
 describe('debug weathering controls', () => {
   it('selects another authored profile and updates live mesh uniforms for edits', () => {
     const profiles = BUNDLED_CONTENT.registry.weathering;
-    const defaultProfile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+    const defaultProfile = profiles.get(defaultWeatheringId)!;
     const alternateProfile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
     const authoredSnapshot = { ...alternateProfile };
     const applied: (WeatheringDef | undefined)[] = [];

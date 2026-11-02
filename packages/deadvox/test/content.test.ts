@@ -42,10 +42,7 @@ import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
-import {
-  fixtureIds as CORE_CONTENT_IDS,
-  defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID,
-} from './fixtures/capabilityIds.ts';
+import { defaultWeatheringId, fixtureIds } from './fixtures/capabilityIds.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -227,7 +224,7 @@ it('rejects inventory names that collide within a category and footprint', () =>
 });
 
 it('validates weathering profile bounds without pinning authored tuning', () => {
-  const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const profile = baseRegistry.weathering.get(defaultWeatheringId)!;
   const validate = (candidate: typeof profile) =>
     validateContent({ source: 'weathering.json', data: { weathering: [candidate] } });
   expect(validate(profile)).toEqual([]);
@@ -453,7 +450,7 @@ describe('content', () => {
       ...INPUT_BINDINGS.flatMap((binding) =>
         binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
       ),
-      ...Object.values(baseRegistry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.pointerButtonLabels),
+      ...Object.values(baseRegistry.ui.get(fixtureIds.ui)!.screenText.pointerButtonLabels),
     ];
     const controlPatterns = [...new Set(bindingLabels)].map((label) => {
       const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
@@ -1396,7 +1393,7 @@ describe('content', () => {
   it('reports a missing inventory-management skill as required core content', () => {
     const withoutSkill = {
       ...baseRegistry,
-      skills: new Map([...baseRegistry.skills].filter(([id]) => id !== CORE_CONTENT_IDS.inventoryManagement)),
+      skills: new Map([...baseRegistry.skills].filter(([id]) => id !== fixtureIds.inventoryManagement)),
     };
     expect(requiredContentIssues(withoutSkill)).toContainEqual({
       source: 'core content',
@@ -1408,7 +1405,7 @@ describe('content', () => {
   it('reports a missing fists melee class as a load error', () => {
     const withoutFists = {
       ...baseRegistry,
-      meleeClasses: new Map([...baseRegistry.meleeClasses].filter(([id]) => id !== CORE_CONTENT_IDS.fistsMeleeClass)),
+      meleeClasses: new Map([...baseRegistry.meleeClasses].filter(([id]) => id !== fixtureIds.unarmed)),
     };
     expect(requiredContentIssues(withoutFists)).toContainEqual({
       source: 'core content',
@@ -2040,7 +2037,7 @@ describe('content references', () => {
   });
 
   it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
-    const combat = baseRegistry.skills.get(CORE_CONTENT_IDS.firearmsCombat)!;
+    const combat = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
     const tuning = combat.combat!.firearms!;
     const precision = { ...baseRegistry.skills.get(tuning.longGunSteadinessSkill)!, id: 'fixture_precision' };
     const firearms = {

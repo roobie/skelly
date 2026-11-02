@@ -6,7 +6,7 @@ import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
@@ -20,7 +20,7 @@ const move: ZombieDef['attack']['moves'][number] = {
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
 const attacker: ZombieDef = { ...shambler, attack: { ...shambler.attack, moves: [move] } };
-const meleeSkill = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)!;
+const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 
 /** Pins the full-block roll's outcome by making the full-block chance 0 or 1 at every skill level. */
@@ -29,7 +29,7 @@ const withFullBlockChance = (chance: number, content = registry) => ({
   skills: new Map([
     ...content.skills,
     [
-      CORE_CONTENT_IDS.meleeCombat,
+      fixtureIds.meleeCombat,
       {
         ...meleeSkill,
         combat: {
@@ -106,7 +106,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     blockSounds: sounds.filter((event) => event.startsWith('player_block_')),
     blocks,
     stamina: session.sim.needs.stamina,
-    practice: session.character.practice[CORE_CONTENT_IDS.meleeCombat] ?? 0,
+    practice: session.character.practice[fixtureIds.meleeCombat] ?? 0,
   };
 };
 

@@ -12,7 +12,7 @@ import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjec
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -150,7 +150,7 @@ it('wires vehicle occupancy into session furniture placement and landing', () =>
   const aimed: Vec3 = [cell[0] + Math.floor(crate.size[0] / 2), cell[1], cell[2] + Math.floor(crate.size[2] / 2)];
 
   expect(session.furniturePlacement(aimed)).toEqual({
-    refusal: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.noRoom,
+    refusal: registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages.noRoom,
   });
   expect(inventory.landing(cell)).toBeUndefined();
 

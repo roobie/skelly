@@ -7,7 +7,7 @@ import { CHUNK, toChunk, type Vec3 } from '../../src/core/coords.ts';
 import { SKY_LOSS, type SkyBounds } from '../../src/core/skylight.ts';
 import { World } from '../../src/core/world.ts';
 import { buildFixtureRegistry as buildRegistry } from '../economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './capabilityIds.ts';
+import { fixtureIds } from './capabilityIds.ts';
 
 function room(world: World, box: SkyBounds, wall: number): void {
   const [x0, y0, z0] = box.min;
@@ -37,7 +37,7 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
         ],
         siteGeneration: [
           {
-            id: CORE_CONTENT_IDS.authoredSite,
+            id: fixtureIds.authoredSite,
             capability: 'authoredSite',
             activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {

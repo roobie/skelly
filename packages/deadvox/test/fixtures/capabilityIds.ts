@@ -16,16 +16,16 @@ const id = (rows: { id: string; capability?: string }[], capability: string): st
 
 export const fixtureIds = {
   powerTuning: id(power.powerTuning, 'power'),
-  coreUi: id(ui.ui, 'interface'),
-  coreGraphics: id(graphics.graphics, 'graphics'),
-  coreLook: id(look.look, 'defaultLook'),
+  ui: id(ui.ui, 'interface'),
+  graphics: id(graphics.graphics, 'graphics'),
+  defaultLook: id(look.look, 'defaultLook'),
   player: id(body.body, 'player'),
   autosave: id(saves.saves, 'autosave'),
   authoredSite: id(sites.siteGeneration, 'authoredSite'),
   testRange: id(range.handlingRange, 'testRange'),
   firearmsCombat: id(recipes.skills, 'firearmsCombat'),
   meleeCombat: id(recipes.skills, 'meleeCombat'),
-  fistsMeleeClass: id(melee.meleeClasses, 'unarmed'),
+  unarmed: id(melee.meleeClasses, 'unarmed'),
   inventoryManagement: id(recipes.skills, 'inventoryManagement'),
   crafting: id(recipes.skills, 'crafting'),
 };

@@ -21,7 +21,7 @@ import { realSeconds } from '../src/core/time.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
 import { Mood } from '../src/render/mood.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({
   composers: [] as {
@@ -94,7 +94,7 @@ it('measures the night-vision chain and source occlusion/halos with the play-def
   const goggles = items.get('night_vision_goggles')!;
   items.set(goggles.id, { ...goggles, light: { ...goggles.light!, nightVision: GOGGLES } });
   const look = new Map(base.look);
-  const defaults = look.get(CORE_CONTENT_IDS.coreLook)!;
+  const defaults = look.get(fixtureIds.defaultLook)!;
   look.set(defaults.id, { ...defaults, tone: 'none', post: false });
   const engine = {
     renderer,

@@ -11,7 +11,7 @@ import {
   fixtureMaterials,
   fixtureSounds,
 } from '../economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './capabilityIds.ts';
+import { fixtureIds } from './capabilityIds.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
@@ -146,7 +146,7 @@ export const fixtureScenarioSources = (
         ],
         siteGeneration: [
           {
-            id: CORE_CONTENT_IDS.authoredSite,
+            id: fixtureIds.authoredSite,
             capability: 'authoredSite',
             activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {

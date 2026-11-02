@@ -16,7 +16,7 @@ import { stageRepairLook } from '../src/game/testHouseRepairLook.ts';
 import { startupContent } from './baseRegistry.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const normal = startupContent();
 const admitted = withReusedBuilds(() => selectBundledMods([], [repairLook.mod]));
@@ -67,8 +67,8 @@ describe('test-house repair look', () => {
       seed: 1,
       registry,
       clock: BASE_CLOCK,
-      bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
-      compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+      bodyTuning: registry.body.get(fixtureIds.player)!,
+      compressionCaps: registry.compression.get(fixtureIds.player)!.caps,
     });
     sim.actions.craft = craftActionHooks(inventory, character, reach, {
       feet: () => position,

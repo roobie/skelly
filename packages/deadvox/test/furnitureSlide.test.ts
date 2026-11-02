@@ -25,7 +25,7 @@ import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
 const base = baseRegistry();
@@ -45,8 +45,8 @@ const registry: Registry = {
   ]),
 };
 const spec = { type: 'slide_fixture', pos: [5, 1, 5] as Vec3, size: [4, 4, 2] as Vec3, facing: 'n' as const };
-const tuning = registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.slide;
-const messages = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const tuning = registry.inventory.get(fixtureIds.player)!.furnitureMove.slide;
+const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
 const player = () => ({ pos: [3, 1, 6] as Vec3, vel: [0, 0, 0] as Vec3, halfWidth: 0.4, height: 3.6, onGround: true });
 const fixture = () => {
   const inventory = new Inventory(registry);
@@ -270,7 +270,7 @@ describe('floor furniture steps', () => {
       const view = new CarriedPiece(
         inventory.entities,
         (piece, def) => meshes.pieceMesh(piece, def),
-        registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
+        registry.inventory.get(fixtureIds.player)!.furnitureMove.carriedView,
       );
       view.update(1, new Quaternion(), mover.blockSize, spot.pos);
       expect(view.group.children).toHaveLength(0);
@@ -290,7 +290,7 @@ describe('floor furniture steps', () => {
     const view = new CarriedPiece(
       inventory.entities,
       (piece, def) => meshes.pieceMesh(piece, def),
-      registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove.carriedView,
+      registry.inventory.get(fixtureIds.player)!.furnitureMove.carriedView,
     );
     const aimed: Vec3 = [spec.pos[0] + 3, spec.pos[1], spec.pos[2] + 1];
 

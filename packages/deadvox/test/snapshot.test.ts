@@ -15,7 +15,7 @@ import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   advance,
@@ -41,10 +41,8 @@ const baseContentFiles = () =>
 
 const registryWithSleepScenario = (sleepCap: number) => {
   const files = baseContentFiles();
-  const compression = files
-    .flatMap(({ data }) => data.compression ?? [])
-    .find((row) => row.id === CORE_CONTENT_IDS.player);
-  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === CORE_CONTENT_IDS.player);
+  const compression = files.flatMap(({ data }) => data.compression ?? []).find((row) => row.id === fixtureIds.player);
+  const body = files.flatMap(({ data }) => data.body ?? []).find((row) => row.id === fixtureIds.player);
   if (!(compression && body)) {
     throw new Error('Missing scenario compression or body definition');
   }
@@ -261,7 +259,7 @@ describe('snapshot state components', () => {
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
-    const combatId = CORE_CONTENT_IDS.firearmsCombat;
+    const combatId = fixtureIds.firearmsCombat;
     const steadinessId = registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessSkill;
     actor.awardPractice(combatId, firstThreshold / 3);
     actor.awardPractice(steadinessId, firstThreshold + firstThreshold / 2);

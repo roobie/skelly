@@ -144,11 +144,7 @@ import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
-import {
-  ATTACHMENT_WORK_SKILL,
-  FirearmAttachmentHandling,
-  isAttachmentWorkAction,
-} from './firearmAttachmentHandling.ts';
+import { attachmentWorkSkill, FirearmAttachmentHandling, isAttachmentWorkAction } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmOutcome,
@@ -2342,8 +2338,8 @@ export const createSession = (options: SessionOptions) => {
       character.awardPractice(claimedId(registry.skills, 'firearmsCombat'), training.practice, training.tier);
     }
     if (isAttachmentWorkAction(job)) {
-      const training = skillActivityPractice(registry, ATTACHMENT_WORK_SKILL(registry), 'attachment');
-      character.awardPractice(ATTACHMENT_WORK_SKILL(registry), training.practice, training.tier);
+      const training = skillActivityPractice(registry, attachmentWorkSkill(registry), 'attachment');
+      character.awardPractice(attachmentWorkSkill(registry), training.practice, training.tier);
     }
   };
   const tickHandling = (dt: number) => {

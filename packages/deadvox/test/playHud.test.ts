@@ -18,7 +18,7 @@ import {
 } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 const text = baseScreenText();
 
@@ -239,7 +239,7 @@ it('uses a rebound registry label for restable furniture interactions', () => {
 
 it("names a damaged piece's band from the shared band table below the top band, and only its name in the top band", () => {
   const registry = baseRegistry();
-  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const bands = registry.inventory.get(fixtureIds.player)!.conditionBands;
   const entities = new BlockEntities(registry);
   const { uid } = entities.add({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' })!;
   const def = entities.defOf(entities.byUid(uid)!);

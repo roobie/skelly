@@ -1,23 +1,28 @@
 import type { ContentIssue, Registry } from './content.ts';
 
 export const CONTENT_CAPABILITIES = {
-  body: ['player'],
-  compression: ['player'],
-  figures: ['player'],
-  handlingRange: ['testRange'],
-  inventory: ['player'],
-  meleeClasses: ['unarmed'],
-  saves: ['autosave'],
-  senses: ['player'],
-  player: ['player'],
-  siteGeneration: ['authoredSite'],
-  skillProgression: ['progression'],
-  skills: ['firearmsCombat', 'meleeCombat', 'inventoryManagement', 'crafting'],
-  ui: ['interface'],
-  graphics: ['graphics'],
-  look: ['defaultLook'],
-  powerTuning: ['power'],
-  weathering: ['defaultWeathering'],
+  body: { player: 'required' },
+  compression: { player: 'required' },
+  figures: { player: 'required' },
+  handlingRange: { testRange: 'required' },
+  inventory: { player: 'required' },
+  meleeClasses: { unarmed: 'required' },
+  saves: { autosave: 'required' },
+  senses: { player: 'required' },
+  player: { player: 'required' },
+  siteGeneration: { authoredSite: 'required' },
+  skillProgression: { progression: 'required' },
+  skills: {
+    firearmsCombat: 'required',
+    meleeCombat: 'required',
+    inventoryManagement: 'required',
+    crafting: 'optional',
+  },
+  ui: { interface: 'required' },
+  graphics: { graphics: 'required' },
+  look: { defaultLook: 'required' },
+  powerTuning: { power: 'required' },
+  weathering: { defaultWeathering: 'required' },
 } as const;
 
 interface Claimant {
@@ -48,9 +53,9 @@ export const capabilityIssues = (registry: Registry, requireAll = true): Content
   const issues: ContentIssue[] = [];
   for (const [section, capabilities] of Object.entries(CONTENT_CAPABILITIES)) {
     const entries = registry[section as keyof typeof CONTENT_CAPABILITIES] as ReadonlyMap<string, Claimant>;
-    for (const capability of capabilities) {
+    for (const [capability, requirement] of Object.entries(capabilities)) {
       const providers = claimants(entries, capability);
-      if (providers.length === 0 && (!requireAll || capability === 'crafting')) {
+      if (providers.length === 0 && (!requireAll || requirement === 'optional')) {
         continue;
       }
       if (providers.length !== 1) {

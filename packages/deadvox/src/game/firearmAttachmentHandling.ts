@@ -31,14 +31,14 @@ const available = (inventory: Inventory, item: Item): boolean => availableAt(inv
 
 const rootTarget = (inventory: Inventory, location: Location): Target => inventory.targetForLocation(location);
 
-export const ATTACHMENT_WORK_SKILL = (registry: Registry): string => claimedId(registry.skills, 'firearmsCombat');
+export const attachmentWorkSkill = (registry: Registry): string => claimedId(registry.skills, 'firearmsCombat');
 
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 
 const attachmentWorkSeconds = (inventory: Inventory): number => {
   const tuning = firearmsCombatTuning(inventory.registry);
   const level = skillEffectLevel(
-    inventory.character.skills?.[ATTACHMENT_WORK_SKILL(inventory.registry)] ?? SKILL_LEVEL_MIN,
+    inventory.character.skills?.[attachmentWorkSkill(inventory.registry)] ?? SKILL_LEVEL_MIN,
   );
   return (
     handlingWeights(inventory.registry).ground *
@@ -161,7 +161,7 @@ export class FirearmAttachmentHandling {
       withSkill &&
       effects?.kind === 'suppressor' &&
       skillEffectLevel(
-        this.inventory.character.skills?.[ATTACHMENT_WORK_SKILL(this.inventory.registry)] ?? SKILL_LEVEL_MIN,
+        this.inventory.character.skills?.[attachmentWorkSkill(this.inventory.registry)] ?? SKILL_LEVEL_MIN,
       ) < effects.fitSkillLevel
     ) {
       return effects.fitRefusal;

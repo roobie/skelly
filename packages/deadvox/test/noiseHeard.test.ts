@@ -21,7 +21,7 @@ import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import type { MoveIntent } from './playerFixture.ts';
@@ -44,7 +44,7 @@ const blockBlow: ZombieDef['attack']['moves'][number] = {
 };
 const shamblerDef = registry.zombies.get('shambler')!;
 const blockAttacker: ZombieDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
-const meleeSkill = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)!;
+const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 /**
  * Every roll is a full-block roll and each blocked point costs a fixed share of the starting stamina,
@@ -55,7 +55,7 @@ const blockContent = {
   skills: new Map([
     ...registry.skills,
     [
-      CORE_CONTENT_IDS.meleeCombat,
+      fixtureIds.meleeCombat,
       {
         ...meleeSkill,
         combat: {
@@ -479,7 +479,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'lift and place both scrape',
       played.filter(({ sound }) => sound.event === 'furniture_scrape').length === 2,
     );
-    const { maxSizeMetres, slide } = registry.inventory.get(CORE_CONTENT_IDS.player)!.furnitureMove;
+    const { maxSizeMetres, slide } = registry.inventory.get(fixtureIds.player)!.furnitureMove;
     const oversized = [...registry.furniture.values()].find(
       (def) =>
         def.container &&

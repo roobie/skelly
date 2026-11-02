@@ -29,14 +29,14 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
 {
   "skills": [skill + { curve: skillCurve } for skill in [
     {
-      "id": "crafting", capability: 'crafting',
+      "id": "crafting", "capability": "crafting",
       "name": "Crafting",
       "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar", "make_rope"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
     { "id": "mechanics", "name": "Mechanics" },
     {
-      "id": "inventory_management", capability: 'inventoryManagement',
+      "id": "inventory_management", "capability": "inventoryManagement",
       "name": "Inventory Management (IM)",
       "training": { "activities": { "handling": { "practice": 2.5 } } },
       "inventory": {
@@ -48,7 +48,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       }
     },
     {
-      "id": "firearms_combat", capability: 'firearmsCombat',
+      "id": "firearms_combat", "capability": "firearmsCombat",
       "name": "Firearms Combat (FC)",
       "detail": "Improves recoil control, handling, raising and aiming down sights. Steadies firearms other than long guns.",
       "training": {
@@ -126,7 +126,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       } },
     },
     {
-      "id": "melee_combat", capability: 'meleeCombat',
+      "id": "melee_combat", "capability": "meleeCombat",
       "name": "Melee Combat (MC)",
       "training": {
         "activities": {

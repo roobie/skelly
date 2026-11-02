@@ -125,7 +125,7 @@ const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/src/content/base/ui.json';
 import recipesFile from '/src/content/base/recipes.json';
-import { fixtureIds as CORE_CONTENT_IDS } from '/test/fixtures/capabilityIds.ts';
+import { fixtureIds } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
@@ -140,7 +140,7 @@ import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 import { applyUiTokens } from '/src/ui/uiTokens.ts';
 import { factDetail } from '/src/ui/factDetail.ts';
 import { render } from 'lit-html';
-const handlingSkills = recipesFile.skills.filter((skill) => skill.id === CORE_CONTENT_IDS.inventoryManagement)
+const handlingSkills = recipesFile.skills.filter((skill) => skill.id === fixtureIds.inventoryManagement)
   .map((skill) => ({ ...skill, detail: 'Fixture handling effect.' }));
 if (handlingSkills.length !== 1) throw Error('Base content lacks the inventory skill');
 const { registry, issues } = buildRegistry([
@@ -223,7 +223,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [...inventory.entities.all], entityDistance: () => 0, dispatch: (payload) => { dispatches.push(payload); }, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
-  body: () => body, character: () => ({ skills: {}, practice: { [CORE_CONTENT_IDS.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
+  body: () => body, character: () => ({ skills: {}, practice: { [fixtureIds.inventoryManagement]: 2.5 * 0.46 } }), needs: () => needsText,
   slotLabels: Object.fromEntries(['head', 'eyes', 'torso', 'legs', 'back', 'waist', 'hands', 'feet', 'shoulder'].map((slot) => [slot, 'fixture ' + slot])),
 });
 const rag = inventory.create('rag');

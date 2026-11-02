@@ -10,7 +10,7 @@ import { bindReach } from '../../src/core/reach.ts';
 import { Simulation } from '../../src/core/sim.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from '../fixtures/capabilityIds.ts';
+import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { FULL, RESULT, STOCK, VESSEL } from '../liquidCraftFixture.ts';
 import { liquidRecoveryData } from '../liquidRecoveryFixture.ts';
 
@@ -34,8 +34,8 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     seed: 1,
     registry,
     clock,
-    bodyTuning: base.body.get(CORE_CONTENT_IDS.player)!,
-    compressionCaps: base.compression.get(CORE_CONTENT_IDS.player)!.caps,
+    bodyTuning: base.body.get(fixtureIds.player)!,
+    compressionCaps: base.compression.get(fixtureIds.player)!.caps,
   });
   const queue = new HandlingQueue(inventory);
   sim.actions.craft = craftActionHooks(inventory, character, reach, { feet: () => feet, calendar: () => sim.calendar });
@@ -76,7 +76,7 @@ export const mountRecoveryProbe = (base: Registry, clock: ClockSettings) => {
     character: () => character,
     body: () => sim.body,
     needs: () => '',
-    slotLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
+    slotLabels: registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
   });
   screen.selected = source;
   screen.open();

@@ -6,7 +6,7 @@ import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
 import { chargerPanel } from '../../src/ui/chargerPanel.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { contentLookup } from '../../src/ui/saveController.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from '../fixtures/capabilityIds.ts';
+import { fixtureIds } from '../fixtures/capabilityIds.ts';
 import { createChargerSession } from '../fixtures/chargerSession.ts';
 
 const queueMove = (
@@ -49,7 +49,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
       body: () => session.sim.body,
       character: () => session.character,
       needs: () => '',
-      slotLabels: runtime.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
+      slotLabels: runtime.registry.ui.get(fixtureIds.ui)!.wearSlotLabels,
       charger: (entity) => chargerPanel(entity, session.power, session.reach()),
       chargerRevision: () => session.sim.time,
       dispatch: (payload) => {

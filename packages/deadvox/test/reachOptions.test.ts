@@ -12,7 +12,7 @@ import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
 
 const registry = baseRegistry();
@@ -331,7 +331,7 @@ it('opened beans expose the eat time and a refusal when both hands hold other it
 });
 
 it('hides an obvious refusal by its key, so rewording it in content keeps it hidden', () => {
-  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const core = registry.ui.get(fixtureIds.ui)!;
   const reworded = { ...core, coreMessages: { ...core.coreMessages, alreadyInHand: 'fixture reworded' } };
   const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, reworded) });
   const knife = t.add('kabar', { kind: 'hand', side: 'right' });
@@ -342,7 +342,7 @@ it('hides an obvious refusal by its key, so rewording it in content keeps it hid
 });
 
 it('shows a refusal that content words like an obvious one, since only the key hides it', () => {
-  const core = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const core = registry.ui.get(fixtureIds.ui)!;
   const shared = core.coreMessages.alreadyInHand;
   const sameWords = { ...core, coreMessages: { ...core.coreMessages, tooFar: shared } };
   const t = setup('right', { ...registry, ui: new Map(registry.ui).set(core.id, sameWords) });

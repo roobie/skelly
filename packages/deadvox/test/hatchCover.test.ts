@@ -12,7 +12,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
-import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
+import { fixtureIds } from './fixtures/capabilityIds.ts';
 import {
   capture,
   contentLookup,
@@ -23,7 +23,7 @@ import {
 } from './snapshotTestSupport.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const messages = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
 const { blockSize } = makeScale(0.5);
 const coverDef = registry.furniture.get('rug')!;
 const hatchDef = [...registry.furniture.values()].find((def) => def.door?.hatch)!;
