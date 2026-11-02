@@ -1,7 +1,7 @@
 ---
 read_if:
   - you distinguish intact vehicle disassembly from destructive salvage
-  - you're planning vehicle implementation, authoring or the Wheels playtest
+  - you're planning vehicle implementation, Rapier-only feasibility evidence, authoring or the Wheels playtest
   - you're applying the settled vehicle scope and deferred directions from issue 322
   - you're integrating vehicle state with items, saves, collision, authored placement or region simulation
   - you're building the heavy-part-hoist vehicle or impact detachment
@@ -240,13 +240,13 @@ includes its state, validation, focused proof and reason-doc update rather than
 leaving saves to an integration finale.
 
 1. **Feasibility.** Run the slice-start consolidation in
-   `EPIC.md`, "How each slice runs". Compare driving candidates on slopes,
-   terrain edges, a thin obstacle and
-   a shallow wall scrape. Require cross-browser replay agreement, bounded collision
-   work and no tunnelling. Include unattended motion and a loaded hoist in the
-   feasibility envelope so neither becomes a late exception. BR judges handling,
-   the constrained boundary and the mass-placement difference. Select neither a
-   library nor its version without evidence and the dependency-age check.
+   `EPIC.md`, "How each slice runs". Run authored Rapier-only probes under
+   `docs/decisions/0009-rapier-f64-build.md`, "Decision", on slopes, terrain edges,
+   a thin obstacle and a shallow wall scrape. Require cross-browser replay
+   agreement, bounded collision work and no tunnelling. Include unattended motion
+   and a loaded hoist in the feasibility envelope so neither becomes a late
+   exception. BR judges handling, the constrained boundary and the mass-placement
+   difference. Engine selection does not waive these evidence requirements.
 2. **Authoring-to-game contract.** Settled in
    `docs/vehicle-spike.md`, "Export contract". VAT production deployment stays in
    #323 rather than making a full editor a prerequisite for reproducible exports.

@@ -3,6 +3,7 @@ read_if:
   - you're choosing or upgrading the physics build for driving, parked collision or ragdolls
   - you're migrating ragdolls off npm Rapier or changing physics initialization and binary identity
   - you're checking which physics evidence remains necessary after engine selection
+tags: [deadvox, adr, physics, vehicles, rapier, determinism]
 ---
 
 # 9. One pinned Rapier f64 build
