@@ -1,5 +1,5 @@
 {
-  powerTuning: [{ id: 'base', tickSimSeconds: 1 }],
+  powerTuning: [{ id: 'base', capability: 'power', tickSimSeconds: 1 }],
   powerDevices: [
     { id: 'main_breaker', kind: 'switch', priority: 0 },
     { id: 'house_fridge', kind: 'consumer', priority: 1, demandWatts: 100 },

@@ -7,11 +7,11 @@ import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';
 import { getBuildRevision } from '../core/buildInfo.ts';
+import { claimed } from '../core/capabilities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { CitySite } from '../core/citySite.ts';
 import { formatClock, nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import type { RecoveryChoices, WorkOperation } from '../core/craftCommands.ts';
@@ -578,7 +578,7 @@ interface HandlingPresentationOptions {
   readonly throwCharge?: HandlingPresentationSource['throwCharge'];
 }
 
-const screenTextOf = (registry: Engine['registry']) => registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+const screenTextOf = (registry: Engine['registry']) => claimed(registry.ui, 'interface')!.screenText;
 
 const handlingPresentationFor = ({
   job,
@@ -623,7 +623,7 @@ const createPlayRefusalPresenter = (
   audio: GameAudio,
   showNotice: (text: string) => void,
 ) => {
-  const event = registry.ui.get(CORE_CONTENT_IDS.coreUi)!.refusalSound;
+  const event = claimed(registry.ui, 'interface')!.refusalSound;
   const nope = registry.sounds.get(event)!;
   return createRefusalPresenter(
     showNotice,
@@ -673,7 +673,7 @@ const configureRestoreFailure = (streamer: Engine['streamer'], saveController: S
 };
 
 const autosaveTuning = (registry: Engine['registry']) => {
-  const autosave = registry.saves.get(CORE_CONTENT_IDS.autosave);
+  const autosave = claimed(registry.saves, 'autosave');
   if (!autosave) {
     throw new Error('Missing autosave tuning');
   }
@@ -753,7 +753,7 @@ export const startPlay = (
   );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
-  const playerSenseTuning = registry.senses.get(CORE_CONTENT_IDS.player);
+  const playerSenseTuning = claimed(registry.senses, 'player');
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
@@ -1149,7 +1149,7 @@ export const startPlay = (
    * sights are wanted and settles back over the content blend once they are not. Presentation state
    * only; it reads the simulation and never writes it (`DESIGN.md`, "Combat and noise").
    */
-  const adsViewBlend = registry.figures.get(CORE_CONTENT_IDS.player)!.aimPose.ads.viewBlend;
+  const adsViewBlend = claimed(registry.figures, 'player')!.aimPose.ads.viewBlend;
   let adsAimShown = 0;
   const adsAimTarget = (): number => {
     const action = selectPrimaryAction(inventory);
@@ -1275,7 +1275,7 @@ export const startPlay = (
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
   let stopReadingOnClose: () => void = () => undefined;
-  const { screenText } = registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+  const { screenText } = claimed(registry.ui, 'interface')!;
   const reading = mountReading(
     $('reading'),
     screenText.reading,
@@ -1457,7 +1457,7 @@ export const startPlay = (
     recovery: (uid, choices) => session.crafting.recovery(uid, choices),
     character: () => session.character,
     body: () => sim.body,
-    slotLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.wearSlotLabels,
+    slotLabels: claimed(registry.ui, 'interface')!.wearSlotLabels,
     needs: () => needsText(),
     wakeGameHour: () => (rest.canSetWakeTime ? { gameHour: rest.wakeGameHour } : undefined),
     actionRefusal: () => sim.body.actionRefusal,
@@ -2684,14 +2684,14 @@ export const startPlay = (
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
       lean: session.lean,
-      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      figure: claimed(registry.figures, 'player')!,
       models: registry.models,
       ads: adsViewPose(),
     });
 
   const heldBodyPose = () =>
     playerLookPose({
-      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      figure: claimed(registry.figures, 'player')!,
       models: registry.models,
       pitch: spectator.avatarPitch(input.pitch),
       stance: session.stance,
@@ -3295,7 +3295,10 @@ export const startPlay = (
       return;
     }
     const selected = meleeSelection(preferredHand);
-    const classTuning = registry.meleeClasses.get(selected.profile);
+    const classTuning =
+      selected.profile === 'fists'
+        ? claimed(registry.meleeClasses, 'unarmed')
+        : registry.meleeClasses.get(selected.profile);
     if (classTuning === undefined) {
       throw new Error(`Missing melee class tuning for ${selected.profile}`);
     }
@@ -3844,7 +3847,7 @@ export const startPlay = (
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, {
       leading: dominantSide(inventory.character),
-      holds: registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(registry.figures, 'player')!.holds,
     });
     const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, spectator.enabled ? undefined : survival.lit, {
@@ -3865,7 +3868,7 @@ export const startPlay = (
     if (selected.kind !== 'firearm') {
       return;
     }
-    const tuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
+    const tuning = claimed(registry.skills, 'firearmsCombat')?.combat?.firearms;
     if (!tuning) {
       throw new Error('Missing firearms-combat pose tuning');
     }
@@ -3879,7 +3882,7 @@ export const startPlay = (
     const twoHanded = Boolean(registry.items.get(item.type)?.twoHanded);
     const aimingDownSights = firearmPose?.aimingDownSights ?? false;
     const poseInput = {
-      holds: registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(registry.figures, 'player')!.holds,
       model,
       side,
       leadingSide,
@@ -4162,7 +4165,7 @@ export const startPlay = (
       canStop: rest.canStop || waitAction !== undefined,
       sim,
       messagesVisible,
-      restLabels: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.restLabels,
+      restLabels: claimed(registry.ui, 'interface')!.restLabels,
       text: screenText,
     });
   };

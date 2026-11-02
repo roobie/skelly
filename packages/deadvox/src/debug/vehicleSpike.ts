@@ -22,8 +22,8 @@ import {
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { claimed } from '../core/capabilities.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { BLOCK_SIZE } from '../core/scale.ts';
@@ -1030,7 +1030,7 @@ applySky(
     ambient,
     camera,
     radiusM: 96,
-    farPlaneScale: registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.fogFarPlaneScale ?? 1,
+    farPlaneScale: claimed(registry.graphics, 'graphics')?.fogFarPlaneScale ?? 1,
   },
   skyAt(12, requireDayCycle(registry)),
 );
@@ -1197,7 +1197,7 @@ const playerGroup = new Group();
 scene.add(playerGroup);
 
 const addPlayer = (): void => {
-  const player = registry.figures.get(CORE_CONTENT_IDS.player);
+  const player = claimed(registry.figures, 'player');
   if (!player) {
     throw new Error('The bundled player figure is missing');
   }

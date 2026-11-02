@@ -1,12 +1,12 @@
 import { batteryEnergy } from '../../src/core/battery.ts';
 import type { Registry } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import { toHands } from '../../src/core/options.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../../src/core/saveFormat.ts';
 import type { ReplayActionPayload } from '../../src/game/replayCommands.ts';
 import { chargerPanel } from '../../src/ui/chargerPanel.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { contentLookup } from '../../src/ui/saveController.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from '../fixtures/capabilityIds.ts';
 import { createChargerSession } from '../fixtures/chargerSession.ts';
 
 const queueMove = (

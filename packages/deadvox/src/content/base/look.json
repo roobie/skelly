@@ -2,6 +2,7 @@
   "look": [
     {
       "bloom": true,
+      "capability": "defaultLook",
       "damageFeedback": {
         "damageForFullStrength": 25,
         "rollPeakDegrees": 6,

@@ -1,6 +1,6 @@
+import { claimed, claimedId } from './capabilities.ts';
 import { SKILL_LEVEL_MAX } from './character.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { isLongGun } from './firearmFitting.ts';
 import type { ItemDef } from './schema.ts';
 
@@ -19,26 +19,28 @@ export const craftingActivityTier = (requiredLevel: number, offset: number): num
 
 // The skill schema's completeness check makes these tunings present on a loaded core skill.
 export const inventoryManagementTuning = (registry: Registry) => {
-  const tuning = registry.skills.get(CORE_CONTENT_IDS.inventoryManagement)?.inventory;
+  const tuning = claimed(registry.skills, 'inventoryManagement')?.inventory;
   if (!tuning) {
-    throw new Error(`Missing inventory tuning on skill ${CORE_CONTENT_IDS.inventoryManagement}`);
+    throw new Error('Missing inventory tuning on capability "inventoryManagement"');
   }
   return tuning;
 };
 
 export const firearmsCombatTuning = (registry: Registry) => {
-  const tuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
+  const tuning = claimed(registry.skills, 'firearmsCombat')?.combat?.firearms;
   if (!tuning) {
-    throw new Error(`Missing firearms tuning on skill ${CORE_CONTENT_IDS.firearmsCombat}`);
+    throw new Error('Missing firearms tuning on capability "firearmsCombat"');
   }
   return tuning;
 };
 
 export const firearmSteadinessSkill = (registry: Registry, firearm: ItemDef | undefined): string =>
-  isLongGun(firearm) ? firearmsCombatTuning(registry).longGunSteadinessSkill : CORE_CONTENT_IDS.firearmsCombat;
+  isLongGun(firearm)
+    ? firearmsCombatTuning(registry).longGunSteadinessSkill
+    : claimedId(registry.skills, 'firearmsCombat');
 
 export const firearmShotPracticeSkill = (registry: Registry, firearm: ItemDef, sighted: boolean): string =>
-  sighted ? firearmSteadinessSkill(registry, firearm) : CORE_CONTENT_IDS.firearmsCombat;
+  sighted ? firearmSteadinessSkill(registry, firearm) : claimedId(registry.skills, 'firearmsCombat');
 
 const skillActivityTraining = (registry: Registry, skillId: string, activityId: string) => {
   const activity = registry.skills.get(skillId)?.training?.activities?.[activityId];

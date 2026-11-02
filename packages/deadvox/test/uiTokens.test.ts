@@ -2,9 +2,9 @@
 import { expect, it } from 'vitest';
 import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../src/core/coreText.ts';
 import { applyUiTokens } from '../src/ui/uiTokens.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const refusalSound = {
   id: 'player_nope',
@@ -39,6 +39,7 @@ const PLACEHOLDER = /\{\w+\}/;
 const baseActionText = baseUi.ui[0]!.actionText as TextTable;
 const tuning = {
   id: CORE_CONTENT_IDS.coreUi,
+  capability: 'interface',
   spacing: 1,
   hudScale: 1,
   refusalSound: refusalSound.id,

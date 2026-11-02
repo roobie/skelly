@@ -49,7 +49,7 @@ export interface PartType {
   readonly storage?: PartStorage;
 }
 
-/** Pockets sized like a furniture container's (`packages/deadvox/src/core/schema.ts`, `ContainerSchema`): a grid in inventory cells. */
+/** Pockets sized like a furniture container's (`packages/deadvox/src/core/schema/items.ts`, `ContainerSchema`): a grid in inventory cells. */
 export interface PartStorage {
   readonly pockets: readonly PartPocket[];
 }

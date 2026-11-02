@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { claimed } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
@@ -87,7 +87,7 @@ for (const count of counts) {
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,
     physics: physicsFor(engine.config.scale, PLAYER),
-    tuning: registry.senses.get(CORE_CONTENT_IDS.player),
+    tuning: claimed(registry.senses, 'player'),
     player: () => player,
     dayPhase: () => dayPhaseAt(requireDayCycle(registry), startTime),
     hurtPlayer: () => undefined,

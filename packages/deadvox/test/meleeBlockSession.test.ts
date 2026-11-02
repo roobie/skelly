@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ZombieDef } from '../src/core/schema.ts';
@@ -7,6 +6,7 @@ import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;

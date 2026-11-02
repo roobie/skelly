@@ -125,7 +125,7 @@ const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/src/content/base/ui.json';
 import recipesFile from '/src/content/base/recipes.json';
-import { CORE_CONTENT_IDS } from '/src/core/contentIds.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
@@ -362,7 +362,7 @@ const vite = await createServer({
       enforce: 'pre',
       transform(code, id) {
         if (id.split('?')[0].endsWith('/src/game/bundledContent.ts')) {
-          const marker = 'const bundle = await BundleAdmission.prepare(';
+          const marker = 'const admission = admitPacks(packs);';
           assert.ok(code.includes(marker), 'content admission marker still exists');
           // Retain live UI/material content rather than the standalone fixture's support source.
           return `import { liquidRecoveryData } from '/test/liquidRecoveryFixture.ts';
@@ -370,7 +370,16 @@ import { fixtureSources } from '/test/economyFixtures.ts';
 ${code.replace(
   marker,
   `const workFixture = liquidRecoveryData(60);
-sources.push(...fixtureSources([{ source: 'inventory-work-fixture', data: { items: workFixture.items, skills: workFixture.skills, liquids: workFixture.liquids } }]).slice(1));
+const fixtureFiles = fixtureSources([{ source: 'inventory-work-fixture.json', data: { items: workFixture.items, skills: workFixture.skills, liquids: workFixture.liquids } }]).slice(1);
+packs.push({
+  source: 'inventory-work-fixture',
+  manifest: {
+    id: 'fixture.inventory-work', version: '1', tier: 'theme', product: false,
+    dependencies: [...packs.map(({ manifest }) => manifest.id), ...(new URLSearchParams(location.search).has('refuse-fixture') ? ['fixture.missing'] : [])],
+    overrides: [], files: fixtureFiles.map(({ source }) => ({ path: source, kind: 'content' })),
+  },
+  files: fixtureFiles,
+});
 ${marker}`,
 )}`;
         }
@@ -404,6 +413,19 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
+  const startupError = page.waitForEvent('pageerror').then((error) => {
+    throw error;
+  });
+  await page.goto(`http://127.0.0.1:${address.port}/?mods=1&refuse-fixture=1`);
+  await Promise.race([
+    startupError,
+    page.waitForFunction(() => document.getElementById('errors')?.textContent.includes('fixture.missing')),
+  ]);
+  assert.ok((await page.locator('#errors').textContent()).includes('fixture.inventory-work'), 'refused pack is named');
+  assert.equal(await page.locator('#view canvas').count(), 0, 'refused bundled content creates no engine');
+  assert.equal(await page.locator('#startup-screen').isVisible(), false, 'refusal retires the startup screen');
+  assert.equal(await page.locator('#mods-screen').isVisible(), false, 'refusal retires the empty mod screen');
+  assert.deepEqual(errors, [], 'refusal displays admission diagnostics without a page exception');
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   try {
     await page.waitForFunction(() => Boolean(globalThis.scrollFixture));

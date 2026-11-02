@@ -3,9 +3,9 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
+import { claimed } from '../core/capabilities.ts';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
@@ -325,8 +325,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       const simulation = new Simulation({
         seed: config.seed,
         registry: engine.registry,
-        bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
-        compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+        bodyTuning: claimed(engine.registry.body, 'player')!,
+        compressionCaps: claimed(engine.registry.compression, 'player')!.caps,
         clock: { ratio: dayCycle.clockRatio, start: startTime },
       });
       simulation.godMode = true;
@@ -337,7 +337,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
         blockSize: s,
-        tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
+        tuning: claimed(engine.registry.senses, 'player')!,
         physics: physicsFor(config.scale, Player),
         player: () => ({
           pos: [...playerBody!.pos] as [number, number, number],

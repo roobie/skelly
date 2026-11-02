@@ -1,7 +1,7 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import type { CraftCharacter } from '../core/character.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { CraftCommands } from '../core/craftCommands.ts';
 import {
   type CraftPreference,
@@ -20,7 +20,7 @@ import { fillText } from '../core/textTemplate.ts';
 import type { TimedActionPresentation } from './hud.ts';
 
 export const craftingText = (registry: Registry): ScreenText['crafting'] =>
-  registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.crafting;
+  claimed(registry.ui, 'interface')!.screenText.crafting;
 export const craftTime = (seconds: number, text: ScreenText['crafting']): string =>
   seconds >= 60
     ? fillText(text.mins, { value: decimalText(seconds / 60) })

@@ -12,6 +12,11 @@ local mod = 'debug-repair-look';
     id: mod,
     data: {
       id: mod,
+      version: '1',
+      tier: 'scenario',
+      product: false,
+      dependencies: ['base'],
+      overrides: [],
       skills: [{ id: 'debug_repair', name: 'Debug repair', startingRecipes: [recipe] }],
       recipes: [{
         id: recipe,

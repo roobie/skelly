@@ -2,6 +2,7 @@
   "inventory": [
     {
       "autoPlacementTallMinFreeAreaGainCells": 4,
+      "capability": "player",
       "cellMetres": 0.10000000000000001,
       "chestHeightMetres": 1,
       "conditionBands": [

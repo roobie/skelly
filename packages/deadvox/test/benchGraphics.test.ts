@@ -1,14 +1,15 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { afterEach, expect, it, vi } from 'vitest';
 import baseDayCycle from '../src/content/base/dayCycle.json' with { type: 'json' };
+import baseWeathering from '../src/content/base/weathering.json' with { type: 'json' };
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { resolveGraphics } from '../src/core/graphics.ts';
 import { configFromUrl } from '../src/game/config.ts';
 import { createEngine } from '../src/game/engine.ts';
 import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
 import { Mood } from '../src/render/mood.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({ setup: undefined as unknown }));
 vi.mock('../src/game/worldSetup.ts', () => ({ createWorldSetup: () => owner.setup }));
@@ -41,12 +42,14 @@ const tuning = {
 it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
   const content = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
+    { source: 'base/weathering.json', data: baseWeathering },
     {
       source: 'fixture',
       data: {
         graphics: [
           {
             id: CORE_CONTENT_IDS.coreGraphics,
+            capability: 'graphics',
             nearPlaneMetres: 0.01,
             playerViewFovDegrees: 70,
             readyRadiusM: 16,

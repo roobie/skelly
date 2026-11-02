@@ -2,9 +2,9 @@
 
 import { smoothstep } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, toChunk } from './coords.ts';
 import type { Scale } from './scale.ts';
 import type { HandlingRangeDef } from './schema.ts';
@@ -15,9 +15,9 @@ import { terrainHeight } from './worldgen.ts';
 
 /** The range layout content; its absence is reported by `requiredContentIssues`. */
 const handlingRangeOf = (registry: Registry): HandlingRangeDef => {
-  const layout = registry.handlingRange.get(CORE_CONTENT_IDS.testRange);
+  const layout = claimed(registry.handlingRange, 'testRange');
   if (!layout) {
-    throw new Error(`content does not define handling range "${CORE_CONTENT_IDS.testRange}"`);
+    throw new Error('missing required capability "testRange"');
   }
   return layout;
 };

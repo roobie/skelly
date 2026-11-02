@@ -8,9 +8,9 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { BODY_REGIONS, type Body, type BodyRegion, bodyRegionLabel } from '../core/body.ts';
+import { claimed } from '../core/capabilities.ts';
 import { offSide, practiceForNextLevel } from '../core/character.ts';
 import type { ItemDef, Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { coreLabel } from '../core/coreText.ts';
 import type { RecoveryChoices, RecoveryProjection, WorkOperation, WorkOption } from '../core/craftCommands.ts';
@@ -1017,7 +1017,7 @@ export class InventoryScreen {
     this.viewer = new ItemViewer(
       () => root.querySelector<HTMLElement>('.inv-viewer-host'),
       () => this.hooks.itemView,
-      () => inv.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemViewer,
+      () => claimed(inv.registry.graphics, 'graphics')!.itemViewer,
       () => this.text().viewerClose,
     );
     root.addEventListener('pointerdown', (e) => this.pointerDown(e));
@@ -1782,7 +1782,7 @@ export class InventoryScreen {
       skills,
       needs: this.hooks.needs(),
       wakeAt: alarm && wakeLabel(alarm.gameHour, text),
-      containerMaxWidthCells: this.inv.registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells,
+      containerMaxWidthCells: claimed(this.inv.registry.inventory, 'player')?.containerMaxWidthCells,
       weight: kg(text, this.inv.carriedWeight()),
       hands,
       worn,
@@ -1804,7 +1804,7 @@ export class InventoryScreen {
     const { view } = opened;
     return {
       vehicleId: view.vehicleId,
-      label: fillText(this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.vehicle.heading, {
+      label: fillText(claimed(this.inv.registry.ui, 'interface')!.screenText.vehicle.heading, {
         vehicle: view.name,
         distance: decimalText(opened.distanceMetres),
       }),
@@ -2100,7 +2100,7 @@ export class InventoryScreen {
   }
 
   private screenText(): ScreenText {
-    return this.inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+    return claimed(this.inv.registry.ui, 'interface')!.screenText;
   }
 
   private text(): InventoryText {

@@ -3,6 +3,7 @@
 {
   handlingRange: [{
     id: 'test_range',
+    capability: 'testRange',
     gap: 8,
     blend: 8,
     length: 82,

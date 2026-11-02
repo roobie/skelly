@@ -1,5 +1,51 @@
 {
+  "dependencies": ["base"],
   "id": "beginner",
+  "overrides": [
+    {
+      "entry": "zombies:shambler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:military_shambler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:farmer_shambler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:worker_shambler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:medic_shambler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:brute_shambler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:runner",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:crawler",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:amalgam",
+      "pack": "base"
+    },
+    {
+      "entry": "zombies:acid_zombie",
+      "pack": "base"
+    }
+  ],
+  "product": false,
+  "tier": "product",
+  "version": "1",
   "zombies": [
     {
       "abilities": [],

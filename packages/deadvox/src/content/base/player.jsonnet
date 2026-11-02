@@ -1,6 +1,7 @@
 {
   player: [{
     id: 'player',
+    capability: 'player',
     halfWidth: 0.3,
     height: 1.8,
     eye: 1.62,

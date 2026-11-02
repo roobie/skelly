@@ -1,11 +1,10 @@
+import { claimed, claimedId } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK } from '../core/coords.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import type { WeatheringDef } from '../core/schema.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID } from '../core/weather.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
 import { sweepFromUrl } from '../render/ragdollConfig.ts';
 import type { StartupContent } from './bundledContent.ts';
@@ -104,8 +103,9 @@ export const makeConfig = (
   blockSize = BLOCK_SIZE,
 ): GameConfig => {
   const scale = makeScale(blockSize);
-  const profile = content.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID);
-  const graphics = content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  const profile = claimed(content.registry.weathering, 'defaultWeathering');
+  const profileId = claimedId(content.registry.weathering, 'defaultWeathering');
+  const graphics = claimed(content.registry.graphics, 'graphics');
   if (!graphics) {
     throw new Error('Missing core graphics tuning');
   }
@@ -124,8 +124,8 @@ export const makeConfig = (
     authoredDecals: true,
     storeys: 1,
     density: null,
-    weatheringProfileId: DEFAULT_WEATHERING_PROFILE_ID,
-    weatheringDefaultProfileId: DEFAULT_WEATHERING_PROFILE_ID,
+    weatheringProfileId: profileId,
+    weatheringDefaultProfileId: profileId,
     weathering: profile ? { ...profile } : undefined,
     actors: 'detailed',
   };
@@ -242,7 +242,7 @@ export const applyWeatheringConfig = (
   registry: Pick<Registry, 'layouts' | 'weathering'> = config.content.registry,
 ): void => {
   config.weatheringDefaultProfileId =
-    registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
+    registry.layouts.get(config.site)?.weatheringProfile ?? claimedId(registry.weathering, 'defaultWeathering');
   const weathering = resolveWeatheringUrl(params, registry.weathering, config.weatheringDefaultProfileId, config.debug);
   config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
   config.weathering = weathering?.settings;

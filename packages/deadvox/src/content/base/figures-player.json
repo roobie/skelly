@@ -220,6 +220,7 @@
           "pivot": "spine"
         }
       },
+      "capability": "player",
       "corpsePose": {
         "ankleDegrees": -40,
         "armsForwardDegrees": 0,

@@ -99,8 +99,9 @@ GitHub artifact without private tooling, so references point only from the priva
 
 ## Git workflow and worktrees
 
-The #1532 freeze overrides instructions to open a new PR until the framework refactor
-is executed. Work may use an existing PR. See
+The #1532 freeze permits only the framework refactor's single PR to open before the
+refactor lands, so that work can receive CI and merge without admitting other new PRs.
+Open it as a draft for CI; other work may use an existing PR. See
 `docs/decisions/0009-content-defined-products.md`, "Refactor gate", for the in-flight
 closure trigger and its reason.
 

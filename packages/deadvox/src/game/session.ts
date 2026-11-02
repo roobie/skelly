@@ -12,12 +12,12 @@ import type { BlockBlow } from '../core/blockDamage.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import type { CanonicalTerrain } from '../core/canonicalTerrain.ts';
+import { claimed, claimedId } from '../core/capabilities.ts';
 import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { terrainSolid, worldMeleeBlocker, worldSoundBlocking } from '../core/collision.ts';
 import { createColumnSupply } from '../core/columnSupply.ts';
 import { type RecipeDef, type Registry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { coreMessage } from '../core/coreText.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
@@ -213,7 +213,9 @@ const sessionSteadiness = (
   return {
     level: skillEffectLevel(character.skills[skillId]!),
     tuning:
-      skillId === CORE_CONTENT_IDS.firearmsCombat ? tuning : steadinessTuning(tuning, registry.skills.get(skillId)!),
+      skillId === claimedId(registry.skills, 'firearmsCombat')
+        ? tuning
+        : steadinessTuning(tuning, registry.skills.get(skillId)!),
   };
 };
 
@@ -237,7 +239,7 @@ const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined
     uid !== undefined &&
     (!firearm ||
       firearm.uid !== uid ||
-      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) === CORE_CONTENT_IDS.firearmsCombat)
+      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) === claimedId(registry.skills, 'firearmsCombat'))
   ) {
     throw new Error('Invalid saved Sniping acquisition firearm');
   }
@@ -263,7 +265,10 @@ const advanceSnipingPractice = ({
   dt: number;
 }): number | undefined => {
   const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
-  if (!(ready && aiming && firearm && firearms.isReady(firearm.uid)) || skillId === CORE_CONTENT_IDS.firearmsCombat) {
+  if (
+    !(ready && aiming && firearm && firearms.isReady(firearm.uid)) ||
+    skillId === claimedId(registry.skills, 'firearmsCombat')
+  ) {
     return undefined;
   }
   if (firearm.uid !== previousUid) {
@@ -582,8 +587,10 @@ interface RestoredLook {
   walk: boolean;
 }
 
-const firearmsSkillLevel = (character: Character): number =>
-  skillEffectLevel(character.skills.firearms_combat ?? SKILL_LEVEL_MIN);
+const firearmsSkillLevel = (character: Character): number => {
+  const id = character.skillForCapability('firearmsCombat');
+  return skillEffectLevel((id === undefined ? undefined : character.skills[id]) ?? SKILL_LEVEL_MIN);
+};
 
 interface StanceBody {
   readonly body: Body;
@@ -644,7 +651,7 @@ const createSessionCharacter = (
 ): Character =>
   restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
 
-const playerBodyTuning = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+const playerBodyTuning = (registry: Registry, id: string = claimedId(registry.body, 'player')) => {
   const tuning = registry.body.get(id);
   if (!tuning) {
     throw new Error('Missing player body tuning');
@@ -652,7 +659,7 @@ const playerBodyTuning = (registry: Registry, id: string = CORE_CONTENT_IDS.play
   return tuning;
 };
 
-const playerCompressionCaps = (registry: Registry, id: string = CORE_CONTENT_IDS.player) => {
+const playerCompressionCaps = (registry: Registry, id: string = claimedId(registry.compression, 'player')) => {
   const tuning = registry.compression.get(id);
   if (!tuning) {
     throw new Error('Missing player compression tuning');
@@ -661,7 +668,7 @@ const playerCompressionCaps = (registry: Registry, id: string = CORE_CONTENT_IDS
 };
 
 const playerSenseTuning = (registry: Registry) => {
-  const tuning = registry.senses.get(CORE_CONTENT_IDS.player);
+  const tuning = claimed(registry.senses, 'player');
   if (!tuning) {
     throw new Error('Missing player sense tuning');
   }
@@ -802,7 +809,7 @@ const createSessionPower = (options: SessionOptions, sim: Simulation, inventory:
   });
   sim.scheduler.register({
     id: 'power',
-    rate: 1 / options.registry.powerTuning.get(CORE_CONTENT_IDS.powerTuning)!.tickSimSeconds,
+    rate: 1 / claimed(options.registry.powerTuning, 'power')!.tickSimSeconds,
     tick: (_dt, time) => power.advance(simTimestamp(time)),
   });
   return power;
@@ -818,7 +825,7 @@ export const createSession = (options: SessionOptions) => {
   const dayCycle = requireDayCycle(registry);
   const shamblerVoice = shamblerVoiceLaw(
     figureSeedPool(registry.zombies),
-    registry.senses.get(CORE_CONTENT_IDS.player)!.shamblerVoice,
+    claimed(registry.senses, 'player')!.shamblerVoice,
   );
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
@@ -857,12 +864,12 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const character = createSessionCharacter(registry, options.handedness, restored);
-  const firearmsCombatTuning = registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
+  const firearmsCombatTuning = claimed(registry.skills, 'firearmsCombat')?.combat?.firearms;
   if (!firearmsCombatTuning) {
     throw new Error('Missing firearms-combat skill tuning');
   }
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
-  const meleeCombatTuning = registry.skills.get(CORE_CONTENT_IDS.meleeCombat)?.combat?.melee;
+  const meleeCombatTuning = claimed(registry.skills, 'meleeCombat')?.combat?.melee;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, {
         character,
@@ -1059,8 +1066,8 @@ export const createSession = (options: SessionOptions) => {
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const awardInventoryPractice = (): void => {
-    const training = skillActivityPractice(registry, CORE_CONTENT_IDS.inventoryManagement, 'handling');
-    character.awardPractice(CORE_CONTENT_IDS.inventoryManagement, training.practice, training.tier);
+    const training = skillActivityPractice(registry, claimedId(registry.skills, 'inventoryManagement'), 'handling');
+    character.awardPractice(claimedId(registry.skills, 'inventoryManagement'), training.practice, training.tier);
   };
   /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
   const blockedDamage = (damage: number, attacker: EntityId): number => {
@@ -1069,7 +1076,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const block = meleeBlock(
       {
-        level: character.skills.melee_combat ?? SKILL_LEVEL_MIN,
+        level: character.skills[claimedId(registry.skills, 'meleeCombat')] ?? SKILL_LEVEL_MIN,
         damage,
         roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
         stamina: sim.needs.stamina,
@@ -1081,8 +1088,12 @@ export const createSession = (options: SessionOptions) => {
       return damage;
     }
     spendStamina(sim.needs, block.staminaCost, bodyTuning.staminaRegenDelaySimSeconds);
-    const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'block');
-    character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice * block.absorbed, training.tier);
+    const training = skillActivityPractice(registry, claimedId(registry.skills, 'meleeCombat'), 'block');
+    character.awardPractice(
+      claimedId(registry.skills, 'meleeCombat'),
+      training.practice * block.absorbed,
+      training.tier,
+    );
     playPlayerSound(block.full ? 'player_block_full' : 'player_block_partial');
     options.onBlock?.(blockJolt(block.absorbed, meleeCombatTuning), block.full);
     return damage - block.absorbed;
@@ -1164,7 +1175,7 @@ export const createSession = (options: SessionOptions) => {
       character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
       const { hits, stops } = zombieSystem.firePellets(shot);
       bodyStops = stops;
-      if (hits > 0 && (skillId !== CORE_CONTENT_IDS.firearmsCombat || firearmReadyWalking)) {
+      if (hits > 0 && (skillId !== claimedId(registry.skills, 'firearmsCombat') || firearmReadyWalking)) {
         const training = skillActivityPractice(registry, skillId, 'hit');
         character.awardPractice(skillId, training.practice, training.tier);
       }
@@ -1262,7 +1273,7 @@ export const createSession = (options: SessionOptions) => {
       pitch: sampledInput().pitch,
       stance: playerStance,
       lean: currentLean(),
-      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      figure: claimed(registry.figures, 'player')!,
       models: registry.models,
       ads: playerAdsPose(inventory, aimingDownSights(), aim.frame),
     });
@@ -1415,7 +1426,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const { yaw, pitch } = sampledInput();
     const look = playerLookPose({
-      figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+      figure: claimed(registry.figures, 'player')!,
       models: registry.models,
       pitch,
       stance: playerStance,
@@ -1646,8 +1657,8 @@ export const createSession = (options: SessionOptions) => {
     {
       onWeaponHit: (uid) => wearMeleeWeaponOnHit(inventory, uid),
       onLandedHit: () => {
-        const training = skillActivityPractice(registry, CORE_CONTENT_IDS.meleeCombat, 'hit');
-        character.awardPractice(CORE_CONTENT_IDS.meleeCombat, training.practice, training.tier);
+        const training = skillActivityPractice(registry, claimedId(registry.skills, 'meleeCombat'), 'hit');
+        character.awardPractice(claimedId(registry.skills, 'meleeCombat'), training.practice, training.tier);
       },
       onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
       payChargeStamina: (wanted) => {
@@ -1887,7 +1898,7 @@ export const createSession = (options: SessionOptions) => {
   const placePiece = (aimed: Readonly<Vec3>): string | undefined => {
     const carried = entities.carrying();
     if (!carried) {
-      return registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.emptyHands;
+      return claimed(registry.ui, 'interface')!.furnitureMoveMessages.emptyHands;
     }
     const sound = carried.floorLocked ? 'furniture_drag' : 'furniture_scrape';
     const reason = placeFurniture(furnitureMover(), aimed);
@@ -1909,7 +1920,7 @@ export const createSession = (options: SessionOptions) => {
       const dz = (fx * Math.sin(angle) + fz * Math.cos(angle)) / length;
       const aimed: Vec3 = [Math.floor(body.pos[0] + dx * clear), y, Math.floor(body.pos[2] + dz * clear)];
       if (!placePiece(aimed)) {
-        (options.refusal ?? options.notice)(registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.wornOut);
+        (options.refusal ?? options.notice)(claimed(registry.ui, 'interface')!.furnitureMoveMessages.wornOut);
         return;
       }
     }
@@ -2079,8 +2090,12 @@ export const createSession = (options: SessionOptions) => {
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
     if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
-      const training = skillActivityPracticeRate(registry, CORE_CONTENT_IDS.firearmsCombat, 'readying');
-      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, dt * training.practicePerSecond, training.tier);
+      const training = skillActivityPracticeRate(registry, claimedId(registry.skills, 'firearmsCombat'), 'readying');
+      character.awardPractice(
+        claimedId(registry.skills, 'firearmsCombat'),
+        dt * training.practicePerSecond,
+        training.tier,
+      );
     }
     snipingAdsUid = advanceSnipingPractice({
       registry,
@@ -2126,7 +2141,7 @@ export const createSession = (options: SessionOptions) => {
         playerLeanBoxes({
           inventory,
           pose: playerLookPose({
-            figure: registry.figures.get(CORE_CONTENT_IDS.player)!,
+            figure: claimed(registry.figures, 'player')!,
             models: registry.models,
             pitch,
             stance: playerStance,
@@ -2323,12 +2338,12 @@ export const createSession = (options: SessionOptions) => {
       awardInventoryPractice();
     }
     if (isFirearmTrainingAction(job)) {
-      const training = skillActivityPractice(registry, CORE_CONTENT_IDS.firearmsCombat, 'handling');
-      character.awardPractice(CORE_CONTENT_IDS.firearmsCombat, training.practice, training.tier);
+      const training = skillActivityPractice(registry, claimedId(registry.skills, 'firearmsCombat'), 'handling');
+      character.awardPractice(claimedId(registry.skills, 'firearmsCombat'), training.practice, training.tier);
     }
     if (isAttachmentWorkAction(job)) {
-      const training = skillActivityPractice(registry, ATTACHMENT_WORK_SKILL, 'attachment');
-      character.awardPractice(ATTACHMENT_WORK_SKILL, training.practice, training.tier);
+      const training = skillActivityPractice(registry, ATTACHMENT_WORK_SKILL(registry), 'attachment');
+      character.awardPractice(ATTACHMENT_WORK_SKILL(registry), training.practice, training.tier);
     }
   };
   const tickHandling = (dt: number) => {
@@ -2416,7 +2431,7 @@ export const createSession = (options: SessionOptions) => {
     player: () => body,
     others: standingZombieBodies,
     playWorldSound: playNoisyWorldSound,
-    closeBlockedMessages: registry.ui.get(CORE_CONTENT_IDS.coreUi)!.doorCloseBlockedMessages,
+    closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
   });
   registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
   registerTrapActions({

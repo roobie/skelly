@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { validate as runValidation } from '../src/cli/validate.ts';
-import { REQUIRED_CORE_CONTENT } from '../src/core/content.ts';
+import { CONTENT_CAPABILITIES } from '../src/core/capabilities.ts';
 
 const validateAt = (root: string, ...files: string[]) => {
   const output: string[] = [];
@@ -18,6 +18,22 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
   try {
     const base = join(root, 'src/content/base');
     mkdirSync(join(base, 'assets'), { recursive: true });
+    mkdirSync(join(base, 'pack'), { recursive: true });
+    writeFileSync(
+      join(base, 'pack/manifest.json'),
+      JSON.stringify({
+        id: 'fixture.base',
+        version: '1',
+        tier: 'product',
+        product: true,
+        dependencies: [],
+        overrides: [],
+        files: [
+          { path: 'sounds.json', kind: 'content' },
+          { path: 'assets/manifest.json', kind: 'json' },
+        ],
+      }),
+    );
     writeFileSync(join(base, 'sounds.json'), JSON.stringify({ sounds: [] }));
     writeFileSync(join(base, 'assets/manifest.json'), JSON.stringify({ sources: [] }));
     const fixtures = join(root, 'test/fixtures');
@@ -33,15 +49,28 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
 };
 
 describe('validate CLI', () => {
-  it('rejects a pack missing a declared required core row', () => {
+  it('rejects a pack missing a required capability', () => {
     const root = makeMinimalPack();
-    const requirement = REQUIRED_CORE_CONTENT.find(({ section }) => section !== 'sounds' && section !== 'ui')!;
+    const [section, capabilities] = Object.entries(CONTENT_CAPABILITIES)[0]!;
     try {
       const run = validateAt(root);
       expect(run.status).toBe(1);
-      expect(run.stdout).toContain(
-        `FAIL  core content ${requirement.section}: missing required content "${requirement.id}"`,
-      );
+      expect(run.stdout).toContain(`FAIL  core content ${section}: missing required capability "${capabilities[0]}"`);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an unlisted JSON file anywhere under a bundled pack root', () => {
+    const root = makeMinimalPack();
+    try {
+      const directory = join(root, 'src/content/base/nested');
+      mkdirSync(directory);
+      writeFileSync(join(directory, 'unlisted.json'), JSON.stringify({ items: [] }));
+      const run = validateAt(root);
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain('fixture.base');
+      expect(run.stdout).toContain('unlisted JSON file nested/unlisted.json');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

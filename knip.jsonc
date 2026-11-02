@@ -30,7 +30,7 @@
         "/src/game/firearmHandling.ts",
         "/src/ui/inventoryScreen.ts",
         "/src/core/reach.ts",
-        "/src/core/contentIds.ts",
+        "/test/fixtures/capabilityIds.ts",
         "/src/core/character.ts",
         "/src/core/templates.ts",
         "/src/core/furnitureSurface.ts",

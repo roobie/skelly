@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you build or change how a zombie holds the player, or a move's `grapple` content
   - you add a hit response, a fall, a ladder or a knockback that should end a hold or throw the player
   - you tune how a held player moves, turns or breaks free
@@ -8,7 +9,7 @@ read_if:
 
 # Grapple
 
-The crawler's whole promise is to grab your legs, and armed humanoids read as things that clutch (`DESIGN.md`, "Types are data"). A landed melee move only deals damage, so nothing a zombie does lasts past the hit. A grapple is a lasting record of who holds whom by which body region, started by a landed melee move and ended by a short, learnable list of exits. Every effect of being held is applied on the player's side by region, never by grabber type, so a new grabbing type is content and a new region is one more effect. See `src/core/zombies.ts`, `ZombieSystem`, and `src/core/schema.ts`, `ZombieMovesSchema`.
+The crawler's whole promise is to grab your legs, and armed humanoids read as things that clutch (`DESIGN.md`, "Types are data"). A landed melee move only deals damage, so nothing a zombie does lasts past the hit. A grapple is a lasting record of who holds whom by which body region, started by a landed melee move and ended by a short, learnable list of exits. Every effect of being held is applied on the player's side by region, never by grabber type, so a new grabbing type is content and a new region is one more effect. See `src/core/zombies.ts`, `ZombieSystem`, and `src/core/schema/zombies.ts`, `ZombieMovesSchema`.
 
 The code word is grapple. "Grab" already means the ladder grab, the pickup animation and the reach band (`src/core/zombies.ts`, `requiredGrabBand`), and "hold" already means tap-versus-hold on the use key, so either word in code would mislead. Player-facing text may still say "grabbed", because that is the word the character would use (`INTERFACE.md`, "Class 3: the character's voice").
 

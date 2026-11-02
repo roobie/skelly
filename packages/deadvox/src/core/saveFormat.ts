@@ -70,7 +70,7 @@ type SaveContentLookup = (kind: SaveContentKind, id: string, item?: ItemState) =
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
   generation: number;
-  /** Omit in the built game to use its injected simulation fingerprint and base-pack hash. */
+  /** Omit in the built game to use its injected simulation fingerprint and pack identities. */
   version?: SaveVersionComponents;
   /** Git revision is diagnostic metadata only and is not part of the compatibility digest. */
   buildRevision?: string;
@@ -79,7 +79,7 @@ export interface EncodeSaveOptions {
 }
 
 export interface DecodeSaveOptions {
-  /** Omit in the built game to compare against its injected simulation fingerprint and base-pack hash. */
+  /** Omit in the built game to compare against its injected simulation fingerprint and pack identities. */
   version?: SaveVersionComponents;
   /** Running revision is shown in refusal messages but never gates compatibility. */
   buildRevision?: string;
@@ -163,9 +163,9 @@ const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
 
-// `vite.config.ts` supplies source, Git diagnostic, and canonical base-content identities.
+// `vite.config.ts` supplies source, Git diagnostic, and canonical per-pack identities.
 declare const __DEADVOX_SIMULATION_HASH__: string;
-declare const __DEADVOX_BASE_CONTENT_HASH__: string;
+declare const __DEADVOX_CONTENT_PACKS__: SaveVersionComponents['contentPacks'];
 
 function defaultVersion(): SaveVersionComponents {
   try {
@@ -173,7 +173,7 @@ function defaultVersion(): SaveVersionComponents {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SAVE_SCHEMA_VERSION,
       generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
-      contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
+      contentPacks: __DEADVOX_CONTENT_PACKS__,
     };
   } catch (error) {
     throw new Error('Explicit save version components are required outside a Vite build', { cause: error });
@@ -1183,12 +1183,11 @@ function versionDigest(version: SaveVersionComponents): Promise<string> {
 /** A bundled mod applied to the running content, identified by the hash of its data. */
 export interface ActiveBundledMod {
   id: string;
+  version: string;
   data: unknown;
 }
 
-export interface ActiveBrowserMod extends ActiveBundledMod {
-  version: string;
-}
+export type ActiveBrowserMod = ActiveBundledMod;
 
 export async function currentSaveVersionIdentity(
   bundledMods: readonly ActiveBundledMod[] = [],
@@ -1196,13 +1195,11 @@ export async function currentSaveVersionIdentity(
 ): Promise<SaveVersionIdentity> {
   const components = structuredClone(defaultVersion());
   const packs = await Promise.all(
-    [...bundledMods]
-      .sort((a, b) => (a.id < b.id ? -1 : 1))
-      .map(async (mod) => ({
-        id: `bundled.${mod.id}`,
-        version: '1',
-        canonicalHash: await sha256(canonicalBytes(mod.data)),
-      })),
+    bundledMods.map(async (mod) => ({
+      id: `bundled.${mod.id}`,
+      version: mod.version,
+      canonicalHash: await sha256(canonicalBytes(mod.data)),
+    })),
   );
   const browserPacks = await Promise.all(
     browserMods.map(async (mod) => ({

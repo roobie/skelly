@@ -181,7 +181,10 @@ refactor and must not collide with `packages/engine`, the assembly/geometry libr
 
 The #1532 gate is closure or merge of every PR in its frozen in-flight set: #1531,
 #1529, #1528, #1527, #1526, #1524, #1520, #1509, #1503, #1496, #1493, #1488, #1477,
-#1403 and #1369. No new PRs open until the refactor is executed. Work can use an
-existing PR. Waiting avoids moving files under active branches, and one extraction
-avoids paying for a temporary internal-edge phase and its later removal. The content-extraction plan belongs in
+#1403 and #1369. The framework refactor's own single PR is allowed under the freeze:
+open it as a draft for CI so the refactor can be checked and merged. Other new PRs
+remain frozen until it lands; other work can use an existing PR. The freeze keeps
+unrelated branches from moving files during extraction, not the extraction itself
+from receiving CI. One extraction avoids paying for a temporary internal-edge phase
+and its later removal. The content-extraction plan belongs in
 `packages/deadvox/docs/pack-split.md`.

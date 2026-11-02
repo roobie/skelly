@@ -3,7 +3,10 @@
   "furniture": "crate",
   "mod": {
     "data": {
+      "dependencies": ["base"],
       "id": "debug-repair-look",
+      "overrides": [],
+      "product": false,
       "recipes": [
         {
           "category": "fixtures",
@@ -40,7 +43,9 @@
           "name": "Debug repair",
           "startingRecipes": ["debug_crate_repair"]
         }
-      ]
+      ],
+      "tier": "scenario",
+      "version": "1"
     },
     "id": "debug-repair-look"
   },

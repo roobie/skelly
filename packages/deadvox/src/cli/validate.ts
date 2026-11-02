@@ -10,6 +10,7 @@ import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { readBundledPacks } from '../../tools/readBundledPacks.ts';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
 import { bundledModCatalogueIssues } from '../core/bundledModCatalogue.ts';
 import {
@@ -20,6 +21,7 @@ import {
   requiredContentIssues,
 } from '../core/content.ts';
 import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
+import { admitPacks } from '../core/packAdmission.ts';
 import { checkReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
@@ -55,10 +57,14 @@ export const validate = (
   write: (line: string) => void = console.log,
   root = process.cwd(),
 ): number => {
-  const base = readdirSync(resolve(root, BASE))
-    .filter((f) => f.endsWith('.json'))
-    .sort()
-    .map((f) => join(BASE, f));
+  let admitted: ReturnType<typeof admitPacks>;
+  try {
+    admitted = admitPacks(readBundledPacks(root).map((pack) => ({ ...pack, source: join('src/game', pack.source) })));
+  } catch (error) {
+    write(`FAIL  bundled packs: ${error instanceof Error ? error.message : String(error)}`);
+    return 1;
+  }
+  const base = admitted.sources.map(({ source }) => source);
   const isManifest = (f: string) => basename(f) === 'manifest.json';
   const files = [...base, ...args.filter((f) => !isManifest(f))];
   const manifests = [join(BASE, MANIFEST_PATH), ...args.filter(isManifest)];
@@ -87,6 +93,7 @@ export const validate = (
     }
   }
   const { registry, issues, origins } = buildRegistry(sources);
+  issues.unshift(...admitted.issues);
   const reachable = checkReachability(registry);
   for (const issue of reachable.issues) {
     const origin = origins.get(`recipes:${issue.recipe}`)!;

@@ -6,7 +6,7 @@ local crouch = {
 {
   senses: [
     {
-      id: 'player',
+      id: 'player', capability: 'player',
       chestEyeFraction: 0.62,
       // Holding the crouch key this long lies down instead of toggling crouch.
       crouchProneHoldRealSeconds: 0.5,

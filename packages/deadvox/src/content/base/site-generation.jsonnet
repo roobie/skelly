@@ -2,6 +2,7 @@
   siteGeneration: [
     {
       id: 'authored',
+      capability: 'authoredSite',
       activeZombieRadiusMetres: 40,
       topography: {
         amplitudeMetres: 0.65,

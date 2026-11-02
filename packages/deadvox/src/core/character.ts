@@ -1,4 +1,6 @@
 // Character progression owner: levels, source-agnostic practice and recipe knowledge.
+
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import type { HandSide } from './inventory.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -47,7 +49,7 @@ export const practiceForNextLevel = (registry: Registry, level: number): number 
   if (level === SKILL_LEVEL_MAX) {
     return LEGENDARY_LEVEL_PRACTICE;
   }
-  const progression = registry.skillProgression.get('core');
+  const progression = claimed(registry.skillProgression, 'progression');
   if (progression === undefined) {
     throw new Error('Missing skill progression content');
   }
@@ -66,6 +68,10 @@ export const startingKnownRecipes = (registry: Registry): string[] => [
 ];
 
 export class Character implements HandedCharacter {
+  skillForCapability(capability: string): string | undefined {
+    return claimed(this.registry.skills, capability)?.id;
+  }
+
   private readonly side: HandSide;
   private readonly registry: Registry;
   get handedness(): HandSide {

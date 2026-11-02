@@ -1,7 +1,7 @@
 // The quickbar and handling progress shown while playing (`DESIGN.md`, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { claimed } from '../core/capabilities.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { countText, decimalText } from '../core/numberText.ts';
@@ -44,7 +44,7 @@ export interface QuickbarViewModel {
 }
 
 export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewModel => {
-  const text = inv.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.quickbar;
+  const text = claimed(inv.registry.ui, 'interface')!.screenText.quickbar;
   return {
     slots: bar.slots.map((_, i) => {
       const item = bar.resolve(i, inv);

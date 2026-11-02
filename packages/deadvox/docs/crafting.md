@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change recipe authoring, browsing taxonomy, workstation, disassembly or salvage rules
   - you change craft ownership, progression, reading or save behavior
   - you change the repair progress arc or presentation between compressed scheduler ticks
@@ -26,7 +27,7 @@ Recipe classification is independent of item categories and skill gates so repai
 future world results can share navigation without pretending to be inventory items.
 A tree gives each recipe one browsing home; tags express overlapping properties without
 duplicating branches. Content owns the labels and search terms so packs can extend or
-translate the catalogue without a code registration. See `src/core/schema.ts`,
+translate the catalogue without a code registration. See `src/core/schema/recipes.ts`,
 `RecipeSchema`, and `src/core/content.ts`, `checkRecipeCategories` and `checkRecipe`.
 
 Browsing is inspection, not admission: filtering must not spend stock, grant knowledge or

@@ -5,9 +5,9 @@
 import { modelMassKg } from '@skelly/thing-core/mass';
 import type { ModelBox, ModelParts } from '@skelly/thing-core/schema';
 import { supportProblems } from '../vehicles/model.ts';
+import { claimed } from './capabilities.ts';
 import { type CargoCells, cargoGrid, fitIssue, placementRegion } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Item } from './items.ts';
 import type { ContentSection, ItemDef, VehicleCapability, VehicleFittingDef } from './schema.ts';
 import type { VehicleInstance, VehicleWorkPlacement } from './vehicleInstances.ts';
@@ -141,7 +141,7 @@ export const vehicleContentIssues = (registry: Registry): VehicleIssue[] => {
       );
     }
   }
-  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   for (const { id, fittings } of registry.vehicleBlueprints.values()) {
     let found = fittingIssues(registry, fittings);
     if (
@@ -232,7 +232,7 @@ const partBody = (fitting: VehicleFittingDef, parts: readonly ModelPart[]): Body
  * drawn in leave its size whole; `cargoSpace.ts` snaps that block onto its load floor's lattice.
  */
 const cargoBody = (registry: Registry, fitting: VehicleFittingDef, [x, y, z]: CargoCells): Body => {
-  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  const cell = claimed(registry.inventory, 'player')?.cellMetres;
   if (cell === undefined) {
     throw new Error(`Fitting ${fitting.id} is a cargo space, which needs the inventory cell size`);
   }
@@ -286,7 +286,7 @@ export const legalAddonPlacements = (
   if (!part?.addon || (part.cargoSpace && !item.cargo)) {
     return [];
   }
-  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+  const cell = claimed(registry.inventory, 'player')!.cellMetres;
   const prototype = placeFitting(registry, {
     id: `addon:${item.uid}`,
     part: item.type,

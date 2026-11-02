@@ -1,6 +1,5 @@
 import { Character } from '../src/core/character.ts';
 import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -8,6 +7,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { fixtureSources } from './economyFixtures.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 export const STOCK = 'world_repair_stock';
 export const PIECE = 'world_repair_piece';

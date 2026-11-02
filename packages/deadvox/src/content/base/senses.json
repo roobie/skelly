@@ -1,6 +1,7 @@
 {
   "senses": [
     {
+      "capability": "player",
       "chestEyeFraction": 0.62,
       "crouch": {
         "hearingRangeScale": 0.5,

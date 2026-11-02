@@ -22,6 +22,7 @@ local handPose(fingers, thumbAcross, thumbIn) = {
   figures: [
     {
       id: 'player',
+      capability: 'player',
       // Stands the bust's eyes at the player's eye height; the leg model's hip-to-sole length matches it.
       hipHeightMetres: 0.82,
       body: {

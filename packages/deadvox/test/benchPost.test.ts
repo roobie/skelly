@@ -10,13 +10,15 @@ import {
 } from '../src/bench/post.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID } from '../src/core/weather.ts';
 import type { StartupContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
 import { heightFogUniforms, setHeightFogTuning } from '../src/render/heightFog.ts';
 import { baseRegistry, startupContent } from './baseRegistry.ts';
+import {
+  fixtureIds as CORE_CONTENT_IDS,
+  defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID,
+} from './fixtures/capabilityIds.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
 const params = (query: string) => new URLSearchParams(query);
@@ -75,7 +77,10 @@ describe('benchmark post-processing option', () => {
     const { registry: contentRegistry } = startupContent();
     const look = contentRegistry.look.get(CORE_CONTENT_IDS.coreLook)!;
     const fog = LOOK_FIXTURE.heightFog;
-    const fixtureRegistry = { ...contentRegistry, look: new Map([[look.id, { ...LOOK_FIXTURE, id: look.id }]]) };
+    const fixtureRegistry = {
+      ...contentRegistry,
+      look: new Map([[look.id, { ...LOOK_FIXTURE, id: look.id, capability: 'defaultLook' }]]),
+    };
     setHeightFogTuning({ baseMetres: fog.baseMetres + 1, scaleMetres: fog.scaleMetres * 2 });
     const engine = {
       registry: fixtureRegistry,

@@ -12,6 +12,7 @@
         "label": "Cached surface noise",
         "options": [false, true]
       },
+      "capability": "graphics",
       "coarseWeathering": {
         "default": false,
         "label": "Coarse weathering grid",

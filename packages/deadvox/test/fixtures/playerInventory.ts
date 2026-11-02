@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './capabilityIds.ts';
 
 const baseJson = (name: string) =>
   JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as {

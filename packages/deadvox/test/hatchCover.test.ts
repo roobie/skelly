@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
@@ -13,6 +12,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import {
   capture,
   contentLookup,

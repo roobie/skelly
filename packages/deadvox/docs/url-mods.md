@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
   - you author a demo mod or change how a URL selects mods
   - you change scenario-owned starts, product defaults or the starting kit
@@ -19,7 +20,7 @@ This is the design plan for `docs/decisions/0006-url-mods-and-hash-state.md`, wh
 
 Start rows belong to scenario content because location and kit depend on the map and run. A scenario may provide several starts, and a mod may add one. The product entry pack names its default scenario and start; a player picker is later UI work. See `docs/decisions/0009-content-defined-products.md`, "Starts and mixing".
 
-The planned start section joins `src/core/schema.ts`, `SECTION_DESCRIPTOR`, so new-game setup uses ordinary admission rather than a private preset path. Move the initial kit from `src/game/loadout.ts`, `startingLoadout`, and the layout's start time into that content. The row supplies layout, storeys, density, start time, seed, kit, wounds and skill levels without putting scenario references in shared topics.
+The planned start section joins `src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, so new-game setup uses ordinary admission rather than a private preset path. Move the initial kit from `src/game/loadout.ts`, `startingLoadout`, and the layout's start time into that content. The row supplies layout, storeys, density, start time, seed, kit, wounds and skill levels without putting scenario references in shared topics.
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 

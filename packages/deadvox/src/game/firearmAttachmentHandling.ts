@@ -1,6 +1,7 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
+import { claimedId } from '../core/capabilities.ts';
 import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { attachmentIdFor, firearmSlotIds, LIGHT_MOUNT_SLOT, SLING_SLOT } from '../core/firearmFitting.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
@@ -30,14 +31,15 @@ const available = (inventory: Inventory, item: Item): boolean => availableAt(inv
 
 const rootTarget = (inventory: Inventory, location: Location): Target => inventory.targetForLocation(location);
 
-// Firearms Combat governs attachment work until Gunsmithing exists; this is the one place that names the skill.
-export const ATTACHMENT_WORK_SKILL = CORE_CONTENT_IDS.firearmsCombat;
+export const ATTACHMENT_WORK_SKILL = (registry: Registry): string => claimedId(registry.skills, 'firearmsCombat');
 
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 
 const attachmentWorkSeconds = (inventory: Inventory): number => {
   const tuning = firearmsCombatTuning(inventory.registry);
-  const level = skillEffectLevel(inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN);
+  const level = skillEffectLevel(
+    inventory.character.skills?.[ATTACHMENT_WORK_SKILL(inventory.registry)] ?? SKILL_LEVEL_MIN,
+  );
   return (
     handlingWeights(inventory.registry).ground *
     skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels)
@@ -158,8 +160,9 @@ export class FirearmAttachmentHandling {
     if (
       withSkill &&
       effects?.kind === 'suppressor' &&
-      skillEffectLevel(this.inventory.character.skills?.[ATTACHMENT_WORK_SKILL] ?? SKILL_LEVEL_MIN) <
-        effects.fitSkillLevel
+      skillEffectLevel(
+        this.inventory.character.skills?.[ATTACHMENT_WORK_SKILL(this.inventory.registry)] ?? SKILL_LEVEL_MIN,
+      ) < effects.fitSkillLevel
     ) {
       return effects.fitRefusal;
     }

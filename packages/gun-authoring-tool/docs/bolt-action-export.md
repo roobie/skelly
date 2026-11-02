@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change turn-bolt geometry, staggered integral capacity or hunting-rifle exports
   - you change the shared manual-action model contract consumed by Deadvox
   - you regenerate the hunting rifle, its civilian cartridge or its optional scope
@@ -35,7 +36,7 @@ Cartridge identity must not silently select a different action envelope: modded 
 
 The carrier, arm and knob share one turn about the carrier's longitudinal centreline. Each part stores that pivot and bore-parallel axis in its own local frame, while the export transforms them into the model frame. The handle profile supplies the lift angle. Receiver relief leaves room for the handle root. Rail clearance follows the turned neck, while the sporter's bedding and low tang leave its rearward root clear without lifting the rail; neither approach permits collisions by family exemption. Continuous clearance is certified for the coupled body and handle over both the lift arc and the lifted draw, including fixed optic geometry; interval displacement bounds prevent narrow collisions between samples from being missed. Axial tail length must not inflate the turn-speed bound, and obstacles reuse immutable phase poses, so bedding detail does not multiply identical motion work. See `src/gun/parts.ts`, `boltTurn`, and `src/gun/boltSweep.ts`, `sweepTurningAction`.
 
-The action is hand-only: unlock, draw, dwell, push and lock share one timeline. Ejection progress comes from the resolved receiver port and carrier stroke, not an independently tuned fraction. Deadvox validates that every turning mover references timelines containing both turn phases, and that all phases fit the duration. Gungen owns visual timing estimates; Deadvox owns skill scaling and mechanical state. See `src/gun/actionDescription.ts`, `resolveGunAction`, `src/gun/cycle.ts`, `boltCycleMotion`, and `packages/deadvox/src/core/schema.ts`, `ActionSchema`.
+The action is hand-only: unlock, draw, dwell, push and lock share one timeline. Ejection progress comes from the resolved receiver port and carrier stroke, not an independently tuned fraction. Deadvox validates that every turning mover references timelines containing both turn phases, and that all phases fit the duration. Gungen owns visual timing estimates; Deadvox owns skill scaling and mechanical state. See `src/gun/actionDescription.ts`, `resolveGunAction`, `src/gun/cycle.ts`, `boltCycleMotion`, and `packages/deadvox/src/core/schema/models.ts`, `ActionSchema`.
 
 Pump tubes and integral rifle wells use the same neutral model record because loading capacity does not imply a tube shape. Neither exports a detachable-magazine slot or a box round-pose column. The loading anchor describes the mouth, not a hand or inventory transaction; see `src/gun/exportGlb.ts`, `DeadvoxModelEntry`, and `src/gun/anchorData.ts`, `GUN_ANCHORS`.
 

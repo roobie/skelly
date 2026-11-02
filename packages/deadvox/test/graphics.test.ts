@@ -1,7 +1,6 @@
 import { PerspectiveCamera, Scene, type WebGLRenderer } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { buildRegistry, requiredContentIssues, validateContent } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import {
   GRAPHICS_KEYS,
   GRAPHICS_KNOBS,
@@ -17,6 +16,7 @@ import { GraphicsControls } from '../src/game/graphicsControls.ts';
 import { readGraphicsSettings, writeGraphicsSettings } from '../src/game/graphicsSettings.ts';
 import { Gore } from '../src/render/gore.ts';
 import { Mood } from '../src/render/mood.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 
 const scale = (label: string) => ({ label, min: 0.2, max: 0.9, default: 0.6 });
@@ -44,6 +44,7 @@ const source = (options: GraphicsOptions) => ({
     graphics: [
       {
         id: CORE_CONTENT_IDS.coreGraphics,
+        capability: 'graphics',
         ...fixtureGraphics,
         readyRadiusM: 16,
         streamHysteresisM: 16,

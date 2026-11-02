@@ -13,7 +13,7 @@ const makeCharacter = (practicePerLevel = 10): { registry: Registry; character: 
     {
       source: 'skill.json',
       data: {
-        skillProgression: [{ id: 'core', practicePerLevel }],
+        skillProgression: [{ id: 'fixture_progression', capability: 'progression', practicePerLevel }],
         skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
       },
     },

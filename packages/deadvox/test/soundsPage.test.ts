@@ -1,9 +1,9 @@
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { buildSoundsPageContent } from '../src/soundsPageContent.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
 
 let context: SuspendedAudioContext | undefined;

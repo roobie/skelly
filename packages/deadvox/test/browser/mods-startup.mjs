@@ -14,7 +14,17 @@ export const selectFixtureMods = async (page) => {
     await page.getByRole('textbox', { name: 'Mod JSON or URL' }).fill(data);
     await page.getByRole('button', { name: 'Add', exact: true }).click();
   };
-  await paste(JSON.stringify({ id: 'earlier-mod', items: [{ ...fixture.items[0], name: 'Earlier override' }] }));
+  await paste(
+    JSON.stringify({
+      id: 'earlier-mod',
+      version: '1',
+      tier: 'theme',
+      product: false,
+      dependencies: [],
+      overrides: [],
+      items: [{ ...fixture.items[0], id: `${fixture.items[0].id}_earlier`, name: 'Earlier addition' }],
+    }),
+  );
   await paste('{');
   assert.equal(await page.locator('#mods-start').isDisabled(), true, 'enabled broken JSON blocks startup');
   const invalid = page.locator('[data-mod-source="mod-3/pasted.json"]');

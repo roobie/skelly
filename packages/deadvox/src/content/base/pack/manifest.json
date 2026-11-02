@@ -1,0 +1,3362 @@
+{
+  "dependencies": [],
+  "files": [
+    {
+      "kind": "content",
+      "path": "benchmark-city.json"
+    },
+    {
+      "kind": "content",
+      "path": "block-materials.json"
+    },
+    {
+      "kind": "content",
+      "path": "blocks.json"
+    },
+    {
+      "kind": "content",
+      "path": "body.json"
+    },
+    {
+      "kind": "content",
+      "path": "camp.json"
+    },
+    {
+      "kind": "content",
+      "path": "compression.json"
+    },
+    {
+      "kind": "content",
+      "path": "controls.json"
+    },
+    {
+      "kind": "content",
+      "path": "crisis-hq-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "crisis-hq.json"
+    },
+    {
+      "kind": "content",
+      "path": "dayCycle.json"
+    },
+    {
+      "kind": "content",
+      "path": "figures-player.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture-cabins.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture-hunting.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture-playtest.json"
+    },
+    {
+      "kind": "content",
+      "path": "furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "gauntlet-look.json"
+    },
+    {
+      "kind": "content",
+      "path": "gauntlet-start.json"
+    },
+    {
+      "kind": "content",
+      "path": "gauntlet.json"
+    },
+    {
+      "kind": "content",
+      "path": "graphics.json"
+    },
+    {
+      "kind": "content",
+      "path": "hunting-cabins.json"
+    },
+    {
+      "kind": "content",
+      "path": "inventory.json"
+    },
+    {
+      "kind": "content",
+      "path": "item-wear.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-ammunition.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-attachments.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-explosives.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-food.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-gun-parts.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-other.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-pistol.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-playtest.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-revolver.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-slice2-content.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-tools.json"
+    },
+    {
+      "kind": "content",
+      "path": "items-wearables.json"
+    },
+    {
+      "kind": "content",
+      "path": "ladders.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts-cabins.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts-playtest.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts-stairs.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts-test-house.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts-voice-size.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts-water.json"
+    },
+    {
+      "kind": "content",
+      "path": "layouts.json"
+    },
+    {
+      "kind": "content",
+      "path": "locks.json"
+    },
+    {
+      "kind": "content",
+      "path": "look.json"
+    },
+    {
+      "kind": "content",
+      "path": "loot-workshop.json"
+    },
+    {
+      "kind": "content",
+      "path": "loot.json"
+    },
+    {
+      "kind": "content",
+      "path": "map-kits.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-attachments.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-firearms.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-gun-parts.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-items.json"
+    },
+    {
+      "kind": "content",
+      "path": "models-melee.json"
+    },
+    {
+      "kind": "content",
+      "path": "player.json"
+    },
+    {
+      "kind": "content",
+      "path": "power.json"
+    },
+    {
+      "kind": "content",
+      "path": "range.json"
+    },
+    {
+      "kind": "content",
+      "path": "readables.json"
+    },
+    {
+      "kind": "content",
+      "path": "recipes.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-medical-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-medical.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-police-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-police.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-substation-fixtures.json"
+    },
+    {
+      "kind": "content",
+      "path": "rural-substation.json"
+    },
+    {
+      "kind": "content",
+      "path": "saves.json"
+    },
+    {
+      "kind": "content",
+      "path": "scenarios.json"
+    },
+    {
+      "kind": "content",
+      "path": "senses.json"
+    },
+    {
+      "kind": "content",
+      "path": "site-generation.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-block.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-furniture.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-pump.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-revolver.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-synth.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds-weapons.json"
+    },
+    {
+      "kind": "content",
+      "path": "sounds.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-cabins.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-medical.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-playtest.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-stairs.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-test-house.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates-workshop.json"
+    },
+    {
+      "kind": "content",
+      "path": "templates.json"
+    },
+    {
+      "kind": "content",
+      "path": "tutorial.json"
+    },
+    {
+      "kind": "content",
+      "path": "ui.json"
+    },
+    {
+      "kind": "content",
+      "path": "vegetation.json"
+    },
+    {
+      "kind": "content",
+      "path": "vehicles.json"
+    },
+    {
+      "kind": "content",
+      "path": "weathering.json"
+    },
+    {
+      "kind": "content",
+      "path": "zombies.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/ak_slant_compensator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_ak_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_ar_large_long.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_ar_large_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_ar_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_pistol.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_pump_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/barrel_sporter_long.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_carrier_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_carrier_ar_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_carrier_ar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_carrier_bolt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_carrier_pump.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_handle_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/bolt_knob_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/case_12_h_gauge_h_00_h_buck.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/case_308_h_winchester.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/case_357_h_magnum.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/case_5_d_56x45.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/case_7_d_62x39.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/case_9x19.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/charging_handle_ar_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/charging_handle_ar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/foregrip.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/forend_pump.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/front_bead.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/front_sight_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/front_sight_ar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/front_sight_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/gas_block_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/gas_cylinder_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/grip_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/grip_ar_long.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/grip_standard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/handguard_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/handguard_ar_clamped.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/handguard_ar_large_clamped.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/handguard_ar_large_free_float.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/handguard_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/improvised_suppressor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/integral_magazine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/lower_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/lower_ar_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/lower_ar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/lower_pump.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/lower_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/magazine_akm_30.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/magazine_pistol_9.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/magazine_stanag_20.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/magazine_stanag_30.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_digital_thermal.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_fixed_prism_4x.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_high_mag_5_25x.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_holographic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_hunting_3_9x.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_lpvo_1_6x.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_mini_reflex.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/optic_tube_dot.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/pistol_frame.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/pistol_service.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/pistol_slide.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/rail_front_sight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/real_suppressor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/rear_sight_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/rear_sight_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/receiver_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/receiver_ar_large.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/receiver_ar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/receiver_pump.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/receiver_sporter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_barrel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_crane.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_cylinder.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_ejector.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_frame.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_grip.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_hammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/revolver_trigger.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/rifle_ak.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/rifle_assault.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/rifle_hunting.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/round_12_h_gauge_h_00_h_buck.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/round_308_h_winchester.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/round_357_h_magnum.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/round_5_d_56x45.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/round_7_d_62x39.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/round_9x19.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/shotgun_pump.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/stock_ak_long.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/stock_m4_long.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/stock_m4_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/stock_sporting_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/stock_tapered_medium.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/tactical_flashlight_mount.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "gungen/tube_magazine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canned_beans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/canned_soup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crackers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/chocolate_bar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soda_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/empty_soda_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/water_bottle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/juice_carton.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cartridge_box_308_h_winchester.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cartridge_box_5_d_56x45.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cartridge_box_7_d_62x39.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cartridge_box_357_h_magnum.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shotshell_box.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/ammo_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jerry_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gas_canister.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/opened_beans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/opened_soup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/empty_can.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/opened_soda.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/can_opener.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/aa_battery.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rag.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/duct_tape.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/nails.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_metal.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stick.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wax.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wooden_plank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/whetstone.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/field_patch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/beans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soup.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/soda.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/apple.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bandage.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antiseptic.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/antibiotics.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/painkillers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/codeine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/morphine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/frag_grenade.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/torch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/candle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/oil_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dead_desk_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_torso.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_head.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_left_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shambler_right_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/car_battery.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/car_headlamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_battery_tray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_battery_tray.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cargo_space.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/mounting_plate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_bed_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_bed_side.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pickup_bed_front.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_side.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_front.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/box_van_roof.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wheel_205_55r16.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/front_seat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/door_mirror.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steering_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gear_lever.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_shell.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_tailgate.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_bonnet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_wing.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_front_strut.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_engine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_gearbox.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_radiator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_fuel_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_exhaust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hatchback_rear_seat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_frame_rail.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_crossmember.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_wheel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_front_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_rear_axle.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_engine.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_gearbox.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_prop_shaft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_fuel_tank.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_exhaust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_radiator.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_cab_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_cab_skirt.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_cab_back.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_front_panel.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_a_post.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_windscreen.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_roof.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_door.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_front_bumper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_dashboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_engine_cover.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_bench.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_deck_floor.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_headboard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_mudguard.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_rear_underrun.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_tail_lamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_crane_base.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_stabiliser.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_crane_column.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_boom.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_boom_extension.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_luff_ram.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_winch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_hook_block.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoist_boom_rest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jeans.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/rubber_boots.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sneakers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cargo_pants.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hoodie.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/utility_vest.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fanny_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/school_backpack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hiking_backpack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/baseball_cap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/blowtorch.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/headlamp.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/weapon_sling.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wire_strippers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/adjustable_pliers.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sewing_repair_kit.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/portable_radio.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scissor_jack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bottle_jack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/engine_hoist.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/crowbar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/sledgehammer.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/baseball_bat.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kabar.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/kitchen_knife.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/machete.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/wrench.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/steel_pipe.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/flashlight.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/compass.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/lighter.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/matches.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/dad_cabin_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/pharmacy_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camp_armoury_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/camp_hq_safe_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/shed_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gauntlet_police_armoury_key.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/gauntlet_lab_entry_card.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hand_saw.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/screwdriver.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/copper_wire.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/small_spring.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hinge_set.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fastener_pack.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/taped_flashlight_mount.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/scrap_foregrip.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_bust.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_arm.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/player_leg.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/riot_helmet.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/night_vision_goggles.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_jacket_body.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_jacket_upper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_jacket_fore.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_hoodie_body.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_hoodie_upper.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_hoodie_fore.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_trousers_pelvis.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_trousers_thigh.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_trousers_shin.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_boot_shaft.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_boot_foot.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/worn_sneaker_foot.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/utility_vest_worn.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stab_vest_worn.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/school_backpack_worn.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hiking_backpack_worn.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fanny_pack_worn.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/weapon_sling_worn.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/utility_vest_worn_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/stab_vest_worn_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/school_backpack_worn_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/hiking_backpack_worn_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fanny_pack_worn_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/weapon_sling_worn_jacket.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/tape_roll.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/thread_spool.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/cord_coil.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/fuse.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/bear_trap.model.json"
+    },
+    {
+      "kind": "json",
+      "path": "things/index.json"
+    },
+    {
+      "kind": "json",
+      "path": "assets/manifest.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/fuel-parts.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-close-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-close-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door-open-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/door_blocked_close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/firearm-dry-click-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/firearm-dry-click-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/firearm-dry-click-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-grass-sand-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-leaves-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-leaves-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-mud-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-stone-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/footstep-wood-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/grenade-blast-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/grenade-blast-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-akm-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-akm-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-akm-pbs1-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-akm-pbs1-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-ar15-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-ar15-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-m4-suppressed-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-sw642-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-sw642-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-tikka-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/gunshot-tikka-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/heartbeat-fast-beat.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/heartbeat-slow-beat.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/item_drop_wood-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/item_drop_wood-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/magazine-clipload-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/magazine-clipload-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-metal-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-metal-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-hit-metal-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-heavy-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-light-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-light-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee-swing-light-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee_hit_fist-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/melee_swing-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-block-full-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-heavy-08.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-hurt-light-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-landing-hard-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-nope-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-09.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-12.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/player-strain-14.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/pouch_take-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-case-pick-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-crane-close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-crane-open-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-dry-click-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-eject-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-hammer-cock-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-round-insert-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/revolver-round-insert-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/rifle-bolt-close-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/rifle-bolt-open-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-alert-04.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-alert-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-alert-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-attack-07.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-attack-08.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-attack-09.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hit-05.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hit-06.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hit-07.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-hurt-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-idle-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-idle-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shambler-idle-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-dry-click-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-hull-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-hull-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-hull-03.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-insert-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-insert-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-model12-01.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-model12-02.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-rack-back.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/audio/shotgun-rack-forward.ogg"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/cursors/cursor.png"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/manifest.jsonnet"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/manifest.libsonnet"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/aa_battery.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/adjustable_pliers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ak_slant_compensator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/ammo_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antibiotics.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/antiseptic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/apple.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bandage.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_ak_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_ar_large_long.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_ar_large_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_ar_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_pistol.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_pump_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/barrel_sporter_long.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/baseball_bat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/baseball_cap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/beans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bear_trap.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/blowtorch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_carrier_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_carrier_ar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_carrier_ar_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_carrier_bolt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_carrier_pump.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_handle_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bolt_knob_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/bottle_jack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_front.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_roof.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/box_van_side.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/broken_clock.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/broken_toaster.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camp_armoury_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/camp_hq_safe_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/can_opener.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/candle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canned_beans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/canned_soup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/car_battery.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/car_headlamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cargo_pants.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cargo_space.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cartridge_box_308_h_winchester.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cartridge_box_357_h_magnum.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cartridge_box_5_d_56x45.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cartridge_box_7_d_62x39.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/case_12_h_gauge_h_00_h_buck.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/case_308_h_winchester.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/case_357_h_magnum.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/case_5_d_56x45.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/case_7_d_62x39.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/case_9x19.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/charging_handle_ar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/charging_handle_ar_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/chocolate_bar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/circuit_board.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cloth_bundle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/codeine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/compass.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/copper_wire.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cord_coil.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/cracked_phone.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crackers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/crowbar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dad_cabin_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/dead_desk_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/door_mirror.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/duct_tape.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/electrical_repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/empty_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/empty_soda_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/engine_hoist.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fanny_pack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fanny_pack_worn.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fanny_pack_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fastener_pack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/field_patch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/flashlight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/folded_note.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/foregrip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/forend_pump.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/frag_grenade.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/front_bead.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/front_seat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/front_sight_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/front_sight_ar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/front_sight_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/fuse.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gas_block_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gas_canister.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gas_cylinder_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gauntlet_lab_entry_card.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gauntlet_police_armoury_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/gear_lever.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_bulb.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_lens.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glass_shards.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/glowstick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grip_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grip_ar_long.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/grip_standard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hammer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hand_saw.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/handguard_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/handguard_ar_clamped.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/handguard_ar_large_clamped.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/handguard_ar_large_free_float.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/handguard_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_battery_tray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_bonnet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_engine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_exhaust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_strut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_front_wing.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_fuel_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_gearbox.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_radiator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_rear_seat.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_shell.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_tailgate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hatchback_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/headlamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hiking_backpack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hiking_backpack_worn.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hiking_backpack_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hinge_set.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_a_post.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_bench.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_boom.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_boom_extension.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_boom_rest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_cab_back.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_cab_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_cab_skirt.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_crane_base.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_crane_column.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_crossmember.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_dashboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_deck_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_door.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_engine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_engine_cover.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_exhaust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_frame_rail.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_front_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_front_bumper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_front_panel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_fuel_tank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_gearbox.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_headboard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_hook_block.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_luff_ram.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_mudguard.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_prop_shaft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_radiator.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_rear_axle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_rear_underrun.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_roof.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_stabiliser.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_tail_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_winch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoist_windscreen.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/hoodie.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/improvised_suppressor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/integral_magazine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jeans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/jerry_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/juice_carton.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kabar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/kitchen_knife.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lamp_oil_bottle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lighter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lower_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lower_ar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lower_ar_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lower_pump.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/lower_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/machete.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/magazine_akm_30.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/magazine_pistol_9.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/magazine_stanag_20.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/magazine_stanag_30.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/matches.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/morphine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/mounting_plate.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/nails.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/night_vision_goggles.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/notebook.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/oil_lamp.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/opened_beans.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/opened_soda.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/opened_soup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_digital_thermal.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_fixed_prism_4x.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_high_mag_5_25x.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_holographic.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_hunting_3_9x.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_lpvo_1_6x.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_mini_reflex.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/optic_tube_dot.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/painkillers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/paper_sheet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pharmacy_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_battery_tray.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_bed_floor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_bed_front.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pickup_bed_side.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pistol_frame.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pistol_service.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/pistol_slide.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_bust.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/player_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/portable_radio.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rag.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rail_front_sight.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/real_suppressor.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rear_sight_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rear_sight_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/receiver_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/receiver_ar.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/receiver_ar_large.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/receiver_pump.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/receiver_sporter.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_barrel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_crane.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_cylinder.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_ejector.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_frame.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_grip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_hammer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/revolver_trigger.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rifle_ak.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rifle_assault.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rifle_hunting.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riot_helmet.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/riot_helmet_view.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/round_12_h_gauge_h_00_h_buck.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/round_308_h_winchester.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/round_357_h_magnum.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/round_5_d_56x45.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/round_7_d_62x39.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/round_9x19.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rubber_boots.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/rubber_strip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/school_backpack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/school_backpack_worn.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/school_backpack_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scissor_jack.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_foregrip.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/scrap_metal.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/screwdriver.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sewing_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sewing_repair_kit.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_head.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_left_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_arm.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_right_leg.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shambler_torso.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shed_key.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shotgun_pump.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/shotshell_box.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sledgehammer.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/small_spring.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/sneakers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soda.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soda_can.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/soup.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stab_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stab_vest_worn.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stab_vest_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steel_pipe.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/steering_wheel.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stick.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stock_ak_long.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stock_m4_long.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stock_m4_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stock_sporting_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/stock_tapered_medium.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/table_fan.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tactical_flashlight_mount.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tape_roll.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/taped_flashlight_mount.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/thread_spool.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/torch.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/tube_magazine.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/utility_vest.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/utility_vest_worn.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/utility_vest_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/water_bottle.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wax.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/weapon_sling.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/weapon_sling_worn.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/weapon_sling_worn_jacket.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wheel_205_55r16.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/whetstone.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wire_strippers.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wood_offcut.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wooden_plank.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_boot_foot.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_boot_shaft.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_hoodie_body.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_hoodie_fore.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_hoodie_upper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_jacket_body.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_jacket_fore.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_jacket_upper.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_sneaker_foot.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_trousers_pelvis.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_trousers_shin.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/worn_trousers_thigh.glb"
+    },
+    {
+      "kind": "asset",
+      "path": "assets/models/wrench.glb"
+    }
+  ],
+  "id": "base",
+  "overrides": [],
+  "product": true,
+  "tier": "product",
+  "version": "1"
+}

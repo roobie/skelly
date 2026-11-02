@@ -1,7 +1,7 @@
 // How much light reaches a point (`DESIGN.md`, "Light"): sky, lights in the inventory's reach and powered
 // fixtures, in the light units the renderer draws with, so what the player sees and what the rules read agree.
 
-import { CORE_CONTENT_IDS } from './contentIds.ts';
+import { claimed } from './capabilities.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import type { Inventory } from './inventory.ts';
@@ -94,7 +94,7 @@ function* pointSources(scene: IlluminationScene, pointDecay: number, renderLiftM
 
 /** Light reaching a point in blocks, in the renderer's light units. */
 export const illuminationAt = (scene: IlluminationScene, point: Vec3): number => {
-  const tuning = scene.inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light;
+  const tuning = claimed(scene.inventory.registry.senses, 'player')!.light;
   const sky = skyAt(scene.gameHour, scene.cycle);
   let total = scene.sky.visibilityAt(point) * (sky.lightIntensity + sky.ambientIntensity);
   for (const source of pointSources(scene, tuning.illumination.pointDecay, tuning.groundLight.renderLiftMetres)) {
@@ -111,7 +111,7 @@ export const illuminationAt = (scene: IlluminationScene, point: Vec3): number =>
 /** Whether a point has the light content says a page or sign needs to be read. */
 export const litEnoughToRead = (scene: IlluminationScene, point: Vec3): boolean =>
   illuminationAt(scene, point) >=
-  scene.inventory.registry.senses.get(CORE_CONTENT_IDS.player)!.light.illumination.readingThreshold;
+  claimed(scene.inventory.registry.senses, 'player')!.light.illumination.readingThreshold;
 
 /** Every readable admits through this one check, so paper and signs share one notion of "enough light". */
 export const readingLightRefusal = (scene: IlluminationScene, point: Vec3): string | undefined =>

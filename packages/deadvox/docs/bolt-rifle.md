@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change bolt-rifle handling, magazine-plus-chamber capacity or open-action saves
   - you change turn-bolt posing or integral-magazine loading presentation
 ---
@@ -18,6 +19,6 @@ The save copy cancels manual motion, not committed ammunition transfers. An open
 
 The civilian cartridge is separate from military ammunition, and fitting the scope is the player's choice. The rifle and its ammunition are admitted to loot by usages and tiers like any other item; see `DESIGN.md`, "Loot". Debug range stock is capability-driven rather than a loot placement; see `src/game/testHouseRange.ts`, `testHouseRangeSupply`.
 
-Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `src/content/base/models-firearms.libsonnet`, `items`, and `src/core/schema.ts`, `FirearmSchema`.
+Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `src/content/base/models-firearms.libsonnet`, `items`, and `src/core/schema/items.ts`, `FirearmSchema`.
 
 The exported pivot, turn and stroke own the motion. Unlock must precede extraction, and the firing hand follows the knob instead of borrowing the pump's support-hand rack. The loading round approaches the top mouth rather than the pump's underside. Rendering samples the existing job clock and never moves ammunition. See `src/render/firearmModel.ts`, `poseActionParts`, `src/render/actorAnimator.ts`, `poseBoltHand`, and `src/render/shellLoadPose.ts`, `shellLoadPose`. The export rationale is in `packages/gun-authoring-tool/docs/bolt-action-export.md`.

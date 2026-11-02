@@ -1,6 +1,6 @@
 import { type PerspectiveCamera, Vector3 } from 'three';
+import { claimed } from '../core/capabilities.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
@@ -15,7 +15,7 @@ import { PileMeshes } from '../render/piles.ts';
 
 const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12 });
 const benchLightPool = (engine: Pick<RenderedEngine, 'registry' | 'scene'>): LightPool =>
-  new LightPool(engine.scene, engine.registry.senses.get(CORE_CONTENT_IDS.player)!.light.renderedFixtureLimit);
+  new LightPool(engine.scene, claimed(engine.registry.senses, 'player')!.light.renderedFixtureLimit);
 const INNER_RING_COUNT = 4;
 
 export const benchFlareSourcesFromUrl = (params: URLSearchParams): Vec3[] | undefined => {
@@ -122,8 +122,8 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   const simulation = new Simulation({
     seed: config.seed,
     registry,
-    bodyTuning: registry.body.get(CORE_CONTENT_IDS.player)!,
-    compressionCaps: registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+    bodyTuning: claimed(registry.body, 'player')!,
+    compressionCaps: claimed(registry.compression, 'player')!.caps,
     clock: { ratio: requireDayCycle(registry).clockRatio, start: calendar },
   });
   const queue = new HandlingQueue(inventory);

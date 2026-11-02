@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema.ts';
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
@@ -12,6 +11,7 @@ import {
   fixtureMaterials,
   fixtureSounds,
 } from '../economyFixtures.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './capabilityIds.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
@@ -147,6 +147,7 @@ export const fixtureScenarioSources = (
         siteGeneration: [
           {
             id: CORE_CONTENT_IDS.authoredSite,
+            capability: 'authoredSite',
             activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
             topography: {
               amplitudeMetres: 0,

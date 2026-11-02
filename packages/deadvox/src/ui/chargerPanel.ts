@@ -1,6 +1,6 @@
 import { batteryCapacityMicrojoules, batteryEnergy } from '../core/battery.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
+import { claimed } from '../core/capabilities.ts';
 import { decimalText } from '../core/numberText.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { FurnitureDef, ScreenText } from '../core/schema.ts';
@@ -47,7 +47,7 @@ export const chargerPanel = (
   if (!(id && power?.chargers && spec && entity.searched)) {
     return undefined;
   }
-  const text = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.charger;
+  const text = claimed(inventory.registry.ui, 'interface')!.screenText.charger;
   const battery = entity.pockets?.[spec.pocket]?.[0]?.item;
   const active = entity.charging !== undefined;
   const full =

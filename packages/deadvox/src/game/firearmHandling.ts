@@ -3,9 +3,9 @@
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
 import type { AimBasis, AimFrame } from '../core/aim.ts';
+import { claimed } from '../core/capabilities.ts';
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, actionOpenSeconds, actionPhaseSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '../core/firearmAttachments.ts';
@@ -356,7 +356,7 @@ export class FirearmMechanics {
     this.firearmsSkillLevel = firearmsSkillLevel;
     this.handlingSlowdown = handlingSlowdown;
     this.shotInput = shotInput;
-    this.firearmsCombatTuning = inventory.registry.skills.get(CORE_CONTENT_IDS.firearmsCombat)?.combat?.firearms;
+    this.firearmsCombatTuning = claimed(inventory.registry.skills, 'firearmsCombat')?.combat?.firearms;
     this.firearmsSkillZeroHandling =
       firearmsSkillZeroHandling ??
       (() => {
@@ -745,7 +745,7 @@ export class FirearmMechanics {
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const tuning = this.requiredFirearmsCombatTuning();
     const bore = firearmBoreRay({
-      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(this.inventory.registry.figures, 'player')!.holds,
       model: data.model,
       eye: input.eye,
       stockSeat: input.stockSeat,
@@ -1660,7 +1660,7 @@ export class FirearmMechanics {
     const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
     const held = heldEjectionPose({
-      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(this.inventory.registry.figures, 'player')!.holds,
       model: data.model,
       side,
       twoHanded,
@@ -1818,7 +1818,7 @@ export class FirearmMechanics {
       side,
       twoHanded: false,
       model,
-      holds: this.inventory.registry.figures.get(CORE_CONTENT_IDS.player)!.holds,
+      holds: claimed(this.inventory.registry.figures, 'player')!.holds,
     });
     const basis = basisAlong(
       [-Math.sin(pose.yaw) * Math.cos(pose.pitch), Math.sin(pose.pitch), -Math.cos(pose.yaw) * Math.cos(pose.pitch)],

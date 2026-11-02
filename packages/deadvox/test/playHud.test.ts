@@ -3,7 +3,6 @@ import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vec
 import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { bodyRegionLabel } from '../src/core/body.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { damageWord } from '../src/core/items.ts';
 import { fillText } from '../src/core/textTemplate.ts';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
@@ -19,6 +18,7 @@ import {
 } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 import { baseRegistry, baseScreenText } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const text = baseScreenText();
 

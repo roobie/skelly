@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you distinguish intact vehicle disassembly from destructive salvage
   - you change the vehicle part model, build page or vehicle exports
   - you add a vehicle part, capability or vehicle blueprint to content
@@ -71,7 +72,7 @@ Every part is its own item, so the first loop's welded assemblies do not apply t
 
 The boom is telescopic, with its extension a separate part, even though that carries the most debt: a sliding stage sets the vocabulary for vehicle motion early, before other moving parts need it.
 
-The crane has one fixed rated load, carried by its lifting part, because a fixed rating carries the least debt; a chart over reach can replace it when lifting needs one. See `src/core/schema.ts`, `ratedLoadKg`.
+The crane has one fixed rated load, carried by its lifting part, because a fixed rating carries the least debt; a chart over reach can replace it when lifting needs one. See `src/core/schema/items.ts`, `ratedLoadKg`.
 
 The rating is the heaviest load the crane lifts with the hook at the boom's working reach, not a lifting moment, because a moment read as a load would let a light truck lift more than it weighs.
 
@@ -93,9 +94,9 @@ The first loop builds from factory structures, uses welded assemblies as player-
 
 ## Export contract
 
-A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so disassembly, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
+A vehicle part is an item whose exported model carries per-part mass, centre of mass, baked collision and named datums, so disassembly, inventory and fitting share one identity and the game never evaluates authoring shapes. A blueprint is content that names parts by item id and places each fitting in the vehicle frame, so a mod adds a compatible part or host with data alone. See `src/core/schema/items.ts`, `VehicleBlueprintSchema`, and `src/content/base/vehicles.jsonnet`.
 
-Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. Each capability carries only the numbers the game code that reads it needs, added when that reader lands. See `src/core/schema.ts`, `VEHICLE_CAPABILITIES`.
+Capabilities are a closed vocabulary because each one needs game code to mean anything; content naming another is refused rather than ignored. Each capability carries only the numbers the game code that reads it needs, added when that reader lands. See `src/core/schema/items.ts`, `VEHICLE_CAPABILITIES`.
 
 Driven and steered belong to the part type, not the fitting. Converting a vehicle's drive then means swapping a part, which is also a gameplay hook: finding a driven axle.
 

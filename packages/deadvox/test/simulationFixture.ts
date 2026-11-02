@@ -1,6 +1,5 @@
 import type { ClockSettings } from '../src/core/clock.ts';
 import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { BodyTuningDef, CompressionCaps } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
 import { gameHours, gameMinutes, gamePerHour, realSeconds, simRate, simSeconds } from '../src/core/time.ts';
@@ -9,6 +8,7 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
+  capability: 'player',
   infectionOnsetGameHours: gameHours(0.01),
   antisepticWindowGameHours: gameHours(0.02),
   infectionChance: 0.5,
@@ -158,7 +158,10 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
 /** Content whose player body uses the supplied tuning, so a whole-session test owns its body definition. */
 export const withPlayerBodyTuning = (content: Registry, body: BodyTuningDef): Registry => ({
   ...content,
-  body: new Map(content.body).set(CORE_CONTENT_IDS.player, body),
+  body: new Map([...content.body].filter(([, entry]) => entry.capability !== 'player')).set(body.id, {
+    ...body,
+    capability: 'player',
+  }),
 });
 
 /** Content whose player body is this fixture, so a whole-session test owns the body tuning it asserts on. */

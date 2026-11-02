@@ -1,4 +1,5 @@
 {
+  "dependencies": ["base"],
   "id": "browser-test-mod",
   "items": [
     {
@@ -15,6 +16,15 @@
       "workInProgress": false
     }
   ],
+  "overrides": [
+    {
+      "entry": "zombies:shambler",
+      "pack": "base"
+    }
+  ],
+  "product": false,
+  "tier": "product",
+  "version": "1",
   "zombies": [
     {
       "abilities": [],

@@ -217,6 +217,10 @@
       "output": "packages/deadvox/src/content/base/models-melee.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/pack/manifest.jsonnet",
+      "output": "packages/deadvox/src/content/base/pack/manifest.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/player.jsonnet",
       "output": "packages/deadvox/src/content/base/player.json"
     },
@@ -351,6 +355,10 @@
     {
       "source": "packages/deadvox/src/content/base/vehicles.jsonnet",
       "output": "packages/deadvox/src/content/base/vehicles.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/weathering.jsonnet",
+      "output": "packages/deadvox/src/content/base/weathering.json"
     },
     {
       "source": "packages/deadvox/src/content/base/zombies.jsonnet",

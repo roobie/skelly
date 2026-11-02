@@ -73,6 +73,12 @@ export const PowerDeviceSchema = variant('kind', [
   strictObject({ ...common, kind: literal('switch') }),
 ]);
 
-export const PowerTuningSchema = strictObject({ id: Identity, tickSimSeconds: Positive });
+import { capabilityField } from './schema/capability.ts';
+
+export const PowerTuningSchema = strictObject({
+  id: Identity,
+  capability: capabilityField('powerTuning'),
+  tickSimSeconds: Positive,
+});
 export type PowerDeviceDef = InferOutput<typeof PowerDeviceSchema>;
 export type PowerTuningDef = InferOutput<typeof PowerTuningSchema>;

@@ -5,6 +5,7 @@ local normalSleep = 100 / normalSleepGameHours;
 {
   body: [{
     id: 'player',
+    capability: 'player',
     infectionOnsetGameHours: 2,
     antisepticWindowGameHours: 12,
     infectionChance: 0.5,

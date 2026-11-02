@@ -15,7 +15,6 @@ import {
   requiredContentIssues,
   validateContent,
 } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { corpseLootPoint, lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
@@ -38,11 +37,15 @@ import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
+import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings } from '../src/game/inputBindings.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { camoShaderConfig } from '../src/render/surfacePatterns.ts';
 import { buildFixtureRegistry as buildRegistry, FIXTURE_MATERIAL, fixtureBreach } from './economyFixtures.ts';
+import {
+  fixtureIds as CORE_CONTENT_IDS,
+  defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID,
+} from './fixtures/capabilityIds.ts';
 
 const BASE = 'src/content/base';
 const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
@@ -584,6 +587,7 @@ describe('content', () => {
           body: events.map((event, index) => ({
             ...body,
             id: `heartbeat_fixture_${index}`,
+            capability: undefined,
             heartbeat: { ...body.heartbeat, sounds: { slow: event, fast: single.id } },
           })),
         },
@@ -1397,7 +1401,7 @@ describe('content', () => {
     expect(requiredContentIssues(withoutSkill)).toContainEqual({
       source: 'core content',
       path: 'skills',
-      message: `missing required content "${CORE_CONTENT_IDS.inventoryManagement}"`,
+      message: 'missing required capability "inventoryManagement"',
     });
   });
 
@@ -1409,7 +1413,7 @@ describe('content', () => {
     expect(requiredContentIssues(withoutFists)).toContainEqual({
       source: 'core content',
       path: 'meleeClasses',
-      message: `missing required content "${CORE_CONTENT_IDS.fistsMeleeClass}"`,
+      message: 'missing required capability "unarmed"',
     });
   });
 
@@ -1499,7 +1503,7 @@ describe('content', () => {
     expect(requiredContentIssues(withoutRange)).toContainEqual({
       source: 'core content',
       path: 'handlingRange',
-      message: `missing required content "${CORE_CONTENT_IDS.testRange}"`,
+      message: 'missing required capability "testRange"',
     });
   });
 
@@ -1912,7 +1916,7 @@ describe('content references', () => {
         { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
         { id: 'nails', name: 'Nails', category: 'material', weight: 1, size: [1, 1] },
       ],
-      skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+      skills: [{ id: 'crafting', capability: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
     },
   };
 
@@ -2094,7 +2098,14 @@ describe('content references', () => {
             },
           },
         ],
-        skills: [{ id: 'fixture_crafting', name: 'Fixture crafting', training: { craftingTierOffset: 1 } }],
+        skills: [
+          {
+            id: 'fixture_crafting',
+            capability: 'crafting',
+            name: 'Fixture crafting',
+            training: { craftingTierOffset: 1 },
+          },
+        ],
         recipeCategories: [{ id: 'fixture_materials', label: 'Fixture materials', order: 1 }],
         recipes: [
           {
@@ -2154,7 +2165,9 @@ describe('content references', () => {
             ...(recovery === 'unpack' ? { unpack: { ...yields[0]!, simSeconds: 1 } } : {}),
           },
         ],
-        skills: [{ id: 'fixture_crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+        skills: [
+          { id: 'fixture_crafting', capability: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } },
+        ],
         recipeCategories: [{ id: 'fixture_materials', label: 'Materials', order: 1 }],
         recipes: [
           {
@@ -3417,7 +3430,7 @@ describe('content', () => {
         armRig: { ...rig, shoulderFromEye: [-rig.shoulderFromEye[0], rig.shoulderFromEye[1], rig.shoulderFromEye[2]] },
       },
       { legRig: { ...legRig, shin: { ...legRig.shin, part: 'fixture_missing_part' } } },
-    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}` }));
+    ].map((change, index) => ({ ...player, ...change, id: `fixture_figure_${index}`, capability: undefined }));
     // Only the models the figure row names: building the full base pack here made the test hit its timeout.
     const figureModelIds = new Set([body.model, ...Object.values(limbs).map(({ model }) => model)]);
     const models = base.flatMap(

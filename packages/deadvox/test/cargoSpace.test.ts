@@ -10,7 +10,6 @@ import {
   snapBox,
 } from '../src/core/cargoSpace.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { ItemFactory, type ItemState, restoreItem, snapshotItem } from '../src/core/items.ts';
 import type { VehicleFittingDef } from '../src/core/schema.ts';
 import {
@@ -21,6 +20,7 @@ import {
 } from '../src/core/vehicleBlueprint.ts';
 import type { VehicleInstance } from '../src/core/vehicleInstances.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 // The vehicle content and the cell size it is measured in, not the whole base: see `test/vehicleExport.test.ts`.
 const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];

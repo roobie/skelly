@@ -1,8 +1,8 @@
 // Core's refusals, notices and action labels are content, read by key, so rewording one can't change behaviour.
 // See `src/content/base/ui-core-text.libsonnet` and `PILLARS.md`, "Content forward compatibility".
 
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { fillText as fill } from './textTemplate.ts';
 
 /** Each core message key, with the named slots its template fills. */
@@ -185,7 +185,7 @@ export type CoreLabelKey = keyof typeof CORE_LABEL_SLOTS;
 
 type SlotValues<S extends readonly string[]> = S extends readonly [] ? [] : [Readonly<Record<S[number], string>>];
 
-const coreUi = (registry: Pick<Registry, 'ui'>) => registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+const coreUi = (registry: Pick<Registry, 'ui'>) => claimed(registry.ui, 'interface')!;
 
 export const coreMessage = <K extends CoreMessageKey>(
   registry: Pick<Registry, 'ui'>,

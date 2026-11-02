@@ -4,9 +4,9 @@ import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
 import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
@@ -234,12 +234,9 @@ export const createPlayView = (
   let pictures: ItemPictures | undefined;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
-    pictures = new ItemPictures(
-      registry,
-      models,
-      registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)!.itemPictureCacheCapacity,
-      { framing: graphics.itemPicture.framing },
-    );
+    pictures = new ItemPictures(registry, models, claimed(registry.graphics, 'graphics')!.itemPictureCacheCapacity, {
+      framing: graphics.itemPicture.framing,
+    });
     if (mood === undefined) {
       throw new Error('rendering resources are incomplete');
     }
@@ -252,7 +249,7 @@ export const createPlayView = (
     shadows.restore(DEFAULT_SHADOWS);
   }
   const weather: Weather = { fogginess: dayCycle.weather.defaultFogginess };
-  const playerFigure = registry.figures.get(CORE_CONTENT_IDS.player)!;
+  const playerFigure = claimed(registry.figures, 'player')!;
   const piles = new PileMeshes(s, models, config.seed, meshes);
   const vehicles = new VehicleMeshes(registry, models, s);
   const caseEffects = new CaseEffects(s, gravityMetresPerSimSecondSquared, models);
@@ -326,7 +323,7 @@ export const createPlayView = (
   scene.add(carriedPiece.floorGroup);
   const playerMeshes = new PlayerMeshes(s, playerFigure, registry.models, models);
   const updateHeldViews = createHeldViews(inventory, held, playerMeshes);
-  const lightTuning = registry.senses.get(CORE_CONTENT_IDS.player)!.light;
+  const lightTuning = claimed(registry.senses, 'player')!.light;
   const flashlight = new Flashlight(
     scene,
     lightTuning.renderedBeamLimit,

@@ -1,7 +1,6 @@
 import { Character } from '../../src/core/character.ts';
 import type { ClockSettings } from '../../src/core/clock.ts';
 import type { Registry } from '../../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../../src/core/contentIds.ts';
 import { CraftCommands } from '../../src/core/craftCommands.ts';
 import { craftActionHooks } from '../../src/core/craftWork.ts';
 import { HandlingQueue } from '../../src/core/handling.ts';
@@ -11,6 +10,7 @@ import { bindReach } from '../../src/core/reach.ts';
 import { Simulation } from '../../src/core/sim.ts';
 import { InventoryScreen } from '../../src/ui/inventoryScreen.ts';
 import { buildFixtureRegistry } from '../economyFixtures.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from '../fixtures/capabilityIds.ts';
 import { FULL, RESULT, STOCK, VESSEL } from '../liquidCraftFixture.ts';
 import { liquidRecoveryData } from '../liquidRecoveryFixture.ts';
 

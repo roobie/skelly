@@ -16,8 +16,8 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import { claimed } from '../core/capabilities.ts';
 import type { FigureDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { heldAdsStandoffMetres, heldTorsoForwardDegrees } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -218,7 +218,7 @@ export class HeldItems {
     const lean = heldTorsoForwardDegrees(this.inventory);
     const shoulder = lean
       ? heldBodyShoulder(this.figure, this.inventory.registry.models, side, {
-          eyeMetres: this.inventory.registry.player.get(CORE_CONTENT_IDS.player)!.eye,
+          eyeMetres: claimed(this.inventory.registry.player, 'player')!.eye,
           leanDegrees: lean,
         })
       : firstPersonShoulder(this.figure, side);
