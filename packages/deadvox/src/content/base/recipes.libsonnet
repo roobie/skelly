@@ -1,23 +1,23 @@
 // Every wearing blade gets one repair per sharpening method: the wheel restores more in less time, so keeping an edge
 // is a choice between a trip to the wheel and a stone carried in the field.
 local sharpening = [
-  { prefix: 'grind_', qualities: {}, workstation: 'grinding_wheel', amount: 0.5, timeGameMinutes: 10 },
-  { prefix: 'hone_', qualities: { sharpening: 1 }, workstation: null, amount: 0.2, timeGameMinutes: 20 },
+  { prefix: "grind_", qualities: {}, workstation: "grinding_wheel", amount: 0.5, timeGameMinutes: 10 },
+  { prefix: "hone_", qualities: { sharpening: 1 }, workstation: null, amount: 0.2, timeGameMinutes: 20 },
 ];
 local blades = [
   item.id
-  for item in (import 'items-tools.libsonnet').items
-  if std.objectHas(item, 'weapon') && item.weapon.melee.type == 'cut' && std.objectHas(item.weapon.melee, 'wearPerHit')
+  for item in (import "items-tools.libsonnet").items
+  if std.objectHas(item, "weapon") && item.weapon.melee.type == "cut" && std.objectHas(item.weapon.melee, "wearPerHit")
 ];
 local sharpen(blade, method) = {
   id: method.prefix + blade,
-  category: 'repair_tools',
-  tags: ['edge'],
+  category: "repair_tools",
+  tags: ["edge"],
   searchTerms: [],
-  kind: 'repair',
-  activation: 'sharpen',
+  kind: "repair",
+  activation: "sharpen",
   result: { item: blade, count: 1 },
-  repair: { skill: 'crafting', amount: method.amount, perSkill: 0.05 },
+  repair: { skill: "crafting", amount: method.amount, perSkill: 0.05 },
   timeGameMinutes: method.timeGameMinutes,
   skills: { crafting: 0 },
   qualities: method.qualities,
@@ -155,25 +155,25 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     }
   ]],
   "recipeCategories": [
-    { id: 'supplies', label: 'Supplies', order: 10 },
-    { id: 'materials', label: 'Materials', parent: 'supplies', order: 10 },
-    { id: 'tools', label: 'Tools and kits', parent: 'supplies', order: 20 },
-    { id: 'lighting', label: 'Lighting', parent: 'supplies', order: 30 },
-    { id: 'attachments', label: 'Weapon attachments', parent: 'supplies', order: 40 },
-    { id: 'fixtures', label: 'Fixtures', order: 20 },
-    { id: 'repairs', label: 'Repairs', order: 30 },
-    { id: 'repair_tools', label: 'Tools and weapons', parent: 'repairs', order: 10 },
-    { id: 'repair_clothing', label: 'Clothing and bags', parent: 'repairs', order: 20 },
-    { id: 'repair_electrical', label: 'Electrical equipment', parent: 'repairs', order: 30 },
+    { id: "supplies", label: "Supplies", order: 10 },
+    { id: "materials", label: "Materials", parent: "supplies", order: 10 },
+    { id: "tools", label: "Tools and kits", parent: "supplies", order: 20 },
+    { id: "lighting", label: "Lighting", parent: "supplies", order: 30 },
+    { id: "attachments", label: "Weapon attachments", parent: "supplies", order: 40 },
+    { id: "fixtures", label: "Fixtures", order: 20 },
+    { id: "repairs", label: "Repairs", order: 30 },
+    { id: "repair_tools", label: "Tools and weapons", parent: "repairs", order: 10 },
+    { id: "repair_clothing", label: "Clothing and bags", parent: "repairs", order: 20 },
+    { id: "repair_electrical", label: "Electrical equipment", parent: "repairs", order: 30 },
   ],
   "recipeTags": [
-    { id: 'wood', label: 'Wood', searchTerms: ['timber'] },
-    { id: 'metal', label: 'Metal', searchTerms: [] },
-    { id: 'textile', label: 'Textiles', searchTerms: ['cloth', 'fabric'] },
-    { id: 'electrical', label: 'Electrical', searchTerms: ['wiring'] },
-    { id: 'edge', label: 'Sharpening', searchTerms: ['blade', 'edge'] },
+    { id: "wood", label: "Wood", searchTerms: ["timber"] },
+    { id: "metal", label: "Metal", searchTerms: [] },
+    { id: "textile", label: "Textiles", searchTerms: ["cloth", "fabric"] },
+    { id: "electrical", label: "Electrical", searchTerms: ["wiring"] },
+    { id: "edge", label: "Sharpening", searchTerms: ["blade", "edge"] },
   ],
-  "skillProgression": [{ "id": "core", capability: 'progression', "practicePerLevel": 10 }],
+  "skillProgression": [{ "id": "core", "capability": "progression", "practicePerLevel": 10 }],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "model": "stick", "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "model": "wax", "size": [1, 1], "stack": 10 },
@@ -238,7 +238,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
   "recipes": [
     {
       "id": "torch",
-      category: 'lighting', tags: ['wood', 'textile'], searchTerms: [],
+      category: "lighting", tags: ["wood", "textile"], searchTerms: [],
       "result": { "item": "torch", "count": 1 },
       "timeGameMinutes": 20,
       "skills": { "crafting": 0 },
@@ -251,7 +251,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "make_bandage",
-      category: 'supplies', tags: ['textile'], searchTerms: [],
+      category: "supplies", tags: ["textile"], searchTerms: [],
       "result": { "item": "bandage", "count": 1 },
       "timeGameMinutes": 5,
       "skills": { "crafting": 0 },
@@ -260,7 +260,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "make_headlamp_strap",
-      category: 'lighting', tags: ['textile'], searchTerms: [],
+      category: "lighting", tags: ["textile"], searchTerms: [],
       "consumeFitted": true,
       "result": { "item": "headlamp", "count": 1 },
       "timeGameMinutes": 10,
@@ -274,7 +274,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "make_nail_bat",
-      category: 'tools', tags: ['wood', 'metal'], searchTerms: [],
+      category: "tools", tags: ["wood", "metal"], searchTerms: [],
       "result": { "item": "nail_bat", "count": 1 },
       "timeGameMinutes": 15,
       "skills": { "crafting": 0 },
@@ -286,7 +286,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "make_spear",
-      category: 'tools', tags: ['wood', 'textile'], searchTerms: [],
+      category: "tools", tags: ["wood", "textile"], searchTerms: [],
       "result": { "item": "spear", "count": 1 },
       "timeGameMinutes": 20,
       "skills": { "crafting": 0 },
@@ -299,7 +299,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "make_taped_armour",
-      category: 'supplies', tags: ['textile'], searchTerms: [],
+      category: "supplies", tags: ["textile"], searchTerms: [],
       "result": { "item": "taped_armour", "count": 1 },
       "timeGameMinutes": 30,
       "skills": { "crafting": 0 },
@@ -311,7 +311,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "candle",
-      category: 'lighting', tags: [], searchTerms: [],
+      category: "lighting", tags: [], searchTerms: [],
       "result": { "item": "candle", "count": 1 },
       "timeGameMinutes": 10,
       "skills": { "crafting": 0 },
@@ -321,7 +321,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "repair_kit",
-      category: 'tools', tags: ['metal', 'textile'], searchTerms: [],
+      category: "tools", tags: ["metal", "textile"], searchTerms: [],
       "result": { "item": "repair_kit", "count": 1 },
       "timeGameMinutes": 30,
       "skills": { "crafting": 1 },
@@ -334,7 +334,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "strip_wire",
-      category: 'materials', tags: ['electrical', 'metal'], searchTerms: ['strip'],
+      category: "materials", tags: ["electrical", "metal"], searchTerms: ["strip"],
       "result": { "item": "copper_wire", "count": 1 },
       "timeGameMinutes": 8,
       "skills": { "mechanics": 0 },
@@ -343,7 +343,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "field_patch",
-      category: 'materials', tags: ['electrical'], searchTerms: [],
+      category: "materials", tags: ["electrical"], searchTerms: [],
       "result": { "item": "field_patch", "count": 1 },
       "timeGameMinutes": 12,
       "skills": { "mechanics": 2 },
@@ -352,7 +352,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "repair_crowbar",
-      category: 'repair_tools', tags: ['metal'], searchTerms: [],
+      category: "repair_tools", tags: ["metal"], searchTerms: [],
       "kind": "repair",
       "result": { "item": "crowbar", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
@@ -363,7 +363,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "sawn_plank",
-      category: 'materials', tags: ['wood'], searchTerms: ['saw'],
+      category: "materials", tags: ["wood"], searchTerms: ["saw"],
       "result": { "item": "wooden_plank", "count": 1 },
       "timeGameMinutes": 4,
       "skills": { "crafting": 0 },
@@ -373,7 +373,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
     },
     {
       "id": "door_bar",
-      category: 'fixtures', tags: ['wood'], searchTerms: [],
+      category: "fixtures", tags: ["wood"], searchTerms: [],
       "result": { "item": "door_bar", "count": 1 },
       "timeGameMinutes": 10,
       "skills": { "crafting": 0 },
