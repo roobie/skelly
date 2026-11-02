@@ -1,7 +1,9 @@
 // Builds a reference catalogue of candidate items from a CDDA checkout, so batch authors know which
 // everyday things exist and their size, weight and materials. CDDA is CC BY-SA 3.0, so the output is a
 // scratch reference only and is never committed: authors write their own geometry and text.
-// Usage: node tools/cdda-reference.mjs --cdda <checkout>/data/json --out <dir> [--batch 15] [--wave first]
+// Usage: node tools/cdda-reference.mjs --cdda <checkout>/data/json --out <dir> [--at <commit>] [--batch 15] [--wave first]
+// tools/catalogue-batch.mjs runs it with a pinned release and commit; run it by hand only to explore.
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -10,6 +12,7 @@ const { values } = parseArgs({
   options: {
     cdda: { type: 'string' },
     out: { type: 'string', default: 'cdda-reference' },
+    at: { type: 'string' },
     batch: { type: 'string', default: '15' },
     wave: { type: 'string', default: 'first' },
   },
@@ -207,14 +210,20 @@ const keep = (o) => {
 };
 
 // ---------- what we already have ----------
+// Read at a fixed commit when given: landed batches add items, and a catalogue rebuilt from the working tree
+// would drop them and renumber every later batch.
+const git = (args) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8', maxBuffer: 1 << 28 });
+const readRepo = (path) => (values.at ? git(['show', `${values.at}:${path}`]) : readFileSync(join(repo, path), 'utf8'));
+const listRepo = (dir) =>
+  values.at ? git(['ls-tree', '--name-only', `${values.at}:${dir}`]).split('\n') : readdirSync(join(repo, dir));
 const norm = (s) => s.toLowerCase().replace(NON_WORD, ' ').trim();
 const existing = new Set();
-for (const row of JSON.parse(readFileSync(join(repo, 'packages/thing-authoring-tool/items.json'), 'utf8')).items) {
+for (const row of JSON.parse(readRepo('packages/thing-authoring-tool/items.json')).items) {
   existing.add(norm(row.id));
 }
-const base = join(repo, 'packages/deadvox/src/content/base');
-for (const f of readdirSync(base).filter((name) => ITEM_FILE.test(name))) {
-  const data = JSON.parse(readFileSync(join(base, f), 'utf8'));
+const contentDir = 'packages/deadvox/src/content/base';
+for (const f of listRepo(contentDir).filter((name) => ITEM_FILE.test(name))) {
+  const data = JSON.parse(readRepo(`${contentDir}/${f}`));
   for (const item of Array.isArray(data) ? data : (data.items ?? [])) {
     existing.add(norm(item.id));
     if (item.name) {

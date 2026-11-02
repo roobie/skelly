@@ -11,6 +11,9 @@ Deadvox's world has too few ordinary things to find, carry and use, and models a
 adding one. Agents author them in batches against a reference catalogue of real-world items. Delete
 this file when the drafted items are applied to Deadvox content after the framework refactor (#1532).
 
+An orchestrator starts from one command, which prints the procedure, the state read from git and the
+next steps, so no separate runbook can drift from the tools. See `tools/catalogue-batch.mjs`, `runbook`.
+
 ## The reference stays out of the repository
 
 Cataclysm: DDA carries the broadest catalogue of everyday survival items, with weights, volumes and
@@ -21,6 +24,11 @@ their own geometry, names and descriptions. See `tools/cdda-reference.mjs`.
 
 Variants that differ only in a stat share one model and ride with their root, so a batch spends its
 effort on distinct shapes.
+
+A batch number must mean the same items on every host and for the whole run. The catalogue leaves out
+things Skelly already has, and landed batches add things, so each host builds it from a pinned CDDA
+release and the Skelly commit recorded when batches were prepared, and starting a batch refuses a
+catalogue whose hash differs. See `tools/catalogue-batch.mjs`, `catalogue`.
 
 ## One worktree and one row file per batch
 
@@ -47,5 +55,5 @@ integration branch after batches merge, and the reviewer judges the whole contac
 ## Item drafts wait for the refactor
 
 Item definitions are content that moves in the framework refactor
-(`docs/decisions/0009-content-defined-products.md`, "Refactor gate"), so batches draft them unloaded in
-`things/catalogue-drafts/` and the drafts are applied once the new content layout exists.
+(`docs/decisions/0009-content-defined-products.md`, "Refactor gate"), so batches draft them unloaded
+and the drafts are applied once the new content layout exists. See `tools/catalogue-batch.mjs`, `DRAFTS`.
