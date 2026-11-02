@@ -57,11 +57,19 @@ describe('content capabilities', () => {
   });
 
   it('runtime gravity and default weathering use independently named providers', () => {
-    const registry = baseRegistry();
-    const player = claimed(registry.player, 'player')!;
-    const weathering = claimed(registry.weathering, 'defaultWeathering')!;
-    registry.player = new Map([['fixture_player_tuning', { ...player, id: 'fixture_player_tuning' }]]);
-    registry.weathering = new Map([['fixture_neutral_surface', { ...weathering, id: 'fixture_neutral_surface' }]]);
+    const base = baseRegistry();
+    const player = claimed(base.player, 'player')!;
+    const weathering = claimed(base.weathering, 'defaultWeathering')!;
+    const { registry, issues } = buildRegistry([
+      {
+        source: 'alternative',
+        data: {
+          player: [{ ...player, id: 'fixture_player_tuning' }],
+          weathering: [{ ...weathering, id: 'fixture_neutral_surface' }],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
     expect(worldGravity(registry)).toBe(player.gravityMetresPerSimSecondSquared);
     const resolved = resolveWeatheringUrl(new URLSearchParams(), registry.weathering);
     expect(resolved?.profileId).toBe('fixture_neutral_surface');
