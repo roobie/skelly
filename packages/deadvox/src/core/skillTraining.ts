@@ -19,7 +19,7 @@ export const craftingActivityTier = (requiredLevel: number, offset: number): num
   return Math.min(SKILL_LEVEL_MAX, requiredLevel + offset);
 };
 
-export const rangedTuning = (registry: Registry) => {
+const rangedTuning = (registry: Registry) => {
   const tuning = claimed(registry.rangedTuning, 'ranged');
   if (!tuning) {
     throw new Error('Missing ranged mechanism tuning');
