@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rapier driving probes — development only</title>
+  <style>
+    body { background: #182025; color: #e0e8ec; font: 16px system-ui; margin: 2rem; }
+    button, select, input { margin: .5rem; }
+    canvas { width: 100%; max-width: 1100px; border: 1px solid #71818a; }
+    pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Rapier driving probes — development only</h1>
+  <p>Sphere chassis; no suspension, steering, rollover or production save integration.</p>
+  <label>Scenario <select id="scenario"></select></label>
+  <button id="reset" type="button">Reset</button>
+  <button id="run" type="button">Run / Pause</button>
+  <button id="step" type="button">Step</button>
+  <label>Drive acceleration <input id="throttle" type="range" min="-1" max="1" step="0.1" value="0"></label>
+  <p>Rapier f64. Scrape: overhead view. Other scenarios: side view.</p>
+  <canvas id="scene" width="1100" height="400"></canvas>
+  <pre id="state"></pre>
+  <script type="module">
+    import { ColliderDesc, RigidBodyDesc, World } from '../../../vendor/rapier-f64/rapier.js';
+    import init from '../../../vendor/rapier-f64/rapier_wasm3d.js';
+    import config from '../../config/vehicleFeasibility.json' with { type: 'json' };
+    import { driving, rapierDriver } from './driving.ts';
+
+    await init();
+    // biome-ignore lint/style/useNamingConvention: upstream Rapier API names
+    const api = { ColliderDesc, RigidBodyDesc, World };
+    const select = document.querySelector('#scenario');
+    const throttle = document.querySelector('#throttle');
+    const canvas = document.querySelector('#scene');
+    const context = canvas.getContext('2d');
+    const state = document.querySelector('#state');
+    for (const scenario of driving.scenarios) {
+      select.add(new Option(scenario.id, scenario.id));
+    }
+    let driver;
+    let sample;
+    let tick = 0;
+    let running = false;
+    let accumulator = 0;
+    let previous = performance.now();
+    const scenario = () => driving.scenarios.find((entry) => entry.id === select.value);
+    function reset() {
+      driver?.dispose();
+      driver = rapierDriver(api, scenario());
+      sample = undefined;
+      tick = 0;
+      accumulator = 0;
+      running = false;
+    }
+    function step() {
+      if (tick >= driving.ticks) {
+        running = false;
+        return;
+      }
+      sample = driver.step(Number(throttle.value));
+      tick += 1;
+    }
+    function drawBox(box, axis) {
+      const [, , z, w] = box.rotation;
+      context.save();
+      context.translate(box.centre[0], box.centre[axis]);
+      if (axis === 1) {
+        context.transform(1 - 2 * z * z, 2 * z * w, -2 * z * w, 1 - 2 * z * z, 0, 0);
+      }
+      context.strokeRect(-box.half[0], -box.half[axis], box.half[0] * 2, box.half[axis] * 2);
+      context.restore();
+    }
+    function draw() {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      const fixture = scenario();
+      const axis = fixture.viewAxis;
+      const scale = 25;
+      context.save();
+      context.translate(canvas.width / 2, canvas.height / 2);
+      context.scale(scale, -scale);
+      context.lineWidth = 1 / scale;
+      context.strokeStyle = '#78909c';
+      for (const box of fixture.boxes) {
+        drawBox(box, axis);
+      }
+      const position = sample?.position ?? fixture.position;
+      context.fillStyle = '#4dd0e1';
+      context.beginPath();
+      context.arc(position[0], position[axis], driving.radius, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+      state.textContent = JSON.stringify({ tick, rapier: sample }, null, 2);
+    }
+    document.querySelector('#reset').addEventListener('click', reset);
+    select.addEventListener('change', reset);
+    document.querySelector('#run').addEventListener('click', () => {
+      running = !running;
+      accumulator = 0;
+    });
+    document.querySelector('#step').addEventListener('click', () => {
+      running = false;
+      step();
+    });
+    window.addEventListener('pagehide', () => driver.dispose());
+    function frame(now) {
+      if (running) {
+        accumulator += (now - previous) / 1000;
+        let steps = 0;
+        while (accumulator >= 1 / driving.tickHz && steps < config.maxTicksPerDispatch && running) {
+          step();
+          accumulator -= 1 / driving.tickHz;
+          steps += 1;
+        }
+      }
+      previous = now;
+      draw();
+      requestAnimationFrame(frame);
+    }
+    reset();
+    requestAnimationFrame(frame);
+  </script>
+</body>
+</html>

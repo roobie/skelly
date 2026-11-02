@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
   - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
@@ -3268,9 +3269,10 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
     reasons are in `docs/content.md`, "Furniture solidity".
 
 **Driving and access.** Road-going arcade handling is sufficient for v1 beta;
-greater realism is the post-beta direction under #322. The physics implementation
-remains an evidence-based choice, with Rapier a candidate rather than a dependency;
-see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels). Determinism and streaming
+greater realism is the post-beta direction under #322. Driving and parked collision
+use the project-owned Rapier f64 build shared with ragdolls, under
+`docs/decisions/0009-rapier-f64-build.md`, "Decision". Engine selection does not
+establish handling or integration acceptance. Determinism and streaming
 follow `docs/decisions/0008-deterministic-world.md`, "Decision". Leaving a moving
 vehicle is allowed: coasting, collision and bystander consequences must not vanish
 when a column unloads. Parked vehicles retain their derived world collision.

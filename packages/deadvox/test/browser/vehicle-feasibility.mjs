@@ -39,7 +39,14 @@ const engines = {
 try {
   await vite.listen();
   await mkdir(artifactDirectory, { recursive: true });
-  if (process.argv.includes('--local-rapier')) {
+  if (process.argv.includes('--driving')) {
+    const { runDrivingProbes } = await import('./vehicle-driving.mjs');
+    await runDrivingProbes(
+      vite,
+      engines,
+      process.argv.slice(2).filter((argument) => argument !== '--driving'),
+    );
+  } else if (process.argv.includes('--local-rapier')) {
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(
       vite,
@@ -47,6 +54,8 @@ try {
       process.argv.slice(2).filter((argument) => argument !== '--local-rapier'),
     );
   } else {
+    const { runDrivingProbes } = await import('./vehicle-driving.mjs');
+    await runDrivingProbes(vite, engines, process.argv.slice(2));
     const { runLocal } = await import('../../tools/rapier-f64/local.mjs');
     await runLocal(vite, engines, process.argv.slice(2), false);
     const { runSuite } = await vite.ssrLoadModule('/src/vehicles/feasibility/runner.ts');
@@ -64,7 +73,7 @@ try {
         .digest('hex'),
       sourceFingerprint: build,
       rapierWasmSha256: createHash('sha256').update(wasm).digest('hex'),
-      rapierRole: 'committed f64 diagnostic candidate; agreement measured by runLocal',
+      rapierRole: 'selected f64 build; diagnostic agreement measured by runLocal',
     };
     const baseline = runSuite(build);
     await writeFile(

@@ -2,12 +2,22 @@ import { Rotation, Vector } from "../math";
 import { CoefficientCombineRule, RigidBody, RigidBodySet } from "../dynamics";
 import { ActiveHooks, ActiveEvents } from "../pipeline";
 import { InteractionGroups } from "./interaction_groups";
-import { Shape, ShapeType, TriMeshFlags, HeightFieldFlags } from "./shape";
+import { Shape, ShapeType, TriMeshFlags, HeightFieldFlags, PolylineFlags, CompoundFlags } from "./shape";
 import { Ray, RayIntersection } from "./ray";
 import { PointProjection } from "./point";
 import { ColliderShapeCastHit, ShapeCastHit } from "./toi";
 import { ShapeContact } from "./contact";
 import { ColliderSet } from "./collider_set";
+export interface VHACDParameters {
+    alpha?: number;
+    beta?: number;
+    concavity?: number;
+    planeDownsampling?: number;
+    convexHullDownsampling?: number;
+    maxConvexHulls?: number;
+    resolution?: number;
+    convexHullApproximation?: boolean;
+}
 export declare enum ActiveCollisionTypes {
     DYNAMIC_DYNAMIC = 1,
     DYNAMIC_KINEMATIC = 12,
@@ -30,10 +40,10 @@ export declare class Collider {
     get shape(): Shape;
     clearShapeCache(): void;
     isValid(): boolean;
-    translation(): Vector;
-    translationWrtParent(): Vector | null;
-    rotation(): Rotation;
-    rotationWrtParent(): Rotation | null;
+    translation(target?: Vector): Vector;
+    translationWrtParent(target?: Vector): Vector | null;
+    rotation(target?: Rotation): Rotation;
+    rotationWrtParent(target?: Rotation): Rotation | null;
     isSensor(): boolean;
     setSensor(isSensor: boolean): void;
     setShape(shape: Shape): void;
@@ -65,7 +75,7 @@ export declare class Collider {
     setRotation(rot: Rotation): void;
     setRotationWrtParent(rot: Rotation): void;
     shapeType(): ShapeType;
-    halfExtents(): Vector;
+    halfExtents(target?: Vector): Vector | null;
     setHalfExtents(newHalfExtents: Vector): void;
     radius(): number;
     setRadius(newRadius: number): void;
@@ -79,10 +89,12 @@ export declare class Collider {
     vertices(): Float64Array;
     indices(): Uint32Array | undefined;
     heightfieldHeights(): Float64Array;
-    heightfieldScale(): Vector;
+    heightfieldScale(target?: Vector): Vector | null;
     heightfieldNRows(): number;
     heightfieldNCols(): number;
     parent(): RigidBody | null;
+    softBody(): number | null;
+    isDeformable(): boolean;
     friction(): number;
     restitution(): number;
     density(): number;
@@ -91,15 +103,15 @@ export declare class Collider {
     collisionGroups(): InteractionGroups;
     solverGroups(): InteractionGroups;
     containsPoint(point: Vector): boolean;
-    projectPoint(point: Vector, solid: boolean): PointProjection | null;
+    projectPoint(point: Vector, solid: boolean, target?: PointProjection): PointProjection | null;
     intersectsRay(ray: Ray, maxToi: number): boolean;
-    castShape(collider1Vel: Vector, shape2: Shape, shape2Pos: Vector, shape2Rot: Rotation, shape2Vel: Vector, targetDistance: number, maxToi: number, stopAtPenetration: boolean): ShapeCastHit | null;
-    castCollider(collider1Vel: Vector, collider2: Collider, collider2Vel: Vector, targetDistance: number, maxToi: number, stopAtPenetration: boolean): ColliderShapeCastHit | null;
+    castShape(collider1Vel: Vector, shape2: Shape, shape2Pos: Vector, shape2Rot: Rotation, shape2Vel: Vector, targetDistance: number, maxToi: number, stopAtPenetration: boolean, target?: ShapeCastHit): ShapeCastHit | null;
+    castCollider(collider1Vel: Vector, collider2: Collider, collider2Vel: Vector, targetDistance: number, maxToi: number, stopAtPenetration: boolean, target?: ColliderShapeCastHit): ColliderShapeCastHit | null;
     intersectsShape(shape2: Shape, shapePos2: Vector, shapeRot2: Rotation): boolean;
-    contactShape(shape2: Shape, shape2Pos: Vector, shape2Rot: Rotation, prediction: number): ShapeContact | null;
-    contactCollider(collider2: Collider, prediction: number): ShapeContact | null;
+    contactShape(shape2: Shape, shape2Pos: Vector, shape2Rot: Rotation, prediction: number, target?: ShapeContact): ShapeContact | null;
+    contactCollider(collider2: Collider, prediction: number, target?: ShapeContact): ShapeContact | null;
     castRay(ray: Ray, maxToi: number, solid: boolean): number;
-    castRayAndGetNormal(ray: Ray, maxToi: number, solid: boolean): RayIntersection | null;
+    castRayAndGetNormal(ray: Ray, maxToi: number, solid: boolean, target?: RayIntersection): RayIntersection | null;
 }
 export declare enum MassPropsMode {
     Density = 0,
@@ -135,7 +147,7 @@ export declare class ColliderDesc {
     static segment(a: Vector, b: Vector): ColliderDesc;
     static triangle(a: Vector, b: Vector, c: Vector): ColliderDesc;
     static roundTriangle(a: Vector, b: Vector, c: Vector, borderRadius: number): ColliderDesc;
-    static polyline(vertices: Float64Array, indices?: Uint32Array | null): ColliderDesc;
+    static polyline(vertices: Float64Array, indices?: Uint32Array | null, flags?: PolylineFlags): ColliderDesc;
     static voxels(voxels: Float64Array | Int32Array, voxelSize: Vector): ColliderDesc;
     static trimesh(vertices: Float64Array, indices: Uint32Array, flags?: TriMeshFlags): ColliderDesc;
     static cuboid(hx: number, hy: number, hz: number): ColliderDesc;
@@ -149,6 +161,8 @@ export declare class ColliderDesc {
     static convexMesh(vertices: Float64Array, indices?: Uint32Array | null): ColliderDesc | null;
     static roundConvexHull(points: Float64Array, borderRadius: number): ColliderDesc | null;
     static roundConvexMesh(vertices: Float64Array, indices: Uint32Array | null, borderRadius: number): ColliderDesc | null;
+    static compound(shapes: Shape[], positions: Vector[], rotations: Rotation[], flags?: CompoundFlags): ColliderDesc;
+    static convexDecomposition(vertices: Float64Array, indices: Uint32Array, params?: VHACDParameters, flags?: CompoundFlags): ColliderDesc | null;
     setTranslation(x: number, y: number, z: number): ColliderDesc;
     setRotation(rot: Rotation): ColliderDesc;
     setSensor(sensor: boolean): ColliderDesc;

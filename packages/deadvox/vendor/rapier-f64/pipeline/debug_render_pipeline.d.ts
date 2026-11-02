@@ -1,5 +1,5 @@
 import { RawDebugRenderPipeline } from "../raw";
-import { ImpulseJointSet, MultibodyJointSet, RigidBodySet } from "../dynamics";
+import { ImpulseJointSet, MultibodyJointSet, RigidBodySet, SoftBodySet } from "../dynamics";
 import { Collider, ColliderSet, NarrowPhase } from "../geometry";
 import { QueryFilterFlags } from "./query_pipeline";
 export declare class DebugRenderBuffers {
@@ -13,5 +13,5 @@ export declare class DebugRenderPipeline {
     colors: Float32Array;
     free(): void;
     constructor(raw?: RawDebugRenderPipeline);
-    render(bodies: RigidBodySet, colliders: ColliderSet, impulse_joints: ImpulseJointSet, multibody_joints: MultibodyJointSet, narrow_phase: NarrowPhase, filterFlags?: QueryFilterFlags, filterPredicate?: (collider: Collider) => boolean): void;
+    render(bodies: RigidBodySet, colliders: ColliderSet, soft_bodies: SoftBodySet, impulse_joints: ImpulseJointSet, multibody_joints: MultibodyJointSet, narrow_phase: NarrowPhase, filterFlags?: QueryFilterFlags, filterPredicate?: (collider: Collider) => boolean): void;
 }

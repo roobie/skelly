@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you're evaluating the engine, physics or rendering stack
+  - you're evaluating the engine, selected Rapier f64 build or rendering stack
   - you're changing the boundary between simulation, rendering and authored content
   - you're asking why Deadvox is a browser game with no game server
 tags: [deadvox, adr, engine, voxel, rendering]
@@ -31,4 +31,4 @@ Keeping the simulation as plain data separate from rendering supports pause, tim
 
 ## Consequences
 
-Vehicle physics, animation and audio remain project work; Rapier is a candidate, not a selected dependency. GitHub Pages cannot set response headers.
+Vehicle physics integration, animation and audio remain project work. Driving and parked collision use the project-owned Rapier f64 build shared with ragdolls under [ADR 0009](0009-rapier-f64-build.md); owning the voxel engine does not require owning a separate rigid-body solver. GitHub Pages cannot set response headers.
