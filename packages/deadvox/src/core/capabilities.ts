@@ -14,6 +14,8 @@ export const CONTENT_CAPABILITIES = {
   player: { player: 'required' },
   siteGeneration: { authoredSite: 'required' },
   skillProgression: { progression: 'required' },
+  rangedTuning: { ranged: 'optional' },
+  combatPolicy: { player: 'optional' },
   skills: {
     firearmsCombat: 'required',
     meleeCombat: 'required',

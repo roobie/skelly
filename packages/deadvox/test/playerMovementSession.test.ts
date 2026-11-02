@@ -28,6 +28,7 @@ import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { type MoveIntent, PLAYER, physicsFor, type StanceToggle } from './playerFixture.ts';
 import { chargedRifle } from './rifleFixture.ts';
@@ -137,6 +138,10 @@ describe('long-gun skill ownership', () => {
     {
       source: 'fixture-sniping',
       data: {
+        combatPolicy: [...registry.combatPolicy.values()].map((policy) => ({
+          ...policy,
+          firearms: { ...policy.firearms!, raiseSimSeconds: 0.3 + 0.3, adsAcquisitionMaximumSimSeconds: 0.45 },
+        })),
         skills: [
           {
             ...combat,
@@ -145,13 +150,8 @@ describe('long-gun skill ownership', () => {
               firearms: {
                 ...combat.combat!.firearms!,
                 longGunSteadinessSkill: snipingId,
-                // Test-authored timing so the two ADS regimes are fixture properties, not production
-                // tuning: the novice raise (minimum + range) exceeds the maximum, so the clamp bites,
-                // while a trained handler's raise (minimum + range * 5 / 15 at half-life 5) stays under it.
                 raiseMinimumSimSeconds: 0.3,
-                raiseRangeSimSeconds: 0.3,
                 raiseHalfLifeLevels: 5,
-                adsAcquisitionMaximumSimSeconds: 0.45,
               },
             },
           },
@@ -170,7 +170,7 @@ describe('long-gun skill ownership', () => {
     },
   ]);
   /** The fixture's own firearms timing; assertions read it, so production retuning cannot break them. */
-  const tuning = content.skills.get(combatId)!.combat!.firearms!;
+  const tuning = skilledFirearmsTuning(content);
   const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {
     const { session } = runtime;
     return chargedRifle(session.inventory, session.queue, session.firearms, { type, magazines: session.magazines })
@@ -259,8 +259,8 @@ describe('long-gun skill ownership', () => {
       expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).recoilKickScale).toBeLessThan(
         firearmsSkillEffects(0, tuning).recoilKickScale,
       );
-      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).reloadDuration).toBeLessThan(
-        firearmsSkillEffects(0, tuning).reloadDuration,
+      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuning).reloadFactor).toBeLessThan(
+        firearmsSkillEffects(0, tuning).reloadFactor,
       );
       expect(firearmStanceEffects(SKILL_LEVEL_MAX, tuning).raiseDurationSimSeconds).toBeLessThan(
         firearmStanceEffects(0, tuning).raiseDurationSimSeconds,

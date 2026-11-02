@@ -49,6 +49,10 @@
       "output": "packages/deadvox/src/content/base/camp.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/combat-policy.jsonnet",
+      "output": "packages/deadvox/src/content/base/combat-policy.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/compression.jsonnet",
       "output": "packages/deadvox/src/content/base/compression.json"
     },
@@ -239,6 +243,10 @@
     {
       "source": "packages/deadvox/src/content/base/range.jsonnet",
       "output": "packages/deadvox/src/content/base/range.json"
+    },
+    {
+      "source": "packages/deadvox/src/content/base/ranged-tuning.jsonnet",
+      "output": "packages/deadvox/src/content/base/ranged-tuning.json"
     },
     {
       "source": "packages/deadvox/src/content/base/readables.jsonnet",

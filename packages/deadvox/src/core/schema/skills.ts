@@ -1,20 +1,7 @@
-import { array, check, maxValue, minValue, number, optional, pipe, record, strictObject } from 'valibot';
+import { array, check, maxValue, optional, pipe, record, strictObject } from 'valibot';
 import { capabilityField } from './capability.ts';
-import {
-  Count,
-  FirearmsSkillZeroHandlingSchema,
-  Fraction,
-  Id,
-  Name,
-  NonNegative,
-  NonNegativeSimRate,
-  Positive,
-  PositiveSimSeconds,
-  SimSeconds,
-  SkillLevel,
-} from './primitives.ts';
-
-// ---- skills and recipes ----
+import { FirearmsEffectsSchema, MeleeEffectsSchema } from './combat.ts';
+import { Count, Fraction, Id, Name, NonNegative, NonNegativeSimRate, Positive, SkillLevel } from './primitives.ts';
 
 const SkillCurveSchema = strictObject({
   saturationFloor: Fraction,
@@ -73,77 +60,8 @@ export const SkillSchema = pipe(
     ),
     combat: optional(
       strictObject({
-        firearms: optional(
-          strictObject({
-            longGunSteadinessSkill: Id,
-            raiseMinimumSimSeconds: PositiveSimSeconds,
-            raiseRangeSimSeconds: SimSeconds,
-            raiseHalfLifeLevels: Positive,
-            /** The ADS-only speed floor, as a maximum aim-down-sights acquisition duration. */
-            adsAcquisitionMaximumSimSeconds: PositiveSimSeconds,
-            readyMovementMinimum: Fraction,
-            readyMovementRange: Fraction,
-            readyMovementHalfLifeLevels: Positive,
-            loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
-            skillZeroHandling: FirearmsSkillZeroHandlingSchema,
-            wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
-            wobbleLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),
-            wobbleVerticalToHorizontalRatio: pipe(Positive, maxValue(1)),
-            wobbleLuneArchPower: pipe(Positive, maxValue(4)),
-            wobbleLunePhaseOffsetRadians: pipe(NonNegative, maxValue(0.45)),
-            wobbleNoiseReversionRatePerSimSecond: pipe(Positive, maxValue(30)),
-            wobbleNoiseSigmaRadiansPerSqrtSecond: pipe(NonNegative, maxValue(1)),
-            wobbleNoiseSmoothingSimSeconds: pipe(Positive, maxValue(1)),
-            wobbleStanceDriftScale: strictObject({
-              standing: NonNegative,
-              crouching: NonNegative,
-              prone: NonNegative,
-            }),
-            reloadFactorFloor: Fraction,
-            reloadFactorHalfLifeLevels: Positive,
-            rackFactorFloor: Fraction,
-            rackFactorHalfLifeLevels: Positive,
-            attachmentFactorFloor: Fraction,
-            attachmentFactorHalfLifeLevels: Positive,
-            caseEjection: strictObject({
-              speedMetresPerSimSecond: Positive,
-              flightSimSeconds: PositiveSimSeconds,
-              /** A landed case rests this far above its settled voxel surface, so it never z-fights the floor. */
-              landingLiftMetres: NonNegative,
-            }),
-            shotTraceRangeBlocks: Positive,
-            /** `DESIGN.md`, "Holding breath". */
-            breathHold: strictObject({
-              staminaPerSimSecond: NonNegativeSimRate,
-              recoverySimSeconds: SimSeconds,
-              recoverySwayScale: pipe(number(), minValue(1, 'must be at least 1'), maxValue(10)),
-              steadyingMinimum: Fraction,
-              steadyingSkillRange: Fraction,
-              steadyingSkillHalfLifeLevels: Positive,
-              painWeakeningPerRatio: NonNegative,
-            }),
-            /** The owning skill's curve is attached by the registry, not authored here. */
-            curve: optional(SkillCurveSchema),
-          }),
-        ),
-        melee: optional(
-          strictObject({
-            blockChanceMinimum: Fraction,
-            blockChanceRange: Fraction,
-            blockChanceHalfLifeLevels: Positive,
-            mitigationMinimum: Fraction,
-            mitigationRange: Fraction,
-            mitigationHalfLifeLevels: Positive,
-            staminaPerAbsorbedPoint: Positive,
-            staminaCostFloor: Fraction,
-            staminaCostHalfLifeLevels: Positive,
-            joltPerAbsorbedPoint: NonNegative,
-            joltRealSeconds: NonNegative,
-            deflectRiseMetres: NonNegative,
-            deflectRiseFloor: Fraction,
-            deflectRealSeconds: NonNegative,
-          }),
-        ),
+        firearms: optional(FirearmsEffectsSchema),
+        melee: optional(MeleeEffectsSchema),
       }),
     ),
   }),
@@ -154,6 +72,7 @@ export const SkillSchema = pipe(
       (capability !== 'crafting' || training?.craftingTierOffset !== undefined) &&
       (capability !== 'firearmsCombat' ||
         (combat?.firearms !== undefined &&
+          curve !== undefined &&
           activity('readying', 'practicePerSimSecond') &&
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
@@ -162,8 +81,6 @@ export const SkillSchema = pipe(
       (capability !== 'meleeCombat' ||
         (combat?.melee !== undefined && activity('block', 'practice') && activity('hit', 'practice'))) &&
       (capability !== 'inventoryManagement' || (inventory !== undefined && activity('handling', 'practice')));
-    const firearm = combat?.firearms;
-    const melee = combat?.melee;
     return (
       complete &&
       (!steadiness ||
@@ -172,13 +89,7 @@ export const SkillSchema = pipe(
           activity('acquisition', 'practice') &&
           activity('ads', 'practicePerSimSecond') &&
           activity('shot', 'practice') &&
-          activity('hit', 'practice'))) &&
-      (!firearm ||
-        (firearm.readyMovementMinimum + firearm.readyMovementRange <= 1 &&
-          firearm.breathHold.steadyingMinimum + firearm.breathHold.steadyingSkillRange <= 1)) &&
-      (!melee ||
-        (melee.blockChanceMinimum + melee.blockChanceRange <= 1 &&
-          melee.mitigationMinimum + melee.mitigationRange <= 1))
+          activity('hit', 'practice')))
     );
   }, 'missing required skill tuning or effect range exceeds one'),
   check(

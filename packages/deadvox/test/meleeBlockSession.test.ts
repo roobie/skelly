@@ -7,6 +7,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
+import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
@@ -20,25 +21,31 @@ const move: ZombieDef['attack']['moves'][number] = {
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
 const attacker: ZombieDef = { ...shambler, attack: { ...shambler.attack, moves: [move] } };
-const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 
 /** Pins the full-block roll's outcome by making the full-block chance 0 or 1 at every skill level. */
 const withFullBlockChance = (chance: number, content = registry) => ({
   ...content,
-  skills: new Map([
-    ...content.skills,
-    [
-      fixtureIds.meleeCombat,
+  combatPolicy: new Map(
+    [...content.combatPolicy].map(([id, policy]) => [
+      id,
       {
-        ...meleeSkill,
-        combat: {
-          ...meleeSkill.combat,
-          melee: { ...meleeSkill.combat!.melee!, blockChanceMinimum: chance, blockChanceRange: 0 },
-        },
+        ...policy,
+        melee: { ...policy.melee!, blockChanceMinimum: chance, mitigationMinimum: 0.5 },
       },
-    ],
-  ]),
+    ]),
+  ),
+  skills: new Map(
+    [...content.skills].map(([id, skill]) => [
+      id,
+      skill.capability === 'meleeCombat'
+        ? {
+            ...skill,
+            combat: { ...skill.combat, melee: { ...skill.combat!.melee!, blockChanceRange: 0, mitigationRange: 0 } },
+          }
+        : skill,
+    ]),
+  ),
 });
 
 /** A player who starts winded and stays so for the whole fixture, as after a long sprint. */
@@ -111,6 +118,15 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
 };
 
 describe('melee blocking in a session', () => {
+  it('blocks at the policy baseline without a melee skill or progression', () => {
+    const { registry: content, issues } = withoutCombatSkills();
+    expect(issues).toEqual([]);
+    const guarded = strike({ content: withFullBlockChance(0, content) });
+    expect(guarded.hits).toHaveLength(1);
+    expect(guarded.hits[0]!.damage).toBeLessThan(move.damage);
+    expect(guarded.blocks).toHaveLength(1);
+    expect(guarded.practice).toBe(0);
+  });
   it('passes a partial block’s leftover to the same region and kind, paid for in stamina', () => {
     const open = strike({ content: withFullBlockChance(0), blocking: false });
     const guarded = strike({ content: withFullBlockChance(0) });

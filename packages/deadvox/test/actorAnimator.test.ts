@@ -40,6 +40,7 @@ import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '../src/render/shadowFlags.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
@@ -235,7 +236,7 @@ it.each(['rifle_hunting', 'pump_shotgun', 'rifle_assault', 'rifle_ak', 'pistol_s
     const f = await fixture(true, type);
     const figure = f.registry.figures.get('player')!;
     const model = f.registry.models.get(f.registry.items.get(f.item.type)!.model!)!;
-    const amplitude = f.registry.skills.get('firearms_combat')!.combat!.firearms!.wobbleLimitRadians;
+    const amplitude = skilledFirearmsTuning(f.registry).wobbleLimitRadians;
     // Walking's vertical arch, look sway and noise share one vector cap, not independently additive maxima.
     const envelope = [
       NEUTRAL_AIM,

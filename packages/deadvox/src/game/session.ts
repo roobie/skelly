@@ -100,6 +100,8 @@ import { type PlacedPowerDevice, SitePower } from '../core/sitePower.ts';
 import {
   firearmShotPracticeSkill,
   firearmSteadinessSkill,
+  firearmsCombatTuning as readFirearmsCombatTuning,
+  meleeCombatTuning as readMeleeCombatTuning,
   skillActivityPractice,
   skillActivityPracticeRate,
 } from '../core/skillTraining.ts';
@@ -140,7 +142,7 @@ import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import { type DownedBodyWay, downedBodyPlan, queueDownedBody, registerDownedBodyAction } from './downedBody.ts';
-import { attachmentWorkSkill, FirearmAttachmentHandling, isAttachmentWorkAction } from './firearmAttachmentHandling.ts';
+import { FirearmAttachmentHandling, isAttachmentWorkAction } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmOutcome,
@@ -203,9 +205,9 @@ const sessionSteadiness = (
 ) => {
   const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
   return {
-    level: skillEffectLevel(character.skills[skillId]!),
+    level: skillEffectLevel(skillId === undefined ? SKILL_LEVEL_MIN : character.skills[skillId]!),
     tuning:
-      skillId === claimedId(registry.skills, 'firearmsCombat')
+      skillId === undefined || skillId === claimed(registry.skills, 'firearmsCombat')?.id
         ? tuning
         : steadinessTuning(tuning, registry.skills.get(skillId)!),
   };
@@ -231,7 +233,8 @@ const validateSnipingAdsFirearm = (registry: Registry, firearm: Item | undefined
     uid !== undefined &&
     (!firearm ||
       firearm.uid !== uid ||
-      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) === claimedId(registry.skills, 'firearmsCombat'))
+      firearmSteadinessSkill(registry, defOf(registry, firearm.type)) ===
+        claimed(registry.skills, 'firearmsCombat')?.id)
   ) {
     throw new Error('Invalid saved Sniping acquisition firearm');
   }
@@ -258,8 +261,9 @@ const advanceSnipingPractice = ({
 }): number | undefined => {
   const skillId = firearmSteadinessSkill(registry, firearm ? defOf(registry, firearm.type) : undefined);
   if (
+    skillId === undefined ||
     !(ready && aiming && firearm && firearms.isReady(firearm.uid)) ||
-    skillId === claimedId(registry.skills, 'firearmsCombat')
+    skillId === claimed(registry.skills, 'firearmsCombat')?.id
   ) {
     return undefined;
   }
@@ -856,12 +860,12 @@ export const createSession = (options: SessionOptions) => {
   };
 
   const character = createSessionCharacter(registry, options.handedness, restored);
-  const firearmsCombatTuning = claimed(registry.skills, 'firearmsCombat')?.combat?.firearms;
-  if (!firearmsCombatTuning) {
-    throw new Error('Missing firearms-combat skill tuning');
-  }
+  const firearmsCombatTuning = readFirearmsCombatTuning(registry);
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
-  const meleeCombatTuning = claimed(registry.skills, 'meleeCombat')?.combat?.melee;
+  const meleeCombatTuning = readMeleeCombatTuning(registry);
+  const firearmsSkillId = claimed(registry.skills, 'firearmsCombat')?.id;
+  const meleeSkillId = claimed(registry.skills, 'meleeCombat')?.id;
+  const inventorySkillId = claimed(registry.skills, 'inventoryManagement')?.id;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, {
         character,
@@ -1058,8 +1062,10 @@ export const createSession = (options: SessionOptions) => {
   const playPlayerSound = (event: SoundId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const awardInventoryPractice = (): void => {
-    const training = skillActivityPractice(registry, claimedId(registry.skills, 'inventoryManagement'), 'handling');
-    character.awardPractice(claimedId(registry.skills, 'inventoryManagement'), training.practice, training.tier);
+    if (inventorySkillId !== undefined) {
+      const training = skillActivityPractice(registry, inventorySkillId, 'handling');
+      character.awardPractice(inventorySkillId, training.practice, training.tier);
+    }
   };
   /** What of a melee blow gets past the en-garde guard; acid never comes through here. */
   const blockedDamage = (damage: number, attacker: EntityId): number => {
@@ -1068,7 +1074,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const block = meleeBlock(
       {
-        level: character.skills[claimedId(registry.skills, 'meleeCombat')] ?? SKILL_LEVEL_MIN,
+        level: meleeSkillId === undefined ? SKILL_LEVEL_MIN : character.skills[meleeSkillId]!,
         damage,
         roll: sim.rng(`block:${attacker}:${sim.time}`).next(),
         stamina: sim.needs.stamina,
@@ -1080,12 +1086,10 @@ export const createSession = (options: SessionOptions) => {
       return damage;
     }
     spendStamina(sim.needs, block.staminaCost, bodyTuning.staminaRegenDelaySimSeconds);
-    const training = skillActivityPractice(registry, claimedId(registry.skills, 'meleeCombat'), 'block');
-    character.awardPractice(
-      claimedId(registry.skills, 'meleeCombat'),
-      training.practice * block.absorbed,
-      training.tier,
-    );
+    if (meleeSkillId !== undefined) {
+      const training = skillActivityPractice(registry, meleeSkillId, 'block');
+      character.awardPractice(meleeSkillId, training.practice * block.absorbed, training.tier);
+    }
     playPlayerSound(bodyTuning.sounds.block[block.full ? 'full' : 'partial']);
     options.onBlock?.(blockJolt(block.absorbed, meleeCombatTuning), block.full);
     return damage - block.absorbed;
@@ -1163,11 +1167,13 @@ export const createSession = (options: SessionOptions) => {
     onShot: (shot, time, firearm, sighted) => {
       options.onDischarge?.(firearm, sighted);
       const skillId = firearmShotPracticeSkill(registry, defOf(registry, firearm.type), sighted);
-      const shotTraining = skillActivityPractice(registry, skillId, 'shot');
-      character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
+      if (skillId !== undefined) {
+        const shotTraining = skillActivityPractice(registry, skillId, 'shot');
+        character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
+      }
       const { hits, stops } = zombieSystem.firePellets(shot);
       bodyStops = stops;
-      if (hits > 0 && (skillId !== claimedId(registry.skills, 'firearmsCombat') || firearmReadyWalking)) {
+      if (skillId !== undefined && hits > 0 && (skillId !== firearmsSkillId || firearmReadyWalking)) {
         const training = skillActivityPractice(registry, skillId, 'hit');
         character.awardPractice(skillId, training.practice, training.tier);
       }
@@ -1189,7 +1195,7 @@ export const createSession = (options: SessionOptions) => {
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
     reloadFactor: () =>
-      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadDuration *
+      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadFactor *
       sim.body.pain.effects.handlingSlowdown,
     onSound: (event, time) => playPlayerSound(event, time),
   });
@@ -1693,8 +1699,10 @@ export const createSession = (options: SessionOptions) => {
     {
       onWeaponHit: (uid) => wearMeleeWeaponOnHit(inventory, uid),
       onLandedHit: () => {
-        const training = skillActivityPractice(registry, claimedId(registry.skills, 'meleeCombat'), 'hit');
-        character.awardPractice(claimedId(registry.skills, 'meleeCombat'), training.practice, training.tier);
+        if (meleeSkillId !== undefined) {
+          const training = skillActivityPractice(registry, meleeSkillId, 'hit');
+          character.awardPractice(meleeSkillId, training.practice, training.tier);
+        }
       },
       onCompletedSwing: (isFist) => options.onCompletedSwing?.(isFist),
       payChargeStamina: (wanted) => {
@@ -2134,13 +2142,14 @@ export const createSession = (options: SessionOptions) => {
     firearms.advanceAdsAcquisition(dt, heldFirearm?.uid, Boolean(controls.aimingDownSights?.()));
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
-    if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
-      const training = skillActivityPracticeRate(registry, claimedId(registry.skills, 'firearmsCombat'), 'readying');
-      character.awardPractice(
-        claimedId(registry.skills, 'firearmsCombat'),
-        dt * training.practicePerSecond,
-        training.tier,
-      );
+    if (
+      firearmsSkillId !== undefined &&
+      readyGait &&
+      readyUid !== undefined &&
+      (!firearms.isReady(readyUid) || going)
+    ) {
+      const training = skillActivityPracticeRate(registry, firearmsSkillId, 'readying');
+      character.awardPractice(firearmsSkillId, dt * training.practicePerSecond, training.tier);
     }
     snipingAdsUid = advanceSnipingPractice({
       registry,
@@ -2382,13 +2391,13 @@ export const createSession = (options: SessionOptions) => {
     if (isInventoryPracticeAction(job)) {
       awardInventoryPractice();
     }
-    if (isFirearmTrainingAction(job)) {
-      const training = skillActivityPractice(registry, claimedId(registry.skills, 'firearmsCombat'), 'handling');
-      character.awardPractice(claimedId(registry.skills, 'firearmsCombat'), training.practice, training.tier);
+    if (firearmsSkillId !== undefined && isFirearmTrainingAction(job)) {
+      const training = skillActivityPractice(registry, firearmsSkillId, 'handling');
+      character.awardPractice(firearmsSkillId, training.practice, training.tier);
     }
-    if (isAttachmentWorkAction(job)) {
-      const training = skillActivityPractice(registry, attachmentWorkSkill(registry), 'attachment');
-      character.awardPractice(attachmentWorkSkill(registry), training.practice, training.tier);
+    if (firearmsSkillId !== undefined && isAttachmentWorkAction(job)) {
+      const training = skillActivityPractice(registry, firearmsSkillId, 'attachment');
+      character.awardPractice(firearmsSkillId, training.practice, training.tier);
     }
   };
   const tickHandling = (dt: number) => {

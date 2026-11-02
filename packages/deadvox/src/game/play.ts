@@ -3876,10 +3876,7 @@ export const startPlay = (
     if (selected.kind !== 'firearm') {
       return;
     }
-    const tuning = claimed(registry.skills, 'firearmsCombat')?.combat?.firearms;
-    if (!tuning) {
-      throw new Error('Missing firearms-combat pose tuning');
-    }
+    const tuning = firearmsCombatTuning(registry);
     const { item } = selected;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
     const model = sightedFirearmModel(registry, item) ?? firearmHandlingFor(item, registry).model;

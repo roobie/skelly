@@ -1,13 +1,9 @@
 import { readFileSync } from 'node:fs';
 import type { ContentSource } from '../../src/core/content.ts';
+import type { ContentFile } from '../../src/core/schema.ts';
 import { fixtureIds } from './capabilityIds.ts';
 
-const baseJson = (name: string) =>
-  JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as {
-    skills?: { id: string; combat?: { firearms?: { longGunSteadinessSkill: string } } }[];
-    ui?: { id: string; refusalSound: string }[];
-    sounds?: { id: string }[];
-  };
+const baseJson = (name: string) => JSON.parse(readFileSync(`src/content/base/${name}`, 'utf8')) as ContentFile;
 
 const baseSkill = (id: string) => {
   const skill = baseJson('recipes.json').skills?.find((candidate) => candidate.id === id);
@@ -23,17 +19,21 @@ const fixtureUi = () => {
   return { ui, sounds };
 };
 
-/** The core player inventory row, the inventory skill's handling tuning and the core UI text its refusals read, which every registry needs for the reach and handling rules; taken from base content so no test restates their values. */
+/** Share authored tuning so fixtures do not pin product values. */
 export const playerInventorySource = (): ContentSource => ({
   source: 'player-inventory-fixture.json',
   data: { ...baseJson('inventory.json'), ...fixtureUi(), skills: [baseSkill(fixtureIds.inventoryManagement)] },
 });
 
-/** The firearms skill's tuning, which held-item rendering needs; taken from base content so no test restates its values. */
+/** Rendering fixtures need baseline policy even when their skill set changes. */
 export const firearmsSkillSource = (): ContentSource => {
   const combat = baseSkill(fixtureIds.firearmsCombat);
   return {
     source: 'firearms-skill-fixture.json',
-    data: { skills: [combat, baseSkill(combat.combat!.firearms!.longGunSteadinessSkill)] },
+    data: {
+      ...baseJson('combat-policy.json'),
+      ...baseJson('ranged-tuning.json'),
+      skills: [combat, baseSkill(combat.combat!.firearms!.longGunSteadinessSkill)],
+    },
   };
 };

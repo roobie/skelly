@@ -23,6 +23,10 @@
     },
     {
       "kind": "content",
+      "path": "combat-policy.json"
+    },
+    {
+      "kind": "content",
       "path": "compression.json"
     },
     {
@@ -228,6 +232,10 @@
     {
       "kind": "content",
       "path": "readables.json"
+    },
+    {
+      "kind": "content",
+      "path": "ranged-tuning.json"
     },
     {
       "kind": "content",

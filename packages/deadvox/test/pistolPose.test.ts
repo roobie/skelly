@@ -30,6 +30,7 @@ import { PlayerMeshes } from '../src/render/playerFigure.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
@@ -41,7 +42,7 @@ it('authors a free two-hand pistol hold with a forward bore at hip and ADS', () 
   expect(model.hands).toBeDefined();
   expect(model.hands!.butt).toBeUndefined();
   const { holds } = registry.figures.get('player')!;
-  const { loweredPitchRadians } = registry.skills.get('firearms_combat')!.combat!.firearms!;
+  const { loweredPitchRadians } = skilledFirearmsTuning(registry);
   for (const side of ['right', 'left'] as const) {
     for (const aimingDownSights of [false, true]) {
       const pose = heldFirearmTransform({

@@ -179,8 +179,11 @@ valid return path. This shares the field-patch conflict rule in
 
 **Combat policy is product content.** Engine mechanisms such as aiming, blocking and
 handling do not own a product's sway or penalty policy. Skills modify that policy;
-a product can use it without a skill system. A core-only validation stack has no
-modifiers and does not imply a playable product.
+a product can use it without a skill system. Expert endpoints belong to skills because
+those are what the skills reach; policy owns the unskilled baseline, so a product
+without skills needs no ceiling. See `src/core/skillTraining.ts`, `firearmsCombatTuning`
+and `meleeCombatTuning`. A core-only validation stack has no modifiers and does not
+imply a playable product.
 
 **Zero skills preserve Body.** The skill list stays empty beside the body/injury
 panel, because hiding the Skills tab would hide health information. See

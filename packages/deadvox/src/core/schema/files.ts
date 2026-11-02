@@ -2,6 +2,7 @@ import { array, check, type InferOutput, optional, pipe, strictObject } from 'va
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
 import { BlockMaterialSchema, BlockSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
+import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
 import { CompressionTuningSchema } from './compression.ts';
 import { ControlSchema } from './controls.ts';
 import { DamageKindSchema } from './damageKinds.ts';
@@ -100,6 +101,8 @@ const SECTION_DESCRIPTOR = {
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
   soundFamilies: { schema: optional(array(strictObject({ id: Id }))), label: 'sound families', order: 8 },
   damageKinds: { schema: optional(array(DamageKindSchema)), label: 'damage kinds', order: 8 },
+  rangedTuning: { schema: optional(array(RangedTuningSchema)), label: 'ranged tuning', order: 8.1 },
+  combatPolicy: { schema: optional(array(CombatPolicySchema)), label: 'combat policy', order: 8.2 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },

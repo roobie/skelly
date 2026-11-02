@@ -28,6 +28,7 @@ import {
 import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -819,7 +820,7 @@ describe('real pump ammunition', () => {
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
-    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuning = skilledFirearmsTuning(registry);
     const bore = firearmBoreRay({
       holds: registry.figures.get('player')!.holds,
       model: firearmHandlingFor(f.gun, registry).model,

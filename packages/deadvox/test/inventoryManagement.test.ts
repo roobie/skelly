@@ -12,6 +12,7 @@ import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
 
 const registry = baseRegistry();
@@ -271,7 +272,7 @@ describe('Inventory Management skill', () => {
   });
 
   it('keeps firearm-owned round handling on the firearms-combat curve', () => {
-    const firearmTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+    const firearmTuning = skilledFirearmsTuning(registry);
     if (!firearmTuning) {
       throw new Error('Firearms Combat content has no reload tuning');
     }
@@ -288,7 +289,7 @@ describe('Inventory Management skill', () => {
       const queue = new HandlingQueue(inventory);
       const handling = new MagazineHandling(inventory, queue, {
         feet: () => [0, 0, 0],
-        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadDuration,
+        reloadFactor: () => firearmsSkillEffects(character.skills.firearms_combat!, firearmTuning).reloadFactor,
       });
       const refusal = handling.strip(magazine.uid, 0);
       if (refusal) {

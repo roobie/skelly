@@ -24,6 +24,7 @@ import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { presentationFlight } from './itemFlightFixture.ts';
 import { PLAYER } from './playerFixture.ts';
 import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
@@ -288,11 +289,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
 
 it('keeps headless session recoil valid when held fire has no view-pitch control', () => {
   const headless = session([], undefined, { pitch: LOOK_PITCH_LIMIT }, { firing: true, adjustPitch: false });
-  const followup = firearmsSkillEffects(
-    0,
-    registry.skills.get('firearms_combat')!.combat!.firearms!,
-    'automaticFollowup',
-  );
+  const followup = firearmsSkillEffects(0, skilledFirearmsTuning(registry), 'automaticFollowup');
   for (let shot = 0; shot < 80; shot++) {
     headless.aim.recordShot(shot, 0.035, followup.recoilKickScale);
     headless.frame(1 / 60);

@@ -2,14 +2,14 @@ import { SKILL_LEVEL_MAX, skillEffectLevel, skillSaturation } from './character.
 
 export interface MeleeCombatTuning {
   readonly blockChanceMinimum: number;
-  readonly blockChanceRange: number;
-  readonly blockChanceHalfLifeLevels: number;
+  readonly blockChanceRange?: number | undefined;
+  readonly blockChanceHalfLifeLevels?: number | undefined;
   readonly mitigationMinimum: number;
-  readonly mitigationRange: number;
-  readonly mitigationHalfLifeLevels: number;
+  readonly mitigationRange?: number | undefined;
+  readonly mitigationHalfLifeLevels?: number | undefined;
   readonly staminaPerAbsorbedPoint: number;
-  readonly staminaCostFloor: number;
-  readonly staminaCostHalfLifeLevels: number;
+  readonly staminaCostFloor?: number | undefined;
+  readonly staminaCostHalfLifeLevels?: number | undefined;
   readonly joltPerAbsorbedPoint: number;
   readonly joltRealSeconds: number;
   /** How far the arms rise, in metres, on a block that absorbs enough to reach full jolt strength. */
@@ -35,8 +35,8 @@ export interface MeleeBlock {
 
 const NO_BLOCK: MeleeBlock = { absorbed: 0, staminaCost: 0, full: false };
 
-const rising = (effective: number, minimum: number, range: number, halfLife: number): number =>
-  minimum + range * (effective / (effective + halfLife));
+const rising = (effective: number, minimum: number, range: number | undefined, halfLife: number | undefined): number =>
+  minimum + (range === undefined ? 0 : range * (effective / (effective + halfLife!)));
 
 /** Blocking effectiveness improves monotonically and legendary uses ordinary-top effects. */
 export const meleeCombatEffects = (level: number, tuning: MeleeCombatTuning): MeleeCombatEffects => {
@@ -54,7 +54,9 @@ export const meleeCombatEffects = (level: number, tuning: MeleeCombatTuning): Me
     mitigation: rising(effective, tuning.mitigationMinimum, tuning.mitigationRange, tuning.mitigationHalfLifeLevels),
     staminaPerAbsorbedPoint:
       tuning.staminaPerAbsorbedPoint *
-      skillSaturation(effective, tuning.staminaCostFloor, tuning.staminaCostHalfLifeLevels),
+      (tuning.staminaCostFloor === undefined
+        ? 1
+        : skillSaturation(effective, tuning.staminaCostFloor, tuning.staminaCostHalfLifeLevels!)),
   };
 };
 

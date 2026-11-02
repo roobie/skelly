@@ -56,6 +56,19 @@ const playerBody = registry.body.get('player')!;
  */
 const blockContent = {
   ...registry,
+  combatPolicy: new Map(
+    [...registry.combatPolicy].map(([id, policy]) => [
+      id,
+      {
+        ...policy,
+        melee: {
+          ...policy.melee!,
+          blockChanceMinimum: 1,
+          staminaPerAbsorbedPoint: (0.6 * playerBody.needs.spawn.stamina) / blockBlow.damage,
+        },
+      },
+    ]),
+  ),
   skills: new Map([
     ...registry.skills,
     [
@@ -66,10 +79,8 @@ const blockContent = {
           ...meleeSkill.combat,
           melee: {
             ...meleeSkill.combat!.melee!,
-            blockChanceMinimum: 1,
             blockChanceRange: 0,
             staminaCostFloor: 1,
-            staminaPerAbsorbedPoint: (0.6 * playerBody.needs.spawn.stamina) / blockBlow.damage,
           },
         },
       },

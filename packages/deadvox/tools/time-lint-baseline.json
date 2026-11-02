@@ -48,10 +48,6 @@
     "core/disassembly.ts": {
       "duration": 2
     },
-    "core/firearmsSkill.ts": {
-      "rackDuration": 2,
-      "reloadDuration": 2
-    },
     "core/firearmState.ts": {
       "duration": 2,
       "elapsed": 2,

@@ -61,46 +61,19 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
         "firearms": {
           "longGunSteadinessSkill": "sniping",
           "raiseMinimumSimSeconds": 0.28,
-          "raiseRangeSimSeconds": 0.42,
           "raiseHalfLifeLevels": 5,
-          "adsAcquisitionMaximumSimSeconds": 0.55,
-          "readyMovementMinimum": 0.45,
           "readyMovementRange": 0.35,
           "readyMovementHalfLifeLevels": 5,
-          "loweredPitchRadians": 0.3,
-          "skillZeroHandling": {
-            "singleShot": { "variance": 20, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },
-            "automaticFollowup": { "variance": 40, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
-          },
           "wobbleSkillTenVariance": 0.05,
-          "wobbleLimitRadians": 0.14,
-          "wobbleVerticalToHorizontalRatio": 0.225,
-          "wobbleLuneArchPower": 2,
-          "wobbleLunePhaseOffsetRadians": 0.08,
-          "wobbleNoiseReversionRatePerSimSecond": 2.4,
-          "wobbleNoiseSigmaRadiansPerSqrtSecond": 0.002,
-          "wobbleNoiseSmoothingSimSeconds": 0.12,
-          "wobbleStanceDriftScale": {
-            "standing": 1,
-            "crouching": 0.8,
-            "prone": 0.6,
-          },
           "reloadFactorFloor": 0.025,
           "reloadFactorHalfLifeLevels": 5,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1,
-          "caseEjection": { "speedMetresPerSimSecond": 3.5, "flightSimSeconds": 0.48, "landingLiftMetres": 0.006 },
-          "shotTraceRangeBlocks": 240,
           "breathHold": {
-            "staminaPerSimSecond": 12,
-            "recoverySimSeconds": 3,
-            "recoverySwayScale": 2.5,
-            "steadyingMinimum": 0.5,
             "steadyingSkillRange": 0.4,
-            "steadyingSkillHalfLifeLevels": 5,
-            "painWeakeningPerRatio": 0.5
+            "steadyingSkillHalfLifeLevels": 5
           }
         }
       }
@@ -133,20 +106,12 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       },
       "combat": {
         "melee": {
-          "blockChanceMinimum": 0.05,
           "blockChanceRange": 0.45,
           "blockChanceHalfLifeLevels": 4,
-          "mitigationMinimum": 0.3,
           "mitigationRange": 0.55,
           "mitigationHalfLifeLevels": 3,
-          "staminaPerAbsorbedPoint": 2,
           "staminaCostFloor": 0.35,
-          "staminaCostHalfLifeLevels": 3,
-          "joltPerAbsorbedPoint": 0.08,
-          "joltRealSeconds": 0.08,
-          "deflectRiseMetres": 0.14,
-          "deflectRiseFloor": 0.6,
-          "deflectRealSeconds": 0.35
+          "staminaCostHalfLifeLevels": 3
         }
       }
     }

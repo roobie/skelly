@@ -1,5 +1,5 @@
 local content = [
-  'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'compression', 'controls',
+  'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'combat-policy', 'compression', 'controls',
   'crisis-hq-fixtures', 'crisis-hq', 'damage-kinds', 'dayCycle', 'figures-player', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'graphics', 'hunting-cabins', 'inventory', 'item-wear', 'items-ammunition',
@@ -9,7 +9,7 @@ local content = [
   'layouts-test-house', 'layouts-voice-size', 'layouts-water', 'layouts', 'locks', 'look',
   'loot-workshop', 'loot', 'map-kits', 'models-attachments', 'models-firearms',
   'models-gun-parts', 'models-items', 'models-melee', 'player', 'power', 'range', 'readables',
-  'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
+  'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
   'rural-substation-fixtures', 'rural-substation', 'saves', 'scenarios', 'senses',
   'site-generation', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',

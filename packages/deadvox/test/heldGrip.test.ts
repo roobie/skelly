@@ -12,6 +12,7 @@ import type { ModelDef } from '../src/core/schema.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
 const source = baseRegistry();
@@ -81,7 +82,7 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
 
 describe('actual-slot held placement', () => {
   it('projects each exported sight line to screen centre within one pixel in ADS', () => {
-    const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const firearms = skilledFirearmsTuning(registry);
     for (const modelId of ['rifle_assault', 'rifle_ak', 'shotgun_pump']) {
       const model = registry.models.get(modelId)!;
       expect(model.gun?.sight?.eyeReliefMetres).toBeGreaterThan(0);
@@ -189,7 +190,7 @@ describe('actual-slot held placement', () => {
   });
 
   it('keeps a long gun’s butt in its shoulder seat while lowering and raising it, mirrored for the left slot', () => {
-    const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const firearms = skilledFirearmsTuning(registry);
     const longGuns = [...registry.models.values()].filter((model) => model.hands?.butt);
     expect(longGuns.length).toBeGreaterThan(0);
     for (const model of longGuns) {

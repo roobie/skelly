@@ -873,61 +873,22 @@
       "capability": "firearmsCombat",
       "combat": {
         "firearms": {
-          "adsAcquisitionMaximumSimSeconds": 0.55000000000000004,
           "attachmentFactorFloor": 0,
           "attachmentFactorHalfLifeLevels": 1.1000000000000001,
           "breathHold": {
-            "painWeakeningPerRatio": 0.5,
-            "recoverySimSeconds": 3,
-            "recoverySwayScale": 2.5,
-            "staminaPerSimSecond": 12,
-            "steadyingMinimum": 0.5,
             "steadyingSkillHalfLifeLevels": 5,
             "steadyingSkillRange": 0.40000000000000002
           },
-          "caseEjection": {
-            "flightSimSeconds": 0.47999999999999998,
-            "landingLiftMetres": 0.0060000000000000001,
-            "speedMetresPerSimSecond": 3.5
-          },
           "longGunSteadinessSkill": "sniping",
-          "loweredPitchRadians": 0.29999999999999999,
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "raiseHalfLifeLevels": 5,
           "raiseMinimumSimSeconds": 0.28000000000000003,
-          "raiseRangeSimSeconds": 0.41999999999999998,
           "readyMovementHalfLifeLevels": 5,
-          "readyMovementMinimum": 0.45000000000000001,
           "readyMovementRange": 0.34999999999999998,
           "reloadFactorFloor": 0.025000000000000001,
           "reloadFactorHalfLifeLevels": 5,
-          "shotTraceRangeBlocks": 240,
-          "skillZeroHandling": {
-            "automaticFollowup": {
-              "recoilKickScale": 12,
-              "recoilRecoveryScale": 0.25,
-              "variance": 40
-            },
-            "singleShot": {
-              "recoilKickScale": 6,
-              "recoilRecoveryScale": 0.5,
-              "variance": 20
-            }
-          },
-          "wobbleLimitRadians": 0.14000000000000001,
-          "wobbleLuneArchPower": 2,
-          "wobbleLunePhaseOffsetRadians": 0.080000000000000002,
-          "wobbleNoiseReversionRatePerSimSecond": 2.3999999999999999,
-          "wobbleNoiseSigmaRadiansPerSqrtSecond": 0.002,
-          "wobbleNoiseSmoothingSimSeconds": 0.12,
-          "wobbleSkillTenVariance": 0.050000000000000003,
-          "wobbleStanceDriftScale": {
-            "crouching": 0.80000000000000004,
-            "prone": 0.59999999999999998,
-            "standing": 1
-          },
-          "wobbleVerticalToHorizontalRatio": 0.22500000000000001
+          "wobbleSkillTenVariance": 0.050000000000000003
         }
       },
       "curve": {
@@ -1002,19 +963,11 @@
       "combat": {
         "melee": {
           "blockChanceHalfLifeLevels": 4,
-          "blockChanceMinimum": 0.050000000000000003,
           "blockChanceRange": 0.45000000000000001,
-          "deflectRealSeconds": 0.34999999999999998,
-          "deflectRiseFloor": 0.59999999999999998,
-          "deflectRiseMetres": 0.14000000000000001,
-          "joltPerAbsorbedPoint": 0.080000000000000002,
-          "joltRealSeconds": 0.080000000000000002,
           "mitigationHalfLifeLevels": 3,
-          "mitigationMinimum": 0.29999999999999999,
           "mitigationRange": 0.55000000000000004,
           "staminaCostFloor": 0.34999999999999998,
-          "staminaCostHalfLifeLevels": 3,
-          "staminaPerAbsorbedPoint": 2
+          "staminaCostHalfLifeLevels": 3
         }
       },
       "curve": {

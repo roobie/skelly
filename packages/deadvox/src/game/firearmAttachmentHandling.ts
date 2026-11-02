@@ -1,5 +1,5 @@
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import { claimedId } from '../core/capabilities.ts';
+import { claimed, claimedId } from '../core/capabilities.ts';
 import { SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -36,13 +36,15 @@ export const attachmentWorkSkill = (registry: Registry): string => claimedId(reg
 export const isAttachmentWorkAction = (job: Job): boolean => job.kind === 'action' && job.jobType === ATTACHMENT_ACTION;
 
 const attachmentWorkSeconds = (inventory: Inventory): number => {
+  const skill = claimed(inventory.registry.skills, 'firearmsCombat');
+  if (!skill) {
+    return handlingWeights(inventory.registry).ground;
+  }
   const tuning = firearmsCombatTuning(inventory.registry);
-  const level = skillEffectLevel(
-    inventory.character.skills?.[attachmentWorkSkill(inventory.registry)] ?? SKILL_LEVEL_MIN,
-  );
+  const level = skillEffectLevel(inventory.character.skills?.[skill.id] ?? SKILL_LEVEL_MIN);
   return (
     handlingWeights(inventory.registry).ground *
-    skillSaturation(level, tuning.attachmentFactorFloor, tuning.attachmentFactorHalfLifeLevels)
+    skillSaturation(level, tuning.attachmentFactorFloor!, tuning.attachmentFactorHalfLifeLevels!)
   );
 };
 
@@ -159,6 +161,7 @@ export class FirearmAttachmentHandling {
     const effects = attachmentDefinition.firearmAttachmentEffects;
     if (
       withSkill &&
+      claimed(this.inventory.registry.skills, 'firearmsCombat') !== undefined &&
       effects?.kind === 'suppressor' &&
       skillEffectLevel(
         this.inventory.character.skills?.[attachmentWorkSkill(this.inventory.registry)] ?? SKILL_LEVEL_MIN,

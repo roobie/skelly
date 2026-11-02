@@ -14,13 +14,14 @@ import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects 
 import { advanceFootsteps, initialFootstepClock, stepDistanceMetres } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { startupContent } from './baseRegistry.ts';
+import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
 import { PLAYER } from './playerFixture.ts';
 
 const footstepTuning = BUNDLED_CONTENT.registry.senses.get('player')!.footsteps;
-const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
+const stanceTuning = skilledFirearmsTuning(BUNDLED_CONTENT.registry);
 const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
 const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
 const skillEffects = (level: number, kind: FirearmsSkillShotKind = 'singleShot') =>
@@ -747,13 +748,13 @@ it('firearms skill reduces climb over the same full-auto burst', () => {
 it('reload and rack curves preserve skill-zero time and stay monotonic', () => {
   const levels = Array.from({ length: SKILL_LEVEL_LEGENDARY + 1 }, (_, level) => level);
   const effects = levels.map((level) => skillEffects(level));
-  const reloadDurations = effects.map(({ reloadDuration }) => reloadDuration);
-  const rackDurations = effects.map(({ rackDuration }) => rackDuration);
-  expect(reloadDurations[0]).toBe(1);
-  expect(rackDurations[0]).toBe(1);
+  const reloadFactors = effects.map(({ reloadFactor }) => reloadFactor);
+  const rackFactors = effects.map(({ rackFactor }) => rackFactor);
+  expect(reloadFactors[0]).toBe(1);
+  expect(rackFactors[0]).toBe(1);
   for (let index = 1; index < levels.length; index++) {
-    expect(reloadDurations[index]).toBeLessThanOrEqual(reloadDurations[index - 1]!);
-    expect(rackDurations[index]).toBeLessThanOrEqual(rackDurations[index - 1]!);
+    expect(reloadFactors[index]).toBeLessThanOrEqual(reloadFactors[index - 1]!);
+    expect(rackFactors[index]).toBeLessThanOrEqual(rackFactors[index - 1]!);
   }
 });
 
@@ -765,8 +766,8 @@ it('firearms skill effects improve through expert level and legendary matches ex
   expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
   expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
   expect(experienced.variance).toBe(stanceTuning.wobbleSkillTenVariance);
-  expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
-  expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
+  expect(experienced.reloadFactor).toBeLessThan(novice.reloadFactor);
+  expect(experienced.rackFactor).toBeLessThan(novice.rackFactor);
   const noviceStance = firearmStanceEffects(0, stanceTuning);
   const experiencedStance = firearmStanceEffects(SKILL_LEVEL_MAX, stanceTuning);
   const legendaryStance = firearmStanceEffects(SKILL_LEVEL_LEGENDARY, stanceTuning);

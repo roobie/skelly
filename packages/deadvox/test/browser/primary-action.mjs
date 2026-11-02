@@ -3606,6 +3606,46 @@ try {
       pistol,
     );
     await page.mouse.up({ button: 'right' });
+    const grenade = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.explosive);
+      if (!definition) {
+        throw new Error('No explosive capability for grenade fixture');
+      }
+      const item = r.inventory.create(definition.id);
+      const { blast, fragments, fuseSimSeconds } = definition.explosive;
+      // A landed charge beyond both hazards cannot injure the later flow's player.
+      const pos = [...r.session.body.pos];
+      pos[0] += (blast.radiusMetres + fragments.rangeMetres) / r.scale.blockSize;
+      if (!r.inventory.add(item, { kind: 'pile', pos }) || r.session.fuses.togglePin(item) !== 'pulled') {
+        throw new Error('Could not stage the landed grenade');
+      }
+      return { uid: item.uid, fuseSimSeconds, start: r.session.sim.time };
+    });
+    await page.waitForFunction((uid) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      return item && r.session.fuses.state(item) === 'burning';
+    }, grenade.uid);
+    await waitForSimulation(
+      page,
+      ({ uid }) => {
+        const { session, inventory } = globalThis.primaryActionTest;
+        return { time: session.sim.time, paused: session.sim.paused, reached: !inventory.itemByUid(uid) };
+      },
+      { uid: grenade.uid },
+      {
+        seconds: grenade.fuseSimSeconds + 1,
+        from: grenade.start,
+        label: 'released grenade burns its authored fuse',
+        record: (line) => process.stderr.write(`${line}\n`),
+      },
+    );
+    assert.equal(
+      await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)), grenade.uid),
+      false,
+      'detonation consumes the released grenade',
+    );
     const food = await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
       const source = [...r.inventory.registry.items.values()].find((candidate) => candidate.food && !candidate.unpack);

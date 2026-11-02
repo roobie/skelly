@@ -40,6 +40,7 @@ import { Rng } from '../core/random.ts';
 import { raycast, type SolidAt } from '../core/raycast.ts';
 import { revolverChamberPoint } from '../core/revolverPose.ts';
 import { makeScale } from '../core/scale.ts';
+import { firearmsCombatTuning, rangedTuning } from '../core/skillTraining.ts';
 import type { SoundId } from '../core/soundEvents.ts';
 import { firearmBoreRay } from './firearmAim.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
@@ -291,7 +292,6 @@ export class FirearmMechanics {
   private readonly firearmsSkillLevel: () => number;
   private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   private readonly handlingSlowdown: () => number;
-  private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
   private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
   private readonly shotInput: ((uid: number, atSimSeconds: number) => FirearmShotInput | undefined) | undefined;
   private readonly revolvers: RevolverHandling;
@@ -359,16 +359,8 @@ export class FirearmMechanics {
     this.firearmsSkillLevel = firearmsSkillLevel;
     this.handlingSlowdown = handlingSlowdown;
     this.shotInput = shotInput;
-    this.firearmsCombatTuning = claimed(inventory.registry.skills, 'firearmsCombat')?.combat?.firearms;
     this.firearmsSkillZeroHandling =
-      firearmsSkillZeroHandling ??
-      (() => {
-        const tuning = this.firearmsCombatTuning;
-        if (!tuning) {
-          throw new Error('Missing firearms-combat skill-zero handling tuning');
-        }
-        return tuning.skillZeroHandling;
-      });
+      firearmsSkillZeroHandling ?? (() => firearmsCombatTuning(inventory.registry).skillZeroHandling);
     for (const { item } of inventory.items()) {
       if (item.firearm?.cycle || item.firearm?.landings?.length) {
         this.active.add(item.uid);
@@ -381,7 +373,7 @@ export class FirearmMechanics {
       }
     }
     this.revolvers = new RevolverHandling(inventory, queue, {
-      factor: () => this.handlingFactor('reloadDuration'),
+      factor: () => this.handlingFactor('reloadFactor'),
       sound: (event, time) => this.onSound(event, undefined, time),
       eject: (gun, chamber, type, time) => this.ejectRevolver(gun, chamber, type, time),
       caseType: (gun) => spentCaseItemId(firearmHandlingFor(gun, inventory.registry).calibre),
@@ -591,19 +583,11 @@ export class FirearmMechanics {
   }
 
   private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
-    const tuning = this.firearmsCombatTuning;
-    if (!tuning) {
-      throw new Error('Missing firearms-combat stance tuning');
-    }
-    return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
+    return { ...firearmsCombatTuning(this.inventory.registry), skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
   private caseEjection(): FirearmsCombatTuning['caseEjection'] {
-    const tuning = this.firearmsCombatTuning;
-    if (!tuning) {
-      throw new Error('Missing firearms-combat case ejection tuning');
-    }
-    return tuning.caseEjection;
+    return rangedTuning(this.inventory.registry).caseEjection;
   }
 
   skillZeroHandlingSettingFor(uid: number): FirearmsSkillZeroHandling {
@@ -808,7 +792,7 @@ export class FirearmMechanics {
     if (item.firearm!.cylinder!.cocked) {
       return;
     }
-    const strikeAt = input.simTime + tuning.doubleActionPullSimSeconds * this.handlingFactor('reloadDuration');
+    const strikeAt = input.simTime + tuning.doubleActionPullSimSeconds * this.handlingFactor('reloadFactor');
     this.revolvers.pull(item, input.simTime, () => {
       const strike = this.shotInput ? this.shotInput(item.uid, strikeAt) : { ...input, simTime: strikeAt };
       if (!strike) {
@@ -1137,7 +1121,7 @@ export class FirearmMechanics {
         count: countText((gun.firearm?.tube?.length ?? 0) + 1),
         capacity: countText(firearmHandlingFor(gun, this.inventory.registry).model.gun!.internalMagazine!.capacity),
       }),
-      defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadDuration'),
+      defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadFactor'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
     this.onSound(defOf(this.inventory.registry, gun.type).firearm!.roundInsertSound!, undefined, time);
@@ -1203,7 +1187,7 @@ export class FirearmMechanics {
       this.queue.enqueueAction(
         STRIP_ACTION,
         this.text.loading.removeRound,
-        defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadDuration'),
+        defOf(this.inventory.registry, type).ammo!.stripSimSeconds * this.handlingFactor('reloadFactor'),
         { uid: gun.uid },
       );
     }
@@ -1211,7 +1195,7 @@ export class FirearmMechanics {
   }
 
   /** Skill's factor on a hand-handling time, lengthened by what the body does to the hands. */
-  private handlingFactor(kind: 'reloadDuration' | 'rackDuration'): number {
+  private handlingFactor(kind: 'reloadFactor' | 'rackFactor'): number {
     return (
       firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning())[kind] *
       this.handlingSlowdown()
@@ -1225,7 +1209,7 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       MAGAZINE_ACTION,
       label,
-      seconds * this.handlingFactor('reloadDuration'),
+      seconds * this.handlingFactor('reloadFactor'),
       replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
     );
     this.onSound(times.changeSound, undefined, time);
@@ -1378,7 +1362,7 @@ export class FirearmMechanics {
     const state: FirearmState = item.firearm ?? { chamber: 'empty' };
     state.hammerDown = undefined;
     const baseDuration = actionPhaseSeconds(data.action, 'hand', phase);
-    const duration = baseDuration * this.handlingFactor('rackDuration');
+    const duration = baseDuration * this.handlingFactor('rackFactor');
     state.cycle = {
       mode: 'hand',
       startedAt: time,

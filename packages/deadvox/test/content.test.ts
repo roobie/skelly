@@ -639,19 +639,37 @@ describe('content', () => {
   });
 
   it('rejects a non-positive firearms skill-zero handling value', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
+    const source = base.find((file) => file.source === 'combat-policy.json')!;
     const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: { skillZeroHandling?: { singleShot?: { variance?: number } } } } }[];
+      combatPolicy: { firearms: { skillZeroHandling: { singleShot: { variance: number } } } }[];
     };
-    data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!.skillZeroHandling!.singleShot!.variance =
-      0;
+    data.combatPolicy[0]!.firearms.skillZeroHandling.singleShot.variance = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
     expect(
       issues.some(
         ({ source: issueSource, path }) =>
-          issueSource === source.source && path.endsWith('.combat.firearms.skillZeroHandling.singleShot.variance'),
+          issueSource === source.source && path.endsWith('.firearms.skillZeroHandling.singleShot.variance'),
       ),
     ).toBe(true);
+  });
+
+  it('rejects skill effect ranges that exceed one when composed with product policy', () => {
+    const policySource = base.find((file) => file.source === 'combat-policy.json')!;
+    const skillSource = base.find((file) => file.source === 'recipes.json')!;
+    const policyData = structuredClone(policySource.data) as {
+      combatPolicy: { firearms: { readyMovementMinimum: number } }[];
+    };
+    const skillData = structuredClone(skillSource.data) as {
+      skills: { capability?: string; combat?: { firearms?: { readyMovementRange: number } } }[];
+    };
+    policyData.combatPolicy[0]!.firearms.readyMovementMinimum = 1;
+    skillData.skills.find((skill) => skill.capability === 'firearmsCombat')!.combat!.firearms!.readyMovementRange = 1;
+    const { issues } = buildRegistry([
+      ...base.filter((file) => file.source !== policySource.source && file.source !== skillSource.source),
+      { source: policySource.source, data: policyData },
+      { source: skillSource.source, data: skillData },
+    ]);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms'))).toBe(true);
   });
 
   it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
@@ -668,36 +686,29 @@ describe('content', () => {
   });
 
   it('rejects invalid OU wobble tuning', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
+    const source = base.find((file) => file.source === 'combat-policy.json')!;
     const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+      combatPolicy: { firearms: Record<string, unknown> }[];
     };
-    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    const { firearms } = data.combatPolicy[0]!;
     firearms.wobbleNoiseReversionRatePerSimSecond = 0;
     firearms.wobbleNoiseSigmaRadiansPerSqrtSecond = -0.01;
     firearms.wobbleNoiseSmoothingSimSeconds = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
 
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(
-      true,
-    );
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(
-      true,
-    );
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
-  it('rejects firearms tuning without case ejection or shot trace range', () => {
-    const source = base.find((file) => file.source === 'recipes.json')!;
-    const data = structuredClone(source.data) as {
-      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
-    };
-    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
-    Reflect.deleteProperty(firearms, 'caseEjection');
-    Reflect.deleteProperty(firearms, 'shotTraceRangeBlocks');
+  it('rejects ranged mechanism tuning without case ejection or shot trace range', () => {
+    const source = base.find((file) => file.source === 'ranged-tuning.json')!;
+    const data = structuredClone(source.data) as { rangedTuning: Record<string, unknown>[] };
+    Reflect.deleteProperty(data.rangedTuning[0]!, 'caseEjection');
+    Reflect.deleteProperty(data.rangedTuning[0]!, 'shotTraceRangeBlocks');
     const { issues } = buildRegistry([{ source: source.source, data }]);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.caseEjection'))).toBe(true);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.shotTraceRangeBlocks'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.caseEjection'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.shotTraceRangeBlocks'))).toBe(true);
   });
 
   it('rejects ammunition spread or firearm choke scale that is not authored', () => {

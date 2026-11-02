@@ -302,12 +302,8 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       (file[section] ?? []).forEach((def, i) => {
         if (section === 'skills') {
           const skill = def as NonNullable<ContentFile['skills']>[number];
-          const entry =
-            skill.combat?.firearms === undefined
-              ? skill
-              : { ...skill, combat: { ...skill.combat, firearms: { ...skill.combat.firearms, curve: skill.curve } } };
-          registry.skills.set(entry.id, entry);
-          note(section, entry.id, source, i);
+          registry.skills.set(skill.id, skill);
+          note(section, skill.id, source, i);
           return;
         }
         (map as Map<string, typeof def>).set(def.id, def);
@@ -1983,7 +1979,36 @@ const checkBlockFootsteps = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
+  const policy = claimed(registry.combatPolicy, 'player');
+  for (const skill of registry.skills.values()) {
+    const firearms = skill.combat?.firearms;
+    const melee = skill.combat?.melee;
+    if (firearms && policy?.firearms) {
+      const baseline = policy.firearms;
+      if (firearms.raiseMinimumSimSeconds > baseline.raiseSimSeconds) {
+        report('skills', skill.id, '.combat.firearms.raiseMinimumSimSeconds', 'expert raise exceeds policy baseline');
+      }
+      if (
+        baseline.readyMovementMinimum + firearms.readyMovementRange > 1 ||
+        baseline.breathHold.steadyingMinimum + firearms.breathHold.steadyingSkillRange > 1
+      ) {
+        report('skills', skill.id, '.combat.firearms', 'effect range exceeds one with combat policy baseline');
+      }
+    }
+    if (
+      melee &&
+      policy?.melee &&
+      (policy.melee.blockChanceMinimum + melee.blockChanceRange > 1 ||
+        policy.melee.mitigationMinimum + melee.mitigationRange > 1)
+    ) {
+      report('skills', skill.id, '.combat.melee', 'effect range exceeds one with combat policy baseline');
+    }
+  }
+};
+
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
+  checkCombatSkillRanges(registry, report);
   for (const skill of registry.skills.values()) {
     const steadinessSkill = skill.combat?.firearms?.longGunSteadinessSkill;
     if (steadinessSkill !== undefined && !registry.skills.get(steadinessSkill)?.steadiness) {
