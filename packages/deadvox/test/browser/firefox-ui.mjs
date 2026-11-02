@@ -31,7 +31,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, worldLoading, spectatorCameraEnabled: () => spectator.enabled, figureVariantOf, THREE: FirefoxTHREE, weatheringStrengthMax: WEATHERING_STRENGTH_MAX } });\n${marker}`,
     );
     // Inside updateWorldLoading, which still runs on every loading frame while the world draw is skipped.
     const loadingMarker =
@@ -41,7 +41,7 @@ const observation = {
       loadingMarker,
       `${loadingMarker}\n    if (worldLoading.state === 'loading' && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { pending: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks), masked: !$('world-loading').hidden };\n    }`,
     );
-    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\n${withLoading}\n`;
+    return `import * as FirefoxTHREE from 'three';\nimport { WEATHERING_STRENGTH_MAX } from '../core/weather.ts';\nimport { figureVariantOf } from '../core/zombieModels.ts';\n${withLoading}\n`;
   },
 };
 const vite = await createServer({
@@ -303,14 +303,14 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
-  // Zombies of each mobgen body are drawn as their own model, so no two of these types share one. The debug spawn
+  // Shared anatomy must not collapse distinct actor figure variants. The debug spawn
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
   const drawnModel = (typeId) => {
-    const { session, view } = globalThis.firefoxUiTest;
+    const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
     for (const [id, zombie] of session.zombies.store.entries()) {
       const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
       const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
-      if (variant?.model === zombie.type.model && variant.mesh.count > 0) {
+      if (variant?.model === figureVariantOf(zombie.type) && variant.mesh.count > 0) {
         return variant.model;
       }
     }
@@ -322,7 +322,7 @@ try {
       page
         .waitForFunction(drawnModel, typeId, { timeout: 10_000 })
         .then((handle) => handle.jsonValue())
-        .catch(() => assert.fail(`a world ${typeId} is drawn as its content model`)),
+        .catch(() => assert.fail(`a world ${typeId} is drawn as its content figure variant`)),
     ),
   );
   assert.equal(

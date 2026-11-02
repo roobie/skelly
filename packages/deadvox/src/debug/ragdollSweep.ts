@@ -1,7 +1,7 @@
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId } from '../core/entities.ts';
-import { figureVariantOf } from '../core/zombieModels.ts';
+import { bodyPlanModel, figureVariantOf } from '../core/zombieModels.ts';
 import type { ZombieSystem } from '../core/zombies.ts';
 import type { ZombieRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';
@@ -31,7 +31,9 @@ export function stageRagdollSweep({
   const tuning = ragdollContent.sweep;
   const downed: EntityId[] = [];
   for (const [row, model] of tuning.models.entries()) {
-    const type = [...registry.zombies.values()].find((candidate) => figureVariantOf(candidate) === model)!;
+    const type = [...registry.zombies.values()].find(
+      (candidate) => bodyPlanModel(figureVariantOf(candidate)) === model,
+    )!;
     for (const [column, cuts] of tuning.cuts.entries()) {
       const position: Vec3 = [
         origin[0] + (tuning.startMetres[0]! + row * tuning.spacingMetres) / blockSize,
@@ -63,7 +65,9 @@ export function stageRagdollSweep({
   }
   const living: { id: EntityId; cuts: string[] }[] = [];
   for (const [row, model] of tuning.models.entries()) {
-    const type = [...registry.zombies.values()].find((candidate) => figureVariantOf(candidate) === model)!;
+    const type = [...registry.zombies.values()].find(
+      (candidate) => bodyPlanModel(figureVariantOf(candidate)) === model,
+    )!;
     for (const [column, cuts] of tuning.crawlCuts.entries()) {
       const position: Vec3 = [
         origin[0] + (tuning.startMetres[0]! + row * tuning.spacingMetres) / blockSize,
