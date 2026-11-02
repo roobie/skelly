@@ -4,7 +4,7 @@ read_if:
   - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
-  - you change salvage, non-destructive disassembly, intact part recovery or loads supported by removed vehicle parts
+  - you change salvage, non-destructive disassembly, intact part recovery or physical settling after vehicle removal
   - you author recipes or item take-apart yields
   - you change liquid recovery destinations or spill consent
   - you change recipe discovery through skill progression or books
@@ -644,12 +644,14 @@ because rearranging a room should not require destroying its contents. See `src/
 - **What lies on top.** Moving a container is not searching it. Pockets stay
   intact, while loose items settle with the stack rather than being lost or
   buried. A furniture move with nowhere for them to land is refused for the same
-  reason. Player-completed car part removal instead lets its loose loads fall
-  onto the first solid support below, spreading when the landing pile is full.
-  With no support below, they join the part at the player's existing feet-drop
-  location, spreading by the ordinary pile rules when full: the player who
-  removed their support receives them, rather than losing them or leaving them
-  hanging where the part was. Physical settling belongs to player completion;
+  reason. Player-completed car part removal keeps the column rule for loads with
+  a floor, rather than rerouting them to the player. The part and no-floor loads
+  use the player's ordinary put-down rule whenever a supported candidate exists:
+  sharing that rule prevents hanging results and gives every landing its
+  drop-sound receiver. The removed part cannot support its own output, so landing
+  is judged after removal. The outcome with no supported candidate awaits the
+  policy decision under #1532; neither refusal nor disposal is inferred from the
+  ordinary player rule. Physical settling belongs to player completion, while
   the inventory transfer remains mechanical. See `src/core/furnitureMove.ts`,
   `resettlePiles` and `planVehicleRemovalPiles`, and `src/core/vehicleRemoval.ts`,
   `completeVehicleRemoval`.

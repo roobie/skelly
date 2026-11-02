@@ -18,10 +18,12 @@ const ids = { part: 'removal_part', load: 'removal_load', hand: 'removal_hand', 
 const fixture = ({
   floor = true,
   height = 2,
+  playerX = 3.5,
   obstacle,
 }: {
   floor?: boolean;
   height?: number;
+  playerX?: number;
   obstacle?: 'non-solid' | 'shape-hole';
 } = {}) => {
   const base = baseRegistry();
@@ -122,7 +124,7 @@ const fixture = ({
     scale,
     seed: 1,
     start: 43_200,
-    spawn: [3.5, height + 1, 1.5],
+    spawn: [playerX, height + 1, 1.5],
     terrainDestruction: { terrain: canonical, source },
     isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
     isOpaque: () => false,
@@ -175,7 +177,7 @@ const fixture = ({
     }
     return location.pile.pos;
   };
-  const moveOntoLoad = () => {
+  const moveOntoLoad = (target = load) => {
     const hand = inventory.create(ids.hand);
     if (!inventory.add(hand, { kind: 'hand', side: 'right' })) {
       throw new Error('Could not hold the fixture item');
@@ -192,7 +194,7 @@ const fixture = ({
         events.push(cue.event);
       }
     });
-    const result = queue.enqueue(hand, { kind: 'pile', pos: posOf(load) });
+    const result = queue.enqueue(hand, { kind: 'pile', pos: posOf(target) });
     if (!result.ok) {
       throw new Error(result.reason);
     }
@@ -231,6 +233,46 @@ it('gives a load with no floor below to the player feet pile with the removed pa
   expect(f.posOf(f.load)).toEqual(f.session.feet());
   expect(f.posOf(f.fitting.item)).toEqual(f.session.feet());
   expect(f.moveOntoLoad()).toEqual([f.dropSound]);
+});
+
+it('settles a part removed from under the player before a hand move uses its receiver', () => {
+  const f = fixture({ playerX: 1.5 });
+  const feet = f.session.feet();
+  expect(f.inventory.landing(feet)).toEqual(feet);
+  expect(f.remove()).toBeUndefined();
+  const [x, y, z] = f.posOf(f.fitting.item);
+  expect(f.inventory.registry.blocks[f.world.getBlock(x, y - 1, z)]!.solid).toBe(true);
+  expect(f.moveOntoLoad(f.fitting.item)).toEqual([f.dropSound]);
+});
+
+it('settles the part and no-floor load beside an empty feet column before a hand move uses their receiver', () => {
+  const f = fixture({ floor: false, playerX: 2.5 });
+  expect(f.inventory.landing(f.session.feet())).toBeUndefined();
+  expect(f.remove()).toBeUndefined();
+  const landed = f.posOf(f.fitting.item);
+  const [x, y, z] = landed;
+  expect(f.inventory.registry.blocks[f.world.getBlock(x, y - 1, z)]!.solid).toBe(true);
+  expect(f.posOf(f.load)).toEqual(landed);
+  expect(f.moveOntoLoad(f.fitting.item)).toEqual([f.dropSound]);
+});
+
+it.each([false, true])('uses the first supported candidate with room (feet landing full: %s)', (full) => {
+  const f = fixture({ playerX: 2.5 });
+  const first = f.inventory.landing(f.session.feet())!;
+  expect(first[1]).toBeLessThan(f.session.feet()[1]);
+  if (full) {
+    expect(f.inventory.add(f.inventory.create('removal_filler'), { kind: 'pile', pos: first })).toBe(true);
+  }
+  expect(f.remove()).toBeUndefined();
+  const landed = f.posOf(f.fitting.item);
+  const [x, y, z] = landed;
+  if (full) {
+    expect(y).toBeGreaterThan(first[1]);
+  } else {
+    expect(landed).toEqual(first);
+  }
+  expect(f.inventory.registry.blocks[f.world.getBlock(x, y - 1, z)]!.solid).toBe(true);
+  expect(f.moveOntoLoad(f.fitting.item)).toEqual([f.dropSound]);
 });
 
 it('can complete a hand move onto the resettled pile without throwing in its sound callback', () => {

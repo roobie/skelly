@@ -8,6 +8,7 @@ import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import { couldFit, findSpot, fitsAt, type Item, type Placed } from './items.ts';
+import { settleCell } from './itemThrow.ts';
 import { ladderOutward } from './ladders.ts';
 import { turnPose } from './orientation.ts';
 import type { Body } from './physics.ts';
@@ -431,7 +432,7 @@ const pilesOver = (inventory: Inventory, boxes: readonly { pos: Vec3; size: Vec3
   return [...found];
 };
 
-/** Player removal reserves the part and its loose loads together, including the explicit feet fallback. */
+/** Part and load admission share reservations so neither can consume the other's room. */
 export const planVehicleRemovalPiles = (
   context: Pick<FurnitureMover, 'inventory' | 'terrainSolid'> & { minY: number; feet: Vec3 },
   boxes: readonly { pos: Vec3; size: Vec3 }[],
@@ -439,10 +440,25 @@ export const planVehicleRemovalPiles = (
 ): PileMove[] | undefined => {
   const { inventory, terrainSolid, minY, feet } = context;
   const shadow = new Shadow(terrainSolid, inventory.entities, undefined, minY);
+  const partTargets: Iterable<Vec3> = {
+    *[Symbol.iterator]() {
+      let supported = false;
+      for (const cell of dropSpots(feet)) {
+        const landed = settleCell(cell, 1, minY, (x, y, z) => shadow.occupied([x, y, z]));
+        if (landed) {
+          supported = true;
+          yield landed;
+        }
+      }
+      // Removal with no supported candidate awaits its own decision; see `DESIGN.md`, "What lies on top".
+      if (!supported) {
+        yield* dropSpots(feet);
+      }
+    },
+  };
   return resettlePiles(context, shadow, pilesOver(inventory, boxes), {
-    fallTargets: (from) =>
-      columnTargets(shadow, from).length > 0 ? spreadFrom(shadow, [from as Vec3]) : dropSpots(feet),
-    loose: [{ items: [{ item: part, x: 0, y: 0, rotated: false }], targets: dropSpots(feet) }],
+    fallTargets: (from) => (columnTargets(shadow, from).length > 0 ? spreadFrom(shadow, [from as Vec3]) : partTargets),
+    loose: [{ items: [{ item: part, x: 0, y: 0, rotated: false }], targets: partTargets }],
   });
 };
 
