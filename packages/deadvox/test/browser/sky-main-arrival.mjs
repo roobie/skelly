@@ -15,6 +15,7 @@ export const mainSourceOverlays = [
   'bench/run.ts',
   'bench/post.ts',
   'game/bundledContent.ts',
+  'game/browserMods.ts',
   'game/config.ts',
   'game/worldSetup.ts',
   'game/engine.ts',
