@@ -1,7 +1,9 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you split Deadvox content into core, theme, product and scenario mods (#637)
   - you replace content ids or setting names in TypeScript with capabilities
+  - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content
   - you change skill providers, combat policy, starts or pack save identity
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
@@ -91,7 +93,7 @@ combat policy belong to the product, separately from the mechanisms they modify.
 zombie types are Deadvox content. Replace setting model names with body-plan capabilities,
 footstep picklists with declared sound families, and fixed settlement types with claimed
 spawn roles. The section is named `actors` so it can hold non-zombie types and NPCs.
-Relevant owners are `src/core/schema.ts`, `ZombieSchema` and `zombieRegionsMatchModel`;
+Relevant owners are `src/core/schema/zombies.ts`, `ZombieSchema` and `zombieRegionsMatchModel`;
 `src/core/zombies.ts`, `ZombieSystem`; `src/core/zombieModels.ts`, `ZOMBIE_MODELS`;
 `src/core/settlementSpawns.ts`, `HORDE_TYPE` and `WANDERER`; and the realization/rendering
 boundaries in `src/core/zombiePose.ts` and `src/render/mobActors.ts`. Their capabilities
@@ -106,7 +108,7 @@ values without preemptively redesigning the ability's shape or name. See
 
 **Damage kinds are content.** Packs declare kinds and their classes; code owns only
 the classes. Replace `src/core/body.ts`, `DAMAGE_KINDS` and `MELEE_DAMAGE_KINDS`, and
-`src/core/schema.ts`, `ZombieSchema.acidResistance`, with declared-kind lookup and
+`src/core/schema/zombies.ts`, `ZombieSchema.acidResistance`, with declared-kind lookup and
 resistance keyed by kind. Fire or poison must not need a code edit merely to be named.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
@@ -114,7 +116,7 @@ with their shared content, reusable weapon sounds with their theme, and zombie-s
 sounds with the product. Mechanisms read selections from triggering entries and
 validation rejects missing selections there. Remove setting prerequisites from
 `src/core/soundEvents.ts`, `SOUND_EVENT_IDS`, and `src/core/content.ts`,
-`REQUIRED_CORE_CONTENT`; don't keep an all-product event whitelist.
+`requiredContentIssues`; don't keep an all-product event whitelist.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
 manufactured materials may be thematic. A site's distribution and authored run remain
@@ -148,15 +150,23 @@ panel, because hiding the Skills tab would hide health information. See
 
 ## Capabilities, not ids
 
-A capability is a property an entry claims and a mechanism selects. Code owns the
-implemented capability set; content owns its claimants. Admission rejects missing
-required claimants and claims lacking their required data. This preserves the
-content-versus-mechanism boundary without silently accepting unsupported behavior.
+Code owns the implemented capabilities; content owns their claimants. A required
+capability must have one live provider, not a promised content id, so a product can
+replace providers without changing mechanisms. Competing claimants fail closed
+rather than letting load order choose. Unsupported claims and claims without their
+required data are invalid. See `src/core/capabilities.ts`, `CONTENT_CAPABILITIES`,
+`claimed` and `capabilityIssues`; `src/core/schema/capability.ts`, `capabilityField`;
+and `src/core/content.ts`, `requiredContentIssues`.
 
-The extraction covers required ids (`src/core/contentIds.ts`, `CORE_CONTENT_IDS`;
-`src/core/content.ts`, `REQUIRED_CORE_CONTENT`), setting-name schema picklists,
-body/render branches and debug loadouts (`src/debug/debugLoadout.ts`,
-`equipDebugLoadout`). Mechanism names describe behavior rather than setting or
+A neutral weathering profile belongs in shared content: it is engine-level
+presentation that every product needs. Overgrown and benchmark profiles belong to
+Deadvox because they express its flavour. The default is a capability, not a profile
+id; see `src/core/weatheringUrl.ts`, `resolveWeatheringUrl`. #1532 owns moving the
+profiles to their shared and product topics; capability selection does not move
+content.
+
+Setting-name schema picklists, body/render branches and debug loadouts remain part
+of #1532's extraction. Mechanism names describe behavior rather than setting or
 scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 "Vocabulary". #393 owns the bounded tunables inventory, not a parallel list here.
 
@@ -169,8 +179,13 @@ construction can discard broken files, so a registry existing is not proof of
 validity. This check keeps upward references out of shared content.
 
 Do not boot or play the core-only stack. It intentionally lacks a scenario and start;
-adding them merely to test core would reintroduce consumer dependencies. Manifest,
-model and sound checks apply per pack; static reachability applies to playable stacks
+adding them merely to test core would reintroduce consumer dependencies. Until
+#1532 completes topic extraction, `test/coreOnly.test.ts` checks the selected shared
+topics against `test/fixtures/coreOnlyKnownIssues.ts`, `CORE_ONLY_KNOWN_ISSUES`.
+Every listed issue has an extraction owner; an unlisted issue or a stale exception
+fails, so partial validation cannot conceal an unrelated defect. The final stack
+must remove that ledger and require zero issues. Manifest, model and sound checks
+apply per pack; static reachability applies to playable stacks
 (`docs/content.md`, "Static reachability").
 
 ## Refactor workstreams
@@ -178,8 +193,7 @@ model and sound checks apply per pack; static reachability applies to playable s
 #1532 delivers runtime extraction and content separation together after its PR gate.
 These workstreams preserve #637's proof obligations within that one refactor:
 
-- **Pack boundaries:** replace setting requirements with capability ownership and prove
-  shared-provider validation. Bundled intake uses the common manifest and fail-closed
+- **Pack boundaries:** prove shared-provider validation. Bundled intake uses the common manifest and fail-closed
   entry conflicts in `src/core/packAdmission.ts`, `admitPacks`; topic extraction must
   preserve that boundary rather than flattening packs into files. Typed field patches
   remain separate work under `docs/decisions/0007-typed-field-patches.md`, "Implementation ownership".
