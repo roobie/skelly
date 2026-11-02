@@ -76,7 +76,7 @@ export const worldRepairInGameFlow = async (page, origin) => {
   });
   assert.equal(pin.uid, pin.target, 'held-list choice pins the target without another aiming step');
   const repairView = page.locator(`#crafting[data-repair-target="${pin.uid}"]`);
-  assert.equal(await repairView.isVisible(), true, 'the requirements view shows the selected target');
+  await repairView.waitFor({ state: 'visible' });
   assert.equal(await page.locator('#inventory .inv-tab[data-tab="repair"][aria-selected="true"]').count(), 1);
   const recipeId = await page.evaluate(() => {
     const f = globalThis.pumpHandlingTest;
