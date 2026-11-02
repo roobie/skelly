@@ -440,25 +440,23 @@ export const planVehicleRemovalPiles = (
   context: Pick<FurnitureMover, 'inventory' | 'terrainSolid'> & { minY: number; feet: Vec3 },
   boxes: readonly { pos: Vec3; size: Vec3 }[],
   part: Item,
-): PileMove[] | undefined => {
+): PileMove[] | 'noGround' | undefined => {
   const { inventory, terrainSolid, minY, feet } = context;
   const shadow = new Shadow(terrainSolid, inventory.entities, undefined, minY);
   const partTargets: Iterable<Vec3> = {
     *[Symbol.iterator]() {
-      let supported = false;
       for (const cell of dropSpots(feet)) {
         const landed = settleCell(cell, 1, minY, (x, y, z) => shadow.occupied([x, y, z]));
         if (landed) {
-          supported = true;
           yield landed;
         }
       }
-      // Removal with no supported candidate awaits its own decision; see `DESIGN.md`, "What lies on top".
-      if (!supported) {
-        yield* dropSpots(feet);
-      }
     },
   };
+  // Loads plan first, so their lack of room must not mask the part's absent ground.
+  if (partTargets[Symbol.iterator]().next().done) {
+    return 'noGround';
+  }
   return resettlePiles(context, shadow, pilesOver(inventory, boxes), {
     fallTargets: (from) => (columnTargets(shadow, from).length > 0 ? spreadFrom(shadow, [from as Vec3]) : partTargets),
     loose: [{ items: [{ item: part, x: 0, y: 0, rotated: false }], targets: partTargets }],

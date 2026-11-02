@@ -95,7 +95,7 @@ read_if:
   - you're changing the quiet-key and noisy-forcing alternatives for locked doors
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
-  - you change item landing, debug spawns, zombie item emissions or loss feedback, landing reach checks or no-ground outcomes
+  - you change item landing, debug spawns, zombie item emissions or loss feedback, removal refusals, landing reach checks or no-ground outcomes
   - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
@@ -646,14 +646,17 @@ because rearranging a room should not require destroying its contents. See `src/
   buried. A furniture move with nowhere for them to land is refused for the same
   reason. Player-completed car part removal keeps the column rule for loads with
   a floor, rather than rerouting them to the player. The part and no-floor loads
-  use the player's ordinary put-down rule whenever a supported candidate exists:
-  sharing that rule prevents hanging results and gives every landing its
-  drop-sound receiver. The removed part cannot support its own output, so landing
-  is judged after removal. The outcome with no supported candidate awaits the
-  policy decision under #1532; neither refusal nor disposal is inferred from the
-  ordinary player rule. Physical settling belongs to player completion, while
-  the inventory transfer remains mechanical. See `src/core/furnitureMove.ts`,
-  `resettlePiles` and `planVehicleRemovalPiles`, and `src/core/vehicleRemoval.ts`,
+  use the player's ordinary put-down rule: sharing it prevents hanging results
+  and gives each landing its drop-sound receiver. The removed part cannot support
+  its own output, so landing is judged without it. With no supported candidate
+  or no room for the part or its loads, removal is refused and they stay together.
+  Removal is a player action with a retained owner, unlike an ownerless zombie
+  drop, so refusal preserves the part rather than losing it. Landing is checked
+  only at completion because ground can change during the job. Refused work is
+  kept, so refusal costs only time spent on the attempt. Physical settling
+  belongs to player completion, while the inventory transfer remains mechanical.
+  See `src/core/furnitureMove.ts`, `resettlePiles` and `planVehicleRemovalPiles`,
+  and `src/core/vehicleRemoval.ts`,
   `completeVehicleRemoval`.
 - **Where it can stand.** A piece may not cover a hatch or fill the space a
   climber stands in front of a ladder, since either would wall off a floor. A
@@ -2765,6 +2768,13 @@ With no supported candidate, player put-downs share one refusal and change
 nothing, preserving the existing owner and any unfinished work. Supported but
 full candidates have a separate refusal. A finished repair puts nothing down;
 an unpack into a pocket with room and a discarded dead battery need no landing.
+
+Car part removal also distinguishes absent ground from full landing space,
+including room needed by its loads, because those are different causes. Removal
+and ordinary put-downs use different full-space messages for the same lack of
+room; that wording difference has no gameplay meaning. See
+`src/core/vehicleRemoval.ts`, `completeVehicleRemoval`, and
+`src/core/itemThrow.ts`, `putDownRefusal`.
 
 Item support follows actual solid cells, so a supported landing has a drop-sound
 receiver: a non-solid piece or a shape gap cannot catch a falling item. Furniture

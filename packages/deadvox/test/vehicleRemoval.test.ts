@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
+import { coreMessage } from '../src/core/coreText.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { dropSpots } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
@@ -17,11 +18,13 @@ import { baseRegistry } from './baseRegistry.ts';
 const ids = { part: 'removal_part', load: 'removal_load', hand: 'removal_hand', host: 'removal_host' };
 const fixture = ({
   floor = true,
+  platform = true,
   height = 2,
   playerX = 3.5,
   obstacle,
 }: {
   floor?: boolean;
+  platform?: boolean;
   height?: number;
   playerX?: number;
   obstacle?: 'non-solid' | 'shape-hole';
@@ -99,7 +102,7 @@ const fixture = ({
           if (floor && chunk.cy === 0) {
             chunk.set(x, 0, z, solid);
           }
-          if (chunk.cx * CHUNK + x >= 3 && chunk.cy === Math.floor(height / CHUNK)) {
+          if (platform && chunk.cx * CHUNK + x >= 3 && chunk.cy === Math.floor(height / CHUNK)) {
             chunk.set(x, height % CHUNK, z, solid);
           }
         }
@@ -208,6 +211,7 @@ const fixture = ({
     canonical,
     load,
     fitting,
+    vehicleId,
     top,
     remove,
     posOf,
@@ -308,6 +312,57 @@ it('spreads the no-floor load and removed part together when the feet pile is fu
   expect(f.remove()).toBeUndefined();
   expect(f.posOf(f.load)).not.toEqual(f.session.feet());
   expect(f.posOf(f.load)).toEqual(f.posOf(f.fitting.item));
+});
+
+it('checks no-ground removal only at completion and retains the fitted part, load and completed work', () => {
+  const f = fixture({ floor: false, platform: false, playerX: 1.5 });
+  const { session, inventory, vehicleId, fitting } = f;
+  const before = inventory.snapshotState();
+  const vehicles = inventory.vehicles.snapshotState();
+  expect(session.vehicleWorkRefusal('remove', vehicleId, fitting, fitting.item.uid)).toBeUndefined();
+  expect(session.beginVehicleWork('remove', vehicleId, fitting, fitting.item.uid)).toBeUndefined();
+  const { job } = session.sim.actions;
+  if (job?.jobType !== 'vehicleWork') {
+    throw new Error('Fixture removal did not start');
+  }
+  session.sim.scheduler.advance(job.duration + 1);
+  expect(session.sim.compression.interruption).toBe(coreMessage(inventory.registry, 'noLanding'));
+  expect(session.sim.actions.job).toMatchObject({ jobType: 'vehicleWork', stopped: true, elapsed: job.duration });
+  expect(inventory.snapshotState()).toEqual(before);
+  expect(inventory.vehicles.snapshotState()).toEqual(vehicles);
+
+  expect(session.beginVehicleWork('remove', vehicleId, fitting, fitting.item.uid)).toBeUndefined();
+  expect(session.sim.actions.job).toMatchObject({ jobType: 'vehicleWork', elapsed: job.duration });
+});
+
+it('keeps the noRoom refusal when every supported part landing is full', () => {
+  const f = fixture();
+  for (const spot of dropSpots(f.session.feet())) {
+    const landed = f.inventory.landing(spot);
+    expect(landed).toBeDefined();
+    expect(f.inventory.add(f.inventory.create('removal_filler'), { kind: 'pile', pos: landed! })).toBe(true);
+  }
+  const before = f.inventory.snapshotState();
+  const vehicles = f.inventory.vehicles.snapshotState();
+  expect(f.remove()).toBe(coreMessage(f.inventory.registry, 'noRoom'));
+  expect(f.inventory.snapshotState()).toEqual(before);
+  expect(f.inventory.vehicles.snapshotState()).toEqual(vehicles);
+});
+
+it.each([false, true])('classifies a blocked load independently of part landing room (part ground: %s)', (ground) => {
+  const f = fixture({ floor: false, platform: false });
+  f.canonical.ensureCell(1, 0, 1);
+  f.world.setBlock(1, 0, 1, f.solid);
+  expect(f.inventory.add(f.inventory.create('removal_filler'), { kind: 'pile', pos: [1, 1, 1] })).toBe(true);
+  if (ground) {
+    f.canonical.ensureCell(3, 0, 1);
+    f.world.setBlock(3, 0, 1, f.solid);
+  }
+  const before = f.inventory.snapshotState();
+  const vehicles = f.inventory.vehicles.snapshotState();
+  expect(f.remove()).toBe(coreMessage(f.inventory.registry, ground ? 'noRoom' : 'noLanding'));
+  expect(f.inventory.snapshotState()).toEqual(before);
+  expect(f.inventory.vehicles.snapshotState()).toEqual(vehicles);
 });
 
 it('does not detach the part or move its load when canonical terrain rejects an incomplete touched column', () => {

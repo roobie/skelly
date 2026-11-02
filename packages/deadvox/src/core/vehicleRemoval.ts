@@ -70,6 +70,9 @@ const attemptRemoval = (context: RemovalContext, request: VehicleTransfer): stri
     boxes,
     fitting.item,
   );
+  if (plan === 'noGround') {
+    return coreMessage(inventory.registry, 'noLanding');
+  }
   if (!plan) {
     return coreMessage(inventory.registry, 'noRoom');
   }
