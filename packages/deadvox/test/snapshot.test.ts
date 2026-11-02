@@ -3,7 +3,6 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { disassemblyOutputs, disassemblyWorkTime } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -16,6 +15,7 @@ import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { contentLookup as lookupSaveContent } from '../src/ui/saveController.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { buildFixtureRegistry } from './economyFixtures.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 import {
   advance,

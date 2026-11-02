@@ -12,6 +12,7 @@ export type { MoveIntent, StanceToggle } from '../src/game/player.ts';
 
 export const PLAYER: PlayerDef = {
   id: 'player',
+  capability: 'player',
   halfWidth: 0.3,
   height: 1.8,
   eye: 1.62,

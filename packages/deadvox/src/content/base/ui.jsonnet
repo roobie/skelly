@@ -1,6 +1,7 @@
 {
   ui: [{
     id: 'core',
+    capability: 'interface',
     spacing: 1,
     hudScale: 1,
     refusalSound: 'player_nope',

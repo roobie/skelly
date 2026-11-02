@@ -51,6 +51,7 @@ local meleeClasses = [
   { id: 'pierce', damageVariance: 0.4, headDamageMultiplier: 1, limbDamageMultiplier: 1, speedMultiplier: 1.15 },
   {
     id: 'fists',
+    capability: 'unarmed',
     damageVariance: 0,
     headDamageMultiplier: 1,
     limbDamageMultiplier: 1,

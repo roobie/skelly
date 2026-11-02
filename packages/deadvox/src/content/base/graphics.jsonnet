@@ -4,6 +4,7 @@ local toggle(label, default=false) = { label: label, default: default, options: 
 {
   graphics: [{
     id: 'core',
+    capability: 'graphics',
     nearPlaneMetres: 0.01,
     playerViewFovDegrees: 75,
     opticLens: { rimSoftness: 0.04, reticleAntiAliasWidth: 0.5 },

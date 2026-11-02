@@ -1,6 +1,5 @@
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
@@ -22,6 +21,7 @@ import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import type { MoveIntent } from './playerFixture.ts';

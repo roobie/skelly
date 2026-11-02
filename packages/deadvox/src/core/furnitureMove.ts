@@ -2,8 +2,8 @@
 // so a refusal leaves the world as it was (`DESIGN.md`, "Moving furniture").
 
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
+import { claimed } from './capabilities.ts';
 import type { FurnitureDef } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
 import { PILE_GRID } from './inventoryScale.ts';
@@ -66,7 +66,7 @@ const footprint = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] => boxCell
 const topLayer = (pos: Readonly<Vec3>, size: Readonly<Vec3>): Vec3[] =>
   footprint([pos[0], pos[1] + size[1], pos[2]], size);
 
-const messagesOf = (inventory: Inventory) => inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+const messagesOf = (inventory: Inventory) => claimed(inventory.registry.ui, 'interface')!.furnitureMoveMessages;
 
 export type FurnitureMoveEffort = 'lift' | 'drag' | 'carry';
 

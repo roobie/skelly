@@ -1,7 +1,7 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import { type Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import type { RecipeDef } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { craftWorkDuration } from '../core/crafting.ts';
 import type { HandlingQueue, JobParams } from '../core/handling.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
@@ -154,7 +154,7 @@ export class Sharpening {
     }
     blade.condition = Math.min(1, blade.condition + params.amount);
     this.inventory.version += 1;
-    const offset = this.inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)!.training!.craftingTierOffset!;
+    const offset = claimed(this.inventory.registry.skills, 'crafting')!.training!.craftingTierOffset!;
     for (const [skill, level] of Object.entries(method.skills)) {
       this.character.awardPractice(
         skill,

@@ -47,7 +47,7 @@ const admit = (value: Readable) =>
         sounds: Object.values(BODY_TUNING_FIXTURE.heartbeat.sounds).map(
           (id) => BUNDLED_CONTENT.registry.sounds.get(id)!,
         ),
-        compression: [{ id: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
+        compression: [{ id: 'player', capability: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
         player: [PLAYER],
       },

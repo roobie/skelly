@@ -14,6 +14,7 @@
         "moveYawPerSpeed": 0.0044999999999999997,
         "recoilRecoverySimSeconds": 0.34000000000000002
       },
+      "capability": "player",
       "crouch": {
         "bodyHeightMetres": 1.2,
         "eyeDropMetres": 0.69999999999999996,

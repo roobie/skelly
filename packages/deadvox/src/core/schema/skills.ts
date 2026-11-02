@@ -1,5 +1,5 @@
 import { array, check, maxValue, minValue, number, optional, pipe, record, strictObject } from 'valibot';
-import { CORE_CONTENT_IDS } from '../contentIds.ts';
+import { capabilityField } from './capability.ts';
 import {
   Count,
   FirearmsSkillZeroHandlingSchema,
@@ -23,12 +23,14 @@ const SkillCurveSchema = strictObject({
 
 export const SkillProgressionSchema = strictObject({
   id: Id,
+  capability: capabilityField('skillProgression'),
   practicePerLevel: Positive,
 });
 
 export const SkillSchema = pipe(
   strictObject({
     id: Id,
+    capability: capabilityField('skills'),
     name: Name,
     detail: optional(Name),
     curve: optional(SkillCurveSchema),
@@ -148,21 +150,21 @@ export const SkillSchema = pipe(
       }),
     ),
   }),
-  check(({ training, id, combat, inventory, steadiness, curve }) => {
+  check(({ training, capability, combat, inventory, steadiness, curve }) => {
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
-      (id !== CORE_CONTENT_IDS.crafting || training?.craftingTierOffset !== undefined) &&
-      (id !== CORE_CONTENT_IDS.firearmsCombat ||
+      (capability !== 'crafting' || training?.craftingTierOffset !== undefined) &&
+      (capability !== 'firearmsCombat' ||
         (combat?.firearms !== undefined &&
           activity('readying', 'practicePerSimSecond') &&
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
           activity('hit', 'practice') &&
           activity('attachment', 'practice'))) &&
-      (id !== CORE_CONTENT_IDS.meleeCombat ||
+      (capability !== 'meleeCombat' ||
         (combat?.melee !== undefined && activity('block', 'practice') && activity('hit', 'practice'))) &&
-      (id !== CORE_CONTENT_IDS.inventoryManagement || (inventory !== undefined && activity('handling', 'practice')));
+      (capability !== 'inventoryManagement' || (inventory !== undefined && activity('handling', 'practice')));
     const firearm = combat?.firearms;
     const melee = combat?.melee;
     return (
@@ -183,8 +185,8 @@ export const SkillSchema = pipe(
     );
   }, 'missing required skill tuning or effect range exceeds one'),
   check(
-    ({ id, training }) =>
-      id !== CORE_CONTENT_IDS.inventoryManagement || training?.activities?.handling?.tier === undefined,
+    ({ capability, training }) =>
+      capability !== 'inventoryManagement' || training?.activities?.handling?.tier === undefined,
     'inventory-management handling activity must be untiered',
   ),
 );

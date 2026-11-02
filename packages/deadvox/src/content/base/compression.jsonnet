@@ -6,6 +6,7 @@ local work = 30;
 {
   compression: [{
     id: 'player',
+    capability: 'player',
     caps: {
       wait: passTime,
       rest: passTime,

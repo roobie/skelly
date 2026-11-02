@@ -1,7 +1,6 @@
 import { expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldSolid } from '../src/core/collision.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { settleCell } from '../src/core/itemThrow.ts';
@@ -13,6 +12,7 @@ import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjec
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
 const registry = baseRegistry();

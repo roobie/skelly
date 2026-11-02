@@ -11,7 +11,6 @@ import {
 } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { BlockEntity } from '../src/core/blockEntities.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import {
   type FurnitureMover,
@@ -29,6 +28,7 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { CarriedPiece } from '../src/render/carriedPiece.ts';
 import { FurnitureMeshes } from '../src/render/furniture.ts';
 import { HeldItems } from '../src/render/hands.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import {
   capture,
   contentLookup,

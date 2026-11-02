@@ -7,8 +7,11 @@ const weatheringNumber = (field: keyof typeof WEATHERING_RANGES) => {
   return pipe(number(), minValue(min), maxValue(max));
 };
 
+import { capabilityField } from './capability.ts';
+
 export const WeatheringSchema = strictObject({
   id: Id,
+  capability: capabilityField('weathering'),
   /** Shared weathering strength for the rendered site. */
   strength: weatheringNumber('strength'),
   /** Linear tint multiplier for grime. */

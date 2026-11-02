@@ -3,8 +3,8 @@
 // items stack up to their type's limit.
 
 import { assertBatteryEnergy, batteryFields } from './battery.ts';
+import { claimed } from './capabilities.ts';
 import type { ItemDef, ModelDef, Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { RecoveryOperation } from './disassembly.ts';
 import { firearmSlotIds } from './firearmFitting.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
@@ -733,13 +733,13 @@ export const craftComponentEligible = (item: Item, consumeFitted = false): boole
 
 /** Condition as a word, from the content band table (`DESIGN.md`, "The item model"). */
 export const conditionWord = (registry: Registry, condition: number): string => {
-  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const bands = claimed(registry.inventory, 'player')!.conditionBands;
   return (bands.findLast((band) => band.from <= condition) ?? bands[0]!).word;
 };
 
 /** The band word for a condition below the top band; a thing in the top band reads by its plain name. */
 export const damageWord = (registry: Registry, condition: number): string | undefined => {
-  const bands = registry.inventory.get(CORE_CONTENT_IDS.player)!.conditionBands;
+  const bands = claimed(registry.inventory, 'player')!.conditionBands;
   return condition < bands.at(-1)!.from ? conditionWord(registry, condition) : undefined;
 };
 
@@ -868,7 +868,7 @@ export const findSpot = (
       size: grid.size,
       placed: [...grid.placed.filter((placed) => placed.item !== ignore), { item, ...spot }],
     });
-  const threshold = registry.inventory.get(CORE_CONTENT_IDS.player)!.autoPlacementTallMinFreeAreaGainCells;
+  const threshold = claimed(registry.inventory, 'player')!.autoPlacementTallMinFreeAreaGainCells;
   // Remove the empty-grid aspect-ratio bias before crediting packing beside other items.
   const gain = remaining(tall) - remaining(wide) - (emptyRemaining(tall.rotated) - emptyRemaining(wide.rotated));
   return gain > threshold ? tall : wide;

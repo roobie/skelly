@@ -159,9 +159,12 @@ const NeedsTuningSchema = strictObject({
   badlyHurt: strictObject({ below: Positive, message: Name }),
 });
 
+import { capabilityField } from './capability.ts';
+
 export const BodyTuningSchema = pipe(
   strictObject({
     id: Id,
+    capability: capabilityField('body'),
     /** Game hours after a bleeding wound before an at-risk infection becomes early. */
     infectionOnsetGameHours: PositiveGameHours,
     /** Game hours the early infection stage remains treatable with antiseptic. */

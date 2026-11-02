@@ -52,8 +52,11 @@ const TreesSchema = strictObject({
   ),
 });
 
+import { capabilityField } from './capability.ts';
+
 export const SiteGenerationSchema = strictObject({
   id: Id,
+  capability: capabilityField('siteGeneration'),
   activeZombieRadiusMetres: PositiveMetres,
   topography: strictObject({
     amplitudeMetres: NonNegative,

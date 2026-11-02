@@ -1,6 +1,7 @@
 {
   "compression": [
     {
+      "capability": "player",
       "caps": {
         "craft": 30,
         "reading": 30,

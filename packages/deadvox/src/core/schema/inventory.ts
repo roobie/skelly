@@ -20,8 +20,11 @@ const ConditionBandsSchema = pipe(
   }),
 );
 
+import { capabilityField } from './capability.ts';
+
 export const InventoryTuningSchema = strictObject({
   id: Id,
+  capability: capabilityField('inventory'),
   /** What a condition reads as (`DESIGN.md`, "The item model"); furniture reads the same table. */
   conditionBands: ConditionBandsSchema,
   /** The real side of one inventory cell; footprints and pockets are real sizes rounded up to it (`DESIGN.md`, "The item model"). */

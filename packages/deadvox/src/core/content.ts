@@ -7,9 +7,9 @@
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
 import type { BundleAdmission } from './bundleAdmission.ts';
+import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -822,7 +822,7 @@ const checkContainerWidth = ({
   registry: Registry;
   report: Report;
 }): void => {
-  const limit = registry.inventory.get(CORE_CONTENT_IDS.player)?.containerMaxWidthCells;
+  const limit = claimed(registry.inventory, 'player')?.containerMaxWidthCells;
   if (limit === undefined || container.wideReason) {
     return;
   }
@@ -1010,7 +1010,7 @@ const checkItems = (registry: Registry, report: Report) => {
   const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
-  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   for (const item of items) {
     if (item.container) {
       checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
@@ -1263,7 +1263,7 @@ const checkFurniturePower = (registry: Registry, furniture: FurnitureDef, report
 };
 
 const checkFurniture = (registry: Registry, report: Report) => {
-  const cellMetres = registry.inventory.get(CORE_CONTENT_IDS.player)?.cellMetres;
+  const cellMetres = claimed(registry.inventory, 'player')?.cellMetres;
   checkMaterialSounds(registry, report);
   for (const furniture of registry.furniture.values()) {
     if (liftableFurniture(furniture) && furniture.massKg === undefined) {
@@ -1691,7 +1691,7 @@ const checkRecipe = ({
   }
   if (
     Object.keys(recipe.skills).length > 0 &&
-    registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset === undefined
+    claimed(registry.skills, 'crafting')?.training?.craftingTierOffset === undefined
   ) {
     report('recipes', recipe.id, '.skills', 'crafting skill has no crafting tier offset');
   }
@@ -2221,40 +2221,13 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   return issues;
 };
 
-// Recipe skill references already make `crafting` missing content invalid; it need not be a pack-level requirement.
-export const REQUIRED_CORE_CONTENT = [
-  { section: 'body', id: CORE_CONTENT_IDS.player },
-  { section: 'compression', id: CORE_CONTENT_IDS.player },
-  { section: 'figures', id: CORE_CONTENT_IDS.player },
-  { section: 'handlingRange', id: CORE_CONTENT_IDS.testRange },
-  { section: 'skillProgression', id: 'core' },
-  { section: 'inventory', id: CORE_CONTENT_IDS.player },
-  { section: 'meleeClasses', id: CORE_CONTENT_IDS.fistsMeleeClass },
-  { section: 'saves', id: CORE_CONTENT_IDS.autosave },
-  { section: 'senses', id: CORE_CONTENT_IDS.player },
-  { section: 'player', id: CORE_CONTENT_IDS.player },
-  { section: 'siteGeneration', id: CORE_CONTENT_IDS.authoredSite },
-  { section: 'skills', id: CORE_CONTENT_IDS.firearmsCombat },
-  { section: 'skills', id: CORE_CONTENT_IDS.meleeCombat },
-  { section: 'skills', id: CORE_CONTENT_IDS.inventoryManagement },
-  { section: 'ui', id: CORE_CONTENT_IDS.coreUi },
-  { section: 'graphics', id: CORE_CONTENT_IDS.coreGraphics },
-  { section: 'look', id: CORE_CONTENT_IDS.coreLook },
-  ...SOUND_EVENT_IDS.map((id) => ({ section: 'sounds' as const, id })),
-] as const satisfies readonly { section: Exclude<ContentSection, 'blocks'>; id: string }[];
-
 export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
-  const issues: ContentIssue[] = REQUIRED_CORE_CONTENT.filter(({ section, id }) => !registry[section].has(id)).map(
-    ({ section, id }) => {
-      let message = `missing required content "${id}"`;
-      if (section === 'sounds') {
-        message = `missing required sound event "${id}"`;
-      } else if (section === 'ui') {
-        message = `missing required UI tuning "${id}"`;
-      }
-      return { source: 'core content', path: section, message };
-    },
-  );
+  const issues: ContentIssue[] = capabilityIssues(registry);
+  for (const id of SOUND_EVENT_IDS) {
+    if (!registry.sounds.has(id)) {
+      issues.push({ source: 'core content', path: 'sounds', message: `missing required sound event "${id}"` });
+    }
+  }
   if ([...registry.items.values()].filter((item) => item.workInProgress).length !== 1) {
     issues.push({
       source: 'core content',
@@ -2295,6 +2268,10 @@ export const buildRegistry = (
   }
   for (;;) {
     const { registry, origins } = merge(files);
+    const conflicts = capabilityIssues(registry, false);
+    if (conflicts.length > 0) {
+      return { registry, issues: [...issues, ...conflicts], origins };
+    }
     const broken = trusted ? [] : referenceIssues(registry, origins);
     if (broken.length === 0) {
       return { registry, issues, origins };

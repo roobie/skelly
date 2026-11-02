@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { requireDayCycle } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type IlluminationScene, litEnoughToRead } from '../src/core/illumination.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -9,6 +8,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { DayCycleDef } from '../src/core/schema.ts';
 import { gameSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const base = baseRegistry();
 // The fixture owns the threshold and every light level, far apart, so each case turns on its own rule, not on tuning.

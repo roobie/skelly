@@ -9,7 +9,7 @@ const fixture = (skill = 'fixture_skill', level = 2, taughtRecipe = 'fixture_rec
     {
       source: 'recipe-knowledge-fixture.json',
       data: {
-        skillProgression: [{ id: 'core', practicePerLevel: 10 }],
+        skillProgression: [{ id: 'fixture_progression', capability: 'progression', practicePerLevel: 10 }],
         skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
         items: [
           {

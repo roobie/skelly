@@ -8,8 +8,8 @@ import {
   standingHeight,
   surfaceFoundation,
 } from './authoredTerrain.mjs';
+import { claimed } from './capabilities.ts';
 import type { Registry, TemplateDef } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M, WORLD_TOP_M } from './scale.ts';
@@ -70,7 +70,7 @@ const showroomIssues = (
     return issues;
   }
   // Streaming whole columns, the startup ring can reach one column past its radius.
-  const ready = registry.graphics.get(CORE_CONTENT_IDS.coreGraphics)?.readyRadiusM;
+  const ready = claimed(registry.graphics, 'graphics')?.readyRadiusM;
   const { rect } = new ShowroomCatalogue(registry, showroom.catalogue);
   const [px, , pz] = layout.player.position;
   const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));

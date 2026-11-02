@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { coreMessage } from '../src/core/coreText.ts';
 import type { Item } from '../src/core/items.ts';
@@ -19,6 +18,7 @@ import {
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import {
   blockId,
   capture,

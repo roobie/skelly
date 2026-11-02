@@ -1,7 +1,7 @@
 import { supportProblems } from '../vehicles/model.ts';
+import { claimed } from './capabilities.ts';
 import { fitIssue } from './cargoSpace.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { MapEntityStore } from './entities.ts';
 import { type Item, type ItemState, restoreItem, snapshotItem } from './items.ts';
@@ -165,7 +165,7 @@ const validateBuild = (registry: Registry, vehicle: VehicleInstance): void => {
     }
   }
   const placed = vehicle.fittings.map((fitting) => projectVehicleFitting(registry, fitting));
-  const cell = registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres;
+  const cell = claimed(registry.inventory, 'player')!.cellMetres;
   for (const fitting of placed) {
     const issue = fitIssue(
       placed.filter((other) => other !== fitting),

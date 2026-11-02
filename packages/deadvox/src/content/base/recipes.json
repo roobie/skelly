@@ -808,12 +808,14 @@
   ],
   "skillProgression": [
     {
+      "capability": "progression",
       "id": "core",
       "practicePerLevel": 10
     }
   ],
   "skills": [
     {
+      "capability": "crafting",
       "curve": {
         "saturationFloor": 0.41999999999999998,
         "saturationHalfLifeLevels": 4
@@ -848,6 +850,7 @@
       "name": "Mechanics"
     },
     {
+      "capability": "inventoryManagement",
       "curve": {
         "saturationFloor": 0.41999999999999998,
         "saturationHalfLifeLevels": 4
@@ -870,6 +873,7 @@
       }
     },
     {
+      "capability": "firearmsCombat",
       "combat": {
         "firearms": {
           "adsAcquisitionMaximumSimSeconds": 0.55000000000000004,
@@ -997,6 +1001,7 @@
       }
     },
     {
+      "capability": "meleeCombat",
       "combat": {
         "melee": {
           "blockChanceHalfLifeLevels": 4,

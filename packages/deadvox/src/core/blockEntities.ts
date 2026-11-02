@@ -5,8 +5,8 @@
 // spawned at, its origin, which stays claimed wherever the piece is carried.
 
 import { solidBlocks } from '../vehicles/solid.ts';
+import { claimed } from './capabilities.ts';
 import type { FurnitureDef, Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import { type Placed, type PlacedState, restorePlaced, snapshotPlaced, weightOf } from './items.ts';
@@ -714,7 +714,7 @@ export class BlockEntities {
    * `removalRefusal`). See `DESIGN.md`, "Edits persist".
    */
   removalRefusal(entity: BlockEntity): string | undefined {
-    const messages = this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages;
+    const messages = claimed(this.registry.ui, 'interface')!.furnitureMoveMessages;
     if (entity.pockets?.some((grid) => grid.length > 0)) {
       return messages.holdsItems;
     }
@@ -907,7 +907,7 @@ export class BlockEntities {
         : coreMessage(this.registry, 'barredOtherSide');
     }
     if (door.hatch && this.lyingOn(entity)) {
-      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.hatchCovered;
+      return claimed(this.registry.ui, 'interface')!.furnitureMoveMessages.hatchCovered;
     }
     return entity.lock?.locked ? coreMessage(this.registry, 'locked') : undefined;
   }
@@ -1176,7 +1176,7 @@ export class BlockEntities {
   /** Why a piece can't be used now: its deconstruction holds it. Every use path that refuses a missing piece asks. */
   useRefusal(entity: BlockEntity): string | undefined {
     return this.reservedUids.has(entity.uid)
-      ? this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.reserved
+      ? claimed(this.registry.ui, 'interface')!.furnitureMoveMessages.reserved
       : undefined;
   }
 

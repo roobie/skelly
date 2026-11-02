@@ -1,6 +1,6 @@
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import { dominantSide } from '../core/character.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { coreLabel } from '../core/coreText.ts';
 import { movableRefusal, slidableFurniture } from '../core/furnitureMove.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -13,7 +13,7 @@ export const furnitureActionsFor = (
   blockSize: number,
   knownRecipes?: Iterable<string>,
 ): ItemAction[] => {
-  const text = inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText;
+  const text = claimed(inventory.registry.ui, 'interface')!.screenText;
   const hasRepair = [...(knownRecipes ?? [])].some((id) => {
     const recipe = inventory.registry.recipes.get(id);
     const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;

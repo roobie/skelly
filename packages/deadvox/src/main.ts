@@ -10,8 +10,8 @@ import repairLook from './config/repair-look.json' with { type: 'json' };
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from './core/assets.ts';
 import { getBuildRevision } from './core/buildInfo.ts';
+import { claimed } from './core/capabilities.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import { CORE_CONTENT_IDS } from './core/contentIds.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from './game/bundledMods.ts';
 import {
   applyWeatheringConfig,
@@ -84,12 +84,12 @@ if (bundled.issues.length > 0) {
 }
 // The mods screen is drawn before any mod is chosen, so it reads the bundled packs' text.
 const browserSelection = showMods
-  ? await chooseMods(modsScreen, bundled.content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.screenText.mods)
+  ? await chooseMods(modsScreen, claimed(bundled.content.registry.ui, 'interface')!.screenText.mods)
   : undefined;
 const content = browserSelection?.content ?? bundled.content;
 startupScreen.hidden = false;
 applyUiTokens(content.registry, document.documentElement);
-const { screenText } = content.registry.ui.get(CORE_CONTENT_IDS.coreUi)!;
+const { screenText } = claimed(content.registry.ui, 'interface')!;
 inputBindings.setPointerLabels(screenText.pointerButtonLabels);
 const menuCard = document.querySelector<HTMLElement>('#overlay .card');
 const scrollUpCue = document.getElementById('card-scroll-up');

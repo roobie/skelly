@@ -5,8 +5,8 @@
 // the stress-test city instead (`?site=city`).
 
 import { DirectionalLight, Fog, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
+import { claimed } from '../core/capabilities.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { CHUNK } from '../core/coords.ts';
 import { skyAt } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
@@ -74,7 +74,7 @@ export function createEngine(
   }
 
   const scene = new Scene();
-  const graphicsTuning = config.content.registry.graphics.get(CORE_CONTENT_IDS.coreGraphics);
+  const graphicsTuning = claimed(config.content.registry.graphics, 'graphics');
   if (!graphicsTuning) {
     throw new Error('Missing core graphics policy');
   }

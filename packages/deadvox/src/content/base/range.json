@@ -2,6 +2,7 @@
   "handlingRange": [
     {
       "blend": 8,
+      "capability": "testRange",
       "firingLine": {
         "depth": 2,
         "inset": 3,

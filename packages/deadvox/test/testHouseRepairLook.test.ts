@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import repairLook from '../src/config/repair-look.json' with { type: 'json' };
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { Character } from '../src/core/character.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
@@ -17,6 +16,7 @@ import { stageRepairLook } from '../src/game/testHouseRepairLook.ts';
 import { startupContent } from './baseRegistry.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const normal = startupContent();
 const admitted = withReusedBuilds(() => selectBundledMods([], [repairLook.mod]));

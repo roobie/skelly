@@ -17,7 +17,6 @@ export interface Weather {
 export type WeatherTuning = DayCycleDef['weather'];
 
 /** Weathering profiles keep place-level age coherent while allowing distinct site moods. */
-export const DEFAULT_WEATHERING_PROFILE_ID = 'proper';
 
 /** Shared ceiling leaves debug comparisons room above authored weathering without a separate cap. */
 export const WEATHERING_STRENGTH_MAX = 8;

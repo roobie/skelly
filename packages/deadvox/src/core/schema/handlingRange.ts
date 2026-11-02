@@ -6,8 +6,11 @@ const BlockCount = pipe(number(), integer('must be a whole number'), minValue(1,
 const BlockOffset = pipe(number(), integer('must be a whole number'));
 
 /** Distances are whole blocks: `offset` runs along the lane from its near end, `lateral` across it from its centre line. */
+import { capabilityField } from './capability.ts';
+
 export const HandlingRangeSchema = strictObject({
   id: Id,
+  capability: capabilityField('handlingRange'),
   /** Clear ground between the site this range sits beside and the lane's near end. */
   gap: Count,
   /** How far the terrain blends into the level lane beyond its edge. */

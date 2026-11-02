@@ -42,7 +42,7 @@ it('validate rejects every missing or negative player tuning field and a missing
     return { status, output: output.join('\n') };
   };
   try {
-    expect(run().output).toContain('core content player: missing required content "player"');
+    expect(run().output).toContain('core content player: missing required capability "player"');
     const paths = numericPaths(PLAYER);
     expect(paths.length).toBeGreaterThan(0);
     for (const path of paths) {

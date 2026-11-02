@@ -287,7 +287,7 @@ try {
         const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
         const { InventoryScreen } = await import('/src/ui/inventoryScreen.ts');
         const { bindReach } = await import('/src/core/reach.ts');
-        const { CORE_CONTENT_IDS } = await import('/src/core/contentIds.ts');
+        const { fixtureIds: CoreContentIds } = await import('/test/fixtures/capabilityIds.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
         const { inputBindings } = await import('/src/game/inputBindings.ts');
         const inventory = new Inventory(gauntletWitness.engine.registry);
@@ -382,7 +382,7 @@ try {
               character: () => gauntletWitness.session.character,
               body: () => gauntletWitness.session.sim.body,
               needs: () => '',
-              slotLabels: inventory.registry.ui.get(CORE_CONTENT_IDS.coreUi).wearSlotLabels,
+              slotLabels: inventory.registry.ui.get(CoreContentIds.coreUi).wearSlotLabels,
             });
             let presented = false;
             try {

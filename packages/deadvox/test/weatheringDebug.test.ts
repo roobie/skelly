@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { WeatheringDef } from '../src/core/schema.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
+import { WEATHERING_RANGES } from '../src/core/weather.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_DAY_CYCLE } from './dayPhaseFixture.ts';
+import { defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID } from './fixtures/capabilityIds.ts';
 
 const BUNDLED_CONTENT = startupContent();
 

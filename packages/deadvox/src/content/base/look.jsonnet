@@ -1,6 +1,7 @@
 {
   look: [{
     id: 'core',
+    capability: 'defaultLook',
     tone: 'none',
     exposure: 0.2,
     srgb: true,

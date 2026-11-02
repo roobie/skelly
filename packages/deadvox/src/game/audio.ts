@@ -1,5 +1,5 @@
+import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { SenseDef, SoundDef, SoundRecipe } from '../core/schema.ts';
@@ -174,7 +174,7 @@ export class GameAudio {
     this.isSolid = isSolid;
     this.tuning = tuning;
     this.report = report;
-    this.volumes = readVolumes(registry.ui.get(CORE_CONTENT_IDS.coreUi)!.audioVolumes);
+    this.volumes = readVolumes(claimed(registry.ui, 'interface')!.audioVolumes);
     this.heartbeat = playerHeartbeat(registry);
     this.heartbeatTarget = heartbeatForStamina(this.heartbeat, 100);
   }

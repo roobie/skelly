@@ -1,5 +1,5 @@
+import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
@@ -82,8 +82,7 @@ export const firearmShotEmission = (registry: Registry, item: Item, noiseRadiusS
 export type HeartbeatTuning = BodyTuningDef['heartbeat'];
 
 /** The player body's heartbeat; content validation makes the player body required. */
-export const playerHeartbeat = (registry: Registry): HeartbeatTuning =>
-  registry.body.get(CORE_CONTENT_IDS.player)!.heartbeat;
+export const playerHeartbeat = (registry: Registry): HeartbeatTuning => claimed(registry.body, 'player')!.heartbeat;
 
 export interface HeartbeatTarget {
   readonly bpm: number;

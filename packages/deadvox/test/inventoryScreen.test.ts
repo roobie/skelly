@@ -4,7 +4,6 @@ import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { coreLabel, coreMessage } from '../src/core/coreText.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
@@ -40,6 +39,7 @@ import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { baseRegistry, baseRegistryWith } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const registry = baseRegistry();
@@ -1417,7 +1417,7 @@ describe('inventory screen Lit rendering', () => {
     if (effects?.kind !== 'suppressor' || effects.fitSkillLevel < 1) {
       throw new Error('Fixture suppressor needs a readable fit level above the minimum');
     }
-    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel - 1;
+    test.character.skills[ATTACHMENT_WORK_SKILL(test.inv.registry)] = effects.fitSkillLevel - 1;
     test.screen.selected = firearm;
     test.screen.update();
 
@@ -1425,7 +1425,7 @@ describe('inventory screen Lit rendering', () => {
     expect(test.root.querySelector(`${row} button.inv-option`)).toBeNull();
     expect(test.root.querySelector(`${row} [data-refused] .inv-reason`)?.textContent).toBe(effects.fitRefusal);
 
-    test.character.skills[ATTACHMENT_WORK_SKILL] = effects.fitSkillLevel;
+    test.character.skills[ATTACHMENT_WORK_SKILL(test.inv.registry)] = effects.fitSkillLevel;
     test.screen.update();
     expect(test.root.querySelector(`${row} [data-refused]`)).toBeNull();
     expect(test.root.querySelector(`${row} button.inv-option`)).not.toBeNull();

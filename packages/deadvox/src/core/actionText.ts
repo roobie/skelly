@@ -2,8 +2,8 @@
 // "Action text is content"). Content authors every line; code only fills named placeholders.
 
 import { check, type InferOutput, nonEmpty, pipe, strictObject, string, transform } from 'valibot';
+import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 
 const PLACEHOLDER = /\{(\w+)\}/g;
 
@@ -228,7 +228,7 @@ export type ActionText = InferOutput<typeof ActionTextSchema>;
 
 /** The core UI entry's action text; content validation requires that entry. */
 export const actionText = (registry: Pick<Registry, 'ui'>): ActionText => {
-  const ui = registry.ui.get(CORE_CONTENT_IDS.coreUi);
+  const ui = claimed(registry.ui, 'interface');
   if (!ui) {
     throw new Error('Missing core UI tuning');
   }

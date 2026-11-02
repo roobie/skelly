@@ -1,9 +1,11 @@
 import { check, minValue, pipe, strictObject } from 'valibot';
+import { capabilityField } from './capability.ts';
 import { LoweredStanceSchema } from './player.ts';
 import { Count, Fraction, Id, NonNegative, Positive, PositiveSimSeconds } from './primitives.ts';
 
 export const SenseSchema = strictObject({
   id: Id,
+  capability: capabilityField('senses'),
   /** Chest height as a fraction of the eye height, so a stance that lowers the eyes lowers the chest. */
   chestEyeFraction: Fraction,
   /** Real seconds the crouch key is held before it lies down instead of toggling crouch. */

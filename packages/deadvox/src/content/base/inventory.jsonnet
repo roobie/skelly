@@ -2,6 +2,7 @@
   inventory: [
     {
       id: 'player',
+      capability: 'player',
       conditionBands: [
         { from: 0, word: 'ruined' },
         { from: 0.1, word: 'badly damaged' },

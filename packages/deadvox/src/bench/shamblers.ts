@@ -1,9 +1,9 @@
 // The shambler mode of the shared ?bench= harness. It loads the forest, runs the
 // real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
 
+import { claimed } from '../core/capabilities.ts';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { worldGravity } from '../core/gravity.ts';
@@ -143,8 +143,8 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
     const simulation = new Simulation({
       seed: run.seed,
       registry: engine.registry,
-      bodyTuning: engine.registry.body.get(CORE_CONTENT_IDS.player)!,
-      compressionCaps: engine.registry.compression.get(CORE_CONTENT_IDS.player)!.caps,
+      bodyTuning: claimed(engine.registry.body, 'player')!,
+      compressionCaps: claimed(engine.registry.compression, 'player')!.caps,
       clock: { ratio: dayCycle.clockRatio, start: startTime },
     });
     simulation.godMode = true;
@@ -154,7 +154,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
       blockSize: s,
-      tuning: engine.registry.senses.get(CORE_CONTENT_IDS.player)!,
+      tuning: claimed(engine.registry.senses, 'player')!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
       physics: physicsFor(scale, Player),
       player: () => ({

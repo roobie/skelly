@@ -1105,6 +1105,7 @@
       "speedMultiplier": 1.1499999999999999
     },
     {
+      "capability": "unarmed",
       "damageVariance": 0,
       "headDamageMultiplier": 1,
       "id": "fists",

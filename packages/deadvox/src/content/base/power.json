@@ -71,6 +71,7 @@
   ],
   "powerTuning": [
     {
+      "capability": "power",
       "id": "base",
       "tickSimSeconds": 1
     }

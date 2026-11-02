@@ -144,8 +144,11 @@ const AdsViewBlendSchema = strictObject({
   blendBackRealSeconds: PositiveRealSeconds,
 });
 
+import { capabilityField } from './capability.ts';
+
 export const FigureSchema = strictObject({
   id: Id,
+  capability: capabilityField('figures'),
   /** Where the hips stand above the ground; stances pivot about them. */
   hipHeightMetres: Positive,
   /**

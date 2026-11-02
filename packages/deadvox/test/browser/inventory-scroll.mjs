@@ -125,7 +125,7 @@ const fixture = `
 import '/src/ui/style.css';
 import uiFile from '/src/content/base/ui.json';
 import recipesFile from '/src/content/base/recipes.json';
-import { CORE_CONTENT_IDS } from '/src/core/contentIds.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from '/test/fixtures/capabilityIds.ts';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';

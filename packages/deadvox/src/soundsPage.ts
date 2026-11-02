@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
 import assetManifest from './content/base/assets/manifest.json' with { type: 'json' };
 import type { Manifest } from './core/assets.ts';
-import { CORE_CONTENT_IDS } from './core/contentIds.ts';
+import { claimed } from './core/capabilities.ts';
 import type { SoundId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
 import { playerHeartbeat } from './game/audioPresentation.ts';
@@ -27,7 +27,7 @@ const audio = new GameAudio({
   registry,
   blockSize: 1,
   isSolid: () => false,
-  tuning: registry.senses.get(CORE_CONTENT_IDS.player)!,
+  tuning: claimed(registry.senses, 'player')!,
   report: (message) => {
     errorRoot.textContent = message;
   },

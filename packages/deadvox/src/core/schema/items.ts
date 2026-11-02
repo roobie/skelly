@@ -26,11 +26,11 @@ import {
 } from 'valibot';
 import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS } from '../body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
-import { CORE_CONTENT_IDS } from '../contentIds.ts';
 import { ItemEconomySchema } from '../loot.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from '../readable.ts';
 import { SOUND_EVENT_IDS } from '../soundEvents.ts';
+import { capabilityField } from './capability.ts';
 import {
   CalibreId,
   Color,
@@ -269,19 +269,20 @@ const UnarmedAttackSchema = strictObject({
 
 export const MeleeClassSchema = pipe(
   strictObject({
-    id: picklist([...MELEE_DAMAGE_KINDS, 'fists']),
+    id: Id,
+    capability: capabilityField('meleeClasses'),
     /** Fractional spread applied symmetrically around base weapon damage. */
     damageVariance: Fraction,
     headDamageMultiplier: Positive,
     limbDamageMultiplier: Positive,
     /** Multiplies swing speed; cooldown is divided by this value. */
     speedMultiplier: Positive,
-    /** Present exactly on the `fists` class, whose attack has no weapon item to carry it. */
+    /** No weapon item supplies the unarmed attack. */
     unarmed: optional(UnarmedAttackSchema),
   }),
   check(
-    (meleeClass) => (meleeClass.id === CORE_CONTENT_IDS.fistsMeleeClass) === (meleeClass.unarmed !== undefined),
-    'only the fists melee class carries an unarmed attack, and it must',
+    (meleeClass) => (meleeClass.capability === 'unarmed') === (meleeClass.unarmed !== undefined),
+    'the unarmed capability requires an unarmed attack, and only its claimant may carry one',
   ),
 );
 

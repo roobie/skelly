@@ -9,7 +9,6 @@ import {
 } from '../src/core/cityPlan.ts';
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { GauntletSite, gauntletPopulation } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -26,6 +25,7 @@ import {
 import { generateChunk } from '../src/core/worldgen.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureLootContext } from './economyFixtures.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 import { fixtureScenario, fixtureScenarioSources, fixtureStart } from './fixtures/scenario.ts';
 import { sweepGroup } from './sweeps.ts';
 

@@ -7,7 +7,10 @@ it('starts normal sites when a malformed bundled layout file is rejected whole',
   // checkout's shared cache was stale, enough CPU to cross the default timeout on a loaded host.
   for (const file of readdirSync(new URL('../src/content/base/', import.meta.url))) {
     // Keep the content needed by config and the binding registry while isolating layout rejection.
-    if (file.endsWith('.json') && !['dayCycle.json', 'controls.json', 'graphics.json'].includes(file)) {
+    if (
+      file.endsWith('.json') &&
+      !['dayCycle.json', 'controls.json', 'graphics.json', 'weathering.json'].includes(file)
+    ) {
       vi.doMock(`../src/content/base/${file}`, () => ({ default: file === 'layouts.json' ? { layouts: {} } : {} }));
     }
   }

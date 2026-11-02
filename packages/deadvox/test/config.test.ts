@@ -1,8 +1,11 @@
 import { expect, it, vi } from 'vitest';
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import { chunksFor } from '../src/core/scale.ts';
-import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
+import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
 import { applyWeatheringConfig, makeConfig as makeContentConfig, savingEnabledFromUrl } from '../src/game/config.ts';
+import {
+  fixtureIds as CORE_CONTENT_IDS,
+  defaultWeatheringId as DEFAULT_WEATHERING_PROFILE_ID,
+} from './fixtures/capabilityIds.ts';
 import { content as BUNDLED_CONTENT, configFromUrl, makeConfig } from './fixtures/startupContent.ts';
 
 const dayCycle = BUNDLED_CONTENT.registry.dayCycle!;

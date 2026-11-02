@@ -12,8 +12,11 @@ const PlayerStanceTuningSchema = strictObject({
   bodyHeightMetres: Positive,
 });
 
+import { capabilityField } from './capability.ts';
+
 export const PlayerSchema = strictObject({
   id: Id,
+  capability: capabilityField('player'),
   halfWidth: Positive,
   height: Positive,
   eye: Positive,

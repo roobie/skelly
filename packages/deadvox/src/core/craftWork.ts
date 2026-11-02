@@ -1,6 +1,7 @@
 // Native craft effects and live admission. Item progress/inputs stay Inventory-owned.
+
+import { claimed } from './capabilities.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
 import { admissionRefusal } from './crafting.ts';
@@ -129,7 +130,7 @@ export const craftActionHooks = (
       return refusal;
     }
     const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
-    const offset = inventory.registry.skills.get(CORE_CONTENT_IDS.crafting)?.training?.craftingTierOffset;
+    const offset = claimed(inventory.registry.skills, 'crafting')?.training?.craftingTierOffset;
     const practice = recipe
       ? Object.entries(recipe.skills).map(([skill, level]) => {
           if (offset === undefined) {

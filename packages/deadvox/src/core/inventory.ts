@@ -3,6 +3,7 @@
 // handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
+import { claimed, claimedId } from './capabilities.ts';
 import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
@@ -14,7 +15,6 @@ import {
   skillSaturation,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
-import { CORE_CONTENT_IDS } from './contentIds.ts';
 import type { Vec3 } from './coords.ts';
 import { type CoreMessageKey, coreLabel, coreMessage, coreRefusal } from './coreText.ts';
 import type { WorkPlan } from './crafting.ts';
@@ -107,7 +107,9 @@ export const handlingWeights = (registry: Registry) => {
 
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
   const tuning = inventoryManagementTuning(registry);
-  const level = skillEffectLevel(character.skills?.inventory_management ?? SKILL_LEVEL_MIN);
+  const level = skillEffectLevel(
+    character.skills?.[claimedId(registry.skills, 'inventoryManagement')] ?? SKILL_LEVEL_MIN,
+  );
   return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
 };
 
@@ -593,7 +595,7 @@ export class Inventory {
       part: item.type,
       ...(item.cargo ? { cargo: [...item.cargo] } : {}),
     });
-    return fitIssue(present, candidate, this.registry.inventory.get(CORE_CONTENT_IDS.player)!.cellMetres)
+    return fitIssue(present, candidate, claimed(this.registry.inventory, 'player')!.cellMetres)
       ? coreMessage(this.registry, 'partDoesNotFit')
       : undefined;
   }
@@ -1986,14 +1988,14 @@ export class Inventory {
   /** Why both hands can't take up a piece of furniture: one holds an item, a piece or something outside. */
   liftRefusal(): string | undefined {
     if (this.entities.carrying() || this.hands.right || this.hands.left) {
-      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+      return claimed(this.registry.ui, 'interface')!.furnitureMoveMessages.handsFull;
     }
     return this.handHold.liftRefusal();
   }
 
   private handMoveRefusal(item: Item, from: Location, target: Target): string | undefined {
     if (target.kind === 'hand' && this.entities.carrying()) {
-      return this.registry.ui.get(CORE_CONTENT_IDS.coreUi)!.furnitureMoveMessages.handsFull;
+      return claimed(this.registry.ui, 'interface')!.furnitureMoveMessages.handsFull;
     }
     return this.handHold.moveRefusal(
       item,

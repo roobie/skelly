@@ -213,6 +213,7 @@
         "ui": 0.80000000000000004,
         "world": 0.80000000000000004
       },
+      "capability": "interface",
       "coreActionLabels": {
         "batteryIn": "Put a battery in the {item}",
         "batteryOut": "Take the battery out",

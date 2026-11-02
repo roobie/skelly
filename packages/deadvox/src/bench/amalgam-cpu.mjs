@@ -6,9 +6,9 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from '../core/amalgamFigure.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
+import { claimed } from '../core/capabilities.ts';
 import { worldSolid } from '../core/collision.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
-import { CORE_CONTENT_IDS } from '../core/contentIds.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { makeScale } from '../core/scale.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
@@ -137,7 +137,7 @@ for (const { name, corridor } of scenarios) {
       dayPhase: () => dayPhaseAt(requireDayCycle(registry), 12 * 3600),
       blockSize: scale.blockSize,
       physics: physicsFor(scale, PLAYER),
-      tuning: registry.senses.get(CORE_CONTENT_IDS.player),
+      tuning: claimed(registry.senses, 'player'),
       hurtPlayer: () => undefined,
       seed: 17,
     });

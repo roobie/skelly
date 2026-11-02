@@ -512,8 +512,11 @@ const UiScreenTextSchema = strictObject({
 
 export type ScreenText = InferOutput<typeof UiScreenTextSchema>;
 
+import { capabilityField } from './capability.ts';
+
 export const UiTuningSchema = strictObject({
   id: Id,
+  capability: capabilityField('ui'),
   screenText: UiScreenTextSchema,
   /** Multiplies every UI margin, padding and gap; below 1 packs the UI for smaller screens. */
   spacing: Positive,

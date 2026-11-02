@@ -1,0 +1,34 @@
+local neutral = {
+  strength: 0,
+  tintColor: '#ddd7d7',
+  tintDarkness: 0,
+  streakColor: '#ddddcf',
+  streakStrength: 0.22,
+  streakLengthMetres: 2.38,
+  mossColor: '#dde7d7',
+  mossStrength: 0.2,
+  variationScaleMetres: 12,
+  variationStrength: 0.85,
+  mossThreshold: 0.68,
+  mossBias: 0.5,
+  mixCeiling: 1,
+  weatheringBlend: 0,
+};
+{
+  weathering: [
+    neutral + { id: 'proper', capability: 'defaultWeathering' },
+    neutral + { id: 'bench', strength: 4, tintDarkness: 1 },
+    neutral + {
+      id: 'overgrown',
+      strength: 2.2,
+      tintColor: '#5e5c64',
+      tintDarkness: 0.37,
+      streakColor: '#2ec27e',
+      streakStrength: 0.26,
+      streakLengthMetres: 4.32,
+      mossColor: '#d1d391',
+      mossStrength: 1.02,
+      variationScaleMetres: 29.1,
+    },
+  ],
+}

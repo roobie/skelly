@@ -15,13 +15,13 @@ import { expect, it, vi } from 'vitest';
 import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { benchDraw } from '../src/bench/post.ts';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
-import { CORE_CONTENT_IDS } from '../src/core/contentIds.ts';
 import type { NightVision } from '../src/core/schema.ts';
 import type { Sky } from '../src/core/sky.ts';
 import { realSeconds } from '../src/core/time.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
 import { Mood } from '../src/render/mood.ts';
 import { baseRegistry } from './baseRegistry.ts';
+import { fixtureIds as CORE_CONTENT_IDS } from './fixtures/capabilityIds.ts';
 
 const owner = vi.hoisted(() => ({
   composers: [] as {

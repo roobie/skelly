@@ -1,10 +1,12 @@
 import { check, finite, integer, maxValue, minValue, number, pipe, strictObject } from 'valibot';
 import { GraphicsOptionsSchema } from '../graphics.ts';
+import { capabilityField } from './capability.ts';
 import { Degrees } from './layouts.ts';
 import { Count, Fraction, Id, Positive } from './primitives.ts';
 
 export const GraphicsTuningSchema = strictObject({
   id: Id,
+  capability: capabilityField('graphics'),
   nearPlaneMetres: Positive,
   playerViewFovDegrees: pipe(number(), finite(), minValue(1), maxValue(179)),
   opticLens: strictObject({

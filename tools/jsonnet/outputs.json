@@ -357,6 +357,10 @@
       "output": "packages/deadvox/src/content/base/vehicles.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/weathering.jsonnet",
+      "output": "packages/deadvox/src/content/base/weathering.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/zombies.jsonnet",
       "output": "packages/deadvox/src/content/base/zombies.json"
     },

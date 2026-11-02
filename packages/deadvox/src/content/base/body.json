@@ -97,6 +97,7 @@
         ]
       },
       "bloodRecoveryPerSimSecond": 0.002,
+      "capability": "player",
       "coverage": {
         "head": ["head"],
         "leftArm": ["torso", "hands"],

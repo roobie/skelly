@@ -1,10 +1,12 @@
 import { maxValue, minValue, number, picklist, pipe, strictObject, boolean as vBoolean } from 'valibot';
 import { MAX_EXPOSURE, MIN_EXPOSURE, TONE_KEYS } from '../mood.ts';
+/** The game's default look (core/mood.ts `LookDefaults`); URL parameters and the debug panel override it. */
+import { capabilityField } from './capability.ts';
 import { Fraction, Id, NonNegative, Positive, PositiveRealSeconds, PositiveSimSeconds } from './primitives.ts';
 
-/** The game's default look (core/mood.ts `LookDefaults`); URL parameters and the debug panel override it. */
 export const LookDefaultsSchema = strictObject({
   id: Id,
+  capability: capabilityField('look'),
   tone: picklist(TONE_KEYS),
   exposure: pipe(
     number(),
