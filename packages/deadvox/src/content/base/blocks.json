@@ -2,6 +2,9 @@
   "blocks": [
     {
       "color": "#5b8c3a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_grass",
         "shambler": "shambler_step_grass"
@@ -15,6 +18,9 @@
     },
     {
       "color": "#7a5a3a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_mud",
         "shambler": "shambler_step_mud"
@@ -28,6 +34,9 @@
     },
     {
       "color": "#8a8d91",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -41,6 +50,9 @@
     },
     {
       "color": "#8a8d91",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -54,6 +66,9 @@
     },
     {
       "color": "#d6c68f",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_sand",
         "shambler": "shambler_step_sand"
@@ -67,6 +82,9 @@
     },
     {
       "color": "#3b3d40",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -80,6 +98,9 @@
     },
     {
       "color": "#b9bcba",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -93,6 +114,9 @@
     },
     {
       "color": "#b5b3ad",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -106,6 +130,9 @@
     },
     {
       "color": "#a0763f",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_wood",
         "shambler": "shambler_step_wood"
@@ -119,6 +146,9 @@
     },
     {
       "color": "#9c4f3a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -132,6 +162,9 @@
     },
     {
       "color": "#d9d4c7",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -145,6 +178,9 @@
     },
     {
       "color": "#cfd6da",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -158,6 +194,9 @@
     },
     {
       "color": "#5b6f9a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_leaves",
         "shambler": "shambler_step_leaves"
@@ -170,6 +209,9 @@
     },
     {
       "color": "#4a4b50",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -183,6 +225,9 @@
     },
     {
       "color": "#6b4f4a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_leaves",
         "shambler": "shambler_step_leaves"
@@ -196,6 +241,9 @@
     },
     {
       "color": "#e6e2d8",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -208,6 +256,9 @@
     },
     {
       "color": "#8f4b4b",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -221,6 +272,9 @@
     },
     {
       "color": "#7a8d94",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -234,6 +288,9 @@
     },
     {
       "color": "#aab4b8",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -247,6 +304,9 @@
     },
     {
       "color": "#5f6b58",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -260,6 +320,9 @@
     },
     {
       "color": "#bcab8a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -273,6 +336,9 @@
     },
     {
       "color": "#c9a43a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -285,6 +351,9 @@
     },
     {
       "color": "#89979a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "fencePosts": {
         "spacingBlocks": 6,
         "widthBlocks": 0.12
@@ -311,6 +380,9 @@
     },
     {
       "color": "#9b8d6a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -323,6 +395,9 @@
     },
     {
       "color": "#777b6a",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -338,6 +413,9 @@
     },
     {
       "color": "#3b6e8f",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_mud",
         "shambler": "shambler_step_mud"

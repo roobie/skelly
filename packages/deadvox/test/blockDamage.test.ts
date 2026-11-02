@@ -20,8 +20,22 @@ const structureCell: Vec3 = [6, 5, 6];
 const fixtureData = () => ({
   ...blockMaterialFixture('fixture_rubble'),
   blocks: [
-    { id: 'fixture_wall', name: 'Wall', material: 'fixture_material', color: '#888888', solid: true },
-    { id: 'fixture_rubble', name: 'Rubble', material: 'fixture_material', color: '#777777', solid: true },
+    {
+      id: 'fixture_wall',
+      name: 'Wall',
+      material: 'fixture_material',
+      color: '#888888',
+      solid: true,
+      drops: { default: 'fixture_blow' },
+    },
+    {
+      id: 'fixture_rubble',
+      name: 'Rubble',
+      material: 'fixture_material',
+      color: '#777777',
+      solid: true,
+      drops: { default: 'fixture_blow' },
+    },
   ],
 });
 const fixture = (world = new World()) => {

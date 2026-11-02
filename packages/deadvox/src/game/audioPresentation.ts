@@ -1,6 +1,7 @@
 import { claimed } from '../core/capabilities.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { type DropReceiverContext, pileDropSound } from '../core/dropSounds.ts';
 import type { MoveStart } from '../core/handling.ts';
 import type { Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -122,7 +123,11 @@ export const handlingMoveStartCue = (
 };
 
 /** Sound policy for a completed move; positions remain in blocks for SessionAudio to scale once. */
-export const handlingMoveCompleteCue = (move: MoveStart): HandlingSoundCue | undefined => {
+export const handlingMoveCompleteCue = (
+  move: MoveStart,
+  registry: Registry,
+  context: DropReceiverContext,
+): HandlingSoundCue | undefined => {
   const { from, target } = move;
   if (target.kind !== 'pile') {
     return undefined;
@@ -132,5 +137,5 @@ export const handlingMoveCompleteCue = (move: MoveStart): HandlingSoundCue | und
     return undefined;
   }
   const [x, y, z] = target.pos;
-  return { event: 'item_drop_wood', position: [x + 0.5, y, z + 0.5] };
+  return { event: pileDropSound(registry, move.item.type, target.pos, context), position: [x + 0.5, y, z + 0.5] };
 };

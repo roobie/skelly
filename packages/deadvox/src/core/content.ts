@@ -11,6 +11,7 @@ import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { checkDamageKinds } from './damageContent.ts';
+import { checkDropSounds } from './dropSounds.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -2203,6 +2204,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkCamoBlocks(registry, report);
   checkBlockFootsteps(registry, report);
+  checkDropSounds(registry, report);
   checkBlockMaterials(registry, report);
   for (const block of registry.blocks) {
     for (const [gait, event] of Object.entries(block.rustle ?? {})) {
@@ -2318,10 +2320,6 @@ const checkActionSounds = (registry: Registry, report: Report): void => {
 
 export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
   const issues: ContentIssue[] = capabilityIssues(registry);
-  // #1532 removes this last fixed selection once its content owner is settled.
-  if (!registry.sounds.has('item_drop_wood')) {
-    issues.push({ source: 'core content', path: 'sounds', message: 'missing required sound event "item_drop_wood"' });
-  }
   if ([...registry.items.values()].filter((item) => item.workInProgress).length !== 1) {
     issues.push({
       source: 'core content',

@@ -43,6 +43,7 @@ export const FurnitureMaterialSchema = pipe(
     id: Id,
     /** What a blow on a piece of this material sounds like; it must alert hearing, since every blow is heard. */
     blowSound: Id,
+    drops: optional(record(Id, Id)),
     /** Forcing methods a door of this material admits; a door's material must list them. */
     methods: optional(array(Id)),
     /** How a broken leaf of this material is painted: its colour moves `strength` of the way to `tint`. */

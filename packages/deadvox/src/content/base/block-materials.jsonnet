@@ -23,7 +23,7 @@ local materials = [
   blocks: [
     {
       id: row[0].id + '_rubble', material: row[0].id, name: row[1], color: row[2], solid: true,
-      pattern: 'rough', weatherable: false,
+      pattern: 'rough', weatherable: false, drops: { default: 'item_drop_wood' },
       footsteps: { player: row[3], shambler: row[4] },
     }
     for row in [

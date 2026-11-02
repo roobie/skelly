@@ -14,6 +14,9 @@
       "size": [3, 2],
       "vehicle": {
         "capabilities": ["electricity"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -37,6 +40,9 @@
       "size": [2, 2],
       "vehicle": {
         "capabilities": ["light", "glazing"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -60,6 +66,9 @@
       "size": [3, 2],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -83,6 +92,9 @@
       "size": [4, 3],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -105,6 +117,9 @@
       "size": [6, 6],
       "vehicle": {
         "capabilities": ["wheel"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "mount": "hatchback_wheel",
         "obstruction": {
           "combat": true,
@@ -128,6 +143,9 @@
       "size": [5, 10],
       "vehicle": {
         "capabilities": ["seat"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -150,6 +168,9 @@
       "size": [2, 2],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -172,6 +193,9 @@
       "size": [4, 4],
       "vehicle": {
         "capabilities": ["steered"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -194,6 +218,9 @@
       "size": [1, 3],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -216,6 +243,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure", "protection", "storage"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -238,6 +268,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["entry", "glazing", "protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -260,6 +293,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["entry", "glazing", "protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -282,6 +318,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["entry", "glazing"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -304,6 +343,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["glazing"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -326,6 +368,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -348,6 +393,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -370,6 +418,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -392,6 +443,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -414,6 +468,9 @@
       "size": [3, 2],
       "vehicle": {
         "capabilities": ["light"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -436,6 +493,9 @@
       "size": [4, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "mount": "hatchback_front_strut",
         "obstruction": {
           "combat": true,
@@ -459,6 +519,9 @@
       "size": [12, 4],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "mount": "hatchback_rear_axle",
         "obstruction": {
           "combat": true,
@@ -482,6 +545,9 @@
       "size": [6, 5],
       "vehicle": {
         "capabilities": ["power"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -504,6 +570,9 @@
       "size": [3, 3],
       "vehicle": {
         "capabilities": ["driven"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -526,6 +595,9 @@
       "size": [10, 4],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -548,6 +620,9 @@
       "size": [5, 4],
       "vehicle": {
         "capabilities": ["fuel"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -570,6 +645,9 @@
       "size": [12, 2],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -592,6 +670,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -614,6 +695,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["seat"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -636,6 +720,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -658,6 +745,9 @@
       "size": [4, 2],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -680,6 +770,9 @@
       "size": [6, 6],
       "vehicle": {
         "capabilities": ["wheel"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -702,6 +795,9 @@
       "size": [12, 4],
       "vehicle": {
         "capabilities": ["steered", "structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -724,6 +820,9 @@
       "size": [12, 4],
       "vehicle": {
         "capabilities": ["driven", "structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -746,6 +845,9 @@
       "size": [8, 6],
       "vehicle": {
         "capabilities": ["power"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -768,6 +870,9 @@
       "size": [4, 3],
       "vehicle": {
         "capabilities": ["driven"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -790,6 +895,9 @@
       "size": [12, 1],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -812,6 +920,9 @@
       "size": [8, 4],
       "vehicle": {
         "capabilities": ["fuel"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -834,6 +945,9 @@
       "size": [8, 2],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -856,6 +970,9 @@
       "size": [6, 6],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -878,6 +995,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -900,6 +1020,9 @@
       "size": [8, 2],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -922,6 +1045,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -944,6 +1070,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -966,6 +1095,9 @@
       "size": [2, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -988,6 +1120,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["glazing"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -1010,6 +1145,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1032,6 +1170,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["entry", "glazing", "protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": false,
@@ -1054,6 +1195,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1076,6 +1220,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1098,6 +1245,9 @@
       "size": [6, 3],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1120,6 +1270,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["seat"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1142,6 +1295,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1164,6 +1320,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1186,6 +1345,9 @@
       "size": [4, 3],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1208,6 +1370,9 @@
       "size": [12, 2],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1230,6 +1395,9 @@
       "size": [3, 2],
       "vehicle": {
         "capabilities": ["light"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1252,6 +1420,9 @@
       "size": [8, 6],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1274,6 +1445,9 @@
       "size": [4, 8],
       "vehicle": {
         "capabilities": ["stabiliser"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1296,6 +1470,9 @@
       "size": [4, 8],
       "vehicle": {
         "capabilities": ["lift"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1319,6 +1496,9 @@
       "size": [12, 2],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1341,6 +1521,9 @@
       "size": [12, 2],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1363,6 +1546,9 @@
       "size": [6, 2],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1385,6 +1571,9 @@
       "size": [4, 3],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1407,6 +1596,9 @@
       "size": [2, 3],
       "vehicle": {
         "capabilities": [],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1429,6 +1621,9 @@
       "size": [3, 4],
       "vehicle": {
         "capabilities": ["structure"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1459,6 +1654,9 @@
         "cargoSpace": {
           "handlingSimSeconds": 1.2,
           "wideReason": "A cargo space is as wide as the floor it covers, not a carried bag."
+        },
+        "drops": {
+          "default": "item_drop_wood"
         },
         "mount": "cargo_space",
         "obstruction": {
@@ -1491,6 +1689,9 @@
           "requires": "load_floor"
         },
         "capabilities": ["structure", "load_floor"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "mount": "mounting_plate",
         "obstruction": {
           "combat": true,
@@ -1519,6 +1720,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure", "load_floor"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1541,6 +1745,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1563,6 +1770,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1585,6 +1795,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["structure", "load_floor"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1607,6 +1820,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1629,6 +1845,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,
@@ -1651,6 +1870,9 @@
       "size": [12, 6],
       "vehicle": {
         "capabilities": ["protection"],
+        "drops": {
+          "default": "item_drop_wood"
+        },
         "obstruction": {
           "combat": true,
           "light": true,

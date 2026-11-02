@@ -23,7 +23,7 @@ import { baseSources } from '../src/game/bundledContent.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
 
 // The vehicle content and the cell size it is measured in, not the whole base: see `test/vehicleExport.test.ts`.
-const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json'];
+const FIXTURE_BASE = ['vehicles.json', 'models-items.json', 'inventory.json', 'item-wear.json', 'sounds.json'];
 const fixtureSources = baseSources.filter(({ source }) => FIXTURE_BASE.some((file) => source.endsWith(`/${file}`)));
 const MOD = 'mods/cargo-fixture.json';
 const OFF_FREE_FLOOR = /free floor/;

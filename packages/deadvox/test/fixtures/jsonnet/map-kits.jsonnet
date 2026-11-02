@@ -41,8 +41,8 @@ local room = {
     noise: { enabled: true, radiusMetres: 10 },
   }],
   blocks: [
-    { id: 'fixture_floor', material: 'fixture_material', name: 'Floor', color: '#808080', solid: true },
-    { id: 'fixture_other_floor', material: 'fixture_material', name: 'Other floor', color: '#808080', solid: true },
+    { id: 'fixture_floor', material: 'fixture_material', name: 'Floor', color: '#808080', solid: true, drops: { default: 'fixture_blow' } },
+    { id: 'fixture_other_floor', material: 'fixture_material', name: 'Other floor', color: '#808080', solid: true, drops: { default: 'fixture_blow' } },
   ],
   mapStyles: [
     { id: 'fixture_style', bindings: { floor: { role: 'support', block: 'fixture_floor' }, air: { role: 'opening', block: 'air' } } },

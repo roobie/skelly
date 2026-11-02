@@ -32,7 +32,7 @@ local flimsyToWoodPryRatio = flimsyPry.timeSimSeconds / woodDoor.door.methods.pr
 breach.breaking(shape.colliding({
   furnitureMaterials: [
     {
-      id: 'wood', blowSound: 'door_bash', methods: ['pry', 'hammer'], broken: { tint: '#d8c9a6', strength: 0.6 },
+      id: 'wood', drops: { default: 'item_drop_wood' }, blowSound: 'door_bash', methods: ['pry', 'hammer'], broken: { tint: '#d8c9a6', strength: 0.6 },
       damaged: [
         { from: 0.01, tint: '#3a2a1c', strength: 0.2 },
         { from: 0.4, tint: '#3a2a1c', strength: 0.4 },
@@ -40,7 +40,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'steel', blowSound: 'door_bash', methods: ['pry', 'cut', 'hammer'], broken: { tint: '#9a4a28', strength: 0.55 },
+      id: 'steel', drops: { default: 'item_drop_wood' }, blowSound: 'door_bash', methods: ['pry', 'cut', 'hammer'], broken: { tint: '#9a4a28', strength: 0.55 },
       damaged: [
         { from: 0.01, tint: '#2a2a2e', strength: 0.2 },
         { from: 0.4, tint: '#2a2a2e', strength: 0.4 },
@@ -48,7 +48,7 @@ breach.breaking(shape.colliding({
       ],
     },
     {
-      id: 'plastic', blowSound: 'door_bash',
+      id: 'plastic', drops: { default: 'item_drop_wood' }, blowSound: 'door_bash',
       damaged: [
         { from: 0.01, tint: '#4a4a44', strength: 0.15 },
         { from: 0.4, tint: '#4a4a44', strength: 0.35 },

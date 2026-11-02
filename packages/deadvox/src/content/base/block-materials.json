@@ -214,6 +214,9 @@
   "blocks": [
     {
       "color": "#685744",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_mud",
         "shambler": "shambler_step_mud"
@@ -227,6 +230,9 @@
     },
     {
       "color": "#827b71",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -240,6 +246,9 @@
     },
     {
       "color": "#776144",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_wood",
         "shambler": "shambler_step_wood"
@@ -253,6 +262,9 @@
     },
     {
       "color": "#6e6965",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_stone",
         "shambler": "shambler_step_stone"
@@ -266,6 +278,9 @@
     },
     {
       "color": "#68604e",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_leaves",
         "shambler": "shambler_step_leaves"

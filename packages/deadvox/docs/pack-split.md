@@ -3,7 +3,7 @@ read_if:
   - you split Deadvox content into core, theme, product and scenario mods (#637)
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
-  - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound material prerequisites
+  - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
   - you separate anatomical body plans from figure properties, change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
@@ -131,12 +131,19 @@ presentation selections mean silence when omitted, never a borrowed sound. Door
 presentation need not alert hearing; forcing it to do so would change quiet doors
 merely because their former default became explicit. Search remains a hearing event;
 see `src/core/content.ts`, `checkSearchNoise`.
-A dropped item's sound combines what it hits with what it is made of. #1532 must
-supply item main-material ownership and the missing surface/material-pair rule before
-that selection can replace the fixed ground-drop prerequisite. See
-`src/game/audioPresentation.ts`, `handlingMoveCompleteCue`, and `src/core/content.ts`,
-`requiredContentIssues`; keeping that prerequisite is not permission to infer material
-from appearance or salvage.
+A pile sounds like what it landed on, not the terrain beneath its support. Terrain
+blocks, furniture materials and fitted vehicle parts own the same drop-response table.
+Items optionally select their own sound character through the open sound-family
+registry: a bucket and a casing need not sound alike on the same receiver, and mods
+can add characters without changing other entries. Nothing is inferred from material,
+size or appearance. Each receiver requires an authored any-item default so an omitted
+character or an unlisted pair still plays that receiver's sound, never silence or a
+sound borrowed from another item. Air and non-solid terrain cannot receive piles and
+need no default. Overlapping vehicle parts need a stable receiver; authored order
+supplies it without a separate priority setting. See `src/core/dropSounds.ts`,
+`checkDropSounds` and `pileDropSound`,
+`src/core/vehicleProjection.ts`, `vehiclePartAt`, and `src/game/audioPresentation.ts`,
+`handlingMoveCompleteCue`. Fired-case presentation remains a firearm selection.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
 manufactured materials may be thematic. A site's distribution and authored run remain

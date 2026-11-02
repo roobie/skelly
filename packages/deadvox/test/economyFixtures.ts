@@ -18,7 +18,9 @@ export const fixtureBreach = () => ({ minimumStrength: 1, durability: 1 });
 /** A material for fixture furniture whose damage look no test reads; content needs one on every piece. */
 export const FIXTURE_MATERIAL = 'fixture_material';
 /** The material table entry `FIXTURE_MATERIAL` names, for a fixture registry built without base content. */
-export const fixtureMaterials = () => [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: [] }];
+export const fixtureMaterials = () => [
+  { id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
+];
 /** The sound a blow on fixture furniture makes; materials must name one that alerts hearing. */
 export const FIXTURE_BLOW_SOUND = 'fixture_blow';
 export const fixtureSounds = () => [
@@ -54,7 +56,7 @@ export const fixtureMaterialSource = (): ContentSource => {
       soundFamilies: structuredClone(baseSounds.soundFamilies),
       furnitureMaterials: fixtureMaterials(),
       itemWear: structuredClone(baseItemWear.itemWear),
-      sounds: [...fixtureSounds(), sound],
+      sounds: [...fixtureSounds(), sound, baseSounds.sounds.find((entry) => entry.id === 'item_drop_wood')!],
       ui,
       recipeCategories: [{ id: 'fixture_category', label: 'Fixture', order: 0 }],
     },
@@ -83,13 +85,19 @@ const fixtureEntry = (entry: unknown, section: string): unknown => {
     return entry;
   }
   if (section === 'blocks') {
-    return { material: FIXTURE_MATERIAL, ...entry };
+    return { material: FIXTURE_MATERIAL, drops: { default: FIXTURE_BLOW_SOUND }, ...entry };
   }
   if (section === 'recipes') {
     return { category: 'fixture_category', tags: [], searchTerms: [], ...entry };
   }
   if (section === 'items') {
-    return { economy: fixtureEconomy(), workInProgress: false, notLoot: false, ...entry };
+    return {
+      economy: fixtureEconomy(),
+      workInProgress: false,
+      notLoot: false,
+      ...entry,
+      ...(object(entry.vehicle) ? { vehicle: { drops: { default: FIXTURE_BLOW_SOUND }, ...entry.vehicle } } : {}),
+    };
   }
   if (section === 'templates') {
     return { lootContext: fixtureLootContext(), ...entry };

@@ -28,6 +28,5 @@ export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
   missing('skill providers', 'skills', 'meleeCombat'),
   missing('skill providers', 'skills', 'inventoryManagement'),
   missing('theme extraction', 'powerTuning', 'power'),
-  known('sound selection', 'core content', 'sounds', 'missing required sound event "item_drop_wood"'),
   known('core extraction', 'core content', 'items', 'expected exactly one work-in-progress item definition'),
 ];

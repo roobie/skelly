@@ -725,6 +725,7 @@ export const ItemSchema = strictObject({
   notLoot: vBoolean(),
   name: Name,
   category: picklist(ITEM_CATEGORIES),
+  soundsLike: optional(Id),
   weight: optional(NonNegative),
   /** Cells it takes in a grid, as [w, h]; it can be rotated. */
   size: Area,
@@ -829,6 +830,7 @@ export const ItemSchema = strictObject({
   /** A vehicle part: blueprints may fit it, and its model must export parts with baked collision. */
   vehicle: optional(
     strictObject({
+      drops: optional(record(Id, Id)),
       /** Content identity of the service interface this loose part can occupy. */
       mount: optional(Id),
       service: optional(strictObject(VehicleServiceFields)),

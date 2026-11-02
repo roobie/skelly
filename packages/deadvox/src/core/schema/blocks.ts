@@ -98,6 +98,7 @@ export const BlockSchema = strictObject({
   /** Content-owned brushing events: gentle movement and fast movement. */
   rustle: optional(strictObject({ gentle: Id, fast: Id })),
   footsteps: optional(record(Id, Id)),
+  drops: optional(record(Id, Id)),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
   /** Whether render-only site weathering may affect this built material. */

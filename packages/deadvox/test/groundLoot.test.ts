@@ -21,7 +21,14 @@ import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
-const floor = { id: 'fixture_floor', material: FIXTURE_MATERIAL, name: 'Fixture floor', solid: true, color: '#808080' };
+const floor = {
+  id: 'fixture_floor',
+  material: FIXTURE_MATERIAL,
+  name: 'Fixture floor',
+  solid: true,
+  color: '#808080',
+  drops: { default: 'fixture_blow' },
+};
 const fixtureData = (): ContentFile => ({
   damageKinds: fixtureDamageContent().damageKinds,
   furnitureMaterials: fixtureMaterials(),

@@ -8,7 +8,9 @@ import { capture, createRuntime, encodeFixture, formatVersion } from './snapshot
 const methodId = 'fixture_method';
 const qualityId = 'fixture_quality';
 const fixture = (admitted: string[]) => ({
-  furnitureMaterials: [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: admitted }],
+  furnitureMaterials: [
+    { id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: admitted },
+  ],
   furniture: [
     {
       id: 'fixture_door',

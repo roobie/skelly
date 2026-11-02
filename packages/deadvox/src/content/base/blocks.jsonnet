@@ -20,7 +20,7 @@ local materials = {
   hazard_yellow: 'metal', chain_link: 'metal', sandbag: 'soil', camo_woodland: 'timber', water: 'liquid',
 };
 local block(id, name, color, surface, extra={}) =
-  { id: id, material: materials[id], name: name, color: color, solid: true, footsteps: footstepEvents[surface] } + extra;
+  { id: id, material: materials[id], name: name, color: color, solid: true, drops: { default: 'item_drop_wood' }, footsteps: footstepEvents[surface] } + extra;
 
 local asphalt = block('asphalt', 'Asphalt', '#3b3d40', 'stone', { pattern: 'noise', weatherable: true });
 local paintedAsphalt = asphalt + { id: 'painted_asphalt', name: 'Painted asphalt', color: '#b9bcba' };

@@ -1278,6 +1278,9 @@
           "tint": "#d8c9a6"
         }
       ],
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "id": "wood",
       "methods": ["pry", "hammer"]
     },
@@ -1304,6 +1307,9 @@
           "tint": "#9a4a28"
         }
       ],
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "id": "steel",
       "methods": ["pry", "cut", "hammer"]
     },
@@ -1326,6 +1332,9 @@
           "tint": "#e8e4d0"
         }
       ],
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "id": "plastic"
     }
   ]

@@ -7,6 +7,7 @@ local part(id, name, size, capabilities, description=null) = {
   model: id,
   size: size,
   vehicle: {
+    drops: { default: 'item_drop_wood' },
     capabilities: capabilities,
     obstruction: {
       // Glazing retains body collision but admits sight and light.

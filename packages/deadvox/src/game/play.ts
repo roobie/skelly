@@ -1005,7 +1005,12 @@ export const startPlay = (
         }
       },
       onMoveComplete: (move, time) => {
-        const cue = handlingMoveCompleteCue(move);
+        const cue = handlingMoveCompleteCue(move, registry, {
+          blockIdAt: (x, y, z) => engine.world.getBlock(x, y, z),
+          entities: inventory.entities,
+          vehicles: inventory.vehicles,
+          blockSize: s,
+        });
         if (cue) {
           session.playWorldSound(cue.event, cue.position, time);
         }

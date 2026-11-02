@@ -44,7 +44,9 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'breach-fixture',
     data: {
-      furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+      furnitureMaterials: [
+        { id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, drops: { default: FIXTURE_BLOW_SOUND }, methods: [] },
+      ],
       furniture: [fixtureDoor('breach_door'), fixtureDoor('breach_boarded', 'front')],
     },
   },
@@ -163,7 +165,14 @@ it('builds the breach fixture without issues and rejects any piece, door or not,
       {
         source: 'breach-rejected',
         data: {
-          furnitureMaterials: [{ id: 'breach_fixture', blowSound: FIXTURE_BLOW_SOUND, methods: [] }],
+          furnitureMaterials: [
+            {
+              id: 'breach_fixture',
+              blowSound: FIXTURE_BLOW_SOUND,
+              drops: { default: FIXTURE_BLOW_SOUND },
+              methods: [],
+            },
+          ],
           sounds: fixtureSounds(),
           furniture: [piece],
         },

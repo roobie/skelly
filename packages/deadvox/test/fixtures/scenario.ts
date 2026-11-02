@@ -4,6 +4,7 @@ import type { MapPoolDef, ScenarioDef, TemplateDef } from '../../src/core/schema
 import { gameHours } from '../../src/core/time.ts';
 import { fixtureBlockMaterial } from '../blockMaterialFixture.ts';
 import {
+  FIXTURE_BLOW_SOUND,
   FIXTURE_MATERIAL,
   fixtureBreach,
   fixtureEconomy,
@@ -145,8 +146,22 @@ export const fixtureScenarioSources = (
         blockMaterials: [fixtureBlockMaterial('fixture_solid')],
         sounds: [...fixtureSounds(), ...bodySounds],
         blocks: [
-          { id: 'fixture_solid', material: FIXTURE_MATERIAL, name: 'Fixture solid', solid: true, color: '#808080' },
-          { id: 'asphalt', material: FIXTURE_MATERIAL, name: 'Fixture asphalt', solid: true, color: '#404040' },
+          {
+            id: 'fixture_solid',
+            material: FIXTURE_MATERIAL,
+            name: 'Fixture solid',
+            solid: true,
+            color: '#808080',
+            drops: { default: FIXTURE_BLOW_SOUND },
+          },
+          {
+            id: 'asphalt',
+            material: FIXTURE_MATERIAL,
+            name: 'Fixture asphalt',
+            solid: true,
+            color: '#404040',
+            drops: { default: FIXTURE_BLOW_SOUND },
+          },
           {
             id: 'fixture_water',
             material: FIXTURE_MATERIAL,

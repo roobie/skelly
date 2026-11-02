@@ -2,6 +2,9 @@
   "blocks": [
     {
       "color": "#62503b",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_wood",
         "shambler": "shambler_step_wood"
@@ -16,6 +19,9 @@
     },
     {
       "color": "#705941",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_wood",
         "shambler": "shambler_step_wood"
@@ -48,6 +54,9 @@
     },
     {
       "color": "#766047",
+      "drops": {
+        "default": "item_drop_wood"
+      },
       "footsteps": {
         "player": "footstep_leaves",
         "shambler": "shambler_step_leaves"

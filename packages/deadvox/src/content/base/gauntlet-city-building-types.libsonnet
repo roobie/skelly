@@ -112,7 +112,7 @@ local building(id, context, shellId, roomId) = {
 };
 local stoneSteps = { player: 'footstep_stone', shambler: 'shambler_step_stone' };
 local signBlock(id, name, color, extra={}) =
-  { id: id, material: 'metal', name: name, color: color, solid: true, footsteps: stoneSteps, weatherable: false } + extra;
+  { id: id, material: 'metal', name: name, color: color, solid: true, drops: { default: 'item_drop_wood' }, footsteps: stoneSteps, weatherable: false } + extra;
 local frontStyle(id, bindings) = { id: id, bindings: {
   facade: { role: 'shell', block: 'brick' }, opening: { role: 'opening', block: 'air' },
 } + bindings };

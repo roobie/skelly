@@ -16,6 +16,7 @@ local box(position, size) = { position: position, size: size };
       pattern: 'rough',
       weatherable: false,
       footsteps: wood,
+      drops: { default: 'item_drop_wood' },
     },
     {
       id: 'tree_branch', material: 'timber',
@@ -26,6 +27,7 @@ local box(position, size) = { position: position, size: size };
       pattern: 'rough',
       weatherable: false,
       footsteps: wood,
+      drops: { default: 'item_drop_wood' },
     },
     {
       id: 'leaves', material: 'textile',
@@ -47,6 +49,7 @@ local box(position, size) = { position: position, size: size };
       pattern: 'noise',
       weatherable: false,
       footsteps: leaves,
+      drops: { default: 'item_drop_wood' },
     },
     {
       id: 'tall_grass', material: 'textile',

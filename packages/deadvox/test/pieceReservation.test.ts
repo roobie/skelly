@@ -43,7 +43,14 @@ const { registry, issues } = buildFixtureRegistry([
   {
     source: 'reservation-fixture',
     data: {
-      furnitureMaterials: [{ id: FIXTURE_MATERIAL, blowSound: FIXTURE_BLOW_SOUND, methods: [methodId] }],
+      furnitureMaterials: [
+        {
+          id: FIXTURE_MATERIAL,
+          blowSound: FIXTURE_BLOW_SOUND,
+          drops: { default: FIXTURE_BLOW_SOUND },
+          methods: [methodId],
+        },
+      ],
       furniture: [
         door('fixture_door'),
         {
