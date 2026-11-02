@@ -102,6 +102,34 @@ it('a stale pack stamp falls back to reference checks rather than admitting a br
   expect(result.registry.items.has(item.id)).toBe(false);
 });
 
+it('combined pack trust matches the stamped stack but expires when one non-content model changes', async () => {
+  const packs = [pack('fixture.first'), pack('fixture.second')];
+  const model = { source: 'fixture.model.json', data: { geometry: 1 } };
+  packs[1]!.manifest.files.push({ path: model.source, kind: 'json' });
+  packs[1]!.files.push(model);
+  const proofHash = '1'.repeat(64);
+  const admissions = await Promise.all(
+    packs.map(async (input) => ({
+      pack: input,
+      admission: await BundleAdmission.preparePack(
+        input,
+        {
+          sourceHash: await packContentHash(input),
+          proofHash,
+        },
+        proofHash,
+      ),
+    })),
+  );
+  const combined = BundleAdmission.combine(admissions);
+  expect(combined).toBeDefined();
+  const { sources, issues } = admitPacks(packs);
+  expect(issues).toEqual([]);
+  expect(combined!.matches(sources)).toBe(true);
+  model.data = { geometry: 2 };
+  expect(combined!.matches(sources)).toBe(false);
+});
+
 it('hashes each pack model and rejects an admission stamp after that model changes', async () => {
   const input = pack('fixture.models');
   for (const directory of ['things', 'gungen']) {
