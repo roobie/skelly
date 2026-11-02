@@ -19,7 +19,15 @@ const checkerFor = (registry: Registry, report: Report, section: ContentSection,
       selected(`${path}.${kind}`, kind);
     }
   };
-  return { issue, selected, keys };
+  const complete = (path: string, values: object): void => {
+    keys(path, values);
+    for (const kind of registry.damageKinds.keys()) {
+      if (!Object.hasOwn(values, kind)) {
+        issue(`${path}.${kind}`, `missing response for damage kind "${kind}"`);
+      }
+    }
+  };
+  return { issue, selected, keys, complete };
 };
 type Checker = ReturnType<typeof checkerFor>;
 
@@ -32,14 +40,8 @@ const checkBody = (body: BodyTuningDef, checker: Checker): void => {
       body.bleeding.tiers.map((tier, i) => [`.bleeding.tiers[${i}].chancePerDamage`, tier.chancePerDamage]),
     ),
   };
-  const kinds = new Set(Object.values(responses).flatMap(Object.keys));
   for (const [path, values] of Object.entries(responses)) {
-    checker.keys(path, values);
-    for (const kind of kinds) {
-      if (!Object.hasOwn(values, kind)) {
-        checker.issue(`${path}.${kind}`, `missing body response for damage kind "${kind}"`);
-      }
-    }
+    checker.complete(path, values);
   }
   checker.keys('.linger', body.linger);
   checker.selected('.landing.kind', body.landing.kind);
@@ -87,7 +89,7 @@ export const checkDamageKinds = (registry: Registry, report: Report): void => {
     checkBody(body, checkerFor(registry, report, 'body', body.id));
   }
   for (const material of registry.blockMaterials.values()) {
-    checkerFor(registry, report, 'blockMaterials', material.id).keys('.resistance', material.resistance);
+    checkerFor(registry, report, 'blockMaterials', material.id).complete('.resistance', material.resistance);
   }
   for (const meleeClass of registry.meleeClasses.values()) {
     const checker = checkerFor(registry, report, 'meleeClasses', meleeClass.id);

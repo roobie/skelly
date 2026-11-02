@@ -12,7 +12,9 @@ local severedItems = {
   rightLeg: 'shambler_right_leg',
 };
 local resistanceFor(amount) = { [region]: amount for region in std.objectFields(severedItems) };
-local neutralDamageResistance = { [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce'] };
+local neutralDamageResistance = {
+  [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce', 'acid', 'blast', 'fragment', 'breach', 'crush']
+};
 local senseHeightMetres = 1.3;
 local hordeSpacing = { innerMetres: 0.35, stepMetres: 0.38 };
 local grabBandMetres = 1.7;
@@ -371,6 +373,7 @@ local content = {
         "leftLeg": 18,
         "rightLeg": 18
       },
+      "damageResistance": neutralDamageResistance,
       "speed": { "wanderMetresPerSimSecond": 0.8, "chaseMetresPerSimSecond": 6.5, "backgroundStepMetres": backgroundStepMetres },
       "stepLength": 0.8,
       "sight": 25,
@@ -481,6 +484,7 @@ local content = {
         "leftLeg": 10,
         "rightLeg": 10
       },
+      "damageResistance": neutralDamageResistance,
       "speed": { "wanderMetresPerSimSecond": 0.35, "chaseMetresPerSimSecond": 1.1, "backgroundStepMetres": backgroundStepMetres },
       "stepLength": 0.45,
       "sight": 16,

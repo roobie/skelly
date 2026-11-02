@@ -117,10 +117,21 @@ actor resistance; see `src/core/schema/damageKinds.ts`, `DamageKindSchema`,
 `src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/zombies.ts`,
 `damageToZombie`. A weapon's animation mechanism is a separate content selection, so
 adding a melee kind does not imply adding a pose; see `src/game/melee.ts`,
-`meleeProfileForWeapon`. #1532 must settle kind applicability to bodies and terrain
-before widening their supported response domains. Missing tuning is not permission
-to invent resistance or injury responses; see `src/core/body.ts`, `damageResponse`,
-and `src/core/schema/blocks.ts`, `BlockMaterialSchema`.
+`meleeProfileForWeapon`. Every declared kind works on both bodies and terrain:
+there must be no silent no-effect pair. Complete response maps make admission catch
+missing pairs before a hit reaches a runtime error; see `src/core/damageContent.ts`,
+`checkDamageKinds`, `src/core/body.ts`, `damageResponse`, and
+`src/core/schema/blocks.ts`, `BlockMaterialSchema`.
+
+Authored defaults reuse the nearest existing injury response rather than introducing
+another balance decision: force follows blunt, fragments follow pierce, and block
+acid follows pierce except where cloth's acid vulnerability calls for its own response.
+These values do not change play until an attack selects the added pair. Explicit
+neutral actor maps preserve the existing absence-of-resistance behavior, while the
+acid actor keeps its authored immunity. See `src/content/base/body.jsonnet`, `responses`,
+`src/content/base/block-materials.jsonnet`, `materials`, and
+`src/content/base/zombies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
+permission to invent resistance or injury responses.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific

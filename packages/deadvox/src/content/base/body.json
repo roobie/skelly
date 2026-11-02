@@ -12,8 +12,12 @@
             "bloodLossPerSimSecond": 0.002,
             "chancePerDamage": {
               "acid": 0.0060000000000000001,
+              "blast": 0.012,
               "blunt": 0.012,
+              "breach": 0.012,
+              "crush": 0.012,
               "cut": 0.050000000000000003,
+              "fragment": 0.040000000000000001,
               "pierce": 0.040000000000000001
             },
             "closeSimSeconds": 180,
@@ -32,8 +36,12 @@
             "bloodLossPerSimSecond": 0.014999999999999999,
             "chancePerDamage": {
               "acid": 0.0025000000000000001,
+              "blast": 0.0040000000000000001,
               "blunt": 0.0040000000000000001,
+              "breach": 0.0040000000000000001,
+              "crush": 0.0040000000000000001,
               "cut": 0.040000000000000001,
+              "fragment": 0.050000000000000003,
               "pierce": 0.050000000000000003
             },
             "closeSimSeconds": 7200,
@@ -53,8 +61,12 @@
             "bloodLossPerSimSecond": 0.12,
             "chancePerDamage": {
               "acid": 0,
+              "blast": 0.0011999999999999999,
               "blunt": 0.0011999999999999999,
+              "breach": 0.0011999999999999999,
+              "crush": 0.0011999999999999999,
               "cut": 0.02,
+              "fragment": 0.02,
               "pierce": 0.02
             },
             "closeSimSeconds": 21600,
@@ -74,8 +86,12 @@
             "bloodLossPerSimSecond": 1.6699999999999999,
             "chancePerDamage": {
               "acid": 0,
+              "blast": 0.00025000000000000001,
               "blunt": 0.00025000000000000001,
+              "breach": 0.00025000000000000001,
+              "crush": 0.00025000000000000001,
               "cut": 0.0060000000000000001,
+              "fragment": 0.0040000000000000001,
               "pierce": 0.0040000000000000001
             },
             "closeSimSeconds": 86400,
@@ -212,8 +228,12 @@
       },
       "outerWearMultiplier": {
         "acid": 4,
+        "blast": 1,
         "blunt": 1,
+        "breach": 1,
+        "crush": 1,
         "cut": 1,
+        "fragment": 1,
         "pierce": 1
       },
       "pain": {
@@ -234,8 +254,12 @@
         "knockoutAt": 100,
         "perDamage": {
           "acid": 3,
+          "blast": 1.6000000000000001,
           "blunt": 1.6000000000000001,
+          "breach": 1.6000000000000001,
+          "crush": 1.6000000000000001,
           "cut": 2,
+          "fragment": 2,
           "pierce": 2
         },
         "perRegionDamage": 0.5,
@@ -282,8 +306,12 @@
       "roughSleepShare": 0.59999999999999998,
       "shockPerDamage": {
         "acid": 1,
+        "blast": 2,
         "blunt": 2,
+        "breach": 2,
+        "crush": 2,
         "cut": 0,
+        "fragment": 0,
         "pierce": 0
       },
       "shockRecoveryPerSimSecond": 0.10000000000000001,

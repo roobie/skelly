@@ -13,7 +13,6 @@ import {
   tuple,
   boolean as vBoolean,
 } from 'valibot';
-import { BLOCK_DAMAGE_KINDS, type BlockDamageKind } from '../blockDamageKinds.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { Color, Count, Fraction, Id, Name, NonNegative, Positive } from './primitives.ts';
 
@@ -43,12 +42,7 @@ export const BlockMaterialSchema = pipe(
     id: Id,
     minimumStrength: NonNegative,
     durability: Positive,
-    resistance: strictObject(
-      Object.fromEntries(BLOCK_DAMAGE_KINDS.map((kind) => [kind, Fraction])) as Record<
-        BlockDamageKind,
-        typeof Fraction
-      >,
-    ),
+    resistance: record(Id, Fraction),
     massKg: Positive,
     span: Count,
     fallsTo: Id,

@@ -428,10 +428,10 @@ describe('supply-aware terrain destruction', () => {
 
   it('refuses an unsupported debug strike kind before forwarding a terrain blow', () => {
     const f = fixture({ resident: true });
-    debugKind(f, 'acid');
+    debugKind(f, 'fixture_unsupported');
     const { build, blows, eye, dir } = debugBuild(f);
     build.toggle();
-    expect(() => build.strike('step', eye, dir)).toThrow('Unsupported block damage kind "acid"');
+    expect(() => build.strike('step', eye, dir)).toThrow('Unsupported block damage kind "fixture_unsupported"');
     expect(blows).toEqual([]);
     expect(f.world.blockDamage.get(cell)).toBeUndefined();
   });

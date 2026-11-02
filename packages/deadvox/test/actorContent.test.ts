@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { claimed } from '../src/core/capabilities.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { settlementHordeSpawn, settlementZombieSpawns } from '../src/core/settlementSpawns.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
@@ -40,10 +40,10 @@ it.each(['runner', 'crawler', 'brute'] as const)('admits a %s figure as a proper
   const admitted = registry.zombies.get(actor.id)!;
   expect(admitted.model).toBe('humanoid');
   expect(zombieFigure(admitted, 1).genome.template).toBe(figure);
-  const { issues: invalid } = buildRegistry([
-    ...baseSources,
-    { source: 'fixture-invalid-plan', data: { actors: [{ ...actor, model: figure }] } },
-  ]);
+  const invalid = validateContent({
+    source: 'fixture-invalid-plan',
+    data: { actors: [{ ...actor, model: figure }] },
+  });
   expect(
     invalid.some(({ source: origin, path }) => origin === 'fixture-invalid-plan' && path === 'actors[0].model'),
   ).toBe(true);

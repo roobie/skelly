@@ -1,6 +1,10 @@
 // The player's body (`DESIGN.md`, "Character"). Fatigue is sleep debt: 100 is what a normal sleep clears.
 local normalSleepGameHours = 8;
 local normalSleep = 100 / normalSleepGameHours;
+local responses(blunt, cut, pierce, acid) = {
+  blunt: blunt, cut: cut, pierce: pierce, acid: acid,
+  blast: blunt, fragment: pierce, breach: blunt, crush: blunt,
+};
 
 {
   body: [{
@@ -20,9 +24,9 @@ local normalSleep = 100 / normalSleepGameHours;
     staminaRegenDelaySimSeconds: 5,
     proneEyeHeightMetres: 0.3,
     fragmentRegionHeights: { head: 0.85, torso: 0.45 },
-    shockPerDamage: { blunt: 2, cut: 0, pierce: 0, acid: 1 },
+    shockPerDamage: responses(2, 0, 0, 1),
     // Acid eats the outermost worn layer, so clothing is a consumable (`packages/deadvox/docs/acid-zombie.md`).
-    outerWearMultiplier: { blunt: 1, cut: 1, pierce: 1, acid: 4 },
+    outerWearMultiplier: responses(1, 1, 1, 4),
     // Footwear and gloves are each limb's last layer, so a blow meets them only on a bare limb.
     coverage: {
       head: ['head'],
@@ -61,7 +65,7 @@ local normalSleep = 100 / normalSleepGameHours;
           closeSimSeconds: 180,
           treatmentEffort: 1,
           minDamage: 0,
-          chancePerDamage: { blunt: 0.012, cut: 0.05, pierce: 0.04, acid: 0.006 },
+          chancePerDamage: responses(0.012, 0.05, 0.04, 0.006),
           drip: { rate: 0.2, size: 0.75 },
           pain: 1,
         },
@@ -74,7 +78,7 @@ local normalSleep = 100 / normalSleepGameHours;
           closeSimSeconds: 7200,
           treatmentEffort: 1,
           minDamage: 5,
-          chancePerDamage: { blunt: 0.004, cut: 0.04, pierce: 0.05, acid: 0.0025 },
+          chancePerDamage: responses(0.004, 0.04, 0.05, 0.0025),
           drip: { rate: 1, size: 1 },
           pain: 5,
         },
@@ -87,7 +91,7 @@ local normalSleep = 100 / normalSleepGameHours;
           closeSimSeconds: 21600,
           treatmentEffort: 2,
           minDamage: 8,
-          chancePerDamage: { blunt: 0.0012, cut: 0.02, pierce: 0.02, acid: 0 },
+          chancePerDamage: responses(0.0012, 0.02, 0.02, 0),
           drip: { rate: 2.5, size: 1.3 },
           pain: 10,
         },
@@ -101,7 +105,7 @@ local normalSleep = 100 / normalSleepGameHours;
           treatmentEffort: 4,
           minDamage: 12,
           regionFactor: { torso: 0.5 },
-          chancePerDamage: { blunt: 0.00025, cut: 0.006, pierce: 0.004, acid: 0 },
+          chancePerDamage: responses(0.00025, 0.006, 0.004, 0),
           drip: { rate: 6, size: 1.6 },
           pain: 20,
         },
@@ -112,7 +116,7 @@ local normalSleep = 100 / normalSleepGameHours;
     pain: {
       knockoutAt: 100,
       // A bite or stab hurts a little more than a blow of the same damage; a burn hurts most.
-      perDamage: { blunt: 1.6, cut: 2, pierce: 2, acid: 3 },
+      perDamage: responses(1.6, 2, 2, 3),
       regionWeight: { head: 1.5, torso: 1, leftArm: 1, rightArm: 1, leftLeg: 1, rightLeg: 1 },
       perRegionDamage: 0.5,
       infection: { early: 8, advanced: 20 },

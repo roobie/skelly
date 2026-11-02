@@ -126,7 +126,7 @@ export class BuildMode {
     if (!Object.hasOwn(material.resistance, tuning.damageKind)) {
       throw new Error(`Unsupported block damage kind "${tuning.damageKind}"`);
     }
-    const admitted = 1 - material.resistance[tuning.damageKind as keyof typeof material.resistance];
+    const admitted = 1 - material.resistance[tuning.damageKind]!;
     return this.strikeTerrainCell(hit.block, {
       kind: tuning.damageKind,
       strength: admitted > 0 ? effective / admitted : 0,

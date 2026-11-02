@@ -33,7 +33,7 @@ export const bashBlock = (cell: { material: BlockMaterialDef; damage: number }, 
   if (!Object.hasOwn(material.resistance, blow.kind)) {
     throw new Error(`Unsupported block damage kind "${blow.kind}"`);
   }
-  const strength = blow.strength * (1 - material.resistance[blow.kind as keyof typeof material.resistance]);
+  const strength = blow.strength * (1 - material.resistance[blow.kind]!);
   if (strength <= 0 || strength < material.minimumStrength) {
     return { outcome: 'resisted', damage };
   }

@@ -24,6 +24,7 @@
       "massKg": 180,
       "minimumStrength": 2,
       "resistance": {
+        "acid": 0.40000000000000002,
         "blast": 0,
         "blunt": 0,
         "breach": 0,
@@ -59,6 +60,7 @@
       "massKg": 260,
       "minimumStrength": 9,
       "resistance": {
+        "acid": 0.80000000000000004,
         "blast": 0.10000000000000001,
         "blunt": 0.10000000000000001,
         "breach": 0,
@@ -94,6 +96,7 @@
       "massKg": 65,
       "minimumStrength": 3.5,
       "resistance": {
+        "acid": 0.5,
         "blast": 0.10000000000000001,
         "blunt": 0.10000000000000001,
         "breach": 0,
@@ -129,6 +132,7 @@
       "massKg": 180,
       "minimumStrength": 9,
       "resistance": {
+        "acid": 0.59999999999999998,
         "blast": 0.20000000000000001,
         "blunt": 0.40000000000000002,
         "breach": 0,
@@ -164,6 +168,7 @@
       "massKg": 8,
       "minimumStrength": 0,
       "resistance": {
+        "acid": 0,
         "blast": 0,
         "blunt": 0.5,
         "breach": 0,
@@ -199,6 +204,7 @@
       "massKg": 125,
       "minimumStrength": 0,
       "resistance": {
+        "acid": 1,
         "blast": 1,
         "blunt": 1,
         "breach": 1,
