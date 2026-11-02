@@ -56,6 +56,30 @@ describe('content capabilities', () => {
     }
   });
 
+  it('rejects non-kind weapon class ids without restricting the unarmed provider id', () => {
+    const tuning = { damageVariance: 0, headDamageMultiplier: 1, limbDamageMultiplier: 1, speedMultiplier: 1 };
+    const validate = (entry: unknown) => validateContent({ source: 'fixture', data: { meleeClasses: [entry] } });
+    expect(validate({ ...tuning, id: 'blunt' })).toEqual([]);
+    expect(
+      validate({
+        ...tuning,
+        id: 'fixture_unarmed',
+        capability: 'unarmed',
+        unarmed: {
+          motion: 'thrust',
+          damage: 1,
+          reach: 1,
+          cooldownSimSeconds: 1,
+          stamina: 0,
+          contactFraction: 0.5,
+          windupCapSimSeconds: 1,
+          impulse: 0,
+        },
+      }),
+    ).toEqual([]);
+    expect(validate({ ...tuning, id: 'fixture_mistyped_kind' }).length).toBeGreaterThan(0);
+  });
+
   it('runtime gravity and default weathering use independently named providers', () => {
     const base = baseRegistry();
     const player = claimed(base.player, 'player')!;

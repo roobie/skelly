@@ -281,6 +281,10 @@ export const MeleeClassSchema = pipe(
     unarmed: optional(UnarmedAttackSchema),
   }),
   check(
+    ({ id, capability }) => capability === 'unarmed' || MELEE_DAMAGE_KINDS.some((kind) => kind === id),
+    'a weapon melee class id must name a melee damage kind',
+  ),
+  check(
     (meleeClass) => (meleeClass.capability === 'unarmed') === (meleeClass.unarmed !== undefined),
     'the unarmed capability requires an unarmed attack, and only its claimant may carry one',
   ),
