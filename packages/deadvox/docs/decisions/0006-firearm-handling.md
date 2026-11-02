@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you're changing the Gungen-to-Deadvox firearm model contract
   - you're changing mechanical firearm state or its presentation boundary
   - you're evaluating firearm attachment effects
@@ -22,7 +23,7 @@ Gungen owns firearm model and action data; Deadvox validates and consumes that e
 
 Mechanical state—cycle, ammunition and magazine contents—belongs to the simulation and must not depend on renderer timing. Animation, sound, muzzle flash, recoil display and flying cases are presentation. Cycle differences that change weapon behavior remain firearm data. Timelines and ballistic figures are gameplay estimates, not measured firearm specifications.
 
-Trigger selection is content, independent of the mechanical cycle: a self-loading action does not imply held-trigger fire. Semi-automatic pulls use input edges, while the simulation's cycle still prevents overlapping shots; absent selection retains automatic cadence for existing cycling guns. See `src/core/schema.ts`, `ActionSchema`, `src/game/firearmTrigger.ts`, `FirearmTrigger`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
+Trigger selection is content, independent of the mechanical cycle: a self-loading action does not imply held-trigger fire. Semi-automatic pulls use input edges, while the simulation's cycle still prevents overlapping shots; absent selection retains automatic cadence for existing cycling guns. See `src/core/schema/models.ts`, `ActionSchema`, `src/game/firearmTrigger.ts`, `FirearmTrigger`, and `src/game/firearmHandling.ts`, `FirearmMechanics`.
 
 A pistol needs two palm contacts without a shoulder seat: treating its grip as a long-gun stock turns the muzzle away from aim. Hip follows a compressed ready technique, with elbows down, forearms forward and a level muzzle; ADS carries the gun on the firing hand's eye, within fixed arm reach, with shoulders and head level. The figure's ADS torso and head rolls lift a long gun's dominant shoulder under its stock; a free-held gun follows the eye, so those rolls carry it to the off side and read as the other hand, and the pistol's content overrides them. A long gun keeps the view's eye, where its stock seat brings the cheek. See `src/core/heldPose.ts`, `heldAdsEye`; and `src/core/adsView.ts`, `adsRollDegrees`. Contacts sit on the grip rather than beside the slide, so closed fingers wrap the front strap and the support hand cups the firing hand. Both holds must fit fixed anatomy, not stretched arms or wider joint limits. An authored elbow bend hint uses the existing solver's bend-side input: an outward-only hint can fold a compressed forearm back toward the chest rather than forward from the elbow. See `src/core/heldPose.ts`, `heldFirearmTransform`, and `src/render/heldPresentation.ts`, `HeldPresentation.solve`.
 

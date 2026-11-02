@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change the test house, its garage, its fixture stock or its debug gate
   - you change parking bays or where the test house places vehicles
   - you change the haven's rooms, landscape, lake or south-facing view
@@ -58,7 +59,7 @@ water rules, including swimming and drowning, rather than a decorative barrier.
 The debug wrapper preserves the home's water surface: a debug visit must not dry the
 lake out. Its range placement is independent of the landscape bounds so enlarging the
 view cannot move the rack out of reach at startup. See `src/game/worldSetup.ts`,
-`DebugTestHouseSite`, and `src/core/schema.ts`, `handlingRange`.
+`DebugTestHouseSite`, and `src/core/schema/layouts.ts`, `handlingRange`.
 
 Debug floors reserve their derived footprints against authored vegetation before
 streaming. Sharing those rectangles avoids trees in the firing corridor or catalogue
@@ -155,7 +156,7 @@ look. Keep the shelf reachable behind the player's starting point instead of cro
 their row. Its independent placement remains a showroom slot so fixture stock, focus,
 house power and deck validation retain their existing owners rather than gaining a runtime
 staging overlay. Content owns the placement; see
-`src/content/base/layouts-test-house.jsonnet`, `showroom`; `src/core/schema.ts`,
+`src/content/base/layouts-test-house.jsonnet`, `showroom`; `src/core/schema/layouts.ts`,
 `ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
 The catalogue needs no per-feature slot because its purpose is to expose furniture

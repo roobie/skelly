@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
@@ -192,12 +193,12 @@ current settings here. See `BLOCK_SIZE` in `src/core/scale.ts`.
 The player's own movement, load and aim tuning belongs in one content home,
 not split between sensory tuning and code, so mods can retune the player without
 changing mechanisms. See `src/content/base/player.jsonnet`, `player`;
-`src/core/schema.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
+`src/core/schema/player.ts`, `PlayerSchema`; `src/game/player.ts`, `playerTuning`,
 `movementPace` and `steer`; and `src/core/aim.ts`, `AimController`.
 Saved look offsets must obey the geometric ceiling shared by all valid player
 tuning, not the core pack's chosen tuning: impossible offsets can overflow on
 advancement even when the saved numbers are finite. See `src/core/aim.ts`,
-`assertAimState`, and `src/core/schema.ts`, `PlayerSchema`.
+`assertAimState`, and `src/core/schema/player.ts`, `PlayerSchema`.
 
 ### Crouching and lying prone
 
@@ -250,7 +251,7 @@ crouch or gain a type-specific exception.
 
 A restored stance must take its height from admitted content rather than saved
 body dimensions. See `src/core/saveFormat.ts`, `decodeSave`;
-`src/game/session.ts`, `setStanceHeight`; `src/core/schema.ts`, `PlayerSchema`
+`src/game/session.ts`, `setStanceHeight`; `src/core/schema/player.ts`, `PlayerSchema`
 and `SenseSchema`; `src/core/zombies.ts`, `loweredStanceTuning`;
 `src/content/base/camp.libsonnet`, `camp_wall_run_crouch_hole`; and
 `src/core/spawnClearance.ts`, `zombieBodyDimensions`.
@@ -263,7 +264,7 @@ and tint belong to content too, so another fence needs no identity-based engine 
 Open wire geometry leaves holes in rendered shadows rather than casting a wall's
 shadow. Interaction requires both physical and visual access: seeing a container
 through wire does not let the player loot it, and passable foliage still hides it.
-See `src/core/schema.ts`, `BlockSchema`; `src/core/collision.ts`, `worldOpaque`;
+See `src/core/schema/blocks.ts`, `BlockSchema`; `src/core/collision.ts`, `worldOpaque`;
 `src/core/wireMesh.ts`, `wirePolygons`; and `src/core/interactionPick.ts`, `pickInteractionTarget`.
 
 Fence supports make ends, isolated cells, corners and junctions read as built structure rather than
@@ -341,7 +342,7 @@ to a maximum, and stops rising at about wardrobe size, so a small box is quick a
 tall furniture takes the full time. One content number sets where it stops, which
 keeps the rule cheap to tune. Its known limit is that a later container larger than
 that point searches no slower than a wardrobe; adding one is the trigger to revisit
-the rule. See `src/core/blockEntities.ts`, `searchTime`, and `src/core/schema.ts`,
+the rule. See `src/core/blockEntities.ts`, `searchTime`, and `src/core/schema/inventory.ts`,
 `InventoryTuningSchema`.
 
 Bound each compressed simulation step so one frame does not become arbitrarily
@@ -487,7 +488,7 @@ strength, so no code or flag names a kind that cannot be ruined; content keeps a
 that matters, such as a scenario goal or a needed ladder, by authoring a high minimum
 strength and durability. Worldgen may place a piece already worn, within a range its
 content authors, so an abandoned place reads as used; it never places a piece ruined,
-because a ruined piece is gone. See `src/core/schema.ts`, `FurnitureSchema`, and
+because a ruined piece is gone. See `src/core/schema/furniture.ts`, `FurnitureSchema`, and
 `src/core/blockEntities.ts`, `BlockEntities.conditionOf` and `BlockEntities.wear`.
 
 A damaged piece other than a dead human shows its damage in steps its material authors,
@@ -496,7 +497,7 @@ material from one furniture material table, so a mod retunes how a kind of furni
 wears without touching each piece. The hint's word comes from the condition band table
 items read, and it shows no number, following `INTERFACE.md`, "Text". A view redraws a
 piece only when its damage crosses into a different step, not on every blow. See
-`src/core/schema.ts`, `FurnitureMaterialSchema`, `src/core/blockEntities.ts`,
+`src/core/schema/furniture.ts`, `FurnitureMaterialSchema`, `src/core/blockEntities.ts`,
 `BlockEntities.wearOf`, `src/render/furniture.ts`, `FurnitureMeshes.damageLook`, and
 `src/core/items.ts`, `damageWord`.
 
@@ -518,7 +519,7 @@ beside owned equipment. See `src/content/base/figures-player.jsonnet`, `outfits`
 `src/render/playerFigure.ts`, `dress`, and `src/render/corpseFigures.ts`, `CorpseFigures`.
 
 The body stays furniture so its gameplay identity does not depend on its drawing.
-See `src/core/schema.ts`, `FurnitureSchema` and `FigureSchema`.
+See `src/core/schema/furniture.ts`, `FurnitureSchema` and `FigureSchema`.
 
 A dead human shows no material damage steps because its look belongs to the figure;
 the hint still names the damage band so the player can judge its condition.
@@ -661,7 +662,7 @@ because rearranging a room should not require destroying its contents. See `src/
   under it. The size cap does not apply to a cover, because a rug rolls up and
   the secret hatch is wider than the cap allows a piece to be. A cover is never
   fitted, because the room it hides must stay openable. See
-  `src/core/schema.ts`, `FurnitureSchema`, and `src/core/content.ts`,
+  `src/core/schema/furniture.ts`, `FurnitureSchema`, and `src/core/content.ts`,
   `checkPaletteObjectRefs`.
 - **A carried piece carries its contents.** An explosive inside a carried
   piece goes off at its carrier, because the piece is in their hands, not where
@@ -776,7 +777,7 @@ are a separate decision. The ground around the wall is flat at the city floor, b
 gauntlet is a confined playtest area and relief beyond the wall would only be
 unreachable scenery; a distant ridge can return later as an authored feature. The
 scenario opts in, so other sites keep their natural ground; see `src/core/citySite.ts`,
-`surface` and `src/core/schema.ts`, `flatSurroundings`.
+`surface` and `src/core/schema/scenarios.ts`, `flatSurroundings`.
 See `src/core/cityPlan.ts`, `cityPerimeter`, `perimeterGaps` and `perimeterIssues`. City size, scarcity and
 pressure need in-game judgment; multi-day pressure growth and needs-rate authoring
 remain outside #671's first version.
@@ -829,7 +830,7 @@ resource names, as the police armoury's rack is (below). Other stops are few and
 hand-placed, so review and play own their reach, but an edit that cuts one of them off
 fails no check, and saying so keeps that risk in view. Each stop has its own role, and the player
 may visit them in any order, so finding the stock rewards exploring rather than
-following a rail. See `src/core/schema.ts`, `ScenarioSchema`;
+following a rail. See `src/core/schema/scenarios.ts`, `ScenarioSchema`;
 `src/core/scenarioComposition.ts`, `scenarioCompositionIssues` and
 `composeScenario` and `eventIssues`; `src/core/placementLoot.ts`,
 `placementLootIssues`; `src/core/inventory.ts`, `furnish`; and
@@ -881,7 +882,7 @@ area, while authored markers stay separate. The policy is the scenario's
 `population` content, so any scenario tunes its street pressure without code.
 The gauntlet places one horde rather than one per building group, and stragglers
 carry more of the street pressure. This reuses population and spawn
-admission instead of inventing an enemy-density runtime. See `src/core/schema.ts`,
+admission instead of inventing an enemy-density runtime. See `src/core/schema/scenarios.ts`,
 `ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/gauntlet.ts`,
 `gauntletPopulation`; `src/core/settlementSpawns.ts`, `settlementZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
@@ -1357,7 +1358,7 @@ moves cannot disagree; explicit player placement remains the player's choice.
 Content owns how much
 packing benefit outweighs readability, so mods can retune that trade-off. See
 `src/core/items.ts`, `findSpot` and `largestFreeRectangleArea`, and
-`src/core/schema.ts`, `InventoryTuningSchema`.
+`src/core/schema/inventory.ts`, `InventoryTuningSchema`.
 
 A soft container such as a bag isn't rigid, so packed empty it is plausibly
 smaller than what it holds when used: its footprint may be smaller than its
@@ -1369,7 +1370,7 @@ belongs to the definition rather than saved instance state. Free nesting is
 plausible and realistic, but not worth its complexity yet; one loaded-case level
 keeps storage manageable without excluding packed cases. Packing and filling
 must obey the same limit so move order cannot create extra storage. See
-`src/core/schema.ts`, `ItemSchema`; `src/core/inventoryScale.ts`,
+`src/core/schema/items.ts`, `ItemSchema`; `src/core/inventoryScale.ts`,
 `rigidPocketScaleIssue`; and `src/core/inventory.ts`, `Inventory.gridPlacement`.
 
 The ammo can uses the ordinary cuboid item presentation and shed loot, because
@@ -1465,7 +1466,7 @@ surprise weapon use. See `src/game/canOpening.ts`, `openingTargetForHand`,
 
 An opened can retains its vessel so opening and eating cannot teleport food or
 leave an empty shell in a different place. Food exposure histories belong to
-servings, not measured fuel, so liquid transfer does not mix them. See `src/core/schema.ts`,
+servings, not measured fuel, so liquid transfer does not mix them. See `src/core/schema/items.ts`,
 `ItemSchema`, `src/game/unpacking.ts`, `Unpacking.complete`, and
 `src/game/survival.ts`, `Survival.finishConsuming`.
 
@@ -1491,7 +1492,7 @@ choice so sharpening does not cause a surprise swing. Aimed wheel activation
 uses the held blade. Repair recipes retain the shared content-owned restoration,
 skill and work-rate contract; their activation selector keeps held work out of
 the craft list. See `src/game/sharpening.ts`, `Sharpening`,
-`src/game/itemActions.ts`, `ItemActionSelection`, `src/core/schema.ts`,
+`src/game/itemActions.ts`, `ItemActionSelection`, `src/core/schema/recipes.ts`,
 `RecipeSchema`, and `src/ui/craftReadout.ts`, `craftRows`.
 
 Craft-list repairs, crafting and disassembly gather reachable supplies because
@@ -1758,7 +1759,7 @@ See `src/core/content.ts`, `checkMaterialCycles`.
 
 Recipe knowledge may come from a book, a skill level, either, or the starting
 set. A book shortcuts the skill grind; a skilled character does not need the
-book. Knowledge does not waive crafting requirements. See `src/core/schema.ts`,
+book. Knowledge does not waive crafting requirements. See `src/core/schema/recipes.ts`,
 `RecipeSchema`, and `src/core/crafting.ts`, `requirementStatus`.
 
 Skill discovery writes to existing recipe knowledge on level-up rather than
@@ -1936,7 +1937,7 @@ or changing stance. Physical standoff is independent of optical eye relief:
 changing an optic must not pull a handgun back into the shooter's face. Camera
 framing must not supply anatomical reach. See `src/core/heldPose.ts`,
 `heldFirearmTransform` and `heldAdsStandoffMetres`; `src/core/playerLookPose.ts`,
-`playerHeldSeatFrame`; `src/core/schema.ts`, `GunModelSchema`;
+`playerHeldSeatFrame`; `src/core/schema/models.ts`, `GunModelSchema`;
 `src/content/base/models-firearms.libsonnet`; and
 `src/content/base/items-pistol.jsonnet`, `adsStandoffByPitch`.
 
@@ -2076,7 +2077,7 @@ gear additions independent of human renderers and equipment ownership. The same
 human must serve different equipment owners without manufacturing inventory in
 the renderer. Attachment does not decide whether a garment needs rigid segments
 or skin deformation; that choice needs a visual comparison before multiplying
-clothing assets. See `src/core/schema.ts`, `ItemSchema` and `FigureSchema`;
+clothing assets. See `src/core/schema/items.ts`, `ItemSchema` and `FigureSchema`;
 `src/render/playerFigure.ts`, `WornPresentation` and `PlayerMeshes`.
 
 Carry and armour follow the torso's under-layer so changes to the body or clothing
@@ -2113,7 +2114,7 @@ before trousers and a grip reaches gloves before a sleeve. See `src/core/wear.ts
 **Eyes slot.** Goggles take their own slot beside the head, so night-vision goggles
 stack with a helmet or a headlamp instead of making the player choose between seeing
 in the dark and head protection or a lamp. Both show on the figure's head. See
-`src/core/schema.ts`, `WearableSchema`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
+`src/core/schema/items.ts`, `WearableSchema`, and `src/render/playerFigure.ts`, `PlayerMeshes`.
 
 A worn item stops a share of a hit before flesh damage and bleeding are resolved,
 set per damage kind because real armour is built against particular threats.
@@ -2127,7 +2128,7 @@ The shares, burden, warmth and durability are content tuning, not armour rules.
 Later Vest-slot armour, such as plate carriers and ballistic vests, will carry
 strength in blunt and pierce because hard plates spread a blow and stop a point;
 that is why protection is per kind rather than one number. See
-`src/core/schema.ts`, `WearableSchema`; `src/content/base/items-wearables.libsonnet`,
+`src/core/schema/items.ts`, `WearableSchema`; `src/content/base/items-wearables.libsonnet`,
 `items`.
 
 Armour wears by the whole blow because it took the whole blow. Protection holds
@@ -2205,7 +2206,7 @@ for it, and it shows even with film off. Its strength needs a playtest. The held
 because the body is part of what the drugged player sees, and keeping the hands apart
 would make every screen effect choose whether to cover them. The HUD stays sharp
 because it is drawn on top of the game view. Whether a stacked dose can be dangerous
-and whether dependence is ever modelled are later rulings. See `src/core/schema.ts`, `AnalgesicSchema`; `src/core/pain.ts`,
+and whether dependence is ever modelled are later rulings. See `src/core/schema/items.ts`, `AnalgesicSchema`; `src/core/pain.ts`,
 `drugVignette`; and `src/render/moodOutput.ts`, `moodDrugSample`.
 
 The optional stats readout shows felt pain and its acute, injury and relief
@@ -2221,7 +2222,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   describes the injury, so a bite can wrestle and still pierce. Keeping them
   separate prevents an injury label from granting passage through wire. Content
   validation requires the choice rather than inferring it from an actor or item
-  identity. See `src/core/meleeMotion.ts`, `MELEE_MOTIONS`; and `src/core/schema.ts`,
+  identity. See `src/core/meleeMotion.ts`, `MELEE_MOTIONS`; and `src/core/schema/items.ts`,
   `WeaponSchema`, `UnarmedAttackSchema` and `ZombieMovesSchema`.
 
   Misses and obstructions still spend stamina and cooldown, so swinging has a cost
@@ -2329,7 +2330,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   remain harder to control. Complete per-gun overrides avoid mixing fields from
   different guns; the tuning remains content-owned so an author can change the
   response without changing its mechanism. See `src/game/firearmHandling.ts`,
-  `FirearmMechanics.skillZeroHandlingFor`, and `src/core/schema.ts`, `SkillSchema`.
+  `FirearmMechanics.skillZeroHandlingFor`, and `src/core/schema/skills.ts`, `SkillSchema`.
 
   Lower stances are steadier because the body is braced. Mean-reverting drift
   avoids unbounded sway, and smoothing avoids fixed-tick twitch. Sharing gait
@@ -2382,7 +2383,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
 
   A fitted optic owns the aiming sight line because its mount can obstruct the irons. Visible placement and aiming must share the connector transform so the view and shot remain aligned; see `src/core/firearmSight.ts`, `sightedFirearmModel`. Magnification changes the local sight picture, not the weapon or its ballistics, so zoom selection stays outside saved item and replay state. Content-controlled per-weapon memory lasts for the play session; a fresh session starts at the authored power rather than making a camera preference authoritative simulation state. While an optic is aimed, look sensitivity divides by its applied power so the magnified picture keeps a constant on-screen angular speed; this applies to the surrounding view too because the player has one view direction. See `src/game/opticZoom.ts`, `OpticZoom.appliedPower`; `src/game/input.ts`, `Input.setLookSensitivity`; `src/core/opticView.ts`, `mountedOptic`, `opticViewSettings` and `projectLensAperture`; and `src/render/opticLens.ts`, `OpticLensRenderer`. The digital thermal optic's explicit unavailable-view content mark keeps it out of loot admission, fitting and ADS until a thermal view exists; the mark makes the omission visible and restores its ordinary loot admission when that view lands. Exposing an optic without its defining view would mislead the player. See `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`; `src/content/base/economy.libsonnet`, `authorItem`; and `src/content/base/items-attachments.libsonnet`, `items`.
 
-  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
+  An attachment is an atom, so its mass is the mass authored for its item, and a fitted gun weighs the sum of its own parts and its fitted items; see `things/README.md`, "Rules". Every atom's item `weight` is authoritative even when atoms share a visual model. Assemblies author no competing item total: their model carries authored body-part masses, with replaceable geometry owned by the fitted child item instead. See `src/core/items.ts`, `typeWeightGrams`, and `src/core/modelMass.ts`, `modelBodyMassKg`. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear, and foregrips affect aim, stance and wear. Effects are tagged with their model's attachment kind, each kind authors every effect it has, wear included as zero for none, and a suppressor model always exports its noise factor: a missing value is a content error rather than a silent neutral default, so an unfinished attachment cannot ship as one that does nothing. Fitting either suppressor requires Firearms Combat 4; removing one has no skill gate. See `src/core/schema/items.ts`, `FirearmAttachmentEffectsSchema` and `AttachmentSchema`; `src/core/content.ts`, `checkItemAttachmentEffects`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`. A powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
 
 - **Military loot (3.2):** Progression admission has one owner under `DESIGN.md`, "Loot", so recovery cannot bypass source restrictions.
 - **Spent cases per block:** Cases must never end inside terrain; use only clear,
@@ -2433,7 +2434,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   cartridge exists, the nearest real one stands in. Loudness, pitch and tonal balance
   belong to content so listening adjustments need no weapon-specific code. Bass
   shaping must retain the recorded attack rather than muffling the whole report;
-  see `src/game/audio.ts`, `GameAudio.startSource`, and `src/core/schema.ts`,
+  see `src/game/audio.ts`, `GameAudio.startSource`, and `src/core/schema/models.ts`,
   `SoundSchema`. Keep the original recordings untouched so provenance remains
   intact. A synth stays only where it already reads as its gun; a suppressed shot
   keeps its synth until a recording of one exists.
@@ -2456,7 +2457,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   re-cocks is a fact of the gun's mechanism, not of its kind, so content decides it per
   gun and a new double-action gun needs no code. The fallen hammer is saved, so a load
   cannot re-arm a dead trigger. See `src/game/firearmHandling.ts`, `dropHammer`, and
-  `src/core/schema.ts`, `triggerCocks`.
+  `src/core/schema/items.ts`, `triggerCocks`.
 - **Bolt strokes per phase.** Opening and closing a bolt are separate actions the
   player can stop between, so each phase plays its own cut; one whole-cycle recording
   would play a close the player has not made. See `src/game/firearmHandling.ts`,
@@ -2485,12 +2486,12 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   differ without weapon-name exceptions or a later schema replacement. Missing
   metadata must fail admission rather than hide incomplete content behind a default.
   Resistance precedes the strength gate so an ineffective blow does not accumulate
-  damage. See `src/core/schema.ts`, `BlockMaterialSchema`; `src/core/content.ts`,
+  damage. See `src/core/schema/blocks.ts`, `BlockMaterialSchema`; `src/core/content.ts`,
   `buildRegistry`; and `src/core/blockDamage.ts`, `bashBlock`.
 - **Rubble preserves wreckage.** A material's fallen form is solid rubble because
   wreckage should still provide cover; falling alone is not loose salvage. Strikes
   and deconstruction are the intended routes to loose resources. See
-  `src/core/schema.ts`, `BlockMaterialSchema`.
+  `src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 - **Ruined furniture.** Refusing destruction when its drops cannot fit conserves
   supplies without stranding them. Destructive dependants use spatial ordering so
   arrival's allocation order cannot decide who takes drop capacity first. A fixed
@@ -2519,7 +2520,7 @@ application rather than weapon-class special cases. See `ZombieSchema` in
   and its corpse sinks. The action re-checks reach and the tool when it ends, so
   walking away or cancelling leaves the body lying. Like all handling, an action
   in progress is not saved. The times and the quality are content on the zombie
-  type. See `src/core/schema.ts`, `ZombieSchema` (`downed`); `src/game/downedBody.ts`,
+  type. See `src/core/schema/zombies.ts`, `ZombieSchema` (`downed`); `src/game/downedBody.ts`,
   `downedBodyPlan`; `src/core/zombies.ts`, `ZombieSystem.finishDowned`; and
   `src/game/session.ts`, `standingZombieBodies`.
 - **Gore is presentation only.** Every damaging hit sprays blood from the
@@ -2793,11 +2794,11 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 
 - **Pulling the pin is an action.** The held grenade's primary action pulls the pin, or puts it back, and says which; the item's details show the pin, or a burning fuse. Arming takes a deliberate act, so a grenade is never live by accident. See `src/core/explosive.ts`, `Fuses.togglePin`, and `src/game/play.ts`, `togglePin`.
 - **The fuse lights when the hand lets go.** An unpinned grenade lights the moment it is anywhere but a hand: thrown, dropped, or put away, because nothing holds the lever once the grip opens. A pinned grenade that is thrown remains a dud, and re-pinning before release makes it safe. There is no cooking, and a lit fuse cannot be stopped. Pin and fuse are saved on the item, including while its presentation arc is playing. The fuse counts down in simulation time inside the zombies system's step rather than in a system of its own, because the scheduler's set of systems is part of the save. See `src/core/explosive.ts`, `Fuses.advance`, and `src/game/session.ts`, `detonate`.
-- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `src/core/schema.ts`, `LeverModelSchema`; `src/content/base/models-items.jsonnet`; and `src/render/leverProps.ts`, `LeverProps`.
-- **The pin shows on the model until it is pulled; the lever stays on until release.** A pulled pin leaves the model and comes back when it is put back in, because our rules let the player re-pin a held grenade, so the model has to show which state it is in. The lever stays on after the pin is out, because on a real grenade the hand keeps the lever down; the lever flies and the fuse starts when the grip opens. See `src/core/schema.ts`, `PinModelSchema`, and `src/render/itemLook.ts`, `itemLook`.
+- **The lever flying off is the only sign of a lit fuse.** When the fuse lights, the grenade is drawn without its lever and a short-lived copy of the lever springs away, because the lever flying off is how a real live grenade shows itself. There is no smoke, spark or glow: a real fragmentation fuse burns inside the body, and a visible one would look wrong and would also set the look of every fused throwable. Any fused throwable whose model names a lever part takes the same path, and its launch and lifetime are content. See `src/core/schema/models.ts`, `LeverModelSchema`; `src/content/base/models-items.jsonnet`; and `src/render/leverProps.ts`, `LeverProps`.
+- **The pin shows on the model until it is pulled; the lever stays on until release.** A pulled pin leaves the model and comes back when it is put back in, because our rules let the player re-pin a held grenade, so the model has to show which state it is in. The lever stays on after the pin is out, because on a real grenade the hand keeps the lever down; the lever flies and the fuse starts when the grip opens. See `src/core/schema/models.ts`, `PinModelSchema`, and `src/render/itemLook.ts`, `itemLook`.
 - **It goes off where it is:** at its simulation position, whether the grenade is in a pile or with whoever picked it up. A render-only throw arc never moves its fuse or detonation point. See `detonationPoint` and `detonate` in `src/game/session.ts`.
 - **The blast kills most of the way to its radius.** It reaches every body whose centre it sees, falling to nothing at its radius; a wall between stops it. It kills a shambler over most of its radius and severs limbs nearly to its edge, and it strikes the limbs before the region that kills, so a close blast tears limbs off before it drops the body: the giblets are the point. Which region kills is one rule shared with individual hits, so a blast and a hit never disagree on it. Its own push falls off with its damage and throws the severed parts outward. A full-strength level throw clears the blast, while fragments extend beyond it as a separate hazard; a short throw can still put the thrower in the blast. See `src/core/explosive.ts`, `blastShare`, and `src/core/zombies.ts`, `lethalRegion` and `ZombieSystem.detonate`.
-- **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ZombieSystem.firePellets`; and `src/core/schema.ts`, `ExplosiveSchema`.
+- **Fragments are seeded shots.** They are rays through the same hit test as shotgun pellets, so walls and bodies stop them and fewer reach a farther body. One fragment severs a shambler's limb, and they reach past the blast, so a crowd around the landing point comes apart. A full-strength throw carries the player beyond fragment reach; shorter throws can still expose the player to fragments. Each ray is traced against every body in range, so the count sets the cost of the moment; the schema caps it. See `src/core/explosive.ts`, `fragmentDirections`; `ZombieSystem.firePellets`; and `src/core/schema/items.ts`, `ExplosiveSchema`.
 - **The player takes the same falloff, line of sight and fragments** in a simpler model: one blast hit to the torso, and fragments traced against a body box, which zombie bodies do not shield. A short throw hurts the thrower. See `src/core/explosive.ts`, `fragmentHitsOnBody`.
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
 - **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
@@ -2812,7 +2813,7 @@ Zombie types should compose shared mechanisms rather than require type-specific
 code. The planned ability components are `leap`, `scream`, `explode`,
 `acidSpit`, `heatAura`, `lightEmitter`, `armoured`, `regenerate` and `burrow`;
 this is design intent, not an inventory of implemented systems. The picklist in
-`src/core/schema.ts`, `ZOMBIE_ABILITIES`, admits an ability only once its runtime
+`src/core/schema/zombies.ts`, `ZOMBIE_ABILITIES`, admits an ability only once its runtime
 mechanism lands, because a content value no system reads is a silent no-op.
 
 | Tier | Type | Gist |
@@ -2831,11 +2832,11 @@ mechanism lands, because a content value no system reads is a silent no-op.
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
-Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns, the crisis HQ's markers and the lab's research level, because the HQ is a military site whose threat should be mostly soldiers and the research level is where the lab's threat changes kind (`DESIGN.md`, "Gauntlet"); no other place that merely looks military takes them; `src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
+Zombie types are content definitions used by shared systems; choose behavior through content properties rather than type-id cases. `src/core/schema/zombies.ts`, `ZombieSchema`, defines those properties, and `src/core/zombies.ts`, `ZombieSystem.emitFootsteps`, uses the declared footstep family. The soldier appears only at military-camp markers, explicit camp spawns, the crisis HQ's markers and the lab's research level, because the HQ is a military site whose threat should be mostly soldiers and the research level is where the lab's threat changes kind (`DESIGN.md`, "Gauntlet"); no other place that merely looks military takes them; `src/core/settlementSpawns.ts`, `ordinarySpawnWeights`, excludes authored-only kinds from ordinary selection.
 
 A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
-The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema.ts`, `ZOMBIE_MODEL`.
+The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema/zombies.ts`, `ZOMBIE_MODEL`.
 
 ### Obstacle hops
 
@@ -2845,7 +2846,7 @@ modest hop apex under shared world gravity rather than letting enemies clear
 containment walls. Longer airtime is accepted; a separate enemy gravity would
 make the same world read differently for different bodies. See
 `src/content/base/zombies.jsonnet`, `jumpMetresPerSimSecond`,
-`src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`,
+`src/core/schema/zombies.ts`, `ZombieSchema`, and `src/core/zombies.ts`,
 `ZombieSystem.stepZombieBody` and `canJumpObstacle`.
 
 ### Acid flight
@@ -2886,7 +2887,7 @@ repeat nor skip a firing. Only the calendar and that record decide firing, never
 column loading or rendering, following `docs/decisions/0008-deterministic-world.md`,
 "Decision". Rules stop once the run is won, because a run's timestamps end at its
 completion. Rule ids key the record, so validation rejects duplicates.
-See `src/core/eventRules.ts`, `advanceEventRules`, and `src/core/schema.ts`,
+See `src/core/eventRules.ts`, `advanceEventRules`, and `src/core/schema/scenarios.ts`,
 `EventRuleSchema`.
 
 The first effect releases a horde from an authored world point toward where the
@@ -2900,7 +2901,7 @@ unloaded terrain, it waits like any unloaded actor until the abstract tier of
 
 ### Amalgam body and damage (#308)
 
-The amalgam's distinct sound-event identities reuse shambler recordings; an authored type pitch multiplier overrides the ordinary body-height rule so the fused creature can keep a distinct low voice. See `src/content/base/zombies.jsonnet`, `soundPitchMultiplier`, `src/core/schema.ts`, `ZombieSchema`, and `src/game/session.ts`, `admitSound`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents. It answers what only needs the creature's size: spawn clearance, zombie-to-zombie separation and its stance on the terrain floor, where a conservative box costs nothing visible and the flesh nearly fills the footprint. Terrain, the player and shots meet the flesh itself ("Exact collision" below). The amalgam's no-jump rule is authored in its type data, so fence and container blocking does not depend on the jump probe's position relative to its envelope. See `src/content/base/zombies.jsonnet`, the amalgam type; `src/core/schema.ts`, `ZombieSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody` and `terrainStance`; `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
+The amalgam's distinct sound-event identities reuse shambler recordings; an authored type pitch multiplier overrides the ordinary body-height rule so the fused creature can keep a distinct low voice. See `src/content/base/zombies.jsonnet`, `soundPitchMultiplier`, `src/core/schema/zombies.ts`, `ZombieSchema`, and `src/game/session.ts`, `admitSound`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents. It answers what only needs the creature's size: spawn clearance, zombie-to-zombie separation and its stance on the terrain floor, where a conservative box costs nothing visible and the flesh nearly fills the footprint. Terrain, the player and shots meet the flesh itself ("Exact collision" below). The amalgam's no-jump rule is authored in its type data, so fence and container blocking does not depend on the jump probe's position relative to its envelope. See `src/content/base/zombies.jsonnet`, the amalgam type; `src/core/schema/zombies.ts`, `ZombieSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody` and `terrainStance`; `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
 
 The amalgam's authored body scale is shared by its rendered body, collision envelope, posed hit regions and melee reach, so visible and gameplay size cannot drift apart. See `src/content/base/zombies.jsonnet`, `bodyScale`; `src/core/amalgamFigure.ts`, `amalgamFigureForType`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
 
@@ -2916,7 +2917,7 @@ A surviving amalgam attacks with a tentacle that strikes in a straight line from
 
 The line starts at a fixed interior point of the core at rest pose, so the simulation's check and the rendered tentacle start in the same place; the render follows the posed core, so the two part only during a hit flinch. A fixed point also keeps a change in the player's bearing from moving the root between the core's lobes. The tentacle extends along the line through wind-up and strike, then retracts, capped by the same reach; it adds no collision, hit region or saved state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/amalgamFigure.ts`, `amalgamStrikeOrigin`; `src/render/amalgamTentaclePose.ts`, `amalgamTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
-A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hole. The hole starts at the flesh voxel the hit test struck ("Exact collision" below), so there is no second hit test. A severed member's voxels went with the member, so a shot passes through where they were, as the hit test and the renderer do. Every damaging hit takes at least the struck voxel, and the type's carving rule adds every visible flesh voxel within a radius that grows with the hit's damage, up to a cap. The rule is tuned so a full close shotgun blast to the centre knocks out a chunk several voxels across, which reads on a body the amalgam's size; a lighter hit takes less, down to the struck voxel. One shot's pellets make one hole per amalgam, sized by their summed damage and centred on the struck voxel nearest their middle: one shot reads as one chunk, and pellets along one line can't tunnel through the body. The core voxel the tentacle roots in is never removed, so the core always keeps flesh. See `src/content/base/zombies.jsonnet`, the amalgam's `carving`; `src/core/schema.ts`, `ZombieSchema`; `src/core/amalgamCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
+A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hole. The hole starts at the flesh voxel the hit test struck ("Exact collision" below), so there is no second hit test. A severed member's voxels went with the member, so a shot passes through where they were, as the hit test and the renderer do. Every damaging hit takes at least the struck voxel, and the type's carving rule adds every visible flesh voxel within a radius that grows with the hit's damage, up to a cap. The rule is tuned so a full close shotgun blast to the centre knocks out a chunk several voxels across, which reads on a body the amalgam's size; a lighter hit takes less, down to the struck voxel. One shot's pellets make one hole per amalgam, sized by their summed damage and centred on the struck voxel nearest their middle: one shot reads as one chunk, and pellets along one line can't tunnel through the body. The core voxel the tentacle roots in is never removed, so the core always keeps flesh. See `src/content/base/zombies.jsonnet`, the amalgam's `carving`; `src/core/schema/zombies.ts`, `ZombieSchema`; `src/core/amalgamCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
 
 Holes change where shots land and where the body fits, never how much it can take: a hole shows damage the regions already took, so damage, region health and severing are as they would be without holes. `test/amalgam.test.ts` compares the hit that carves with the same hit without holes. A hole is simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `wirePayloadSchema`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
 
@@ -2946,7 +2947,7 @@ height-extents table: its upkeep costs more than the collision it avoids. See
 
 **Movement and corners.** A type's `locomotion` says how it moves relative to its facing. A `forward` walker, as every shambler type is, moves only where it faces, so it turns before it heads somewhere new. The amalgam is `omnidirectional`: it moves toward its goal at once while its facing turns toward the goal at the type's turn rate, so its sight, its reach and its look still follow the facing. A body its size that must face where it walks spends its time turning before it can move off a wall or toward a player beside it. Its pose has no gait, so moving sideways or backwards shows no foot slide.
 
-It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. `ZombieSystem.wallAhead` notices a wall by moving a body's shape the lookahead distance along its aim and testing that shape against terrain, so a block corner the centre line clears but the body catches still counts as contact. A shambler's body box and the amalgam's flesh both pass that shape-along-aim test, the amalgam's shape being its flesh. A shambler then slides off to a seeded side and sometimes wanders, while at a new contact the amalgam slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema.ts`, `ZombieSchema`; `src/content/base/zombies.jsonnet`, the amalgam type; and `src/core/zombies.ts`, `steer`, `ZombieSystem.wallAhead` and `ZombieSystem.openSide`.
+It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. `ZombieSystem.wallAhead` notices a wall by moving a body's shape the lookahead distance along its aim and testing that shape against terrain, so a block corner the centre line clears but the body catches still counts as contact. A shambler's body box and the amalgam's flesh both pass that shape-along-aim test, the amalgam's shape being its flesh. A shambler then slides off to a seeded side and sometimes wanders, while at a new contact the amalgam slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema/zombies.ts`, `ZombieSchema`; `src/content/base/zombies.jsonnet`, the amalgam type; and `src/core/zombies.ts`, `steer`, `ZombieSystem.wallAhead` and `ZombieSystem.openSide`.
 
 Carving must expose flesh-coloured hole walls from every side, and a corpse must retain its visible wounds. Flying flesh and landing splats are presentation, not extra simulation entities: they make the hit readable without burdening saves or combat with decorative debris. Keep flesh's presentation budget independent of bodies and severed limbs so carving cannot erase those visual witnesses. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 
@@ -3024,10 +3025,10 @@ crouch rules. See `src/core/zombies.ts`, `hearingTier`, `hearVocalNoise` and
 - For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `packages/deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/zombies.ts`, `ZombieSystem.updateAttention` and `ZombieSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
-- **Idle voices:** Each nearby enemy lengthens an idle cue's interval, so a crowd does not become a steady stream of idle audio that gets to be too much. Radius and the density curve are authored per type. See `src/core/zombies.ts`, `ZombieSystem.updateIdleSound`; `src/core/schema.ts`, `ZombieSchema`; and `src/content/base/zombies.jsonnet`, the shambler type.
+- **Idle voices:** Each nearby enemy lengthens an idle cue's interval, so a crowd does not become a steady stream of idle audio that gets to be too much. Radius and the density curve are authored per type. See `src/core/zombies.ts`, `ZombieSystem.updateIdleSound`; `src/core/schema/zombies.ts`, `ZombieSchema`; and `src/content/base/zombies.jsonnet`, the shambler type.
 - **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. A per-body cry cooldown stops ping-pong when horde members become uncommitted again: shamblers are slow to react. Recruitment stays loudness-driven without hop damping, because the cooldown limits cries rather than interest. Saving the last cry prevents loading from restarting the echo. Resolving calls before movement prevents entity order from delaying listeners, and a transient queue keeps pending calls out of saves. See `src/core/zombies.ts`, `ZombieSystem.cryAlert`, `ZombieSystem.announcePursuit` and `ZombieSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
-- **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
+- **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema/zombies.ts`, `ZombieSchema`, and `src/core/zombies.ts`, `ZombieSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
 - **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration. The stimulus timestamp is saved so loading does not restart the wait. Whether this duration should use real time or game time remains open for BR's decision; the current simulation-seconds behavior is not a settled design choice. A horde resumes the sun-derived roam or home behavior after forgetting. See `ZombieSchema` in `src/core/schema.ts` and `ZombieSystem.updateHordes` in `src/core/zombies.ts`.
 - **Background cadence persistence:** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `zombie-background` in `src/game/session.ts`.
@@ -3082,7 +3083,7 @@ figure. Shared authored joints and grips keep idle and active arms connected to
 the body rather than making first person another art obligation. Missing model,
 anchor or rig data must fail validation instead of silently drawing a partial
 body. Hit regions keep a box layout because the body simulation, not the drawn
-shape, decides where a hit lands. Gore placement must not change with the observer. See `src/core/schema.ts`, `FigureSchema`,
+shape, decides where a hit lands. Gore placement must not change with the observer. See `src/core/schema/figures.ts`, `FigureSchema`,
 `src/render/armRig.ts`, `buildArmRig`, and `src/render/playerFigure.ts`,
 `playerFigureLayout` and `PLAYER_REGION_BOXES`.
 
@@ -3103,7 +3104,7 @@ instead of hiding the omission behind a guessed hold. Mirroring must retain
 the support hand's gun-side contact. Nominal eye-relative seating remains for
 isolated item presentation and optical effects, not the anatomical actor's
 physical hold. See `src/content/base/long-gun-hands.libsonnet`, `firingHold`;
-`src/core/schema.ts`, `HandsModelSchema`; `src/core/heldPose.ts`, `heldHoldFrame`;
+`src/core/schema/models.ts`, `HandsModelSchema`; `src/core/heldPose.ts`, `heldHoldFrame`;
 and `src/core/content.ts`, `checkHeldHands`.
 
 Many animations are expected over time, so a pose is data that names a joint and an
@@ -3120,10 +3121,10 @@ cannot be authored, blended or added to without a code change per animation.
   bypass support through destruction cascades. See `src/core/furnitureMove.ts`,
   `removalRefusal`.
 - **Doors and locks.** A matching key is the quiet route. The noisy fallback needs the door's forcing tool, not always a crowbar, so finding that tool is part of the trade. How a door yields follows from its material and its own resistance; flimsy and burglary-safe leaves need not yield alike. Forced entry destroys the lock so the breach is one-way. A leaf shows its state, because the player has to see which doors no longer hold, and how close the rest are to giving way, before trusting one: damage repaints it in steps as it grows toward breaking, and a broken leaf has its own look. The leaf's material in the shared furniture material table authors both, so a mod retunes them; the steps and redraws work as for any piece (`DESIGN.md`, "Block entities").
-- **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema.ts`, `FurnitureSchema`.
-- **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `src/core/options.ts`, `heldDoorBar`, and `src/core/schema.ts`, `ItemSchema`.
+- **Breach by strength.** A door leaf yields to blows by its piece's breach, so flimsy and burglary-safe leaves yield differently. A blow below the minimum strength does nothing, so a weak attacker cannot grind through by waiting; stronger blows add up until they reach the durability. Zombie strength and a melee weapon's impulse share one scale, so a zombie's bash and a player's strike meet the same gate; a swing that meets no zombie strikes the standing piece, leaf or furniture, in its reach, and the blow is heard in the sound its material names. Every blow makes a noise zombies hear. A broken leaf stands open with its lock gone and cannot be shut, so the breach is one-way, as forcing is, and movement, sight and sound treat it as an open doorway. Damage short of breaking leaves a boarded leaf's opening sides as they were. A container's front is its body, so a blow on it damages the whole piece; on a piece that is no door leaf, the breach sets the durability its condition is measured against, and reaching it ruins the piece (`DESIGN.md`, "Damage, destruction and dismemberment"). See `src/core/blockEntities.ts`, `BlockEntities.bash`, `src/game/session.ts`, `bashPiece` and `strikePiece`, and `src/core/schema/furniture.ts`, `FurnitureSchema`.
+- **Door bar.** Barring holds a door shut at the player's choice, so where to bar is a decision about which side to be on. A bar set on a shut door lies on the setter's side: that side must lift it before opening, and the far side is refused. Setting and lifting take time and both hands. The barred side is door state beside the lock, not item state, so a bar on a door survives a save and a bar item is just the thing that sets it; setting spends the item and lifting gives one back. A broken leaf loses its bar with its lock, and boarded doors take no bar. See `src/core/blockEntities.ts`, `BlockEntities.setBar` and `BlockEntities.liftBar`, `src/core/options.ts`, `heldDoorBar`, and `src/core/schema/items.ts`, `ItemSchema`.
 - **Forcing routes trade time against noise.** A door offers more than one forcing method so the player chooses how to pay: the crowbar's prying is slow and the quieter route, the sledgehammer's hammering is fast and the louder one, and it is heavy and two-handed to carry. Each method names its own strike sound and times, so the choice is content, and the noise reaches zombies through the same hearing as any sound. Forcing by method and destroying a leaf by damage stay separate, so boarded doors and bashing leave this choice alone. See `src/core/prying.ts`, `pryPlan`, and `src/core/zombies.ts`, `hearPlayer`.
-- **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
+- **Cutting.** Cutting a wooden door will start a fire, so wood offers no cut method until a fire model exists. Cutting steel is a flame-cutting quality apart from a knife's `cutting`, and a finished cut spends gas from the torch's swappable cartridge, so one torch does not settle every cut door; a cut without enough gas won't start. Refilling a cartridge is direction only, with no source yet. See `src/core/prying.ts`, `pryPlan`, `src/core/torch.ts`, `spendFuel`, `src/core/longAction.ts`, `LongActions.beginForcing`, and `src/core/schema/furniture.ts`, `FurnitureMaterialSchema` and `DoorForcingSchema`.
 - **Electricity** keeps topology separate from energy balance so rate changes
   do not rebuild networks. Resource settlement and timestamped power transitions
   preserve appliance history across absences and wiring changes. The dispatch,
@@ -3176,7 +3177,7 @@ their state.
 **Part work.** Work requirements belong to the part's item so mods author work
 with the part; an authored site's service wins so a vehicle can override that work.
 Geometry and cargo pocket handling time cannot establish installation cost. See
-`src/core/schema.ts`, `VehicleServiceFields`, and `src/core/inventory.ts`,
+`src/core/schema/items.ts`, `VehicleServiceFields`, and `src/core/inventory.ts`,
 `Inventory.vehiclePlacementService`. Further add-on content follows #1124.
 
 **Add-on regions.** A capability word opens a face by a code rule so mods offer a
@@ -3261,7 +3262,7 @@ a reworded pack relabels saved vehicles; see `src/core/vehicleInstances.ts`, `ve
     parked body blockers from occupied exported boxes; `src/core/solidBricks.ts`,
     `worldBricks`, uses the same projection for accelerated physics and navigation.
     This exterior cell approximation leaves clear exported space unfilled rather than
-    inventing a cabin envelope. `src/core/schema.ts`, `ItemSchema`, validates the
+    inventing a cabin envelope. `src/core/schema/items.ts`, `ItemSchema`, validates the
     per-part obstruction channels, and `src/content/base/vehicles.jsonnet`, `part`,
     authors their policy. `src/core/collision.ts`, `worldOpaque`, `worldSoundBlocking`
     and `worldMeleeBlocker`, plus `src/game/session.ts`, `createSession`, route those
@@ -3432,7 +3433,7 @@ play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
-Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. It marks built materials, not nature's terrain or vegetation; `src/core/schema.ts`, `BlockSchema.weatherable`, lets content keep that distinction, and an absent flag means no weathering. Fabric, window frames, chain link and sandbags stay clean because moss and lichen belong on stone, concrete and wood; hazard paint keeps its warning colour, and galvanized sheet keeps its corrugated ribs legible. The overgrown tint may shift the base hue, but the surface pattern must still read; the restrained default keeps each material's base hue.
+Building weathering gives each site a render-only mood without changing simulation or shared geometry: fairly kept points of interest benefit from restrained change, while long-abandoned places need a general overgrown and dilapidated look. It marks built materials, not nature's terrain or vegetation; `src/core/schema/blocks.ts`, `BlockSchema.weatherable`, lets content keep that distinction, and an absent flag means no weathering. Fabric, window frames, chain link and sandbags stay clean because moss and lichen belong on stone, concrete and wood; hazard paint keeps its warning colour, and galvanized sheet keeps its corrugated ribs legible. The overgrown tint may shift the base hue, but the surface pattern must still read; the restrained default keeps each material's base hue.
 
 **Rendering and performance.** Foliage gets a performance plan from the start,
 so scale does not force a later redesign:
@@ -3456,20 +3457,20 @@ so scale does not force a later redesign:
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
-- **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
+- **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema/look.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
 - **Carry and visor:** carried furniture, worn visors and NVG are physical worn geometry. Worn gear is part of the world, so it shares world depth and clipping and reads the same in every view. The camera-effect visor remains until the framework refactor (#1532). See `src/render/hands.ts`, `HeldItems.render`.
 - **The near plane must admit short-relief optics:** the world camera draws physical optic housing too. Cutting
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
-  authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
+  authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema/graphics.ts`,
   `GraphicsTuningSchema`; `src/game/engine.ts`, `createEngine`; and `src/render/hands.ts`, `HeldItems`.
-- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
+- **Optic presentation tuning is content:** the player view and lens-edge controls remain content-owned so look nudges do not require a code round. See `src/content/base/graphics.jsonnet`, `graphics`; `src/core/schema/graphics.ts`, `GraphicsTuningSchema`; and `src/render/opticLens.ts`, `OPTIC_LENS_SHADER`.
 - **Optic eye relief is authored per optic so imperfect alignment reads at 1x:** the dot marks the shot direction and drifts against the housing by the eye's lateral offset over the relief, so a long relief hides the sway that skill is meant to fade. See `packages/gun-authoring-tool/src/gun/opticPresentation.jsonnet`; and `src/render/hands.ts`, `HeldItems.poseOptic`.
 - **The optic window has no drawn border:** the optic's own housing already frames the view, and a second frame
   hides more of the scene. At unity a replacement image keeps nearby gun features, as a real 1× sight does, but
   never the optic itself, which would fill its own window. The golden holographic look instead keeps its physical
   window, so its glass and thin near frame remain part of the sight picture. Image selection is authored rather than
   selected by item identity in the renderer. See `src/core/opticView.ts`, `opticRendersWorld`;
-  `src/core/schema.ts`, `ItemSchema`; and `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
+  `src/core/schema/items.ts`, `ItemSchema`; and `src/render/shadowFlags.ts`, `OPTIC_BODY_LAYER`.
 - **Zoom shows the environment only:** the magnified image is the world seen through the lens, so the zoom camera
   sets the world layer alone instead of copying the main camera's mask, and the player's figure, held and worn items
   and own-head layers never enter it. three.js layers do not inherit, so a node added under the figure takes its
@@ -3638,7 +3639,7 @@ A map needs light like any paper, with no map-only exception; see `docs/readable
 Region payloads stay with ordinary item ownership so putting down a sheet removes
 access without erasing its identity. Sheets do not stack: stateless merging must
 not discard coverage. Saved coverage must not require visited or edited terrain,
-and render caches are not durable knowledge. See `src/core/schema.ts`,
+and render caches are not durable knowledge. See `src/core/schema/items.ts`,
 `ItemSchema`; `src/core/content.ts`, `checkItems`; `src/core/items.ts`,
 `ItemFields`, `ItemFactory`, `snapshotItem` and `restoreItem`; and
 `src/core/saveFormat.ts`, `itemSchema`.

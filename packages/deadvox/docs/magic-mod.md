@@ -1,9 +1,11 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you're planning the magic mod inspired by Cataclysm's Magiclysm, or the engine work it needs
   - you're planning the high-fantasy product the magic mod is a big piece of
   - you're writing a compatibility mod that brings the magic mod into another product, such as Deadvox
   - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
+  - you generalize skill capability providers into a composable effect resolver
   - you're deciding what a character attribute governs, or whether a new one is needed
   - you're choosing which engine verbs or content kinds the mod rules work adds first
   - you're opening a closed code list (damage kinds, item capabilities, long jobs, creature abilities) for mods
@@ -163,12 +165,12 @@ measure and the training integrator.
 #### Skills and the resolver
 
 Skill effects fold into the resolver; skills stay the owner of progression: practice,
-levels, recipe unlocks and training activities. Code reads skills in three ways that stop
-mods: by id (`src/core/inventory.ts`; `src/core/skillTraining.ts` and `src/core/craftWork.ts`
-through `CORE_CONTENT_IDS`), through mechanism tuning blocks on the skill entry
-(`src/core/schema.ts`, `SkillSchema`), and, as prying does, through content that names the
-skill driving it (`src/core/prying.ts`). The fold generalizes the third, which is also why
-a skill must not be selected by id in code.
+levels, recipe unlocks and training activities. Mechanism capabilities select providers
+without fixing their ids; see `src/core/capabilities.ts`, `claimed`. The resolver must
+also decouple effects from their provider's tuning shape so content can combine
+contributors instead of requiring one predefined skill block. Content naming the skill
+driving an interaction remains valid; see `src/core/prying.ts`, `pryPlan`. The fold
+generalizes that relationship rather than restoring fixed skill ids.
 
 Each modified effect resolves in one pipeline:
 
@@ -386,7 +388,7 @@ and the product it brings it into, which is what lets it settle their clashes.
 `docs/decisions/0007-typed-field-patches.md`, "Decision" lands in two cuts:
 
 1. **Commuting additions:** spellbooks into loot tables, sites into map pools
-   (`src/core/schema.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
+   (`src/core/schema/layouts.ts`, `MapPoolSchema`), schools into start options. Loot rows and pool
    choices need ids, since rows are 0007's first keyed list.
 2. **Overrides, removal and derive:** a compatibility mod overrides only where the two
    packs genuinely clash, such as a creature's weakness to fire, and its dependency on
@@ -465,8 +467,8 @@ Elemental schools need fire, cold and electric hits. Damage kinds are a closed c
 and the body's responses are tables keyed by every kind, so adding a kind means editing
 every table, and under field patches two mods adding kinds would each have to know them
 all; see `src/core/body.ts`, `DAMAGE_KINDS` and `MELEE_DAMAGE_KINDS`, and
-`src/core/schema.ts`, `perDamageKind`. Creature resistance has a fixed shape for the
-melee kinds plus a separate acid special case; see `src/core/schema.ts`,
+`src/core/schema/body.ts`, `perDamageKind`. Creature resistance has a fixed shape for the
+melee kinds plus a separate acid special case; see `src/core/schema/zombies.ts`,
 `MeleeDamageResistanceSchema`, and `src/core/zombies.ts`, `acidDamageToZombie`. Blasts
 always deal one kind; see `src/core/zombies.ts`, `ZombieSystem.detonate`. Wearable
 protection is already keyed by kind and optional (`src/core/wear.ts`).
@@ -501,7 +503,7 @@ opening.
 ### 8. Creature abilities, factions and allies
 
 Creature stats are content, but abilities and body models are closed code lists, and the
-AI targets only the player character; see `src/core/schema.ts`, `ZOMBIE_ABILITIES`;
+AI targets only the player character; see `src/core/schema/zombies.ts`, `ZOMBIE_ABILITIES`;
 `src/core/zombieModels.ts`, `ZOMBIE_MODELS`; and `src/core/zombies.ts`, `ZombieMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.

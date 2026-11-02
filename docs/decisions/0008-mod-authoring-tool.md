@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you build or scope the mod authoring tool or its SkellyEngine authoring API
   - you change mod folders, tool-to-game handoff, sharing or default mod selection
   - you schedule typed field patches against the tool's editing slices
@@ -129,7 +130,7 @@ start flow.
 4. **New-entry and patch editor.** Depends on slice 1 for the workspace/API, slice 2
    for patch semantics and per-field origins, and slice 3 to evaluate saved Jsonnet in
    the browser. Derive structural forms from
-   `packages/deadvox/src/core/schema.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
+   `packages/deadvox/src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, rather than keeping a
    second schema; add presentation metadata at that owner. The first editing workflow
    saves Jsonnet and uses the engine's patch semantics and per-field origins.
 5. **Validation parity.** Depends on slice 1 for the hosted/local file adapters, not

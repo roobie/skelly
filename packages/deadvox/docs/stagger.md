@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change how a melee hit interrupts a zombie, or a type's `stagger` content
   - you tune charged strikes or a weapon's impulse against zombie stagger thresholds
   - you add knockback, knockdown or any other hit response that moves a zombie
@@ -14,7 +15,7 @@ Slice 5 defence needs hits that interrupt an approaching threat (`SLICE-5.md`, "
 
 **Stagger rewards commitment.** A player commits by charging a strike or by carrying a heavy, slow weapon, and either can reach a type's threshold, the heavy weapon even on an ordinary swing. Light, quick ordinary swings stay below it, so stagger is a reward for commitment rather than a side effect of every swing. Where "heavy" starts is tuning, set by weapon impulse against each type's threshold in content. See `src/core/zombies.ts`, `stagger`, and `src/content/base/items-tools.libsonnet`, `melee`.
 
-**A threshold, per type.** Both the threshold and the duration are content, because sturdier types should shrug off what drops a shambler. See `src/core/schema.ts`, `ZombieSchema`.
+**A threshold, per type.** Both the threshold and the duration are content, because sturdier types should shrug off what drops a shambler. See `src/core/schema/zombies.ts`, `ZombieSchema`.
 
 **It spoils the attack in progress.** A stagger cancels the melee wind-up and the acid spit and blocks new ones until it ends. A wind-up that resumed afterwards would land anyway, and the interruption would mean nothing.
 

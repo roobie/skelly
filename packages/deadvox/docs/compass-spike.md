@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change the held compass's look, readability, lighting or placement
   - you change the debug compass loadout or its hand preferences
 ---
@@ -8,7 +9,7 @@ read_if:
 
 The compass is a held object, not HUD text, so its information stays attached to the item. It must not add a second gameplay input or hand-motion authority. See `src/render/compass.ts`, `createCompass`, and `src/core/coords.ts`, `compassBearing`.
 
-The compass reads as a magnetic needle compass: a light card with bold cardinal marks and a long needle with a coloured north end, on a centre pin. A screen is illegible at hand distance, while a few large analogue shapes still read at that size. Its colours, marks and proportions are content on the model. See `src/content/base/models-items.jsonnet`, `dial`, and `src/core/schema.ts`, `CompassDialSchema`.
+The compass reads as a magnetic needle compass: a light card with bold cardinal marks and a long needle with a coloured north end, on a centre pin. A screen is illegible at hand distance, while a few large analogue shapes still read at that size. Its colours, marks and proportions are content on the model. See `src/content/base/models-items.jsonnet`, `dial`, and `src/core/schema/models.ts`, `CompassDialSchema`.
 
 The whole card turns with the needle, so its letters always name real directions and the mark on the rim reads the heading. It uses the world's canonical north convention and converts actor yaw to a clockwise bearing. See `src/core/coords.ts`, `WORLD_NORTH`.
 

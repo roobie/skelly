@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you build any round of the acid zombie's integration
   - you change the acid body's standing-height fitting or shape measurements
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
@@ -148,7 +149,7 @@ Tuning stays in content rather than test literals. Its release-freeze triggers b
 ## What Deadvox needs
 
 Deadvox picks a model by id, resolves it through `consumableTemplate` and builds hit boxes
-from the bones the body plan lists per region. See `packages/deadvox/src/core/schema.ts`,
+from the bones the body plan lists per region. See `packages/deadvox/src/core/schema/zombies.ts`,
 `ZOMBIE_MODEL`; `src/mob/shamblerFigure.ts`, `zombieFigure`; and
 `packages/deadvox/src/core/zombieRegions.ts`. The acid body's bones have their own names (it has a
 skull and maw, not head and jaw, and a belly and hips, not spine and pelvis), so a humanoid
@@ -163,7 +164,7 @@ name lookup would find nothing.
   gore mask sizes itself from the widest body (`packages/deadvox/src/render/mobActors.ts`
   passes the bone count to `crowdTextureLayout`), so the acid bone count needs no encoding
   change. A severed acid part follows its creature kind's authored drop policy,
-  independently of bone names. See `packages/deadvox/src/core/schema.ts`,
+  independently of bone names. See `packages/deadvox/src/core/schema/zombies.ts`,
   `ZombieSchema.severedItems`, and `packages/deadvox/src/game/session.ts`, `createSession`.
 - **Death burst.** On death the sac's voxels are removed without leaving a severed item and
   without any simulation consequence, so presentation reads death and the sac stays out of

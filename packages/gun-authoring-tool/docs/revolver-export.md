@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you change or consume the revolver model export, shared writer or moving-part transforms
   - you refresh the revolver or its ammunition in Deadvox
   - you change the structured Deadvox export recipe
@@ -11,7 +12,7 @@ The revolver uses assembly parts rather than display groups because only parts h
 
 ## Runtime composition
 
-The separate revolver contract avoids pretending that rotating parts follow the linear carrier timeline. See `src/gun/revolverExport.ts`, `RevolverMetadata`, and `src/gun/exportGlb.ts`, `DeadvoxModelEntry`. The playable consumer validates it through `packages/deadvox/src/core/schema.ts`, `RevolverSchema`.
+The separate revolver contract avoids pretending that rotating parts follow the linear carrier timeline. See `src/gun/revolverExport.ts`, `RevolverMetadata`, and `src/gun/exportGlb.ts`, `DeadvoxModelEntry`. The playable consumer validates it through `packages/deadvox/src/core/schema/models.ts`, `RevolverSchema`.
 
 All points, axes and displacements use the exported model frame, with lengths in metres and signed right-hand rotations in radians. Each node's rest transform is its assembled GLB pose, not an identity transform and not a pivot-relative pose. The writer's node list is flat. Consumers must reset to that rest pose each frame rather than accumulate deltas.
 

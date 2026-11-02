@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you're changing procedural surface weathering or building appearance
   - you're changing the solar-phase look, flashlight daylight adaptation, beam shape or spill, how lights switch on and off, or evaluating renderer performance or a look change it makes
   - you're changing sun shadow occlusion in interiors or underground
@@ -16,7 +17,7 @@ The graphics direction is driven by atmosphere and readability, not realism. The
 
 ## Look decisions
 
-The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
+The default look is tone mapping off, low exposure, the mood pass off and no weathering, because it was judged by eye to look better and costs less. Content owns it, so a mod can change it; every part stays tunable through URL parameters and the debug panel. See `src/core/schema/look.ts`, `LookDefaultsSchema`, and `src/core/lookDefaults.ts`, `lookDefaultsOf`.
 
 Tone mapping can follow the solar cycle instead: neutral in bright daylight, shifting toward ACES at dawn and dusk and using ACES at night, which gives daylight a natural palette while retaining depth in darkness. Weathering adds render-only age without replacing material identity; named profiles let authored scenes vary it. See `src/render/autoTone.ts`.
 
@@ -26,7 +27,7 @@ A flashlight beam fades in full daylight because its pool is not worth drawing o
 
 A powered ceiling fixture's light on a surface fades by that surface's sky exposure, because walking across sunlight must not change how a room is lit. That exposure leaves furniture out: glows cast no furniture shadows, so fading by furniture-blocked sky would light the wall behind a workbench brighter than the open wall beside it. See `src/core/skylight.ts`, "SkyVolume". The held-item scene and the fallback without a skylight have no per-surface sky exposure to fade by, so there the camera's daylight scale stands in. See `src/render/skylight.ts`, `ITEM_POINT_LIGHTS`, and `src/render/lightPool.ts`, `LightPoolContext`.
 
-The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `src/core/schema.ts`, `renderedFixtureLimit`.
+The number of fixtures drawn at once is content, because rooms such as the test house's garage need every strip light lit together. Raising it accepts more per-pixel light work on every lit surface, and any fixed number can be exceeded again by a busier room, so the nearest fixtures win when that happens. See `src/core/schema/senses.ts`, `renderedFixtureLimit`.
 
 Item light content owns focused-cone brightness, reach, shape and decay so authors can tune different kinds of beam without renderer constants. Spill is optional: omit it, or author it with `enabled` false, for the exact plain cone with an unwidened shadow camera. Base battery beams author a dim spill switched off, because the plain cone is the look the game ships with; the tunables stay in content so a mod can turn it on. Blend both lobes in one spot and widen its shadow camera so spill cannot bypass occluders or require another shadow pass. Install the spill shader before warm-up and express plain beams through neutral uniforms, so both existing and later-created materials use one program without switch-on recompilation or stale variants. See `src/core/schema.ts`, `BeamSpillSchema`, `src/content/base/items-tools.libsonnet`, `batteryBeam`, and `src/render/flashlight.ts`, `Flashlight`.
 

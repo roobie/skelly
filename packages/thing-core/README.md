@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you locate or change a schema contract cited here
   - you add or change the neutral model schema or the material and physical-property model
   - you decide whether code belongs in the core or in one of the tools
   - you add a domain pack's fields to the model entry
@@ -30,7 +31,7 @@ reasons and `things/WORK.md`, "Phases" for the remaining suite work.
   schema. The envelope then names no kind of thing, nothing leaks between packs, and one
   entry can carry several packs' blocks without their names clashing. A field two packs
   both want is promoted into the envelope on purpose. The gun pack's block and the composed
-  Deadvox schema are `packages/deadvox/src/core/schema.ts`, `GunModelSchema` and `ModelSchema`.
+  Deadvox schema are `packages/deadvox/src/core/schema/models.ts`, `GunModelSchema` and `ModelSchema`.
 - Materials share one content table so tools and the game read the same appearance and a
   mod changes it in one place. Mass is authored, not inferred from material density or a
   drawn envelope: items can mix materials and hide complex internal shapes. See
