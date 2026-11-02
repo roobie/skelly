@@ -17,6 +17,7 @@ import { affectedChunks, World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import { BuildMode } from '../src/debug/build.ts';
 import type { Engine } from '../src/game/engine.ts';
+import { playerTuning } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Streamer } from '../src/game/streamer.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
@@ -354,6 +355,29 @@ const meshing = (f: Fixture) => {
   return { streamer, meshes, next, reply };
 };
 
+const debugBuild = (f: Fixture) => {
+  const blows: BlockBlow[] = [];
+  const engine = {
+    config: { debug: true, scale },
+    registry: f.registry,
+    world: f.world,
+    scene: new Scene(),
+    isOpaque: worldSolid(f.world, f.registry, f.inventory.entities),
+  } as unknown as Engine;
+  const build = new BuildMode(engine, f.session.body, 1, (target, blow) => {
+    blows.push(blow);
+    return f.session.strikeTerrainCell(target, blow);
+  });
+  const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
+  const dir: Vec3 = [0, 1, 0];
+  return { build, blows, eye, dir };
+};
+
+const debugKind = (f: Fixture, damageKind: string) => {
+  const player = playerTuning(f.registry);
+  f.registry.player.set(player.id, { ...player, debugBlockTool: { ...player.debugBlockTool, damageKind } });
+};
+
 afterEach(() => vi.unstubAllGlobals());
 
 describe('supply-aware terrain destruction', () => {
@@ -362,20 +386,7 @@ describe('supply-aware terrain destruction', () => {
     const edited = vi.fn();
     const debug = fixture(variant, undefined, edited);
     const real = fixture(variant);
-    const blows: BlockBlow[] = [];
-    const engine = {
-      config: { debug: true, scale },
-      registry: debug.registry,
-      world: debug.world,
-      scene: new Scene(),
-      isOpaque: worldSolid(debug.world, debug.registry, debug.inventory.entities),
-    } as unknown as Engine;
-    const build = new BuildMode(engine, debug.session.body, 1, (target, blow) => {
-      blows.push(blow);
-      return debug.session.strikeTerrainCell(target, blow);
-    });
-    const eye: Vec3 = [cell[0] + 0.5, cell[1] - 0.9, cell[2] + 0.5];
-    const dir: Vec3 = [0, 1, 0];
+    const { build, blows, eye, dir } = debugBuild(debug);
     expect(build.strike('step', eye, dir)).toBe(false);
     expect(blows).toEqual([]);
     build.toggle();
@@ -396,6 +407,33 @@ describe('supply-aware terrain destruction', () => {
     expect(edited).toHaveBeenCalledOnce();
     expect(real.playerStrike(blows[1]!.strength)).toBe(true);
     expect(logical(debug)).toEqual(logical(real));
+  });
+
+  it('normalizes debug strike strength by the selected damage kind, not blunt resistance', () => {
+    const f = fixture({ resident: true });
+    debugKind(f, 'cut');
+    const material = f.registry.blockMaterials.get('fixture_material')!;
+    f.registry.blockMaterials.set(material.id, {
+      ...material,
+      minimumStrength: 0,
+      resistance: { ...material.resistance, blunt: 0, cut: 0.5 },
+    });
+    const { build, eye, dir } = debugBuild(f);
+    build.toggle();
+    expect(build.strike('step', eye, dir)).toBe(true);
+    expect(f.world.blockDamage.get(cell)!.damage).toBeCloseTo(
+      material.durability * playerTuning(f.registry).debugBlockTool.stepDurabilityFraction,
+    );
+  });
+
+  it('refuses an unsupported debug strike kind before forwarding a terrain blow', () => {
+    const f = fixture({ resident: true });
+    debugKind(f, 'acid');
+    const { build, blows, eye, dir } = debugBuild(f);
+    build.toggle();
+    expect(() => build.strike('step', eye, dir)).toThrow('Unsupported block damage kind "acid"');
+    expect(blows).toEqual([]);
+    expect(f.world.blockDamage.get(cell)).toBeUndefined();
   });
 
   it.each(['drawn', 'in-flight'] as const)(
