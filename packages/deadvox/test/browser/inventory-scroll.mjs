@@ -68,7 +68,7 @@ const content = [
     source: 'inventory-scroll-fixture',
     data: {
       inventory: [{ ...baseInventoryRow, containerMaxWidthCells: 5 }],
-      furnitureMaterials: [{ id: 'scroll_material', blowSound }],
+      furnitureMaterials: [{ id: 'scroll_material', blowSound, drops: { default: blowSound } }],
       furniture: [
         {
           id: 'scroll_rack',
