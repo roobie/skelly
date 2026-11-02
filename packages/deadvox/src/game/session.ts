@@ -52,13 +52,14 @@ import {
   ruinFurniture,
   slideDestination,
   slideFurniture,
+  spreadZombieDrop,
   tipCarried,
   turnCarried,
 } from '../core/furnitureMove.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { type IlluminationScene, illuminationAt, readingLightRefusal } from '../core/illumination.ts';
-import { Inventory, type Location } from '../core/inventory.ts';
+import { dropSpots, Inventory, type Location } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { settleCell } from '../core/itemThrow.ts';
 import { climb, LadderHold } from '../core/ladders.ts';
@@ -1538,21 +1539,37 @@ export const createSession = (options: SessionOptions) => {
     return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
   };
   const traps = new BearTraps(inventory);
+  const zombieReady = zombieReadinessFor(options);
   const placeZombieDrop = (item: Item, pos: Vec3): void => {
     const landed = freshDropTarget(inventory, item, pos);
     if (!landed) {
       return;
     }
-    // Wider all-full search awaits its bounds and scope; see `DESIGN.md`, "Dropped items land".
-    const target = inventory.planAdd(item, landed).ok ? landed : { kind: 'pile' as const, pos };
-    inventory.add(item, target);
+    if (inventory.planAdd(item, landed).ok) {
+      inventory.add(item, landed);
+      return;
+    }
+    if (!zombieReady(pos[0], pos[2])) {
+      return;
+    }
+    const landings = dropSpots(pos).flatMap((spot) => {
+      const floor = inventory.landing(spot);
+      return floor ? [floor] : [];
+    });
+    for (const cell of spreadZombieDrop(inventory, physicalSolid, pos, landings)) {
+      const target = { kind: 'pile' as const, pos: cell };
+      if (inventory.planAdd(item, target).ok) {
+        inventory.add(item, target);
+        return;
+      }
+    }
   };
   const zombieSystem = new ZombieSystem({
     activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
     store: zombieStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,
-    isLoaded: zombieReadinessFor(options),
+    isLoaded: zombieReady,
     terrainFloor: options.terrainFloor,
     isSolid: physicalSolid,
     solidBricks: solidBricksFor(world, registry, inventory, s),

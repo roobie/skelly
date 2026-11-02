@@ -80,6 +80,26 @@ const liveStreamer = (preloadRings = 0) => {
   return { streamer, drawn, reveal, settle };
 };
 
+it('requires the body column and every immediate neighbour to be generated before reporting ready', () => {
+  const { streamer } = liveStreamer();
+  streamer.setReplayControlled();
+  streamer.update(0, 0);
+  const neighbours: [number, number][] = [];
+  for (let z = -1; z <= 1; z++) {
+    for (let x = -1; x <= 1; x++) {
+      neighbours.push([x, z]);
+      expect(streamer.generateForReplay(x, z)).toBe(true);
+    }
+  }
+  expect(streamer.isReady(0, 0)).toBe(true);
+  for (const [cx, cz] of neighbours) {
+    streamer.unloadForReplay(cx, cz);
+    expect(streamer.isReady(0, 0)).toBe(false);
+    expect(streamer.generateForReplay(cx, cz)).toBe(true);
+    expect(streamer.isReady(0, 0)).toBe(true);
+  }
+});
+
 it.each([0, 1, 2])('keeps view-edge terrain revealed while loading %i extra sky rings', (preloadRings) => {
   const { streamer, drawn, reveal, settle } = liveStreamer(preloadRings);
   settle(0, 0);

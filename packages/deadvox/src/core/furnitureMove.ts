@@ -4,7 +4,7 @@
 import { type BlockEntities, type BlockEntity, boxIntersectsBody } from './blockEntities.ts';
 import { claimed } from './capabilities.ts';
 import type { FurnitureDef } from './content.ts';
-import type { Vec3 } from './coords.ts';
+import { toChunk, type Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
 import { PILE_GRID } from './inventoryScale.ts';
 import { couldFit, findSpot, fitsAt, type Item, type Placed } from './items.ts';
@@ -401,6 +401,22 @@ const spreadFrom = (shadow: Shadow, cells: readonly Vec3[]): Iterable<Vec3> => {
       }
     },
   };
+};
+
+/** Only generated neighbours of a ready body may participate; the boundary acts as a wall, not a new seed. */
+export const spreadZombieDrop = (
+  inventory: Inventory,
+  terrainSolid: SolidAt,
+  body: Vec3,
+  landings: readonly Vec3[],
+): Iterable<Vec3> => {
+  const cx = toChunk(body[0]);
+  const cz = toChunk(body[2]);
+  const shadow = new Shadow(
+    (x, y, z) => Math.abs(toChunk(x) - cx) > 1 || Math.abs(toChunk(z) - cz) > 1 || terrainSolid(x, y, z),
+    inventory.entities,
+  );
+  return spreadFrom(shadow, landings);
 };
 
 const fitPlaced = (

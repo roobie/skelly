@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { StressCity } from '../src/core/city.ts';
 import type { Registry } from '../src/core/content.ts';
-import { toChunk } from '../src/core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
 import { dropSpots } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
@@ -175,7 +175,25 @@ describe('loot source routing', () => {
     return world;
   };
 
-  const zombieDropScene = ({ ground = true, full = false, drops = true } = {}) => {
+  interface DropScene {
+    session: ReturnType<typeof createSession>;
+    world: World;
+    block: number;
+    pos: Vec3;
+  }
+  const zombieDropScene = ({
+    ground = true,
+    full = false,
+    drops = true,
+    zombieReady = true,
+    prepare,
+  }: {
+    ground?: boolean;
+    full?: boolean;
+    drops?: boolean;
+    zombieReady?: boolean;
+    prepare?: (scene: DropScene) => void;
+  } = {}) => {
     const registry = fixtureRegistry();
     const severed = 'fixture_severed_item';
     registry.items.set(severed, { ...registry.items.get(stock)!, id: severed });
@@ -211,7 +229,8 @@ describe('loot source routing', () => {
       seed: 17,
       start: 0,
       spawn: [0, 0, 0],
-      ready: () => false,
+      ready: () => !zombieReady,
+      zombieReady: () => zombieReady,
       controls: {
         active: () => false,
         intent: () => IDLE,
@@ -237,11 +256,15 @@ describe('loot source routing', () => {
       notice,
       onRead: () => undefined,
     });
+    const pos: Vec3 = [4, 4, 0];
     if (full) {
-      for (const y of [1, 4]) {
-        expect(session.inventory.add(session.inventory.create(bulk), { kind: 'pile', pos: [4, y, 0] })).toBe(true);
+      const landed = session.inventory.landing(pos);
+      if (!landed) {
+        throw new Error('Full-landing fixture needs ground');
       }
+      expect(session.inventory.add(session.inventory.create(bulk), { kind: 'pile', pos: landed })).toBe(true);
     }
+    prepare?.({ session, world, block, pos });
     const base = [...registry.zombies.values()][0]!;
     const id = session.zombies.add(
       {
@@ -258,16 +281,16 @@ describe('loot source routing', () => {
           rightLeg: null,
         },
       },
-      [4, 4, 0],
+      pos,
     );
     session.zombies.detonate({
       blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
       fragments: { damageKind: 'pierce', origin: [0, 4, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
-    return { session, registry, world, block, solid, id, severed, forbidden, play, notice, moveSounds };
+    return { session, registry, world, block, solid, id, pos, severed, forbidden, play, notice, moveSounds };
   };
 
-  it.each([false, true])('lands admitted death and severing drops (full source: %s)', (full) => {
+  it.each([false, true])('lands admitted death and severing drops (first landing full: %s)', (full) => {
     const { session, solid, id, severed, forbidden } = zombieDropScene({ full });
     expect(session.zombieStore.get(id)).toBeUndefined();
     const items = [...session.inventory.items()].map(({ item }) => item);
@@ -283,6 +306,91 @@ describe('loot source routing', () => {
       ),
     ).toBe(true);
   });
+
+  it('lands zombie emissions beyond full first-ring piles on their connected level floor', () => {
+    const ring: Vec3[] = [];
+    const f = zombieDropScene({
+      ground: false,
+      prepare: ({ session, world, block, pos }) => {
+        const columnStart = toChunk(pos[0]) * CHUNK;
+        for (let x = columnStart - CHUNK; x < columnStart + 2 * CHUNK; x++) {
+          world.setBlock(x, 0, pos[2], block);
+          if (toChunk(x) === toChunk(pos[0])) {
+            expect(
+              session.inventory.add(session.inventory.create('fixture_bulk'), { kind: 'pile', pos: [x, 1, pos[2]] }),
+            ).toBe(true);
+          }
+        }
+        for (const spot of dropSpots(pos)) {
+          const landed = session.inventory.landing(spot);
+          if (landed) {
+            ring.push(landed);
+          }
+        }
+      },
+    });
+    const emissions = [...f.session.inventory.items()].filter(({ item }) => [stock, f.severed].includes(item.type));
+    expect(emissions.map(({ item }) => item.type)).toEqual(expect.arrayContaining([stock, f.severed]));
+    for (const { location } of emissions) {
+      expect(location.kind).toBe('pile');
+      if (location.kind !== 'pile') {
+        throw new Error('Zombie emission is not piled');
+      }
+      const [x, y, z] = location.pile.pos;
+      expect(ring.some((cell) => cell.every((value, axis) => value === location.pile.pos[axis]))).toBe(false);
+      expect(ring.some((cell) => cell[1] === y)).toBe(true);
+      expect(f.solid(x, y - 1, z)).toBe(true);
+      expect(toChunk(x)).not.toBe(toChunk(f.pos[0]));
+      const columnStart = toChunk(f.pos[0]) * CHUNK;
+      expect(Math.abs(x - f.pos[0])).toBe(Math.min(f.pos[0] - columnStart + 1, columnStart + CHUNK - f.pos[0]));
+      expect(Math.abs(toChunk(x) - toChunk(f.pos[0])) <= 1 && Math.abs(toChunk(z) - toChunk(f.pos[2])) <= 1).toBe(true);
+    }
+  });
+
+  it.each([true, false])(
+    'silently loses all-full emissions without exceeding the body search (ready: %s)',
+    (zombieReady) => {
+      let pilesBefore: string[] = [];
+      const floorReads: Vec3[] = [];
+      const prepare = ({ session, world, block, pos }: DropScene) => {
+        const left = (toChunk(pos[0]) - 1) * CHUNK;
+        const right = (toChunk(pos[0]) + 2) * CHUNK;
+        for (let x = left - 1; x <= right; x++) {
+          world.setBlock(x, 0, pos[2], block);
+          if (
+            zombieReady ? x >= left && x < right : dropSpots(pos).some((spot) => spot[0] === x && spot[2] === pos[2])
+          ) {
+            expect(
+              session.inventory.add(session.inventory.create('fixture_bulk'), { kind: 'pile', pos: [x, 1, pos[2]] }),
+            ).toBe(true);
+          }
+        }
+        pilesBefore = [...session.inventory.piles.keys()];
+        const getBlock = world.getBlock.bind(world);
+        vi.spyOn(world, 'getBlock').mockImplementation((x, y, z) => {
+          if (y === 0) {
+            floorReads.push([x, y, z]);
+          }
+          return getBlock(x, y, z);
+        });
+      };
+      const withoutDrops = zombieDropScene({ ground: false, drops: false, zombieReady, prepare });
+      const f = zombieDropScene({ ground: false, zombieReady, prepare });
+      expect([...f.session.inventory.items()].filter(({ item }) => [stock, f.severed].includes(item.type))).toEqual([]);
+      expect([...f.session.inventory.piles.keys()]).toEqual(pilesBefore);
+      expect(f.notice).not.toHaveBeenCalled();
+      expect(f.play.mock.calls).toEqual(withoutDrops.play.mock.calls);
+      expect(floorReads.length).toBeGreaterThan(0);
+      for (const [x, , z] of floorReads) {
+        expect(Math.abs(toChunk(x) - toChunk(f.pos[0])) <= 1 && Math.abs(toChunk(z) - toChunk(f.pos[2])) <= 1).toBe(
+          true,
+        );
+        if (!zombieReady) {
+          expect(dropSpots(f.pos).some((spot) => spot[0] === x && spot[2] === z)).toBe(true);
+        }
+      }
+    },
+  );
 
   it('silently loses death loot and severed items with no ground, leaving later hand moves safe', () => {
     const supported = zombieDropScene();

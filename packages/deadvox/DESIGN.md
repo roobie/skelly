@@ -95,7 +95,7 @@ read_if:
   - you're changing the quiet-key and noisy-forcing alternatives for locked doors
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
-  - you change item landing, debug spawns, zombie item emissions or loss feedback, removal refusals, landing reach checks or no-ground outcomes
+  - you change item landing, debug spawns, zombie item emissions or loss feedback, readiness-bounded floor searches, removal refusals, landing reach checks or no-ground outcomes
   - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
@@ -2783,13 +2783,25 @@ not let furniture fall into those reserved cells. See `src/core/furnitureMove.ts
 `Shadow`, and `src/core/blockEntities.ts`, `BlockEntities.blockingBoxes` and
 `BlockEntities.filling`.
 
-Zombie loot and severed parts use the same landing rule when a supported pile has
-room. With no supported candidate, the item is lost: the zombie has been removed
-or the limb cut, so no owner can retain it. The loss adds neither a notice nor a
-sound. Zombie loot can yield nothing, and a line about an unseen body would
-narrate what the character cannot know; see `INTERFACE.md`, "Text". Wider search
-when all supported candidates are full awaits bounds and scope under #1532. See
-`src/game/session.ts`, `placeZombieDrop`.
+Zombie loot and severed parts start with the same landings. When every supported
+first-ring landing is full, a ready body's drops spread over connected floor,
+nearest first, staying at each landing's level. The search stays within the
+body's own column and its eight neighbours: readiness guarantees those columns
+are generated, so the walk does not read load state. Walls, gaps and height
+changes stop it. An unready body gets only the first ring. That restriction
+matters for a far kill at the loaded edge together with full supported spots,
+so the case is rare; loss is already the outcome when no room is found.
+Readiness uses the replay-aware zombie rule.
+
+With no supported landing or no room found by the permitted search, the item is
+lost: the zombie has been removed or the limb cut, so no owner can retain it.
+Loss adds neither a notice nor a sound. Zombie loot can yield nothing, and a
+line about an unseen body would narrate what the character cannot know; see
+`INTERFACE.md`, "Text". Zombie drops search wider because they have no retained
+owner; player routes keep their ordinary candidates and refuse because they do
+have one. See `src/game/session.ts`, `placeZombieDrop`;
+`src/core/furnitureMove.ts`, `spreadZombieDrop` and `spreadFrom`; and
+`src/game/streamer.ts`, `Streamer.isReady`.
 
 See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
 `src/core/options.ts`, `dropTarget` and `freshDropTarget`;
