@@ -5,9 +5,9 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {
   advanceShamblerFootsteps,
+  footstepEventAt,
+  footstepEventForBlock,
   initialShamblerFootstepClock,
-  shamblerFootstepEventAt,
-  shamblerFootstepEventForBlock,
 } from '../src/core/footsteps.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -20,6 +20,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
 const BASE = 'src/content/base';
+const FIXTURE_FAMILY = 'fixture_steps';
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
@@ -97,7 +98,11 @@ const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Zombie['typ
 describe('shambler footsteps', () => {
   it('uses real grounded travel distance, stays silent while still, and steps more often while chasing', () => {
     const { system, store, played } = makeWorld(sense([100, 1, 100], [-1, 0, 0]));
-    const zombie = system.add(SHAMBLER, [2, 1, 2], [1, 0, 0]);
+    const zombie = system.add(
+      { ...SHAMBLER, id: 'fixture_walker', footstepSound: 'fixture_steps' },
+      [2, 1, 2],
+      [1, 0, 0],
+    );
     store.get(zombie)!.body.onGround = true;
     run(system, 2);
     expect(played).toHaveLength(0);
@@ -145,47 +150,45 @@ describe('shambler footsteps', () => {
     expect(movedSteps('stroll', 3, silent)).toBe(0);
   });
 
-  it('selects the authored shambler footstep for a new block id and keeps air silent', () => {
+  it('selects an independently declared footstep family for a new block id and keeps air silent', () => {
     const fixtureBlock = {
       id: 'fixture_moss',
       name: 'Moss',
       color: '#3f6b2f',
       solid: true,
-      footsteps: { player: 'footstep_grass', shambler: 'shambler_step_grass' },
+      footsteps: { player: 'footstep_grass', [FIXTURE_FAMILY]: 'shambler_step_grass' },
     };
     const fixture = buildRegistry([
       {
         source: 'sounds.json',
         data: JSON.parse(readFileSync(join(BASE, 'sounds.json'), 'utf8')) as unknown,
       },
-      { source: 'fixture-blocks.json', data: { blocks: [fixtureBlock] } },
+      { source: 'fixture-blocks.json', data: { soundFamilies: [{ id: 'fixture_steps' }], blocks: [fixtureBlock] } },
     ]);
     expect(fixture.issues).toEqual([]);
     const runtimeId = fixture.registry.blockIds.get(fixtureBlock.id)!;
     let sampledCell: Vec3 | undefined;
     expect(
-      shamblerFootstepEventAt(
+      footstepEventAt(
         [2.5, 1.3, 3.5],
         { halfWidth: 0.3 },
         (x, y, z) => {
           sampledCell = [x, y, z];
           return runtimeId;
         },
-        fixture.registry.blocks,
+        { blocks: fixture.registry.blocks, family: 'fixture_steps' },
       ),
     ).toBe('shambler_step_grass');
     expect(sampledCell).toEqual([2, 0, 3]);
     // Centre over air, footprint on the mossy block: the supporting cell's contract still sounds.
     expect(
-      shamblerFootstepEventAt(
-        [0.9, 1, 0.5],
-        { halfWidth: 0.6, halfDepth: 0.6 },
-        (x) => (x === 1 ? runtimeId : 0),
-        fixture.registry.blocks,
-      ),
+      footstepEventAt([0.9, 1, 0.5], { halfWidth: 0.6, halfDepth: 0.6 }, (x) => (x === 1 ? runtimeId : 0), {
+        blocks: fixture.registry.blocks,
+        family: 'fixture_steps',
+      }),
     ).toBe('shambler_step_grass');
     const air = fixture.registry.blocks[fixture.registry.blockIds.get('air')!]!;
-    expect(shamblerFootstepEventForBlock(air)).toBeUndefined();
+    expect(footstepEventForBlock(air, 'fixture_steps')).toBeUndefined();
   });
 
   it('lets only the nearest three moving shamblers emit footsteps', () => {

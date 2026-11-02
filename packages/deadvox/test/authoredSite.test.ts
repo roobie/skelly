@@ -17,6 +17,7 @@ import {
   rectDistance,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
+import { claimedId } from '../src/core/capabilities.ts';
 import type { Registry } from '../src/core/content.ts';
 import { CHUNK, compassBearing, toChunk } from '../src/core/coords.ts';
 import { couldFit, ItemFactory } from '../src/core/items.ts';
@@ -24,7 +25,7 @@ import { lootTypeIssue } from '../src/core/loot.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { HORDE_MEMBERS, HORDE_TYPE } from '../src/core/settlementSpawns.ts';
+import { HORDE_MEMBERS } from '../src/core/settlementSpawns.ts';
 import { rectsOverlap } from '../src/core/site.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
@@ -103,7 +104,7 @@ const layoutValidationBase = [
           layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
         };
       }),
-      zombies: [...layoutZombieIds].map((id) => {
+      actors: [...layoutZombieIds].map((id) => {
         const zombie = structuredClone(registry.zombies.get(id)!);
         zombie.loot = undefined;
         zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
@@ -481,7 +482,7 @@ describe('authored layout acceptance', () => {
         )
         .map(({ id, position }) => ({
           id: `${playtest.id}_${id}`,
-          type: HORDE_TYPE,
+          type: claimedId(registry.zombies, 'settlementHorde'),
           pos: position.map((metres) => metres / scale.blockSize),
         }));
     const minX = Math.floor(playtest.bounds.x0 / scale.blockSize / CHUNK) - 1;

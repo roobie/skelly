@@ -44,9 +44,12 @@ describe('player footsteps', () => {
     const { registry, issues } = fixtureRegistry();
     expect(issues).toEqual([]);
     const runtimeId = registry.blockIds.get(FIXTURE_BLOCK.id)!;
-    expect(footstepEventAt([0.4, 1.2, 0.6], { halfWidth: 0.3 }, () => runtimeId, registry.blocks)).toBe(
-      'footstep_grass',
-    );
+    expect(
+      footstepEventAt([0.4, 1.2, 0.6], { halfWidth: 0.3 }, () => runtimeId, {
+        blocks: registry.blocks,
+        family: 'player',
+      }),
+    ).toBe('footstep_grass');
   });
 
   it('takes the supporting block event when the centre cell is over air', () => {
@@ -54,9 +57,12 @@ describe('player footsteps', () => {
     const plank = registry.blockIds.get(FIXTURE_PLANK.id)!;
     // The actor stands on a plank ledge with its centre over the air cell beside it.
     const blockIdAt = (x: number) => (x === 1 ? plank : 0);
-    expect(footstepEventAt([0.9, 1, 0.5], { halfWidth: 0.6, halfDepth: 0.6 }, blockIdAt, registry.blocks)).toBe(
-      'footstep_wood',
-    );
+    expect(
+      footstepEventAt([0.9, 1, 0.5], { halfWidth: 0.6, halfDepth: 0.6 }, blockIdAt, {
+        blocks: registry.blocks,
+        family: 'player',
+      }),
+    ).toBe('footstep_wood');
   });
 
   it('rejects a footstep event the pack does not define, naming the authored path', () => {
@@ -76,8 +82,10 @@ describe('player footsteps', () => {
   it('keeps air and an out-of-registry chunk id out of the authored selection contract', () => {
     const { registry } = buildRegistry([]);
     const air = registry.blocks[registry.blockIds.get('air')!]!;
-    expect(footstepEventForBlock(air)).toBeUndefined();
-    expect(() => footstepEventAt([0, 1, 0], { halfWidth: 0.3 }, () => 999, registry.blocks)).toThrow();
+    expect(footstepEventForBlock(air, 'player')).toBeUndefined();
+    expect(() =>
+      footstepEventAt([0, 1, 0], { halfWidth: 0.3 }, () => 999, { blocks: registry.blocks, family: 'player' }),
+    ).toThrow();
   });
 
   it('uses the configured walking, jogging, and sprinting distances between footfalls', () => {

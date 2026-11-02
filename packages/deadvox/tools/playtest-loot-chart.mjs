@@ -3,8 +3,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { placementOf } from '../src/core/authoredPlacement.ts';
+import { claimedId } from '../src/core/capabilities.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from '../src/core/settlementSpawns.ts';
+import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from '../src/core/settlementSpawns.ts';
 import { footprint } from '../src/core/templates.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
@@ -213,7 +214,7 @@ for (const { spawns } of buildings) {
   }
 }
 for (const _horde of playtest.hordes ?? []) {
-  const hordeSource = sourceForZombie(HORDE_TYPE);
+  const hordeSource = sourceForZombie(claimedId(registry.zombies, 'settlementHorde'));
   hordeSource.hordes += 1;
 }
 

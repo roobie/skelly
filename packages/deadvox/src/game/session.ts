@@ -37,13 +37,7 @@ import {
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import { foodMillisecondsAt } from '../core/food.ts';
-import {
-  advanceFootsteps,
-  footstepEventAt,
-  initialFootstepClock,
-  isHardLanding,
-  shamblerFootstepEventAt,
-} from '../core/footsteps.ts';
+import { advanceFootsteps, footstepEventAt, initialFootstepClock, isHardLanding } from '../core/footsteps.ts';
 import {
   advanceFloorLockedPlacement,
   type FurnitureMover,
@@ -1380,7 +1374,10 @@ export const createSession = (options: SessionOptions) => {
     );
     footstepClock = footsteps.clock;
     for (let i = 0; i < footsteps.steps; i++) {
-      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), registry.blocks);
+      const event = footstepEventAt(body.pos, body, (x, y, z) => world.getBlock(x, y, z), {
+        blocks: registry.blocks,
+        family: senseTuning.footsteps.family,
+      });
       if (event) {
         playPlayerSound(event, time);
       }
@@ -1523,7 +1520,7 @@ export const createSession = (options: SessionOptions) => {
     if (piece && entities.isSolid(...hit.block)) {
       return bashPiece(piece, weapon.impulse);
     }
-    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type ?? 'blunt' }) : false;
+    return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
   };
   const traps = new BearTraps(inventory);
   const zombieSystem = new ZombieSystem({
@@ -1597,12 +1594,14 @@ export const createSession = (options: SessionOptions) => {
       );
     },
     onFootstep: (position, id, mode, zombie) => {
-      const event = shamblerFootstepEventAt(
-        position,
-        zombie.body,
-        (x, y, z) => world.getBlock(x, y, z),
-        registry.blocks,
-      );
+      const family = zombie.type.footstepSound;
+      if (family === undefined) {
+        return;
+      }
+      const event = footstepEventAt(position, zombie.body, (x, y, z) => world.getBlock(x, y, z), {
+        blocks: registry.blocks,
+        family,
+      });
       if (!event) {
         return;
       }
@@ -1737,13 +1736,16 @@ export const createSession = (options: SessionOptions) => {
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
     const { damage, impulse, rangeMetres } = spec.fragments;
-    zombieSystem.detonate({ blast: spec.blast, fragments: { origin: at, directions, damage, impulse, rangeMetres } });
+    zombieSystem.detonate({
+      blast: spec.blast,
+      fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
+    });
     const centre = bodyCentre(body);
     const blast =
       spec.blast.damage *
       blastShare(spec.blast, Math.hypot(centre[0] - at[0], centre[1] - at[1], centre[2] - at[2]) * s);
     if (blast > 0 && inSight(at, centre, physicalSolid)) {
-      sim.hit(blast, text.causes.grenade, 'torso', { kind: 'blunt' });
+      sim.hit(blast, text.causes.grenade, 'torso', { kind: spec.blast.damageKind });
     }
     for (const region of fragmentHitsOnBody({
       origin: at,
@@ -1753,7 +1755,7 @@ export const createSession = (options: SessionOptions) => {
       isSolid: physicalSolid,
       regionHeights: bodyTuning.fragmentRegionHeights,
     })) {
-      sim.hit(damage, text.causes.grenade, region, { kind: 'pierce' });
+      sim.hit(damage, text.causes.grenade, region, { kind: spec.fragments.damageKind });
     }
     options.onDetonation?.([at[0] * s, at[1] * s, at[2] * s], spec.blast.radiusMetres);
     // The blast is the player's doing, so it is heard as their noise, from where it went off.
@@ -2512,7 +2514,7 @@ export const createSession = (options: SessionOptions) => {
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
-    playerCombat.restoreState(restored.character.playerCombat);
+    playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();

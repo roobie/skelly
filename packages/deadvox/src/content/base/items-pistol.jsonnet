@@ -23,7 +23,7 @@ local pistol = import 'gungen/pistol_service.model.json';
     {
       id: 'cartridge_9x19', name: '9×19 mm round', category: 'ammo',
       weight: 12, size: [1, 1], stack: 50, model: 'round_9x19', notLoot: true,
-      ammo: { loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip', calibre: '9x19', pellets: 1, spreadDegrees: 0, diameterMm: 9.03, damage: 40, impulse: 2.68, rangeMetres: 100, loadSimSeconds: 0.6, stripSimSeconds: 0.5 },
+      ammo: { damageKind: 'pierce', loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip', calibre: '9x19', pellets: 1, spreadDegrees: 0, diameterMm: 9.03, damage: 40, impulse: 2.68, rangeMetres: 100, loadSimSeconds: 0.6, stripSimSeconds: 0.5 },
     },
     {
       id: 'cartridge_box_9x19', name: '9×19 mm box', category: 'ammo',

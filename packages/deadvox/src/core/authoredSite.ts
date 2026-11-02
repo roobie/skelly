@@ -11,7 +11,7 @@ import {
   rectDistance,
   smoothstep,
 } from './authoredTerrain.mjs';
-import { claimed } from './capabilities.ts';
+import { claimed, claimedId } from './capabilities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, toChunk, type Vec3, yawFromBearing } from './coords.ts';
@@ -21,7 +21,7 @@ import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
-import { HORDE_MEMBERS, HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   focusPose,
   propCentre,
@@ -469,7 +469,7 @@ export class AuthoredSite implements Site {
       }));
     this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
       id: `${layout.id}_${id}`,
-      type: HORDE_TYPE,
+      type: claimedId(registry.zombies, 'settlementHorde'),
       pos: blocks(position),
       members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));

@@ -502,7 +502,7 @@ describe('player melee action', () => {
     const restoredSounds: string[] = [];
     const restored = makeSystem(FLOOR, [], restoredSounds);
     restored.restoreState(original.snapshotState(), (type) => (type === SHAMBLER.id ? SHAMBLER : undefined));
-    combatFor(restored).restoreState(combatFor(original).snapshotState());
+    combatFor(restored).restoreState(combatFor(original).snapshotState(), registry);
     restored.setFrozen(true);
     advance(original, 0.05, hands);
     advance(restored, 0.05, hands);
@@ -528,7 +528,7 @@ describe('player melee action', () => {
     const restoredResults: string[] = [];
     const restored = makeSystem(FLOOR, restoredResults);
     restored.restoreState(state, (type) => (type === SHAMBLER.id ? SHAMBLER : undefined));
-    combatFor(restored).restoreState(actionState);
+    combatFor(restored).restoreState(actionState, registry);
     restored.setFrozen(true);
     expect(combatFor(restored).activeMeleeAction?.elapsed).toBe(0.2);
     for (const system of [original, restored]) {

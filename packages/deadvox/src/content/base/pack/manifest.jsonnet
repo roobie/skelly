@@ -1,6 +1,6 @@
 local content = [
   'benchmark-city', 'block-materials', 'blocks', 'body', 'camp', 'compression', 'controls',
-  'crisis-hq-fixtures', 'crisis-hq', 'dayCycle', 'figures-player', 'furniture-cabins',
+  'crisis-hq-fixtures', 'crisis-hq', 'damage-kinds', 'dayCycle', 'figures-player', 'furniture-cabins',
   'furniture-hunting', 'furniture-playtest', 'furniture', 'gauntlet-look', 'gauntlet-start',
   'gauntlet', 'graphics', 'hunting-cabins', 'inventory', 'item-wear', 'items-ammunition',
   'items-attachments', 'items-explosives', 'items-food', 'items-gun-parts', 'items-other',

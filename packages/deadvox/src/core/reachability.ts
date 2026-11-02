@@ -1,10 +1,12 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
+
+import { claimed } from './capabilities.ts';
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import type { ScenarioDef, SiteLayoutDef } from './schema.ts';
-import { HORDE_TYPE, ordinarySpawnWeights } from './settlementSpawns.ts';
+import { ordinarySpawnWeights } from './settlementSpawns.ts';
 import { type CompiledTemplate, compileMapPiece, compileTemplate, kitSlotChoices } from './templates.ts';
 
 interface RecipeDiagnostic {
@@ -192,7 +194,10 @@ const worldZombieTypes = (
   const types = new Set(layouts.flatMap((layout) => layout.shamblers.map((spawn) => spawn.type)));
   const populations = [...scenarios].map((scenario) => scenario.population);
   if (layouts.some((layout) => layout.hordes?.length) || populations.some((population) => population.hordes > 0)) {
-    types.add(HORDE_TYPE);
+    const provider = claimed(registry.zombies, 'settlementHorde');
+    if (provider) {
+      types.add(provider.id);
+    }
   }
   if (populations.some((population) => population.settlementPressure)) {
     for (const [type, weight] of ordinarySpawnWeights(registry)) {

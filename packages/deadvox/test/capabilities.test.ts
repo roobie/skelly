@@ -57,15 +57,35 @@ describe('content capabilities', () => {
   });
 
   it('rejects non-kind weapon class ids without restricting the unarmed provider id', () => {
-    const tuning = { damageVariance: 0, headDamageMultiplier: 1, limbDamageMultiplier: 1, speedMultiplier: 1 };
-    const validate = (entry: unknown) => validateContent({ source: 'fixture', data: { meleeClasses: [entry] } });
-    expect(validate({ ...tuning, id: 'blunt' })).toEqual([]);
+    const tuning = {
+      pose: 'blunt',
+      damageVariance: 0,
+      headDamageMultiplier: 1,
+      limbDamageMultiplier: 1,
+      speedMultiplier: 1,
+    };
+    const kind = { id: 'fixture_melee_kind', class: 'melee' };
+    const sound = [...baseRegistry().sounds.values()][0]!;
+    const validate = (entry: unknown) =>
+      buildRegistry([
+        {
+          source: 'fixture',
+          data: {
+            damageKinds: [kind],
+            meleeClasses: [entry],
+            sounds: ['fixture_swing', 'fixture_hit'].map((id) => ({ ...sound, id })),
+          },
+        },
+      ]).issues;
+    expect(validate({ ...tuning, id: kind.id })).toEqual([]);
     expect(
       validate({
         ...tuning,
         id: 'fixture_unarmed',
         capability: 'unarmed',
+        pose: 'fists',
         unarmed: {
+          damageKind: kind.id,
           swingSound: 'fixture_swing',
           hitSound: 'fixture_hit',
           motion: 'thrust',
@@ -90,6 +110,7 @@ describe('content capabilities', () => {
       {
         source: 'alternative',
         data: {
+          damageKinds: [base.damageKinds.get(player.debugBlockTool.damageKind)!],
           player: [{ ...player, id: 'fixture_player_tuning' }],
           weathering: [{ ...weathering, id: 'fixture_neutral_surface' }],
         },

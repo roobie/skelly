@@ -1,4 +1,12 @@
 {
+  "soundFamilies": [
+    {
+      "id": "player"
+    },
+    {
+      "id": "shambler"
+    }
+  ],
   "sounds": [
     {
       "category": "body",

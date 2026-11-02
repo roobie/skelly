@@ -1,16 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { acidDamageToZombie } from '../src/core/zombies.ts';
+import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
+import { damageToZombie } from '../src/core/zombies.ts';
 
-describe('zombie acid resistance', () => {
-  it('leaves a type without acidResistance taking the full amount', () => {
-    expect(acidDamageToZombie({}, 10)).toBe(10);
+const BURN_KIND = 'fixture_burn';
+const resistance = (amount: number) =>
+  Object.fromEntries(BODY_REGIONS.map((region) => [region, amount])) as Record<BodyRegion, number>;
+
+describe('actor resistance by declared kind', () => {
+  it('leaves an unresisted kind taking the full amount', () => {
+    expect(damageToZombie({}, 10, 'fixture_burn', 'torso')).toBe(10);
   });
 
-  it('makes a type with acidResistance 1 immune', () => {
-    expect(acidDamageToZombie({ acidResistance: 1 }, 10)).toBe(0);
+  it('makes a fully resisted kind immune without resisting other kinds', () => {
+    const type = { damageResistance: { [BURN_KIND]: resistance(1) } };
+    expect(damageToZombie(type, 10, 'fixture_burn', 'torso')).toBe(0);
+    expect(damageToZombie(type, 10, 'fixture_other', 'torso')).toBe(10);
   });
 
-  it('removes a partial resistance’s share of the amount', () => {
-    expect(acidDamageToZombie({ acidResistance: 0.25 }, 8)).toBeCloseTo(6);
+  it('applies fractional resistance only to the selected region', () => {
+    const type = { damageResistance: { [BURN_KIND]: { ...resistance(0), torso: 0.25 } } };
+    expect(damageToZombie(type, 8, 'fixture_burn', 'torso')).toBeCloseTo(6);
+    expect(damageToZombie(type, 8, 'fixture_burn', 'head')).toBe(8);
   });
 });

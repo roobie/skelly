@@ -4,6 +4,7 @@ read_if:
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content
+  - you change body-plan identity, settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
 ---
@@ -89,14 +90,16 @@ combat policy belong to the product, separately from the mechanisms they modify.
 `docs/decisions/0006-firearm-handling.md` and "Skill providers".
 
 **Creature framework.** Senses, attention, modes and attacks are reusable mechanisms;
-zombie types are Deadvox content. Replace setting model names with body-plan capabilities,
-footstep picklists with declared sound families, and fixed settlement types with claimed
-spawn roles. The section is named `actors` so it can hold non-zombie types and NPCs.
-Relevant owners are `src/core/schema/zombies.ts`, `ZombieSchema` and `zombieRegionsMatchModel`;
-`src/core/zombies.ts`, `ZombieSystem`; `src/core/zombieModels.ts`, `ZOMBIE_MODELS`;
-`src/core/settlementSpawns.ts`, `HORDE_TYPE` and `WANDERER`; and the realization/rendering
-boundaries in `src/core/zombiePose.ts` and `src/render/mobActors.ts`. Their capabilities
-must admit a new content id selecting an existing mechanism without code changes.
+zombie types are Deadvox content. Shape and gait describe reusable body plans without
+requiring another product to inherit zombie vocabulary. Actor identity does not select
+its implementation: see `src/core/zombieModels.ts`, `BODY_PLANS` and `bodyPlanModel`,
+and `src/core/schema/zombies.ts`, `ZombieSchema` and `zombieRegionsMatchModel`.
+Settlement population requests require their claimed providers only when that population
+is selected, so shared content needs no actor merely to validate; see
+`src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementZombieSpawns`,
+and `src/core/capabilities.ts`, `capabilityIssues`. Declared sound families let another
+actor reuse surface responses without pretending to be a particular creature; see
+`src/core/footsteps.ts`, `footstepEventForBlock`. Omission means silence.
 
 **Ability composition.** The wind-up, projectile and ground hazard behind acid spit
 are general mechanisms; acid presentation and type-specific resistance are content.
@@ -105,10 +108,16 @@ a competing composition model first would duplicate that work. The extraction mo
 values without preemptively redesigning the ability's shape or name. See
 `docs/acid-zombie.md`, "Ability, not type".
 
-**Damage kinds are content.** Packs declare kinds and their classes; code owns only
-the classes. Replace `src/core/body.ts`, `DAMAGE_KINDS` and `MELEE_DAMAGE_KINDS`, and
-`src/core/schema/zombies.ts`, `ZombieSchema.acidResistance`, with declared-kind lookup and
-resistance keyed by kind. Fire or poison must not need a code edit merely to be named.
+**Damage kinds are content.** Naming a kind must not require a code edit. Admission
+checks declarations and class compatibility, while content owns response tuning and
+actor resistance; see `src/core/schema/damageKinds.ts`, `DamageKindSchema`,
+`src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/zombies.ts`,
+`damageToZombie`. A weapon's animation mechanism is a separate content selection, so
+adding a melee kind does not imply adding a pose; see `src/game/melee.ts`,
+`meleeProfileForWeapon`. #1532 must settle kind applicability to bodies and terrain
+before widening their supported response domains. Missing tuning is not permission
+to invent resistance or injury responses; see `src/core/body.ts`, `damageResponse`,
+and `src/core/schema/blocks.ts`, `BlockMaterialSchema`.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
@@ -163,10 +172,11 @@ required data are invalid. See `src/core/capabilities.ts`, `CONTENT_CAPABILITIES
 `claimed` and `capabilityIssues`; `src/core/schema/capability.ts`, `capabilityField`;
 and `src/core/content.ts`, `requiredContentIssues`.
 
-Provider identity must not widen mechanism dispatch: weapon melee classes still
-name supported damage kinds so a typo fails admission instead of the first swing.
-The unarmed provider may have an independent id; see `src/core/schema/items.ts`,
-`MeleeClassSchema`.
+Provider identity must not widen mechanism dispatch: a weapon class must resolve a
+declared melee kind and an implemented pose, so a typo fails admission instead of the
+first swing. The unarmed provider may have an independent id; see
+`src/core/schema/items.ts`, `MeleeClassSchema`, and `src/core/damageContent.ts`,
+`checkDamageKinds`.
 
 A neutral weathering profile belongs in shared content: it is engine-level
 presentation that every product needs. Overgrown and benchmark profiles belong to
@@ -213,8 +223,8 @@ These workstreams preserve #637's proof obligations within that one refactor:
 - **Sound selection:** an entry naming an absent sound must be rejected at that entry;
   shared content must validate without product sound rows.
 - **Actors and damage:** prove a new actor id using an existing body plan is admitted
-  without a code edit, and a shared stack needs no zombie type. Replace model-name
-  generator keys with body-plan identity.
+  without a code edit, and a shared stack needs no zombie type. Generator identity
+  follows implemented body plans; see `src/core/saveFormat.ts`, `defaultVersion`.
 - **Ranged content and policy:** shared content validates without firearms. Preserve
   full-product firing and grenade behavior in an existing browser flow while product
   skills read through roles and debug kits become content.
@@ -245,7 +255,10 @@ changed pack; see `src/core/saveFormat.ts`, `currentSaveVersionIdentity` and
 `contentPackDifferences`. Scenario and product topic packs use the same identity rule.
 This remains pack-list identity until #1395 implements evaluated-content identity
 under `docs/decisions/0008-deterministic-world.md`, "Decision". Generator identity
-follows body plans rather than setting model names. Save-store policy is unchanged;
+follows body plans rather than setting model names, so renaming an actor does not
+pretend its generator changed. Saved damage references resolve against the admitted
+kind declarations rather than a code enumeration; see `src/core/saveFormat.ts`,
+`validateContentReferences`. Save-store policy is unchanged;
 see `docs/decisions/0009-content-defined-products.md`, "Saves and proof scope".
 No pre-beta migration is owed (`AGENTS.md`, "Project stage: pre-pre-alpha, no backwards compatibility").
 

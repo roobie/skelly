@@ -334,6 +334,7 @@ local spentCase(id, name, weight, description, model) = {
       ammo: {
         loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip',
         calibre: '12-gauge-00-buck',
+        damageKind: 'pierce',
         pellets: 9,
         spreadDegrees: 2,
         diameterMm: 8.38,

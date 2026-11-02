@@ -63,6 +63,7 @@ local rackBack = audio(['shotgun-rack-back.ogg']);
 local shellInsert = numbered('shotgun-insert', [1, 2]);
 
 {
+  soundFamilies: [{ id: 'player' }, { id: 'shambler' }],
   sounds: [
     handling('shotgun_rack_back', 'Rack the held pump shotgun: its backward hand stroke.', rackBack, 0.65, [1, 1]),
     handling(

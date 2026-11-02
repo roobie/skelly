@@ -1,5 +1,5 @@
 {
-  "zombies": [
+  "actors": [
     {
       "abilities": [],
       "attack": {
@@ -61,6 +61,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "canJumpObstacles": true,
+      "capability": ["settlementHorde", "settlementWanderer"],
       "cause": "a shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
@@ -80,6 +81,32 @@
         "swayIntervalSimSeconds": {
           "max": 1.1000000000000001,
           "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
         }
       },
       "dismember": {
@@ -147,39 +174,7 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "shambler",
+      "model": "humanoid",
       "name": "Shambler",
       "nightSight": 10,
       "regions": {
@@ -336,6 +331,32 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -401,39 +422,7 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "soldier_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "shambler",
+      "model": "humanoid",
       "name": "Soldier",
       "nightSight": 10,
       "regions": {
@@ -590,6 +579,32 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -655,39 +670,7 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "farmer_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "shambler",
+      "model": "humanoid",
       "name": "Farmer",
       "nightSight": 10,
       "regions": {
@@ -844,6 +827,32 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -909,39 +918,7 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "worker_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "shambler",
+      "model": "humanoid",
       "name": "Site worker",
       "nightSight": 10,
       "regions": {
@@ -1098,6 +1075,32 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -1163,39 +1166,7 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "medic_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "shambler",
+      "model": "humanoid",
       "name": "Medic",
       "nightSight": 10,
       "regions": {
@@ -1352,6 +1323,32 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -1417,38 +1414,6 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
       "model": "brute",
       "name": "Brute",
       "nightSight": 10,
@@ -1981,6 +1946,32 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -2035,39 +2026,7 @@
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "locomotion": "omnidirectional",
       "loot": "shambler_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "amalgam",
+      "model": "fused-mass",
       "name": "Amalgam",
       "nightSight": 10,
       "regions": {
@@ -2163,7 +2122,6 @@
           "radiusMetres": 3
         }
       },
-      "acidResistance": 1,
       "acidSpit": {
         "cancelPenaltyFraction": 0.5,
         "cooldownSimSeconds": 5,
@@ -2201,6 +2159,7 @@
           "splashRealSeconds": 0.25
         },
         "puddle": {
+          "damageKind": "acid",
           "damagePerSimSecond": 2,
           "lifetimeSimSeconds": 8,
           "radiusMetres": 0.80000000000000004
@@ -2293,6 +2252,40 @@
           "min": 0.69999999999999996
         }
       },
+      "damageResistance": {
+        "acid": {
+          "head": 1,
+          "leftArm": 1,
+          "leftLeg": 1,
+          "rightArm": 1,
+          "rightLeg": 1,
+          "torso": 1
+        },
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        }
+      },
       "dismember": {
         "chance": 0.14999999999999999,
         "headOnKillChance": 0.25
@@ -2358,38 +2351,6 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
       "model": "acid",
       "name": "Acid zombie",
       "nightSight": 10,

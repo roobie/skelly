@@ -7,6 +7,7 @@ import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
+import { BODY_PLANS } from '../src/core/zombieModels.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
@@ -14,51 +15,52 @@ import { baseRegistry } from './baseRegistry.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const fixtureFigure = zombieFigure({ model: 'shambler' }, 17).realized;
+const fixtureFigure = zombieFigure({ model: 'humanoid' }, 17).realized;
 const ground = { blockSize: 1, isSolid: (_x: number, y: number, _z: number) => y < 0 };
 const pose = { rotations: {}, root: [0, 0, 0] as const };
 
 describe('render ragdoll', () => {
-  it.each(ragdollContent.models)(
-    '%s partitions every skeleton bone once with one limited link per non-root group',
-    async (model) => {
-      const type = model === 'amalgam' ? amalgamTypeOf(baseRegistry().zombies)! : { model };
-      const figure = zombieFigure(type, model === 'amalgam' ? AMALGAM_FIGURE_SEED : 17).realized;
-      const groups = ragdollGroups(figure.body.bones);
-      const indices = groups.flatMap((group) => group.indices);
-      expect(indices.length).toBe(figure.body.bones.length);
-      expect(new Set(indices).size).toBe(indices.length);
-      const world = new RagdollWorld(WORLD_GRAVITY);
-      try {
-        const corpse = world.spawn({
-          realized: figure,
-          pose,
-          position: [0, 0, 0],
-          yaw: 0,
-          direction: -1,
-          seed: 17,
-          ground,
-        });
-        await world.ready;
-        expect(corpse.parts.length).toBe(groups.length);
-        expect(corpse.joints.length).toBe(groups.filter((group) => group.parent !== undefined).length);
-        for (const group of groups) {
-          if (group.parent !== undefined) {
-            const { body } = corpse.parts[groups.indexOf(group)]!;
-            const parent = corpse.parts[group.parent]!.body;
-            const links = corpse.joints.filter(
-              (joint) => joint.body1().handle === parent.handle && joint.body2().handle === body.handle,
-            );
-            expect(links.length).toBe(1);
-            expect(group.limits).not.toBeNull();
-          }
+  it.each(
+    Object.entries(BODY_PLANS)
+      .filter(([, plan]) => ragdollContent.models.includes(plan.model))
+      .map(([plan]) => plan),
+  )('%s partitions every skeleton bone once with one limited link per non-root group', async (model) => {
+    const type = model === 'fused-mass' ? amalgamTypeOf(baseRegistry().zombies)! : { model };
+    const figure = zombieFigure(type, model === 'fused-mass' ? AMALGAM_FIGURE_SEED : 17).realized;
+    const groups = ragdollGroups(figure.body.bones);
+    const indices = groups.flatMap((group) => group.indices);
+    expect(indices.length).toBe(figure.body.bones.length);
+    expect(new Set(indices).size).toBe(indices.length);
+    const world = new RagdollWorld(WORLD_GRAVITY);
+    try {
+      const corpse = world.spawn({
+        realized: figure,
+        pose,
+        position: [0, 0, 0],
+        yaw: 0,
+        direction: -1,
+        seed: 17,
+        ground,
+      });
+      await world.ready;
+      expect(corpse.parts.length).toBe(groups.length);
+      expect(corpse.joints.length).toBe(groups.filter((group) => group.parent !== undefined).length);
+      for (const group of groups) {
+        if (group.parent !== undefined) {
+          const { body } = corpse.parts[groups.indexOf(group)]!;
+          const parent = corpse.parts[group.parent]!.body;
+          const links = corpse.joints.filter(
+            (joint) => joint.body1().handle === parent.handle && joint.body2().handle === body.handle,
+          );
+          expect(links.length).toBe(1);
+          expect(group.limits).not.toBeNull();
         }
-        expect(() => ragdollGroups(figure.body.bones.slice(1))).toThrow();
-      } finally {
-        world.dispose();
       }
-    },
-  );
+      expect(() => ragdollGroups(figure.body.bones.slice(1))).toThrow();
+    } finally {
+      world.dispose();
+    }
+  });
 
   it('rejects authored grouping omissions and duplicate ownership', () => {
     const figure = fixtureFigure;
@@ -114,7 +116,7 @@ describe('render ragdoll', () => {
   // biome-ignore-end lint/suspicious/noMisplacedAssertion: shared invariant probe.
 
   it.each([
-    { model: 'shambler', cuts: [] },
+    { model: 'humanoid', cuts: [] },
     { model: 'runner', cuts: ['head'] },
     { model: 'brute', cuts: ['upperArm.L'] },
     { model: 'crawler', cuts: ['thigh.L', 'thigh.R'] },

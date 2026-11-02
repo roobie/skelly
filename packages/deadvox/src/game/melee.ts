@@ -6,6 +6,14 @@ import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../cor
 import type { ItemDef } from '../core/schema.ts';
 import type { MeleeWeapon } from '../core/zombies.ts';
 
+export const meleeProfileForWeapon = (classes: ReadonlyMap<string, MeleeClassDef>, kind: string) => {
+  const tuning = classes.get(kind);
+  if (!tuning || tuning.unarmed) {
+    throw new Error(`No weapon melee class "${kind}"`);
+  }
+  return tuning.pose;
+};
+
 export type MeleeStartResult = 'started' | 'too-tired' | 'busy';
 
 type ContentMeleeWeapon = NonNullable<NonNullable<ItemDef['weapon']>['melee']>;
@@ -39,6 +47,7 @@ export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassD
   }
   return copyMeleeWeapon({
     motion: unarmed.motion,
+    type: unarmed.damageKind,
     damage: unarmed.damage,
     reach: unarmed.reach,
     cooldown: unarmed.cooldownSimSeconds,

@@ -4,6 +4,7 @@
       "ammo": {
         "calibre": "308-winchester",
         "damage": 65,
+        "damageKind": "pierce",
         "diameterMm": 7.8200000000000003,
         "headDamageMultiplier": 2,
         "impulse": 2.5,
@@ -66,6 +67,7 @@
       "ammo": {
         "calibre": "5.56x45",
         "damage": 35,
+        "damageKind": "pierce",
         "diameterMm": 5.7000000000000002,
         "headDamageMultiplier": 2,
         "impulse": 1,
@@ -96,6 +98,7 @@
       "ammo": {
         "calibre": "7.62x39",
         "damage": 45,
+        "damageKind": "pierce",
         "diameterMm": 7.9199999999999999,
         "headDamageMultiplier": 2,
         "impulse": 1.5,

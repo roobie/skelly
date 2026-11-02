@@ -516,6 +516,7 @@
       "ammo": {
         "calibre": "12-gauge-00-buck",
         "damage": 20,
+        "damageKind": "pierce",
         "diameterMm": 8.3800000000000008,
         "impulse": 0.34999999999999998,
         "loadSimSeconds": 0.80000000000000004,

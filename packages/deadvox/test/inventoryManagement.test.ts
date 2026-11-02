@@ -75,6 +75,7 @@ const fixtureRegistry = (): Registry => {
       size: [1, 1],
       ammo: {
         calibre: 'fixture_calibre',
+        damageKind: 'pierce',
         loadSound: 'fixture_load',
         stripSound: 'fixture_strip',
         pellets: 1,

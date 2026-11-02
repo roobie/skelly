@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy must observe the actual melee block boundary.
 import * as meleeCombat from '../src/core/meleeCombat.ts';
@@ -48,7 +49,16 @@ const shambler: ZombieDef = {
     backgroundStepMetres: 1,
   },
 };
-const resistant: ZombieDef = { ...shambler, id: 'fixture_resistant', acidResistance: 1 };
+const resistant: ZombieDef = {
+  ...shambler,
+  id: 'fixture_resistant',
+  damageResistance: {
+    [spitter.acidSpit!.moves[0]!.damageKind]: Object.fromEntries(BODY_REGIONS.map((region) => [region, 1])) as Record<
+      BodyRegion,
+      number
+    >,
+  },
+};
 const spreadSpitter: ZombieDef = {
   ...spitter,
   id: 'fixture_spread',
@@ -213,7 +223,7 @@ describe('acid glob', () => {
       h.land();
       expect(h.hits.mock.calls.filter(([, , , hit]) => hit?.kind === 'acid')).toHaveLength(0);
       const lost = Object.entries(before).reduce((sum, [region, health]) => sum + health - zombie.regions[region]!, 0);
-      if (type.acidResistance === 1) {
+      if (type === resistant) {
         expect(lost).toBe(0);
       } else {
         expect(lost).toBeGreaterThan(0);

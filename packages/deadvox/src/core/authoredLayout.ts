@@ -14,7 +14,7 @@ import { CHUNK, type Vec3 } from './coords.ts';
 import { placementLootIssues } from './placementLoot.ts';
 import { WORLD_BOTTOM_M, WORLD_TOP_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import { HORDE_TYPE, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
+import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
 import { grow, type Rect, rectDistance, rectsOverlap } from './site.ts';
 import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
@@ -224,9 +224,9 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];
-  const hordeType = registry.zombies.get(HORDE_TYPE);
+  const hordeType = claimed(registry.zombies, 'settlementHorde');
   if (authoredHordes.length > 0 && !hordeType) {
-    issues.push(['.hordes', `no zombie type "${HORDE_TYPE}"`]);
+    issues.push(['.hordes', 'missing required capability "settlementHorde"']);
   }
   const hordeIds = new Set<string>();
   authoredHordes.forEach(({ id, position }, i) => {

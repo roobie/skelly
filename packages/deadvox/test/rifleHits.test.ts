@@ -72,7 +72,7 @@ type AmmoData = NonNullable<ItemDef['ammo']>;
 const expectedLoss = (ammo: AmmoData, region: ZombieRegion, before: ZombieRegions): number => {
   const shambler = registry.zombies.get('shambler')!;
   const scale = region === 'head' ? (ammo.headDamageMultiplier ?? 1) : 1;
-  const resistance = shambler.meleeDamageResistance?.[region].pierce ?? 0;
+  const resistance = shambler.damageResistance?.[ammo.damageKind]?.[region] ?? 0;
   return Math.min(before[region]!, ammo.damage * scale * (1 - resistance));
 };
 
@@ -140,6 +140,7 @@ describe('rifle hits', () => {
       const length = Math.hypot(aim[0] - origin[0], aim[1] - origin[1], aim[2] - origin[2]);
       const direction = aim.map((value, axis) => (value - origin[axis]!) / length) as Vec3;
       const region = session.zombies.aimAt(origin, direction, {
+        type: ammo.damageKind,
         damage: 0,
         reach: ammo.rangeMetres,
         cooldown: 0,

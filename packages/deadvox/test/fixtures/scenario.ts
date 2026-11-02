@@ -13,6 +13,7 @@ import {
 } from '../economyFixtures.ts';
 import { bodySoundIds } from './bodySounds.ts';
 import { fixtureIds } from './capabilityIds.ts';
+import { fixtureDamageContent } from './damageKinds.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
@@ -114,7 +115,15 @@ export const fixtureScenarioSources = (
   const {
     body: [body],
   } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
-  const selectedSounds = new Set(bodySoundIds(body));
+  const { actors } = JSON.parse(readFileSync('src/content/base/zombies.json', 'utf8'));
+  const {
+    footstepSound: _footstepSound,
+    loot: _loot,
+    ...actorSource
+  } = actors.find((entry: { capability?: string[] }) => entry.capability?.includes('settlementHorde'));
+  const actor = { ...actorSource, id: 'fixture_settlement_actor' };
+  actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+  const selectedSounds = new Set([...bodySoundIds(body), ...Object.values(actor.sounds)]);
   const bodySounds = ['sounds', 'sounds-synth', 'sounds-block'].flatMap((name) =>
     (JSON.parse(readFileSync(`src/content/base/${name}.json`, 'utf8')).sounds as { id: string }[]).filter(({ id }) =>
       selectedSounds.has(id),
@@ -130,6 +139,8 @@ export const fixtureScenarioSources = (
     {
       source: 'scenario-fixture.json',
       data: {
+        damageKinds: fixtureDamageContent().damageKinds,
+        actors: [actor],
         furnitureMaterials: fixtureMaterials(),
         blockMaterials: [fixtureBlockMaterial('fixture_solid')],
         sounds: [...fixtureSounds(), ...bodySounds],
@@ -217,6 +228,17 @@ export const fixtureScenarioSources = (
           },
         ],
         items: [
+          {
+            id: 'fixture_dismember_tool',
+            workInProgress: false,
+            notLoot: true,
+            name: 'Fixture blade',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            economy: fixtureEconomy(),
+            tool: { qualities: { [actor.downed.dismember.quality]: actor.downed.dismember.level } },
+          },
           {
             id: 'fixture_token',
             workInProgress: false,

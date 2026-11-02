@@ -1,4 +1,5 @@
 import type { BlockMaterialDef } from '../src/core/schema.ts';
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
   id: 'fixture_material',
@@ -16,6 +17,7 @@ export const fixtureBlockMaterial = (fallsTo: string): BlockMaterialDef => ({
 
 /** Explicit fixture content, independent of base material tuning and identifiers. */
 export const blockMaterialFixture = (fallsTo: string) => ({
+  ...fixtureDamageContent(),
   blockMaterials: [fixtureBlockMaterial(fallsTo)],
   sounds: [
     {

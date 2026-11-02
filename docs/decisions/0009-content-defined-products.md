@@ -3,6 +3,7 @@ read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
   - you classify mods, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or the framework refactor gate
+  - you name reusable mechanisms, actor body plans or content-selected providers
 ---
 
 # 9. Content-defined products on one composable framework
@@ -136,7 +137,7 @@ scenario names in framework mechanisms, such as `packages/deadvox/src/core/gaunt
 `GauntletSite`, to descriptive names: a scenario name in framework code ties every
 product to one scenario. Generic words must not blur distinct mechanisms.
 Content selectors and taxonomies move out of code regardless of the mechanism's name;
-see `packages/deadvox/src/core/settlementSpawns.ts`, `HORDE_TYPE`, and
+see `packages/deadvox/src/core/settlementSpawns.ts`, `settlementHordeSpawn`, and
 `packages/deadvox/src/core/loot.ts`, `LOOT_TIERS`.
 
 ## Remote intake

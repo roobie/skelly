@@ -230,7 +230,7 @@ describe('posed shambler hit regions', () => {
     const seeds = SHAMBLER_FIGURE_SEEDS.slice(0, 4);
     const mean = (model: string) => seeds.reduce((sum, seed) => sum + headTop(model, seed), 0) / seeds.length;
     // Within a tenth of the shambler's height, standing on the same floor.
-    expect(Math.abs(mean('acid') / mean('shambler') - 1)).toBeLessThan(0.1);
+    expect(Math.abs(mean('acid') / mean('humanoid') - 1)).toBeLessThan(0.1);
   });
 
   it('removes severed bones from their hit region without hiding the rest of the arm', () => {

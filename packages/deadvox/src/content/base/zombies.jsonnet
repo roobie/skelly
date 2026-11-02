@@ -11,6 +11,8 @@ local severedItems = {
   leftLeg: 'shambler_left_leg',
   rightLeg: 'shambler_right_leg',
 };
+local resistanceFor(amount) = { [region]: amount for region in std.objectFields(severedItems) };
+local neutralDamageResistance = { [kind]: resistanceFor(0) for kind in ['blunt', 'cut', 'pierce'] };
 local senseHeightMetres = 1.3;
 local hordeSpacing = { innerMetres: 0.35, stepMetres: 0.38 };
 local grabBandMetres = 1.7;
@@ -24,13 +26,13 @@ local severedGore = {
 
 local meleeMotions = { clobber: 'swing', bite: 'wrestle', tentacle_strike: 'thrust' };
 local content = {
-  "zombies": [
+  "actors": [
     {
       "id": "shambler",
       "strength": 5,
       "name": "Shambler",
       "cause": "a shambler",
-      "model": "shambler",
+      "model": "humanoid",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 1,
@@ -53,14 +55,7 @@ local content = {
         "leftLeg": 24,
         "rightLeg": 24
       },
-      "meleeDamageResistance": {
-        "head": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "torso": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "leftArm": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "rightArm": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "leftLeg": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
-      },
+      "damageResistance": neutralDamageResistance,
       "speed": {
         "wanderMetresPerSimSecond": 0.8,
         "chaseMetresPerSimSecond": 2.8,
@@ -156,11 +151,11 @@ local content = {
     },
     {
       "id": "military_shambler",
-      "idleSound": $.zombies[0].idleSound,
+      "idleSound": $.actors[0].idleSound,
       "strength": 5,
       "name": "Soldier",
       "cause": "a soldier",
-      "model": "shambler",
+      "model": "humanoid",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 1,
@@ -180,14 +175,7 @@ local content = {
         "leftLeg": 24,
         "rightLeg": 24
       },
-      "meleeDamageResistance": {
-        "head": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "torso": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "leftArm": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "rightArm": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "leftLeg": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
-      },
+      "damageResistance": neutralDamageResistance,
       "speed": {
         "wanderMetresPerSimSecond": 0.8,
         "chaseMetresPerSimSecond": 2.8,
@@ -281,28 +269,28 @@ local content = {
       "abilities": [],
       "loot": "soldier_pockets"
     },
-    $.zombies[0] + {
+    $.actors[0] + {
       "id": "farmer_shambler",
       "name": "Farmer",
       "cause": "a farmer",
       "authoredOnly": true,
       "loot": "farmer_pockets"
     },
-    $.zombies[0] + {
+    $.actors[0] + {
       "id": "worker_shambler",
       "name": "Site worker",
       "cause": "a site worker",
       "authoredOnly": true,
       "loot": "worker_pockets"
     },
-    $.zombies[0] + {
+    $.actors[0] + {
       "id": "medic_shambler",
       "name": "Medic",
       "cause": "a medic",
       "authoredOnly": true,
       "loot": "medic_pockets"
     },
-    $.zombies[0] + {
+    $.actors[0] + {
       "id": "brute_shambler",
       "name": "Brute",
       "cause": "a brute",
@@ -359,7 +347,7 @@ local content = {
     },
     {
       "id": "runner",
-      "idleSound": $.zombies[0].idleSound,
+      "idleSound": $.actors[0].idleSound,
       "strength": 4,
       "name": "Runner",
       "cause": "a runner",
@@ -468,7 +456,7 @@ local content = {
     },
     {
       "id": "crawler",
-      "idleSound": $.zombies[0].idleSound,
+      "idleSound": $.actors[0].idleSound,
       "strength": 3,
       "name": "Crawler",
       "cause": "a crawler",
@@ -560,11 +548,11 @@ local content = {
     },
     {
       "id": "amalgam",
-      "idleSound": $.zombies[0].idleSound,
+      "idleSound": $.actors[0].idleSound,
       "strength": 0,
       "name": "Amalgam",
       "cause": "an amalgam",
-      "model": "amalgam",
+      "model": "fused-mass",
       "canJumpObstacles": false,
       "locomotion": "omnidirectional",
       "bodyScale": 4,
@@ -586,14 +574,7 @@ local content = {
         "member.leftLeg": 24,
         "member.rightLeg": 24
       },
-      "meleeDamageResistance": {
-        "head": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "torso": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "leftArm": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "rightArm": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "leftLeg": { "blunt": 0, "cut": 0, "pierce": 0 },
-        "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
-      },
+      "damageResistance": neutralDamageResistance,
       "speed": {
         "wanderMetresPerSimSecond": 0.25,
         "chaseMetresPerSimSecond": 1.4,
@@ -668,7 +649,7 @@ local content = {
       "loot": "shambler_pockets"
     },
     // Shambler senses and melee on the acid body; `docs/acid-zombie.md` owns what the type must show.
-    $.zombies[0] + {
+    $.actors[0] + {
       "id": "acid_zombie",
       "name": "Acid zombie",
       "cause": "an acid zombie",
@@ -688,7 +669,7 @@ local content = {
         "attack": "acid_zombie_attack",
         "hurt": "acid_zombie_hurt"
       },
-      "acidResistance": 1,
+      "damageResistance": $.actors[0].damageResistance + { acid: resistanceFor(1) },
       "abilities": ["acidSpit"],
       "acidSpit": {
         "rangeBand": { "nearMetres": 4, "farMetres": 12 },
@@ -717,16 +698,16 @@ local content = {
             ]
           }
         ],
-        "puddle": { "lifetimeSimSeconds": 8, "radiusMetres": 0.8, "damagePerSimSecond": 2 }
+        "puddle": { "damageKind": "acid", "lifetimeSimSeconds": 8, "radiusMetres": 0.8, "damagePerSimSecond": 2 }
       }
     }
   ]
 };
 content + {
-  zombies: [zombie + severedGore + {
+  actors: [zombie + severedGore + {
     jumpMetresPerSimSecond: jumpMetresPerSimSecond,
     speed+: { crawlMetresPerSimSecond: 0.4 },
-    severedItems: if zombie.model == 'amalgam' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
+    severedItems: if zombie.model == 'fused-mass' then { [region]: null for region in std.objectFields(zombie.regions) } else severedItems,
     hearingModel+: {
       loudNoiseRadiusMetres: 30,
       hesitationSimSeconds: { min: 5, max: 5 },
@@ -739,5 +720,5 @@ content + {
     attack+: {
       moves: [move + { motion: meleeMotions[move.id] } for move in zombie.attack.moves],
     },
-  } for zombie in content.zombies],
+  } + (if zombie.id == 'shambler' then { capability: ['settlementHorde', 'settlementWanderer'] } else {}) for zombie in content.actors],
 }

@@ -12,7 +12,7 @@ it('bounds carved flesh independently and removes evicted physics', async () => 
     physics: () => world,
     ground: () => ({ blockSize: 1, isSolid: (_x, y, _z) => y < 0 }),
   });
-  const { realized } = zombieFigure({ model: 'shambler' }, 17);
+  const { realized } = zombieFigure({ model: 'humanoid' }, 17);
   const cell = realized.voxels.owner.findIndex((owner) => owner > 0);
   expect(cell).toBeGreaterThanOrEqual(0);
   try {

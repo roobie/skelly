@@ -14,8 +14,8 @@ local items = [
     description: 'A fragmentation grenade. With the pin pulled, its fuse lights as it leaves the hand.',
     explosive: {
       fuseSimSeconds: 4,
-      blast: { radiusMetres: 7, damage: 180, impulse: 30 },
-      fragments: { count: 600, damage: 30, rangeMetres: 15, impulse: 0.5 },
+      blast: { damageKind: 'blunt', radiusMetres: 7, damage: 180, impulse: 30 },
+      fragments: { damageKind: 'pierce', count: 600, damage: 30, rangeMetres: 15, impulse: 0.5 },
       sound: 'grenade_blast',
     },
   },

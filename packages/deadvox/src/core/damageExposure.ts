@@ -1,4 +1,4 @@
-import { BODY_REGIONS, type BodyRegion, DAMAGE_KINDS, type DamageKind, TOUCHES, type Touch } from './body.ts';
+import { BODY_REGIONS, type BodyRegion, type DamageKind, TOUCHES, type Touch } from './body.ts';
 import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -109,7 +109,7 @@ export class DamageExposures {
     if (
       !(
         BODY_REGIONS.includes(exposure.region) &&
-        DAMAGE_KINDS.includes(exposure.kind) &&
+        Object.hasOwn(this.tuning.shockPerDamage, exposure.kind) &&
         Number.isFinite(exposure.damage)
       ) ||
       exposure.damage < 0 ||

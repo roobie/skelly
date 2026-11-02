@@ -1,25 +1,24 @@
+import { claimedId } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { Rng } from './random.ts';
 import type { HordeSpawn, Rect, ZombieSpawn } from './site.ts';
 import type { SpawnMarker } from './templates.ts';
 
 export const TEMPLATE_BLOCK_SIZE = 0.5;
-export const HORDE_TYPE = 'shambler';
 export const HORDE_MEMBERS = [20, 50] as const;
-const WANDERER = 'shambler';
 const ZOMBIE_COUNT = [6, 10] as const;
 
 export const settlementHordeSpawn = (
+  registry: Pick<Registry, 'zombies'>,
   seed: number,
   road: Rect,
-  roadHeightAt: (x: number) => number,
-  id: string,
+  { roadHeightAt, id }: { readonly roadHeightAt: (x: number) => number; readonly id: string },
 ): HordeSpawn => {
   const rng = Rng.stream(seed, 'settlement-horde');
   const x = Math.floor(road.x0 + (road.x1 - road.x0) * 0.68);
   return {
     id,
-    type: HORDE_TYPE,
+    type: claimedId(registry.zombies, 'settlementHorde'),
     pos: [x + 0.5, roadHeightAt(x) + 1, (road.z0 + road.z1) / 2],
     members: rng.int(...HORDE_MEMBERS),
   };
@@ -33,23 +32,25 @@ export const ordinarySpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<s
   );
 
 export const settlementZombieSpawns = (
+  registry: Pick<Registry, 'zombies'>,
   seed: number,
   road: Rect,
-  markers: readonly SpawnMarker[],
   options: {
+    readonly markers: readonly SpawnMarker[];
     readonly roadHeightAt: (x: number) => number;
     readonly spawnWeights?: ReadonlyMap<string, number>;
     readonly roadsideOffset?: number;
     readonly extraWanderers?: number;
   },
 ): ZombieSpawn[] => {
-  const { roadHeightAt } = options;
+  const { roadHeightAt, markers } = options;
   const rng = Rng.stream(seed, 'settlement-zombies');
-  const spawnWeights = options.spawnWeights ?? new Map([[WANDERER, 1]]);
+  const wanderer = claimedId(registry.zombies, 'settlementWanderer');
+  const spawnWeights = options.spawnWeights ?? new Map([[wanderer, 1]]);
   const selected = markers.filter((spawn) => rng.chance(spawn.chance * (spawnWeights.get(spawn.zombie) ?? 1)));
   const weightedTypes = [...spawnWeights].filter(([, weight]) => weight > 0);
-  if (!weightedTypes.some(([type]) => type === WANDERER)) {
-    weightedTypes.push([WANDERER, 1]);
+  if (!weightedTypes.some(([type]) => type === wanderer)) {
+    weightedTypes.push([wanderer, 1]);
   }
   const totalWeight = weightedTypes.reduce((total, [, weight]) => total + weight, 0);
   const wandererType = (): string => {

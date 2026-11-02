@@ -119,7 +119,7 @@ describe('player melee restore at the contact tolerance edge', () => {
     const first = saved.owner.snapshotState();
     expect(saved.owner.snapshotState()).toEqual(first);
     const restored = combat();
-    expect(() => restored.owner.restoreState(structuredClone(first))).not.toThrow();
+    expect(() => restored.owner.restoreState(structuredClone(first), registry)).not.toThrow();
     for (const step of [1 / 60, FISTS_MELEE.cooldown]) {
       uninterrupted.owner.tick(step, hands);
       restored.owner.tick(step, hands);

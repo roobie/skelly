@@ -1,6 +1,7 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { amalgamFigure } from './amalgamFigure.ts';
+import { bodyPlanModel } from './zombieModels.ts';
 
 export interface ZombieFigureType {
   readonly model: string;
@@ -15,12 +16,12 @@ export const figureSeedPool = (zombies: ReadonlyMap<string, ZombieFigureType>): 
 
 /** The content type realized as the amalgam model, chosen by its model rather than its id. */
 export const amalgamTypeOf = <T extends ZombieFigureType>(zombies: ReadonlyMap<string, T>): T | undefined =>
-  [...zombies.values()].find((type) => type.model === 'amalgam');
+  [...zombies.values()].find((type) => type.model === 'fused-mass');
 
 /** One realization boundary for every content-selected Deadvox zombie model. */
 export const zombieFigure = (type: ZombieFigureType, seed: number) => {
-  if (type.model !== 'amalgam') {
-    return humanoidFigure(type.model, seed);
+  if (type.model !== 'fused-mass') {
+    return humanoidFigure(bodyPlanModel(type.model), seed);
   }
   if (type.bodyScale === undefined) {
     throw new Error('Amalgam figure is missing its authored bodyScale');

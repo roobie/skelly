@@ -19,11 +19,12 @@ import {
   transform,
   boolean as vBoolean,
 } from 'valibot';
-import { BODY_REGIONS, DAMAGE_KINDS } from '../body.ts';
+import { BODY_REGIONS } from '../body.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { simRate } from '../time.ts';
-import { ZOMBIE_MODELS } from '../zombieModels.ts';
+import { BODY_PLANS, type BodyPlan } from '../zombieModels.ts';
 import { ZOMBIE_REGION_NAMES } from '../zombieRegionNames.ts';
+import { capabilityClaimsField } from './capability.ts';
 import {
   Color,
   Count,
@@ -52,25 +53,26 @@ export type ZombieRegions = Record<string, number>;
 
 const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
 
-const ZOMBIE_MODEL = picklist(ZOMBIE_MODELS);
+const BODY_PLAN = picklist(Object.keys(BODY_PLANS) as BodyPlan[]);
 
 const ZOMBIE_ABILITIES = ['acidSpit'] as const;
 
-const MeleeDamageResistanceSchema = strictObject({
-  head: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
-  torso: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
-  leftArm: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
-  rightArm: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
-  leftLeg: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
-  rightLeg: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
-});
+const DamageResistanceSchema = record(
+  Id,
+  strictObject(
+    Object.fromEntries(BODY_REGIONS.map((region) => [region, Fraction])) as Record<
+      (typeof BODY_REGIONS)[number],
+      typeof Fraction
+    >,
+  ),
+);
 
 /** What a landed hit can be, picked by weight as it lands (`DESIGN.md`, "Bleeding"). */
 const DamageMoveSchema = strictObject({
   id: Id,
   weight: Positive,
   damage: Positive,
-  damageKind: picklist(DAMAGE_KINDS),
+  damageKind: Id,
   hitRegions: pipe(
     array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),
     nonEmpty('needs at least one hit region'),
@@ -100,6 +102,7 @@ const AcidSpitSchema = pipe(
     }),
     moves: pipe(array(DamageMoveSchema), nonEmpty('needs at least one move')),
     puddle: strictObject({
+      damageKind: Id,
       lifetimeSimSeconds: PositiveSimSeconds,
       radiusMetres: Positive,
       damagePerSimSecond: Positive,
@@ -132,11 +135,12 @@ const AcidBodySchema = pipe(
 
 export const ZombieSchema = strictObject({
   id: Id,
+  capability: capabilityClaimsField('actors'),
   name: Name,
   /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
   cause: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
-  model: ZOMBIE_MODEL,
+  model: BODY_PLAN,
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
   /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
@@ -164,10 +168,7 @@ export const ZombieSchema = strictObject({
     intervalSimSeconds: SimDurationRange,
     density: strictObject({ radiusMetres: Positive, penaltyPerNeighbour: NonNegative }),
   }),
-  /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
-  meleeDamageResistance: optional(MeleeDamageResistanceSchema),
-  /** Fraction of acid damage resisted, whatever the region; 1 is immune and omitted is neutral. */
-  acidResistance: optional(Fraction),
+  damageResistance: optional(DamageResistanceSchema),
   speed: strictObject({
     wanderMetresPerSimSecond: SimRate,
     chaseMetresPerSimSecond: SimRate,
@@ -178,7 +179,7 @@ export const ZombieSchema = strictObject({
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
   /** Surface-step sound family for grounded travel; omitted types do not emit footfalls. */
-  footstepSound: optional(picklist(['shambler'])),
+  footstepSound: optional(Id),
   /** Whether this type tries to jump low obstacles when grounded. */
   canJumpObstacles: vBoolean(),
   jumpMetresPerSimSecond: pipe(Positive, finite(), transform(simRate)),
@@ -356,7 +357,7 @@ export const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ZombieSc
   zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
 
 export const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
-  const expected = zombie.model === 'amalgam' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
+  const expected = zombie.model === 'fused-mass' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
   const keys = Object.keys(zombie.regions);
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
 };

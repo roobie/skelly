@@ -188,7 +188,7 @@ describe('pain', () => {
 
   it('empties shock at the pain knockout threshold without doing so below it', () => {
     const { knockoutAt, perDamage, perRegionDamage, regionWeight } = BODY_TUNING_FIXTURE.pain;
-    const painPerDamage = perDamage.cut * regionWeight.torso + perRegionDamage;
+    const painPerDamage = perDamage.cut! * regionWeight.torso + perRegionDamage;
     const atThreshold = bodyWith();
     atThreshold.impact(knockoutAt / painPerDamage, 'torso', { kind: 'cut' });
     expect(atThreshold.pain.felt).toBeCloseTo(knockoutAt, 9);

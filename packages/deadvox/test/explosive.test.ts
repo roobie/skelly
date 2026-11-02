@@ -128,6 +128,7 @@ const healthLost = (before: ZombieRegions, after: ZombieRegions): number =>
 const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0): Detonation => ({
   blast,
   fragments: {
+    damageKind: 'pierce',
     origin,
     directions: fragmentDirections(Rng.stream(5, 'test-fragments'), fragmentCount),
     damage: 5,
@@ -359,7 +360,7 @@ describe('hand grenade', () => {
     const far = session.zombieStore.get(session.zombies.add(SHAMBLER, [-6, 0, 0]))!;
     const beyond = session.zombieStore.get(session.zombies.add(SHAMBLER, [0, 0, 14]))!;
     const before = [near, far, beyond].map(({ regions }) => ({ ...regions }));
-    session.zombies.detonate(detonation(origin, { radiusMetres: 6, damage: 20, impulse: 1 }));
+    session.zombies.detonate(detonation(origin, { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }));
     const [nearLoss, farLoss, beyondLoss] = [near, far, beyond].map(({ regions }, i) =>
       healthLost(before[i]!, regions),
     );
@@ -373,7 +374,9 @@ describe('hand grenade', () => {
     const sheltered = session.zombieStore.get(session.zombies.add(SHAMBLER, [6, 0, 0.5]))!;
     const open = session.zombieStore.get(session.zombies.add(SHAMBLER, [-5, 0, 0.5]))!;
     const before = [sheltered, open].map(({ regions }) => ({ ...regions }));
-    session.zombies.detonate(detonation([0.5, 1, 0.5], { radiusMetres: 6, damage: 20, impulse: 1 }, 400));
+    session.zombies.detonate(
+      detonation([0.5, 1, 0.5], { damageKind: 'blunt', radiusMetres: 6, damage: 20, impulse: 1 }, 400),
+    );
     expect(healthLost(before[0]!, sheltered.regions)).toBe(0);
     expect(healthLost(before[1]!, open.regions)).toBeGreaterThan(0);
   });
@@ -386,7 +389,7 @@ describe('hand grenade', () => {
       severedItems: { ...SHAMBLER.severedItems, leftArm: 'rag', rightLeg: null } as typeof SHAMBLER.severedItems,
     };
     const id = session.zombies.add(type, [1, 0, 0]);
-    session.zombies.detonate(detonation([0, 1, 0], { radiusMetres: 6, damage: 1000, impulse: 1 }));
+    session.zombies.detonate(detonation([0, 1, 0], { damageKind: 'blunt', radiusMetres: 6, damage: 1000, impulse: 1 }));
     expect(session.zombieStore.get(id)).toBeUndefined();
     const dropped = [...session.inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type));
     const limbs = (['leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const)

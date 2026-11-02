@@ -125,7 +125,7 @@ import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
-import type { ZombieModel } from '../core/zombieModels.ts';
+import { bodyPlanModel, type ZombieModel } from '../core/zombieModels.ts';
 import { acidSpitWindupProgress, posedShambler, zombieCrawls, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
@@ -486,7 +486,7 @@ interface BuiltActorVariant {
 }
 
 const requireAmalgamType = (type: ZombieFigureType | undefined): ZombieFigureType => {
-  if (type?.model !== 'amalgam') {
+  if (type?.model !== 'fused-mass') {
     throw new Error('MobActorMeshes requires the amalgam content type when amalgam actors are enabled');
   }
   return type;
@@ -524,10 +524,10 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
 };
 
 const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ZombieFigureType): BuiltActorVariant => {
-  const type = model === 'amalgam' ? requireAmalgamType(amalgamType) : { model };
+  const type = model === 'fused-mass' ? requireAmalgamType(amalgamType) : { model };
   const figure = zombieFigure(type, seed);
   const { genome, realized } = figure;
-  const bodyScale = model === 'amalgam' ? type.bodyScale : undefined;
+  const bodyScale = model === 'fused-mass' ? type.bodyScale : undefined;
   return {
     model,
     figureSeed: seed,
@@ -539,7 +539,7 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: Zombie
       params: genome.params as HumanoidParams,
       seed: genome.seed,
     },
-    lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
+    lookAt: LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : bodyPlanModel(model)]!,
     severedRoots: severedRootsFor(figure),
     headPart: 'severableParts' in figure ? figure.severableParts.head[0] : undefined,
   };
@@ -553,7 +553,7 @@ const figureSeedsByModel = (
 ): ReadonlyMap<ActorModel, readonly number[]> => {
   const byModel = new Map<ActorModel, number[]>();
   for (const type of zombies.values()) {
-    const authored = type.model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : (type.figureSeeds ?? []);
+    const authored = type.model === 'fused-mass' ? [AMALGAM_FIGURE_SEED] : (type.figureSeeds ?? []);
     const seeds = byModel.get(type.model) ?? [];
     byModel.set(type.model, [...new Set([...seeds, ...authored])]);
   }
@@ -765,7 +765,7 @@ export class MobActorMeshes implements ZombieRenderer {
           partBoneIndices: boneIndices,
           bodyBoneIndices: v.realized.body.bones.map((_, index) => index),
           voxelSize: v.realized.voxels.size,
-          template: templatesByModel.get(v.model)!,
+          template: templatesByModel.get(bodyPlanModel(v.model))!,
           part,
         });
         const bounds = voxelBounds(v.realized.voxels, boneIndices, properties.center);
@@ -1108,7 +1108,7 @@ export class MobActorMeshes implements ZombieRenderer {
       lastSeenFrame: this.frameCounter,
     };
     this.states.set(id, state);
-    if (variant.model === 'amalgam') {
+    if (variant.model === 'fused-mass') {
       this.addTentacle(id);
     }
     return state;
@@ -1155,7 +1155,7 @@ export class MobActorMeshes implements ZombieRenderer {
       return;
     }
     const figure = zombieFigure(zombie.type, zombie.figureSeed);
-    if (zombie.type.model !== 'amalgam') {
+    if (zombie.type.model !== 'fused-mass') {
       throw new Error('Amalgam tentacle requires the amalgam figure');
     }
     const amalgam = figure as AmalgamFigure;
@@ -1483,7 +1483,7 @@ export class MobActorMeshes implements ZombieRenderer {
       return;
     }
     const variant = this.variants[corpse.variantIndex]!;
-    if (ragdollContent.models.includes(variant.model)) {
+    if (ragdollContent.models.includes(bodyPlanModel(variant.model))) {
       this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       corpse.ragdoll = this.ragdolls.spawn({
         realized: variant.realized,
@@ -2336,7 +2336,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const halfWidth = zombie.body.halfWidth * this.blockSize;
     const halfDepth = (zombie.body.halfDepth ?? zombie.body.halfWidth) * this.blockSize;
     const height = zombie.body.height * this.blockSize;
-    const amalgam = zombie.type.model === 'amalgam';
+    const amalgam = zombie.type.model === 'fused-mass';
     return {
       center: new Vector3(
         placement.worldPos[0],

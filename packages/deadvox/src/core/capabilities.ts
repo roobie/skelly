@@ -1,6 +1,8 @@
 import type { ContentIssue, Registry } from './content.ts';
+import { registrySection } from './registrySection.ts';
 
 export const CONTENT_CAPABILITIES = {
+  actors: { settlementHorde: 'optional', settlementWanderer: 'optional' },
   body: { player: 'required' },
   compression: { player: 'required' },
   figures: { player: 'required' },
@@ -27,11 +29,13 @@ export const CONTENT_CAPABILITIES = {
 
 interface Claimant {
   id: string;
-  capability?: string | undefined;
+  capability?: string | readonly string[] | undefined;
 }
 
 const claimants = <T extends Claimant>(entries: ReadonlyMap<string, T>, capability: string): T[] =>
-  [...entries.values()].filter((entry) => entry.capability === capability);
+  [...entries.values()].filter((entry) =>
+    typeof entry.capability === 'string' ? entry.capability === capability : entry.capability?.includes(capability),
+  );
 
 export const claimed = <T extends Claimant>(entries: ReadonlyMap<string, T>, capability: string): T | undefined => {
   const providers = claimants(entries, capability);
@@ -52,7 +56,10 @@ export const claimedId = <T extends Claimant>(entries: ReadonlyMap<string, T>, c
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   for (const [section, capabilities] of Object.entries(CONTENT_CAPABILITIES)) {
-    const entries = registry[section as keyof typeof CONTENT_CAPABILITIES] as ReadonlyMap<string, Claimant>;
+    const entries = registry[registrySection(section as keyof typeof CONTENT_CAPABILITIES)] as ReadonlyMap<
+      string,
+      Claimant
+    >;
     for (const [capability, requirement] of Object.entries(capabilities)) {
       const providers = claimants(entries, capability);
       if (providers.length === 0 && (!requireAll || requirement === 'optional')) {

@@ -55,6 +55,10 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
       return registry.zombies.has(id);
     case 'sound':
       return registry.sounds.has(id);
+    case 'damageKind':
+      return registry.damageKinds.has(id);
+    case 'meleeDamageKind':
+      return registry.damageKinds.get(id)?.class === 'melee';
     case 'scheduler':
       return KNOWN_SCHEDULER_IDS.has(id);
     case 'skill':

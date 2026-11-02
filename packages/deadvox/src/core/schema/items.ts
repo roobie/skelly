@@ -24,10 +24,11 @@ import {
   variant,
   boolean as vBoolean,
 } from 'valibot';
-import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS } from '../body.ts';
+import { BODY_REGIONS } from '../body.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
 import { ItemEconomySchema } from '../loot.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
+import { MELEE_PROFILES } from '../meleePose.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from '../readable.ts';
 import { capabilityField } from './capability.ts';
 import {
@@ -141,11 +142,11 @@ const WearableSchema = pipe(
     encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
     warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
     wearPerDamage: optional(NonNegative),
-    protects: optional(record(picklist(DAMAGE_KINDS), pipe(NonNegative, maxValue(1)))),
+    protects: optional(record(Id, pipe(NonNegative, maxValue(1)))),
     /** Damage kinds that neither reach the wearer through it nor wear it (`DESIGN.md`, "Worn coverage"). */
     imperviousTo: optional(
       pipe(
-        array(picklist(DAMAGE_KINDS)),
+        array(Id),
         check((kinds) => new Set(kinds).size === kinds.length, 'impervious damage kinds must be unique'),
       ),
     ),
@@ -246,13 +247,14 @@ const WeaponSchema = strictObject({
     hitSound: Id,
     /** Played over the hit, such as a metal ring for a metal weapon. */
     hitLayerSound: optional(Id),
-    type: picklist(MELEE_DAMAGE_KINDS),
+    type: Id,
     charge: optional(MeleeChargeSchema),
   }),
 });
 
 /** The bare-handed attack, which no item supplies. */
 const UnarmedAttackSchema = strictObject({
+  damageKind: Id,
   swingSound: Id,
   hitSound: Id,
   motion: picklist(MELEE_MOTIONS),
@@ -271,6 +273,7 @@ export const MeleeClassSchema = pipe(
   strictObject({
     id: Id,
     capability: capabilityField('meleeClasses'),
+    pose: picklist(MELEE_PROFILES),
     /** Fractional spread applied symmetrically around base weapon damage. */
     damageVariance: Fraction,
     headDamageMultiplier: Positive,
@@ -281,8 +284,8 @@ export const MeleeClassSchema = pipe(
     unarmed: optional(UnarmedAttackSchema),
   }),
   check(
-    ({ id, capability }) => capability === 'unarmed' || MELEE_DAMAGE_KINDS.some((kind) => kind === id),
-    'a weapon melee class id must name a melee damage kind',
+    (meleeClass) => (meleeClass.capability === 'unarmed') === (meleeClass.pose === 'fists'),
+    'only the unarmed class selects the fists pose',
   ),
   check(
     (meleeClass) => (meleeClass.capability === 'unarmed') === (meleeClass.unarmed !== undefined),
@@ -371,6 +374,7 @@ const FirearmSchema = strictObject({
 
 /** Per projectile (one rifle bullet, or each pellet); damage, push and reach are gameplay estimates, not ballistics. */
 const AmmoSchema = strictObject({
+  damageKind: Id,
   loadSound: Id,
   stripSound: Id,
   calibre: CalibreId,
@@ -502,12 +506,13 @@ const ExplosiveSchema = strictObject({
    * Region health taken from every region of a body whose centre the blast sees, and the push in N·s on it, both
    * falling to none at the radius.
    */
-  blast: strictObject({ radiusMetres: Positive, damage: Positive, impulse: Positive }),
+  blast: strictObject({ damageKind: Id, radiusMetres: Positive, damage: Positive, impulse: Positive }),
   /**
    * Seeded rays through the shot hit test; each takes `damage` from the region it strikes. Every ray is traced
    * against the bodies in range when the charge goes off, so the count sets that moment's cost.
    */
   fragments: strictObject({
+    damageKind: Id,
     count: pipe(Count, minValue(1, 'must be at least 1'), maxValue(1000, 'must be at most 1000')),
     damage: Positive,
     rangeMetres: Positive,
@@ -526,7 +531,7 @@ const TrapSchema = strictObject({
   /** How long its jaws hold a caught leg before the victim pulls free. */
   holdSimSeconds: PositiveSimSeconds,
   /** The player's wound when it springs on them. */
-  playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: picklist(DAMAGE_KINDS) }),
+  playerInjury: strictObject({ region: picklist(BODY_REGIONS), damage: Positive, kind: Id }),
   /** Health taken from a caught zombie's legs, shared between those not yet destroyed. */
   zombieLegDamage: NonNegative,
 });

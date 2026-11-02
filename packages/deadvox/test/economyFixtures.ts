@@ -6,6 +6,8 @@ import type { ItemEconomy, LootContext, LootSpawnPoint } from '../src/core/loot.
 import { simSeconds } from '../src/core/time.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
+
 export const fixtureEconomy = (): ItemEconomy => ({
   usage: ['Residential', 'Industrial', 'Medical', 'Hunting', 'Police', 'Military', 'Infected'],
   tiers: ['Tier1', 'Tier2', 'Tier3'],
@@ -48,6 +50,8 @@ export const fixtureMaterialSource = (): ContentSource => {
   return {
     source: 'fixture-materials.json',
     data: {
+      ...fixtureDamageContent(),
+      soundFamilies: structuredClone(baseSounds.soundFamilies),
       furnitureMaterials: fixtureMaterials(),
       itemWear: structuredClone(baseItemWear.itemWear),
       sounds: [...fixtureSounds(), sound],

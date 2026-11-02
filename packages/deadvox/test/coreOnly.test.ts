@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import bodyContent from '../src/content/base/body.json' with { type: 'json' };
+import sensesContent from '../src/content/base/senses.json' with { type: 'json' };
 import soundContent from '../src/content/base/sounds.json' with { type: 'json' };
 import blockSoundContent from '../src/content/base/sounds-block.json' with { type: 'json' };
 import synthContent from '../src/content/base/sounds-synth.json' with { type: 'json' };
@@ -11,6 +12,7 @@ import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
 const CORE_TOPICS = [
   'body',
+  'damage-kinds',
   'compression',
   'figures-player',
   'inventory',
@@ -44,6 +46,9 @@ it('validates selected core topics without booting or hiding unowned or stale is
   sources.push({
     source: 'core-only/selected-sounds.json',
     data: {
+      soundFamilies: soundContent.soundFamilies.filter(({ id }) =>
+        sensesContent.senses.some((senses) => senses.footsteps.family === id),
+      ),
       sounds: [...soundContent.sounds, ...synthContent.sounds, ...blockSoundContent.sounds].filter(({ id }) =>
         selectedSounds.has(id),
       ),

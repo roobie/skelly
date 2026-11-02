@@ -1335,7 +1335,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(system.store, 0, 1);
       expect(renderer.isBoneHidden(id, 'head')).toBe(true);
       expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
-      const head = zombieFigure({ model: 'shambler' }, 1).realized.body.bones.findIndex((bone) => bone.id === 'head');
+      const head = zombieFigure({ model: 'humanoid' }, 1).realized.body.bones.findIndex((bone) => bone.id === 'head');
       const finished = (
         renderer as unknown as { corpses: ReadonlyMap<number, { ragdoll: import('../src/render/ragdoll.ts').Ragdoll }> }
       ).corpses.get(id)!;
@@ -1359,7 +1359,7 @@ describe('MobActorMeshes reactions', () => {
   });
 
   it.each([
-    { model: 'shambler', cuts: ['thigh.L'] },
+    { model: 'humanoid', cuts: ['thigh.L'] },
     { model: 'runner', cuts: ['thigh.L', 'thigh.R'] },
     { model: 'brute', cuts: ['thigh.R'] },
   ])(

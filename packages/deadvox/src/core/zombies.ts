@@ -17,7 +17,7 @@ import {
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
 import { AmalgamShape } from './amalgamShape.ts';
-import type { BodyRegion, DamageKind, MeleeDamageKind } from './body.ts';
+import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -50,6 +50,7 @@ import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
+import { bodyPlanModel } from './zombieModels.ts';
 import {
   advanceStanceWeight,
   posedMouth,
@@ -105,7 +106,7 @@ const requiredGrabBand = (type: ZombieDef): number => {
 };
 
 export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
-  type.model === 'amalgam' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
+  type.model === 'fused-mass' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
 
 /**
  * Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it.
@@ -117,8 +118,9 @@ import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive
 import type { PelletShot } from './pellets.ts';
 
 /** A shot's or a blast's hit, dealt through the melee hit path without a swing to recover from. */
-const projectileWeapon = (damage: number, reach: number, impulse: number): HitWeapon => ({
+const projectileWeapon = (damage: number, reach: number, impulse: number, type: DamageKind): HitWeapon => ({
   damage,
+  type,
   reach,
   cooldown: 0,
   impulse,
@@ -128,17 +130,17 @@ const zombieRegionClass = (region: ZombieHitRegion): string =>
   region === 'core.trunk' ? 'torso' : (region.split('.').at(-1) ?? region);
 
 export const lethalRegion = (type: ZombieDef, region: ZombieHitRegion): boolean =>
-  region === 'core.trunk' || (type.model !== 'amalgam' && zombieRegionClass(region) === 'head');
+  region === 'core.trunk' || (type.model !== 'fused-mass' && zombieRegionClass(region) === 'head');
 
 const maxZombieRegionHealth = (type: ZombieDef, region: ZombieHitRegion): number | undefined => {
-  if (type.model === 'amalgam') {
+  if (type.model === 'fused-mass') {
     return type.regions[region === 'core.trunk' ? region : `member.${zombieRegionClass(region)}`];
   }
   return type.regions[region];
 };
 
 const zombieRegionsFor = (type: ZombieDef, seed: number): ZombieRegions => {
-  if (type.model !== 'amalgam') {
+  if (type.model !== 'fused-mass') {
     return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ZombieRegions;
   }
   const figure = amalgamFigureForType(type, seed);
@@ -160,7 +162,7 @@ const validStanceWeight = (weight: number | undefined): boolean =>
 const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
-type MeleeDamageType = MeleeDamageKind;
+type MeleeDamageType = DamageKind;
 type ZombieMove = ZombieDef['attack']['moves'][number];
 type ZombieHitRegionChoice = ZombieMove['hitRegions'][number];
 
@@ -203,7 +205,7 @@ interface HitWeapon {
   readonly swingSound?: SoundId | undefined;
   readonly hitSound?: SoundId | undefined;
   readonly hitLayerSound?: SoundId | undefined;
-  readonly type?: MeleeDamageType | undefined;
+  readonly type: MeleeDamageType;
 }
 
 export interface ZombieAim {
@@ -268,20 +270,22 @@ const meleeDamageForContact = (
   const spread = weapon.damageVariance;
   const rolled =
     spread === undefined ? weapon.damage : weapon.damage * zombie.dismemberRng.range(1 - spread, 1 + spread);
-  const regionClass = zombieRegionClass(region) as keyof NonNullable<ZombieDef['meleeDamageResistance']>;
+  const regionClass = zombieRegionClass(region) as BodyRegion;
   let multiplier = 1;
   if (regionClass === 'head') {
     multiplier = weapon.headDamageMultiplier ?? 1;
   } else if (regionClass !== 'torso') {
     multiplier = weapon.limbDamageMultiplier ?? 1;
   }
-  const resistance = zombie.type.meleeDamageResistance?.[regionClass][damageType] ?? 0;
-  return rolled * multiplier * (1 - resistance);
+  return damageToZombie(zombie.type, rolled * multiplier, damageType, regionClass);
 };
 
-/** Acid damage a zombie type takes; a type with `acidResistance` 1 is immune. */
-export const acidDamageToZombie = (type: Pick<ZombieDef, 'acidResistance'>, amount: number): number =>
-  amount * (1 - (type.acidResistance ?? 0));
+export const damageToZombie = (
+  type: Pick<ZombieDef, 'damageResistance'>,
+  amount: number,
+  kind: DamageKind,
+  region: BodyRegion,
+): number => amount * (1 - (type.damageResistance?.[kind]?.[region] ?? 0));
 
 export interface MeleeResult {
   readonly id?: EntityId | undefined;
@@ -425,7 +429,7 @@ export interface AmalgamMemberContribution {
 export const activeAmalgamMembers = (
   zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>,
 ): readonly AmalgamMemberContribution[] => {
-  if (zombie.type.model !== 'amalgam') {
+  if (zombie.type.model !== 'fused-mass') {
     return [];
   }
   const severed = new Set(zombie.severed);
@@ -436,8 +440,8 @@ export const activeAmalgamMembers = (
 
 /** Remaining manifest members share the authored attack reach; with none, the unseverable core cannot attack. */
 export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>): number => {
-  if (zombie.type.model !== 'amalgam' || activeAmalgamMembers(zombie).length === 0) {
-    return zombie.type.model === 'amalgam' ? 0 : zombie.type.attack.reach;
+  if (zombie.type.model !== 'fused-mass' || activeAmalgamMembers(zombie).length === 0) {
+    return zombie.type.model === 'fused-mass' ? 0 : zombie.type.attack.reach;
   }
   return zombieAttackReachForType(zombie.type, zombie.figureSeed);
 };
@@ -710,7 +714,7 @@ const posedRegionsForZombie = ({
   }
   const poseInput = zombiePoseInputFor(zombie, id, blockSize);
   const posed =
-    zombie.type.model === 'amalgam' ? posedAmalgamRegionBoxes(poseInput) : posedShamblerRegionBoxes(poseInput);
+    zombie.type.model === 'fused-mass' ? posedAmalgamRegionBoxes(poseInput) : posedShamblerRegionBoxes(poseInput);
   poseCache?.set(id, posed);
   return posed;
 };
@@ -734,7 +738,7 @@ const rayMayHitZombie = (zombie: Zombie, origin: Vec3, direction: Vec3, blockSiz
   );
 };
 const isActiveHitRegion = (zombie: Zombie, region: ZombieHitRegion): boolean => {
-  const memberPart = zombie.type.model === 'amalgam' ? AMALGAM_MEMBER_REGION.exec(region)?.[1] : undefined;
+  const memberPart = zombie.type.model === 'fused-mass' ? AMALGAM_MEMBER_REGION.exec(region)?.[1] : undefined;
   return zombie.regions[region]! > 0 && !(memberPart !== undefined && zombie.severed.includes(memberPart));
 };
 /** A body's regions with the one whose loss kills last, so a blast severs limbs before it kills. */
@@ -894,7 +898,7 @@ const withinAttackReach = (probe: AttackReachProbe): boolean => {
   const chestOffset = PLAYER_CHEST_METRES / blockSize;
   const playerChest: Vec3 = [playerPos[0], playerPos[1] + chestOffset, playerPos[2]];
   const origin =
-    zombie.type.model === 'amalgam'
+    zombie.type.model === 'fused-mass'
       ? strikeOrigin(probe, reachMetres, playerChest)
       : grabOrigin(probe, reachMetres, chestOffset);
   return origin !== undefined && clearLine(origin, playerChest, isSolid);
@@ -972,7 +976,7 @@ const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
 // parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
 
 const cutsFor = (zombie: Zombie) => {
-  const figure = humanoidFigure(zombie.type.model, zombie.figureSeed);
+  const figure = humanoidFigure(bodyPlanModel(zombie.type.model), zombie.figureSeed);
   return { parts: figure.severableParts, bones: figure.realized.body.bones };
 };
 
@@ -1706,7 +1710,7 @@ export class ZombieSystem {
     if (collider === undefined) {
       const zombie = [...this.store.entries()].find(([, candidate]) => candidate.body === body)?.[1];
       collider =
-        zombie?.type.model === 'amalgam'
+        zombie?.type.model === 'fused-mass'
           ? {
               zombie,
               shape: new AmalgamShape(
@@ -1924,10 +1928,10 @@ export class ZombieSystem {
         if (!type) {
           throw new Error(`Missing zombie type ${zombie.type}`);
         }
-        if (type.model === 'amalgam' && zombie.figureSeed !== AMALGAM_FIGURE_SEED) {
+        if (type.model === 'fused-mass' && zombie.figureSeed !== AMALGAM_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
         }
-        if (type.model !== 'amalgam' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
+        if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
           throw new Error(`Invalid zombie state for entity ${id}`);
         }
         const expectedRegions = zombieRegionsFor(type, zombie.figureSeed);
@@ -1942,7 +1946,7 @@ export class ZombieSystem {
         ) {
           throw new Error(`Invalid zombie regions for entity ${id}`);
         }
-        if (type.model === 'amalgam') {
+        if (type.model === 'fused-mass') {
           const envelope = amalgamCollisionEnvelope(
             amalgamFigureForType(type, zombie.figureSeed),
             this.options.blockSize,
@@ -2211,7 +2215,7 @@ export class ZombieSystem {
   add(type: ZombieDef, position: Vec3, facing: Vec3 = [0, 0, -1]): EntityId {
     const direction = unit(facing);
     const figureSeed =
-      type.model === 'amalgam'
+      type.model === 'fused-mass'
         ? AMALGAM_FIGURE_SEED
         : requiredFigureSeeds(type)[
             Rng.stream(this.options.seed ?? 0, `zombie-figure:${this.store.nextId}`).int(
@@ -3383,7 +3387,7 @@ export class ZombieSystem {
       zombie.staggerSimSeconds <= 0 &&
       zombie.attackWait <= 0 &&
       zombie.spitWindup <= 0 &&
-      (type.model === 'amalgam' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie)) &&
+      (type.model === 'fused-mass' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie)) &&
       this.reachableZombieMoves(zombie, pos, player.pos).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
@@ -3497,7 +3501,7 @@ export class ZombieSystem {
   ): void {
     const footfallCandidates = entries.flatMap(([id, zombie]) => {
       if (
-        zombie.type.footstepSound !== 'shambler' ||
+        zombie.type.footstepSound === undefined ||
         !groundedAtTickStart.get(zombie) ||
         !zombie.body.onGround ||
         zombie.horizontalSpeed <= 0.01
@@ -3617,14 +3621,14 @@ export class ZombieSystem {
             rate: puddle.damagePerSimSecond / 2,
             cause: type.cause,
             region,
-            kind: 'acid',
+            kind: type.acidSpit!.puddle.damageKind,
             touch: 'ground',
           });
         } else {
           this.options.onPlayerLeaveExposure?.(id);
         }
       }
-      this.burnZombieFeet(puddle, radius, damage);
+      this.burnZombieFeet(puddle, radius, damage, type.acidSpit!.puddle.damageKind);
       puddle.remainingSimSeconds = Math.max(0, puddle.remainingSimSeconds - dt);
       if (puddle.remainingSimSeconds === 0) {
         for (const region of ['leftLeg', 'rightLeg'] as const) {
@@ -3635,10 +3639,9 @@ export class ZombieSystem {
     this.puddles = this.puddles.filter(({ state }) => state.remainingSimSeconds > 0);
   }
 
-  private burnZombieFeet(puddle: Readonly<AcidPuddleState>, radius: number, damage: number): void {
+  private burnZombieFeet(puddle: Readonly<AcidPuddleState>, radius: number, damage: number, kind: DamageKind): void {
     for (const [id, zombie] of this.store.entries()) {
-      const burn = acidDamageToZombie(zombie.type, damage);
-      if (burn <= 0 || !feetInAcidPuddle(zombie.body, puddle, radius)) {
+      if (damage <= 0 || !feetInAcidPuddle(zombie.body, puddle, radius)) {
         continue;
       }
       const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter((region) =>
@@ -3648,7 +3651,11 @@ export class ZombieSystem {
         if (zombie.regions[region]! <= 0) {
           continue;
         }
-        const healthAfter = this.damageRegion(zombie, region, burn / legs.length);
+        const burn = damageToZombie(zombie.type, damage / legs.length, kind, zombieRegionClass(region) as BodyRegion);
+        if (burn <= 0) {
+          continue;
+        }
+        const healthAfter = this.damageRegion(zombie, region, burn);
         this.resolveRegionDamage(id, zombie, region, healthAfter);
       }
     }
@@ -3689,7 +3696,12 @@ export class ZombieSystem {
       });
     } else if (contact.kind === 'zombie') {
       const { id, zombie, region, cell } = contact.hit;
-      const damage = move.damageKind === 'acid' ? acidDamageToZombie(zombie.type, state.damage) : state.damage;
+      const damage = damageToZombie(
+        zombie.type,
+        state.damage,
+        move.damageKind,
+        zombieRegionClass(region) as BodyRegion,
+      );
       if (damage > 0) {
         const strike = this.applyMeleeHit({
           id,
@@ -3699,8 +3711,8 @@ export class ZombieSystem {
           origin: position,
           direction: unit(state.velocity),
           distanceMetres: 0,
-          weapon: projectileWeapon(damage, 0, 0),
-          damageType: 'blunt',
+          weapon: projectileWeapon(damage, 0, 0, move.damageKind),
+          damageType: move.damageKind,
           damageOverride: damage,
           isFist: false,
           projectile: true,
@@ -3831,7 +3843,8 @@ export class ZombieSystem {
   ): RegionHit | undefined {
     const { blockSize } = this.options;
     const posed = posedRegionsForZombie({ id, zombie, blockSize, poseCache });
-    const figure = zombie.type.model === 'amalgam' ? amalgamFigureForType(zombie.type, zombie.figureSeed) : undefined;
+    const figure =
+      zombie.type.model === 'fused-mass' ? amalgamFigureForType(zombie.type, zombie.figureSeed) : undefined;
     let found = nearest;
     for (const regionId of Object.keys(zombie.regions)) {
       const region = regionId as ZombieHitRegion;
@@ -3905,8 +3918,7 @@ export class ZombieSystem {
     const stops: (number | undefined)[] = [];
     const poseCache = new Map<EntityId, Readonly<Record<string, readonly PosedBoneBox[]>>>();
     const weapon: HitWeapon = {
-      ...projectileWeapon(shot.damage, shot.rangeMetres, shot.impulse),
-      type: 'pierce',
+      ...projectileWeapon(shot.damage, shot.rangeMetres, shot.impulse, shot.damageKind),
       ...(shot.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: shot.headDamageMultiplier }),
     };
     // One shot's pellets carve one hole per amalgam, struck against the flesh as it was before the shot's
@@ -3935,7 +3947,7 @@ export class ZombieSystem {
         direction,
         distanceMetres: aim.distanceMetres,
         weapon,
-        damageType: 'pierce',
+        damageType: shot.damageKind,
         isFist: false,
         projectile: true,
       });
@@ -3971,7 +3983,12 @@ export class ZombieSystem {
       reached += 1;
       const toward: Vec3 =
         distance > 0 ? [centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]] : [0, 1, 0];
-      const weapon = projectileWeapon(blast.damage * share, blast.radiusMetres, blast.impulse * share);
+      const weapon = projectileWeapon(
+        blast.damage * share,
+        blast.radiusMetres,
+        blast.impulse * share,
+        blast.damageKind,
+      );
       for (const region of blastOrder(zombie)) {
         if (this.store.get(id) !== zombie) {
           break;
@@ -3986,7 +4003,7 @@ export class ZombieSystem {
             direction: toward,
             distanceMetres,
             weapon,
-            damageType: 'blunt',
+            damageType: blast.damageKind,
             isFist: false,
             projectile: true,
           });
@@ -4027,7 +4044,7 @@ export class ZombieSystem {
       direction,
       distanceMetres: aim.distanceMetres,
       weapon,
-      damageType: weapon.type ?? 'blunt',
+      damageType: weapon.type,
       isFist,
     });
     if (strike) {
@@ -4087,7 +4104,7 @@ export class ZombieSystem {
     const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
     const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
     const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
-    const headPart = zombie.type.model === 'amalgam' ? undefined : regionCut(zombie, 'head');
+    const headPart = zombie.type.model === 'fused-mass' ? undefined : regionCut(zombie, 'head');
     const part = headPart !== undefined && newParts.includes(headPart) ? headPart : newParts[0];
     const outcome = meleeOutcome(killed, incapacitated, part, headPart);
     if (!projectile) {
@@ -4150,7 +4167,7 @@ export class ZombieSystem {
   }
 
   private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
-    if (zombie.type.model === 'amalgam') {
+    if (zombie.type.model === 'fused-mass') {
       const member = AMALGAM_MEMBER_REGION.exec(region)?.[1];
       if (member && healthAfter === 0) {
         this.sever(id, zombie, member, hit);
@@ -4166,7 +4183,7 @@ export class ZombieSystem {
       this.rollDismember(id, zombie, killed, hit);
     }
     const incapacitated = this.resolveRegionDamage(id, zombie, region, healthAfter);
-    if (!killed && zombie.type.model !== 'amalgam' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
+    if (!killed && zombie.type.model !== 'fused-mass' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
       this.options.onSevered?.(zombie, region as ZombieRegion);
     }
     return incapacitated;
@@ -4197,7 +4214,7 @@ export class ZombieSystem {
   private resolveRegionDamage(id: EntityId, zombie: Zombie, region: ZombieHitRegion, healthAfter: number): boolean {
     const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
     const incapacitated =
-      zombie.type.model !== 'amalgam' && region === 'torso' && healthAfter === 0 && zombie.regions.head! > 0;
+      zombie.type.model !== 'fused-mass' && region === 'torso' && healthAfter === 0 && zombie.regions.head! > 0;
     if (incapacitated && !zombie.incapacitated) {
       zombie.incapacitated = true;
       zombie.horizontalSpeed = 0;

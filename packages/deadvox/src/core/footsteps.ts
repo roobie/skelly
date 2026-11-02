@@ -29,8 +29,8 @@ export const initialFootstepClock = (): FootstepClock => ({
   stepIndex: 0,
 });
 
-/** The authored player footstep event for a block; a block without a contract (air) is silent. */
-export const footstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.player;
+export const footstepEventForBlock = (block: BlockDef, family: string): SoundEventId | undefined =>
+  block.footsteps?.[family];
 
 export interface FootstepAdvance {
   clock: FootstepClock;
@@ -108,9 +108,6 @@ export const advanceShamblerFootsteps = (
   return { clock: { distanceUntilStep: remaining - distance, nextLongStep }, steps };
 };
 
-/** The authored shambler footstep event for a block; a block without a contract (air) is silent. */
-export const shamblerFootstepEventForBlock = (block: BlockDef): SoundEventId | undefined => block.footsteps?.shambler;
-
 /** An actor's horizontal half extents in blocks; halfDepth defaults to a square footprint. */
 export interface Footprint {
   halfWidth: number;
@@ -148,31 +145,14 @@ const supportBlocks = (
   return found.map(({ block }) => block);
 };
 
-/** Selects the authored player footstep event for the nearest supporting block, if it declares one. */
 export const footstepEventAt = (
   position: Vec3,
   footprint: Footprint,
   blockIdAt: (x: number, y: number, z: number) => number,
-  blocks: readonly BlockDef[],
+  { blocks, family }: { readonly blocks: readonly BlockDef[]; readonly family: string },
 ): SoundEventId | undefined => {
   for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
-    const event = footstepEventForBlock(block);
-    if (event !== undefined) {
-      return event;
-    }
-  }
-  return undefined;
-};
-
-/** Selects the authored shambler footstep event for the nearest supporting block, if it declares one. */
-export const shamblerFootstepEventAt = (
-  position: Vec3,
-  footprint: Footprint,
-  blockIdAt: (x: number, y: number, z: number) => number,
-  blocks: readonly BlockDef[],
-): SoundEventId | undefined => {
-  for (const block of supportBlocks(position, footprint, blockIdAt, blocks)) {
-    const event = shamblerFootstepEventForBlock(block);
+    const event = footstepEventForBlock(block, family);
     if (event !== undefined) {
       return event;
     }

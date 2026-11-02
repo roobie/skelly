@@ -1,6 +1,6 @@
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
-import { BODY_REGIONS, DAMAGE_KINDS, MELEE_DAMAGE_KINDS, TOUCHES } from './body.ts';
+import { BODY_REGIONS, TOUCHES } from './body.ts';
 import { getBuildRevision } from './buildInfo.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -16,6 +16,7 @@ import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import { MELEE_MOTIONS } from './meleeMotion.ts';
+import { MELEE_PROFILES } from './meleePose.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import { PLAYER_STANCES } from './playerStance.ts';
 import type { SaveSnapshot } from './saveState.ts';
@@ -24,6 +25,7 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { assertVehicleState, type VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedChunk, SavedColumn } from './world.ts';
 import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
+import { BODY_PLANS } from './zombieModels.ts';
 import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
@@ -60,6 +62,8 @@ export type SaveContentKind =
   | 'climbable'
   | 'zombie'
   | 'sound'
+  | 'damageKind'
+  | 'meleeDamageKind'
   | 'scheduler'
   | 'skill'
   | 'recipe'
@@ -157,7 +161,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 64;
+export const SAVE_SCHEMA_VERSION = 65;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
 const HASH = /^[0-9a-f]{64}$/;
@@ -172,7 +176,12 @@ function defaultVersion(): SaveVersionComponents {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SAVE_SCHEMA_VERSION,
-      generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+      generators: {
+        worldgen: 'worldgen-v2',
+        ...Object.fromEntries(
+          Object.entries(BODY_PLANS).map(([plan, capability]) => [`bodyPlan.${plan}`, capability.generator]),
+        ),
+      },
       contentPacks: __DEADVOX_CONTENT_PACKS__,
     };
   } catch (error) {
@@ -318,7 +327,7 @@ const simulationFields = {
     exposures: arr(
       obj({
         region: enumeration(BODY_REGIONS),
-        kind: enumeration(DAMAGE_KINDS),
+        kind: str({ id: true }),
         damage: nonNegative,
         roll: num({ min: 0, max: 1 }),
         infectionRoll: num({ min: 0, max: 1 }),
@@ -729,7 +738,7 @@ const playerState = obj({
 });
 const meleeAction = nullable(
   obj({
-    profile: enumeration([...MELEE_DAMAGE_KINDS, 'fists']),
+    profile: enumeration(MELEE_PROFILES),
     hand: enumeration(['right', 'left']),
     twoHanded: bool,
     cooldown: positive,
@@ -758,7 +767,7 @@ const meleeAction = nullable(
       swingSound: opt(str({ id: true })),
       hitSound: opt(str({ id: true })),
       hitLayerSound: opt(str({ id: true })),
-      type: opt(enumeration(MELEE_DAMAGE_KINDS)),
+      type: str({ id: true }),
       charge: opt(
         obj({
           fullSimSeconds: positive,
@@ -1776,6 +1785,19 @@ function validateItemContentReferences(
   }
 }
 
+function validateDamageReferences(
+  snapshot: SaveSnapshot,
+  check: (kind: SaveContentKind, id: string, path: string) => void,
+): void {
+  for (const [index, exposure] of snapshot.character.simulation.exposures.exposures.entries()) {
+    check('damageKind', exposure.kind, `character.simulation.exposures.exposures[${index}].kind`);
+  }
+  const { meleeAction: action } = snapshot.character.playerCombat;
+  if (action) {
+    check('meleeDamageKind', action.weapon.type, 'character.playerCombat.meleeAction.weapon.type');
+  }
+}
+
 function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLookup): void {
   const check = (kind: SaveContentKind, id: string, path: string, item?: ItemState) => {
     if (!lookup(kind, id, item)) {
@@ -1807,6 +1829,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   ) {
     throw new Error('Duplicate known recipe');
   }
+  validateDamageReferences(snapshot, check);
   validateItemContentReferences(snapshot.character.inventory, snapshot.world.vehicles, check);
   for (const { id, vehicle } of snapshot.world.vehicles.instances) {
     check('vehicleBlueprint', vehicle.blueprint, `world.vehicles.${id}.blueprint`);

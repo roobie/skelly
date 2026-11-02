@@ -2,7 +2,7 @@ import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
-import { footstepEventForBlock, type PlayerGait, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
+import { footstepEventForBlock, type PlayerGait } from '../src/core/footsteps.ts';
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -31,7 +31,11 @@ const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
 const shamblerFootstepEvents = new Set<SoundId | undefined>(
-  registry.blocks.map((block) => shamblerFootstepEventForBlock(block)),
+  [...registry.zombies.values()].flatMap((actor) =>
+    actor.footstepSound === undefined
+      ? []
+      : registry.blocks.map((block) => footstepEventForBlock(block, actor.footstepSound!)),
+  ),
 );
 
 const blockBlow: ZombieDef['attack']['moves'][number] = {
@@ -267,7 +271,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const surfaces = new Map<string, string>();
     for (const block of registry.blocks) {
       if (block.solid) {
-        const event = footstepEventForBlock(block);
+        const event = footstepEventForBlock(block, [...registry.senses.values()][0]!.footsteps.family);
         if (event && registry.sounds.has(event) && !surfaces.has(event)) {
           surfaces.set(event, block.id);
         }

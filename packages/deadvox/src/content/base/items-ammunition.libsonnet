@@ -11,7 +11,7 @@
       model: 'round_308_h_winchester',
       ammo: {
         loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip',
-        calibre: '308-winchester', pellets: 1, spreadDegrees: 0, diameterMm: 7.82,
+        damageKind: 'pierce', calibre: '308-winchester', pellets: 1, spreadDegrees: 0, diameterMm: 7.82,
         damage: 65, impulse: 2.5, rangeMetres: 700, headDamageMultiplier: 2,
         loadSimSeconds: 0.8, stripSimSeconds: 0.5,
       },
@@ -36,6 +36,7 @@
       "description": "A loose 5.56×45 rifle cartridge.",
       "ammo": {
         "calibre": "5.56x45",
+        "damageKind": "pierce",
         "loadSound": "magazine_round_insert",
         "stripSound": "magazine_round_strip",
         "pellets": 1,
@@ -60,6 +61,7 @@
       "description": "A loose 7.62×39 rifle cartridge.",
       "ammo": {
         "calibre": "7.62x39",
+        "damageKind": "pierce",
         "loadSound": "magazine_round_insert",
         "stripSound": "magazine_round_strip",
         "pellets": 1,

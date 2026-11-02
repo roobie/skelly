@@ -61,6 +61,7 @@ read_if:
   - you change shared world gravity, player jump height, zombie hops or acid flight balance
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
+  - you change descriptive body-plan selection or its generator boundary
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you change quickbar assignment feedback
   - you add or change a first-person handling animation (what it may read its timing from)
@@ -2837,7 +2838,7 @@ Zombie types are content definitions used by shared systems; choose behavior thr
 
 A shambler's kit is the loot table its type names in `loot`, rolled when it dies from the world seed and the zombie's id (see `src/game/session.ts`, `onDeath`), so it is deterministic and needs no state of its own: the drop is an ordinary pile that saves already cover. Kit belongs to the kind and lives in content, not in code, because a kind such as the farmer, the site worker or the medic then differs from a plain shambler by one more type and one more table, never by a branch on its id. Kinds with a kit are authored-only and spawn only where their place puts them. Kit uses ordinary items; military loot remains restricted to site containers. A corpse drops only what its loot context admits, so a base kit item outside that context is dead content and a base-content test rejects it; validate does not, because a table supplies weights, not a second geography authority (`DESIGN.md`, "Loot"). For #487, defer rendering what a kind wears and carries, the military clothing palette, armour, and body searching; until then clothes and tools appear only as drops.
 
-The brute shambler guards the secret cellar (`packages/deadvox/docs/content.md`, "City building types"). It is an authored-only type on mobgen's brute body, with more health and harder hits than the shambler as content values. It wears the brute body rather than a shambler's so it reads as a different kind of zombie in the dark. It bashes doors with no more strength than the shambler and never knocks the player back: the tier-2 Brute's door breaking and knockback arrive together (`packages/deadvox/EPIC.md`, "5. Holding ground"). What that leaves open: a player meets the brute's look in a city house before the evolution line introduces brutes. See `src/core/schema/zombies.ts`, `ZOMBIE_MODEL`.
+The cellar brute uses a distinct body so it reads as a different threat in the dark. Its authored placement introduces that silhouette before the evolution line introduces brutes, without granting the later door breaking and knockback. Those abilities belong together under `packages/deadvox/EPIC.md`, "5. Holding ground". See `packages/deadvox/docs/content.md`, "City building types", and `src/core/schema/zombies.ts`, `BODY_PLAN`.
 
 ### Obstacle hops
 
@@ -2964,13 +2965,12 @@ low profile that limits its bite to the player's legs. Its posture determines
 posed hit regions, so gait and flinches follow those regions. Keep other short or
 hunched forms as distinct future types, not crawler variants.
 
-A type's body is a content choice: its `model` names a mobgen figure the renderer
-can build, and the renderer draws each type with the model and figure seeds its
-content selects, so a model left out of that list cannot be selected. A figure
-seed must realize a valid body by itself. One that fell through to the next valid
-seed would draw two seeds as one body and quietly shrink the variety content
-authored, so it is refused, and a model whose template rejects some shared seeds
-authors its own. See `src/core/zombieModels.ts`, `ZOMBIE_MODELS`;
+A type's body is a content choice, independent of its identity. Shape and gait
+names let other products reuse implemented bodies without inheriting zombie
+vocabulary. A figure seed must realize a valid body by itself. Falling through to
+the next valid seed would draw two seeds as one body and quietly shrink authored
+variety, so it is refused; a body plan whose template rejects shared seeds authors
+its own. See `src/core/zombieModels.ts`, `BODY_PLANS` and `bodyPlanModel`;
 `src/render/mobActors.ts`, `figureSeedsByModel`; and
 `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
 

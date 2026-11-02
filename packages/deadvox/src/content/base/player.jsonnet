@@ -11,7 +11,7 @@
     jump: 4.6761,
     gravityMetresPerSimSecondSquared: 9.81,
     reach: 4,
-    debugBlockTool: { reachMetres: 8, stepDurabilityFraction: 0.25 },
+    debugBlockTool: { damageKind: 'blunt', reachMetres: 8, stepDurabilityFraction: 0.25 },
     stepHeight: 0.5,
     movement: { sidewaysSpeedScale: 0.7, backwardSpeedScale: 0.5 },
     lean: {

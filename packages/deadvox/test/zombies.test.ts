@@ -3770,7 +3770,7 @@ describe('dismemberment', () => {
       regions: { ...survives, head: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    type.meleeDamageResistance = undefined;
+    type.damageResistance = undefined;
     const hitSystem = new ZombieSystem(senses(() => player([100, 2, 0])));
     const hitId = hitSystem.add(type, [1, 1, 0], [0, 0, 1]);
     const hitZombie = hitSystem.store.get(hitId)!;
@@ -3788,8 +3788,8 @@ describe('dismemberment', () => {
     });
     const blastId = blastSystem.add(type, [1, 1, 0], [0, 0, 1]);
     blastSystem.detonate({
-      blast: { radiusMetres: 6, damage: 1_000_000, impulse: 1 },
-      fragments: { origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
+      blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
+      fragments: { damageKind: 'pierce', origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
     expect(blastSystem.store.get(blastId)).toBeUndefined();
     expect(blastDeathRegions).toBeDefined();

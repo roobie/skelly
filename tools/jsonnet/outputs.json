@@ -65,6 +65,10 @@
       "output": "packages/deadvox/src/content/base/crisis-hq.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/damage-kinds.jsonnet",
+      "output": "packages/deadvox/src/content/base/damage-kinds.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
       "output": "packages/deadvox/src/content/base/figures-player.json"
     },
@@ -375,6 +379,10 @@
     {
       "source": "packages/deadvox/test/fixtures/content/recipe-too-many-combinations.jsonnet",
       "output": "packages/deadvox/test/fixtures/content/recipe-too-many-combinations.json"
+    },
+    {
+      "source": "packages/deadvox/test/fixtures/content/zombie-with-model.jsonnet",
+      "output": "packages/deadvox/test/fixtures/content/zombie-with-model.json"
     },
     {
       "source": "packages/deadvox/test/fixtures/mods/browser-mod.jsonnet",

@@ -406,9 +406,27 @@ describe('static reachability', () => {
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
-    registry.zombies.set('fixture_spawn', { ...shambler, id: 'fixture_spawn', loot: 'spawned', authoredOnly: true });
-    registry.zombies.set('fixture_direct', { ...shambler, id: 'fixture_direct', loot: 'direct', authoredOnly: true });
-    registry.zombies.set('fixture_zero', { ...shambler, id: 'fixture_zero', loot: 'zero_spawn', spawnWeight: 0 });
+    registry.zombies.set('fixture_spawn', {
+      ...shambler,
+      id: 'fixture_spawn',
+      capability: undefined,
+      loot: 'spawned',
+      authoredOnly: true,
+    });
+    registry.zombies.set('fixture_direct', {
+      ...shambler,
+      id: 'fixture_direct',
+      capability: undefined,
+      loot: 'direct',
+      authoredOnly: true,
+    });
+    registry.zombies.set('fixture_zero', {
+      ...shambler,
+      id: 'fixture_zero',
+      capability: undefined,
+      loot: 'zero_spawn',
+      spawnWeight: 0,
+    });
     registry.templates.set('shed', {
       id: 'shed',
       lootContext: fixtureLootContext(),

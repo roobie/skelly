@@ -60,6 +60,7 @@
       "ammo": {
         "calibre": "9x19",
         "damage": 40,
+        "damageKind": "pierce",
         "diameterMm": 9.0299999999999994,
         "impulse": 2.6800000000000002,
         "loadSimSeconds": 0.59999999999999998,

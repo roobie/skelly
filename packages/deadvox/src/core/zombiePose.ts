@@ -17,6 +17,7 @@ import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob
 import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { ZombieFigure } from './zombieFigure.ts';
+import { bodyPlanModel } from './zombieModels.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {
@@ -63,7 +64,7 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
 };
 
 export const zombieCrawls = (zombie: Zombie): boolean => {
-  if (templateByName(zombie.type.model).bodyPlan !== 'humanoid') {
+  if (templateByName(bodyPlanModel(zombie.type.model)).bodyPlan !== 'humanoid') {
     return false;
   }
   if (zombie.regions.leftLeg! <= 0 || zombie.regions.rightLeg! <= 0) {
@@ -72,7 +73,7 @@ export const zombieCrawls = (zombie: Zombie): boolean => {
   if (zombie.severed.length === 0) {
     return false;
   }
-  const { severableParts } = humanoidFigure(zombie.type.model, zombie.figureSeed);
+  const { severableParts } = humanoidFigure(bodyPlanModel(zombie.type.model), zombie.figureSeed);
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => zombie.severed.includes(part));
 };
 
@@ -249,7 +250,7 @@ export const targetStanceWeight = (input: ShamblerPoseInput): number => {
   if (input.chasing || input.attackWindup > 0) {
     return 1;
   }
-  const model = input.model ?? 'shambler';
+  const model = bodyPlanModel(input.model ?? 'humanoid');
   if (model === 'acid') {
     return acidAttackTimeFor(input) === undefined ? 0 : 1;
   }
@@ -377,7 +378,7 @@ export const posedMouth = (input: ShamblerPoseInput): Vec3 => {
 
 /** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
-  const model = input.model ?? 'shambler';
+  const model = bodyPlanModel(input.model ?? 'humanoid');
   if (model === 'amalgam') {
     return posedAmalgam(input);
   }
@@ -423,12 +424,12 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
 export const HIT_FLINCH_DURATION = HIT_FLINCH.duration;
 
 export const zombieHitFlinchDuration = (model: string): number => {
-  if (model === 'amalgam') {
+  if (model === 'fused-mass') {
     return HIT_FLINCH_DURATION;
   }
   if (model === 'acid') {
     return acidTemplate.animation.hitDuration;
   }
-  const template = templateByName(model);
+  const template = templateByName(bodyPlanModel(model));
   return template.bodyPlan === 'crawler' ? HIT_FLINCH_DURATION : flinchClipFor(template).duration;
 };

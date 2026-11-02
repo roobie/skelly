@@ -971,6 +971,7 @@ describe('real pump ammunition', () => {
     const a = open.zombies.add(type, [0, 0, -8]);
     const b = blocked.zombies.add(type, [0, 0, -8]);
     const shot: PelletShot = {
+      damageKind: 'pierce',
       origin: [0, 2, 0],
       directions: [[0, 0, -1]],
       damage: 20,

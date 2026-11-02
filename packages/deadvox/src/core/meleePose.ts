@@ -2,7 +2,8 @@ import { DEFAULT_HANDED_CHARACTER } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { HeldPosesDef } from './schema.ts';
 
-export type MeleeProfile = 'blunt' | 'cut' | 'pierce' | 'fists';
+export const MELEE_PROFILES = ['blunt', 'cut', 'pierce', 'fists'] as const;
+export type MeleeProfile = (typeof MELEE_PROFILES)[number];
 export type MeleeHand = 'right' | 'left';
 
 /** Contact is quick for heavy weapons too, by the weapon's cap; recovery still fills its full cooldown. */

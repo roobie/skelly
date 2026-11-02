@@ -10,6 +10,7 @@ import type { BundleAdmission } from './bundleAdmission.ts';
 import { capabilityIssues, claimed } from './capabilities.ts';
 import { scenarioPlanIssues, settlementCollectionIssues } from './cityPlan.ts';
 import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
+import { checkDamageKinds } from './damageContent.ts';
 import { liftableFurniture } from './furnitureMove.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
@@ -89,7 +90,10 @@ export interface ContentIssue {
 }
 
 type RegistryMaps = {
-  [S in Exclude<ContentSection, 'blocks'>]: Map<string, NonNullable<ContentFile[S]>[number]>;
+  [S in Exclude<ContentSection, 'blocks'> as S extends 'actors' ? 'zombies' : S]: Map<
+    string,
+    NonNullable<ContentFile[S]>[number]
+  >;
 };
 
 export interface Registry extends RegistryMaps {
@@ -105,6 +109,8 @@ export interface Registry extends RegistryMaps {
 }
 
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
+
+import { registrySection } from './registrySection.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -256,7 +262,7 @@ interface Origin {
 const emptyRegistry = (): Registry => ({
   // Object.fromEntries loses key-specific types; every ordinary section receives its native map.
   ...(Object.fromEntries(
-    SECTIONS.filter((section) => section !== 'blocks').map((section) => [section, new Map()]),
+    SECTIONS.filter((section) => section !== 'blocks').map((section) => [registrySection(section), new Map()]),
   ) as RegistryMaps),
   blocks: [AIR],
   blockIds: new Map([[AIR.id, 0]]),
@@ -290,7 +296,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       if (section === 'blocks') {
         continue;
       }
-      const map = registry[section];
+      const map = registry[registrySection(section)];
       (file[section] ?? []).forEach((def, i) => {
         if (section === 'skills') {
           const skill = def as NonNullable<ContentFile['skills']>[number];
@@ -1560,11 +1566,11 @@ const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report
     regions.length !== Object.keys(zombie.severedItems).length ||
     regions.some((region) => !Object.hasOwn(zombie.severedItems, region))
   ) {
-    report('zombies', zombie.id, '.severedItems', 'severed item keys must match region keys');
+    report('actors', zombie.id, '.severedItems', 'severed item keys must match region keys');
   }
   for (const [region, item] of Object.entries(zombie.severedItems)) {
     if (item !== null && !registry.items.has(item)) {
-      report('zombies', zombie.id, `.severedItems.${region}`, `no item "${item}"`);
+      report('actors', zombie.id, `.severedItems.${region}`, `no item "${item}"`);
     }
   }
 };
@@ -1573,17 +1579,20 @@ const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
     checkSeveredItems(registry, zombie, report);
+    if (zombie.footstepSound !== undefined && !registry.soundFamilies.has(zombie.footstepSound)) {
+      report('actors', zombie.id, '.footstepSound', `no sound family "${zombie.footstepSound}"`);
+    }
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
-      report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+      report('actors', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
     }
     const quality = zombie.downed?.dismember.quality;
     if (quality !== undefined && !qualities.has(quality)) {
-      report('zombies', zombie.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
+      report('actors', zombie.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
       const event = zombie.sounds[key];
       if (!registry.sounds.has(event)) {
-        report('zombies', zombie.id, `.sounds.${key}`, `no sound event "${event}"`);
+        report('actors', zombie.id, `.sounds.${key}`, `no sound event "${event}"`);
       }
     }
   }
@@ -1914,8 +1923,20 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
   });
 };
 
+const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, report: Report): void => {
+  for (const [capability, required, field] of [
+    ['settlementHorde', scenario.population.hordes > 0, 'hordes'],
+    ['settlementWanderer', scenario.population.settlementPressure, 'settlementPressure'],
+  ] as const) {
+    if (required && !claimed(registry.zombies, capability)) {
+      report('scenarios', scenario.id, `.population.${field}`, `missing required capability "${capability}"`);
+    }
+  }
+};
+
 const checkScenarios = (registry: Registry, report: Report): void => {
   for (const scenario of registry.scenarios.values()) {
+    checkScenarioPopulation(registry, scenario, report);
     for (const [path, message] of scenarioPlanIssues(registry, scenario)) {
       report('scenarios', scenario.id, path, message);
     }
@@ -1933,11 +1954,19 @@ const checkScenarios = (registry: Registry, report: Report): void => {
 };
 
 const checkBlockFootsteps = (registry: Registry, report: Report): void => {
+  for (const senses of registry.senses.values()) {
+    if (!registry.soundFamilies.has(senses.footsteps.family)) {
+      report('senses', senses.id, '.footsteps.family', `no sound family "${senses.footsteps.family}"`);
+    }
+  }
   for (const { id, footsteps } of registry.blocks) {
     if (!footsteps) {
       continue;
     }
     for (const [family, event] of Object.entries(footsteps)) {
+      if (!registry.soundFamilies.has(family)) {
+        report('blocks', id, `.footsteps.${family}`, `no sound family "${family}"`);
+      }
       if (!registry.sounds.has(event)) {
         report('blocks', id, `.footsteps.${family}`, `no sound event "${event}"`);
       }
@@ -2193,6 +2222,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkKeys(registry, report);
   checkZombies(registry, report);
+  checkDamageKinds(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
   checkHeartbeatSounds(registry, report);

@@ -21,6 +21,7 @@
         "speedMetresPerSimSecond": 1
       },
       "debugBlockTool": {
+        "damageKind": "blunt",
         "reachMetres": 8,
         "stepDurabilityFraction": 0.25
       },

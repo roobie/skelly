@@ -5,6 +5,7 @@ read_if:
   - you change mobgen's material, budget or carve contracts while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
   - you change acid animation, gaze or the spit mouth anchor
+  - you change Deadvox body-plan selection or its mobgen realization boundary
   - you change creature-owned severed-part item policy
   - you build the cross-mob far level of detail for per-bone meshes
 ---
@@ -147,12 +148,13 @@ Tuning stays in content rather than test literals. Its release-freeze triggers b
 
 ## What Deadvox needs
 
-Deadvox picks a model by id, resolves it through `consumableTemplate` and builds hit boxes
-from the bones the body plan lists per region. See `packages/deadvox/src/core/schema/zombies.ts`,
-`ZOMBIE_MODEL`; `src/mob/shamblerFigure.ts`, `zombieFigure`; and
-`packages/deadvox/src/core/zombieRegions.ts`. The acid body's bones have their own names (it has a
-skull and maw, not head and jaw, and a belly and hips, not spine and pelvis), so a humanoid
-name lookup would find nothing.
+Actor identity must not determine its skeleton. Deadvox resolves a selected body plan
+at the mobgen boundary, keeping each plan's region ownership authoritative rather than
+forcing the acid body's distinct bones through humanoid names. See
+`packages/deadvox/src/core/schema/zombies.ts`, `BODY_PLAN`;
+`packages/deadvox/src/core/zombieModels.ts`, `bodyPlanModel`;
+`src/mob/shamblerFigure.ts`, `zombieFigure`; and
+`packages/deadvox/src/core/zombieRegions.ts`.
 
 - **Hit regions.** Each plan says which of its bones form head, torso and limbs, because
   renaming acid bones to humanoid names would hide that it is its own skeleton. The sac's

@@ -70,6 +70,7 @@
       "ammo": {
         "calibre": "357-magnum",
         "damage": 70,
+        "damageKind": "pierce",
         "diameterMm": 9.0700000000000003,
         "impulse": 4,
         "loadSimSeconds": 0.69999999999999996,

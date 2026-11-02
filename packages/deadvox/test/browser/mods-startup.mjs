@@ -68,7 +68,7 @@ export const selectFixtureMods = async (page) => {
 
 export const assertFixtureMods = async (page, fixture) => {
   const [item] = fixture.items;
-  const [zombie] = fixture.zombies;
+  const [zombie] = fixture.actors;
   const actual = await page.evaluate(
     ({ itemId, zombieId }) => {
       const { registry } = globalThis.firefoxUiTest;

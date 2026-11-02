@@ -51,13 +51,14 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
 describe('validate CLI', () => {
   it('rejects a pack missing a required capability', () => {
     const root = makeMinimalPack();
-    const [section, capabilities] = Object.entries(CONTENT_CAPABILITIES)[0]!;
+    const [section, capabilities] = Object.entries(CONTENT_CAPABILITIES).find(([, entries]) =>
+      Object.values(entries).some((requirement) => requirement === 'required'),
+    )!;
+    const [capability] = Object.entries(capabilities).find(([, requirement]) => requirement === 'required')!;
     try {
       const run = validateAt(root);
       expect(run.status).toBe(1);
-      expect(run.stdout).toContain(
-        `FAIL  core content ${section}: missing required capability "${Object.keys(capabilities)[0]}"`,
-      );
+      expect(run.stdout).toContain(`FAIL  core content ${section}: missing required capability "${capability}"`);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -140,7 +141,7 @@ describe('validate CLI', () => {
       'FAIL  test/fixtures/content/recipe-too-many-combinations.json recipes[0].components: 2048 component combinations exceeds maximum 1024',
       'FAIL  test/fixtures/content/broken-reference.json loot[0].entries[1].item: no item "golden_toilet"',
       'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
-      'FAIL  test/fixtures/content/zombie-with-model.json zombies[0].strength: missing',
+      'FAIL  test/fixtures/content/zombie-with-model.json actors[0].strength: missing',
       'FAIL  test/fixtures/content/missing-model-file.json models[0].file: "assets/models/lamp.glb" is not in the pack',
       'FAIL  test/fixtures/packs/stray/assets/manifest.json sources: "assets/models/stray.glb" is in the pack but no source lists it',
       'FAIL  test/fixtures/assets/manifest.json sources[0].author: CC-BY-4.0 needs an author',

@@ -11,6 +11,7 @@ export interface PelletShot {
   readonly diameterMm: number;
   /** Per projectile, from the cartridge's `ammo` content. */
   readonly damage: number;
+  readonly damageKind: string;
   readonly impulse: number;
   readonly rangeMetres: number;
   readonly headDamageMultiplier?: number;
@@ -31,6 +32,7 @@ export const projectileShot = (
   directions: directions.map((direction): Vec3 => [...direction]),
   diameterMm: ammo.diameterMm,
   damage: ammo.damage,
+  damageKind: ammo.damageKind,
   impulse: ammo.impulse,
   rangeMetres: ammo.rangeMetres,
   ...(ammo.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: ammo.headDamageMultiplier }),

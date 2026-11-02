@@ -340,6 +340,7 @@ describe('rendered and hit shambler poses', () => {
         [center[0]! / BLOCK_SIZE, center[1]! / BLOCK_SIZE, center[2]! / BLOCK_SIZE - 0.6 / BLOCK_SIZE],
         [0, 0, 1],
         {
+          type: 'blunt',
           damage: 8,
           reach: 0.1,
           cooldown: 0.8,

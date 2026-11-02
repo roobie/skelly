@@ -101,11 +101,12 @@ const authoredHordeSpawns = (
   if (!(population.settlementPressure && population.hordeAreas)) {
     return [];
   }
-  return population.hordeAreas
-    .slice(0, population.hordes)
-    .map((area, index) =>
-      settlementHordeSpawn(site.seed, area, () => site.floor, `scenario:${scenarioId}:horde:area:${index}`),
-    );
+  return population.hordeAreas.slice(0, population.hordes).map((area, index) =>
+    settlementHordeSpawn(site.registry, site.seed, area, {
+      roadHeightAt: () => site.floor,
+      id: `scenario:${scenarioId}:horde:area:${index}`,
+    }),
+  );
 };
 const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDef['population']): Set<number> => {
   const { hordes, hordeAreas, settlementPressure } = population;
@@ -138,7 +139,8 @@ export const gauntletPopulation = (site: CitySite, { id: scenarioId, population 
     const group = ordinary.slice(start, start + groupSize);
     const road = groupRoad(group, grid);
     const seed = Math.floor(hash3(site.seed, start, 0, 601) * 0x7f_ff_ff_ff);
-    for (const spawn of settlementZombieSpawns(seed, road, group.flatMap(placedSpawns), {
+    for (const spawn of settlementZombieSpawns(site.registry, seed, road, {
+      markers: group.flatMap(placedSpawns),
       roadHeightAt: () => floor,
       spawnWeights: weights,
       roadsideOffset,
@@ -149,7 +151,10 @@ export const gauntletPopulation = (site: CitySite, { id: scenarioId, population 
     if (hordeStarts.has(start)) {
       append(
         hordes,
-        settlementHordeSpawn(seed, road, () => floor, `scenario:${scenarioId}:horde:${start}`),
+        settlementHordeSpawn(site.registry, seed, road, {
+          roadHeightAt: () => floor,
+          id: `scenario:${scenarioId}:horde:${start}`,
+        }),
       );
     }
   }

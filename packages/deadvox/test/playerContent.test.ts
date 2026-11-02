@@ -18,7 +18,12 @@ const numericPaths = (value: object, prefix: string[] = []): string[][] =>
   });
 
 it('validate rejects every missing or negative player tuning field and a missing player row', () => {
-  const valid = buildRegistry([{ source: 'fixture', data: { player: [PLAYER] } }]);
+  const valid = buildRegistry([
+    {
+      source: 'fixture',
+      data: { damageKinds: [{ id: PLAYER.debugBlockTool.damageKind, class: 'melee' }], player: [PLAYER] },
+    },
+  ]);
   expect(valid.issues).toEqual([]);
   expect(valid.registry.player.get('player')).toEqual(PLAYER);
   const root = mkdtempSync(join(tmpdir(), 'deadvox-player-content-'));

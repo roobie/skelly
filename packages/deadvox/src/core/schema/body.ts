@@ -13,7 +13,7 @@ import {
   strictObject,
   boolean as vBoolean,
 } from 'valibot';
-import { BODY_REGIONS, type BodyRegion, DAMAGE_KINDS, type DamageKind, TOUCHES, type Touch } from '../body.ts';
+import { BODY_REGIONS, type BodyRegion, TOUCHES, type Touch } from '../body.ts';
 import { WEAR_SLOTS } from './items.ts';
 import {
   Fraction,
@@ -30,9 +30,7 @@ import {
   SimRate,
 } from './primitives.ts';
 
-/** One value for every damage kind, so no kind is ever left out. */
-const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) =>
-  strictObject(Object.fromEntries(DAMAGE_KINDS.map((kind) => [kind, value])) as Record<DamageKind, S>);
+const perDamageKind = <S extends typeof Fraction | typeof NonNegative>(value: S) => record(Id, value);
 
 const WearSlotSchema = picklist(WEAR_SLOTS);
 
@@ -207,7 +205,7 @@ export const BodyTuningSchema = pipe(
     ),
     exposureRefusal: Name,
     linger: record(
-      picklist(DAMAGE_KINDS),
+      Id,
       strictObject({
         simSeconds: PositiveSimSeconds,
       }),
@@ -219,7 +217,7 @@ export const BodyTuningSchema = pipe(
         strictObject({ min: Positive, max: Positive }),
         check(({ min, max }) => min <= max, 'min must not be more than max'),
       ),
-      kind: picklist(DAMAGE_KINDS),
+      kind: Id,
       cause: Name,
       regions: pipe(
         array(strictObject({ region: picklist(BODY_REGIONS), weight: Positive })),

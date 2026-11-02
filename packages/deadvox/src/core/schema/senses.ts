@@ -22,6 +22,7 @@ export const SenseSchema = strictObject({
   }),
   /** Footfall spacing per moving gait and the fall that lands hard; cadence and landing noise follow from these. */
   footsteps: strictObject({
+    family: Id,
     walkingStepMetres: Positive,
     joggingStepMetres: Positive,
     sprintingStepMetres: Positive,

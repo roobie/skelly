@@ -124,7 +124,10 @@ export class BuildMode {
       material.durability * (mode === 'step' ? tuning.stepDurabilityFraction : 1),
     );
     const admitted = 1 - material.resistance.blunt;
-    return this.strikeTerrainCell(hit.block, { kind: 'blunt', strength: admitted > 0 ? effective / admitted : 0 });
+    return this.strikeTerrainCell(hit.block, {
+      kind: tuning.damageKind,
+      strength: admitted > 0 ? effective / admitted : 0,
+    });
   }
 
   target(eye: Vec3, dir: Vec3, active: boolean): string {

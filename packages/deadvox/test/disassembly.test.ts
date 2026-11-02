@@ -60,6 +60,7 @@ const items = [
 ];
 const fixtureBuild = buildRegistry([
   playerInventorySource(),
+  { source: 'damage-kinds.json', data: JSON.parse(readFileSync(join(base, 'damage-kinds.json'), 'utf8')) as unknown },
   ...items,
   soundSource(items),
   { source: 'item-wear.json', data: JSON.parse(readFileSync(join(base, 'item-wear.json'), 'utf8')) as unknown },

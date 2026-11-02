@@ -2,6 +2,7 @@
 read_if:
   - you build the acid zombie, the `acidSpit` ability, its glob or its puddle
   - you add a ranged zombie attack, a zombie projectile or acid damage
+  - you change content-declared damage kinds or actor resistance
   - you add a later tier of the acid evolution line
   - you change how the acid zombie sounds, or scramble another type's voice
   - you decide how the player counters an enemy that attacks from a distance
@@ -33,11 +34,11 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Aim is seeded.** A far spit can miss, but saving or replaying must not change its chance to land. Release captures the attack rather than following the player, so moving after release remains a counter. See `DESIGN.md`, "Determinism"; `src/core/zombies.ts`, `AcidSpitRelease` and `ZombieSystem.resolveAcidSpit`; and `src/core/acidGlob.ts`, `AcidGlobState`.
 
-**A zombie in the way takes the acid.** A crowd shields the player and takes the burn, so "use the crowd" stays a tactic. Acid zombies are immune; shamblers are not. Content owns immunity so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.resolveAcidGlobImpact` and `acidDamageToZombie`, and `src/core/schema/zombies.ts`, `ZombieSchema`.
+**A zombie in the way takes the acid.** A crowd shields the player and takes the burn, so "use the crowd" stays a tactic. Acid zombies are immune; shamblers are not. Content owns immunity so later tiers and other types choose it by data. See `src/core/zombies.ts`, `ZombieSystem.resolveAcidGlobImpact` and `damageToZombie`, and `src/core/schema/zombies.ts`, `ZombieSchema`.
 
 **The player is hit through the existing path.** The glob ignores the melee block, which stays a melee answer. Localized hits keep pain, shock, bleeding and worn-item wear with their existing owners rather than creating a second injury system. Hits are light and the cooldown long, so one spit hurts but rarely opens a serious wound. See `DESIGN.md`, "Landing injuries", and `DESIGN.md`, "Bleeding"; `src/game/zombiePlayerHit.ts`, `applyZombiePlayerHit`; and `src/core/sim.ts`, `Simulation.hit`.
 
-**Acid is a damage kind.** Acid sits beside the melee kinds, not among them: weapons, melee classes and per-region melee resistance take only melee kinds, while zombie attack moves, injury and wear content take every kind. So bleeding chance, wound depth, pain and shock are authored for acid in content, not special-cased in code. The aim is a burn: content gives acid a low bleeding chance and high pain. Hazmat's "resists acid" gets a key to resist. See `src/core/body.ts`, `MELEE_DAMAGE_KINDS` and `DAMAGE_KINDS`.
+**Acid is a damage kind.** Burns need their own authored injury and wear responses, not an acid branch in the injury mechanism. Class admission separates weapon melee kinds from non-melee kinds, while actor resistance is keyed by the selected kind and region so immunity is not a privileged field. See `src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/zombies.ts`, `damageToZombie`.
 
 **Acid eats the outer worn layer.** A hit wears the worn item it meets first on the struck region harder than melee does, so clothing and armour become a consumable against spitters and a reason to carry spares. Worn armour takes wear but doesn't change damage unless it is impervious to acid (`DESIGN.md`, "Worn coverage"), so this costs gear, not health. The multiplier is per damage kind in content, not an acid check in the wear code. See `src/core/wear.ts`, `wearOnPlayerHit`.
 

@@ -190,7 +190,7 @@ const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
   return {
     transforms: posed.transforms,
     figure: posed.figure,
-    voxelSummaries: voxelSummaryFor(`${input.model ?? 'shambler'}:${input.seed}`, posed.figure),
+    voxelSummaries: voxelSummaryFor(`${input.model ?? 'humanoid'}:${input.seed}`, posed.figure),
     hidden: posed.hidden,
     yaw: posed.yaw,
     position: posed.position,
@@ -231,7 +231,7 @@ export const posedAmalgamRegionBoxes = (
   input: ShamblerPoseInput,
 ): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const context = poseContextFor(input);
-  if (input.model !== 'amalgam' || !('manifest' in context.figure)) {
+  if (input.model !== 'fused-mass' || !('manifest' in context.figure)) {
     throw new Error('Amalgam region boxes require an amalgam pose input');
   }
   return regionBoxesForContext(context);

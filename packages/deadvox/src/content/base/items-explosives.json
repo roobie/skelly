@@ -10,12 +10,14 @@
       "explosive": {
         "blast": {
           "damage": 180,
+          "damageKind": "blunt",
           "impulse": 30,
           "radiusMetres": 7
         },
         "fragments": {
           "count": 600,
           "damage": 30,
+          "damageKind": "pierce",
           "impulse": 0.5,
           "rangeMetres": 15
         },

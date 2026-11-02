@@ -17,7 +17,9 @@ import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
+import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { bodyWithFixtureKind } from './fixtures/damageKinds.ts';
 import { PLAYER } from './playerFixture.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import {
@@ -240,15 +242,28 @@ it("a hit's acute pain and a painkiller dose under way survive the save codec", 
   ).toEqual(saved);
 });
 
-it('an active burn keeps its threshold, accumulated damage and tail through the save codec', async () => {
-  const content = withFixtureBody(registry);
+it('a declared non-melee kind keeps its exposure threshold, accumulated damage and tail through the save codec', async () => {
+  const kind = 'fixture_exposure_kind';
+  const fixture = withFixtureBody(registry);
+  const content = {
+    ...fixture,
+    damageKinds: new Map(fixture.damageKinds).set(kind, { id: kind, class: 'non-melee' as const }),
+    body: new Map([...fixture.body].map(([id, body]) => [id, bodyWithFixtureKind(body, kind)])),
+  };
   const source = createRuntime(undefined, false, undefined, { registry: content });
-  source.sim.hit(1, 'fixture glob', 'leftArm', { kind: 'acid' });
+  source.sim.hit(1, 'fixture glob', 'leftArm', { kind });
   source.sim.frame(simSeconds(0.25));
   const exposure = source.sim.exposures.snapshotState();
   expect(exposure.exposures).toHaveLength(1);
   expect(exposure.exposures[0]!.damage).toBeGreaterThan(1);
-  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const bytes = await encodeFixture(capture(source));
+  await expect(decodeSave(bytes, { version: formatVersion, contentLookup })).rejects.toThrow(
+    `Unknown damageKind content id "${kind}"`,
+  );
+  const decoded = await decodeSave(bytes, {
+    version: formatVersion,
+    contentLookup: (type, id, item) => registryContentLookup(content, type, id, item),
+  });
   const restored = createRuntime(decoded.snapshot, false, undefined, { registry: content });
   expect(restored.sim.exposures.snapshotState()).toEqual(exposure);
   restored.sim.paused = false;

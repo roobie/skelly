@@ -9,6 +9,7 @@
       },
       "crouchProneHoldRealSeconds": 0.5,
       "footsteps": {
+        "family": "player",
         "hardLandingMetres": 2.5,
         "joggingStepMetres": 1.2,
         "sprintingStepMetres": 1.6000000000000001,

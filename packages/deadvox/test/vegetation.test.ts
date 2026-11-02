@@ -3,7 +3,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';
 import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts';
-import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
+import { footstepEventForBlock } from '../src/core/footsteps.ts';
 import { Forest } from '../src/core/forest.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { raycast } from '../src/core/raycast.ts';
@@ -198,6 +198,7 @@ describe('passable but opaque vegetation', () => {
     const origin: [number, number, number] = [center[0], center[1], 0.5];
     const direction: [number, number, number] = [0, 0, 1];
     const weapon = {
+      type: 'blunt',
       motion: 'swing' as const,
       damage: 1,
       reach: 6,
@@ -346,13 +347,23 @@ describe('passable but opaque vegetation', () => {
 
     for (const name of ['tree_trunk', 'tree_branch']) {
       const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(block)).toBe(playerWood);
-      expect(shamblerFootstepEventForBlock(block)).toBe(shamblerWood);
+      expect(footstepEventForBlock(block, [...registry.senses.values()][0]!.footsteps.family)).toBe(playerWood);
+      expect(
+        footstepEventForBlock(
+          block,
+          [...registry.zombies.values()].find((actor) => actor.footstepSound)!.footstepSound!,
+        ),
+      ).toBe(shamblerWood);
     }
     for (const name of ['leaves', 'leaf_litter']) {
       const block = registry.blocks[registry.blockIds.get(name)!]!;
-      expect(footstepEventForBlock(block)).toBe(playerFoliage);
-      expect(shamblerFootstepEventForBlock(block)).toBe(shamblerFoliage);
+      expect(footstepEventForBlock(block, [...registry.senses.values()][0]!.footsteps.family)).toBe(playerFoliage);
+      expect(
+        footstepEventForBlock(
+          block,
+          [...registry.zombies.values()].find((actor) => actor.footstepSound)!.footstepSound!,
+        ),
+      ).toBe(shamblerFoliage);
     }
   });
 

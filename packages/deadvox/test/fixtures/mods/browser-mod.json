@@ -1,31 +1,5 @@
 {
-  "dependencies": ["base"],
-  "id": "browser-test-mod",
-  "items": [
-    {
-      "category": "misc",
-      "economy": {
-        "tiers": [],
-        "usage": []
-      },
-      "id": "mod_test_token",
-      "name": "Mod token",
-      "notLoot": false,
-      "size": [1, 1],
-      "weight": 0.10000000000000001,
-      "workInProgress": false
-    }
-  ],
-  "overrides": [
-    {
-      "entry": "zombies:shambler",
-      "pack": "base"
-    }
-  ],
-  "product": false,
-  "tier": "product",
-  "version": "1",
-  "zombies": [
+  "actors": [
     {
       "abilities": [],
       "attack": {
@@ -87,6 +61,7 @@
         "windupSimSeconds": 0.29999999999999999
       },
       "canJumpObstacles": true,
+      "capability": ["settlementHorde", "settlementWanderer"],
       "cause": "a shambler",
       "chaseMotion": {
         "lurchSimSeconds": 1,
@@ -106,6 +81,32 @@
         "swayIntervalSimSeconds": {
           "max": 1.1000000000000001,
           "min": 0.69999999999999996
+        }
+      },
+      "damageResistance": {
+        "blunt": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "cut": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
+        },
+        "pierce": {
+          "head": 0,
+          "leftArm": 0,
+          "leftLeg": 0,
+          "rightArm": 0,
+          "rightLeg": 0,
+          "torso": 0
         }
       },
       "dismember": {
@@ -173,39 +174,7 @@
       },
       "jumpMetresPerSimSecond": 4.6760999999999999,
       "loot": "shambler_pockets",
-      "meleeDamageResistance": {
-        "head": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "leftLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightArm": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "rightLeg": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        },
-        "torso": {
-          "blunt": 0,
-          "cut": 0,
-          "pierce": 0
-        }
-      },
-      "model": "shambler",
+      "model": "humanoid",
       "name": "Shambler",
       "nightSight": 10,
       "regions": {
@@ -279,5 +248,31 @@
         "wayAroundReachMetres": 2
       }
     }
-  ]
+  ],
+  "dependencies": ["base"],
+  "id": "browser-test-mod",
+  "items": [
+    {
+      "category": "misc",
+      "economy": {
+        "tiers": [],
+        "usage": []
+      },
+      "id": "mod_test_token",
+      "name": "Mod token",
+      "notLoot": false,
+      "size": [1, 1],
+      "weight": 0.10000000000000001,
+      "workInProgress": false
+    }
+  ],
+  "overrides": [
+    {
+      "entry": "actors:shambler",
+      "pack": "base"
+    }
+  ],
+  "product": false,
+  "tier": "product",
+  "version": "1"
 }

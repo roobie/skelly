@@ -8,11 +8,12 @@ import {
   optional,
   picklist,
   pipe,
+  record,
   strictObject,
   tuple,
   boolean as vBoolean,
 } from 'valibot';
-import { BLOCK_DAMAGE_KINDS } from '../blockDamageKinds.ts';
+import { BLOCK_DAMAGE_KINDS, type BlockDamageKind } from '../blockDamageKinds.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { Color, Count, Fraction, Id, Name, NonNegative, Positive } from './primitives.ts';
 
@@ -44,7 +45,7 @@ export const BlockMaterialSchema = pipe(
     durability: Positive,
     resistance: strictObject(
       Object.fromEntries(BLOCK_DAMAGE_KINDS.map((kind) => [kind, Fraction])) as Record<
-        (typeof BLOCK_DAMAGE_KINDS)[number],
+        BlockDamageKind,
         typeof Fraction
       >,
     ),
@@ -96,16 +97,7 @@ export const BlockSchema = strictObject({
   ),
   /** Content-owned brushing events: gentle movement and fast movement. */
   rustle: optional(strictObject({ gentle: Id, fast: Id })),
-  /**
-   * Authored ground-contact events, one per actor family. Omitted means the block is silent underfoot,
-   * which is the built-in air's case; authored walkable blocks select both events explicitly.
-   */
-  footsteps: optional(
-    strictObject({
-      player: Id,
-      shambler: Id,
-    }),
-  ),
+  footsteps: optional(record(Id, Id)),
   /** Surface pattern; `none` when omitted. */
   pattern: optional(picklist(BLOCK_PATTERNS)),
   /** Whether render-only site weathering may affect this built material. */

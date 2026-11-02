@@ -93,7 +93,7 @@ export class ZombieMeshes {
   private syncPart(part: Part, zombies: RenderZombie[]): void {
     const mesh = this.meshes.get(part)!;
     const visible = zombies.filter(({ zombie }) =>
-      zombie.type.model === 'amalgam'
+      zombie.type.model === 'fused-mass'
         ? part === 'body' && zombie.regions['core.trunk']! > 0
         : zombie.regions[REGION_FOR_PART[part]]! > 0,
     );
@@ -102,7 +102,7 @@ export class ZombieMeshes {
     for (let i = 0; i < mesh.count; i++) {
       const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
       const box =
-        zombie.type.model === 'amalgam' && part === 'body'
+        zombie.type.model === 'fused-mass' && part === 'body'
           ? {
               size: [
                 zombie.body.halfWidth * 2 * s,

@@ -16,12 +16,14 @@ import { contentLookup } from '../src/ui/saveController.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { fixtureBlockMaterial } from './blockMaterialFixture.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
+import { fixtureDamageContent } from './fixtures/damageKinds.ts';
 
 const base = baseRegistry();
 const seed = 7;
 const PIECES_PATH = /^.*\.pieces/;
 const floor = { id: 'fixture_floor', material: FIXTURE_MATERIAL, name: 'Fixture floor', solid: true, color: '#808080' };
 const fixtureData = (): ContentFile => ({
+  damageKinds: fixtureDamageContent().damageKinds,
   furnitureMaterials: fixtureMaterials(),
   sounds: fixtureSounds(),
   blocks: [floor],

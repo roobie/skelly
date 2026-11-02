@@ -27,6 +27,7 @@ import { damageWord, defOf, type Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
+import type { MeleeProfile } from '../core/meleePose.ts';
 import { countText } from '../core/numberText.ts';
 import {
   doorOptions,
@@ -161,6 +162,7 @@ import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
 import { startingLoadout } from './loadout.ts';
 import {
+  meleeProfileForWeapon,
   meleeWeaponFromContent,
   resolvePlayerMeleeWeapon,
   shouldEnterMeleeGuard,
@@ -3267,7 +3269,7 @@ export const startPlay = (
     preferredHand?: 'right' | 'left',
   ): {
     weapon: MeleeWeapon;
-    profile: 'blunt' | 'cut' | 'pierce' | 'fists';
+    profile: MeleeProfile;
     hand?: 'right' | 'left';
     twoHanded: boolean;
     item?: (typeof inventory.hands)['right'];
@@ -3281,7 +3283,7 @@ export const startPlay = (
       if (item && weapon) {
         return {
           weapon: meleeWeaponFromContent(weapon),
-          profile: weapon.type,
+          profile: meleeProfileForWeapon(registry.meleeClasses, weapon.type),
           hand,
           twoHanded: registry.items.get(item.type)?.twoHanded ?? false,
           item,
@@ -3306,7 +3308,7 @@ export const startPlay = (
     const classTuning =
       selected.profile === 'fists'
         ? claimed(registry.meleeClasses, 'unarmed')
-        : registry.meleeClasses.get(selected.profile);
+        : registry.meleeClasses.get(selected.weapon.type!);
     if (classTuning === undefined) {
       throw new Error(`Missing melee class tuning for ${selected.profile}`);
     }

@@ -54,7 +54,7 @@ function content() {
       templates.push(entry);
     }
   }
-  return { templates, zombies: readJson(`${base}/zombies.json`).zombies };
+  return { templates, zombies: readJson(`${base}/zombies.json`).actors };
 }
 function scalar(object, name, fallback) {
   const property = object.property(name);

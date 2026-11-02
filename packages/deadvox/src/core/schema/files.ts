@@ -4,6 +4,7 @@ import { BlockMaterialSchema, BlockSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CompressionTuningSchema } from './compression.ts';
 import { ControlSchema } from './controls.ts';
+import { DamageKindSchema } from './damageKinds.ts';
 import { DayCycleSchema } from './dayCycle.ts';
 import { FigureSchema } from './figures.ts';
 import { FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
@@ -16,6 +17,7 @@ import { LookDefaultsSchema } from './look.ts';
 import { LootTableSchema } from './loot.ts';
 import { type GunModelSchema, ItemWearSchema, ModelSchema, type SoundRecipeSchema, SoundSchema } from './models.ts';
 import { PlayerSchema } from './player.ts';
+import { Id } from './primitives.ts';
 import { RecipeCategorySchema, RecipeSchema, RecipeTagSchema } from './recipes.ts';
 import { SaveTuningSchema } from './saves.ts';
 import { ScenarioSchema } from './scenarios.ts';
@@ -53,29 +55,29 @@ const SECTION_DESCRIPTOR = {
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
-  zombies: {
+  actors: {
     schema: optional(
       pipe(
         array(ZombieSchema),
         check(
-          (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.bodyScale !== undefined),
+          (types) => types.every((zombie) => zombie.model !== 'fused-mass' || zombie.bodyScale !== undefined),
           'amalgam must define bodyScale',
         ),
         check(
-          (types) => types.every((zombie) => zombie.model === 'amalgam' || zombie.carving === undefined),
+          (types) => types.every((zombie) => zombie.model === 'fused-mass' || zombie.carving === undefined),
           'only an amalgam may define carving',
         ),
         check(
-          (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.downed === undefined)),
+          (types) => types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.downed === undefined)),
           'every type but the amalgam, which never lies downed, must define downed',
         ),
         check(
-          (types) => types.every((zombie) => (zombie.model === 'amalgam') === (zombie.figureSeeds === undefined)),
+          (types) => types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.figureSeeds === undefined)),
           'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
         ),
         check(
           (types) =>
-            types.every((zombie) => (zombie.model === 'amalgam') === (zombie.attack.grabBandMetres === undefined)),
+            types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.attack.grabBandMetres === undefined)),
           'every type but the amalgam, which strikes from its core, must define attack.grabBandMetres',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
@@ -89,13 +91,15 @@ const SECTION_DESCRIPTOR = {
         ),
       ),
     ),
-    label: 'zombie types',
+    label: 'actor types',
     order: 6,
   },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   itemWear: { schema: optional(array(ItemWearSchema)), label: 'item wear looks', order: 7.1 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
+  soundFamilies: { schema: optional(array(strictObject({ id: Id }))), label: 'sound families', order: 8 },
+  damageKinds: { schema: optional(array(DamageKindSchema)), label: 'damage kinds', order: 8 },
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   skillProgression: { schema: optional(array(SkillProgressionSchema)), label: 'skill progression', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },

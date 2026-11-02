@@ -5,7 +5,7 @@ import { capture, contentLookup, createRuntime, formatWorldOptions } from './sna
 
 const mods = [
   { id: 'fixture-first', version: '1', data: { items: [] } },
-  { id: 'fixture-second', version: '2', data: { zombies: [] } },
+  { id: 'fixture-second', version: '2', data: { actors: [] } },
 ];
 
 test('a save round-trip preserves the admitted ordered browser mod identity', async () => {

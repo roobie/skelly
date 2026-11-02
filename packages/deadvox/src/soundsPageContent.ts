@@ -1,4 +1,5 @@
 import bodyFile from './content/base/body.json' with { type: 'json' };
+import damageKindsFile from './content/base/damage-kinds.json' with { type: 'json' };
 import sensesFile from './content/base/senses.json' with { type: 'json' };
 import uiFile from './content/base/ui.json' with { type: 'json' };
 import { buildRegistry } from './core/content.ts';
@@ -17,5 +18,6 @@ export const buildSoundsPageContent = () =>
       .map(([path, data]) => ({ source: `.${path}`, data })),
     { source: '../content/base/ui.json', data: uiFile },
     { source: '../content/base/body.json', data: bodyFile },
+    { source: '../content/base/damage-kinds.json', data: damageKindsFile },
     { source: '../content/base/senses.json', data: sensesFile },
   ]);

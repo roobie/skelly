@@ -24,6 +24,7 @@ local crouch = {
         clearCutoffHz: 18000,
       },
       footsteps: {
+        family: 'player',
         walkingStepMetres: 0.75,
         joggingStepMetres: 1.2,
         sprintingStepMetres: 1.6,

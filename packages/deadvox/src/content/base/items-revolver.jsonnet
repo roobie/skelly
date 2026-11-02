@@ -27,7 +27,7 @@
     {
       id: 'cartridge_357_h_magnum', name: '.357 Magnum round', category: 'ammo',
       weight: 16, size: [1, 1], stack: 50, model: 'round_357_h_magnum',
-      ammo: { loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip', calibre: '357-magnum', pellets: 1, spreadDegrees: 0, diameterMm: 9.07, damage: 70, impulse: 4, rangeMetres: 100, loadSimSeconds: 0.7, stripSimSeconds: 0.5 },
+      ammo: { damageKind: 'pierce', loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip', calibre: '357-magnum', pellets: 1, spreadDegrees: 0, diameterMm: 9.07, damage: 70, impulse: 4, rangeMetres: 100, loadSimSeconds: 0.7, stripSimSeconds: 0.5 },
     },
     {
       id: 'cartridge_box_357_h_magnum', name: '.357 Magnum box', category: 'ammo',

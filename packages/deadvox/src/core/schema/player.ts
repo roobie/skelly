@@ -28,6 +28,7 @@ export const PlayerSchema = strictObject({
   gravityMetresPerSimSecondSquared: Positive,
   reach: Positive,
   debugBlockTool: strictObject({
+    damageKind: Id,
     reachMetres: Positive,
     stepDurabilityFraction: pipe(Positive, ltValue(1)),
   }),

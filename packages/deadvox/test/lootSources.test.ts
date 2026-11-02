@@ -205,8 +205,8 @@ describe('loot source routing', () => {
       [4, 1, 0],
     );
     session.zombies.detonate({
-      blast: { radiusMetres: 6, damage: 1_000_000, impulse: 1 },
-      fragments: { origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
+      blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
+      fragments: { damageKind: 'pierce', origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
     expect(session.zombieStore.get(id)).toBeUndefined();
     const items = [...session.inventory.items()].map(({ item }) => item);
