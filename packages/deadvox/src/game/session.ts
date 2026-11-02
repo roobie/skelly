@@ -113,6 +113,7 @@ import { spendFuel } from '../core/torch.ts';
 import type { VehicleWorkTarget } from '../core/vehicleInstances.ts';
 import { VehicleParts } from '../core/vehicleParts.ts';
 import { VehicleOccupancy } from '../core/vehicleProjection.ts';
+import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
@@ -1210,6 +1211,20 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.reading = bookReadingHooks(inventory, character, () => readingLight());
   sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   sim.actions.vehicleWork = vehicleWorkHooks(inventory, {
+    transfer: (request) => {
+      const context = options.terrainDestruction;
+      return request.kind === 'remove' && context
+        ? completeVehicleRemoval(
+            {
+              terrain: context.terrain,
+              supply: columnSupply.project(context.source),
+              blockSize: s,
+              feet: inventory.dropFeet()!,
+            },
+            request,
+          )
+        : inventory.vehicleTransfer(request);
+    },
     output: () => ({ kind: 'pile', pos: feet() }),
     quality: (quality) =>
       Math.max(0, ...reach().entries.map(({ item }) => registry.items.get(item.type)?.tool?.qualities[quality] ?? 0)),

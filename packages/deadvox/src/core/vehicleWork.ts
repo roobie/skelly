@@ -1,11 +1,12 @@
 // Service work keeps item ownership in Inventory until its terminal atomic transfer.
 
 import { coreMessage } from './coreText.ts';
-import type { Inventory, Location, Target } from './inventory.ts';
+import type { Inventory, Location, Target, VehicleTransfer } from './inventory.ts';
 import type { VehicleWorkHooks } from './longAction.ts';
 import type { VehicleWorkPlacement, VehicleWorkTarget } from './vehicleInstances.ts';
 
 export interface VehicleWorkOptions {
+  transfer: (request: VehicleTransfer) => string | undefined;
   /** Resolves the ordinary output owner when a removal completes. */
   output: () => Target;
   /** Available tool qualities are derived by the interaction/reach owner. */
@@ -90,7 +91,7 @@ export const vehicleWorkHooks = (inventory: Inventory, options: VehicleWorkOptio
     validate,
     finish: (kind, vehicleId, placement, itemUid) =>
       validate(kind, vehicleId, placement, itemUid) ??
-      inventory.vehicleTransfer({
+      options.transfer({
         kind,
         vehicleId,
         fittingId: placement.id,

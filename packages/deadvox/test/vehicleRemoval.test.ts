@@ -1,0 +1,247 @@
+import { expect, it } from 'vitest';
+import { CanonicalTerrain, installColumn } from '../src/core/canonicalTerrain.ts';
+import { CHUNK, type Vec3 } from '../src/core/coords.ts';
+import { HandlingQueue } from '../src/core/handling.ts';
+import { dropSpots } from '../src/core/inventory.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
+import type { Item } from '../src/core/items.ts';
+import { makeScale } from '../src/core/scale.ts';
+import type { ColumnSource } from '../src/core/site.ts';
+import { simSeconds } from '../src/core/time.ts';
+import { World } from '../src/core/world.ts';
+import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
+import { baseRegistry } from './baseRegistry.ts';
+
+const ids = { part: 'removal_part', load: 'removal_load', hand: 'removal_hand', host: 'removal_host' };
+const fixture = ({ floor = true, height = 2 } = {}) => {
+  const base = baseRegistry();
+  const scale = { ...makeScale(0.5), minCy: 0, maxCy: 5 };
+  const donor = [...base.items.values()].find((item) => item.vehicle && item.model && !item.vehicle.addon)!;
+  const model = base.models.get(donor.model!)!;
+  const items = new Map(base.items);
+  items.set(ids.part, {
+    ...donor,
+    id: ids.part,
+    model: ids.part,
+    size: [1, 1],
+    vehicle: { ...donor.vehicle!, mount: 'removal_mount' },
+  });
+  for (const id of [ids.load, ids.hand]) {
+    items.set(id, {
+      id,
+      name: id,
+      category: 'misc',
+      size: [1, 1],
+      weight: 1,
+      economy: { usage: [], tiers: [] },
+      workInProgress: false,
+      notLoot: false,
+    });
+  }
+  items.set('removal_filler', { ...items.get(ids.load)!, id: 'removal_filler', size: [PILE_GRID.w, PILE_GRID.h] });
+  const registry = {
+    ...base,
+    items,
+    models: new Map(base.models).set(ids.part, {
+      ...model,
+      id: ids.part,
+      parts: {
+        body: {
+          massKg: 1,
+          centreOfMass: [0, 0, 0],
+          voxelGrain: scale.blockSize,
+          collision: [{ min: [0, 0, 0], max: [scale.blockSize, scale.blockSize, scale.blockSize] }],
+        },
+      },
+    }),
+    vehicleBlueprints: new Map(base.vehicleBlueprints).set(ids.host, {
+      id: ids.host,
+      name: 'Removal fixture',
+      fittings: [
+        {
+          id: 'part',
+          part: ids.part,
+          at: [0, 0, 0],
+          supportedBy: [],
+          service: { name: 'Remove', mount: 'removal_mount', durationSimSeconds: simSeconds(1), qualities: {} },
+        },
+      ],
+    }),
+  };
+  const solid = registry.blocks.findIndex((block) => block.solid);
+  const terrain: Terrain = {
+    seed: 1,
+    scale,
+    blocks: { grass: 0, dirt: 0, rock: 0, sand: 0, water: 0 },
+    shape: {
+      minHeightMetres: 0,
+      maxHeightMetres: 0,
+      beachBelowMetres: 0,
+      dirtDepthMetres: 0,
+      featureSizeMetres: 1,
+      octaves: 1,
+    },
+    stamp: (chunk) => {
+      for (let x = 0; x < CHUNK; x++) {
+        for (let z = 0; z < CHUNK; z++) {
+          if (floor && chunk.cy === 0) {
+            chunk.set(x, 0, z, solid);
+          }
+          if (chunk.cx * CHUNK + x >= 3 && chunk.cy === Math.floor(height / CHUNK)) {
+            chunk.set(x, height % CHUNK, z, solid);
+          }
+        }
+      }
+    },
+  };
+  const world = new World();
+  installColumn(
+    world,
+    generateColumn(terrain, 0, 0).filter((chunk) => chunk.cy === Math.floor(height / CHUNK)),
+  );
+  const canonical = new CanonicalTerrain(world, terrain);
+  const source: ColumnSource = {
+    furnitureIn: () => [],
+    lootPointsIn: () => [],
+    supplySourcesIn: () => [],
+    zombiesIn: () => [],
+  };
+  const session = createSession({
+    registry,
+    world,
+    scale,
+    seed: 1,
+    start: 43_200,
+    spawn: [3.5, height + 1, 1.5],
+    terrainDestruction: { terrain: canonical, source },
+    isSolid: (x, y, z) => registry.blocks[world.getBlock(x, y, z)]!.solid,
+    isOpaque: () => false,
+    ready: () => false,
+    controls: {
+      active: () => true,
+      intent: () => IDLE,
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => undefined,
+  });
+  const { inventory } = session;
+  const vehicleId = inventory.registerVehicle({
+    blueprint: ids.host,
+    placementKey: ids.host,
+    origin: [1, height, 1],
+    facing: 'n',
+  });
+  const fitting = inventory.vehicles.get(vehicleId)!.fittings[0]!;
+  const top: Vec3 = [1, height + 1, 1];
+  const load = inventory.create(ids.load);
+  if (!inventory.add(load, { kind: 'pile', pos: top })) {
+    throw new Error('Could not place the fixture load');
+  }
+  const remove = () => session.sim.actions.vehicleWork!.finish('remove', vehicleId, fitting, fitting.item.uid);
+  const posOf = (item: Item): Vec3 => {
+    const location = inventory.locate(item);
+    if (location?.kind !== 'pile') {
+      throw new Error('Fixture item is not piled');
+    }
+    return location.pile.pos;
+  };
+  const moveOntoLoad = () => {
+    const hand = inventory.create(ids.hand);
+    if (!inventory.add(hand, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the fixture item');
+    }
+    const events: string[] = [];
+    const queue = new HandlingQueue(inventory, undefined, (move) => {
+      const cue = handlingMoveCompleteCue(move, registry, {
+        blockIdAt: (x, y, z) => world.getBlock(x, y, z),
+        entities: inventory.entities,
+        vehicles: inventory.vehicles,
+        blockSize: scale.blockSize,
+      });
+      if (cue) {
+        events.push(cue.event);
+      }
+    });
+    const result = queue.enqueue(hand, { kind: 'pile', pos: posOf(load) });
+    if (!result.ok) {
+      throw new Error(result.reason);
+    }
+    queue.tick(result.job.duration);
+    return events;
+  };
+  return {
+    inventory,
+    session,
+    world,
+    canonical,
+    load,
+    fitting,
+    top,
+    remove,
+    posOf,
+    moveOntoLoad,
+    solid,
+    dropSound: registry.blocks[solid]!.drops!.default,
+  };
+};
+
+it("settles a removed part's load on canonical floor deeper than the live furniture fall limit", () => {
+  const f = fixture({ height: 130 });
+  expect(f.world.getChunk(0, 0, 0)).toBeUndefined();
+  expect(f.remove()).toBeUndefined();
+  const landed = f.posOf(f.load);
+  expect(landed[1]).toBeLessThan(f.top[1]);
+  expect(f.canonical.getBlock(landed[0], landed[1] - 1, landed[2])).not.toBe(0);
+  expect(f.posOf(f.fitting.item)).toEqual(f.session.feet());
+});
+
+it('gives a load with no floor below to the player feet pile with the removed part', () => {
+  const f = fixture({ floor: false });
+  expect(f.remove()).toBeUndefined();
+  expect(f.posOf(f.load)).toEqual(f.session.feet());
+  expect(f.posOf(f.fitting.item)).toEqual(f.session.feet());
+  expect(f.moveOntoLoad()).toEqual([f.dropSound]);
+});
+
+it('can complete a hand move onto the resettled pile without throwing in its sound callback', () => {
+  const f = fixture();
+  expect(f.remove()).toBeUndefined();
+  expect(f.moveOntoLoad()).toEqual([f.dropSound]);
+});
+
+it('spreads a falling load beyond full adjacent piles instead of leaving it on the removed support', () => {
+  const f = fixture();
+  const blocked = dropSpots([f.top[0], 1, f.top[2]]);
+  for (const pos of blocked) {
+    expect(f.inventory.add(f.inventory.create('removal_filler'), { kind: 'pile', pos })).toBe(true);
+  }
+  expect(f.remove()).toBeUndefined();
+  const landed = f.posOf(f.load);
+  expect(blocked.some((pos) => pos.every((value, axis) => value === landed[axis]))).toBe(false);
+  expect(f.world.getBlock(landed[0], landed[1] - 1, landed[2])).toBe(f.solid);
+});
+
+it('spreads the no-floor load and removed part together when the feet pile is full', () => {
+  const f = fixture({ floor: false });
+  expect(f.inventory.add(f.inventory.create('removal_filler'), { kind: 'pile', pos: f.session.feet() })).toBe(true);
+  expect(f.remove()).toBeUndefined();
+  expect(f.posOf(f.load)).not.toEqual(f.session.feet());
+  expect(f.posOf(f.load)).toEqual(f.posOf(f.fitting.item));
+});
+
+it('does not detach the part or move its load when canonical terrain rejects an incomplete touched column', () => {
+  const f = fixture({ height: 130 });
+  f.world.touchColumn(0, 0);
+  const before = f.inventory.snapshotState();
+  const vehicles = f.inventory.vehicles.snapshotState();
+  expect(() => f.remove()).toThrow('Incomplete touched column');
+  expect(f.inventory.snapshotState()).toEqual(before);
+  expect(f.inventory.vehicles.snapshotState()).toEqual(vehicles);
+});

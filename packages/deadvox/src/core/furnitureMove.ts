@@ -7,7 +7,7 @@ import type { FurnitureDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { dropSpots, type Inventory, type Pile, type Spot } from './inventory.ts';
 import { PILE_GRID } from './inventoryScale.ts';
-import { couldFit, findSpot, fitsAt, type Placed } from './items.ts';
+import { couldFit, findSpot, fitsAt, type Item, type Placed } from './items.ts';
 import { ladderOutward } from './ladders.ts';
 import { turnPose } from './orientation.ts';
 import type { Body } from './physics.ts';
@@ -295,17 +295,23 @@ interface Loose {
  * Loose items go to their own targets.
  */
 const resettlePiles = (
-  mover: FurnitureMover,
+  mover: Pick<FurnitureMover, 'inventory'>,
   shadow: Shadow,
   piles: readonly Pile[],
-  loose: readonly Loose[] = [],
+  {
+    loose = [],
+    fallTargets = (from) => columnTargets(shadow, from),
+  }: {
+    loose?: readonly Loose[];
+    fallTargets?: (from: Readonly<Vec3>) => Iterable<Vec3>;
+  } = {},
 ): PileMove[] | undefined => {
   const { inventory } = mover;
   const moving: Loose[] = piles
     .filter((pile) => shadow.occupied(pile.pos) || !shadow.occupied(below(pile.pos)))
     .map((pile) => ({
       items: pile.items,
-      targets: shadow.occupied(pile.pos) ? shadow.aside(pile.pos) : columnTargets(shadow, pile.pos),
+      targets: shadow.occupied(pile.pos) ? shadow.aside(pile.pos) : fallTargets(pile.pos),
     }));
   const leaving = new Set(moving.flatMap((pile) => pile.items));
   const grids = new Map<string, Placed[]>();
@@ -378,7 +384,7 @@ const spreadFrom = (shadow: Shadow, cells: readonly Vec3[]): Iterable<Vec3> => {
 };
 
 const fitPlaced = (
-  mover: FurnitureMover,
+  mover: Pick<FurnitureMover, 'inventory'>,
   targets: Iterable<Vec3>,
   gridAt: (cell: Vec3) => Placed[],
   placed: Placed,
@@ -407,6 +413,21 @@ const pilesOver = (inventory: Inventory, boxes: readonly { pos: Vec3; size: Vec3
     }
   }
   return [...found];
+};
+
+/** Player removal reserves the part and its loose loads together, including the explicit feet fallback. */
+export const planVehicleRemovalPiles = (
+  context: Pick<FurnitureMover, 'inventory' | 'terrainSolid'> & { minY: number; feet: Vec3 },
+  boxes: readonly { pos: Vec3; size: Vec3 }[],
+  part: Item,
+): PileMove[] | undefined => {
+  const { inventory, terrainSolid, minY, feet } = context;
+  const shadow = new Shadow(terrainSolid, inventory.entities, undefined, minY);
+  return resettlePiles(context, shadow, pilesOver(inventory, boxes), {
+    fallTargets: (from) =>
+      columnTargets(shadow, from).length > 0 ? spreadFrom(shadow, [from as Vec3]) : dropSpots(feet),
+    loose: [{ items: [{ item: part, x: 0, y: 0, rotated: false }], targets: dropSpots(feet) }],
+  });
 };
 
 /**
@@ -530,7 +551,7 @@ export const planRuin = (
   const piles = [...new Set([...affectedPiles, ...pilesOver(inventory, [...left, ...landed])])].sort((a, b) =>
     cellOrder(a.pos, b.pos),
   );
-  const moves = resettlePiles(mover, shadow, piles, loose);
+  const moves = resettlePiles(mover, shadow, piles, { loose });
   if (!moves) {
     return undefined;
   }

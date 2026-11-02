@@ -4,7 +4,7 @@ read_if:
   - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
-  - you change salvage, non-destructive disassembly or intact part recovery across items, furniture and vehicles
+  - you change salvage, non-destructive disassembly, intact part recovery or loads supported by removed vehicle parts
   - you author recipes or item take-apart yields
   - you change liquid recovery destinations or spill consent
   - you change recipe discovery through skill progression or books
@@ -643,8 +643,16 @@ because rearranging a room should not require destroying its contents. See `src/
   `src/core/furnitureMove.ts`, `supportRefusal`.
 - **What lies on top.** Moving a container is not searching it. Pockets stay
   intact, while loose items settle with the stack rather than being lost or
-  buried. A move with nowhere for them to land is refused for the same reason.
-  See `src/core/furnitureMove.ts`, `resettlePiles`.
+  buried. A furniture move with nowhere for them to land is refused for the same
+  reason. Player-completed car part removal instead lets its loose loads fall
+  onto the first solid support below, spreading when the landing pile is full.
+  With no support below, they join the part at the player's existing feet-drop
+  location, spreading by the ordinary pile rules when full: the player who
+  removed their support receives them, rather than losing them or leaving them
+  hanging where the part was. Physical settling belongs to player completion;
+  the inventory transfer remains mechanical. See `src/core/furnitureMove.ts`,
+  `resettlePiles` and `planVehicleRemovalPiles`, and `src/core/vehicleRemoval.ts`,
+  `completeVehicleRemoval`.
 - **Where it can stand.** A piece may not cover a hatch or fill the space a
   climber stands in front of a ladder, since either would wall off a floor. A
   flat cover may lie on a shut hatch, because it walls nothing off and hiding
