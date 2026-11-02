@@ -10,6 +10,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import process from 'node:process';
 import { parseArgs } from 'node:util';
 
 const { values, positionals } = parseArgs({
@@ -30,6 +31,7 @@ const batchName = (n) => `batch-${pad(n)}`;
 const ROWS = 'packages/thing-authoring-tool/catalogue';
 const DRAFTS = 'things/catalogue-drafts';
 const ITEMS = 'packages/thing-authoring-tool/items.jsonnet';
+const BATCH_FILE = /^batch-\d+\.libsonnet$/;
 const INDEX_IMPORT = "(import 'catalogue/index.libsonnet')";
 
 function prepare(range) {
@@ -38,47 +40,69 @@ function prepare(range) {
   mkdirSync(join(top, DRAFTS), { recursive: true });
   for (let n = first; n <= last; n++) {
     const rows = join(top, ROWS, `${batchName(n)}.libsonnet`);
-    if (!existsSync(rows)) writeFileSync(rows, "local h = import '../compound.libsonnet';\n[\n]\n");
+    if (!existsSync(rows)) {
+      writeFileSync(rows, "local h = import '../compound.libsonnet';\n[\n]\n");
+    }
     const drafts = join(top, DRAFTS, `${batchName(n)}.json`);
-    if (!existsSync(drafts)) writeFileSync(drafts, '[]\n');
+    if (!existsSync(drafts)) {
+      writeFileSync(drafts, '[]\n');
+    }
   }
-  const batches = readdirSync(join(top, ROWS)).filter((f) => /^batch-\d+\.libsonnet$/.test(f)).sort();
+  const batches = readdirSync(join(top, ROWS))
+    .filter((f) => BATCH_FILE.test(f))
+    .sort();
   writeFileSync(join(top, ROWS, 'index.libsonnet'), `${batches.map((f) => `(import '${f}')`).join('\n+ ')}\n`);
   const items = readFileSync(join(top, ITEMS), 'utf8');
   if (!items.includes(INDEX_IMPORT)) {
     const anchor = "(import 'worn-carry.libsonnet') +";
-    if (!items.includes(anchor)) throw new Error(`${ITEMS} changed shape; add ${INDEX_IMPORT} to its items by hand`);
+    if (!items.includes(anchor)) {
+      throw new Error(`${ITEMS} changed shape; add ${INDEX_IMPORT} to its items by hand`);
+    }
     writeFileSync(join(top, ITEMS), items.replace(anchor, `${anchor} ${INDEX_IMPORT} +`));
   }
   git(['add', ROWS, DRAFTS, ITEMS]);
   git(['commit', '-q', '-m', `Prepare catalogue batches ${pad(first)} to ${pad(last)}`]);
-  console.log(`prepared ${batches.length} batch files and committed; push this branch before starting batches on other hosts`);
+  console.log(
+    `prepared ${batches.length} batch files and committed; push this branch before starting batches on other hosts`,
+  );
 }
 
 function start(n) {
-  if (!values.catalogue) throw new Error('--catalogue <dir> (output of tools/cdda-reference.mjs) is required');
+  if (!values.catalogue) {
+    throw new Error('--catalogue <dir> (output of tools/cdda-reference.mjs) is required');
+  }
   const name = batchName(n);
   const reference = join(resolve(values.catalogue), 'batches', `${name}.json`);
-  if (!existsSync(reference)) throw new Error(`no ${reference}`);
-  if (!existsSync(join(top, ROWS, `${name}.libsonnet`))) throw new Error(`${name} is not prepared on this branch; run prepare first`);
+  if (!existsSync(reference)) {
+    throw new Error(`no ${reference}`);
+  }
+  if (!existsSync(join(top, ROWS, `${name}.libsonnet`))) {
+    throw new Error(`${name} is not prepared on this branch; run prepare first`);
+  }
   const base = values.base ?? git(['rev-parse', '--abbrev-ref', 'HEAD']);
   const wt = join(mainCheckout, '.claude/worktrees', `catalogue-${pad(n)}`);
   const branch = `things/catalogue-${pad(n)}`;
   if (!existsSync(wt)) {
     git(['worktree', 'add', '-b', branch, wt, base]);
-    if (!values['no-setup']) run('npm', ['run', 'setup'], wt);
+    if (!values['no-setup']) {
+      run('npm', ['run', 'setup'], wt);
+    }
   }
   mkdirSync(join(wt, '.catalogue'), { recursive: true });
   writeFileSync(join(wt, '.catalogue/reference.json'), readFileSync(reference));
   const rows = JSON.parse(readFileSync(reference, 'utf8'));
   writeFileSync(join(wt, '.catalogue/BRIEF.md'), brief(name, branch, rows));
-  console.log(`${wt}\n  branch ${branch}, ${rows.length} items\n  agent prompt: "Read .catalogue/BRIEF.md in this worktree and carry it out."`);
+  console.log(
+    `${wt}\n  branch ${branch}, ${rows.length} items\n  agent prompt: "Read .catalogue/BRIEF.md in this worktree and carry it out."`,
+  );
 }
 
 function land(ns) {
   git(['fetch', 'origin']);
   for (const n of ns) {
-    const branch = `origin/things/catalogue-${pad(n)}`;
+    // Batches from other hosts arrive through origin; a batch run on this host may not be pushed yet.
+    const local = `things/catalogue-${pad(n)}`;
+    const branch = git(['branch', '-r', '--list', `origin/${local}`]) ? `origin/${local}` : local;
     git(['merge', '--no-ff', '-q', '-m', `Merge catalogue ${batchName(n)}`, branch]);
     console.log(`merged ${branch}`);
   }

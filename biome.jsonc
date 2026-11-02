@@ -138,6 +138,21 @@
       }
     },
     {
+      // Catalogue authoring CLIs: an authoring agent reads their printed report.
+      "includes": [
+        "tools/cdda-reference.mjs",
+        "tools/model-look.mjs",
+        "tools/model-sheet.mjs",
+        "tools/catalogue-batch.mjs"
+      ],
+      "linter": {
+        "rules": {
+          "correctness": { "noNodejsModules": "off" },
+          "suspicious": { "noConsole": "off" }
+        }
+      }
+    },
+    {
       // Standalone Playwright check scripts (run by hand, not by vitest): they assert, read env and print.
       "includes": ["**/gun-authoring-tool/test/browser/*.mjs"],
       "linter": {
