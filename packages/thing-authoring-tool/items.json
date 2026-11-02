@@ -540,37 +540,31 @@
       "handling": {
         "fraction": [0.5, 0.5, 0.5],
         "hold": "upright",
-        "part": "package",
+        "part": "jerry_can",
         "roll": 0,
-        "solid": "handle",
+        "solid": "handle-b",
         "turn": [0, 0, -90]
       },
       "id": "jerry_can",
       "parts": [
         {
-          "family": "carton",
+          "family": "compound",
           "finish": {
             "body": "polymer-od-green",
-            "cap": "polymer-od-green",
-            "label": "paint-charcoal"
+            "cap": "paint-charcoal",
+            "handle": "polymer-od-green",
+            "seam": "polymer-od-green",
+            "spout": "steel-grey"
           },
-          "id": "package",
-          "massKg": 2.5,
+          "id": "jerry_can",
+          "massKg": 4,
           "params": {
-            "bandHeight": "0.040000000000000001",
-            "bandInset": "0.00029999999999999997",
-            "depth": "0.14999999999999999",
-            "handleDepth": "0.025000000000000001",
-            "handleHeight": "0.044999999999999998",
-            "handleWall": "0.012",
-            "handleWidth": "0.17999999999999999",
-            "height": "0.40000000000000002",
-            "lidHeight": "0.025000000000000001",
-            "width": "0.29999999999999999"
+            "pieces": "[\n    {\n        \"axis\": \"z\",\n        \"end\": 0.0825,\n        \"id\": \"body\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.1525,\n                0\n            ],\n            [\n                0.1525,\n                0\n            ],\n            [\n                0.1725,\n                0.02\n            ],\n            [\n                0.1725,\n                0.405\n            ],\n            [\n                0.1525,\n                0.425\n            ],\n            [\n                -0.1525,\n                0.425\n            ],\n            [\n                -0.1725,\n                0.405\n            ],\n            [\n                -0.1725,\n                0.02\n            ]\n        ],\n        \"slot\": \"body\",\n        \"start\": -0.0825\n    },\n    {\n        \"axis\": \"z\",\n        \"end\": 0.003,\n        \"id\": \"seam\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.1545,\n                -0.002\n            ],\n            [\n                0.1545,\n                -0.002\n            ],\n            [\n                0.1765,\n                0.02\n            ],\n            [\n                0.1765,\n                0.407\n            ],\n            [\n                0.1545,\n                0.429\n            ],\n            [\n                -0.1545,\n                0.429\n            ],\n            [\n                -0.1765,\n                0.407\n            ],\n            [\n                -0.1765,\n                0.02\n            ]\n        ],\n        \"slot\": \"seam\",\n        \"start\": -0.003\n    },\n    {\n        \"axis\": \"y\",\n        \"id\": \"spout\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.118,\n            0.425,\n            0.02\n        ],\n        \"profile\": [\n            [\n                0,\n                0\n            ],\n            [\n                0,\n                0.03\n            ],\n            [\n                0.012,\n                0.03\n            ],\n            [\n                0.012,\n                0.021\n            ],\n            [\n                0.032,\n                0.021\n            ],\n            [\n                0.032,\n                0\n            ]\n        ],\n        \"slot\": \"spout\"\n    },\n    {\n        \"axis\": \"y\",\n        \"id\": \"cap\",\n        \"kind\": \"turned\",\n        \"origin\": [\n            -0.118,\n            0.425,\n            0.02\n        ],\n        \"profile\": [\n            [\n                0.032,\n                0\n            ],\n            [\n                0.032,\n                0.026\n            ],\n            [\n                0.048,\n                0.026\n            ],\n            [\n                0.052,\n                0.02\n            ],\n            [\n                0.052,\n                0\n            ]\n        ],\n        \"slot\": \"cap\"\n    },\n    {\n        \"id\": \"cap-lever\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.086,\n            0.477,\n            0.03\n        ],\n        \"min\": [\n            -0.15,\n            0.468,\n            0.01\n        ],\n        \"slot\": \"cap\"\n    },\n    {\n        \"axis\": \"z\",\n        \"end\": 0.087,\n        \"id\": \"x-rise-front\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.1282,\n                0.0208\n            ],\n            [\n                0.1518,\n                0.3808\n            ],\n            [\n                0.1282,\n                0.3992\n            ],\n            [\n                -0.1518,\n                0.0392\n            ]\n        ],\n        \"slot\": \"body\",\n        \"start\": 0.0825\n    },\n    {\n        \"axis\": \"z\",\n        \"end\": 0.087,\n        \"id\": \"x-fall-front\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                0.1518,\n                0.0392\n            ],\n            [\n                -0.1282,\n                0.3992\n            ],\n            [\n                -0.1518,\n                0.3808\n            ],\n            [\n                0.1282,\n                0.0208\n            ]\n        ],\n        \"slot\": \"body\",\n        \"start\": 0.0825\n    },\n    {\n        \"axis\": \"z\",\n        \"end\": -0.0825,\n        \"id\": \"x-rise-back\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                -0.1282,\n                0.0208\n            ],\n            [\n                0.1518,\n                0.3808\n            ],\n            [\n                0.1282,\n                0.3992\n            ],\n            [\n                -0.1518,\n                0.0392\n            ]\n        ],\n        \"slot\": \"body\",\n        \"start\": -0.087\n    },\n    {\n        \"axis\": \"z\",\n        \"end\": -0.0825,\n        \"id\": \"x-fall-back\",\n        \"kind\": \"prism\",\n        \"profile\": [\n            [\n                0.1518,\n                0.0392\n            ],\n            [\n                -0.1282,\n                0.3992\n            ],\n            [\n                -0.1518,\n                0.3808\n            ],\n            [\n                0.1282,\n                0.0208\n            ]\n        ],\n        \"slot\": \"body\",\n        \"start\": -0.087\n    },\n    {\n        \"id\": \"handle-a\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.031,\n            0.47,\n            0.06\n        ],\n        \"min\": [\n            -0.049,\n            0.448,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-a-front\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.031,\n            0.448,\n            0.06\n        ],\n        \"min\": [\n            -0.049,\n            0.425,\n            0.042\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-a-back\",\n        \"kind\": \"box\",\n        \"max\": [\n            -0.031,\n            0.448,\n            -0.042\n        ],\n        \"min\": [\n            -0.049,\n            0.425,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-b\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.049,\n            0.47,\n            0.06\n        ],\n        \"min\": [\n            0.031,\n            0.448,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-b-front\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.049,\n            0.448,\n            0.06\n        ],\n        \"min\": [\n            0.031,\n            0.425,\n            0.042\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-b-back\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.049,\n            0.448,\n            -0.042\n        ],\n        \"min\": [\n            0.031,\n            0.425,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-c\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.129,\n            0.47,\n            0.06\n        ],\n        \"min\": [\n            0.111,\n            0.448,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-c-front\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.129,\n            0.448,\n            0.06\n        ],\n        \"min\": [\n            0.111,\n            0.425,\n            0.042\n        ],\n        \"slot\": \"handle\"\n    },\n    {\n        \"id\": \"handle-c-back\",\n        \"kind\": \"box\",\n        \"max\": [\n            0.129,\n            0.448,\n            -0.042\n        ],\n        \"min\": [\n            0.111,\n            0.425,\n            -0.06\n        ],\n        \"slot\": \"handle\"\n    }\n]"
           },
           "ports": []
         }
-      ]
+      ],
+      "voxelGrain": 0.0040000000000000001
     },
     {
       "connections": [],

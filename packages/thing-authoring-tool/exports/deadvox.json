@@ -176,7 +176,7 @@
     "source": "jerry_can",
     "voxel": {
       "detailGrain": 0.002,
-      "grain": 0.01
+      "grain": 0.0040000000000000001
     }
   },
   {

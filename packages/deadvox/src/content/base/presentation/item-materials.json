@@ -182,7 +182,7 @@
   "assets/models/integral_magazine.glb": { "materials": ["steel-blued"] },
   "assets/models/jacket.glb": { "materials": ["paperboard-brown", "paint-charcoal"] },
   "assets/models/jeans.glb": { "materials": ["plastic-blue"] },
-  "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "paint-charcoal"] },
+  "assets/models/jerry_can.glb": { "materials": ["polymer-od-green", "steel-grey", "paint-charcoal"] },
   "assets/models/juice_carton.glb": { "materials": ["paperboard-tan", "plastic-green"] },
   "assets/models/kabar.glb": { "materials": ["rubber-black", "steel-blued"] },
   "assets/models/kitchen_knife.glb": { "materials": ["plastic-black", "steel-stainless"] },
