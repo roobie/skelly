@@ -1540,8 +1540,11 @@ export const createSession = (options: SessionOptions) => {
   const traps = new BearTraps(inventory);
   const placeZombieDrop = (item: Item, pos: Vec3): void => {
     const landed = freshDropTarget(inventory, item, pos);
-    // Non-player no-ground/all-full policy is unresolved; see `DESIGN.md`, "Dropped items land".
-    const target = landed && inventory.planAdd(item, landed).ok ? landed : { kind: 'pile' as const, pos };
+    if (!landed) {
+      return;
+    }
+    // Wider all-full search awaits its bounds and scope; see `DESIGN.md`, "Dropped items land".
+    const target = inventory.planAdd(item, landed).ok ? landed : { kind: 'pile' as const, pos };
     inventory.add(item, target);
   };
   const zombieSystem = new ZombieSystem({

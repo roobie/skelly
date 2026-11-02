@@ -4,6 +4,7 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { StressCity } from '../src/core/city.ts';
 import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
+import { dropSpots } from '../src/core/inventory.ts';
 import { PILE_GRID } from '../src/core/inventoryScale.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
 import * as selection from '../src/core/loot.ts';
@@ -12,6 +13,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { lootSourcesOf, type Site } from '../src/core/site.ts';
 import { compileTemplate, type Placement, placedPieces } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
+import { handlingMoveCompleteCue } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureEconomy } from './economyFixtures.ts';
@@ -161,7 +163,19 @@ describe('loot source routing', () => {
     expectRoutedColumn(authored, authored.placements);
   });
 
-  it.each([false, true])('lands admitted death and severing drops (full source: %s)', (full) => {
+  const zombieDropWorld = (ground: boolean, block: number) => {
+    const world = new World();
+    if (ground) {
+      for (let x = 2; x <= 6; x++) {
+        for (let z = -1; z <= 1; z++) {
+          world.setBlock(x, 0, z, block);
+        }
+      }
+    }
+    return world;
+  };
+
+  const zombieDropScene = ({ ground = true, full = false, drops = true } = {}) => {
     const registry = fixtureRegistry();
     const severed = 'fixture_severed_item';
     registry.items.set(severed, { ...registry.items.get(stock)!, id: severed });
@@ -176,21 +190,19 @@ describe('loot source routing', () => {
     const table = 'fixture_corpse_supply';
     registry.loot.set(table, {
       id: table,
-      rolls: [1, 1],
+      rolls: drops ? [1, 1] : [0, 0],
       entries: [
         { item: stock, weight: 1 },
         { item: forbidden, weight: 100 },
       ],
     });
-    const world = new World();
     const block = registry.blocks.findIndex((entry) => entry.solid);
-    for (let x = 2; x <= 6; x++) {
-      for (let z = -1; z <= 1; z++) {
-        world.setBlock(x, 0, z, block);
-      }
-    }
+    const world = zombieDropWorld(ground, block);
     const solid = (x: number, y: number, z: number) => registry.blocks[world.getBlock(x, y, z)]!.solid;
-    const session = createSession({
+    const play = vi.fn();
+    const notice = vi.fn();
+    const moveSounds: string[] = [];
+    const session: ReturnType<typeof createSession> = createSession({
       registry,
       world,
       isSolid: solid,
@@ -208,8 +220,21 @@ describe('loot source routing', () => {
         walking: () => false,
         descending: () => false,
       },
-      audio: { play: () => undefined },
-      notice: () => undefined,
+      audio: {
+        play,
+        onMoveComplete: (move) => {
+          const cue = handlingMoveCompleteCue(move, registry, {
+            blockIdAt: (x, y, z) => world.getBlock(x, y, z),
+            entities: session.inventory.entities,
+            vehicles: session.inventory.vehicles,
+            blockSize: 0.5,
+          });
+          if (cue) {
+            moveSounds.push(cue.event);
+          }
+        },
+      },
+      notice,
       onRead: () => undefined,
     });
     if (full) {
@@ -224,7 +249,14 @@ describe('loot source routing', () => {
         id: 'fixture_corpse',
         loot: table,
         dismember: { chance: 0, headOnKillChance: 0 },
-        severedItems: { head: null, torso: null, leftArm: severed, rightArm: null, leftLeg: null, rightLeg: null },
+        severedItems: {
+          head: null,
+          torso: null,
+          leftArm: drops ? severed : null,
+          rightArm: null,
+          leftLeg: null,
+          rightLeg: null,
+        },
       },
       [4, 4, 0],
     );
@@ -232,6 +264,11 @@ describe('loot source routing', () => {
       blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
       fragments: { damageKind: 'pierce', origin: [0, 4, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
+    return { session, registry, world, block, solid, id, severed, forbidden, play, notice, moveSounds };
+  };
+
+  it.each([false, true])('lands admitted death and severing drops (full source: %s)', (full) => {
+    const { session, solid, id, severed, forbidden } = zombieDropScene({ full });
     expect(session.zombieStore.get(id)).toBeUndefined();
     const items = [...session.inventory.items()].map(({ item }) => item);
     const dropped = items.filter((item) => item.type === stock);
@@ -245,5 +282,35 @@ describe('loot source routing', () => {
           location.kind === 'pile' && solid(location.pile.pos[0], location.pile.pos[1] - 1, location.pile.pos[2]),
       ),
     ).toBe(true);
+  });
+
+  it('silently loses death loot and severed items with no ground, leaving later hand moves safe', () => {
+    const supported = zombieDropScene();
+    expect([...supported.session.inventory.items()].map(({ item }) => item.type)).toEqual(
+      expect.arrayContaining([stock, supported.severed]),
+    );
+    const withoutDrops = zombieDropScene({ ground: false, drops: false });
+    const f = zombieDropScene({ ground: false });
+    for (const spot of dropSpots([4, 4, 0])) {
+      expect(f.session.inventory.landing(spot)).toBeUndefined();
+    }
+    expect(f.session.zombieStore.get(f.id)).toBeUndefined();
+    expect(f.session.inventory.piles.size).toBe(0);
+    expect([...f.session.inventory.items()]).toEqual([]);
+    expect(f.notice).not.toHaveBeenCalled();
+    expect(f.play.mock.calls).toEqual(withoutDrops.play.mock.calls);
+
+    f.world.setBlock(1, 0, 0, f.block);
+    const held = f.session.inventory.create(stock);
+    expect(f.session.inventory.add(held, { kind: 'hand', side: 'right' })).toBe(true);
+    const move = f.session.queue.enqueue(held, { kind: 'pile', pos: [1, 1, 0] });
+    expect(move.ok).toBe(true);
+    if (!move.ok) {
+      throw new Error(move.reason);
+    }
+    expect(() => f.session.queue.tick(move.job.duration)).not.toThrow();
+    expect(f.session.inventory.locate(held)).toMatchObject({ kind: 'pile' });
+    expect(f.moveSounds).toHaveLength(1);
+    expect(f.notice).not.toHaveBeenCalled();
   });
 });

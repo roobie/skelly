@@ -95,7 +95,7 @@ read_if:
   - you're changing the quiet-key and noisy-forcing alternatives for locked doors
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
-  - you change item landing, debug spawns, zombie item emissions, landing reach checks or no-ground outcomes
+  - you change item landing, debug spawns, zombie item emissions or loss feedback, landing reach checks or no-ground outcomes
   - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
@@ -2766,7 +2766,7 @@ nothing, preserving the existing owner and any unfinished work. Supported but
 full candidates have a separate refusal. A finished repair puts nothing down;
 an unpack into a pocket with room and a discarded dead battery need no landing.
 
-Item support follows actual solid cells, so every pile landing has a drop-sound
+Item support follows actual solid cells, so a supported landing has a drop-sound
 receiver: a non-solid piece or a shape gap cannot catch a falling item. Furniture
 instead stands on any piece and reserves whole boxes. The item-support rule must
 not let furniture fall into those reserved cells. See `src/core/furnitureMove.ts`,
@@ -2774,10 +2774,12 @@ not let furniture fall into those reserved cells. See `src/core/furnitureMove.ts
 `BlockEntities.filling`.
 
 Zombie loot and severed parts use the same landing rule when a supported pile has
-room. Non-player emission outcomes require their own decisions under #1532: a
-player refusal assumes a retained owner, but death or severing has already
-committed. Those outcomes must not acquire a loss or retention rule by
-inference. See `src/game/session.ts`, `placeZombieDrop`.
+room. With no supported candidate, the item is lost: the zombie has been removed
+or the limb cut, so no owner can retain it. The loss adds neither a notice nor a
+sound. Zombie loot can yield nothing, and a line about an unseen body would
+narrate what the character cannot know; see `INTERFACE.md`, "Text". Wider search
+when all supported candidates are full awaits bounds and scope under #1532. See
+`src/game/session.ts`, `placeZombieDrop`.
 
 See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
 `src/core/options.ts`, `dropTarget` and `freshDropTarget`;
