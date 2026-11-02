@@ -13,6 +13,7 @@
       cellMetres: 0.1,
       containerMaxWidthCells: 10,
       keyHoldRealSeconds: 0.35,
+      handling: { perCell: 0.05, ground: 1, wear: 2 },
       groundPileStateCap: 65536,
       autoPlacementTallMinFreeAreaGainCells: 4,
       reachMetres: 2,

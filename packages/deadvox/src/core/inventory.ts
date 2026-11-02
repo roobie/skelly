@@ -3,7 +3,7 @@
 // handling time is up (handling.ts). `DESIGN.md`, "Items and inventory"; `DESIGN.md`, "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import { claimed, claimedId } from './capabilities.ts';
+import { claimed } from './capabilities.ts';
 import { cargoGrid, cargoSpaceItem, fitIssue } from './cargoSpace.ts';
 import {
   DEFAULT_HANDED_CHARACTER,
@@ -77,7 +77,6 @@ import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import { countText, volumeText } from './numberText.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
-import { inventoryManagementTuning } from './skillTraining.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import { placeFitting } from './vehicleBlueprint.ts';
 import {
@@ -92,24 +91,15 @@ import {
   validVehicleWorkPlacement,
 } from './vehicleInstances.ts';
 
-/** Handling tunables in seconds, authored in content beside the skill that scales them. */
-export const handlingWeights = (registry: Registry) => {
-  const tuning = inventoryManagementTuning(registry);
-  return {
-    /** Added per cell of the item's size, taking it out and putting it in. */
-    perCell: tuning.handlingPerCellSimSeconds,
-    /** Taking from or putting on the ground. */
-    ground: tuning.handlingGroundSimSeconds,
-    /** Putting on or taking off a worn item. */
-    wear: tuning.handlingWearSimSeconds,
-  };
-};
+export const handlingWeights = (registry: Registry) => claimed(registry.inventory, 'player')!.handling;
 
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
-  const tuning = inventoryManagementTuning(registry);
-  const level = skillEffectLevel(
-    character.skills?.[claimedId(registry.skills, 'inventoryManagement')] ?? SKILL_LEVEL_MIN,
-  );
+  const skill = claimed(registry.skills, 'inventoryManagement');
+  if (!skill) {
+    return 1;
+  }
+  const tuning = skill.inventory!;
+  const level = skillEffectLevel(character.skills?.[skill.id] ?? SKILL_LEVEL_MIN);
   return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
 };
 

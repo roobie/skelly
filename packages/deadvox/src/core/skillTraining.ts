@@ -17,15 +17,6 @@ export const craftingActivityTier = (requiredLevel: number, offset: number): num
   return Math.min(SKILL_LEVEL_MAX, requiredLevel + offset);
 };
 
-// The skill schema's completeness check makes these tunings present on a loaded core skill.
-export const inventoryManagementTuning = (registry: Registry) => {
-  const tuning = claimed(registry.skills, 'inventoryManagement')?.inventory;
-  if (!tuning) {
-    throw new Error('Missing inventory tuning on capability "inventoryManagement"');
-  }
-  return tuning;
-};
-
 export const firearmsCombatTuning = (registry: Registry) => {
   const tuning = claimed(registry.skills, 'firearmsCombat')?.combat?.firearms;
   if (!tuning) {

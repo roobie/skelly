@@ -41,10 +41,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       "training": { "activities": { "handling": { "practice": 2.5 } } },
       "inventory": {
         "handlingFactorFloor": 0,
-        "handlingFactorHalfLifeLevels": 1.1,
-        "handlingPerCellSimSeconds": 0.05,
-        "handlingGroundSimSeconds": 1,
-        "handlingWearSimSeconds": 2
+        "handlingFactorHalfLifeLevels": 1.1
       }
     },
     {

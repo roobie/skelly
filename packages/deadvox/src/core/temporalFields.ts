@@ -75,9 +75,9 @@ export const TEMPORAL_FIELDS = [
     dimension: 'acceleration',
   },
   { path: 'inventory[].furnitureMove.slide.stepSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
-  { path: 'skills[].inventory.handlingPerCellSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
-  { path: 'skills[].inventory.handlingGroundSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
-  { path: 'skills[].inventory.handlingWearSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'inventory[].handling.perCell', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'inventory[].handling.ground', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'inventory[].handling.wear', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   {
     path: 'inventory[].furnitureMove.fatigue.carry.basePerSimSecond',
     clock: 'Sim',
