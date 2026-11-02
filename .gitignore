@@ -13,5 +13,8 @@ test-results/
 # The lead's role skill: a symlink into the untracked team repo under .agent-mail/bin.
 .claude/skills/role-lead
 
+# Catalogue batch scratch: CDDA-derived reference, looks and briefs stay out of the repository.
+/.catalogue/
+
 # Host-local mise settings (e.g. AGENT_MAIL_ROOT).
 mise.local.toml
