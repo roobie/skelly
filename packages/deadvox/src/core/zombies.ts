@@ -50,7 +50,7 @@ import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
-import { bodyPlanModel } from './zombieModels.ts';
+import { bodyPlanModel, figureVariantOf } from './zombieModels.ts';
 import {
   advanceStanceWeight,
   posedMouth,
@@ -976,7 +976,7 @@ const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
 // parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
 
 const cutsFor = (zombie: Zombie) => {
-  const figure = humanoidFigure(bodyPlanModel(zombie.type.model), zombie.figureSeed);
+  const figure = humanoidFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
   return { parts: figure.severableParts, bones: figure.realized.body.bones };
 };
 
@@ -2584,7 +2584,7 @@ export class ZombieSystem {
     if (zombie.hitFlinchTime !== undefined) {
       const nextFlinchTime = zombie.hitFlinchTime + dt;
       zombie.hitFlinchTime =
-        nextFlinchTime > zombieHitFlinchDuration(zombieCrawls(zombie) ? 'crawler' : zombie.type.model)
+        nextFlinchTime > zombieHitFlinchDuration(zombieCrawls(zombie) ? 'crawler' : figureVariantOf(zombie.type))
           ? undefined
           : nextFlinchTime;
     }

@@ -61,7 +61,7 @@ read_if:
   - you change shared world gravity, player jump height, zombie hops or acid flight balance
   - you're changing bleeding tiers, blood loss, wound closure, treatment strength, or when bleeding refuses time compression
   - you're changing zombie attack moves or the damage kinds they deal
-  - you change descriptive body-plan selection or its generator boundary
+  - you change anatomical body-plan selection, figure-variant properties or their generator boundary
   - you change the game's design, especially inventory layout, held-item feedback, body damage or treatment, or hand ownership
   - you change quickbar assignment feedback
   - you add or change a first-person handling animation (what it may read its timing from)
@@ -2965,12 +2965,13 @@ low profile that limits its bite to the player's legs. Its posture determines
 posed hit regions, so gait and flinches follow those regions. Keep other short or
 hunched forms as distinct future types, not crawler variants.
 
-A type's body is a content choice, independent of its identity. Shape and gait
-names let other products reuse implemented bodies without inheriting zombie
-vocabulary. A figure seed must realize a valid body by itself. Falling through to
-the next valid seed would draw two seeds as one body and quietly shrink authored
-variety, so it is refused; a body plan whose template rejects shared seeds authors
-its own. See `src/core/zombieModels.ts`, `BODY_PLANS` and `bodyPlanModel`;
+A type's anatomy is a content choice, independent of its identity. Speed, gait and
+size remain humanoid properties rather than separate body plans; figure variants
+preserve their distinct realizations without misclassifying anatomy. A figure seed
+must realize a valid body by itself. Falling through to the next valid seed would
+draw two seeds as one body and quietly shrink authored variety, so it is refused;
+a figure variant whose template rejects shared seeds authors its own. See
+`src/core/zombieModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
 `src/render/mobActors.ts`, `figureSeedsByModel`; and
 `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
 

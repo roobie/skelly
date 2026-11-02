@@ -125,7 +125,7 @@ import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
-import { bodyPlanModel, type ZombieModel } from '../core/zombieModels.ts';
+import { bodyPlanModel, FIGURE_VARIANTS, figureVariantOf, type ZombieModel } from '../core/zombieModels.ts';
 import { acidSpitWindupProgress, posedShambler, zombieCrawls, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
@@ -524,7 +524,10 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
 };
 
 const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ZombieFigureType): BuiltActorVariant => {
-  const type = model === 'fused-mass' ? requireAmalgamType(amalgamType) : { model };
+  const type =
+    model === 'fused-mass'
+      ? requireAmalgamType(amalgamType)
+      : { model: FIGURE_VARIANTS[model].bodyPlan, figure: model };
   const figure = zombieFigure(type, seed);
   const { genome, realized } = figure;
   const bodyScale = model === 'fused-mass' ? type.bodyScale : undefined;
@@ -554,8 +557,9 @@ const figureSeedsByModel = (
   const byModel = new Map<ActorModel, number[]>();
   for (const type of zombies.values()) {
     const authored = type.model === 'fused-mass' ? [AMALGAM_FIGURE_SEED] : (type.figureSeeds ?? []);
-    const seeds = byModel.get(type.model) ?? [];
-    byModel.set(type.model, [...new Set([...seeds, ...authored])]);
+    const variant = figureVariantOf(type);
+    const seeds = byModel.get(variant) ?? [];
+    byModel.set(variant, [...new Set([...seeds, ...authored])]);
   }
   for (const [model, seeds] of byModel) {
     if (seeds.length === 0) {
@@ -1070,7 +1074,7 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   private addZombie(id: EntityId, zombie: Zombie): ZombieRenderState | undefined {
-    const variantIndex = this.variantIndexBySeed.get(`${zombie.type.model}:${zombie.figureSeed}`);
+    const variantIndex = this.variantIndexBySeed.get(`${figureVariantOf(zombie.type)}:${zombie.figureSeed}`);
     if (variantIndex === undefined) {
       return undefined;
     }

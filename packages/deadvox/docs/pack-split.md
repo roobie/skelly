@@ -3,8 +3,8 @@ read_if:
   - you split Deadvox content into core, theme, product and scenario mods (#637)
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
-  - you classify creature, ranged, vehicle, sound or damage-kind content
-  - you change body-plan identity, settlement role claims or melee pose selection
+  - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound material prerequisites
+  - you separate anatomical body plans from figure properties, change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
 ---
@@ -90,9 +90,12 @@ combat policy belong to the product, separately from the mechanisms they modify.
 `docs/decisions/0006-firearm-handling.md` and "Skill providers".
 
 **Creature framework.** Senses, attention, modes and attacks are reusable mechanisms;
-zombie types are Deadvox content. Shape and gait describe reusable body plans without
-requiring another product to inherit zombie vocabulary. Actor identity does not select
-its implementation: see `src/core/zombieModels.ts`, `BODY_PLANS` and `bodyPlanModel`,
+zombie types are Deadvox content. A body plan names anatomy: speed, gait and size are
+properties of a humanoid, not reasons to invent another anatomy. Figure variants retain
+those distinct realizations without turning actor properties into body plans or requiring
+another product to inherit zombie vocabulary. Actor identity does not select its
+implementation: see `src/core/zombieModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`,
+`figureVariantOf` and `bodyPlanModel`,
 and `src/core/schema/zombies.ts`, `ZombieSchema` and `zombieRegionsMatchModel`.
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
@@ -128,9 +131,12 @@ presentation selections mean silence when omitted, never a borrowed sound. Door
 presentation need not alert hearing; forcing it to do so would change quiet doors
 merely because their former default became explicit. Search remains a hearing event;
 see `src/core/content.ts`, `checkSearchNoise`.
-`src/game/audioPresentation.ts`, `handlingMoveCompleteCue` retains the ground-drop
-selection until #1532 settles its owner; `src/core/content.ts`,
-`requiredContentIssues` keeps that named prerequisite, not an event whitelist.
+A dropped item's sound combines what it hits with what it is made of. #1532 must
+supply item main-material ownership and the missing surface/material-pair rule before
+that selection can replace the fixed ground-drop prerequisite. See
+`src/game/audioPresentation.ts`, `handlingMoveCompleteCue`, and `src/core/content.ts`,
+`requiredContentIssues`; keeping that prerequisite is not permission to infer material
+from appearance or salvage.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
 manufactured materials may be thematic. A site's distribution and authored run remain

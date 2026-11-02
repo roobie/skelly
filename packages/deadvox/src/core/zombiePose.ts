@@ -17,7 +17,7 @@ import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob
 import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { ZombieFigure } from './zombieFigure.ts';
-import { bodyPlanModel } from './zombieModels.ts';
+import { bodyPlanModel, figureVariantOf } from './zombieModels.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {
@@ -64,7 +64,7 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
 };
 
 export const zombieCrawls = (zombie: Zombie): boolean => {
-  if (templateByName(bodyPlanModel(zombie.type.model)).bodyPlan !== 'humanoid') {
+  if (templateByName(bodyPlanModel(figureVariantOf(zombie.type))).bodyPlan !== 'humanoid') {
     return false;
   }
   if (zombie.regions.leftLeg! <= 0 || zombie.regions.rightLeg! <= 0) {
@@ -73,7 +73,7 @@ export const zombieCrawls = (zombie: Zombie): boolean => {
   if (zombie.severed.length === 0) {
     return false;
   }
-  const { severableParts } = humanoidFigure(bodyPlanModel(zombie.type.model), zombie.figureSeed);
+  const { severableParts } = humanoidFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => zombie.severed.includes(part));
 };
 
@@ -87,7 +87,7 @@ export const zombiePoseInputFor = (
   return {
     id,
     seed: zombie.figureSeed,
-    model: zombie.type.model,
+    model: figureVariantOf(zombie.type),
     crawling: zombieCrawls(zombie),
     ...(zombie.type.bodyScale === undefined ? {} : { bodyScale: zombie.type.bodyScale }),
     position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],

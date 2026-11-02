@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bodyPlanModel } from '../src/core/zombieModels.ts';
+import { bodyPlanModel, figureVariantOf } from '../src/core/zombieModels.ts';
 import { posedShambler } from '../src/core/zombiePose.ts';
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
@@ -8,6 +8,7 @@ const { actors: zombies } = readJson<{
   actors: {
     id: string;
     model: string;
+    figure?: string;
     bodyScale?: number;
     spawnWeight: number;
     sounds: Record<string, string>;
@@ -37,7 +38,9 @@ describe('zombie type content', () => {
   it('poses every zombie with the model selected by its type data', () => {
     expect(zombies.length).toBeGreaterThan(0);
     for (const zombie of zombies) {
-      expect(figureForModel(zombie.model, zombie.bodyScale).genome.template).toBe(bodyPlanModel(zombie.model));
+      expect(figureForModel(figureVariantOf(zombie), zombie.bodyScale).genome.template).toBe(
+        bodyPlanModel(figureVariantOf(zombie)),
+      );
     }
   });
 

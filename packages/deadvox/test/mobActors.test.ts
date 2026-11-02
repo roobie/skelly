@@ -31,6 +31,7 @@ import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
+import { figureVariantOf } from '../src/core/zombieModels.ts';
 import { flinchSideForId, HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
@@ -1054,7 +1055,7 @@ describe('MobActorMeshes', () => {
         });
         return { type, realized: zombieFigure(type, figureSeed).realized, id: store.add(zombie) };
       });
-      expect(entries.some(({ type }) => type.model === 'crawler')).toBe(true);
+      expect(entries.some(({ type }) => type.figure === 'crawler')).toBe(true);
       renderer.sync(store, 1 / 60, 1);
       for (const { type, realized, id } of entries) {
         expect(realized.body.bones.length, type.id).toBeGreaterThan(0);
@@ -1365,7 +1366,7 @@ describe('MobActorMeshes reactions', () => {
   ])(
     'hands $model leg loss back to crawling and releases its physics without mutating simulation',
     async ({ model, cuts }) => {
-      const type = [...registry.zombies.values()].find((candidate) => candidate.model === model)!;
+      const type = [...registry.zombies.values()].find((candidate) => figureVariantOf(candidate) === model)!;
       const renderer = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
       const reference = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
       const store = new MapEntityStore<Zombie>();

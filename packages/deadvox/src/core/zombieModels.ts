@@ -1,18 +1,27 @@
 export const BODY_PLANS = {
-  humanoid: { model: 'shambler', generator: 'shambler-figure-v1' },
-  runner: { model: 'runner', generator: 'shambler-figure-v1' },
-  crawler: { model: 'crawler', generator: 'shambler-figure-v1' },
-  brute: { model: 'brute', generator: 'shambler-figure-v1' },
-  acid: { model: 'acid', generator: 'shambler-figure-v1' },
-  'fused-mass': { model: 'amalgam', generator: 'amalgam-figure-v1' },
+  humanoid: { generator: 'shambler-figure-v1' },
+  acid: { generator: 'shambler-figure-v1' },
+  'fused-mass': { generator: 'amalgam-figure-v1' },
+} as const;
+
+export const FIGURE_VARIANTS = {
+  humanoid: { bodyPlan: 'humanoid', model: 'shambler' },
+  runner: { bodyPlan: 'humanoid', model: 'runner' },
+  crawler: { bodyPlan: 'humanoid', model: 'crawler' },
+  brute: { bodyPlan: 'humanoid', model: 'brute' },
+  acid: { bodyPlan: 'acid', model: 'acid' },
+  'fused-mass': { bodyPlan: 'fused-mass', model: 'amalgam' },
 } as const;
 
 export type BodyPlan = keyof typeof BODY_PLANS;
-export type ZombieModel = BodyPlan;
+export type ZombieModel = keyof typeof FIGURE_VARIANTS;
 
-export const bodyPlanModel = (plan: string) => {
-  if (!Object.hasOwn(BODY_PLANS, plan)) {
-    throw new Error(`Unsupported body plan "${plan}"`);
+export const figureVariantOf = (type: { readonly model: string; readonly figure?: string | undefined }): ZombieModel =>
+  (type.figure ?? type.model) as ZombieModel;
+
+export const bodyPlanModel = (variant: string) => {
+  if (!Object.hasOwn(FIGURE_VARIANTS, variant)) {
+    throw new Error(`Unsupported figure variant "${variant}"`);
   }
-  return BODY_PLANS[plan as BodyPlan].model;
+  return FIGURE_VARIANTS[variant as ZombieModel].model;
 };

@@ -111,6 +111,7 @@ export interface Registry extends RegistryMaps {
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 import { registrySection } from './registrySection.ts';
+import { FIGURE_VARIANTS } from './zombieModels.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -1575,10 +1576,17 @@ const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report
   }
 };
 
+const checkActorFigure = (zombie: ZombieDef, report: Report): void => {
+  if (zombie.figure !== undefined && FIGURE_VARIANTS[zombie.figure].bodyPlan !== zombie.model) {
+    report('actors', zombie.id, '.figure', 'figure variant anatomy must match the body plan');
+  }
+};
+
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const zombie of registry.zombies.values()) {
     checkSeveredItems(registry, zombie, report);
+    checkActorFigure(zombie, report);
     if (zombie.footstepSound !== undefined && !registry.soundFamilies.has(zombie.footstepSound)) {
       report('actors', zombie.id, '.footstepSound', `no sound family "${zombie.footstepSound}"`);
     }

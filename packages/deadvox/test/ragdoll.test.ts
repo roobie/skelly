@@ -7,7 +7,7 @@ import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
-import { BODY_PLANS } from '../src/core/zombieModels.ts';
+import { FIGURE_VARIANTS } from '../src/core/zombieModels.ts';
 import { RagdollWorld, ragdollContent, ragdollGroups, ragdollMotion } from '../src/render/ragdoll.ts';
 import type RAPIER from '../src/render/ragdollRapier.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
@@ -21,7 +21,7 @@ const pose = { rotations: {}, root: [0, 0, 0] as const };
 
 describe('render ragdoll', () => {
   it.each(
-    Object.entries(BODY_PLANS)
+    Object.entries(FIGURE_VARIANTS)
       .filter(([, plan]) => ragdollContent.models.includes(plan.model))
       .map(([plan]) => plan),
   )('%s partitions every skeleton bone once with one limited link per non-root group', async (model) => {

@@ -22,7 +22,7 @@ import {
 import { BODY_REGIONS } from '../body.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { simRate } from '../time.ts';
-import { BODY_PLANS, type BodyPlan } from '../zombieModels.ts';
+import { BODY_PLANS, type BodyPlan, FIGURE_VARIANTS, type ZombieModel } from '../zombieModels.ts';
 import { ZOMBIE_REGION_NAMES } from '../zombieRegionNames.ts';
 import { capabilityClaimsField } from './capability.ts';
 import {
@@ -139,8 +139,8 @@ export const ZombieSchema = strictObject({
   name: Name,
   /** How the death screen names this type as the cause, article included, because only the phrase knows its article. */
   cause: Name,
-  /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: BODY_PLAN,
+  figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ZombieModel[])),
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
   /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */

@@ -116,8 +116,10 @@ export function adaptMainSeedPool(source) {
     )
     .replace(
       "import type { ZombieModel } from '../core/zombieModels.ts';",
-      "import { bodyPlanModel, type ZombieModel } from '../core/zombieModels.ts';",
+      "import { bodyPlanModel, figureVariantOf, type ZombieModel } from '../core/zombieModels.ts';",
     )
+    .replaceAll('zombie.type.model', 'figureVariantOf(zombie.type)')
+    .replaceAll('type.model', 'figureVariantOf(type)')
     .replaceAll("'amalgam'", "'fused-mass'")
     .replace(
       "LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : model]",

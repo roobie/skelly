@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import { validateContent } from '../src/core/content.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
-import { BODY_PLANS } from '../src/core/zombieModels.ts';
+import { FIGURE_VARIANTS } from '../src/core/zombieModels.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
@@ -23,7 +23,11 @@ describe('zombie models', () => {
           source: 'body-plan.json',
           data: {
             actors: [
-              { ...row, model: Object.entries(BODY_PLANS).find(([, plan]) => plan.model === template.name)?.[0] },
+              {
+                ...row,
+                model: Object.values(FIGURE_VARIANTS).find((variant) => variant.model === template.name)?.bodyPlan,
+                figure: Object.entries(FIGURE_VARIANTS).find(([, variant]) => variant.model === template.name)?.[0],
+              },
             ],
           },
         }).some(({ path }) => path.endsWith('.model')),
@@ -34,7 +38,7 @@ describe('zombie models', () => {
 
   it('realizes a figure for every model content can select', () => {
     const amalgam = amalgamTypeOf(registry.zombies)!;
-    for (const model of Object.keys(BODY_PLANS)) {
+    for (const model of Object.keys(FIGURE_VARIANTS)) {
       const [type, seed] = model === 'fused-mass' ? [amalgam, AMALGAM_FIGURE_SEED] : [{ model }, FIXTURE_SEED];
       expect(() => zombieFigure(type, seed), model).not.toThrow();
     }

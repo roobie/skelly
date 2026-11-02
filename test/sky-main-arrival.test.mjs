@@ -124,6 +124,7 @@ return types.map((type) => {
   const inspect = Function(
     'types',
     'bodyPlanModel',
+    'figureVariantOf',
     'LOOK_AT_PROFILES',
     'templatesByModel',
     'ragdollContent',
@@ -131,8 +132,9 @@ return types.map((type) => {
   );
   const mechanisms = { humanoid: 'shambler', 'fused-mass': 'amalgam', crawler: 'crawler' };
   const actual = inspect(
-    Object.keys(mechanisms).map((model) => ({ model })),
-    (plan) => mechanisms[plan],
+    [{ model: 'humanoid' }, { model: 'fused-mass' }, { model: 'humanoid', figure: 'crawler' }],
+    (variant) => mechanisms[variant],
+    (type) => type.figure ?? type.model,
     { shambler: 'humanoid-gaze', crawler: 'crawler-gaze' },
     new Map([
       ['shambler', 'humanoid-template'],
