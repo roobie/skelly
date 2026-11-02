@@ -1027,10 +1027,8 @@ const meleeOutcome = (
   return part ? 'severed' : 'nothing';
 };
 
-const meleeHitSounds = (weapon: HitWeapon, isFist: boolean): SoundId[] => {
-  const hitSound = weapon.hitSound ?? (isFist ? 'melee_hit_fist' : 'melee_hit');
-  return weapon.hitLayerSound === undefined ? [hitSound] : [hitSound, weapon.hitLayerSound];
-};
+const meleeHitSounds = (weapon: HitWeapon): SoundId[] =>
+  [weapon.hitSound, weapon.hitLayerSound].filter((sound): sound is SoundId => sound !== undefined);
 
 interface JumpObstacleProbe {
   body: Body;
@@ -4000,7 +3998,9 @@ export class ZombieSystem {
   }
 
   playPlayerMeleeSwing(origin: Vec3, weapon: MeleeWeapon): void {
-    this.options.onSound?.(weapon.swingSound ?? 'melee_swing', copy(origin), undefined, true);
+    if (weapon.swingSound !== undefined) {
+      this.options.onSound?.(weapon.swingSound, copy(origin), undefined, true);
+    }
   }
 
   resolvePlayerMelee(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean): boolean {
@@ -4053,7 +4053,6 @@ export class ZombieSystem {
     distanceMetres,
     weapon,
     damageType,
-    isFist,
     projectile = false,
     damageOverride,
   }: MeleeHitContext & { projectile?: boolean; damageOverride?: number }): AmalgamStrike | undefined {
@@ -4067,7 +4066,7 @@ export class ZombieSystem {
     const damage = damageOverride ?? meleeDamageForContact(zombie, region, weapon, damageType);
     if (!projectile) {
       this.options.onMeleeContact?.(hit.impulse);
-      for (const event of meleeHitSounds(weapon, isFist)) {
+      for (const event of meleeHitSounds(weapon)) {
         this.options.onSound?.(event, copy(zombie.body.pos), zombie, true);
       }
     }

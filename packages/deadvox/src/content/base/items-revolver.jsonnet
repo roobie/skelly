@@ -12,6 +12,7 @@
           automaticFollowup: { recoilKickScale: 20, recoilRecoveryScale: 0.18, variance: 60 },
         },
         revolver: {
+          sounds: { open: 'revolver_crane_open', eject: 'revolver_eject', pick: 'revolver_case_pick', load: 'revolver_round_insert', close: 'revolver_crane_close', cock: 'revolver_hammer_cock' },
           doubleActionPullSimSeconds: 0.15, doubleActionDispersionRadians: 0.024,
           recoverySimSeconds: 0.3, openSimSeconds: 0.5, ejectSimSeconds: 0.6,
           pickSimSeconds: 0.7, loadSimSeconds: 1, closeSimSeconds: 0.4, cockSimSeconds: 0.3,
@@ -26,7 +27,7 @@
     {
       id: 'cartridge_357_h_magnum', name: '.357 Magnum round', category: 'ammo',
       weight: 16, size: [1, 1], stack: 50, model: 'round_357_h_magnum',
-      ammo: { calibre: '357-magnum', pellets: 1, spreadDegrees: 0, diameterMm: 9.07, damage: 70, impulse: 4, rangeMetres: 100, loadSimSeconds: 0.7, stripSimSeconds: 0.5 },
+      ammo: { loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip', calibre: '357-magnum', pellets: 1, spreadDegrees: 0, diameterMm: 9.07, damage: 70, impulse: 4, rangeMetres: 100, loadSimSeconds: 0.7, stripSimSeconds: 0.5 },
     },
     {
       id: 'cartridge_box_357_h_magnum', name: '.357 Magnum box', category: 'ammo',

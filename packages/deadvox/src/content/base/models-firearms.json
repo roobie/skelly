@@ -25,6 +25,7 @@
         "handling": {},
         "pelletSpreadScale": 1,
         "recoilKickRadians": 0.025000000000000001,
+        "roundInsertSound": "shotgun_insert",
         "roundLoadSimSeconds": 1.2,
         "shotSound": "gunshot_tikka",
         "skillZeroHandling": {
@@ -71,12 +72,16 @@
         }
       ],
       "firearm": {
+        "caseDropSound": "shotgun_hull_drop",
         "dispersionRadians": 0,
         "dryFireSound": "shotgun_dry_click",
         "handling": {},
         "pelletSpreadScale": 1,
         "pump": true,
+        "rackForwardSound": "shotgun_rack_forward",
+        "rackSound": "shotgun_rack_back",
         "recoilKickRadians": 0.035000000000000003,
+        "roundInsertSound": "shotgun_insert",
         "roundLoadSimSeconds": 0.90000000000000002,
         "shotBodySound": "shotgun_boom",
         "shotSound": "shotgun_blast",
@@ -151,11 +156,13 @@
         "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
+            "changeSound": "magazine_change",
             "insertSimSeconds": 3,
             "removeSimSeconds": 3
           }
         },
         "pelletSpreadScale": 1,
+        "rackSound": "rifle_charge",
         "recoilKickRadians": 0.0060000000000000001,
         "shotSound": "gunshot_m4",
         "skillZeroHandling": {
@@ -201,11 +208,13 @@
         "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
+            "changeSound": "magazine_change",
             "insertSimSeconds": 3,
             "removeSimSeconds": 3
           }
         },
         "pelletSpreadScale": 1,
+        "rackSound": "rifle_charge",
         "recoilKickRadians": 0.012,
         "shotSound": "gunshot",
         "skillZeroHandling": {

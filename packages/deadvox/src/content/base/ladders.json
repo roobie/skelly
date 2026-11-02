@@ -12,6 +12,10 @@
       "id": "ladder",
       "massKg": 10,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Ladder",
       "shape": [
         {
@@ -41,6 +45,8 @@
       },
       "color": "#8d969a",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 1],
           "frame": 0.059999999999999998,
@@ -62,11 +68,16 @@
         },
         "handlingSimSeconds": 0.80000000000000004,
         "hatch": true,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "roof_hatch",
       "massKg": 12,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Roof hatch",
       "size": [2, 1, 3]
     }

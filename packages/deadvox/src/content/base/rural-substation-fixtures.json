@@ -9,6 +9,10 @@
       "id": "substation_switchgear",
       "massKg": 32,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Switchgear cabinet",
       "shape": [
         {
@@ -48,6 +52,10 @@
       "id": "substation_panel",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Control panel",
       "shape": [
         {
@@ -102,6 +110,10 @@
       "id": "substation_transformer",
       "massKg": 420,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Transformer",
       "shape": [
         {
@@ -176,6 +188,10 @@
       "id": "substation_disconnector",
       "massKg": 30,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Disconnector",
       "shape": [
         {
@@ -223,6 +239,10 @@
       "id": "substation_pole",
       "massKg": 160,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Power line pole",
       "shape": [
         {

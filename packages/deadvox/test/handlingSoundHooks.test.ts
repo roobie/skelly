@@ -37,8 +37,8 @@ describe('handling move sound hooks', () => {
     expect(started[0]?.from).toMatchObject({ kind: 'pocket' });
     const startedMove = started[0]!;
     const ownerLocation = startedMove.from.kind === 'pocket' ? inventory.locate(startedMove.from.owner) : undefined;
-    const startCue = handlingMoveStartCue(startedMove, ownerLocation, [4, 2, -3]);
-    expect(startCue).toEqual({ event: 'pouch_take', position: [4, 2, -3] });
+    const startCue = handlingMoveStartCue(startedMove, ownerLocation, [4, 2, -3], 'fixture_take');
+    expect(startCue).toEqual({ event: 'fixture_take', position: [4, 2, -3] });
     expect(completed).toHaveLength(0);
     queue.tick(result.ok ? result.job.duration : 0);
     expect(completed).toHaveLength(1);

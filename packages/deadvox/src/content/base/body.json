@@ -294,6 +294,24 @@
         "minGameMinutes": 2
       },
       "sleepRecoveryFactor": 2,
+      "sounds": {
+        "block": {
+          "full": "player_block_full",
+          "partial": "player_block_partial"
+        },
+        "breath": {
+          "exhale": "breath_exhale",
+          "gasp": "breath_gasp",
+          "inhale": "breath_inhale"
+        },
+        "hurt": {
+          "heavy": "player_hurt_heavy",
+          "heavyAtDamage": 15,
+          "light": "player_hurt_light"
+        },
+        "landing": "player_landing_hard",
+        "strain": "player_strain"
+      },
       "staminaRegenDelaySimSeconds": 5,
       "swingSlowdownPerDamage": 0.01,
       "touchFirst": {

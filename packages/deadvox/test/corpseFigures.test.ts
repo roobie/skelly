@@ -186,6 +186,10 @@ describe('the content check for dead humans', () => {
     const ids = new Set([figure.body.model, ...FIGURE_LIMBS.map((limb) => figure.limbs[limb].model)]);
     return [
       baseSource('figures-player.json'),
+      {
+        source: 'corpse-sounds',
+        data: { sounds: Object.values(body.moveSounds!).map((id) => registry.sounds.get(id)!) },
+      },
       { source: 'corpse-models.json', data: { models: modelRows.filter(({ id }) => ids.has(id)) } },
     ];
   };

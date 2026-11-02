@@ -8,6 +8,13 @@ import { BASE_CLOCK } from './dayPhaseFixture.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
+  sounds: {
+    hurt: { light: 'fixture_hurt_light', heavy: 'fixture_hurt_heavy', heavyAtDamage: 10 },
+    strain: 'fixture_strain',
+    landing: 'fixture_landing',
+    block: { full: 'fixture_block_full', partial: 'fixture_block_partial' },
+    breath: { inhale: 'fixture_inhale', exhale: 'fixture_exhale', gasp: 'fixture_gasp' },
+  },
   capability: 'player',
   infectionOnsetGameHours: gameHours(0.01),
   antisepticWindowGameHours: gameHours(0.02),

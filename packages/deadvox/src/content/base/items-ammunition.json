@@ -8,10 +8,12 @@
         "headDamageMultiplier": 2,
         "impulse": 2.5,
         "loadSimSeconds": 0.80000000000000004,
+        "loadSound": "magazine_round_insert",
         "pellets": 1,
         "rangeMetres": 700,
         "spreadDegrees": 0,
-        "stripSimSeconds": 0.5
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
       "economy": {
@@ -68,10 +70,12 @@
         "headDamageMultiplier": 2,
         "impulse": 1,
         "loadSimSeconds": 0.80000000000000004,
+        "loadSound": "magazine_round_insert",
         "pellets": 1,
         "rangeMetres": 500,
         "spreadDegrees": 0,
-        "stripSimSeconds": 0.5
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
       "description": "A loose 5.56×45 rifle cartridge.",
@@ -96,10 +100,12 @@
         "headDamageMultiplier": 2,
         "impulse": 1.5,
         "loadSimSeconds": 0.80000000000000004,
+        "loadSound": "magazine_round_insert",
         "pellets": 1,
         "rangeMetres": 400,
         "spreadDegrees": 0,
-        "stripSimSeconds": 0.5
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
       "description": "A loose 7.62×39 rifle cartridge.",

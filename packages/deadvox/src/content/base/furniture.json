@@ -10,6 +10,10 @@
       "id": "rug",
       "massKg": 2,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Rug",
       "shape": [
         {
@@ -30,6 +34,10 @@
       "id": "bedroll",
       "massKg": 2,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Bedroll",
       "rest": {
         "quality": 0.29999999999999999,
@@ -59,6 +67,10 @@
       "id": "tarp",
       "massKg": 1.5,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Tarp",
       "shape": [
         {
@@ -90,6 +102,10 @@
       "id": "kitchen_cupboard",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Kitchen cupboard",
       "size": [2, 2, 1],
       "wear": {
@@ -118,6 +134,10 @@
       "id": "counter",
       "massKg": 4,
       "material": "plastic",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Kitchen counter",
       "size": [2, 2, 1]
     },
@@ -142,6 +162,10 @@
       "id": "fridge",
       "massKg": 80,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Fridge",
       "power": {
         "device": "house_fridge",
@@ -172,6 +196,10 @@
       "id": "wardrobe",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Wardrobe",
       "size": [2, 4, 1],
       "wear": {
@@ -196,6 +224,10 @@
       "id": "desk",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Desk",
       "shape": [
         {
@@ -258,6 +290,10 @@
       "id": "range_table",
       "massKg": 32,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Simple wooden table",
       "shape": [
         {
@@ -293,6 +329,10 @@
       "id": "range_target",
       "massKg": 5,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Paper target",
       "shotTarget": true,
       "size": [1, 4, 5]
@@ -318,6 +358,10 @@
       "id": "range_rack",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Gun rack",
       "size": [2, 4, 1]
     },
@@ -338,6 +382,10 @@
       "id": "shelf",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Shelf",
       "shape": [
         {
@@ -385,6 +433,10 @@
       "id": "fuel_generator",
       "massKg": 16,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Generator",
       "power": {
         "device": "fuel_generator",
@@ -402,6 +454,10 @@
       "id": "storage_battery",
       "massKg": 4,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Storage battery",
       "power": {
         "device": "storage_battery",
@@ -419,6 +475,10 @@
       "id": "solar_panel",
       "massKg": 16,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Solar panel",
       "power": {
         "device": "solar_panel",
@@ -436,6 +496,10 @@
       "id": "main_breaker",
       "massKg": 4,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Main breaker",
       "power": {
         "device": "main_breaker",
@@ -453,6 +517,10 @@
       "id": "electric_lamp",
       "massKg": 6,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Electric lamp",
       "power": {
         "device": "lab_light",
@@ -488,6 +556,10 @@
       "id": "battery_charger",
       "massKg": 2,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Battery charger",
       "power": {
         "device": "portable_battery_charger",
@@ -558,6 +630,10 @@
       "id": "workbench",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Workbench",
       "shape": [
         {
@@ -617,6 +693,10 @@
       "id": "grinding_wheel",
       "massKg": 16,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Grinding wheel",
       "shape": [
         {
@@ -671,6 +751,10 @@
       "id": "crate",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Crate",
       "shape": [
         {
@@ -762,6 +846,10 @@
       "id": "wood_stove",
       "massKg": 24,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Wood stove",
       "shape": [
         {
@@ -811,6 +899,10 @@
       "id": "bed",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Bed",
       "rest": {
         "quality": 1,
@@ -885,6 +977,10 @@
       "id": "chair",
       "massKg": 4,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Chair",
       "rest": {
         "quality": 1
@@ -931,6 +1027,10 @@
       "id": "sofa",
       "massKg": 32,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Sofa",
       "rest": {
         "quality": 0.5,
@@ -976,6 +1076,8 @@
       },
       "color": "#7a5534",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 2],
           "frame": 0.10000000000000001,
@@ -1015,11 +1117,16 @@
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15
           }
-        }
+        },
+        "openSound": "door_open"
       },
       "id": "wood_door",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Burglary-safe wooden door",
       "size": [2, 4, 1]
     },
@@ -1030,6 +1137,8 @@
       },
       "color": "#7a5534",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 2],
           "frame": 0.10000000000000001,
@@ -1069,11 +1178,16 @@
             "strikeSound": "lock_pry",
             "timeSimSeconds": 6
           }
-        }
+        },
+        "openSound": "door_open"
       },
       "id": "flimsy_wood_door",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Flimsy wooden door",
       "size": [2, 4, 1]
     },
@@ -1084,6 +1198,8 @@
       },
       "color": "#626a70",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 1],
           "frame": 0.050000000000000003,
@@ -1124,11 +1240,16 @@
             "strikeSound": "lock_hammer",
             "timeSimSeconds": 12
           }
-        }
+        },
+        "openSound": "door_open"
       },
       "id": "steel_armoury_door",
       "massKg": 16,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Steel armoury door",
       "size": [2, 4, 1]
     }

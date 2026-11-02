@@ -1090,7 +1090,7 @@ export const createSession = (options: SessionOptions) => {
       training.practice * block.absorbed,
       training.tier,
     );
-    playPlayerSound(block.full ? 'player_block_full' : 'player_block_partial');
+    playPlayerSound(bodyTuning.sounds.block[block.full ? 'full' : 'partial']);
     options.onBlock?.(blockJolt(block.absorbed, meleeCombatTuning), block.full);
     return damage - block.absorbed;
   };
@@ -1330,7 +1330,7 @@ export const createSession = (options: SessionOptions) => {
     });
     const cue = aim.breathCue;
     if (cue) {
-      playPlayerSound(`breath_${cue}`);
+      playPlayerSound(bodyTuning.sounds.breath[cue]);
     }
   };
   /** `DESIGN.md`, "Holding breath": staying still lets breath steady the body. */
@@ -1362,7 +1362,7 @@ export const createSession = (options: SessionOptions) => {
         airbornePeakY !== undefined &&
         isHardLanding((airbornePeakY - body.pos[1]) * s, senseTuning.footsteps)
       ) {
-        playPlayerSound('player_landing_hard', time);
+        playPlayerSound(bodyTuning.sounds.landing, time);
       }
       airbornePeakY = undefined;
     } else {
@@ -1849,7 +1849,10 @@ export const createSession = (options: SessionOptions) => {
       furnitureMoveStamina(inventory, entity, floorLocked ? 'drag' : 'lift'),
       bodyTuning.staminaRegenDelaySimSeconds,
     );
-    playNoisyWorldSound(floorLocked ? 'furniture_drag' : 'furniture_scrape', centre);
+    const sound = entities.defOf(entity).moveSounds?.[floorLocked ? 'drag' : 'lift'];
+    if (sound !== undefined) {
+      playNoisyWorldSound(sound, centre);
+    }
     return undefined;
   };
   queue.registerAction('furniture.slide', (params) => {
@@ -1868,7 +1871,10 @@ export const createSession = (options: SessionOptions) => {
     const reason = slideFurniture(furnitureMover(), entity, params.way, { destination: params.destination as Vec3 });
     if (!reason) {
       spendStamina(sim.needs, furnitureMoveStamina(inventory, entity, 'drag'), bodyTuning.staminaRegenDelaySimSeconds);
-      playNoisyWorldSound('furniture_drag', boxCentre(entity.pos, entity.size));
+      const sound = entities.defOf(entity).moveSounds?.drag;
+      if (sound !== undefined) {
+        playNoisyWorldSound(sound, boxCentre(entity.pos, entity.size));
+      }
     }
     return reason;
   });
@@ -1896,9 +1902,9 @@ export const createSession = (options: SessionOptions) => {
     if (!carried) {
       return claimed(registry.ui, 'interface')!.furnitureMoveMessages.emptyHands;
     }
-    const sound = carried.floorLocked ? 'furniture_drag' : 'furniture_scrape';
+    const sound = entities.defOf(carried).moveSounds?.[carried.floorLocked ? 'drag' : 'lift'];
     const reason = placeFurniture(furnitureMover(), aimed);
-    if (!reason) {
+    if (!reason && sound !== undefined) {
       playNoisyWorldSound(sound, boxCentre(carried.pos, carried.size));
     }
     return reason;
@@ -2005,7 +2011,7 @@ export const createSession = (options: SessionOptions) => {
     const ladder = ladderHold.piece(pacedIntent.jump || sim.body.actionRefusal !== undefined);
     steer(body, scale, { yaw: sampledInput().yaw, intent: { ...steered, onLadder: ladder !== undefined } }, Player);
     if (jumpStarted) {
-      playPlayerSound('player_strain', time);
+      playPlayerSound(bodyTuning.sounds.strain, time);
     }
     refuseThrowForLadder();
     const climbing =
@@ -2851,7 +2857,10 @@ export const createSession = (options: SessionOptions) => {
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+          playPlayerSound(
+            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+            event.time,
+          );
         }
       }
     },
@@ -2864,7 +2873,10 @@ export const createSession = (options: SessionOptions) => {
       rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
-          playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+          playPlayerSound(
+            bodyTuning.sounds.hurt[event.amount >= bodyTuning.sounds.hurt.heavyAtDamage ? 'heavy' : 'light'],
+            event.time,
+          );
         }
       }
     },

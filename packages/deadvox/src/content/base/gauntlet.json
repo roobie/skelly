@@ -108,6 +108,10 @@
       "id": "gauntlet_car_wreck_0_0_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -127,6 +131,10 @@
       "id": "gauntlet_car_wreck_0_0_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -146,6 +154,10 @@
       "id": "gauntlet_car_wreck_0_0_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -165,6 +177,10 @@
       "id": "gauntlet_car_wreck_0_0_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -193,6 +209,10 @@
       "id": "gauntlet_car_wreck_0_0_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -219,6 +239,10 @@
       "id": "gauntlet_car_wreck_0_0_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -258,6 +282,10 @@
       "id": "gauntlet_car_wreck_0_1_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -277,6 +305,10 @@
       "id": "gauntlet_car_wreck_0_1_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -296,6 +328,10 @@
       "id": "gauntlet_car_wreck_0_1_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -315,6 +351,10 @@
       "id": "gauntlet_car_wreck_0_1_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -343,6 +383,10 @@
       "id": "gauntlet_car_wreck_0_1_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -369,6 +413,10 @@
       "id": "gauntlet_car_wreck_0_1_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -408,6 +456,10 @@
       "id": "gauntlet_car_wreck_0_2_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -427,6 +479,10 @@
       "id": "gauntlet_car_wreck_0_2_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -446,6 +502,10 @@
       "id": "gauntlet_car_wreck_0_2_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -465,6 +525,10 @@
       "id": "gauntlet_car_wreck_0_2_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -493,6 +557,10 @@
       "id": "gauntlet_car_wreck_0_2_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -519,6 +587,10 @@
       "id": "gauntlet_car_wreck_0_2_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -558,6 +630,10 @@
       "id": "gauntlet_car_wreck_1_0_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -577,6 +653,10 @@
       "id": "gauntlet_car_wreck_1_0_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -596,6 +676,10 @@
       "id": "gauntlet_car_wreck_1_0_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -615,6 +699,10 @@
       "id": "gauntlet_car_wreck_1_0_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -643,6 +731,10 @@
       "id": "gauntlet_car_wreck_1_0_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -669,6 +761,10 @@
       "id": "gauntlet_car_wreck_1_0_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -708,6 +804,10 @@
       "id": "gauntlet_car_wreck_1_1_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -727,6 +827,10 @@
       "id": "gauntlet_car_wreck_1_1_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -746,6 +850,10 @@
       "id": "gauntlet_car_wreck_1_1_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -765,6 +873,10 @@
       "id": "gauntlet_car_wreck_1_1_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -793,6 +905,10 @@
       "id": "gauntlet_car_wreck_1_1_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -819,6 +935,10 @@
       "id": "gauntlet_car_wreck_1_1_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -858,6 +978,10 @@
       "id": "gauntlet_car_wreck_1_2_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -877,6 +1001,10 @@
       "id": "gauntlet_car_wreck_1_2_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -896,6 +1024,10 @@
       "id": "gauntlet_car_wreck_1_2_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -915,6 +1047,10 @@
       "id": "gauntlet_car_wreck_1_2_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -943,6 +1079,10 @@
       "id": "gauntlet_car_wreck_1_2_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -969,6 +1109,10 @@
       "id": "gauntlet_car_wreck_1_2_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1008,6 +1152,10 @@
       "id": "gauntlet_car_wreck_2_0_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1027,6 +1175,10 @@
       "id": "gauntlet_car_wreck_2_0_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1046,6 +1198,10 @@
       "id": "gauntlet_car_wreck_2_0_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1065,6 +1221,10 @@
       "id": "gauntlet_car_wreck_2_0_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1093,6 +1253,10 @@
       "id": "gauntlet_car_wreck_2_0_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1119,6 +1283,10 @@
       "id": "gauntlet_car_wreck_2_0_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1158,6 +1326,10 @@
       "id": "gauntlet_car_wreck_2_1_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1177,6 +1349,10 @@
       "id": "gauntlet_car_wreck_2_1_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1196,6 +1372,10 @@
       "id": "gauntlet_car_wreck_2_1_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1215,6 +1395,10 @@
       "id": "gauntlet_car_wreck_2_1_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1243,6 +1427,10 @@
       "id": "gauntlet_car_wreck_2_1_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1269,6 +1457,10 @@
       "id": "gauntlet_car_wreck_2_1_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1308,6 +1500,10 @@
       "id": "gauntlet_car_wreck_2_2_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1327,6 +1523,10 @@
       "id": "gauntlet_car_wreck_2_2_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1346,6 +1546,10 @@
       "id": "gauntlet_car_wreck_2_2_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1365,6 +1569,10 @@
       "id": "gauntlet_car_wreck_2_2_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1393,6 +1601,10 @@
       "id": "gauntlet_car_wreck_2_2_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1419,6 +1631,10 @@
       "id": "gauntlet_car_wreck_2_2_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1458,6 +1674,10 @@
       "id": "gauntlet_car_wreck_3_0_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1477,6 +1697,10 @@
       "id": "gauntlet_car_wreck_3_0_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1496,6 +1720,10 @@
       "id": "gauntlet_car_wreck_3_0_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1515,6 +1743,10 @@
       "id": "gauntlet_car_wreck_3_0_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1543,6 +1775,10 @@
       "id": "gauntlet_car_wreck_3_0_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1569,6 +1805,10 @@
       "id": "gauntlet_car_wreck_3_0_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1608,6 +1848,10 @@
       "id": "gauntlet_car_wreck_3_1_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1627,6 +1871,10 @@
       "id": "gauntlet_car_wreck_3_1_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1646,6 +1894,10 @@
       "id": "gauntlet_car_wreck_3_1_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1665,6 +1917,10 @@
       "id": "gauntlet_car_wreck_3_1_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1693,6 +1949,10 @@
       "id": "gauntlet_car_wreck_3_1_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1719,6 +1979,10 @@
       "id": "gauntlet_car_wreck_3_1_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1758,6 +2022,10 @@
       "id": "gauntlet_car_wreck_3_2_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1777,6 +2045,10 @@
       "id": "gauntlet_car_wreck_3_2_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1796,6 +2068,10 @@
       "id": "gauntlet_car_wreck_3_2_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1815,6 +2091,10 @@
       "id": "gauntlet_car_wreck_3_2_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1843,6 +2123,10 @@
       "id": "gauntlet_car_wreck_3_2_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1869,6 +2153,10 @@
       "id": "gauntlet_car_wreck_3_2_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1908,6 +2196,10 @@
       "id": "gauntlet_car_wreck_4_0_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1927,6 +2219,10 @@
       "id": "gauntlet_car_wreck_4_0_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1946,6 +2242,10 @@
       "id": "gauntlet_car_wreck_4_0_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1965,6 +2265,10 @@
       "id": "gauntlet_car_wreck_4_0_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -1993,6 +2297,10 @@
       "id": "gauntlet_car_wreck_4_0_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2019,6 +2327,10 @@
       "id": "gauntlet_car_wreck_4_0_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2058,6 +2370,10 @@
       "id": "gauntlet_car_wreck_4_1_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2077,6 +2393,10 @@
       "id": "gauntlet_car_wreck_4_1_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2096,6 +2416,10 @@
       "id": "gauntlet_car_wreck_4_1_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2115,6 +2439,10 @@
       "id": "gauntlet_car_wreck_4_1_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2143,6 +2471,10 @@
       "id": "gauntlet_car_wreck_4_1_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2169,6 +2501,10 @@
       "id": "gauntlet_car_wreck_4_1_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2208,6 +2544,10 @@
       "id": "gauntlet_car_wreck_4_2_intact",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2227,6 +2567,10 @@
       "id": "gauntlet_car_wreck_4_2_doors",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2246,6 +2590,10 @@
       "id": "gauntlet_car_wreck_4_2_wheels",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2265,6 +2613,10 @@
       "id": "gauntlet_car_wreck_4_2_front",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2293,6 +2645,10 @@
       "id": "gauntlet_car_wreck_4_2_rear",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2319,6 +2675,10 @@
       "id": "gauntlet_car_wreck_4_2_shell",
       "massKg": 1440,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Stripped car",
       "size": [4, 4, 9],
       "vehicle": {
@@ -2357,6 +2717,8 @@
       "color": "#7a5534",
       "door": {
         "barredFrom": "front",
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 2],
           "frame": 0.10000000000000001,
@@ -2396,11 +2758,16 @@
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15
           }
-        }
+        },
+        "openSound": "door_open"
       },
       "id": "gauntlet_door_boarded",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Boarded wooden door",
       "shape": [
         {
@@ -2431,6 +2798,10 @@
       "id": "gauntlet_roof_parapet",
       "massKg": 4,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Parapet wall",
       "shape": [
         {
@@ -2450,6 +2821,10 @@
       "id": "gauntlet_roof_ac",
       "massKg": 96,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Air conditioner",
       "shape": [
         {
@@ -2489,6 +2864,10 @@
       "id": "gauntlet_roof_vent",
       "massKg": 96,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Roof vent",
       "shape": [
         {
@@ -2516,6 +2895,10 @@
       "id": "gauntlet_yard_shrub",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Shrub",
       "shape": [
         {
@@ -2547,6 +2930,10 @@
       "id": "gauntlet_yard_fence",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Wooden fence",
       "shape": [
         {
@@ -2576,6 +2963,8 @@
       },
       "color": "#626d70",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 1],
           "frame": 0.050000000000000003,
@@ -2615,11 +3004,16 @@
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15
           }
-        }
+        },
+        "openSound": "door_open"
       },
       "id": "gauntlet_cell_door",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Cell door",
       "shape": [
         {
@@ -2670,6 +3064,10 @@
       "id": "gauntlet_dead_scavenger",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Dead scavenger",
       "shape": [
         {
@@ -2701,6 +3099,10 @@
       "id": "gauntlet_button",
       "massKg": 2,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Nuclear objective button",
       "scenarioGoal": true,
       "shape": [
@@ -2733,6 +3135,10 @@
       "id": "gauntlet_dead_special_ops",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Dead special operations soldier",
       "size": [4, 1, 2],
       "solid": false
@@ -2746,6 +3152,10 @@
       "id": "gauntlet_perimeter_notice",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Notice",
       "readable": {
         "text": "QUARANTINE ZONE",
@@ -2769,6 +3179,10 @@
       "id": "gauntlet_perimeter_gate_notice",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Notice",
       "readable": {
         "text": "NO ENTRY",
@@ -2792,6 +3206,10 @@
       "id": "gauntlet_water_tank",
       "massKg": 864,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Square raised water tank",
       "shape": [
         {
@@ -2831,6 +3249,10 @@
       "id": "gauntlet_loading_frame",
       "massKg": 192,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Yellow loading frame",
       "shape": [
         {

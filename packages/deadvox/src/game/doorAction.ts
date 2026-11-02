@@ -51,12 +51,18 @@ export const registerDoorAction = ({
       if (reason) {
         return reason;
       }
-      const openNoise = entities.defOf(entity).door?.openNoise;
-      playWorldSound(openNoise?.sound ?? 'door_open', center);
+      const sound = entities.defOf(entity).door!.openSound;
+      if (sound !== undefined) {
+        playWorldSound(sound, center);
+      }
       return undefined;
     }
     const blocker = entities.closeDoor(entity, player(), others());
-    playWorldSound(blocker ? 'door_blocked_close' : 'door_close', center);
+    const door = entities.defOf(entity).door!;
+    const sound = blocker ? door.blockedCloseSound : door.closeSound;
+    if (sound !== undefined) {
+      playWorldSound(sound, center);
+    }
     return blocker ? closeBlockedMessages[blocker] : undefined;
   };
   queue.registerAction(DOOR_ACTION, (params) => {

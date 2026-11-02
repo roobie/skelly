@@ -63,6 +63,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
               singleShot: { variance: 1.2, recoilKickScale: 2, recoilRecoveryScale: 0.8 },
@@ -81,6 +82,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
             skillZeroHandling: {
               singleShot: { variance: 2.5, recoilKickScale: 12, recoilRecoveryScale: 0.2 },
@@ -99,6 +101,7 @@ const { registry: skillZeroRegistry } = buildRegistry([
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
           },
         },
@@ -761,6 +764,7 @@ describe('rifle firearm handling', () => {
                 dispersionRadians: 0.01,
                 pelletSpreadScale: 1,
                 shotSound: 'gunshot',
+                rackSound: 'gunshot',
                 handling: {},
               },
             },

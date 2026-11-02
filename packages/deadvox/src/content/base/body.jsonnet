@@ -5,6 +5,12 @@ local normalSleep = 100 / normalSleepGameHours;
 {
   body: [{
     id: 'player',
+    sounds: {
+      hurt: { light: 'player_hurt_light', heavy: 'player_hurt_heavy', heavyAtDamage: 15 },
+      strain: 'player_strain', landing: 'player_landing_hard',
+      block: { full: 'player_block_full', partial: 'player_block_partial' },
+      breath: { inhale: 'breath_inhale', exhale: 'breath_exhale', gasp: 'breath_gasp' },
+    },
     capability: 'player',
     infectionOnsetGameHours: 2,
     antisepticWindowGameHours: 12,

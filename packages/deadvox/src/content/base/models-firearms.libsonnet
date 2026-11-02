@@ -1,7 +1,7 @@
 // Grounded in Crate Club's timed rifle reloads, which drop the old magazine:
 // https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle
 // Changing a magazine here stows it instead, so skill 0 sits at the slow end.
-local magazineHandling = { handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3 } } };
+local magazineHandling = { rackSound: 'rifle_charge', handling: { magazine: { removeSimSeconds: 3, insertSimSeconds: 3, changeSound: 'magazine_change' } } };
 local longGunHands = import 'long-gun-hands.libsonnet';
 // A slung long gun (`DESIGN.md`, "Shoulder and sling") hangs muzzle down at the wearer's right side, behind the arm
 // and clear of a pack: its top faces forward and its ejection side out. The point on its bore level with its grip sits
@@ -20,7 +20,7 @@ local slung(model) = [{
       figureModels: slung(import 'gungen/rifle_hunting.model.json'),
       lightMountSite: { kind: 'strap', at: [0.42, -0.03, 0], turn: [0, 0, 0] },
       firearm: {
-        bolt: true, handling: {}, roundLoadSimSeconds: 1.2,
+        bolt: true, handling: {}, roundLoadSimSeconds: 1.2, roundInsertSound: 'shotgun_insert',
         recoilKickRadians: 0.025, dispersionRadians: 0.006, pelletSpreadScale: 1,
         shotSound: 'gunshot_tikka', suppressedShotSound: 'gunshot_m4_suppressed',
         dryFireSound: 'firearm_dry_click', boltOpenSound: 'rifle_bolt_open', boltCloseSound: 'rifle_bolt_close',
@@ -39,6 +39,10 @@ local slung(model) = [{
         "dispersionRadians": 0,
         "pelletSpreadScale": 1,
         "pump": true,
+        "rackSound": "shotgun_rack_back",
+        "rackForwardSound": "shotgun_rack_forward",
+        "roundInsertSound": "shotgun_insert",
+        "caseDropSound": "shotgun_hull_drop",
         "recoilKickRadians": 0.035,
         "shotSound": "shotgun_blast",
         "shotBodySound": "shotgun_boom",

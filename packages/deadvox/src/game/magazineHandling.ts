@@ -80,7 +80,7 @@ export class MagazineHandling {
       defOf(this.inventory.registry, round.type).ammo!.loadSimSeconds * this.reloadFactor(),
       { uid: magazine.uid, ammoUid: round.uid },
     );
-    this.onSound('magazine_round_insert', time);
+    this.onSound(defOf(this.inventory.registry, round.type).ammo!.loadSound, time);
     return undefined;
   }
 
@@ -98,7 +98,7 @@ export class MagazineHandling {
       this.heldStripUid = undefined;
       return this.text.magazine.empty;
     }
-    const { stripSimSeconds } = defOf(this.inventory.registry, magazine.cartridges![0]!).ammo!;
+    const { stripSimSeconds, stripSound } = defOf(this.inventory.registry, magazine.cartridges![0]!).ammo!;
     this.queue.enqueueAction(
       MAGAZINE_STRIP_ACTION,
       this.text.itemActions.stripRound,
@@ -106,7 +106,7 @@ export class MagazineHandling {
       { uid: magazine.uid },
     );
     this.heldStripUid = held ? uid : undefined;
-    this.onSound('magazine_round_strip', time);
+    this.onSound(stripSound, time);
     return undefined;
   }
 

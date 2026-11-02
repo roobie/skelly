@@ -7,6 +7,8 @@
       },
       "color": "#7a5534",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 2],
           "frame": 0.10000000000000001,
@@ -27,11 +29,16 @@
           "seam": 0.12
         },
         "handlingSimSeconds": 0.59999999999999998,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "dad_front_door",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Dad's cabin front door",
       "size": [2, 4, 1]
     },
@@ -52,6 +59,10 @@
       "id": "gun_cabinet",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Gun cabinet",
       "shape": [
         {

@@ -9,6 +9,10 @@
       "id": "sample_sign",
       "massKg": 12,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Placeholder sign",
       "readable": {
         "text": "PLACEHOLDER SIGN — NOT A ROUTE TO A REAL LOCATION",

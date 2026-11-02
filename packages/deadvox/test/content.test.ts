@@ -33,7 +33,6 @@ import {
 import { ordinarySpawnWeights } from '../src/core/settlementSpawns.ts';
 import { furnitureOf, lootPointsOf } from '../src/core/site.ts';
 import { sitePalette } from '../src/core/sitePalette.ts';
-import { SOUND_EVENT_IDS } from '../src/core/soundEvents.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
@@ -577,6 +576,7 @@ describe('content', () => {
     const pair = { ...single, id: 'heartbeat_fixture_pair', variants: [onlyVariant, onlyVariant] };
     const events = [single.id, pair.id, 'heartbeat_fixture_absent'];
     const { issues } = buildRegistry([
+      baseSounds,
       {
         source: 'heartbeat-fixture.json',
         data: {
@@ -861,6 +861,10 @@ describe('content', () => {
         dispersionRadians: 0.01,
         pelletSpreadScale: 1,
         shotSound: 'gunshot',
+        rackSound: 'gunshot',
+        rackForwardSound: 'gunshot',
+        roundInsertSound: 'gunshot',
+        caseDropSound: 'gunshot',
         handling: {},
         roundLoadSimSeconds: 1,
       },
@@ -913,6 +917,7 @@ describe('content', () => {
             dispersionRadians: 0,
             pelletSpreadScale: 1,
             shotSound: 'gunshot',
+            rackSound: 'gunshot',
             handling: {},
           },
         },
@@ -1538,18 +1543,13 @@ describe('content', () => {
     });
   });
 
-  it('reports a missing sound event even when another is defined', () => {
-    const retainedId = SOUND_EVENT_IDS.at(-1)!;
-    const missingId = SOUND_EVENT_IDS.find((id) => id !== retainedId);
-    expect(missingId).toBeDefined();
-    const registry = {
-      ...baseRegistry,
-      sounds: new Map([[retainedId, baseRegistry.sounds.get(retainedId)!]]),
-    };
-    expect(requiredContentIssues(registry)).toContainEqual({
+  it('retains the unresolved ground-drop sound requirement until its selection has an owner', () => {
+    const sounds = new Map(baseRegistry.sounds);
+    sounds.delete('item_drop_wood');
+    expect(requiredContentIssues({ ...baseRegistry, sounds })).toContainEqual({
       source: 'core content',
       path: 'sounds',
-      message: `missing required sound event "${missingId}"`,
+      message: 'missing required sound event "item_drop_wood"',
     });
   });
 
@@ -2423,29 +2423,11 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('requires door and search action noise to select sound events with hearing noise', () => {
+  it('requires search action noise to select a sound event with hearing noise', () => {
     const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
     const quietDoorOpen = { ...doorOpen, noise: { ...doorOpen.noise, enabled: false } };
-    const quietDoor = {
-      source: 'quiet-door.json',
-      data: {
-        furniture: [
-          {
-            id: 'fixture_quiet_door',
-            name: 'Fixture door',
-            size: [1, 1, 1],
-            color: '#333333',
-            door: {
-              methods: {},
-              handlingSimSeconds: 0.4,
-              openNoise: { sound: 'door_open' },
-            },
-          },
-        ],
-      },
-    };
     const quietPile = {
       source: 'quiet-pile.json',
       data: {
@@ -2460,16 +2442,7 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([
-      { source: 'door-sound.json', data: { sounds: [quietDoorOpen] } },
-      quietDoor,
-      quietPile,
-    ]);
-    expect(issues).toContainEqual({
-      source: 'quiet-door.json',
-      path: 'furniture[0].door.openNoise.sound',
-      message: 'opening sound must emit hearing noise',
-    });
+    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietPile]);
     expect(issues).toContainEqual({
       source: 'quiet-pile.json',
       path: 'furniture[0].searchNoise.sound',
@@ -2729,7 +2702,9 @@ describe('content references', () => {
     zombie.id = 'fixture_military_looter';
     zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
     zombie.loot = lootId;
-    const sounds = [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!);
+    const sounds = [...new Set([...Object.values(zombie.sounds), ...Object.values(furniture.moveSounds!)])].map(
+      (id) => baseRegistry.sounds.get(id)!,
+    );
     const { quality, level } = zombie.downed!.dismember;
     const result = buildRegistry([
       {

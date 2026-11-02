@@ -3,7 +3,7 @@ import { render } from 'lit-html';
 import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
-import { SOUND_EVENT_IDS, type SoundId } from '../src/core/soundEvents.ts';
+import type { SoundId } from '../src/core/soundEvents.ts';
 import { soundVariantKey } from '../src/core/soundSynth.ts';
 import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from '../src/ui/soundGuide.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
@@ -31,10 +31,8 @@ const heartbeatFixtureManifest = {
   ],
 } as Manifest;
 
-const [recordingId, recipeId] = SOUND_EVENT_IDS;
-if (!(recordingId && recipeId)) {
-  throw new Error('Sound guide fixture needs two sound event ids');
-}
+const recordingId = 'fixture_recording';
+const recipeId = 'fixture_recipe';
 
 const fixtureRecipe = { recipe: 'fixture-recipe', jfxr: {} };
 const fixtureSounds = [

@@ -17,6 +17,10 @@
       "id": "hunting_crate",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Crate",
       "shape": [
         {

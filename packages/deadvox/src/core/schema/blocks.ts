@@ -14,7 +14,6 @@ import {
 } from 'valibot';
 import { BLOCK_DAMAGE_KINDS } from '../blockDamageKinds.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
-import { SOUND_EVENT_IDS } from '../soundEvents.ts';
 import { Color, Count, Fraction, Id, Name, NonNegative, Positive } from './primitives.ts';
 
 // ---- blocks ----
@@ -96,15 +95,15 @@ export const BlockSchema = strictObject({
     }),
   ),
   /** Content-owned brushing events: gentle movement and fast movement. */
-  rustle: optional(strictObject({ gentle: picklist(SOUND_EVENT_IDS), fast: picklist(SOUND_EVENT_IDS) })),
+  rustle: optional(strictObject({ gentle: Id, fast: Id })),
   /**
    * Authored ground-contact events, one per actor family. Omitted means the block is silent underfoot,
    * which is the built-in air's case; authored walkable blocks select both events explicitly.
    */
   footsteps: optional(
     strictObject({
-      player: picklist(SOUND_EVENT_IDS),
-      shambler: picklist(SOUND_EVENT_IDS),
+      player: Id,
+      shambler: Id,
     }),
   ),
   /** Surface pattern; `none` when omitted. */

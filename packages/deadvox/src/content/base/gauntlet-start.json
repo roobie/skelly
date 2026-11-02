@@ -7,6 +7,8 @@
       },
       "color": "#8d969a",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 2],
           "frame": 0.059999999999999998,
@@ -28,11 +30,16 @@
         },
         "handlingSimSeconds": 0.80000000000000004,
         "hatch": true,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "gauntlet_start_hatch",
       "massKg": 24,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Roof hatch",
       "size": [6, 1, 2]
     }

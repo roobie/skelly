@@ -34,6 +34,10 @@
     + (if std.objectHas(piece, 'breach') then {} else { breach: $.kindOf(piece) })
     + (if std.objectHas(piece, 'material') then {} else { material: $.materialOf(piece) })
     + (if std.objectHas(piece, 'massKg') then {} else { massKg: $.estimatedMassKg(piece) })
+    + (if std.objectHas(piece, 'moveSounds') then {} else { moveSounds: { lift: 'furniture_scrape', drag: 'furniture_drag' } })
+    + (if std.objectHas(piece, 'door') then {
+      door: { openSound: 'door_open', closeSound: 'door_close', blockedCloseSound: 'door_blocked_close' } + piece.door,
+    } else {})
     for piece in pieces
   ],
   breaking(document):: document + { furniture: $.breakable(document.furniture) },

@@ -332,6 +332,7 @@ local spentCase(id, name, weight, description, model) = {
       stack: 25,
       description: 'Nine-pellet 00 buckshot.',
       ammo: {
+        loadSound: 'magazine_round_insert', stripSound: 'magazine_round_strip',
         calibre: '12-gauge-00-buck',
         pellets: 9,
         spreadDegrees: 2,

@@ -63,7 +63,10 @@ export const isFirearmTrainingAction = (job: Job): boolean =>
  * drawing one and seating it. A removal or an insert into an empty gun takes only its half (`DESIGN.md`, "Combat and
  * noise", rifles). The skill's reload factor shortens both.
  */
-const magazineTimes = (gun: Item, registry: Registry): { removeSimSeconds: number; insertSimSeconds: number } =>
+const magazineTimes = (
+  gun: Item,
+  registry: Registry,
+): { removeSimSeconds: number; insertSimSeconds: number; changeSound: SoundId } =>
   defOf(registry, gun.type).firearm!.handling.magazine!;
 
 /** The share of a magazine job spent taking the fitted one out, so presentation can play remove, then insert. */
@@ -1137,7 +1140,7 @@ export class FirearmMechanics {
       defOf(this.inventory.registry, gun.type).firearm!.roundLoadSimSeconds! * this.handlingFactor('reloadDuration'),
       { uid: gun.uid, ammoUid: ammo.uid },
     );
-    this.onSound('shotgun_insert', undefined, time);
+    this.onSound(defOf(this.inventory.registry, gun.type).firearm!.roundInsertSound!, undefined, time);
     return undefined;
   }
 
@@ -1225,7 +1228,7 @@ export class FirearmMechanics {
       seconds * this.handlingFactor('reloadDuration'),
       replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
     );
-    this.onSound('magazine_change', undefined, time);
+    this.onSound(times.changeSound, undefined, time);
   }
 
   private fullestMagazine(gun: Item): Item | undefined {
@@ -1397,7 +1400,7 @@ export class FirearmMechanics {
     );
     const firearm = defOf(this.inventory.registry, item.type).firearm!;
     const boltSound = phase === 'close' ? firearm.boltCloseSound : firearm.boltOpenSound;
-    this.onSound(boltSound ?? (pump ? 'shotgun_rack_back' : 'rifle_charge'), undefined, time);
+    this.onSound(firearm.bolt ? boltSound! : firearm.rackSound!, undefined, time);
   }
 
   pauseTo(time: number): void {
@@ -1457,7 +1460,7 @@ export class FirearmMechanics {
         this.isPump(item) &&
         landing.type === spentCaseItemId(firearmHandlingFor(item, this.inventory.registry).calibre);
       if (spentPumpCase) {
-        this.onSound('shotgun_hull_drop', landing.position, landing.at);
+        this.onSound(defOf(this.inventory.registry, item.type).firearm!.caseDropSound!, landing.position, landing.at);
       }
     }
     item.firearm!.landings = pending.length > 0 ? pending : undefined;
@@ -1617,7 +1620,7 @@ export class FirearmMechanics {
       cycle.mode === 'hand' && cycle.phase === undefined
         ? defOf(this.inventory.registry, item.type).firearm!.boltCloseSound
         : undefined;
-    const sound = pump ? 'shotgun_rack_forward' : boltCloseSound;
+    const sound = pump ? defOf(this.inventory.registry, item.type).firearm!.rackForwardSound : boltCloseSound;
     if (sound === undefined || cycle.forwardSounded) {
       return;
     }

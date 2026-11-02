@@ -17,6 +17,10 @@
       "id": "hq_weapon_cabinet",
       "massKg": 60,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Weapon cabinet",
       "shape": [
         {
@@ -197,6 +201,10 @@
       "id": "hq_meeting_table",
       "massKg": 72,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Meeting table",
       "shape": [
         {
@@ -232,6 +240,10 @@
       "id": "hq_generator",
       "massKg": 72,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Generator",
       "shape": [
         {

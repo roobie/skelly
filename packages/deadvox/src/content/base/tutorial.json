@@ -18,6 +18,10 @@
       "id": "tutorial_cabinet",
       "massKg": 12,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Supply cabinet",
       "shape": [
         {
@@ -207,6 +211,10 @@
       "id": "tutorial_range_cabinet",
       "massKg": 12,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Range supplies",
       "shape": [
         {

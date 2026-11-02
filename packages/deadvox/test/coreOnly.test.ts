@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
+import bodyContent from '../src/content/base/body.json' with { type: 'json' };
+import soundContent from '../src/content/base/sounds.json' with { type: 'json' };
+import blockSoundContent from '../src/content/base/sounds-block.json' with { type: 'json' };
+import synthContent from '../src/content/base/sounds-synth.json' with { type: 'json' };
+import uiContent from '../src/content/base/ui.json' with { type: 'json' };
 import { buildRegistry, requiredContentIssues } from '../src/core/content.ts';
+import { bodySoundIds } from './fixtures/bodySounds.ts';
 import { CORE_ONLY_KNOWN_ISSUES } from './fixtures/coreOnlyKnownIssues.ts';
 
 const CORE_TOPICS = [
@@ -30,6 +36,18 @@ it('validates selected core topics without booting or hiding unowned or stale is
   sources.push({
     source: 'core-only/weathering.json',
     data: { weathering: weathering.weathering.filter((profile) => profile.capability === 'defaultWeathering') },
+  });
+  const selectedSounds = new Set([
+    ...bodyContent.body.flatMap(bodySoundIds),
+    ...uiContent.ui.map(({ refusalSound }) => refusalSound),
+  ]);
+  sources.push({
+    source: 'core-only/selected-sounds.json',
+    data: {
+      sounds: [...soundContent.sounds, ...synthContent.sounds, ...blockSoundContent.sounds].filter(({ id }) =>
+        selectedSounds.has(id),
+      ),
+    },
   });
   const { registry, issues } = buildRegistry(sources);
   const actual = [...issues, ...requiredContentIssues(registry)];

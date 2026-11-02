@@ -89,6 +89,10 @@
       "id": "shrub_small",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Small shrub",
       "shape": [
         {
@@ -112,6 +116,10 @@
       "id": "shrub_tall",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Tall shrub",
       "shape": [
         {
@@ -139,6 +147,10 @@
       "id": "weed_tuft",
       "massKg": 2,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Weeds",
       "shape": [
         {
@@ -178,6 +190,10 @@
       "id": "creeper_strip",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Creeper",
       "shape": [
         {

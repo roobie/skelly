@@ -6,7 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { disassemblyOutputs, planDisassembly } from '../src/core/disassembly.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import type { ItemDef } from '../src/core/schema.ts';
+import type { ItemDef, MeleeClassDef } from '../src/core/schema.ts';
 import { gameMinutes } from '../src/core/time.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { playerInventorySource } from './fixtures/playerInventory.ts';
@@ -15,6 +15,7 @@ const base = 'src/content/base';
 const itemSource = (file: string, ids: readonly string[]) => {
   const data = JSON.parse(readFileSync(join(base, file), 'utf8')) as {
     items: { id: string; salvage?: unknown; salvageTimeGameMinutes?: unknown }[];
+    meleeClasses?: MeleeClassDef[];
   };
   data.items = data.items.filter(({ id }) => ids.includes(id));
   for (const item of data.items) {
@@ -25,7 +26,7 @@ const itemSource = (file: string, ids: readonly string[]) => {
   }
   return { source: file, data };
 };
-// The kept items' weapons name sounds, so the fixture loads just the rows they name.
+// The retained unarmed provider also selects sounds independently of the kept items.
 const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
   const named = new Set(
     sources.flatMap(({ data }) =>
@@ -36,6 +37,14 @@ const soundSource = (sources: readonly ReturnType<typeof itemSource>[]) => {
       ),
     ),
   );
+  for (const { data } of sources) {
+    for (const { unarmed } of data.meleeClasses ?? []) {
+      if (unarmed) {
+        named.add(unarmed.swingSound);
+        named.add(unarmed.hitSound);
+      }
+    }
+  }
   const sounds = readdirSync(base)
     .filter((file) => file.startsWith('sounds') && file.endsWith('.json'))
     .flatMap((file) => (JSON.parse(readFileSync(join(base, file), 'utf8')) as { sounds: { id: string }[] }).sounds)

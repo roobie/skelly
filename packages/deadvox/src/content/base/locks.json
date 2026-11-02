@@ -22,6 +22,10 @@
       "id": "key_box",
       "massKg": 5,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Key box",
       "size": [1, 1, 1]
     }

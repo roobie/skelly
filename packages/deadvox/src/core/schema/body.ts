@@ -165,6 +165,13 @@ export const BodyTuningSchema = pipe(
   strictObject({
     id: Id,
     capability: capabilityField('body'),
+    sounds: strictObject({
+      hurt: strictObject({ light: Id, heavy: Id, heavyAtDamage: NonNegative }),
+      strain: Id,
+      landing: Id,
+      block: strictObject({ full: Id, partial: Id }),
+      breath: strictObject({ inhale: Id, exhale: Id, gasp: Id }),
+    }),
     /** Game hours after a bleeding wound before an at-risk infection becomes early. */
     infectionOnsetGameHours: PositiveGameHours,
     /** Game hours the early infection stage remains treatable with antiseptic. */

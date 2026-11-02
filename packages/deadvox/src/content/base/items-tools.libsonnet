@@ -7,6 +7,7 @@ local disassembly(timeGameMinutes, yields) = { timeGameMinutes: timeGameMinutes,
 
 local melee(type, motion, damage, reach, cooldownSimSeconds, stamina, impulse, wearPerHit) = {
   melee: {
+    swingSound: 'melee_swing', hitSound: 'melee_hit',
     damage: damage,
     reach: reach,
     cooldownSimSeconds: cooldownSimSeconds,
@@ -28,7 +29,7 @@ local melee(type, motion, damage, reach, cooldownSimSeconds, stamina, impulse, w
   },
 };
 
-// A weapon without these keeps the shared swing and hit (`DESIGN.md`, "Weapon sounds").
+// These selections specialize the authored shared presentation (`DESIGN.md`, "Weapon sounds").
 local lightSwing = { melee+: { swingSound: 'melee_swing_light' } };
 local heavySwing = { melee+: { swingSound: 'melee_swing_heavy' } };
 local metalRing = { melee+: { hitLayerSound: 'melee_hit_metal' } };
@@ -56,7 +57,7 @@ local meleeClasses = [
     headDamageMultiplier: 1,
     limbDamageMultiplier: 1,
     speedMultiplier: 1,
-    unarmed: { motion: 'swing', damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
+    unarmed: { swingSound: 'melee_swing', hitSound: 'melee_hit_fist', motion: 'swing', damage: 8, reach: 0.1, cooldownSimSeconds: 0.8, stamina: 4, impulse: 4, contactFraction: 0.4, windupCapSimSeconds: 0.25 },
   },
 ];
 

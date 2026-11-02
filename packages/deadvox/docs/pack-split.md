@@ -112,10 +112,16 @@ resistance keyed by kind. Fire or poison must not need a code edit merely to be 
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong
 with their shared content, reusable weapon sounds with their theme, and zombie-specific
-sounds with the product. Mechanisms read selections from triggering entries and
-validation rejects missing selections there. Remove setting prerequisites from
-`src/core/soundEvents.ts`, `SOUND_EVENT_IDS`, and `src/core/content.ts`,
-`requiredContentIssues`; don't keep an all-product event whitelist.
+sounds with the product. Mechanisms read selections from triggering entries;
+`src/core/content.ts`, `checkActionSounds` and `referenceIssues` reject absent
+providers at those fields rather than requiring every product event. Optional
+presentation selections mean silence when omitted, never a borrowed sound. Door
+presentation need not alert hearing; forcing it to do so would change quiet doors
+merely because their former default became explicit. Search remains a hearing event;
+see `src/core/content.ts`, `checkSearchNoise`.
+`src/game/audioPresentation.ts`, `handlingMoveCompleteCue` retains the ground-drop
+selection until #1532 settles its owner; `src/core/content.ts`,
+`requiredContentIssues` keeps that named prerequisite, not an event whitelist.
 
 **Terrain, sites and transport.** Natural blocks and vegetation are shared content;
 manufactured materials may be thematic. A site's distribution and authored run remain

@@ -57,6 +57,7 @@ const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 // These files are not runtime roots: buildRevision is a test/build diagnostic helper,
 // while debugInterface contains only erased TypeScript contracts.
 const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
+  'src/core/soundEvents.ts': 'Erased sound-id type contracts; selections and validation stay in the runtime graph.',
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
   'src/core/scenarioCertificate.ts': 'Test-only route proof; no game runtime imports it.',

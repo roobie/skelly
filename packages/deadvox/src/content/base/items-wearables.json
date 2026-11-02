@@ -24,7 +24,8 @@
             "handlingSimSeconds": 0.59999999999999998,
             "name": "back right"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -200,7 +201,8 @@
             "handlingSimSeconds": 0.80000000000000004,
             "name": "cargo right"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -228,7 +230,8 @@
             "handlingSimSeconds": 0.5,
             "name": "front"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -309,7 +312,8 @@
             "handlingSimSeconds": 0.69999999999999996,
             "name": "inner"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -395,7 +399,8 @@
             "handlingSimSeconds": 0.5,
             "name": "pouch 4"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -567,7 +572,8 @@
             "grid": [3, 2],
             "handlingSimSeconds": 0.80000000000000004
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -610,7 +616,8 @@
             "handlingSimSeconds": 1.2,
             "name": "front"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],
@@ -653,7 +660,8 @@
             "handlingSimSeconds": 1,
             "name": "lid"
           }
-        ]
+        ],
+        "takeSound": "pouch_take"
       },
       "economy": {
         "tiers": ["Tier1", "Tier2", "Tier3"],

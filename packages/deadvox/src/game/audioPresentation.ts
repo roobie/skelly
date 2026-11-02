@@ -107,14 +107,16 @@ export const handlingMoveStartCue = (
   move: MoveStart,
   ownerLocation: Location | undefined,
   chest: Vec3,
+  takeSound: SoundId | undefined,
 ): HandlingSoundCue | undefined => {
   const { from, target } = move;
   if (
+    takeSound !== undefined &&
     from.kind === 'pocket' &&
     ownerLocation?.kind === 'worn' &&
     !(target.kind === 'pocket' && target.owner === from.owner && target.pocket === from.pocket)
   ) {
-    return { event: 'pouch_take', position: chest };
+    return { event: takeSound, position: chest };
   }
   return undefined;
 };

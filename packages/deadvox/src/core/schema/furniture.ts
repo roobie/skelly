@@ -21,7 +21,6 @@ import { BLUEPRINTS } from '../../vehicles/catalogue.ts';
 import { solidBlocks } from '../../vehicles/solid.ts';
 import { POWER_UNITS, unitCount } from '../powerContent.ts';
 import { shapeBlocks } from '../shapeSolid.ts';
-import { SOUND_EVENT_IDS } from '../soundEvents.ts';
 import { ContainerSchema, ReadableSchema } from './items.ts';
 import {
   Color,
@@ -137,13 +136,16 @@ export const FurnitureSchema = pipe(
     mount: optional(literal('wall')),
     container: optional(ContainerSchema),
     /** Sound emitted when searching this furniture; it must alert hearing. */
-    searchNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
+    searchNoise: optional(strictObject({ sound: Id })),
+    moveSounds: optional(strictObject({ lift: Id, drag: Id })),
     /** It opens and closes, taking this many Sim seconds. */
     door: optional(
       strictObject({
         handlingSimSeconds: SimSeconds,
         methods: record(Id, DoorForcingSchema),
-        openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
+        openSound: optional(Id),
+        closeSound: optional(Id),
+        blockedCloseSound: optional(Id),
         /** It lies flat in a floor or roof and swings up on its hinge edge, which is on its facing side. */
         hatch: optional(literal(true)),
         /** Barricaded from this side, the facing side (`front`) or its opposite (`back`): it opens only from the other. */

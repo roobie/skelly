@@ -33,7 +33,15 @@
           "loadSimSeconds": 1,
           "openSimSeconds": 0.5,
           "pickSimSeconds": 0.69999999999999996,
-          "recoverySimSeconds": 0.29999999999999999
+          "recoverySimSeconds": 0.29999999999999999,
+          "sounds": {
+            "close": "revolver_crane_close",
+            "cock": "revolver_hammer_cock",
+            "eject": "revolver_eject",
+            "load": "revolver_round_insert",
+            "open": "revolver_crane_open",
+            "pick": "revolver_case_pick"
+          }
         },
         "shotSound": "revolver_shot",
         "skillZeroHandling": {
@@ -65,10 +73,12 @@
         "diameterMm": 9.0700000000000003,
         "impulse": 4,
         "loadSimSeconds": 0.69999999999999996,
+        "loadSound": "magazine_round_insert",
         "pellets": 1,
         "rangeMetres": 100,
         "spreadDegrees": 0,
-        "stripSimSeconds": 0.5
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
       "economy": {

@@ -54,7 +54,6 @@ import {
   type TemplateDef,
   type ZombieDef,
 } from './schema.ts';
-import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
 import {
   templateDoorIssues,
@@ -1079,16 +1078,6 @@ const checkLoot = (registry: Registry, report: Report) => {
   }
 };
 
-const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
-  const openNoise = furniture.door?.openNoise;
-  const openingSound = openNoise && registry.sounds.get(openNoise.sound);
-  if (openNoise && !openingSound) {
-    report('furniture', furniture.id, '.door.openNoise.sound', `no sound event "${openNoise.sound}"`);
-  } else if (openNoise && openingSound && !openingSound.noise.enabled) {
-    report('furniture', furniture.id, '.door.openNoise.sound', 'opening sound must emit hearing noise');
-  }
-};
-
 const checkSearchNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
   const { searchNoise } = furniture;
   const sound = searchNoise && registry.sounds.get(searchNoise.sound);
@@ -1279,7 +1268,6 @@ const checkFurniture = (registry: Registry, report: Report) => {
         report('furniture', furniture.id, `.container.pockets[${index}].grid`, issue);
       }
     });
-    checkDoorOpenNoise(registry, furniture, report);
     checkSearchNoise(registry, furniture, report);
     checkMaterial(registry, furniture, report);
     checkDoorForcing(registry, furniture, report);
@@ -2208,6 +2196,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);
   checkHeartbeatSounds(registry, report);
+  checkActionSounds(registry, report);
   for (const layout of registry.layouts.values()) {
     checkLayoutReferences(layout, registry, report);
   }
@@ -2221,12 +2210,79 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   return issues;
 };
 
+const checkActionSounds = (registry: Registry, report: Report): void => {
+  const selected = (section: ContentSection, id: string, path: string, sound: string | undefined): void => {
+    if (sound !== undefined && !registry.sounds.has(sound)) {
+      report(section, id, path, `no sound event "${sound}"`);
+    }
+  };
+  const group = (section: ContentSection, id: string, path: string, sounds: Record<string, string>): void => {
+    for (const [field, sound] of Object.entries(sounds)) {
+      selected(section, id, `${path}.${field}`, sound);
+    }
+  };
+  for (const body of registry.body.values()) {
+    const { hurt, block, breath, strain, landing } = body.sounds;
+    group('body', body.id, '.sounds', { strain, landing });
+    group('body', body.id, '.sounds.hurt', { light: hurt.light, heavy: hurt.heavy });
+    group('body', body.id, '.sounds.block', block);
+    group('body', body.id, '.sounds.breath', breath);
+  }
+  for (const furniture of registry.furniture.values()) {
+    if (furniture.moveSounds) {
+      group('furniture', furniture.id, '.moveSounds', furniture.moveSounds);
+    }
+    if (furniture.door) {
+      selected('furniture', furniture.id, '.door.openSound', furniture.door.openSound);
+      selected('furniture', furniture.id, '.door.closeSound', furniture.door.closeSound);
+      selected('furniture', furniture.id, '.door.blockedCloseSound', furniture.door.blockedCloseSound);
+    }
+    selected('furniture', furniture.id, '.container.takeSound', furniture.container?.takeSound);
+  }
+  for (const meleeClass of registry.meleeClasses.values()) {
+    if (meleeClass.unarmed) {
+      const { swingSound, hitSound } = meleeClass.unarmed;
+      group('meleeClasses', meleeClass.id, '.unarmed', { swingSound, hitSound });
+    }
+  }
+  const checkItem = (item: ItemDef): void => {
+    selected('items', item.id, '.container.takeSound', item.container?.takeSound);
+    selected('items', item.id, '.explosive.sound', item.explosive?.sound);
+    if (item.ammo) {
+      const { loadSound, stripSound } = item.ammo;
+      group('items', item.id, '.ammo', { loadSound, stripSound });
+    }
+    const { firearm } = item;
+    if (!firearm) {
+      return;
+    }
+    const needed = {
+      rackSound: !(firearm.bolt || firearm.revolver),
+      rackForwardSound: firearm.pump,
+      caseDropSound: firearm.pump,
+      roundInsertSound: firearm.roundLoadSimSeconds !== undefined,
+    };
+    for (const field of ['rackSound', 'rackForwardSound', 'roundInsertSound', 'caseDropSound'] as const) {
+      selected('items', item.id, `.firearm.${field}`, firearm[field]);
+      if (needed[field] && firearm[field] === undefined) {
+        report('items', item.id, `.firearm.${field}`, 'missing sound selection for this firearm action');
+      }
+    }
+    if (firearm.revolver) {
+      group('items', item.id, '.firearm.revolver.sounds', firearm.revolver.sounds);
+    }
+    selected('items', item.id, '.firearm.handling.magazine.changeSound', firearm.handling.magazine?.changeSound);
+  };
+  for (const item of registry.items.values()) {
+    checkItem(item);
+  }
+};
+
 export const requiredContentIssues = (registry: Registry): ContentIssue[] => {
   const issues: ContentIssue[] = capabilityIssues(registry);
-  for (const id of SOUND_EVENT_IDS) {
-    if (!registry.sounds.has(id)) {
-      issues.push({ source: 'core content', path: 'sounds', message: `missing required sound event "${id}"` });
-    }
+  // #1532 removes this last fixed selection once its content owner is settled.
+  if (!registry.sounds.has('item_drop_wood')) {
+    issues.push({ source: 'core content', path: 'sounds', message: 'missing required sound event "item_drop_wood"' });
   }
   if ([...registry.items.values()].filter((item) => item.workInProgress).length !== 1) {
     issues.push({

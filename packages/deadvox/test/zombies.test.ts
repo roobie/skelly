@@ -438,20 +438,29 @@ describe('melee hit sounds', () => {
     const hit = system.swing(ray.origin, ray.direction, weapon, isFist);
     return {
       hit: hit === id,
-      events: emitted.filter((event) => event === 'melee_hit' || event === 'melee_hit_fist'),
+      events: emitted.filter((event) => event === weapon.hitSound || event === FISTS_MELEE.hitSound),
     };
   };
 
   it('emits exactly one fist impact and no weapon impact for a fist hit', () => {
     const result = emittedFor(FISTS_MELEE, true);
     expect(result.hit).toBe(true);
-    expect(result.events).toEqual(['melee_hit_fist']);
+    expect(result.events).toEqual([FISTS_MELEE.hitSound]);
   });
 
   it('emits exactly one weapon impact and no fist impact for a weapon hit', () => {
-    const result = emittedFor({ ...FISTS_MELEE, damage: 12, reach: 0.7, cooldown: 1, impulse: 5, type: 'blunt' });
+    const hitSound = 'fixture_weapon_hit';
+    const result = emittedFor({
+      ...FISTS_MELEE,
+      hitSound,
+      damage: 12,
+      reach: 0.7,
+      cooldown: 1,
+      impulse: 5,
+      type: 'blunt',
+    });
     expect(result.hit).toBe(true);
-    expect(result.events).toEqual(['melee_hit']);
+    expect(result.events).toEqual([hitSound]);
   });
 });
 

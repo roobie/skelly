@@ -48,7 +48,7 @@ breach.breaking(shape.colliding({
       material: 'steel',
       breach: { minimumStrength: 9, durability: 400 },
       door: {
-        methods: {}, handlingSimSeconds: 1.2, openNoise: { sound: 'door_roller_open' }, detail: detail.slatted,
+        methods: {}, handlingSimSeconds: 1.2, openSound: 'door_roller_open', detail: detail.slatted,
       },
     },
     { id: 'workshop_service_pit', name: 'Service pit', size: [6, 1, 2], color: '#373a3b', solid: false },

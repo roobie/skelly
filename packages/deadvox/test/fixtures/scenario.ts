@@ -11,6 +11,7 @@ import {
   fixtureMaterials,
   fixtureSounds,
 } from '../economyFixtures.ts';
+import { bodySoundIds } from './bodySounds.ts';
 import { fixtureIds } from './capabilityIds.ts';
 import { playerInventorySource } from './playerInventory.ts';
 
@@ -113,11 +114,12 @@ export const fixtureScenarioSources = (
   const {
     body: [body],
   } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
-  // The base body's heartbeat names base sound events, so they come along with it.
-  const heartbeatSounds = new Set(Object.values(body.heartbeat.sounds));
-  const bodySounds = (
-    JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as { id: string }[]
-  ).filter(({ id }) => heartbeatSounds.has(id));
+  const selectedSounds = new Set(bodySoundIds(body));
+  const bodySounds = ['sounds', 'sounds-synth', 'sounds-block'].flatMap((name) =>
+    (JSON.parse(readFileSync(`src/content/base/${name}.json`, 'utf8')).sounds as { id: string }[]).filter(({ id }) =>
+      selectedSounds.has(id),
+    ),
+  );
   const {
     compression: [compression],
   } = JSON.parse(readFileSync('src/content/base/compression.json', 'utf8'));

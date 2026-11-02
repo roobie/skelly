@@ -17,6 +17,7 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
+import { fixtureBodySounds } from './fixtures/bodySounds.ts';
 import { firearmsSkillSource, playerInventorySource } from './fixtures/playerInventory.ts';
 import { PLAYER } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -44,9 +45,7 @@ const admit = (value: Readable) =>
           },
         ],
         body: [{ ...BODY_TUNING_FIXTURE, id: 'player' }],
-        sounds: Object.values(BODY_TUNING_FIXTURE.heartbeat.sounds).map(
-          (id) => BUNDLED_CONTENT.registry.sounds.get(id)!,
-        ),
+        sounds: fixtureBodySounds(BODY_TUNING_FIXTURE),
         compression: [{ id: 'player', capability: 'player', caps: COMPRESSION_CAPS_FIXTURE }],
         senses: [TEST_SENSE_TUNING],
         player: [PLAYER],

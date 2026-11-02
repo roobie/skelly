@@ -7,6 +7,8 @@
       },
       "color": "#718087",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [5, 1],
           "frame": 0.059999999999999998,
@@ -37,11 +39,16 @@
             "strikeSound": "lock_pry",
             "timeSimSeconds": 15
           }
-        }
+        },
+        "openSound": "door_open"
       },
       "id": "container_door",
       "massKg": 16,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Steel container door",
       "size": [2, 4, 1]
     },
@@ -68,6 +75,10 @@
       "id": "rifle_rack",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Rifle rack",
       "shape": [
         {
@@ -152,6 +163,10 @@
       "id": "ammo_crate",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Ammunition crate",
       "shape": [
         {
@@ -243,6 +258,10 @@
       "id": "ammo_can",
       "massKg": 5,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Ammunition can",
       "size": [1, 1, 1]
     },
@@ -263,6 +282,10 @@
       "id": "footlocker",
       "massKg": 4,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Footlocker",
       "shape": [
         {
@@ -352,6 +375,10 @@
       "id": "camp_cot",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Folding cot",
       "rest": {
         "quality": 0.59999999999999998,
@@ -427,12 +454,19 @@
         ]
       },
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "handlingSimSeconds": 0.59999999999999998,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "camp_hq_safe",
       "massKg": 24,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Steel reserve safe",
       "shape": [
         {
@@ -459,6 +493,10 @@
       "id": "field_desk",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Field desk",
       "shape": [
         {
@@ -521,6 +559,10 @@
       "id": "camp_orders",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Camp orders board",
       "readable": {
         "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer.",
@@ -552,6 +594,10 @@
       "id": "camp_sandbag_barricade",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Sandbag barricade",
       "size": [2, 2, 2],
       "solid": true
@@ -563,6 +609,8 @@
       },
       "color": "#666c70",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [8, 1],
           "frame": 0.059999999999999998,
@@ -583,11 +631,16 @@
           "seam": 0.050000000000000003
         },
         "handlingSimSeconds": 1.2,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "camp_gate_leaf",
       "massKg": 60,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Camp fence-gate leaf",
       "size": [6, 5, 1]
     }

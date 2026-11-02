@@ -66,6 +66,8 @@ describe('content capabilities', () => {
         id: 'fixture_unarmed',
         capability: 'unarmed',
         unarmed: {
+          swingSound: 'fixture_swing',
+          hitSound: 'fixture_hit',
           motion: 'thrust',
           damage: 1,
           reach: 1,

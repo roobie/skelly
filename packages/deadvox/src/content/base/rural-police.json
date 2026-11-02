@@ -21,6 +21,10 @@
       "id": "dead_officer_body",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Dead officer",
       "size": [4, 1, 2],
       "solid": false
@@ -42,6 +46,10 @@
       "id": "police_weapon_cabinet",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Weapon cabinet",
       "shape": [
         {

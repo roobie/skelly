@@ -28,6 +28,8 @@ const capabilities = [
     kind: 'melee',
     weapon: {
       melee: {
+        swingSound: 'gunshot',
+        hitSound: 'gunshot',
         motion: 'swing',
         damage: 1,
         reach: 1,
@@ -55,6 +57,7 @@ const capabilities = [
       dispersionRadians: 0.01,
       pelletSpreadScale: 1,
       shotSound: 'gunshot',
+      rackSound: 'gunshot',
       handling: {},
     },
     twoHanded: true,

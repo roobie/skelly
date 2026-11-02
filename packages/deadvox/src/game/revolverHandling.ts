@@ -19,15 +19,6 @@ interface RevolverHooks {
   readonly caseType: (gun: Item) => string;
   readonly completed?: (gun: Item, step: RevolverStep) => void;
 }
-// The trigger pull's click is the gun's content-selected dry-fire sound.
-const sounds: Record<Exclude<RevolverStep, 'pull'>, SoundEventId> = {
-  open: 'revolver_crane_open',
-  eject: 'revolver_eject',
-  pick: 'revolver_case_pick',
-  load: 'revolver_round_insert',
-  close: 'revolver_crane_close',
-  cock: 'revolver_hammer_cock',
-};
 const firingOrder = (cylinder: CylinderState): number[] =>
   cylinder.chambers.map((_, index) => (cylinder.aligned + 1 + index) % cylinder.chambers.length);
 
@@ -65,7 +56,7 @@ export class RevolverHandling {
     }
     const time = Number(params.at);
     if (step !== 'open' && !params.cuePlayed) {
-      this.hooks.sound(sounds[step], step === 'eject' ? Number(params.cueAt) : time);
+      this.hooks.sound(this.sounds(gun)[step], step === 'eject' ? Number(params.cueAt) : time);
     }
     this.hooks.completed?.(gun, step);
     this.afterStep(gun, step, time);
@@ -179,6 +170,10 @@ export class RevolverHandling {
     return defOf(this.inventory.registry, ammo.type).ammo?.calibre === this.model(gun)?.gun?.calibre;
   }
 
+  private sounds(gun: Item) {
+    return defOf(this.inventory.registry, gun.type).firearm!.revolver!.sounds;
+  }
+
   private model(gun: Item) {
     const id = defOf(this.inventory.registry, gun.type).model;
     return id ? this.inventory.registry.models.get(id) : undefined;
@@ -204,7 +199,7 @@ export class RevolverHandling {
       ...(source.ammo ? { ammoUid: source.ammo.uid } : {}),
     });
     if (step === 'open') {
-      this.hooks.sound(sounds.open, time);
+      this.hooks.sound(this.sounds(gun).open, time);
     }
   }
 
@@ -343,7 +338,8 @@ export class RevolverHandling {
       job.elapsed >= job.duration / 2
     ) {
       job.params.cuePlayed = true;
-      this.hooks.sound('revolver_eject', Number(job.params.cueAt));
+      const gun = this.inventory.itemByUid(Number(job.params.uid))!;
+      this.hooks.sound(this.sounds(gun).eject, Number(job.params.cueAt));
     }
   }
 

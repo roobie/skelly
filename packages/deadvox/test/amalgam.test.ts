@@ -534,7 +534,7 @@ describe('amalgam body and combat seam', () => {
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       onSound: (event, _position, targetZombie) => {
-        if (event === 'melee_hit' && targetZombie?.type.id === type.id) {
+        if (event === FISTS_MELEE.hitSound && targetZombie?.type.id === type.id) {
           heardBody = zombieFigure(targetZombie.type, targetZombie.figureSeed).realized.body.bones.length > 0;
         }
       },
@@ -721,6 +721,8 @@ describe('amalgam body and combat seam', () => {
         projectileShot(
           {
             calibre: 'test',
+            loadSound: 'fixture_load',
+            stripSound: 'fixture_strip',
             pellets: 1,
             spreadDegrees: 0,
             damage: 1,

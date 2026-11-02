@@ -29,7 +29,6 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../character.ts';
 import { ItemEconomySchema } from '../loot.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from '../readable.ts';
-import { SOUND_EVENT_IDS } from '../soundEvents.ts';
 import { capabilityField } from './capability.ts';
 import {
   CalibreId,
@@ -121,6 +120,7 @@ const PocketSchema = strictObject({
 });
 
 export const ContainerSchema = strictObject({
+  takeSound: optional(Id),
   pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')),
   /** Why its pockets need more than the inventory width tuning allows. */
   wideReason: optional(pipe(string(), nonEmpty('must not be empty'))),
@@ -242,10 +242,8 @@ const WeaponSchema = strictObject({
     limbDamageMultiplier: optional(Positive),
     /** Overrides the weapon class's swing-speed multiplier. */
     speedMultiplier: optional(Positive),
-    /** Swing presentation event; absent uses the shared swing. */
-    swingSound: optional(Id),
-    /** Hit presentation event; absent uses the shared hit. */
-    hitSound: optional(Id),
+    swingSound: Id,
+    hitSound: Id,
     /** Played over the hit, such as a metal ring for a metal weapon. */
     hitLayerSound: optional(Id),
     type: picklist(MELEE_DAMAGE_KINDS),
@@ -255,6 +253,8 @@ const WeaponSchema = strictObject({
 
 /** The bare-handed attack, which no item supplies. */
 const UnarmedAttackSchema = strictObject({
+  swingSound: Id,
+  hitSound: Id,
   motion: picklist(MELEE_MOTIONS),
   damage: Positive,
   /** Metres beyond the player's hand; the arm's reach is added when swinging. */
@@ -329,6 +329,10 @@ const FirearmSchema = strictObject({
   /** A bolt gun's open and close strokes; each plays on its own phase, so a bolt gun needs both. */
   boltOpenSound: optional(Id),
   boltCloseSound: optional(Id),
+  rackSound: optional(Id),
+  rackForwardSound: optional(Id),
+  roundInsertSound: optional(Id),
+  caseDropSound: optional(Id),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
@@ -340,6 +344,7 @@ const FirearmSchema = strictObject({
   /** Reload handling times at skill 0, before the firearms skill's reload factor. */
   revolver: optional(
     strictObject({
+      sounds: strictObject({ open: Id, eject: Id, pick: Id, load: Id, close: Id, cock: Id }),
       doubleActionPullSimSeconds: PositiveSimSeconds,
       doubleActionDispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
       recoverySimSeconds: PositiveSimSeconds,
@@ -358,6 +363,7 @@ const FirearmSchema = strictObject({
       strictObject({
         removeSimSeconds: PositiveSimSeconds,
         insertSimSeconds: PositiveSimSeconds,
+        changeSound: Id,
       }),
     ),
   }),
@@ -365,6 +371,8 @@ const FirearmSchema = strictObject({
 
 /** Per projectile (one rifle bullet, or each pellet); damage, push and reach are gameplay estimates, not ballistics. */
 const AmmoSchema = strictObject({
+  loadSound: Id,
+  stripSound: Id,
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
   /** Base half-angle for pellet directions; the firearm's choke scale multiplies it. */
@@ -507,7 +515,7 @@ const ExplosiveSchema = strictObject({
     impulse: Positive,
   }),
   /** Sound event at detonation; its noise draws zombies. */
-  sound: picklist(SOUND_EVENT_IDS),
+  sound: Id,
 });
 
 /** A trap set on the floor that springs on whatever enters its cell (`SLICE-5.md`, "Settled bear-trap rules — issue #107"). */

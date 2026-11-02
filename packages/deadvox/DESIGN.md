@@ -1,5 +1,6 @@
 ---
 read_if:
+  - you change content-owned sound selections or weapon audio presentation
   - you change the selected physics build for driving or parked collision
   - you change terrain strikes, block damage persistence, authored supply publication or destructive furniture admission
   - you change shared item-instance presentation, fuel visibility or material wear
@@ -2462,9 +2463,10 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   would play a close the player has not made. See `src/game/firearmHandling.ts`,
   `startHandCycle`.
 - **Melee sounds by weapon weight and material.** A knife and a bat should not sound
-  alike, so a melee weapon can name its own swing, its own hit and a layer over the
-  hit, such as a metal ring for a metal striker. A weapon that names none keeps the
-  shared swing and hit. See `src/core/zombies.ts`, `MeleeWeapon`.
+  alike. Weapons and the unarmed provider must select their presentation explicitly:
+  borrowing an engine default would hide incomplete content. An optional impact layer
+  can distinguish a metal striker without replacing its contact sound. See
+  `src/core/schema/items.ts`, `WeaponSchema` and `UnarmedAttackSchema`.
 
 ## Damage, destruction and dismemberment
 

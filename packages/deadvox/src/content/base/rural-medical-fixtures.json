@@ -9,6 +9,10 @@
       "id": "medical_folding_screen",
       "massKg": 4,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Folding screen",
       "shape": [
         {
@@ -32,6 +36,10 @@
       "id": "medical_examination_couch",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Examination couch",
       "shape": [
         {
@@ -67,6 +75,10 @@
       "id": "medical_steam_sterilizer",
       "massKg": 4,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Steam sterilizer",
       "shape": [
         {
@@ -102,6 +114,10 @@
       "id": "medical_card_file",
       "massKg": 10,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Card-file cabinet",
       "size": [1, 2, 1]
     },
@@ -114,6 +130,10 @@
       "id": "medical_bike_rack",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Bike rack",
       "shape": [
         {
@@ -145,6 +165,10 @@
       "id": "medical_bin_enclosure",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Bin enclosure",
       "shape": [
         {

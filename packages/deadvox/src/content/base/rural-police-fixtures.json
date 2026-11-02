@@ -9,6 +9,10 @@
       "id": "police_desk_radio",
       "massKg": 4,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Desk radio",
       "shape": [
         {
@@ -57,6 +61,10 @@
       "massKg": 2,
       "material": "wood",
       "mount": "wall",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Duty notice",
       "readable": {
         "text": "EVIDENCE\n\nLog every transfer. Sign out keys at the duty desk.",
@@ -92,6 +100,10 @@
       "id": "police_file_cabinet",
       "massKg": 40,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "File cabinet",
       "size": [2, 4, 1]
     },
@@ -116,6 +128,10 @@
       "id": "police_evidence_locker",
       "massKg": 40,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Evidence locker",
       "size": [2, 4, 1]
     },
@@ -128,6 +144,10 @@
       "id": "station_toilet",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Toilet",
       "shape": [
         {
@@ -175,6 +195,10 @@
       "id": "station_cell_toilet",
       "massKg": 16,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Cell toilet",
       "shape": [
         {
@@ -222,6 +246,10 @@
       "id": "station_washbasin",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Washbasin",
       "shape": [
         {
@@ -273,6 +301,10 @@
       "id": "station_cleaning_sink",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Cleaning sink",
       "shape": [
         {
@@ -324,6 +356,10 @@
       "id": "station_kitchen_sink",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Kitchen sink",
       "shape": [
         {
@@ -375,6 +411,10 @@
       "id": "station_solid_fuel_boiler",
       "massKg": 72,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Solid-fuel boiler",
       "shape": [
         {
@@ -422,6 +462,10 @@
       "id": "station_coal_bin",
       "massKg": 24,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Coal bin",
       "shape": [
         {
@@ -471,6 +515,8 @@
       },
       "color": "#596562",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 1],
           "frame": 0.050000000000000003,
@@ -491,11 +537,16 @@
           "seam": 0.050000000000000003
         },
         "handlingSimSeconds": 0.59999999999999998,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "station_coal_hatch",
       "massKg": 8,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Coal delivery hatch",
       "size": [2, 2, 1]
     },
@@ -508,6 +559,10 @@
       "id": "station_cooker",
       "massKg": 8,
       "material": "wood",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Cooker",
       "shape": [
         {
@@ -565,6 +620,8 @@
       },
       "color": "#8c9b91",
       "door": {
+        "blockedCloseSound": "door_blocked_close",
+        "closeSound": "door_close",
         "detail": {
           "fields": [1, 2],
           "frame": 0.050000000000000003,
@@ -585,11 +642,16 @@
           "seam": 0.050000000000000003
         },
         "handlingSimSeconds": 0.59999999999999998,
-        "methods": {}
+        "methods": {},
+        "openSound": "door_open"
       },
       "id": "station_emergency_door",
       "massKg": 16,
       "material": "steel",
+      "moveSounds": {
+        "drag": "furniture_drag",
+        "lift": "furniture_scrape"
+      },
       "name": "Emergency exit door",
       "size": [2, 4, 1]
     }

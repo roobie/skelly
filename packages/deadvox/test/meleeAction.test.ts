@@ -36,6 +36,8 @@ const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR: SolidAt = (_x, y) => y === 0;
 const BASE_WEAPON: MeleeWeapon = {
+  swingSound: 'fixture_swing',
+  hitSound: 'fixture_hit',
   motion: 'swing',
   damage: 1,
   reach: 3,
@@ -447,8 +449,8 @@ describe('player melee action', () => {
       advance(missSystem, 0.05);
     }
     expect(results).toEqual(['miss']);
-    expect(sounds).toContain('melee_swing');
-    expect(sounds).not.toContain('melee_hit');
+    expect(sounds).toContain(BASE_WEAPON.swingSound);
+    expect(sounds).not.toContain(BASE_WEAPON.hitSound);
     expect(combatFor(missSystem).snapshotState().playerAttackWait).toBeCloseTo(0.55);
 
     const unblocked = makeSystem();
@@ -475,8 +477,18 @@ describe('player melee action', () => {
   });
 
   it.each([
-    { profile: 'fists' as const, expected: 'melee_hit_fist', weapon: FISTS_MELEE, hands: { right: null, left: null } },
-    { profile: 'blunt' as const, expected: 'melee_hit', weapon: BASE_WEAPON, hands: { right: 11, left: null } },
+    {
+      profile: 'fists' as const,
+      expected: FISTS_MELEE.hitSound,
+      weapon: FISTS_MELEE,
+      hands: { right: null, left: null },
+    },
+    {
+      profile: 'blunt' as const,
+      expected: BASE_WEAPON.hitSound,
+      weapon: BASE_WEAPON,
+      hands: { right: 11, left: null },
+    },
   ])('preserves $profile hit sound through live ticks and restored actions', ({ profile, expected, weapon, hands }) => {
     const originalSounds: string[] = [];
     const original = makeSystem(FLOOR, [], originalSounds);
@@ -495,7 +507,9 @@ describe('player melee action', () => {
     advance(original, 0.05, hands);
     advance(restored, 0.05, hands);
     for (const sounds of [originalSounds, restoredSounds]) {
-      expect(sounds.filter((event) => event === 'melee_hit' || event === 'melee_hit_fist')).toEqual([expected]);
+      expect(sounds.filter((event) => event === BASE_WEAPON.hitSound || event === FISTS_MELEE.hitSound)).toEqual([
+        expected,
+      ]);
     }
   });
 

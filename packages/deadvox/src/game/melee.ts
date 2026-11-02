@@ -46,6 +46,8 @@ export const unarmedMeleeWeapon = (meleeClasses: ReadonlyMap<string, MeleeClassD
     windupCapSimSeconds: unarmed.windupCapSimSeconds,
     stamina: unarmed.stamina,
     impulse: unarmed.impulse,
+    swingSound: unarmed.swingSound,
+    hitSound: unarmed.hitSound,
   });
 };
 

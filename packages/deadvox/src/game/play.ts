@@ -23,7 +23,7 @@ import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.t
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
-import { damageWord, type Item } from '../core/items.ts';
+import { damageWord, defOf, type Item } from '../core/items.ts';
 import { flightForItem, hasMetThrowMinimumHold, throwDistanceForItem } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse, wornNightVision } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
@@ -995,7 +995,9 @@ export const startPlay = (
     audio: {
       play: playSessionSound,
       onMoveStart: (move, ownerLocation, position, time) => {
-        const cue = handlingMoveStartCue(move, ownerLocation, position);
+        const takeSound =
+          move.from.kind === 'pocket' ? defOf(registry, move.from.owner.type).container?.takeSound : undefined;
+        const cue = handlingMoveStartCue(move, ownerLocation, position, takeSound);
         if (cue) {
           session.playPlayerSound(cue.event, time);
         }
@@ -1755,7 +1757,13 @@ export const startPlay = (
       },
     },
     emitTestNoise: () =>
-      !replayPlayer && session.playPlayerSound('player_hurt_light', sim.time, { sourceLabel: 'debug test noise' }),
+      !replayPlayer &&
+      session.playPlayerSound(
+        (engine.scenario ? registry.body.get(engine.scenario.body)! : claimed(registry.body, 'player')!).sounds.hurt
+          .light,
+        sim.time,
+        { sourceLabel: 'debug test noise' },
+      ),
     feet,
     showNotice,
     spawnItem,

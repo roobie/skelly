@@ -1,7 +1,6 @@
-import { check, type InferOutput, picklist, pipe, strictObject } from 'valibot';
+import { check, type InferOutput, pipe, strictObject } from 'valibot';
 import { ActionTextSchema } from '../actionText.ts';
 import { CORE_LABEL_SLOTS, CORE_MESSAGE_SLOTS } from '../coreText.ts';
-import { SOUND_EVENT_IDS } from '../soundEvents.ts';
 import { SLOT_PATTERN } from '../textTemplate.ts';
 import { Fraction, Id, Name, Positive } from './primitives.ts';
 
@@ -523,7 +522,7 @@ export const UiTuningSchema = strictObject({
   /** Multiplies the root font size the UI is measured in; the world canvas is not scaled. */
   hudScale: Positive,
   /** The sound event played when the player tries an action that cannot be completed. */
-  refusalSound: picklist(SOUND_EVENT_IDS),
+  refusalSound: Id,
   /** The audio options' volumes before the player saves any. */
   audioVolumes: strictObject({ master: Fraction, world: Fraction, body: Fraction, ui: Fraction }),
   /** What the rest card calls each kind of rest. */

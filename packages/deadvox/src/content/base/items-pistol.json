@@ -12,11 +12,13 @@
         "dryFireSound": "firearm_dry_click",
         "handling": {
           "magazine": {
+            "changeSound": "magazine_change",
             "insertSimSeconds": 2,
             "removeSimSeconds": 2
           }
         },
         "pelletSpreadScale": 1,
+        "rackSound": "rifle_charge",
         "recoilKickRadians": 0.017999999999999999,
         "shotSound": "revolver_shot",
         "skillZeroHandling": {
@@ -61,10 +63,12 @@
         "diameterMm": 9.0299999999999994,
         "impulse": 2.6800000000000002,
         "loadSimSeconds": 0.59999999999999998,
+        "loadSound": "magazine_round_insert",
         "pellets": 1,
         "rangeMetres": 100,
         "spreadDegrees": 0,
-        "stripSimSeconds": 0.5
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
       "economy": {

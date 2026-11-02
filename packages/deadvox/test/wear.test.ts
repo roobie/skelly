@@ -20,6 +20,7 @@ const armour = {
 };
 const wearables = 'items-wearables.json';
 const hitBuild = buildRegistry([
+  { source: 'wear-sounds', data: { sounds: [...registry.sounds.values()] } },
   { source: wearables, data: JSON.parse(readFileSync(join('src/content/base', wearables), 'utf8')) as unknown },
   {
     source: 'models-items.json',

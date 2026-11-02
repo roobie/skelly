@@ -519,10 +519,12 @@
         "diameterMm": 8.3800000000000008,
         "impulse": 0.34999999999999998,
         "loadSimSeconds": 0.80000000000000004,
+        "loadSound": "magazine_round_insert",
         "pellets": 9,
         "rangeMetres": 50,
         "spreadDegrees": 2,
-        "stripSimSeconds": 0.5
+        "stripSimSeconds": 0.5,
+        "stripSound": "magazine_round_strip"
       },
       "category": "ammo",
       "description": "Nine-pellet 00 buckshot.",
