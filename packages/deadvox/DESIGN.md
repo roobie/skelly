@@ -2089,10 +2089,13 @@ Carry stays visible in first person for the same reason as the body. See
 `src/render/wornModels.ts`, `wornEntries`; and `test/wornCarry.test.ts`.
 
 Head gear can sit in front of the eyes, so the player should see what they look
-through. The visor/scope boundary work must distinguish that optical effect from
-a second physical item. Optical strength belongs to content rather than a HUD
-setting because it describes the worn item. See `src/render/hands.ts`, `HeldItems`,
-and [Character](#character).
+through. Worn visors and NVG are physical worn geometry, so they share world
+depth and clipping and read the same in every view. The camera-effect visor
+remains until the framework refactor (#1532); the earlier world-geometry attempt
+lives at PR #1369's old head `5836ac87b` and can supply ideas but is too old to
+reuse. Optical strength belongs to content rather than a HUD setting because it
+describes the worn item. See `src/render/hands.ts`, `HeldItems`, and
+[Character](#character).
 
 **Worn coverage.** Vests take their own outer slot over the torso so a vest and
 a jacket can be worn together, and the outer layer is the one a blow meets.
@@ -3454,7 +3457,7 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **The default look:** tone mapping off, low exposure, the mood pass off and no weathering, because it looks better by eye and costs less. It is content (`src/core/schema.ts`, `LookDefaultsSchema`) and stays tunable by URL parameter and debug panel.
-- **Carry and visor:** carried furniture is physical and depth-tests with world camera planes; the visor sits closer than the world near plane, so it remains an isolated effect without clearing world depth. See `src/render/hands.ts`, `HeldItems.render`.
+- **Carry and visor:** carried furniture, worn visors and NVG are physical worn geometry. Worn gear is part of the world, so it shares world depth and clipping and reads the same in every view. The camera-effect visor remains until the framework refactor (#1532). See `src/render/hands.ts`, `HeldItems.render`.
 - **The near plane must admit short-relief optics:** the world camera draws physical optic housing too. Cutting
   through it can leave disconnected slivers above an otherwise complete composited disc. Both camera owners use
   authored near-plane policy supplied by the engine, rather than protecting only the optical adapter. See `src/core/schema.ts`,
