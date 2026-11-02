@@ -392,6 +392,30 @@ describe('floor furniture steps', () => {
     expect(session.queue.busy).toBe(false);
   });
 
+  it('places carried furniture on top of a non-solid piece without overlapping its reserved box', () => {
+    const content = {
+      ...registry,
+      furniture: new Map(registry.furniture).set(spec.type, {
+        ...registry.furniture.get(spec.type)!,
+        solid: false,
+      }),
+    };
+    const { inventory, entity: support, mover } = fixture(content);
+    const type = 'slide_fixture_small';
+    const piece = inventory.furnish({
+      type,
+      pos: [spec.pos[0] - 1, spec.pos[1], spec.pos[2]],
+      size: content.furniture.get(type)!.size,
+      facing: 'n',
+    })!;
+    expect(liftFurniture(mover, piece)).toBeUndefined();
+    const aimed: Vec3 = [support.pos[0], support.pos[1] + support.size[1] + 1, support.pos[2]];
+    expect(placeFurniture(mover, aimed)).toBeUndefined();
+    expect(piece.pos[1]).toBe(support.pos[1] + support.size[1]);
+    expect(inventory.entities.filling(...support.pos)).toBe(support);
+    expect(inventory.entities.filling(...piece.pos)).toBe(piece);
+  });
+
   it('reserves non-solid furniture boxes even though they cannot support a falling pile', () => {
     const type = 'slide_fixture_non_solid';
     const content = {

@@ -156,7 +156,10 @@ class Shadow {
   /** Whether anything is under a box, so it stands rather than falls. */
   rests(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
     this.readBox?.(pos, size);
-    return footprint(pos, size).some((cell) => this.occupied(below(cell)));
+    return footprint(pos, size).some((cell) => {
+      const under = below(cell);
+      return this.terrainSolid(...under) || this.occupant(under) !== undefined;
+    });
   }
 
   /** The height a free box comes to rest at when let go. */

@@ -31,7 +31,7 @@ read_if:
   - you're changing world block shapes, wire fences or their supports, sight opacity, reach through obstacles, sound blocking or slab geometry
   - you change standing water, basins, the flooded-lot check or how liquids are meshed
   - you're changing ladders, roof hatches or where the player can climb above a fight
-  - you're changing which furniture the player can lift, carry, push or drag, or how stacks settle
+  - you change furniture lifting, carrying, placement, floor movement or stack support
   - you change furniture repair admission or the boundary between repair and replacement
   - you change world-target repair selection or target identity ownership
   - you're changing the rules for time, survival, light or zombies
@@ -2766,16 +2766,17 @@ nothing, preserving the existing owner and any unfinished work. Supported but
 full candidates have a separate refusal. A finished repair puts nothing down;
 an unpack into a pocket with room and a discarded dead battery need no landing.
 
-Support follows actual solid cells, not furniture reservation boxes: a non-solid
-piece or a shape gap cannot catch a falling item. Placement still reserves whole
-furniture boxes, so correcting support must not admit overlapping pieces. See
-`src/core/furnitureMove.ts`, `Shadow`, and `src/core/blockEntities.ts`,
-`BlockEntities.blockingBoxes`.
+Item support follows actual solid cells, so every pile landing has a drop-sound
+receiver: a non-solid piece or a shape gap cannot catch a falling item. Furniture
+instead stands on any piece and reserves whole boxes. The item-support rule must
+not let furniture fall into those reserved cells. See `src/core/furnitureMove.ts`,
+`Shadow`, and `src/core/blockEntities.ts`, `BlockEntities.blockingBoxes` and
+`BlockEntities.filling`.
 
 Zombie loot and severed parts use the same landing rule when a supported pile has
-room. Their no-ground and all-full outcomes await the non-player policy decision
-under #1532: a player refusal assumes a retained owner, but death or severing has
-already committed. Those outcomes must not acquire a loss or retention rule by
+room. Non-player emission outcomes require their own decisions under #1532: a
+player refusal assumes a retained owner, but death or severing has already
+committed. Those outcomes must not acquire a loss or retention rule by
 inference. See `src/game/session.ts`, `placeZombieDrop`.
 
 See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
