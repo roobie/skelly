@@ -120,8 +120,12 @@ grains), \`packages/thing-authoring-tool/hand-tools.libsonnet\` (compound rows),
 ## Each item
 
 1. Add a row: id in lowercase snake case (the reference id when it reads well), mass in kg from the
-   reference weight, finishes that match its materials, a comment giving its real-world size. Units are
-   metres; a held tool lies along x and sets \`handling\` and \`voxelGrain\` as the hand tools do.
+   reference weight, a comment giving its real-world size. Units are metres and **y is up**; a \`turned\`
+   profile lists [position along the axis, radius] pairs; a held tool lies along x and sets \`handling\`
+   as the hand tools do. Things smaller than a shoebox set \`voxelGrain: 0.004\` (0.002 below about 10 cm)
+   so they do not read as a few blocks.
+   Pick the nearest existing finish for each material. Do not add finishes: the palette is shared by every
+   batch, so a new one would collide on merge; name the finish you wished for in your report.
 2. Look: \`node tools/model-look.mjs --out .catalogue/look --ref .catalogue/reference.json <id>[=<referenceId>] ...\`
    Open the tiles (\`.catalogue/look/tiles/<id>.png\`: front, side, top, iso; grid 1 cm, bold 10 cm) and fix
    the row until the thing is recognisable from the iso view alone and every CHECK flag is fixed or

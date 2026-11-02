@@ -20,8 +20,17 @@ const glbDir = join(out, 'glb');
 mkdirSync(glbDir, { recursive: true });
 
 compileJsonnetSources({ within: ['packages/thing-core/src', 'packages/thing-authoring-tool', 'packages/deadvox/src/content/base/presentation'] });
-const { loadThingRecipe } = await import('../packages/thing-authoring-tool/src/exports.ts');
-const rows = loadThingRecipe().filter(({ id }) => ids.includes(id));
+let recipe;
+try {
+  const { loadThingRecipe } = await import('../packages/thing-authoring-tool/src/exports.ts');
+  recipe = loadThingRecipe();
+} catch (error) {
+  // Schema errors arrive as a long issue dump; one line per issue with its path is what an author needs.
+  if (!error.issues) throw error;
+  for (const issue of error.issues) console.log(`ROW ERROR ${(issue.path ?? []).map((p) => p.key).join('.')}: ${issue.message} (${JSON.stringify(issue.input)})`);
+  process.exit(1);
+}
+const rows = recipe.filter(({ id }) => ids.includes(id));
 const missing = ids.filter((id) => !rows.some((r) => r.id === id));
 if (missing.length) console.log(`not in the recipe (missing import in items.jsonnet?): ${missing.join(' ')}`);
 const mass = {};
