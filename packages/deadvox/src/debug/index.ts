@@ -68,6 +68,7 @@ import {
   spawnUnawareShambler as spawnUnawareShamblerBehindWall,
   spawnZombieType,
 } from './shamblerSpawning.ts';
+import { spawnDebugItem } from './spawnItem.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { TransientDebugDraw } from './transientDraw.ts';
 
@@ -1192,7 +1193,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let shellKey = '';
   let noclip = false;
   const build = new BuildMode(hooks.engine, hooks.body, hooks.engine.config.scale.blockSize, hooks.strikeTerrainCell);
-  const spawnMenu = new SpawnMenu(hooks.engine.registry, hooks.spawnItem);
+  const spawnMenu = new SpawnMenu(hooks.engine.registry, (type) => spawnDebugItem(hooks.inventory, type, hooks.feet()));
   let shamblerCount = readShamblerCount();
   let spawnStatus = '';
   /** Groups the operator collapsed; remembered per browser. */
