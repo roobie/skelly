@@ -15,7 +15,15 @@ import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const ids = { part: 'removal_part', load: 'removal_load', hand: 'removal_hand', host: 'removal_host' };
-const fixture = ({ floor = true, height = 2 } = {}) => {
+const fixture = ({
+  floor = true,
+  height = 2,
+  obstacle,
+}: {
+  floor?: boolean;
+  height?: number;
+  obstacle?: 'non-solid' | 'shape-hole';
+} = {}) => {
   const base = baseRegistry();
   const scale = { ...makeScale(0.5), minCy: 0, maxCy: 5 };
   const donor = [...base.items.values()].find((item) => item.vehicle && item.model && !item.vehicle.addon)!;
@@ -132,6 +140,21 @@ const fixture = ({ floor = true, height = 2 } = {}) => {
     onRead: () => undefined,
   });
   const { inventory } = session;
+  if (obstacle) {
+    const donorPiece = [...registry.furniture.values()].find((entry) => !(entry.door || entry.mount))!;
+    const type = 'removal_obstacle';
+    registry.furniture.set(type, {
+      ...donorPiece,
+      id: type,
+      size: [2, 1, 1],
+      solid: obstacle !== 'non-solid',
+      solidFill: 0.1,
+      shape: obstacle === 'shape-hole' ? [{ position: [1, 0, 0], size: [1, 1, 1] }] : undefined,
+    });
+    if (!inventory.furnish({ type, pos: [1, 1, 1], size: [2, 1, 1], facing: 'n' })) {
+      throw new Error('Could not place fixture obstacle');
+    }
+  }
   const vehicleId = inventory.registerVehicle({
     blueprint: ids.host,
     placementKey: ids.host,
@@ -215,6 +238,15 @@ it('can complete a hand move onto the resettled pile without throwing in its sou
   expect(f.remove()).toBeUndefined();
   expect(f.moveOntoLoad()).toEqual([f.dropSound]);
 });
+
+it.each(['non-solid', 'shape-hole'] as const)(
+  'vehicle removal piles fall past %s furniture to a real receiver',
+  (obstacle) => {
+    const f = fixture({ obstacle });
+    expect(f.remove()).toBeUndefined();
+    expect(f.moveOntoLoad()).toEqual([f.dropSound]);
+  },
+);
 
 it('spreads a falling load beyond full adjacent piles instead of leaving it on the removed support', () => {
   const f = fixture();

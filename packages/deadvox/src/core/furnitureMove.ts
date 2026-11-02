@@ -94,7 +94,7 @@ export const furnitureMoveStamina = (
  */
 class Shadow {
   /** A cell the move fills or empties; `null` is emptied. */
-  private readonly changed = new Map<string, BlockEntity | null>();
+  private readonly changed = new Map<string, { entity: BlockEntity; solid: boolean } | null>();
   private readonly terrainSolid: SolidAt;
   private readonly entities: BlockEntities;
   private readonly readBox: FurnitureMover['readBox'];
@@ -113,9 +113,18 @@ class Shadow {
 
   fill(entity: BlockEntity, pos: Readonly<Vec3>, filled: boolean): void {
     this.readBox?.(pos, entity.size);
+    const solid = filled
+      ? new Set(
+          this.entities
+            .blockingBoxes(entity)
+            .flatMap((box) => boxCells(box.pos, box.size))
+            .map(key),
+        )
+      : undefined;
     for (const cell of boxCells(pos, entity.size)) {
-      if (filled) {
-        this.changed.set(key(cell), entity);
+      if (solid) {
+        const original = cell.map((axis, i) => axis - pos[i]! + entity.pos[i]!) as Vec3;
+        this.changed.set(key(cell), { entity, solid: solid.has(key(original)) });
       } else if (this.occupant(cell) === entity) {
         this.changed.set(key(cell), null);
       }
@@ -124,16 +133,23 @@ class Shadow {
 
   occupant(cell: Readonly<Vec3>): BlockEntity | undefined {
     const changed = this.changed.get(key(cell));
-    return changed === undefined ? this.entities.filling(cell[0], cell[1], cell[2]) : (changed ?? undefined);
+    return changed === undefined ? this.entities.filling(cell[0], cell[1], cell[2]) : changed?.entity;
   }
 
   occupied(cell: Readonly<Vec3>): boolean {
-    return this.terrainSolid(cell[0], cell[1], cell[2]) || this.occupant(cell) !== undefined;
+    const changed = this.changed.get(key(cell));
+    return (
+      this.terrainSolid(cell[0], cell[1], cell[2]) ||
+      (changed === undefined ? this.entities.isSolid(cell[0], cell[1], cell[2]) : changed?.solid === true)
+    );
   }
 
   free(pos: Readonly<Vec3>, size: Readonly<Vec3>): boolean {
     this.readBox?.(pos, size);
-    return boxCells(pos, size).every((cell) => !this.occupied(cell));
+    // Furniture placement reserves its whole box, including holes that do not support a falling item.
+    return boxCells(pos, size).every(
+      (cell) => !this.terrainSolid(cell[0], cell[1], cell[2]) && this.occupant(cell) === undefined,
+    );
   }
 
   /** Whether anything is under a box, so it stands rather than falls. */

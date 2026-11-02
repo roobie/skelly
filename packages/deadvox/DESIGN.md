@@ -95,7 +95,7 @@ read_if:
   - you're changing the quiet-key and noisy-forcing alternatives for locked doors
   - you author the police armoury's roof key or its view from the start
   - you change what vehicles are for, how their parts fit, come off and behave, or what a parked vehicle blocks
-  - you're changing where a dropped, crafted, unpacked or swapped-out item lands, whether a drop checks reach, or what happens with no ground nearby
+  - you change item landing, debug spawns, zombie item emissions, landing reach checks or no-ground outcomes
   - you're changing held-item throwing, its dragged path and duration, range tuning or replay strength
   - you're changing thrown explosives (fuse, blast, fragments, their noise) or where the playtest horde stands
   - you're choosing or changing the building-weathering look and its dilapidation direction
@@ -2752,27 +2752,34 @@ See `src/core/lights.ts`, `wornNightVision`, `src/render/moodOutput.ts`,
 
 ## Dropped items land
 
-A drop comes to rest on the ground below the cell it is put down in, as a thrown
-item does. So do the inputs or result that a craft puts down, the contents an
-unpack spills and the spent battery or cartridge a swap takes out, so nothing is
-left floating where the player was in mid-air. A cell with no ground below it is
-skipped. A drop never refuses for distance: where it lands is not reach-checked,
-so the drop and the throw behave the same, and over a high fall the item lands
-out of reach. The player must still reach what they drop.
+A player put-down, including a debug spawn, lands on ground below its candidate
+cell, as a thrown item does. Craft outputs, unpacked contents and swapped-out
+parts follow the same rule, rather than floating where the player was. Candidates
+without ground are skipped; supported candidates with room take priority. Landing
+is not reach-checked, so a high fall may leave an item out of reach. The player
+must still reach the source item.
 
-When no nearby cell has ground below it, throw, drop, craft, unpack and swap all
-refuse with the same message, and nothing changes: the work and the package stay
-in hand, and the old battery or cartridge stays fitted. One rule and one message
-cover every way of putting an item down, and since nothing is lost, letting items
-fall, adding diagonal cells for a player standing on a corner, or a pocket for
-the spent part can still be chosen later without undoing anything. Ground with no
-room left refuses with its own message. A finished repair puts nothing down, an
-unpack still goes into a pocket with room, and a dead battery is thrown away, so
-none of them needs a landing.
+With no supported candidate, player put-downs share one refusal and change
+nothing, preserving the existing owner and any unfinished work. Supported but
+full candidates have a separate refusal. A finished repair puts nothing down;
+an unpack into a pocket with room and a discarded dead battery need no landing.
+
+Support follows actual solid cells, not furniture reservation boxes: a non-solid
+piece or a shape gap cannot catch a falling item. Placement still reserves whole
+furniture boxes, so correcting support must not admit overlapping pieces. See
+`src/core/furnitureMove.ts`, `Shadow`, and `src/core/blockEntities.ts`,
+`BlockEntities.blockingBoxes`.
+
+Zombie loot and severed parts use the same landing rule when a supported pile has
+room. Their no-ground and all-full outcomes await the non-player policy decision
+under #1532: a player refusal assumes a retained owner, but death or severing has
+already committed. Those outcomes must not acquire a loss or retention rule by
+inference. See `src/game/session.ts`, `placeZombieDrop`.
 
 See `src/core/inventory.ts`, `Inventory.landing` and `Inventory.dropLanding`;
-`src/core/options.ts`, `dropTarget` and `freshDropTarget`; and
-`src/core/itemThrow.ts`, `settleCell` and `putDownRefusal`.
+`src/core/options.ts`, `dropTarget` and `freshDropTarget`;
+`src/core/itemThrow.ts`, `settleCell` and `putDownRefusal`; and
+`src/debug/spawnItem.ts`, `spawnDebugItem`.
 
 ## Held-item throws
 

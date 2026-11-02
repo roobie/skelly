@@ -54,6 +54,7 @@ import { soundVariantKey } from '../core/soundSynth.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
+import { spawnDebugItem } from '../debug/spawnItem.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { worldGrabProgress } from '../render/grabPose.ts';
 import { handlingRotation } from '../render/handlingTurn.ts';
@@ -1567,12 +1568,7 @@ export const startPlay = (
   });
   const captureReplayStartState = (): ReplayStartState => replayPlayState.capture();
 
-  const spawnItem = (type: string): string => {
-    const item = inventory.create(type);
-    return inventory.add(item, { kind: 'pile', pos: feet() })
-      ? `${inventory.name(item)} is at your feet`
-      : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
-  };
+  const spawnItem = (type: string): string => spawnDebugItem(inventory, type, feet());
   const importReplay = (bytes: Uint8Array): void => {
     stashInputReplay(bytes);
     const url = new URL(location.href);

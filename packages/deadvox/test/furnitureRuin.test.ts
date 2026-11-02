@@ -108,6 +108,33 @@ const floating = (inventory: Inventory) =>
 const buried = (inventory: Inventory) =>
   [...inventory.piles.values()].filter(({ pos: [x, y, z] }) => inventory.entities.filling(x, y, z) !== undefined);
 
+it('ruin piles fall past non-solid furniture rather than floating above it', () => {
+  const type = 'ruin_fixture_obstacle';
+  const localRegistry = {
+    ...registry,
+    furniture: new Map(registry.furniture).set(type, {
+      ...registry.furniture.get('ruin_fixture_plank')!,
+      id: type,
+      solid: false,
+      ruin: { debris: [] },
+    }),
+  };
+  const inventory = new Inventory(localRegistry);
+  const root = piece(inventory, 'ruin_fixture_plank', [0, 3, 0]);
+  expect(inventory.furnish({ type, pos: [1, 1, 0], size: [2, 1, 1], facing: 'n' })).toBeDefined();
+  const item = inventory.create('ruin_fixture_item');
+  expect(inventory.add(item, { kind: 'pile', pos: [1, 4, 0] })).toBe(true);
+  const solid = (x: number, y: number, z: number) => terrainSolid(x, y) || (x === 0 && y === 2 && z === 0);
+  expect(ruinFurniture({ ...mover(inventory), terrainSolid: solid }, root)).toBeDefined();
+  const location = inventory.locate(item);
+  expect(location?.kind).toBe('pile');
+  if (location?.kind !== 'pile') {
+    throw new Error('Fixture load was lost');
+  }
+  const [landX, landY, landZ] = location.pile.pos;
+  expect(solid(landX, landY - 1, landZ) || inventory.entities.isSolid(landX, landY - 1, landZ)).toBe(true);
+});
+
 it('reports a ruin only on the blow that brings a piece to its durability', () => {
   const inventory = new Inventory(registry);
   const target = piece(inventory, 'ruin_fixture_box', [0, FLOOR, 0]);

@@ -35,11 +35,23 @@ const registry: Registry = {
   furniture: new Map([
     ...base.furniture,
     [
+      'slide_fixture_small',
+      {
+        ...template,
+        id: 'slide_fixture_small',
+        size: [1, 1, 1] as Vec3,
+        shape: [{ position: [0, 0, 0] as Vec3, size: [1, 1, 1] as Vec3 }],
+        solidFill: 0.1,
+      },
+    ],
+    [
       'slide_fixture',
       {
         ...template,
         id: 'slide_fixture',
         size: [4, 4, 2] as Vec3,
+        shape: [{ position: [0, 0, 0] as Vec3, size: [4, 4, 2] as Vec3 }],
+        solidFill: 0.1,
       },
     ],
   ]),
@@ -48,8 +60,8 @@ const spec = { type: 'slide_fixture', pos: [5, 1, 5] as Vec3, size: [4, 4, 2] as
 const tuning = registry.inventory.get(fixtureIds.player)!.furnitureMove.slide;
 const messages = registry.ui.get(fixtureIds.ui)!.furnitureMoveMessages;
 const player = () => ({ pos: [3, 1, 6] as Vec3, vel: [0, 0, 0] as Vec3, halfWidth: 0.4, height: 3.6, onGround: true });
-const fixture = () => {
-  const inventory = new Inventory(registry);
+const fixture = (content = registry) => {
+  const inventory = new Inventory(content);
   const entity = inventory.furnish(spec)!;
   const mover: FurnitureMover = {
     inventory,
@@ -380,6 +392,29 @@ describe('floor furniture steps', () => {
     expect(session.queue.busy).toBe(false);
   });
 
+  it('reserves non-solid furniture boxes even though they cannot support a falling pile', () => {
+    const type = 'slide_fixture_non_solid';
+    const content = {
+      ...registry,
+      furniture: new Map(registry.furniture).set(type, {
+        ...registry.furniture.get(spec.type)!,
+        id: type,
+        size: [1, 1, 1] as Vec3,
+        solid: false,
+      }),
+    };
+    const { inventory, entity, mover } = fixture(content);
+    expect(
+      inventory.furnish({
+        type,
+        pos: [spec.pos[0] + spec.size[0], spec.pos[1], spec.pos[2]],
+        size: [1, 1, 1],
+        facing: 'n',
+      }),
+    ).toBeDefined();
+    expect(slideFurniture(mover, entity, 'push')).toBe(messages.noRoom);
+  });
+
   it.each(['hole', 'step'] as const)('refuses a %s in the destination floor', (obstacle) => {
     const { entity, mover } = fixture();
     const terrainSolid = (x: number, y: number, z: number) =>
@@ -401,7 +436,7 @@ describe('floor furniture steps', () => {
     expect(slidableFurniture(inventory, entity, mover.blockSize)).toBe(true);
     expect(slidableFurniture(inventory, fixed, mover.blockSize)).toBe(true);
     expect(slideFurniture(mover, fixed, 'push')).toBe(messages.fastened);
-    const small = inventory.furnish({ type: template.id, pos: [5, 1, 12], size: [1, 1, 1], facing: 'n' })!;
+    const small = inventory.furnish({ type: 'slide_fixture_small', pos: [5, 1, 12], size: [1, 1, 1], facing: 'n' })!;
     expect(slidableFurniture(inventory, small, mover.blockSize)).toBe(false);
     expect(slideFurniture(mover, small, 'push')).toBe(messages.carryInstead);
     expect(slideFurniture({ ...mover, stamina: 0 }, entity, 'push')).toBe(messages.slideTired);
@@ -412,8 +447,8 @@ describe('floor furniture steps', () => {
 
   it('settles unsupported pieces and loose items once, leaving a partly supported stack in place', () => {
     const { inventory, entity, mover } = fixture();
-    const top = inventory.furnish({ ...spec, pos: [5, 5, 5], size: [1, 1, 1] })!;
-    const supported = inventory.furnish({ ...spec, pos: [7, 5, 5], size: [1, 1, 1] })!;
+    const top = inventory.furnish({ ...spec, type: 'slide_fixture_small', pos: [5, 5, 5], size: [1, 1, 1] })!;
+    const supported = inventory.furnish({ ...spec, type: 'slide_fixture_small', pos: [7, 5, 5], size: [1, 1, 1] })!;
     const item = inventory.create('canned_beans');
     expect(inventory.add(item, { kind: 'pile', pos: [5, 6, 5] })).toBe(true);
     expect(slideFurniture(mover, entity, 'push')).toBeUndefined();
@@ -424,7 +459,7 @@ describe('floor furniture steps', () => {
 
   it('notifies relocation owners before a committed slide and stack fall, never for a preview or refusal', () => {
     const { inventory, entity, mover } = fixture();
-    const top = inventory.furnish({ ...spec, pos: [5, 5, 5], size: [1, 1, 1] })!;
+    const top = inventory.furnish({ ...spec, type: 'slide_fixture_small', pos: [5, 5, 5], size: [1, 1, 1] })!;
     const relocated: number[] = [];
     const moving = {
       ...mover,

@@ -4,6 +4,7 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { StressCity } from '../src/core/city.ts';
 import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
+import { PILE_GRID } from '../src/core/inventoryScale.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy observes the actual site-to-selector handoff.
 import * as selection from '../src/core/loot.ts';
 import { placementLootIssues } from '../src/core/placementLoot.ts';
@@ -160,8 +161,12 @@ describe('loot source routing', () => {
     expectRoutedColumn(authored, authored.placements);
   });
 
-  it('routes a real session death through Infected admission', () => {
+  it.each([false, true])('lands admitted death and severing drops (full source: %s)', (full) => {
     const registry = fixtureRegistry();
+    const severed = 'fixture_severed_item';
+    registry.items.set(severed, { ...registry.items.get(stock)!, id: severed });
+    const bulk = 'fixture_bulk';
+    registry.items.set(bulk, { ...registry.items.get(stock)!, id: bulk, size: [PILE_GRID.w, PILE_GRID.h] });
     const forbidden = 'fixture_forbidden';
     registry.items.set(forbidden, {
       ...registry.items.get(stock)!,
@@ -177,10 +182,18 @@ describe('loot source routing', () => {
         { item: forbidden, weight: 100 },
       ],
     });
+    const world = new World();
+    const block = registry.blocks.findIndex((entry) => entry.solid);
+    for (let x = 2; x <= 6; x++) {
+      for (let z = -1; z <= 1; z++) {
+        world.setBlock(x, 0, z, block);
+      }
+    }
+    const solid = (x: number, y: number, z: number) => registry.blocks[world.getBlock(x, y, z)]!.solid;
     const session = createSession({
       registry,
-      world: new World(),
-      isSolid: (_x, y) => y < 0,
+      world,
+      isSolid: solid,
       isOpaque: () => false,
       scale: makeScale(0.5),
       seed: 17,
@@ -199,19 +212,38 @@ describe('loot source routing', () => {
       notice: () => undefined,
       onRead: () => undefined,
     });
+    if (full) {
+      for (const y of [1, 4]) {
+        expect(session.inventory.add(session.inventory.create(bulk), { kind: 'pile', pos: [4, y, 0] })).toBe(true);
+      }
+    }
     const base = [...registry.zombies.values()][0]!;
     const id = session.zombies.add(
-      { ...base, id: 'fixture_corpse', loot: table, dismember: { chance: 0, headOnKillChance: 0 } },
-      [4, 1, 0],
+      {
+        ...base,
+        id: 'fixture_corpse',
+        loot: table,
+        dismember: { chance: 0, headOnKillChance: 0 },
+        severedItems: { head: null, torso: null, leftArm: severed, rightArm: null, leftLeg: null, rightLeg: null },
+      },
+      [4, 4, 0],
     );
     session.zombies.detonate({
       blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
-      fragments: { damageKind: 'pierce', origin: [0, 1, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
+      fragments: { damageKind: 'pierce', origin: [0, 4, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });
     expect(session.zombieStore.get(id)).toBeUndefined();
     const items = [...session.inventory.items()].map(({ item }) => item);
     const dropped = items.filter((item) => item.type === stock);
     expect(dropped.length).toBeGreaterThan(0);
     expect(items.some((item) => item.type === forbidden)).toBe(false);
+    expect(items.some((item) => item.type === severed)).toBe(true);
+    const emissions = [...session.inventory.items()].filter(({ item }) => [stock, severed].includes(item.type));
+    expect(
+      emissions.every(
+        ({ location }) =>
+          location.kind === 'pile' && solid(location.pile.pos[0], location.pile.pos[1] - 1, location.pile.pos[2]),
+      ),
+    ).toBe(true);
   });
 });
