@@ -105,6 +105,51 @@ it('a main renderer on one shared seed pool builds only the seeds each model rea
   assert.equal(adaptMainSeedPool(adapted), adapted);
 });
 
+it('main actor overlays keep renamed body-plan selectors separate from mobgen mechanism names', () => {
+  const source = `import type { ZombieModel } from '../core/zombieModels.ts';
+return types.map((type) => {
+  const model = type.model;
+  const v = { model };
+  const variant = v;
+  return {
+    seeded: type.model !== 'amalgam',
+    special: type?.model === 'amalgam',
+    lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model],
+    template: templatesByModel.get(v.model),
+    ragdoll: ragdollContent.models.includes(variant.model),
+  };
+});`;
+  const adapted = adaptMainSeedPool(source);
+  const [declaration, ...body] = adapted.split('\n');
+  const inspect = Function(
+    'types',
+    'bodyPlanModel',
+    'LOOK_AT_PROFILES',
+    'templatesByModel',
+    'ragdollContent',
+    body.join('\n'),
+  );
+  const mechanisms = { humanoid: 'shambler', 'fused-mass': 'amalgam', crawler: 'crawler' };
+  const actual = inspect(
+    Object.keys(mechanisms).map((model) => ({ model })),
+    (plan) => mechanisms[plan],
+    { shambler: 'humanoid-gaze', crawler: 'crawler-gaze' },
+    new Map([
+      ['shambler', 'humanoid-template'],
+      ['amalgam', 'mass-template'],
+      ['crawler', 'crawler-template'],
+    ]),
+    { models: ['shambler', 'amalgam'] },
+  );
+  assert.deepEqual(actual, [
+    { seeded: true, special: false, lookAt: 'humanoid-gaze', template: 'humanoid-template', ragdoll: true },
+    { seeded: false, special: true, lookAt: 'humanoid-gaze', template: 'mass-template', ragdoll: true },
+    { seeded: true, special: false, lookAt: 'crawler-gaze', template: 'crawler-template', ragdoll: false },
+  ]);
+  assert.ok(declaration.includes('bodyPlanModel'));
+  assert.equal(adaptMainSeedPool(adapted), adapted);
+});
+
 it('main imports of an export the branch removed are found, and type-only or kept exports are not', () => {
   const base = `export const kept = 1;
 export const dropped = () => 2;
