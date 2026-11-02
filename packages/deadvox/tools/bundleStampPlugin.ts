@@ -48,7 +48,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
           JSON.stringify(pack.manifest),
         );
         pack.manifest.files.forEach(({ path, kind }, index) => {
-          if (kind !== 'asset') {
+          if (kind === 'content') {
             snapshot.set(resolve(packageRoot, 'src/game', pack.source, path), JSON.stringify(pack.files[index]!.data));
           }
         });
@@ -72,7 +72,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
       Object.assign(config.define, await bundledPackDefines(packs));
     },
     load(id) {
-      // The emitted JSON must be the exact input validated, even if a file is edited during the build.
+      // Emitted content must be the exact input validated, even if a file is edited during the build.
       return snapshot.get(id);
     },
     async generateBundle() {

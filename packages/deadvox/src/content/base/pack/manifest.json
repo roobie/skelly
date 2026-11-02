@@ -1582,6 +1582,14 @@
       "path": "assets/manifest.json"
     },
     {
+      "kind": "json",
+      "path": "presentation/fuel-parts.json"
+    },
+    {
+      "kind": "json",
+      "path": "presentation/item-materials.json"
+    },
+    {
       "kind": "asset",
       "path": "assets/audio/door-close-01.ogg"
     },

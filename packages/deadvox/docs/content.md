@@ -107,9 +107,14 @@ entry replacement survive extraction into topics. A missing dependency, cycle or
 undeclared cross-pack override refuses the stack; filename order must never choose a
 winner between packs. The tier grants no privilege. See `src/core/packAdmission.ts`,
 `PackManifestSchema` and `admitPacks`, and `src/game/bundledPacks.ts`, `bundledPacks`.
+Compiled JSON under a pack root must be declared, so an omitted manifest entry cannot
+silently remove authored content from validation and the game. See
+`tools/readBundledPacks.ts`, `readBundledPacks`.
 
 Each pack's identity covers its manifest and enumerated files, including exporter
 models, so changing a model cannot leave its world's content identity unchanged.
+Non-content JSON and binary assets contribute build-time digests rather than requiring
+unused exporter payloads in the browser. See `tools/readBundledPacks.ts`, `bundledPackDefines`.
 A bundle stamp certifies that exact pack input and the admission implementation;
 a missing or stale stamp requires full reference checks rather than granting trust.
 See `src/core/packAdmission.ts`, `packContentHash`, `src/core/bundleAdmission.ts`,

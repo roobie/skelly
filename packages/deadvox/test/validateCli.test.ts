@@ -28,7 +28,10 @@ const makeMinimalPack = (...fixtureDirs: string[]): string => {
         product: true,
         dependencies: [],
         overrides: [],
-        files: [{ path: 'sounds.json', kind: 'content' }],
+        files: [
+          { path: 'sounds.json', kind: 'content' },
+          { path: 'assets/manifest.json', kind: 'json' },
+        ],
       }),
     );
     writeFileSync(join(base, 'sounds.json'), JSON.stringify({ sounds: [] }));
@@ -55,6 +58,21 @@ describe('validate CLI', () => {
       expect(run.stdout).toContain(
         `FAIL  core content ${requirement.section}: missing required content "${requirement.id}"`,
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an unlisted JSON file anywhere under a bundled pack root', () => {
+    const root = makeMinimalPack();
+    try {
+      const directory = join(root, 'src/content/base/nested');
+      mkdirSync(directory);
+      writeFileSync(join(directory, 'unlisted.json'), JSON.stringify({ items: [] }));
+      const run = validateAt(root);
+      expect(run.status).toBe(1);
+      expect(run.stdout).toContain('fixture.base');
+      expect(run.stdout).toContain('unlisted JSON file nested/unlisted.json');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

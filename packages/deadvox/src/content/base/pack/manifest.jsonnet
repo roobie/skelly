@@ -53,6 +53,9 @@ local assets = import '../assets/manifest.json';
   files: [{ path: name + '.json', kind: 'content' } for name in content] +
          [{ path: 'gungen/' + name + '.model.json', kind: 'json' } for name in guns] +
          [{ path: 'things/' + model.id + '.model.json', kind: 'json' } for model in things] +
-         [{ path: 'things/index.json', kind: 'json' }, { path: 'assets/manifest.json', kind: 'json' }] +
+         [{ path: path, kind: 'json' } for path in [
+           'things/index.json', 'assets/manifest.json',
+           'presentation/fuel-parts.json', 'presentation/item-materials.json',
+         ]] +
          [{ path: file, kind: 'asset' } for file in std.uniq(std.sort(std.flattenArrays([source.files for source in assets.sources])))],
 }
