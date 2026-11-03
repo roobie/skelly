@@ -31,8 +31,8 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
     schemaVersion: SAVE_SCHEMA_VERSION,
     generators: {
       worldgen: 'worldgen-v2',
-      humanoidFigure: 'humanoid-figure-v1',
-      amalgamFigure: 'fused-mass-figure-v1',
+      'bodyPlan.humanoid': 'humanoid-figure-v1',
+      'bodyPlan.fused-mass': 'fused-mass-figure-v1',
     },
     contentPacks: [{ id: 'fixture', version: '1', canonicalHash: '0'.repeat(64) }],
   };

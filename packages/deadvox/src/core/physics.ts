@@ -506,8 +506,8 @@ interface Separation {
 
 /**
  * Pairwise horizontal separation, capped per push and clipped against terrain and supplied blockers. A pair
- * with a shaped body overlaps only where the shape meets the other's box, so the player can stand against an
- * amalgam's flesh.
+ * with a shaped body overlaps only where the shape meets the other's box, so the player can stand against a
+ * fused-mass body's flesh.
  */
 export const separateBodyPair = ({
   first,

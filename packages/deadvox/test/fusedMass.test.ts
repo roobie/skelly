@@ -850,7 +850,7 @@ describe('fused-mass body and combat seam', () => {
     expect(zombieAttackReachMetres(noMembers)).toBe(0);
   });
 
-  it('rejects an amalgam save with a seed that has no rendered variant', () => {
+  it('rejects a fused-mass save with a seed that has no rendered variant', () => {
     const simulation = system();
     const type = registry.zombies.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
@@ -875,7 +875,7 @@ describe('fused-mass body and combat seam', () => {
     );
   });
 
-  it('round-trips an amalgam seed, dynamic regions and rectangular envelope through the save codec', async () => {
+  it('round-trips a fused-mass seed, dynamic regions and rectangular envelope through the save codec', async () => {
     const runtime = createRuntime();
     const id = runtime.zombies.add(registry.zombies.get('amalgam')!, [0, 1, 0]);
     const original = runtime.zombies.store.get(id)!;
@@ -994,20 +994,20 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
 };
 
 describe('attack line', () => {
-  it('lets an amalgam strike a player higher than a standing player when the straight line is within reach', () => {
+  it('lets a fused-mass actor strike a player higher than a standing player when the straight line is within reach', () => {
     const strike = attackAlong({ typeId: 'amalgam', elevation: Math.PI / 4, reachShare: 0.9 });
     expect(strike.riseMetres).toBeGreaterThan(PLAYER.height);
     expect(strike.started).toBe(true);
     expect(strike.hit).toBe(true);
   });
 
-  it('keeps an amalgam from striking when the straight line exceeds reach, though the ground distance is within it', () => {
+  it('keeps a fused-mass actor from striking when the straight line exceeds reach, though the ground distance is within it', () => {
     const strike = attackAlong({ typeId: 'amalgam', elevation: Math.acos(0.9 / 1.2), reachShare: 1.2 });
     expect(strike.horizontalMetres).toBeLessThanOrEqual(strike.reachMetres);
     expect(strike.started).toBe(false);
   });
 
-  it('keeps an amalgam from striking through a roof across the line', () => {
+  it('keeps a fused-mass actor from striking through a roof across the line', () => {
     const strike = attackAlong({ typeId: 'amalgam', elevation: Math.PI / 4, reachShare: 0.9, roof: true });
     expect(strike.roofClearsBody).toBe(true);
     expect(strike.started).toBe(false);

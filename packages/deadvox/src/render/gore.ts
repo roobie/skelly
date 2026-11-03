@@ -271,7 +271,7 @@ export class Gore {
     }
   }
 
-  /** The extra burst as flesh is carved out of an amalgam, on top of the wound's own spray: more for a
+  /** The extra burst as flesh is carved out of a fused-mass body, on top of the wound's own spray: more for a
    * bigger hole. */
   carved(hit: HitImpulse, cells: number): void {
     this.spray(hit, cells * CARVED_CELL_SPRAY_DAMAGE);
@@ -305,7 +305,7 @@ export class Gore {
     }
   }
 
-  /** A large splat on the floor under something wet that came to rest there, such as a chunk of amalgam
+  /** A large splat on the floor under something wet that came to rest there, such as a chunk of fused-mass
    * flesh (its centre, metres). The floor is the top of the block the centre is in. */
   landed(centre: Vec3): void {
     const floor = Math.floor(centre[1] / this.blockSize) * this.blockSize;

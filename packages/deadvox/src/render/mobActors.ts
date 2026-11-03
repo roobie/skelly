@@ -169,7 +169,7 @@ export interface ActorRenderer {
    * limb of debris, not the whole zombie; see MobActorMeshes' own doc comment. */
   setWorld?: (isSolid: RigidWorld['isSolid'], blockSize: number) => void;
   zombieSevered?: (id: EntityId, part: string, hit?: HitImpulse, zombie?: Zombie) => Vec3 | undefined;
-  /** Called when a hit knocks flesh out of an amalgam (src/core/zombies.ts's onCarve, forwarded by play.ts). */
+  /** Called when a hit knocks flesh out of a fused-mass body (src/core/zombies.ts's onCarve, forwarded by play.ts). */
   zombieCarved?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
 }
 
@@ -375,8 +375,8 @@ interface Corpse extends SlotHolder {
 }
 
 /**
- * A carved amalgam's own body mesh, rebuilt without its carved voxels. It reads the same bone-texture row
- * as the amalgam's instance in the shared variant mesh, which is pointed at the all-zero hidden row so
+ * A carved fused-mass body's own mesh, rebuilt without its carved voxels. It reads the same bone-texture row
+ * as the body's instance in the shared variant mesh, which is pointed at the all-zero hidden row so
  * only this one draws.
  */
 interface Wound {
@@ -485,7 +485,7 @@ interface BuiltActorVariant {
 
 const requireFusedMassType = (type: ActorFigureType | undefined): ActorFigureType => {
   if (type?.model !== 'fused-mass') {
-    throw new Error('MobActorMeshes requires the amalgam content type when amalgam actors are enabled');
+    throw new Error('MobActorMeshes requires the fused-mass content type when fused-mass actors are enabled');
   }
   return type;
 };
@@ -494,8 +494,8 @@ const severedRootsFor = (figure: ReturnType<typeof actorFigure>): ReadonlyMap<st
   if (!('manifest' in figure)) {
     return new Map();
   }
-  const amalgam = figure as FusedMassFigure;
-  return new Map(amalgam.manifest.parts.filter((part) => part.severable).map((part) => [part.id, part.rootBone]));
+  const fusedMass = figure as FusedMassFigure;
+  return new Map(fusedMass.manifest.parts.filter((part) => part.severable).map((part) => [part.id, part.rootBone]));
 };
 
 const copyScaledTransform = (source: Transform, target: MutableTransform, scale?: number): void => {
@@ -521,10 +521,10 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
   }
 };
 
-const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ActorFigureType): BuiltActorVariant => {
+const buildActorVariant = (model: ActorModel, seed: number, fusedMassType?: ActorFigureType): BuiltActorVariant => {
   const type =
     model === 'fused-mass'
-      ? requireFusedMassType(amalgamType)
+      ? requireFusedMassType(fusedMassType)
       : { model: FIGURE_VARIANTS[model].bodyPlan, figure: model };
   const figure = actorFigure(type, seed);
   const { genome, realized } = figure;
@@ -547,7 +547,7 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ActorF
 };
 
 /** Each model the types select, with the figure seeds they author for it in authored order, the first
- * `poolSize` of them; the amalgam's seed is fixed. */
+ * `poolSize` of them; the fused-mass seed is fixed. */
 const figureSeedsByModel = (
   zombies: ReadonlyMap<string, DrawnActorType>,
   poolSize: number | undefined,
@@ -572,9 +572,9 @@ const figureSeedsByModel = (
 
 const buildActorVariants = (
   seedsByModel: ReadonlyMap<ActorModel, readonly number[]>,
-  amalgamType?: ActorFigureType,
+  fusedMassType?: ActorFigureType,
 ): BuiltActorVariant[] =>
-  [...seedsByModel].flatMap(([model, seeds]) => seeds.map((seed) => buildActorVariant(model, seed, amalgamType)));
+  [...seedsByModel].flatMap(([model, seeds]) => seeds.map((seed) => buildActorVariant(model, seed, fusedMassType)));
 
 /** Draws zombies as full mobgen actors, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
@@ -636,10 +636,10 @@ export class MobActorMeshes implements ActorRenderer {
     this.blockSize = blockSize;
     this.reveal = options.reveal;
     this.capacity = capacity;
-    const amalgamType = fusedMassTypeOf(options.zombies);
-    this.tentacleGeometry = amalgamType ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
-    this.tentacleTipGeometry = amalgamType ? new SphereGeometry(0.16, 8, 6) : undefined;
-    this.tentacleMaterial = amalgamType
+    const fusedMassType = fusedMassTypeOf(options.zombies);
+    this.tentacleGeometry = fusedMassType ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
+    this.tentacleTipGeometry = fusedMassType ? new SphereGeometry(0.16, 8, 6) : undefined;
+    this.tentacleMaterial = fusedMassType
       ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
       : undefined;
     const templatesByModel = new Map(
@@ -647,7 +647,7 @@ export class MobActorMeshes implements ActorRenderer {
     );
 
     const t0 = performance.now();
-    const built = buildActorVariants(figureSeedsByModel(options.zombies, options.poolSize), amalgamType);
+    const built = buildActorVariants(figureSeedsByModel(options.zombies, options.poolSize), fusedMassType);
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
@@ -695,7 +695,7 @@ export class MobActorMeshes implements ActorRenderer {
     // one fetches the same bone matrices (the gore varying it declares is simply unused).
     const depthMaterial = new MeshDepthMaterial();
     this.depthMaterial = depthMaterial;
-    const interiorColor = amalgamType?.carving?.interiorColor;
+    const interiorColor = fusedMassType?.carving?.interiorColor;
     this.fleshInterior = interiorColor === undefined ? undefined : new Color(interiorColor);
     this.fleshChunks = new FleshChunks(
       this.group,
@@ -1158,17 +1158,17 @@ export class MobActorMeshes implements ActorRenderer {
     }
     const figure = actorFigure(zombie.type, zombie.figureSeed);
     if (zombie.type.model !== 'fused-mass') {
-      throw new Error('Amalgam tentacle requires the amalgam figure');
+      throw new Error('Fused-mass tentacle requires the fused-mass figure');
     }
-    const amalgam = figure as FusedMassFigure;
-    const transforms = boneTransforms(amalgam.realized.body.bones, lastPose);
-    const partRoots = new Map(amalgam.manifest.parts.map((part) => [part.id, part.rootBone]));
+    const fusedMass = figure as FusedMassFigure;
+    const transforms = boneTransforms(fusedMass.realized.body.bones, lastPose);
+    const partRoots = new Map(fusedMass.manifest.parts.map((part) => [part.id, part.rootBone]));
     const hidden = severedBoneSet(
-      amalgam.realized.body.bones,
+      fusedMass.realized.body.bones,
       zombie.severed.map((part) => partRoots.get(part) ?? part),
     );
     const start = fusedMassCoreInteriorAnchor({
-      figure: amalgam,
+      figure: fusedMass,
       transforms,
       hidden,
       yaw: rotY((placement.yaw * 180) / Math.PI),
@@ -1245,7 +1245,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /**
-   * Brings an amalgam's wound mesh up to date with its carved cells: built on its first hole, rebuilt when
+   * Brings a fused-mass body's wound mesh up to date with its carved cells: built on its first hole, rebuilt when
    * more are carved. Its shared instance then reads the hidden row, so only the wound mesh draws the body.
    */
   private syncWound(id: EntityId, holder: SlotHolder, carved: readonly number[]): void {
@@ -1283,7 +1283,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   /**
-   * Called when a hit knocks flesh out of an amalgam (src/core/zombies.ts's onCarve, forwarded by play.ts).
+   * Called when a hit knocks flesh out of a fused-mass body (src/core/zombies.ts's onCarve, forwarded by play.ts).
    * Rebuilds its wound mesh — a corpse's too, since the shot that kills it carves after its death — and
    * throws the knocked-out cells as one chunk of flesh along the strike.
    */
@@ -2338,14 +2338,14 @@ export class MobActorMeshes implements ActorRenderer {
     const halfWidth = zombie.body.halfWidth * this.blockSize;
     const halfDepth = (zombie.body.halfDepth ?? zombie.body.halfWidth) * this.blockSize;
     const height = zombie.body.height * this.blockSize;
-    const amalgam = zombie.type.model === 'fused-mass';
+    const isFusedMass = zombie.type.model === 'fused-mass';
     return {
       center: new Vector3(
         placement.worldPos[0],
-        placement.worldPos[1] + (amalgam ? height / 2 : PELVIS_HEIGHT_M),
+        placement.worldPos[1] + (isFusedMass ? height / 2 : PELVIS_HEIGHT_M),
         placement.worldPos[2],
       ),
-      radius: amalgam ? Math.hypot(halfWidth, halfDepth, height / 2) : BOUNDING_RADIUS_M,
+      radius: isFusedMass ? Math.hypot(halfWidth, halfDepth, height / 2) : BOUNDING_RADIUS_M,
     };
   }
 

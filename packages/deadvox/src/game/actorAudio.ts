@@ -26,13 +26,13 @@ const debugVoicePitch = (search: string, param: 'voicePitch' | 'voicePitchLarge'
 };
 
 /**
- * The shambler voice-pitch law, calibrated on the bodies of the authored figure pool (`figureSeedPool`):
+ * The humanoid voice-pitch law, calibrated on the bodies of the authored figure pool (`figureSeedPool`):
  * a falling power law between its smallest and tallest bodies, clamped around the smallest body's old-law pitch.
  * The smallest body is pitched at its anchor multiple of the old law and the tallest keeps its old-law pitch.
  */
 export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoiceTuning) => {
   if (figureSeeds.length === 0) {
-    throw new Error('The shambler voice law needs at least one authored figure seed');
+    throw new Error('The humanoid voice law needs at least one authored figure seed');
   }
   const oldLawPitch = (height: number): number => Math.sqrt(tuning.oldLawReferenceHeightMetres / height);
   const poolHeights = figureSeeds.map((seed) => bodyHeight(humanoidFigure(seed).realized.body));

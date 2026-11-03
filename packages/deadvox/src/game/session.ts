@@ -553,7 +553,7 @@ export interface SessionOptions {
     onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
     onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
-    /** A hit knocked flesh out of an amalgam (its `carved` already lists `cells`). */
+    /** A hit knocked flesh out of a fused-mass body (its `carved` already lists `cells`). */
     onCarve?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
     /** A zombie became incapacitated but remains in the store and may be revived later. */
     onIncapacitated?: (id: EntityId, zombie: Zombie) => void;

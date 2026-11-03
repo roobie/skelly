@@ -1070,7 +1070,7 @@ describe('MobActorMeshes', () => {
     }
   });
 
-  it('draws a carved amalgam once, from a wound mesh with flesh walls, and drops it with the amalgam', () => {
+  it('draws a carved fused-mass body once, from a wound mesh with flesh walls, and drops it with the actor', () => {
     const amalgam = registry.zombies.get('amalgam')!;
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
@@ -1759,7 +1759,7 @@ describe('MobActorMeshes dismemberment', () => {
       renderer.dispose();
     }
   });
-  it('launches a manifest-owned amalgam part with blood from its shared severing presentation', () => {
+  it('launches a manifest-owned fused-mass part with blood from its shared severing presentation', () => {
     const type = registry.zombies.get('amalgam')!;
     const renderer = new MobActorMeshes(0.5, 4, { zombies: new Map([[type.id, type]]), poolSize: 1 });
     const gore = new Gore(0.5, WORLD_GRAVITY, GORE_TUNING_FIXTURE);

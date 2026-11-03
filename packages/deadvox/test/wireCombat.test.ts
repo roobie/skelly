@@ -171,7 +171,7 @@ it('blocks the shambler swing and piercing bite through wire even when their rea
   }
 });
 
-it('admits the amalgam tentacle thrust only when its reach clears the wire threshold', () => {
+it('admits the fused-mass tentacle thrust only when its reach clears the wire threshold', () => {
   for (const admits of [false, true]) {
     const registry = baseRegistry();
     const world = new World();

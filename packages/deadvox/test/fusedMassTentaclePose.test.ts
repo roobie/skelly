@@ -192,7 +192,7 @@ describe('fused-mass attack tentacle pose', () => {
     );
   });
 
-  it('stays retracted when the amalgam has no remaining attack reach', () => {
+  it('stays retracted when the fused-mass body has no remaining attack reach', () => {
     const pose = fusedMassTentaclePose({
       start: [0, 0, 0],
       target: [1, 0, 0],

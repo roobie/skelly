@@ -720,7 +720,7 @@ const zombie = obj({
   staggerSimSeconds: nonNegative,
   /** Bone ids severed so far — cumulative, never shrinks; see Zombie.severed's own doc comment. */
   severed: arr(str()),
-  /** Amalgam voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
+  /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
   carved: arr(nonNegativeInt),
 });
 const playerState = obj({
