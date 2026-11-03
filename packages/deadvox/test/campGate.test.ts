@@ -477,8 +477,8 @@ describe('camp gate templates', () => {
       }
       return y <= groundBlock;
     };
-    const zombies = [...registry.actors.values()];
-    expect(zombies.length).toBeGreaterThan(0);
+    const actors = [...registry.actors.values()];
+    expect(actors.length).toBeGreaterThan(0);
 
     const crossesOpening = (dimensions: { halfWidth: number; halfDepth: number; height: number }): boolean => {
       const body = {
@@ -496,7 +496,7 @@ describe('camp gate templates', () => {
       return body.pos[0]! + body.halfWidth < wall.origin[0];
     };
 
-    for (const type of zombies) {
+    for (const type of actors) {
       const dimensions = actorBodyDimensions(type, BLOCK_SIZE);
       const halfDepth = dimensions.halfDepth ?? dimensions.halfWidth;
       const fits = dimensions.height <= opening.height && halfDepth * 2 <= laneWidth;

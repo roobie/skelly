@@ -69,16 +69,16 @@ const addWalker = ({
   type?: Actor['type'];
 }) => {
   const id = system.add(type, position, [1, 0, 0]);
-  const zombie = store.get(id)!;
-  zombie.body.onGround = true;
-  zombie.mode = mode;
-  zombie.modeTimer = 100;
-  zombie.lastPerceived = [40, position[1], position[2]];
-  zombie.strollHeading = [1, 0, 0];
-  zombie.horizontalSpeed = mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
-  zombie.lurchValue = 1;
-  zombie.stumbleFactor = 1;
-  return zombie;
+  const actor = store.get(id)!;
+  actor.body.onGround = true;
+  actor.mode = mode;
+  actor.modeTimer = 100;
+  actor.lastPerceived = [40, position[1], position[2]];
+  actor.strollHeading = [1, 0, 0];
+  actor.horizontalSpeed = mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
+  actor.lurchValue = 1;
+  actor.stumbleFactor = 1;
+  return actor;
 };
 
 const run = (system: ActorSystem, seconds: number): void => {
@@ -98,16 +98,16 @@ const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Actor['type
 describe('actor footsteps', () => {
   it('uses real grounded travel distance, stays silent while still, and steps more often while chasing', () => {
     const { system, store, played } = makeWorld(sense([100, 1, 100], [-1, 0, 0]));
-    const zombie = system.add(
+    const actor = system.add(
       { ...SHAMBLER, id: 'fixture_walker', footstepSound: 'fixture_steps' },
       [2, 1, 2],
       [1, 0, 0],
     );
-    store.get(zombie)!.body.onGround = true;
+    store.get(actor)!.body.onGround = true;
     run(system, 2);
     expect(played).toHaveLength(0);
 
-    const walker = store.get(zombie)!;
+    const walker = store.get(actor)!;
     walker.mode = 'stroll';
     walker.modeTimer = 100;
     walker.strollHeading = [1, 0, 0];
@@ -115,7 +115,7 @@ describe('actor footsteps', () => {
     run(system, 2);
     const strollSteps = played.length;
     expect(strollSteps).toBeGreaterThan(0);
-    const stopped = store.get(zombie)!;
+    const stopped = store.get(actor)!;
     stopped.mode = 'idle';
     stopped.horizontalSpeed = 0;
     stopped.body.vel[0] = 0;

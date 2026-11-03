@@ -4,7 +4,7 @@ import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { posedActor } from '../src/core/actorPose.ts';
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
-const { actors: zombies } = readJson<{
+const { actors } = readJson<{
   actors: {
     id: string;
     model: string;
@@ -36,16 +36,16 @@ const figureForModel = (model: string, bodyScale?: number) =>
 
 describe('zombie type content', () => {
   it('poses every zombie with the model selected by its type data', () => {
-    expect(zombies.length).toBeGreaterThan(0);
-    for (const zombie of zombies) {
-      expect(figureForModel(figureVariantOf(zombie), zombie.bodyScale).genome.template).toBe(
-        bodyPlanModel(figureVariantOf(zombie)),
+    expect(actors.length).toBeGreaterThan(0);
+    for (const actor of actors) {
+      expect(figureForModel(figureVariantOf(actor), actor.bodyScale).genome.template).toBe(
+        bodyPlanModel(figureVariantOf(actor)),
       );
     }
   });
 
   it('references registered vocal sounds for every zombie type', () => {
-    const events = zombies.flatMap(({ sounds }) => Object.values(sounds));
+    const events = actors.flatMap(({ sounds }) => Object.values(sounds));
     expect(events.length).toBeGreaterThan(0);
     for (const event of events) {
       expect(soundById.has(event)).toBe(true);

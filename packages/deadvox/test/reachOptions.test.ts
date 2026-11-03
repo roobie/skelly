@@ -199,12 +199,12 @@ const reachTargets = {
     return (_player, view) => [inventory.canReach(pos), view().entries.some((entry) => entry.item === item)];
   },
   body: (_inventory, pos) => {
-    const zombie = {
+    const actor = {
       incapacitated: true,
       type: [...registry.actors.values()].find((definition) => definition.downed)!,
       body: { pos: [pos[0] + 0.5, pos[1], pos[2] + 0.5], halfWidth: 0.4, height: 0.5 },
     } as Actor;
-    return (player) => [downedBodyPlan(player, zombie, 'finish-off').ok];
+    return (player) => [downedBodyPlan(player, actor, 'finish-off').ok];
   },
 } satisfies Record<
   string,

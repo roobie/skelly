@@ -515,16 +515,16 @@ describe('game audio playback', () => {
     let blocked = false;
     const solidAt: SolidAt = (x, y, z) => blocked && x === 4 && y === 2 && z === 0;
     const { audio, play, context, isSolid } = setup(solidAt);
-    const zombie: Vec3 = [0.5, 1.5, 0.5];
-    const listener: Vec3 = [zombie[0], zombie[1] + 1.3, zombie[2]];
+    const actor: Vec3 = [0.5, 1.5, 0.5];
+    const listener: Vec3 = [actor[0], actor[1] + 1.3, actor[2]];
     const radiusMetres = 12;
     const distanceMetres = (radiusMetres * shambler.hearing * (1 + senseTuning.wall.hearingRangeScale)) / 2;
     const source: Vec3 = [listener[0] + distanceMetres, listener[1], listener[2]];
-    const noise = { id: 1, pos: [source[0], zombie[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
+    const noise = { id: 1, pos: [source[0], actor[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
     const hear = (seed: number) =>
       hearVocalNoise({
         def: shambler,
-        from: zombie,
+        from: actor,
         noise,
         time: 1,
         blockSize: 1,

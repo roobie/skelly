@@ -37,10 +37,10 @@ const standing = (position: Vec3, facing: Vec3) => {
     hurtPlayer: () => undefined,
   });
   const id = system.add(registry.actors.get('shambler')!, position, facing);
-  return { system, id, zombie: system.store.get(id)! };
+  return { system, id, actor: system.store.get(id)! };
 };
 
-const posed = (zombie: Actor, id: number) => posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+const posed = (actor: Actor, id: number) => posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
 
 const expectedVertices = (aim: NonNullable<ReturnType<ActorSystem['aimAt']>>) => {
   const edges = [
@@ -78,8 +78,8 @@ const expectedVertices = (aim: NonNullable<ReturnType<ActorSystem['aimAt']>>) =>
 
 describe('debug melee aim overlay', () => {
   it('draws exactly the aimed posed region boxes in range/out-of-range colors and clears on no target', () => {
-    const { system, id, zombie } = standing([4, 1, 4], [0, 0, -1]);
-    const headBox = posed(zombie, id).head[0]!;
+    const { system, id, actor } = standing([4, 1, 4], [0, 0, -1]);
+    const headBox = posed(actor, id).head[0]!;
     const origin: Vec3 = [headBox.center[0], headBox.center[1] + 0.45 / BLOCK_SIZE, headBox.center[2]];
     const aim = system.aimAt(origin, [0, -1, 0], FISTS_MELEE)!;
     expect(aim.region).toBe('head');
@@ -97,9 +97,9 @@ describe('debug melee aim overlay', () => {
       expect(Math.abs(coordinates[index % 3]! - value)).toBeLessThanOrEqual(0.001);
     });
 
-    const { system: distantSystem, id: distantId, zombie: distantZombie } = standing([6 / BLOCK_SIZE, 1, 0], [1, 0, 0]);
+    const { system: distantSystem, id: distantId, actor: distantActor } = standing([6 / BLOCK_SIZE, 1, 0], [1, 0, 0]);
     const distantOrigin: Vec3 = [0, 1 + PLAYER.eye / BLOCK_SIZE, 0];
-    const distantHead = posed(distantZombie, distantId).head[0]!;
+    const distantHead = posed(distantActor, distantId).head[0]!;
     const distantDirection: Vec3 = [
       distantHead.center[0] - distantOrigin[0],
       distantHead.center[1] - distantOrigin[1],

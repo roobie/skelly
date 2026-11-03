@@ -332,8 +332,8 @@ describe('long-gun skill ownership', () => {
     const before = session.character.snapshotState();
     expect(session.firearms.fire(shot)).toBe(false);
     expect(session.character.snapshotState()).toEqual(before);
-    const zombieType = [...content.actors.values()][0]!;
-    session.actors.add(zombieType, [0, 1, -3], [0, 0, 1]);
+    const actorType = [...content.actors.values()][0]!;
+    session.actors.add(actorType, [0, 1, -3], [0, 0, 1]);
     const hits = vi.spyOn(session.actors, 'firePellets');
     expect(session.firearms.fire({ ...shot, ready: true })).toBe(true);
     expect(hits).toHaveReturnedWith(expect.objectContaining({ hits: expect.any(Number) }));
@@ -655,18 +655,18 @@ const FRAGILE: ActorDef = {
 };
 
 /** Adds a shambler facing -z and downs it with a blow to the chest, as the player would. */
-const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie: Actor } => {
+const downShambler = (session: Session, position: Vec3): { id: EntityId; actor: Actor } => {
   const id = session.actors.add(FRAGILE, position, [0, 0, -1]);
-  const zombie = session.actors.store.get(id)!;
+  const actor = session.actors.store.get(id)!;
   const { blockSize } = makeScale(0.5);
-  const chest = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, blockSize)).torso.find(
+  const chest = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, blockSize)).torso.find(
     (box) => box.bone === 'chest',
   )!.center;
   const origin: Vec3 = [chest[0], chest[1], chest[2] + 0.45 / blockSize];
-  if (session.actors.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !zombie.incapacitated) {
+  if (session.actors.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !actor.incapacitated) {
     throw new Error('The blow did not down the shambler');
   }
-  return { id, zombie };
+  return { id, actor };
 };
 
 describe('attacker modifiers', () => {
@@ -710,10 +710,10 @@ describe('attacker modifiers', () => {
       const runtime = makeRuntime({ content });
       const { session } = runtime;
       const id = session.actors.add(type, [1.2, 1, 0], [-1, 0, 0]);
-      const zombie = session.actors.store.get(id)!;
-      expect(zombie.modifiers).toEqual([]);
+      const actor = session.actors.store.get(id)!;
+      expect(actor.modifiers).toEqual([]);
       if (boost) {
-        zombie.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
+        actor.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
       }
       const hit = vi.spyOn(session.sim, 'hit');
       const maxFrames = Math.ceil((type.attack.windupSimSeconds + 2) * 60);
@@ -913,12 +913,12 @@ describe('session movement consequences', () => {
     const corridor = (x: number, y: number): boolean => y === 0 || ((x === -1 || x === 2) && y >= 1 && y <= 4);
     const runtime = makeRuntime({ isSolid: corridor, spawn: [1, 1, 5] });
     const { session } = runtime;
-    const { zombie } = downShambler(session, [1, 1, 1]);
-    expect(2).toBeLessThan(2 * (session.body.halfWidth + zombie.body.halfWidth));
+    const { actor } = downShambler(session, [1, 1, 1]);
+    expect(2).toBeLessThan(2 * (session.body.halfWidth + actor.body.halfWidth));
 
     runtime.setIntent({ ...IDLE, forward: 1, walk: true });
     runtime.advance(360);
-    expect(session.body.pos[2]).toBeLessThan(zombie.body.pos[2] - zombie.body.halfWidth - session.body.halfWidth);
+    expect(session.body.pos[2]).toBeLessThan(actor.body.pos[2] - actor.body.halfWidth - session.body.halfWidth);
   });
 
   it('closes a door over a downed shambler lying in the doorway', () => {
@@ -926,8 +926,8 @@ describe('session movement consequences', () => {
     const { session } = runtime;
     const door = session.entities.add({ type: DOOR_TYPE, pos: [0, 1, -3], size: [2, 4, 1], facing: 'n' })!;
     session.entities.setOpen(door, true);
-    const { zombie } = downShambler(session, [1, 1, -2.5]);
-    expect(session.entities.bodyIntersects(door, zombie.body)).toBe(true);
+    const { actor } = downShambler(session, [1, 1, -2.5]);
+    expect(session.entities.bodyIntersects(door, actor.body)).toBe(true);
 
     const { handlingSimSeconds } = registry.furniture.get(DOOR_TYPE)!.door!;
     session.queue.enqueueAction(DOOR_ACTION, 'Door', handlingSimSeconds, { entityUid: door.uid, closing: true });
@@ -1228,14 +1228,14 @@ describe('clearing a downed shambler', () => {
   it('dismembers it with a tool of the quality, leaving its arms and head behind', () => {
     const runtime = makeRuntime();
     const { session } = runtime;
-    const { id, zombie } = downShambler(session, [0, 1, -2]);
+    const { id, actor } = downShambler(session, [0, 1, -2]);
     const { quality, level, simSeconds } = downed.dismember;
     const tool = [...registry.items.values()].find((item) => (item.tool?.qualities[quality] ?? 0) >= level)!;
     expect(session.inventory.add(session.inventory.create(tool.id), { kind: 'hand', side: 'right' })).toBe(true);
     expect(session.clearDownedBody(id, 'dismember')).toBeUndefined();
     runtime.advance(framesFor(simSeconds));
     expect(session.actors.store.get(id)).toBeUndefined();
-    expect(zombie.severed).toEqual(expect.arrayContaining(['upperArm.L', 'upperArm.R', 'head']));
+    expect(actor.severed).toEqual(expect.arrayContaining(['upperArm.L', 'upperArm.R', 'head']));
     expect(groundItems(session)).toHaveLength(3);
   });
 
@@ -1249,7 +1249,7 @@ describe('clearing a downed shambler', () => {
       'walked out of reach',
       (runtime: Runtime) => runtime.setIntent({ ...IDLE, forward: -1 }),
       // Still running as it is about to end, with the body beyond reach.
-      (session: Session, zombie: Actor) => {
+      (session: Session, actor: Actor) => {
         expect(session.queue.busy).toBe(true);
         const player = {
           inventory: session.inventory,
@@ -1257,20 +1257,20 @@ describe('clearing a downed shambler', () => {
           blockSize: makeScale(0.5).blockSize,
           clock: session.sim.clock,
         };
-        expect(bodyDistance(player, zombie.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
+        expect(bodyDistance(player, actor.body)).toBeGreaterThan(reachTuning(session.inventory.registry).reachMetres);
       },
     ],
   ])('leaves the body lying there when finishing it off is %s', (_, interrupt, premise) => {
     const runtime = makeRuntime();
     const { session } = runtime;
-    const { id, zombie } = downShambler(session, [0, 1, -2]);
+    const { id, actor } = downShambler(session, [0, 1, -2]);
     expect(session.clearDownedBody(id, 'finish-off')).toBeUndefined();
     interrupt(runtime);
     const beforeEnd = Math.floor(downed.finishOff.simSeconds * 60) - 1;
     runtime.advance(beforeEnd);
-    premise(session, zombie);
+    premise(session, actor);
     runtime.advance(framesFor(downed.finishOff.simSeconds) - beforeEnd);
-    expect(session.actors.store.get(id)).toBe(zombie);
-    expect(zombie.incapacitated).toBe(true);
+    expect(session.actors.store.get(id)).toBe(actor);
+    expect(actor.incapacitated).toBe(true);
   });
 });

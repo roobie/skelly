@@ -24,7 +24,7 @@ interface Spawned {
   type: string;
   pos: Vec3;
 }
-const zombieSystemFor = (spawned: Spawned[]): ActorSystem =>
+const actorSystemFor = (spawned: Spawned[]): ActorSystem =>
   ({
     add: (type: ActorDef, pos: Vec3) => {
       spawned.push({ type: type.id, pos });
@@ -57,7 +57,7 @@ const campAmalgams = () => {
 };
 
 const load = (spawner: ActorSpawner, spawned: Spawned[], cx: number, cz: number) => {
-  spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystemFor(spawned) });
+  spawner.onColumn({ cx, cz, site, registry, zombies: actorSystemFor(spawned) });
 };
 
 describe('authored zombie spawn persistence', () => {
@@ -106,7 +106,7 @@ describe('authored zombie spawn persistence', () => {
         type === 'brute_shambler' && x >= x0 && x < x0 + width && z >= z0 && z < z0 + depth && y < grade;
       const loadAll = (spawner: ActorSpawner, spawned: Spawned[]) => {
         for (const [cx, cz] of columns.values()) {
-          spawner.onColumn({ cx, cz, site: city, registry, zombies: zombieSystemFor(spawned) });
+          spawner.onColumn({ cx, cz, site: city, registry, zombies: actorSystemFor(spawned) });
         }
       };
       const beforeSave = new ActorSpawner();
@@ -132,18 +132,18 @@ describe('authored zombie spawn persistence', () => {
         .filter(({ type }) => type === MARKER_TYPE)
         .map(({ type, pos }) => ({ type, pos }));
       const beforeSave = new ActorSpawner();
-      const savedZombies: Spawned[] = [];
-      load(beforeSave, savedZombies, cx, cz);
-      expect(savedZombies.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
+      const savedActors: Spawned[] = [];
+      load(beforeSave, savedActors, cx, cz);
+      expect(savedActors.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
       const savedLedger = JSON.parse(JSON.stringify(beforeSave.snapshotState())) as readonly string[];
 
       const afterLoad = new ActorSpawner();
       afterLoad.restoreState(savedLedger);
-      const restoredZombies = [...savedZombies];
-      load(afterLoad, restoredZombies, cx, cz);
+      const restoredActors = [...savedActors];
+      load(afterLoad, restoredActors, cx, cz);
 
       expect(afterLoad.snapshotState()).toEqual(savedLedger);
-      expect(restoredZombies.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
+      expect(restoredActors.filter(({ type }) => type === MARKER_TYPE)).toEqual(expected);
     }
   });
 });

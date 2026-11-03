@@ -1325,29 +1325,29 @@ describe('input replay', () => {
 
   it("replays a recorded column load's spawn and furniture under compression", async () => {
     const runtime = createRuntime();
-    const firstZombieEntry = runtime.zombies.store.entries().next().value;
-    if (!firstZombieEntry) {
+    const firstActorEntry = runtime.zombies.store.entries().next().value;
+    if (!firstActorEntry) {
       throw new Error('Replay fixture has no zombie');
     }
-    const [zombieId, firstZombie] = firstZombieEntry;
+    const [actorId, firstActor] = firstActorEntry;
     const restRefusal = runtime.sim.actions.startRest('sleep', -10, 1);
     if (restRefusal) {
       throw new Error(`Replay fixture could not start compression: ${restRefusal}`);
     }
     const start = capture(runtime);
-    const cx = toChunk(Math.floor(firstZombie.body.pos[0]));
-    const cz = toChunk(Math.floor(firstZombie.body.pos[2]));
-    const targetTick = BACKGROUND_ACTOR_SLICE_COUNT + (zombieId % BACKGROUND_ACTOR_SLICE_COUNT);
-    const generatedAroundZombie: ReplayColumnUpdate[] = [];
+    const cx = toChunk(Math.floor(firstActor.body.pos[0]));
+    const cz = toChunk(Math.floor(firstActor.body.pos[2]));
+    const targetTick = BACKGROUND_ACTOR_SLICE_COUNT + (actorId % BACKGROUND_ACTOR_SLICE_COUNT);
+    const generatedAroundActor: ReplayColumnUpdate[] = [];
     for (let dz = -1; dz <= 1; dz++) {
       for (let dx = -1; dx <= 1; dx++) {
-        generatedAroundZombie.push([cx + dx, cz + dz, true]);
+        generatedAroundActor.push([cx + dx, cz + dz, true]);
       }
     }
-    const spawnColumn = generatedAroundZombie.find(
+    const spawnColumn = generatedAroundActor.find(
       ([columnX, columnZ]) => (columnX !== cx || columnZ !== cz) && fixtureSite.actorsIn(columnX, columnZ).length > 0,
     );
-    const furnitureColumn = generatedAroundZombie.find(
+    const furnitureColumn = generatedAroundActor.find(
       ([columnX, columnZ]) =>
         (columnX !== cx || columnZ !== cz) && fixtureSite.furnitureIn(columnX, columnZ).length > 0,
     );
@@ -1357,17 +1357,17 @@ describe('input replay', () => {
     const source = recordActiveSession(start, recorder, {
       columns: {
         initial: [],
-        updatesAtTick: (tick) => (tick === targetTick ? generatedAroundZombie : []),
+        updatesAtTick: (tick) => (tick === targetTick ? generatedAroundActor : []),
       },
       initialColumns: [[cx + 10, cz + 10]],
       frameDts: [1 / 60],
     });
     expect(
       [...source.zombies.store.entries()].some(
-        ([, zombie]) =>
+        ([, actor]) =>
           spawnColumn &&
-          toChunk(Math.floor(zombie.body.pos[0])) === spawnColumn[0] &&
-          toChunk(Math.floor(zombie.body.pos[2])) === spawnColumn[1],
+          toChunk(Math.floor(actor.body.pos[0])) === spawnColumn[0] &&
+          toChunk(Math.floor(actor.body.pos[2])) === spawnColumn[1],
       ),
     ).toBe(true);
     expect(
@@ -1849,8 +1849,8 @@ describe('input replay', () => {
   });
 
   it('replays a furniture lift and put-down to the same piece, place and fingerprint', async () => {
-    const [zombieCx, zombieCz] = fixtureZombieColumn;
-    const column: [number, number] = [zombieCx + 10, zombieCz + 10];
+    const [actorCx, actorCz] = fixtureZombieColumn;
+    const column: [number, number] = [actorCx + 10, actorCz + 10];
     const probe = createRuntime(undefined, false, [column]);
     const crate = probe.inventory.registry.furniture.get('crate')!;
     const [width, , depth] = crate.size;

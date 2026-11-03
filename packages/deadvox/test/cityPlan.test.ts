@@ -225,8 +225,8 @@ describe('one finished city plan', () => {
         scenario,
       });
       const site = new CitySite(73, cityRegistry, scale, plan);
-      const { zombies, hordes } = scenarioCityPopulation(site, scenario);
-      return { spawns: [...zombies.values()].flat(), hordes: [...hordes.values()].flat() };
+      const { zombies: actors, hordes } = scenarioCityPopulation(site, scenario);
+      return { spawns: [...actors.values()].flat(), hordes: [...hordes.values()].flat() };
     };
 
     it('spawns each composed event marker once', () => {
@@ -332,9 +332,9 @@ describe('one finished city plan', () => {
       const site = new CitySite(73, testRegistry, scale, plan);
       const markers = placedSpawns(plan.composition!.events[0]!);
       expect(markers.length).toBeGreaterThan(0);
-      const { zombies } = scenarioCityPopulation(site, scenario);
+      const { zombies: actors } = scenarioCityPopulation(site, scenario);
       for (const marker of markers) {
-        const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
+        const spawns = actors.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
         expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
       }
     });

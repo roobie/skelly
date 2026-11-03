@@ -105,9 +105,9 @@ const findRegionRay = ({
 };
 
 const findMemberRay = (simulation: ActorSystem, id: number, distanceMetres = 3) => {
-  const zombie = simulation.store.get(id)!;
-  const regions = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
-  for (const member of activeFusedMassMembers(zombie)) {
+  const actor = simulation.store.get(id)!;
+  const regions = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
+  for (const member of activeFusedMassMembers(actor)) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
       if (ray) {
@@ -374,14 +374,14 @@ describe('fused-mass body and combat seam', () => {
           checkedAmalgamHeading ||= alignment !== undefined;
         }
       }
-      const zombie = simulation.store.get(id)!;
-      expect(zombie.mode).toBe('chase');
+      const actor = simulation.store.get(id)!;
+      expect(actor.mode).toBe('chase');
       if (type.id === 'amalgam') {
         expect(checkedAmalgamHeading).toBe(true);
       }
       return {
         remaining:
-          Math.hypot(seenPlayer.pos[0] - zombie.body.pos[0], seenPlayer.pos[2] - zombie.body.pos[2]) * BLOCK_SIZE,
+          Math.hypot(seenPlayer.pos[0] - actor.body.pos[0], seenPlayer.pos[2] - actor.body.pos[2]) * BLOCK_SIZE,
         firstStepAlignment,
       };
     };
@@ -405,15 +405,15 @@ describe('fused-mass body and combat seam', () => {
     );
     const id = combat.add(amalgam, [0, 1, 0], [0, 0, 1]);
     combat.tick(1 / 60);
-    const zombie = combat.store.get(id)!;
-    expect(zombie.attackWindup).toBeGreaterThan(0);
+    const actor = combat.store.get(id)!;
+    expect(actor.attackWindup).toBeGreaterThan(0);
     expect(damage).toEqual([]);
-    const beforeResolutionTicks = Math.floor(zombie.attackWindup * 30);
+    const beforeResolutionTicks = Math.floor(actor.attackWindup * 30);
     for (let tick = 0; tick < beforeResolutionTicks; tick++) {
       combat.tick(1 / 60);
     }
     expect(damage).toEqual([]);
-    const resolutionLimit = Math.ceil(zombie.type.attack.windupSimSeconds * 60) + 60;
+    const resolutionLimit = Math.ceil(actor.type.attack.windupSimSeconds * 60) + 60;
     let resolvedAfterWindup = false;
     for (let tick = 0; tick < resolutionLimit && damage.length === 0; tick++) {
       combat.tick(1 / 60);
@@ -508,9 +508,9 @@ describe('fused-mass body and combat seam', () => {
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
-      onSound: (event, _position, zombie) => {
-        if (event === type.sounds.alert && zombie?.type.id === type.id) {
-          heardBody = actorFigure(zombie.type, zombie.figureSeed).realized.body.bones.length > 0;
+      onSound: (event, _position, actor) => {
+        if (event === type.sounds.alert && actor?.type.id === type.id) {
+          heardBody = actorFigure(actor.type, actor.figureSeed).realized.body.bones.length > 0;
         }
       },
     });
@@ -533,9 +533,9 @@ describe('fused-mass body and combat seam', () => {
       physics: physicsFor(makeScale(0.5)),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
-      onSound: (event, _position, targetZombie) => {
-        if (event === FISTS_MELEE.hitSound && targetZombie?.type.id === type.id) {
-          heardBody = actorFigure(targetZombie.type, targetZombie.figureSeed).realized.body.bones.length > 0;
+      onSound: (event, _position, targetActor) => {
+        if (event === FISTS_MELEE.hitSound && targetActor?.type.id === type.id) {
+          heardBody = actorFigure(targetActor.type, targetActor.figureSeed).realized.body.bones.length > 0;
         }
       },
     });
@@ -548,12 +548,12 @@ describe('fused-mass body and combat seam', () => {
     for (let tick = 0; tick < 3; tick++) {
       combatSystem.tick(1 / 60);
     }
-    const zombie = combatSystem.store.get(id)!;
-    const poseInput = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+    const actor = combatSystem.store.get(id)!;
+    const poseInput = actorPoseInputFor(actor, id, BLOCK_SIZE);
     const { hitFlinchTime, ...withoutFlinch } = poseInput;
     expect(hitFlinchTime).toBeGreaterThan(0);
 
-    const memberRegion = activeFusedMassMembers(zombie)[0]!.regionIds[0]!;
+    const memberRegion = activeFusedMassMembers(actor)[0]!.regionIds[0]!;
     const posedBoxes = posedFusedMassRegionBoxes(poseInput)[memberRegion] ?? [];
     const unflinchedBoxes = posedFusedMassRegionBoxes(withoutFlinch)[memberRegion] ?? [];
     const aim = combatSystem.aimAt(ray.origin, ray.direction, FISTS_MELEE);
@@ -650,11 +650,11 @@ describe('fused-mass body and combat seam', () => {
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });
-    const zombie = simulation.store.get(simulation.add(registry.actors.get('amalgam')!, start, [0, 0, -1]))!;
+    const actor = simulation.store.get(simulation.add(registry.actors.get('amalgam')!, start, [0, 0, -1]))!;
     let struck = false;
     for (let tick = 0; tick < 3600 && !struck; tick++) {
       simulation.tick(1 / 60);
-      struck = zombie.attackWindup > 0;
+      struck = actor.attackWindup > 0;
     }
     expect(struck).toBe(true);
   });
@@ -690,15 +690,15 @@ describe('fused-mass body and combat seam', () => {
     // It hears the player jog round behind it, outside its sight, and within its reach.
     sense = { ...player(), pos: [atX + 3, 1, atZ + 10], movement: 'jogging' };
     const simulation = pillarSystem();
-    const zombie = simulation.store.get(simulation.add(amalgam, [atX, atY, atZ], facingPillar))!;
-    const [fx, , fz] = zombie.facing;
+    const actor = simulation.store.get(simulation.add(amalgam, [atX, atY, atZ], facingPillar))!;
+    const [fx, , fz] = actor.facing;
     const facingPlayer = (fx * 3 + fz * 10) / Math.hypot(3, 10);
-    expect(facingPlayer).toBeLessThan(Math.cos((zombie.type.sightCone * Math.PI) / 180));
+    expect(facingPlayer).toBeLessThan(Math.cos((actor.type.sightCone * Math.PI) / 180));
     const halfTurnTicks = (180 / amalgam.wander.bodyTurnDegreesPerSimSecond) * 60;
     let struck = false;
     for (let tick = 0; tick < 2 * halfTurnTicks && !struck; tick++) {
       simulation.tick(1 / 60);
-      struck = zombie.attackWindup > 0;
+      struck = actor.attackWindup > 0;
     }
     expect(struck).toBe(true);
   });
@@ -712,9 +712,9 @@ describe('fused-mass body and combat seam', () => {
   it('routes a firearm projectile hit into the manifest-backed fused-mass region', () => {
     const simulation = system();
     const id = simulation.add(registry.actors.get('amalgam')!, [0, 1, 0]);
-    const zombie = simulation.store.get(id)!;
+    const actor = simulation.store.get(id)!;
     const ray = findMemberRay(simulation, id);
-    const before = { ...zombie.regions };
+    const before = { ...actor.regions };
 
     expect(
       simulation.firePellets(
@@ -738,30 +738,30 @@ describe('fused-mass body and combat seam', () => {
         ),
       ).hits,
     ).toBe(1);
-    expect(zombie.regions[ray.regionId]).toBeLessThan(before[ray.regionId]!);
-    expect(Object.keys(before).filter((region) => zombie.regions[region] !== before[region])).toEqual([ray.regionId]);
+    expect(actor.regions[ray.regionId]).toBeLessThan(before[ray.regionId]!);
+    expect(Object.keys(before).filter((region) => actor.regions[region] !== before[region])).toEqual([ray.regionId]);
   });
 
   it('survives a pump blast and loses a member before the core dies', () => {
     const simulation = system();
     const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
-    const zombie = simulation.store.get(id)!;
+    const actor = simulation.store.get(id)!;
     const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
     const firearm = registry.items.get('pump_shotgun')!.firearm!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
       simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key })).hits;
-    const coreBoxes = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+    const coreBoxes = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
     const rangeMetres = 6;
     const coreOrigin: Vec3 = [coreCenter![0], coreCenter![1], coreCenter![2] + rangeMetres / BLOCK_SIZE];
     const coreBasis = aimBasis(0, 0, NEUTRAL_AIM);
-    const coreBefore = zombie.regions['core.trunk']!;
+    const coreBefore = actor.regions['core.trunk']!;
 
     expect(fire(coreOrigin, coreBasis, 'opening-core-shot')).toBeGreaterThan(0);
-    expect(simulation.store.get(id)).toBe(zombie);
-    expect(zombie.regions['core.trunk']).toBeLessThan(coreBefore);
+    expect(simulation.store.get(id)).toBe(actor);
+    expect(actor.regions['core.trunk']).toBeLessThan(coreBefore);
 
     const member = findMemberRay(simulation, id, rangeMetres);
     const memberDirection = member.direction;
@@ -771,8 +771,8 @@ describe('fused-mass body and combat seam', () => {
       NEUTRAL_AIM,
     );
     expect(fire(member.origin, memberBasis, 'member-shot')).toBeGreaterThan(0);
-    expect(simulation.store.get(id)).toBe(zombie);
-    expect(zombie.severed).toContain(member.partId);
+    expect(simulation.store.get(id)).toBe(actor);
+    expect(actor.severed).toContain(member.partId);
 
     // Blasts down one line bore through the core and later ones pass, so each follow-up aims at a patch of core
     // flesh still there, wide enough for the spread.
@@ -800,28 +800,28 @@ describe('fused-mass body and combat seam', () => {
     let followup = 0;
     const maxFollowupBlasts = 256;
     while (simulation.store.get(id) !== undefined && followup < maxFollowupBlasts) {
-      const healthBefore = zombie.regions['core.trunk']!;
+      const healthBefore = actor.regions['core.trunk']!;
       const origin = coreLine();
       expect(origin).toBeDefined();
       expect(fire(origin!, coreBasis, `core-followup-${followup}`)).toBeGreaterThan(0);
       followup += 1;
       if (simulation.store.get(id) !== undefined) {
-        expect(zombie.regions['core.trunk']).toBeLessThan(healthBefore);
+        expect(actor.regions['core.trunk']).toBeLessThan(healthBefore);
       }
     }
     expect(simulation.store.get(id), 'amalgam should die within a bounded number of follow-up blasts').toBeUndefined();
-    expect(zombie.regions['core.trunk']).toBe(0);
-    expect(zombie.severed).toContain(member.partId);
+    expect(actor.regions['core.trunk']).toBe(0);
+    expect(actor.severed).toContain(member.partId);
   });
 
   it('removes a severed member from attack reach while preserving the other members', () => {
     const simulation = system();
     const id = simulation.add(registry.actors.get('amalgam')!, [0, 1, 0]);
-    const zombie = simulation.store.get(id)!;
-    const reach = actorAttackReachMetres(zombie);
+    const actor = simulation.store.get(id)!;
+    const reach = actorAttackReachMetres(actor);
     const severOne = () => {
       const ray = findMemberRay(simulation, id);
-      const damage = zombie.regions[ray.regionId]! + 1;
+      const damage = actor.regions[ray.regionId]! + 1;
       expect(
         simulation.swing(ray.origin, ray.direction, {
           ...FISTS_MELEE,
@@ -833,15 +833,15 @@ describe('fused-mass body and combat seam', () => {
     };
 
     expect(reach).toBeGreaterThan(0);
-    expect(reach).toBeCloseTo(zombie.type.attack.reach * zombie.type.bodyScale!);
+    expect(reach).toBeCloseTo(actor.type.attack.reach * actor.type.bodyScale!);
     severOne();
-    expect(activeFusedMassMembers(zombie).length).toBeGreaterThan(0);
-    expect(actorAttackReachMetres(zombie)).toBe(reach);
+    expect(activeFusedMassMembers(actor).length).toBeGreaterThan(0);
+    expect(actorAttackReachMetres(actor)).toBe(reach);
     const noMembers = {
-      ...zombie,
+      ...actor,
       severed: [
-        ...zombie.severed,
-        ...fusedMassFigureForType(zombie.type, zombie.figureSeed)
+        ...actor.severed,
+        ...fusedMassFigureForType(actor.type, actor.figureSeed)
           .manifest.parts.filter((part) => part.severable)
           .map((part) => part.id),
       ],
@@ -855,20 +855,20 @@ describe('fused-mass body and combat seam', () => {
     const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
-    const { actor: zombie } = state.actors.find((entry) => entry.id === id)!;
+    const { actor } = state.actors.find((entry) => entry.id === id)!;
     const unsupportedSeed = FUSED_MASS_FIGURE_SEED + 1;
     const unsupportedFigure = fusedMassFigureForType(type, unsupportedSeed);
-    zombie.figureSeed = unsupportedSeed;
-    zombie.regions = Object.fromEntries(
+    actor.figureSeed = unsupportedSeed;
+    actor.regions = Object.fromEntries(
       unsupportedFigure.manifest.regions.map(({ id: region }) => {
         const healthKey = region === 'core.trunk' ? region : `member.${region.slice(region.lastIndexOf('.') + 1)}`;
         return [region, type.regions[healthKey]!];
       }),
     );
     const envelope = fusedMassCollisionEnvelope(unsupportedFigure, BLOCK_SIZE);
-    zombie.body.halfWidth = envelope.halfWidth;
-    zombie.body.halfDepth = envelope.halfDepth;
-    zombie.body.height = envelope.height;
+    actor.body.halfWidth = envelope.halfWidth;
+    actor.body.halfDepth = envelope.halfDepth;
+    actor.body.height = envelope.height;
 
     expect(() => system().restoreState(state, (typeId) => registry.actors.get(typeId))).toThrow(
       `Invalid amalgam figure seed for entity ${id}`,
@@ -883,7 +883,7 @@ describe('fused-mass body and combat seam', () => {
       contentLookup,
       version: formatVersion,
     });
-    const saved = decoded.snapshot.world.actors.actors.find(({ actor: zombie }) => zombie.type === 'amalgam')?.actor;
+    const saved = decoded.snapshot.world.actors.actors.find(({ actor }) => actor.type === 'amalgam')?.actor;
 
     expect(saved?.figureSeed).toBe(original.figureSeed);
     expect(saved?.regions).toEqual(original.regions);
@@ -896,12 +896,12 @@ describe('fused-mass body and combat seam', () => {
     const simulation = system();
     const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
-    const zombie = simulation.store.get(id)!;
-    const membersBefore = activeFusedMassMembers(zombie);
+    const actor = simulation.store.get(id)!;
+    const membersBefore = activeFusedMassMembers(actor);
     const ray = findMemberRay(simulation, id);
     const target = membersBefore.find((member) => member.partId === ray.partId)!;
     const { regionId } = ray;
-    const before = { ...zombie.regions };
+    const before = { ...actor.regions };
 
     expect(
       simulation.swing(ray.origin, ray.direction, {
@@ -911,18 +911,18 @@ describe('fused-mass body and combat seam', () => {
         impulse: 0,
       }),
     ).toBe(id);
-    expect(zombie.severed).toContain(target.partId);
-    expect(zombie.regions['core.trunk']).toBe(before['core.trunk']);
+    expect(actor.severed).toContain(target.partId);
+    expect(actor.regions['core.trunk']).toBe(before['core.trunk']);
     for (const region of Object.keys(before)) {
       if (region.startsWith(`${target.partId}.`) && region !== regionId) {
-        expect(zombie.regions[region]).toBe(before[region]);
+        expect(actor.regions[region]).toBe(before[region]);
       }
     }
-    expect(activeFusedMassMembers(zombie).map(({ partId }) => partId)).toEqual(
+    expect(activeFusedMassMembers(actor).map(({ partId }) => partId)).toEqual(
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
-    const boxesAfter = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+    const boxesAfter = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
     for (const region of target.regionIds) {
       expect(boxesAfter[region]).toHaveLength(0);
     }
@@ -933,7 +933,7 @@ describe('fused-mass body and combat seam', () => {
     restored.restoreState(saved, (typeId) => registry.actors.get(typeId));
     expect(restored.snapshotState()).toEqual(saved);
     expect(activeFusedMassMembers(restored.store.get(id)!).map(({ partId }) => partId)).toEqual(
-      activeFusedMassMembers(zombie).map(({ partId }) => partId),
+      activeFusedMassMembers(actor).map(({ partId }) => partId),
     );
   });
 });
@@ -965,11 +965,11 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
   });
   const feet: Vec3 = [0, 1, 0];
   const id = simulation.add(registry.actors.get(typeId)!, feet, [0, 0, 1]);
-  const zombie = simulation.store.get(id)!;
-  const reachMetres = actorAttackReachMetres(zombie);
+  const actor = simulation.store.get(id)!;
+  const reachMetres = actorAttackReachMetres(actor);
   const offsetMetres =
     typeId === 'amalgam'
-      ? fusedMassStrikeOrigin(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie.facing)
+      ? fusedMassStrikeOrigin(fusedMassFigureForType(actor.type, actor.figureSeed), actor.facing)
       : [0, PLAYER_CHEST_METRES, 0];
   const origin = feet.map((coordinate, axis) => coordinate + offsetMetres[axis]! / BLOCK_SIZE) as Vec3;
   const line = (reachMetres * reachShare) / BLOCK_SIZE;
@@ -979,8 +979,8 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
     roofY = Math.floor(sense.pos[1]) - 1;
   }
   simulation.tick(1 / 60);
-  const started = zombie.attackWindup > 0;
-  for (let tick = 0; tick <= Math.ceil(zombie.type.attack.windupSimSeconds * 60); tick++) {
+  const started = actor.attackWindup > 0;
+  for (let tick = 0; tick <= Math.ceil(actor.type.attack.windupSimSeconds * 60); tick++) {
     simulation.tick(1 / 60);
   }
   return {
@@ -989,7 +989,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
     reachMetres,
     riseMetres: (sense.pos[1] - feet[1]) * BLOCK_SIZE,
     horizontalMetres: Math.hypot(sense.pos[0] - feet[0], sense.pos[2] - feet[2]) * BLOCK_SIZE,
-    roofClearsBody: roof && roofY > feet[1] + zombie.body.height,
+    roofClearsBody: roof && roofY > feet[1] + actor.body.height,
   };
 };
 
@@ -1034,15 +1034,15 @@ describe('fused-mass flesh carving', () => {
   /** One amalgam, and a straight line at its core from a few metres out. */
   const coreTarget = (simulation = system(), type: typeof amalgam = amalgam) => {
     const id = simulation.add(type, [0, 1, 0]);
-    const zombie = simulation.store.get(id)!;
-    const core = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
+    const actor = simulation.store.get(id)!;
+    const core = posedFusedMassRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
     const origin: Vec3 = [core[0], core[1], core[2] + 6 / BLOCK_SIZE];
     const direction: Vec3 = [0, 0, -1];
     const pellets = (count: number, damage: number) =>
       simulation.firePellets(
         projectileShot({ ...buck, pellets: count, damage }, origin, new Array(count).fill(direction)),
       );
-    return { simulation, id, zombie, origin, direction, pellets };
+    return { simulation, id, actor, origin, direction, pellets };
   };
 
   it('knocks out the flesh where a hit lands, and more of it for a heavier hit', () => {
@@ -1050,9 +1050,9 @@ describe('fused-mass flesh carving', () => {
     const heavy = coreTarget();
     light.pellets(1, 1);
     heavy.pellets(1, Math.min(carving.maxRadiusMetres, 2 * voxelMetres) / carving.radiusMetresPerDamage);
-    expect(light.zombie.carved.length).toBeGreaterThan(0);
-    expect(heavy.zombie.carved).toEqual(expect.arrayContaining(light.zombie.carved));
-    expect(heavy.zombie.carved.length).toBeGreaterThan(light.zombie.carved.length);
+    expect(light.actor.carved.length).toBeGreaterThan(0);
+    expect(heavy.actor.carved).toEqual(expect.arrayContaining(light.actor.carved));
+    expect(heavy.actor.carved.length).toBeGreaterThan(light.actor.carved.length);
   });
 
   it("makes one hole from one shot's pellets, sized by their summed damage, instead of one per pellet", () => {
@@ -1062,8 +1062,8 @@ describe('fused-mass flesh carving', () => {
     shot.pellets(buck.pellets, buck.damage);
     slug.pellets(1, buck.pellets * buck.damage);
     pellet.pellets(1, buck.damage);
-    expect(shot.zombie.carved).toEqual(slug.zombie.carved);
-    expect(shot.zombie.carved.length).toBeGreaterThan(pellet.zombie.carved.length);
+    expect(shot.actor.carved).toEqual(slug.actor.carved);
+    expect(shot.actor.carved.length).toBeGreaterThan(pellet.actor.carved.length);
   });
 
   it('never carves the core cell the tentacle roots in, whatever is carved around it', () => {
@@ -1085,14 +1085,14 @@ describe('fused-mass flesh carving', () => {
     const runtime = createRuntime();
     const target = coreTarget(runtime.zombies);
     target.pellets(buck.pellets, buck.damage);
-    expect(target.zombie.carved.length).toBeGreaterThan(0);
+    expect(target.actor.carved.length).toBeGreaterThan(0);
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), { contentLookup, version: formatVersion });
     expect(decoded.snapshot.world.actors.actors.find(({ id }) => id === target.id)?.actor.carved).toEqual(
-      target.zombie.carved,
+      target.actor.carved,
     );
     const restored = system();
     restored.restoreState(runtime.zombies.snapshotState(), (typeId) => registry.actors.get(typeId));
-    expect(restored.store.get(target.id)!.carved).toEqual(target.zombie.carved);
+    expect(restored.store.get(target.id)!.carved).toEqual(target.actor.carved);
   });
 
   it.each([
@@ -1120,21 +1120,21 @@ describe('fused-mass flesh carving', () => {
       .map((part) => part.id);
     const restored = system();
     restored.restoreState(state, (type) => registry.actors.get(type));
-    const zombie = restored.store.get(id)!;
-    const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+    const actor = restored.store.get(id)!;
+    const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
     const { hidden } = posedActor(input);
     const { owner } = figure.realized.voxels;
     const lost = (cell: number): boolean =>
       owner[cell]! > 0 && hidden.has(figure.realized.body.bones[owner[cell]! - 1]!.id);
-    return { simulation: restored, zombie, input, lost };
+    return { simulation: restored, actor, input, lost };
   };
 
   it('misses with a ray just beside the flesh, inside the core box', () => {
-    const { simulation, zombie, input } = severedAmalgam();
+    const { simulation, actor, input } = severedAmalgam();
     const weapon = { type: 'blunt', damage: 0, reach: 10, cooldown: 0, impulse: 0 };
     const step = voxelMetres / BLOCK_SIZE;
-    const { pos, halfWidth, height } = zombie.body;
-    const halfDepth = zombie.body.halfDepth ?? halfWidth;
+    const { pos, halfWidth, height } = actor.body;
+    const halfDepth = actor.body.halfDepth ?? halfWidth;
     const within = (box: (typeof boxes)[number], point: Vec3): boolean => {
       const offset = point.map((value, axis) => (value - box.center[axis]!) * BLOCK_SIZE);
       const local = [0, 1, 2].map((column) =>
@@ -1185,15 +1185,15 @@ describe('fused-mass flesh carving', () => {
     const before = target.simulation.aimAt(target.origin, target.direction, weapon);
     expect(before?.region).toBe('core.trunk');
     target.pellets(1, Math.min(carving.maxRadiusMetres, 2 * voxelMetres) / carving.radiusMetresPerDamage);
-    expect(target.zombie.carved.length).toBeGreaterThan(0);
+    expect(target.actor.carved.length).toBeGreaterThan(0);
     const after = target.simulation.aimAt(target.origin, target.direction, weapon);
     expect(after === undefined || after.distanceMetres > before!.distanceMetres).toBe(true);
   });
 
   it('turns its movement shape as the posed figure turns, and keeps it in step with its holes, carve by carve', () => {
     const target = coreTarget();
-    const { simulation, zombie } = target;
-    const kept = simulation.shapeOf(zombie.body) as FusedMassShape;
+    const { simulation, actor } = target;
+    const kept = simulation.shapeOf(actor.body) as FusedMassShape;
     for (const [key, yaw] of [
       ['first', 0],
       ['second', 0.15],
@@ -1209,7 +1209,7 @@ describe('fused-mass flesh carving', () => {
           key,
         }),
       );
-      simulation.shapeOf(zombie.body);
+      simulation.shapeOf(actor.body);
     }
     const built = (carved: readonly number[]): FusedMassShape => {
       const shape = new FusedMassShape(figure, BLOCK_SIZE, testedBricks(FLOOR));
@@ -1234,15 +1234,15 @@ describe('fused-mass flesh carving', () => {
       );
     };
     const whole = probe(built([]));
-    const fresh = probe(built(zombie.carved));
+    const fresh = probe(built(actor.carved));
     expect(whole.every(Boolean)).toBe(true);
-    expect(zombie.carved.length).toBeGreaterThan(0);
+    expect(actor.carved.length).toBeGreaterThan(0);
     expect(fresh).not.toEqual(whole);
     expect(probe(kept)).toEqual(fresh);
   });
 
   it('opens a hole for every shot that hits the core after its members are severed', () => {
-    const { simulation, zombie, input } = severedAmalgam();
+    const { simulation, actor, input } = severedAmalgam();
     // A ring of light pellets at each core box; some lines cross where a lost member's voxels were.
     const lines = posedFusedMassRegionBoxes(input)['core.trunk']!.flatMap((box) =>
       Array.from({ length: 16 }, (_, step) => (step / 16) * 2 * Math.PI).flatMap((angle) =>
@@ -1257,10 +1257,10 @@ describe('fused-mass flesh carving', () => {
     let hits = 0;
     let holes = 0;
     for (const { origin, direction } of lines) {
-      const before = zombie.carved.length;
+      const before = actor.carved.length;
       if (simulation.firePellets(projectileShot({ ...buck, pellets: 1, damage: 1 }, origin, [direction])).hits > 0) {
         hits += 1;
-        holes += zombie.carved.length > before ? 1 : 0;
+        holes += actor.carved.length > before ? 1 : 0;
       }
     }
     expect(hits).toBeGreaterThan(0);
@@ -1268,7 +1268,7 @@ describe('fused-mass flesh carving', () => {
   });
 
   it("never knocks out a lost member's hidden voxels, even with a blast struck beside them", () => {
-    const { zombie, lost } = severedAmalgam();
+    const { actor, lost } = severedAmalgam();
     const { dims, owner } = figure.realized.voxels;
     const faceNeighbours = (cell: number): number[] => {
       const [i, j, k] = [cell % dims[0], Math.floor(cell / dims[0]) % dims[1], Math.floor(cell / (dims[0] * dims[1]))];
@@ -1291,7 +1291,7 @@ describe('fused-mass flesh carving', () => {
     const cells = carveAround({
       figure,
       carving,
-      missing: missingFlesh(figure, zombie),
+      missing: missingFlesh(figure, actor),
       struck,
       damage: buck.pellets * buck.damage,
     });
@@ -1314,7 +1314,7 @@ describe('fused-mass flesh carving', () => {
           }),
         );
       }
-      return target.zombie.carved;
+      return target.actor.carved;
     };
     const first = play();
     expect(first.length).toBeGreaterThan(0);
@@ -1334,7 +1334,7 @@ describe('fused-mass flesh carving', () => {
           key: 'a',
         }),
       );
-      const { regions, severed, carved } = target.zombie;
+      const { regions, severed, carved } = target.actor;
       const alive = target.simulation.store.get(target.id) !== undefined;
       return { regions: { ...regions }, severed: [...severed], carved, alive };
     };

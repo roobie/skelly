@@ -163,7 +163,7 @@ describe('loot source routing', () => {
     expectRoutedColumn(authored, authored.placements);
   });
 
-  const zombieDropWorld = (ground: boolean, block: number) => {
+  const actorDropWorld = (ground: boolean, block: number) => {
     const world = new World();
     if (ground) {
       for (let x = 2; x <= 6; x++) {
@@ -181,11 +181,11 @@ describe('loot source routing', () => {
     block: number;
     pos: Vec3;
   }
-  const zombieDropScene = ({
+  const actorDropScene = ({
     ground = true,
     full = false,
     drops = true,
-    zombieReady = true,
+    zombieReady: actorReady = true,
     prepare,
   }: {
     ground?: boolean;
@@ -215,7 +215,7 @@ describe('loot source routing', () => {
       ],
     });
     const block = registry.blocks.findIndex((entry) => entry.solid);
-    const world = zombieDropWorld(ground, block);
+    const world = actorDropWorld(ground, block);
     const solid = (x: number, y: number, z: number) => registry.blocks[world.getBlock(x, y, z)]!.solid;
     const play = vi.fn();
     const notice = vi.fn();
@@ -229,8 +229,8 @@ describe('loot source routing', () => {
       seed: 17,
       start: 0,
       spawn: [0, 0, 0],
-      ready: () => !zombieReady,
-      zombieReady: () => zombieReady,
+      ready: () => !actorReady,
+      zombieReady: () => actorReady,
       controls: {
         active: () => false,
         intent: () => IDLE,
@@ -291,7 +291,7 @@ describe('loot source routing', () => {
   };
 
   it.each([false, true])('lands admitted death and severing drops (first landing full: %s)', (full) => {
-    const { session, solid, id, severed, forbidden } = zombieDropScene({ full });
+    const { session, solid, id, severed, forbidden } = actorDropScene({ full });
     expect(session.zombieStore.get(id)).toBeUndefined();
     const items = [...session.inventory.items()].map(({ item }) => item);
     const dropped = items.filter((item) => item.type === stock);
@@ -309,7 +309,7 @@ describe('loot source routing', () => {
 
   it('lands zombie emissions beyond full first-ring piles on their connected level floor', () => {
     const ring: Vec3[] = [];
-    const f = zombieDropScene({
+    const f = actorDropScene({
       ground: false,
       prepare: ({ session, world, block, pos }) => {
         const columnStart = toChunk(pos[0]) * CHUNK;
@@ -349,7 +349,7 @@ describe('loot source routing', () => {
 
   it.each([true, false])(
     'silently loses all-full emissions without exceeding the body search (ready: %s)',
-    (zombieReady) => {
+    (actorReady) => {
       let pilesBefore: string[] = [];
       const floorReads: Vec3[] = [];
       const prepare = ({ session, world, block, pos }: DropScene) => {
@@ -358,7 +358,7 @@ describe('loot source routing', () => {
         for (let x = left - 1; x <= right; x++) {
           world.setBlock(x, 0, pos[2], block);
           if (
-            zombieReady ? x >= left && x < right : dropSpots(pos).some((spot) => spot[0] === x && spot[2] === pos[2])
+            actorReady ? x >= left && x < right : dropSpots(pos).some((spot) => spot[0] === x && spot[2] === pos[2])
           ) {
             expect(
               session.inventory.add(session.inventory.create('fixture_bulk'), { kind: 'pile', pos: [x, 1, pos[2]] }),
@@ -374,8 +374,8 @@ describe('loot source routing', () => {
           return getBlock(x, y, z);
         });
       };
-      const withoutDrops = zombieDropScene({ ground: false, drops: false, zombieReady, prepare });
-      const f = zombieDropScene({ ground: false, zombieReady, prepare });
+      const withoutDrops = actorDropScene({ ground: false, drops: false, zombieReady: actorReady, prepare });
+      const f = actorDropScene({ ground: false, zombieReady: actorReady, prepare });
       expect([...f.session.inventory.items()].filter(({ item }) => [stock, f.severed].includes(item.type))).toEqual([]);
       expect([...f.session.inventory.piles.keys()]).toEqual(pilesBefore);
       expect(f.notice).not.toHaveBeenCalled();
@@ -385,7 +385,7 @@ describe('loot source routing', () => {
         expect(Math.abs(toChunk(x) - toChunk(f.pos[0])) <= 1 && Math.abs(toChunk(z) - toChunk(f.pos[2])) <= 1).toBe(
           true,
         );
-        if (!zombieReady) {
+        if (!actorReady) {
           expect(dropSpots(f.pos).some((spot) => spot[0] === x && spot[2] === z)).toBe(true);
         }
       }
@@ -393,12 +393,12 @@ describe('loot source routing', () => {
   );
 
   it('silently loses death loot and severed items with no ground, leaving later hand moves safe', () => {
-    const supported = zombieDropScene();
+    const supported = actorDropScene();
     expect([...supported.session.inventory.items()].map(({ item }) => item.type)).toEqual(
       expect.arrayContaining([stock, supported.severed]),
     );
-    const withoutDrops = zombieDropScene({ ground: false, drops: false });
-    const f = zombieDropScene({ ground: false });
+    const withoutDrops = actorDropScene({ ground: false, drops: false });
+    const f = actorDropScene({ ground: false });
     for (const spot of dropSpots([4, 4, 0])) {
       expect(f.session.inventory.landing(spot)).toBeUndefined();
     }

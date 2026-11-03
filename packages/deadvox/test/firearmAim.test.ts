@@ -26,10 +26,10 @@ it('chooses a bore-line zombie in front of a far wall', () => {
   const blockSize = 0.5;
   const eye: Vec3 = [0, 4, 0];
   const direction: Vec3 = [0, 0, -1];
-  const { system, target: zombie } = zombieAimFixture(BUNDLED_CONTENT.registry, eye, direction, blockSize);
+  const { system, target: actor } = zombieAimFixture(BUNDLED_CONTENT.registry, eye, direction, blockSize);
   const surface = farWallTarget(eye, direction, blockSize);
 
-  expect(surface.distanceMetres).toBeGreaterThan(zombie.distanceMetres);
+  expect(surface.distanceMetres).toBeGreaterThan(actor.distanceMetres);
 
   const result = firearmBoreTarget({
     eye,
@@ -40,11 +40,11 @@ it('chooses a bore-line zombie in front of a far wall', () => {
     rangeBlocks: FIXTURE_RANGE_BLOCKS,
     weapon: FISTS_MELEE,
   });
-  const zombiePoint = eye.map((value, axis) => value + direction[axis]! * (zombie.distanceMetres / blockSize)) as Vec3;
+  const actorPoint = eye.map((value, axis) => value + direction[axis]! * (actor.distanceMetres / blockSize)) as Vec3;
 
-  expect(result.point).toEqual(zombiePoint);
-  expect(result.distanceMetres).toBe(zombie.distanceMetres);
-  expect(result.zombie).toEqual(zombie);
+  expect(result.point).toEqual(actorPoint);
+  expect(result.distanceMetres).toBe(actor.distanceMetres);
+  expect(result.zombie).toEqual(actor);
 });
 
 it('projects the shipped lowered bore below the raised firearm bore', () => {

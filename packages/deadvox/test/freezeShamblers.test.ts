@@ -47,21 +47,21 @@ const run = (system: ActorSystem, seconds: number): void => {
     system.tick(1 / 60);
   }
 };
-const posedBoxes = (zombie: Actor) =>
+const posedBoxes = (actor: Actor) =>
   posedHumanoidRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
-    chasing: zombie.mode === 'chase',
-    attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
-    severed: zombie.severed,
+    seed: actor.figureSeed,
+    position: actor.body.pos,
+    facing: actor.facing,
+    headYaw: actor.headYaw,
+    gaitPhase: actor.gaitPhase,
+    speed: actor.horizontalSpeed,
+    chasing: actor.mode === 'chase',
+    attackWindup: actor.attackWindup,
+    attackWindupSeconds: actor.type.attack.windupSimSeconds,
+    severed: actor.severed,
     blockSize: BLOCK_SIZE,
   });
-const regionRay = (zombie: Actor, region: HumanoidHitRegion) => {
+const regionRay = (actor: Actor, region: HumanoidHitRegion) => {
   const targetBone: Readonly<Record<HumanoidHitRegion, string>> = {
     head: 'head',
     torso: 'chest',
@@ -70,8 +70,8 @@ const regionRay = (zombie: Actor, region: HumanoidHitRegion) => {
     leftLeg: 'shin.L',
     rightLeg: 'shin.R',
   };
-  const box = posedBoxes(zombie)[region].find((candidate) => candidate.bone === targetBone[region])!;
-  const front: Vec3 = [-zombie.facing[0], 0, -zombie.facing[2]];
+  const box = posedBoxes(actor)[region].find((candidate) => candidate.bone === targetBone[region])!;
+  const front: Vec3 = [-actor.facing[0], 0, -actor.facing[2]];
   return {
     origin: [
       box.center[0] + (front[0] * 0.45) / BLOCK_SIZE,
@@ -97,19 +97,19 @@ describe('debug shambler freeze', () => {
       seed: 31,
     });
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
-    const zombie = system.store.get(id)!;
+    const actor = system.store.get(id)!;
     run(system, 0.25);
     target = [0, 1, 3.2];
     run(system, 0.25);
-    expect(zombie.mode).toBe('chase');
-    expect(zombie.stanceWeight).toBeCloseTo(0.5, 5);
+    expect(actor.mode).toBe('chase');
+    expect(actor.stanceWeight).toBeCloseTo(0.5, 5);
     system.setFrozen(true);
-    const midway = zombie.stanceWeight;
+    const midway = actor.stanceWeight;
     run(system, 1);
-    expect(zombie.stanceWeight).toBe(midway);
+    expect(actor.stanceWeight).toBe(midway);
     system.setFrozen(false);
     run(system, 0.25);
-    expect(zombie.stanceWeight).toBe(1);
+    expect(actor.stanceWeight).toBe(1);
   });
 
   it('holds chasing position, heading, timers, and posed hit boxes for five seconds without hurting the player', () => {
@@ -119,16 +119,16 @@ describe('debug shambler freeze', () => {
     });
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
     run(system, 0.15);
-    const zombie = system.store.get(id)!;
-    expect(zombie.mode).toBe('chase');
-    expect(zombie.body.pos[2]).toBeGreaterThan(0);
+    const actor = system.store.get(id)!;
+    expect(actor.mode).toBe('chase');
+    expect(actor.body.pos[2]).toBeGreaterThan(0);
     const healthBeforeFreeze = playerHealth;
     system.setFrozen(true);
     const before = system.snapshotState();
-    const boxesBefore = posedBoxes(zombie);
+    const boxesBefore = posedBoxes(actor);
     run(system, 5);
     expect(system.snapshotState()).toEqual(before);
-    expect(posedBoxes(zombie)).toEqual(boxesBefore);
+    expect(posedBoxes(actor)).toEqual(boxesBefore);
     expect(playerHealth).toBe(healthBeforeFreeze);
   });
 
@@ -138,17 +138,17 @@ describe('debug shambler freeze', () => {
       playerHealth -= damage;
     });
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
-    const zombie = system.store.get(id)!;
-    for (let frame = 0; frame < 120 && zombie.attackWindup === 0; frame++) {
+    const actor = system.store.get(id)!;
+    for (let frame = 0; frame < 120 && actor.attackWindup === 0; frame++) {
       system.tick(1 / 60);
     }
-    expect(zombie.attackWindup).toBeGreaterThan(0);
+    expect(actor.attackWindup).toBeGreaterThan(0);
     system.setFrozen(true);
-    const cooldown = zombie.attackWait;
-    expect(zombie.attackWindup).toBe(0);
+    const cooldown = actor.attackWait;
+    expect(actor.attackWindup).toBe(0);
     run(system, 5);
     expect(playerHealth).toBe(100);
-    expect(zombie.attackWait).toBe(cooldown);
+    expect(actor.attackWait).toBe(cooldown);
   });
 
   it('skips cooldown, idle/search, wander, and stumble timers for frozen time', () => {
@@ -167,28 +167,28 @@ describe('debug shambler freeze', () => {
     });
     const system = makeSystem([100, 1, 100]);
     system.restoreState(state, (typeId) => (typeId === SHAMBLER.id ? SHAMBLER : undefined));
-    const zombie = system.store.get(1)!;
+    const actor = system.store.get(1)!;
     const before = [
-      zombie.attackWait,
-      zombie.idleSoundTimer,
-      zombie.modeTimer,
-      zombie.searchTimer,
-      zombie.wanderClock,
-      zombie.stumbleFactor,
-      zombie.stumbleElapsed,
-      zombie.stumbleDuration,
+      actor.attackWait,
+      actor.idleSoundTimer,
+      actor.modeTimer,
+      actor.searchTimer,
+      actor.wanderClock,
+      actor.stumbleFactor,
+      actor.stumbleElapsed,
+      actor.stumbleDuration,
     ];
     system.setFrozen(true);
     run(system, 10);
     expect([
-      zombie.attackWait,
-      zombie.idleSoundTimer,
-      zombie.modeTimer,
-      zombie.searchTimer,
-      zombie.wanderClock,
-      zombie.stumbleFactor,
-      zombie.stumbleElapsed,
-      zombie.stumbleDuration,
+      actor.attackWait,
+      actor.idleSoundTimer,
+      actor.modeTimer,
+      actor.searchTimer,
+      actor.wanderClock,
+      actor.stumbleFactor,
+      actor.stumbleElapsed,
+      actor.stumbleDuration,
     ]).toEqual(before);
   });
 
@@ -197,18 +197,18 @@ describe('debug shambler freeze', () => {
     const id = system.add(SHAMBLER, [0, 1, 0], [0, 0, 1]);
     run(system, 1.5);
     system.setFrozen(true);
-    const oldZombie = system.store.get(id)!;
-    const frozenPosition = [...oldZombie.body.pos];
+    const oldActor = system.store.get(id)!;
+    const frozenPosition = [...oldActor.body.pos];
     const spawnedId = system.add(SHAMBLER, [5, 1, 5], [0, 0, -1]);
     const spawned = system.store.get(spawnedId)!;
     expect(spawned.mode).toBe('idle');
     const spawnedState = system.snapshotState();
     run(system, 5);
-    expect(oldZombie.body.pos).toEqual(frozenPosition);
+    expect(oldActor.body.pos).toEqual(frozenPosition);
     expect(system.snapshotState()).toEqual(spawnedState);
     system.setFrozen(false);
     run(system, 1);
-    expect(oldZombie.body.pos).not.toEqual(frozenPosition);
+    expect(oldActor.body.pos).not.toEqual(frozenPosition);
   });
 
   it('allows frozen shamblers to take lethal melee hits and does not persist the freeze toggle', () => {
@@ -224,9 +224,9 @@ describe('debug shambler freeze', () => {
       (value) => result.push(value),
     );
     const headId = headSystem.add(headKill, [1, 1, 0], [0, 0, -1]);
-    const headZombie = headSystem.store.get(headId)!;
+    const headActor = headSystem.store.get(headId)!;
     headSystem.setFrozen(true);
-    const ray = regionRay(headZombie, 'head');
+    const ray = regionRay(headActor, 'head');
     expect(headSystem.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(headId);
     expect(result[0]).toMatchObject({ region: 'head', outcome: 'decapitated', part: 'head' });
 

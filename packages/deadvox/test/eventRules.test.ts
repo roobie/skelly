@@ -19,7 +19,7 @@ import { formatVersion } from './snapshotTestSupport.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()][0]!;
-const zombie = [...registry.actors.values()][0]!;
+const actor = [...registry.actors.values()][0]!;
 const worldOptions = { blockSize: 0.5, site: profile.id, storeys: 1, density: null };
 const AFTER = gameHours(2);
 /** Inside the one loaded chunk, beside the player. */
@@ -31,7 +31,7 @@ const waveRule = (at: Vec3, conditions: EventRuleDef['conditions'] = []): EventR
   id: 'fixture_wave',
   trigger: { kind: 'elapsed', afterGameHours: AFTER },
   conditions,
-  effects: [{ kind: 'releaseHorde', zombie: zombie.id, count: 2, at }],
+  effects: [{ kind: 'releaseHorde', zombie: actor.id, count: 2, at }],
 });
 
 const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {

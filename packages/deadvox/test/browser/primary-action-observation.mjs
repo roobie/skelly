@@ -13,7 +13,7 @@ export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
 const streamEdgeColumn =
   chunksFor(makeScale(BLOCK_SIZE), cleanReplayRadiusM) + graphicsFile.graphics[0].skyPreloadRings + 1;
-const streamEdgeZombieX = (streamEdgeColumn + 0.5) * columnMetres;
+const streamEdgeActorX = (streamEdgeColumn + 0.5) * columnMetres;
 
 export const logPhase = (phase, start) => {
   process.stdout.write(
@@ -40,7 +40,7 @@ export const observationPlugin = {
       data.layouts.push({
         id: 'replay_fixture',
         lootContext: { usage: ['Residential'], tier: 'Tier1' },
-        bounds: { x0: -64, z0: -64, x1: Math.max(64, streamEdgeZombieX + columnMetres), z1: 64 },
+        bounds: { x0: -64, z0: -64, x1: Math.max(64, streamEdgeActorX + columnMetres), z1: 64 },
         ground: 20,
         terrain: [],
         buildings: [],
@@ -48,7 +48,7 @@ export const observationPlugin = {
         tracks: [],
         player: { position: [8, 20.5, 8], bearing: 0 },
         // Its own column is generated, but the outward neighbour is not: replay must preserve that gate.
-        shamblers: [{ type: 'shambler', position: [streamEdgeZombieX, 20.5, 8] }],
+        shamblers: [{ type: 'shambler', position: [streamEdgeActorX, 20.5, 8] }],
       });
       return JSON.stringify(data);
     }

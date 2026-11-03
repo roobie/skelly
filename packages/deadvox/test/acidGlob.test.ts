@@ -218,11 +218,11 @@ describe('acid glob', () => {
       const h = runtime();
       h.release();
       const id = h.session.actors.add(type, [2, 1, 0], [-1, 0, 0]);
-      const zombie = h.session.zombieStore.get(id)!;
-      const before = { ...zombie.regions };
+      const actor = h.session.zombieStore.get(id)!;
+      const before = { ...actor.regions };
       h.land();
       expect(h.hits.mock.calls.filter(([, , , hit]) => hit?.kind === 'acid')).toHaveLength(0);
-      const lost = Object.entries(before).reduce((sum, [region, health]) => sum + health - zombie.regions[region]!, 0);
+      const lost = Object.entries(before).reduce((sum, [region, health]) => sum + health - actor.regions[region]!, 0);
       if (type === resistant) {
         expect(lost).toBe(0);
       } else {
@@ -351,10 +351,10 @@ describe('acid puddle', () => {
       const trousers = h.session.inventory.create('jeans');
       expect(h.session.inventory.add(trousers, { kind: 'worn' })).toBe(true);
       const before = trousers.condition;
-      const zombie = h.session.zombieStore.get(
+      const actor = h.session.zombieStore.get(
         h.session.actors.add(shambler, [h.session.body.pos[0], h.session.body.pos[1], h.session.body.pos[2]]),
       )!;
-      const beforeLeg = zombie.regions.leftLeg!;
+      const beforeLeg = actor.regions.leftLeg!;
       const duration = spitter.acidSpit!.puddle.lifetimeSimSeconds / 4;
       for (let index = 0; index < Math.round(duration / step); index++) {
         h.session.frame(step);
@@ -365,13 +365,13 @@ describe('acid puddle', () => {
       expect(trousers.condition).toBeLessThan(before);
       expect(trousers.condition).toBeGreaterThan(0);
       expect(bleeding.every((tier) => tier !== undefined)).toBe(true);
-      expect(zombie.regions.leftLeg).toBeLessThan(beforeLeg);
-      expect(zombie.severed).toEqual([]);
+      expect(actor.regions.leftLeg).toBeLessThan(beforeLeg);
+      expect(actor.severed).toEqual([]);
       return {
         condition: trousers.condition,
         bleeding,
-        regions: zombie.regions,
-        severed: zombie.severed,
+        regions: actor.regions,
+        severed: actor.severed,
         exposures: h.session.sim.exposures.snapshotState().exposures,
       };
     };

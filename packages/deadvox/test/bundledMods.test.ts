@@ -88,11 +88,11 @@ describe('beginner mode saves', () => {
 });
 
 describe('beginner mode light spotting', () => {
-  const farthestSpotted = (zombie: ReturnType<typeof base.actors.get>): number => {
+  const farthestSpotted = (actor: ReturnType<typeof base.actors.get>): number => {
     let farthest = 0;
     for (let metres = 0.5; metres <= 150; metres += 0.5) {
       const seen = perceivePlayer({
-        def: zombie!,
+        def: actor!,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: {

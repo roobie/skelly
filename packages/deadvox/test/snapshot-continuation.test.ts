@@ -136,7 +136,7 @@ describe('fixture save/load continuation', () => {
     const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], { start });
     loaded.session.onColumn(cx, cz, timedSite);
     const atHome = () =>
-      [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i]));
+      [...loaded.zombies.store.entries()].filter(([, actor]) => actor.home.every((v, i) => v === pos[i]));
     expect(atHome()).toHaveLength(0);
     advance(loaded, 456);
     expect(loaded.sim.calendar).toBeGreaterThan(dusk);
@@ -417,7 +417,7 @@ describe('fixture save/load continuation', () => {
     expect(snapshot.character.playerAudio.soundPicker.events).toContainEqual(
       expect.objectContaining({ event: 'player_strain', lastPlayedAt: split.sim.time }),
     );
-    expect(snapshot.world.actors.actors.some(({ actor: zombie }) => zombie.idleSoundTimer > 0)).toBe(true);
+    expect(snapshot.world.actors.actors.some(({ actor }) => actor.idleSoundTimer > 0)).toBe(true);
     expect(snapshot.character.handling.jobs).toEqual([]);
     expect(plainDataTree(snapshot)).toBe(true);
     expect(frozenTree(snapshot)).toBe(true);
@@ -506,9 +506,9 @@ describe('fixture save/load continuation', () => {
     noRngWord.world.actors.actors[0]!.actor.behaviorRng = [a, b, c] as never;
     expect(() => runtimeFrom(noRngWord)).toThrow('Invalid zombie state');
 
-    const noZombieSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noZombieSoundRng.world.actors.actors[0]!.actor, 'soundRng');
-    expect(() => runtimeFrom(noZombieSoundRng)).toThrow('Invalid zombie state');
+    const noActorSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
+    Reflect.deleteProperty(noActorSoundRng.world.actors.actors[0]!.actor, 'soundRng');
+    expect(() => runtimeFrom(noActorSoundRng)).toThrow('Invalid zombie state');
 
     const noIdleSoundTimer = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
     Reflect.deleteProperty(noIdleSoundTimer.world.actors.actors[0]!.actor, 'idleSoundTimer');

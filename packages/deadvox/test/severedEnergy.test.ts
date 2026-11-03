@@ -65,7 +65,7 @@ const impactPointIsInside = ({ body, point }: AppliedPoint): boolean => {
   }
   return local.every((coordinate, axis) => Math.abs(coordinate) <= halfExtents[axis]! + 1e-9);
 };
-const zombieTypeForCut = (mode: CutMode) => {
+const actorTypeForCut = (mode: CutMode) => {
   const regions = { ...SHAMBLER.regions };
   if (mode === 'rolled') {
     Object.assign(regions, HEALTHY_REGIONS);
@@ -106,11 +106,11 @@ const createSeveredHit = (mode: CutMode) => {
     onSever: (entityId, source, cut, hit) => renderer?.zombieSevered(entityId, cut, hit, source),
     onDeath: (entityId, source) => renderer?.zombieDied(entityId, source),
   });
-  const id = system.add(zombieTypeForCut(mode), [4, 1, 4], [0, 0, -1]);
-  const zombie = system.store.get(id)!;
+  const id = system.add(actorTypeForCut(mode), [4, 1, 4], [0, 0, -1]);
+  const actor = system.store.get(id)!;
   const actorMeshes = new MobActorMeshes(BLOCK, 16, {
-    zombies: new Map([[zombie.type.id, zombie.type]]),
-    poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[zombie.type.id, zombie.type]])), zombie.figureSeed),
+    zombies: new Map([[actor.type.id, actor.type]]),
+    poolSize: mobFigurePoolSizeThrough(figureSeedPool(new Map([[actor.type.id, actor.type]])), actor.figureSeed),
   });
   renderer = actorMeshes;
   actorMeshes.setWorld(isSolid, BLOCK);
@@ -126,15 +126,15 @@ const createSeveredHit = (mode: CutMode) => {
   };
   actorMeshes.sync(system.store, 0, 1);
   const boxes = posedHumanoidRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
+    seed: actor.figureSeed,
+    position: actor.body.pos,
+    facing: actor.facing,
+    headYaw: actor.headYaw,
+    gaitPhase: actor.gaitPhase,
+    speed: actor.horizontalSpeed,
     chasing: false,
     attackWindup: 0,
-    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
+    attackWindupSeconds: actor.type.attack.windupSimSeconds,
     severed: [],
     blockSize: BLOCK,
   });
@@ -151,14 +151,14 @@ const createSeveredHit = (mode: CutMode) => {
   let part: string;
   if (mode === 'rolled') {
     system.swing(origin, target.direction, BAT);
-    part = zombie.severed[0] ?? '';
+    part = actor.severed[0] ?? '';
   } else {
     part = mode === 'head' ? 'head' : 'upperArm.L';
     actorMeshes.zombieSevered(
       id,
       part,
       { point: targetBox.center, direction: target.direction, impulse: BAT.impulse! },
-      zombie,
+      actor,
     );
   }
   const partBox = Object.values(boxes)

@@ -59,7 +59,7 @@ const baseRegistry = baseBuild.registry;
 
 describe('content-owned item and world policies', () => {
   it('refuses zombie abilities without a runtime mechanism', () => {
-    const zombie = [...baseRegistry.actors.values()][0]!;
+    const actor = [...baseRegistry.actors.values()][0]!;
     for (const ability of [
       'leap',
       'scream',
@@ -70,7 +70,7 @@ describe('content-owned item and world policies', () => {
       'regenerate',
       'burrow',
     ]) {
-      expect(safeParse(ContentFileSchema, { actors: [{ ...zombie, abilities: [ability] }] }).success).toBe(false);
+      expect(safeParse(ContentFileSchema, { actors: [{ ...actor, abilities: [ability] }] }).success).toBe(false);
     }
   });
 
@@ -82,10 +82,10 @@ describe('content-owned item and world policies', () => {
       delete missing[field];
       expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
     }
-    const zombie = { ...[...baseRegistry.actors.values()][0]! } as Record<string, unknown>;
-    expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(true);
-    zombie.severedItems = undefined;
-    expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(false);
+    const actor = { ...[...baseRegistry.actors.values()][0]! } as Record<string, unknown>;
+    expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(true);
+    actor.severedItems = undefined;
+    expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(false);
     const world = { ...[...baseRegistry.siteGeneration.values()][0]! } as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(true);
     world.activeActorRadiusMetres = undefined;
@@ -93,21 +93,21 @@ describe('content-owned item and world policies', () => {
   });
 
   it('requires a positive finite takeoff speed on each zombie type', () => {
-    const zombie = [...baseRegistry.actors.values()][0]!;
-    expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(true);
+    const actor = [...baseRegistry.actors.values()][0]!;
+    expect(safeParse(ContentFileSchema, { actors: [actor] }).success).toBe(true);
     for (const jumpMetresPerSimSecond of [undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(safeParse(ContentFileSchema, { actors: [{ ...zombie, jumpMetresPerSimSecond }] }).success).toBe(false);
+      expect(safeParse(ContentFileSchema, { actors: [{ ...actor, jumpMetresPerSimSecond }] }).success).toBe(false);
     }
   });
 
   it('validates severed-item references and complete region policy', () => {
-    const zombie = { ...structuredClone(baseRegistry.actors.get('shambler')!), loot: undefined };
-    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
-    const region = Object.keys(zombie.regions)[0]!;
+    const actor = { ...structuredClone(baseRegistry.actors.get('shambler')!), loot: undefined };
+    actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((key) => [key, null]));
+    const region = Object.keys(actor.regions)[0]!;
     const support = {
       source: 'support.json',
       data: {
-        sounds: [...new Set(Object.values(zombie.sounds))].map((id) => baseRegistry.sounds.get(id)!),
+        sounds: [...new Set(Object.values(actor.sounds))].map((id) => baseRegistry.sounds.get(id)!),
         items: [
           {
             id: 'fixture_blade',
@@ -118,20 +118,20 @@ describe('content-owned item and world policies', () => {
             category: 'tool',
             weight: 1,
             size: [1, 1],
-            tool: { qualities: { [zombie.downed!.dismember.quality]: 1 } },
+            tool: { qualities: { [actor.downed!.dismember.quality]: 1 } },
           },
         ],
       },
     };
-    zombie.severedItems[region] = 'fixture_missing_part';
-    const brokenReference = buildRegistry([support, { source: 'parts.json', data: { actors: [zombie] } }]);
+    actor.severedItems[region] = 'fixture_missing_part';
+    const brokenReference = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
     expect(brokenReference.issues).toContainEqual({
       source: 'parts.json',
       path: `actors[0].severedItems.${region}`,
       message: 'no item "fixture_missing_part"',
     });
-    delete zombie.severedItems[region];
-    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { actors: [zombie] } }]);
+    delete actor.severedItems[region];
+    const missingRegion = buildRegistry([support, { source: 'parts.json', data: { actors: [actor] } }]);
     expect(missingRegion.issues).toContainEqual({
       source: 'parts.json',
       path: 'actors[0].severedItems',
@@ -178,18 +178,18 @@ const reachableLootItems = (root: string | undefined): { table: string; item: st
   }
   return found;
 };
-const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
-  const zombieFile = base.find((file) => file.source === 'zombies.json')!;
-  const data = structuredClone(zombieFile.data) as {
+const invalidActorRegionIssues = (actorId: string, regionId: string, change: 'remove' | 'add') => {
+  const actorFile = base.find((file) => file.source === 'zombies.json')!;
+  const data = structuredClone(actorFile.data) as {
     actors: { id: string; regions: Record<string, number> }[];
   };
-  const { regions } = data.actors.find(({ id }) => id === zombieId)!;
+  const { regions } = data.actors.find(({ id }) => id === actorId)!;
   if (change === 'remove') {
     delete regions[regionId];
   } else {
     regions[regionId] = 1;
   }
-  return validateContent({ source: zombieFile.source, data });
+  return validateContent({ source: actorFile.source, data });
 };
 
 it('rejects inventory names that collide within a category and footprint', () => {
@@ -370,12 +370,12 @@ describe('content', () => {
       ],
     };
     const compiled = compileTemplate(baseRegistry, fixture);
-    const smallZombieTemplate = compileTemplate(baseRegistry, {
+    const smallActorTemplate = compileTemplate(baseRegistry, {
       ...fixture,
       palette: { ...fixture.palette, z: { spawn: 'shambler' } },
     });
 
-    expect(templateSpawnClearanceIssues(baseRegistry, smallZombieTemplate)).toEqual([]);
+    expect(templateSpawnClearanceIssues(baseRegistry, smallActorTemplate)).toEqual([]);
     expect(templateSpawnClearanceIssues(baseRegistry, compiled).map(([path]) => path)).toEqual(['.spawns[0]']);
   });
 
@@ -383,7 +383,7 @@ describe('content', () => {
     const soldier = baseRegistry.actors.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
       compileTemplate(baseRegistry, template)
-        .spawns.filter(({ zombie }) => zombie === soldier.id)
+        .spawns.filter(({ zombie: actor }) => actor === soldier.id)
         .map(() => template.id),
     );
     const layoutSpawns = [...baseRegistry.layouts.values()].flatMap((layout) =>
@@ -489,7 +489,7 @@ describe('content', () => {
       ['leftArmm', 'add'],
     ] as const) {
       expect(
-        invalidZombieRegionIssues('shambler', regionId, change).some(
+        invalidActorRegionIssues('shambler', regionId, change).some(
           ({ message }) => message === 'zombie region keys must match the model',
         ),
       ).toBe(true);
@@ -497,8 +497,8 @@ describe('content', () => {
   });
 
   it('requires unique ids within zombie attack move lists', () => {
-    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
-    const data = structuredClone(zombieFile.data) as {
+    const actorFile = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(actorFile.data) as {
       actors: { id: string; attack: { moves: { id: string }[] } }[];
     };
     const {
@@ -507,20 +507,20 @@ describe('content', () => {
     moves[1]!.id = moves[0]!.id;
 
     expect(
-      validateContent({ source: zombieFile.source, data }).some(
+      validateContent({ source: actorFile.source, data }).some(
         ({ message }) => message === 'zombie move ids must be unique',
       ),
     ).toBe(true);
   });
 
   it('rejects an acidSpit ability without tunables and tunables without the ability', () => {
-    const zombieFile = base.find(({ source }) => source === 'zombies.json')!;
+    const actorFile = base.find(({ source }) => source === 'zombies.json')!;
     const issuesFor = (edit: (acid: { abilities: string[]; acidSpit?: unknown }) => void) => {
-      const data = structuredClone(zombieFile.data) as {
+      const data = structuredClone(actorFile.data) as {
         actors: { id: string; abilities: string[]; acidSpit?: unknown }[];
       };
       edit(data.actors.find(({ id }) => id === 'acid_zombie')!);
-      return validateContent({ source: zombieFile.source, data }).map(({ message }) => message);
+      return validateContent({ source: actorFile.source, data }).map(({ message }) => message);
     };
     const mismatch = 'acidSpit tunables must match the acidSpit ability';
 
@@ -620,7 +620,7 @@ describe('content', () => {
       ['member.leftArmm', 'add'],
     ] as const) {
       expect(
-        invalidZombieRegionIssues('amalgam', regionId, change).some(
+        invalidActorRegionIssues('amalgam', regionId, change).some(
           ({ message }) => message === 'zombie region keys must match the model',
         ),
       ).toBe(true);
@@ -1398,12 +1398,12 @@ describe('content', () => {
   });
 
   it('validates the shambler search-duration range', () => {
-    const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
-    const data = structuredClone(zombiePack.data) as {
+    const actorPack = base.find(({ source }) => source === 'zombies.json')!;
+    const data = structuredClone(actorPack.data) as {
       actors: Array<{ hearingModel: { searchSimSeconds: { min: number; max: number } } }>;
     };
     data.actors[0]!.hearingModel.searchSimSeconds = { min: 51, max: 50 };
-    const issues = validateContent({ source: zombiePack.source, data });
+    const issues = validateContent({ source: actorPack.source, data });
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
@@ -1627,36 +1627,36 @@ describe('content', () => {
   });
 
   it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
-    const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+    const actorFile = base.find((file) => file.source === 'zombies.json')!;
     interface Authored {
       model: string;
       figureSeeds?: number[] | undefined;
     }
-    const issuesAfter = (model: string, change: (zombie: Authored) => void): string[] => {
-      const data = structuredClone(zombieFile.data) as { actors: Authored[] };
-      change(data.actors.find((zombie) => zombie.model === model)!);
-      return validateContent({ source: zombieFile.source, data }).map((issue) => issue.path);
+    const issuesAfter = (model: string, change: (actor: Authored) => void): string[] => {
+      const data = structuredClone(actorFile.data) as { actors: Authored[] };
+      change(data.actors.find((actor) => actor.model === model)!);
+      return validateContent({ source: actorFile.source, data }).map((issue) => issue.path);
     };
-    const seeded = (zombie: Authored) => zombie.figureSeeds!;
+    const seeded = (actor: Authored) => actor.figureSeeds!;
 
     expect(
-      issuesAfter('humanoid', (zombie) => {
-        zombie.figureSeeds = undefined;
+      issuesAfter('humanoid', (actor) => {
+        actor.figureSeeds = undefined;
       }),
     ).toContain('actors');
     expect(
-      issuesAfter('humanoid', (zombie) => {
-        zombie.figureSeeds = [];
+      issuesAfter('humanoid', (actor) => {
+        actor.figureSeeds = [];
       }),
     ).not.toEqual([]);
     expect(
-      issuesAfter('humanoid', (zombie) => {
-        zombie.figureSeeds = [seeded(zombie)[0]!, seeded(zombie)[0]!];
+      issuesAfter('humanoid', (actor) => {
+        actor.figureSeeds = [seeded(actor)[0]!, seeded(actor)[0]!];
       }),
     ).not.toEqual([]);
     expect(
-      issuesAfter('fused-mass', (zombie) => {
-        zombie.figureSeeds = [1];
+      issuesAfter('fused-mass', (actor) => {
+        actor.figureSeeds = [1];
       }),
     ).not.toEqual([]);
   });
@@ -2221,7 +2221,7 @@ describe('content references', () => {
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
   const baseContent = (source: string) => base.find((file) => file.source === source)!.data as ContentFile;
-  const zombieSounds = {
+  const actorSounds = {
     idle: 'shambler_idle',
     alert: 'shambler_alert',
     attack: 'shambler_attack',
@@ -2232,7 +2232,7 @@ describe('content references', () => {
     data: {
       items: [{ id: 'fixture_non_battery', name: 'Not a battery', category: 'medical', weight: 1, size: [1, 1] }],
       skills: baseContent('recipes.json').skills!,
-      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
+      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(actorSounds).includes(id)),
     },
   };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
@@ -2649,16 +2649,16 @@ describe('content references', () => {
       palette: { C: { furniture: furniture.id, loot: lootId } },
       layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => 'C'.repeat(width))),
     };
-    const zombie = structuredClone(baseRegistry.actors.get('shambler')!);
-    zombie.id = 'fixture_military_looter';
-    zombie.footstepSound = undefined;
-    zombie.capability = undefined;
-    zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
-    zombie.loot = lootId;
-    const sounds = [...new Set([...Object.values(zombie.sounds), ...Object.values(furniture.moveSounds!)])].map(
+    const actor = structuredClone(baseRegistry.actors.get('shambler')!);
+    actor.id = 'fixture_military_looter';
+    actor.footstepSound = undefined;
+    actor.capability = undefined;
+    actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+    actor.loot = lootId;
+    const sounds = [...new Set([...Object.values(actor.sounds), ...Object.values(furniture.moveSounds!)])].map(
       (id) => baseRegistry.sounds.get(id)!,
     );
-    const { quality, level } = zombie.downed!.dismember;
+    const { quality, level } = actor.downed!.dismember;
     const result = buildRegistry([
       {
         source,
@@ -2684,7 +2684,7 @@ describe('content references', () => {
           loot: [{ id: lootId, rolls: [1, 1], entries: [{ item: 'fixture_military_item', weight: 1 }] }],
           furniture: [furniture],
           templates: [template],
-          actors: [zombie],
+          actors: [actor],
           sounds,
         },
       },
@@ -2744,7 +2744,7 @@ describe('content references', () => {
             jumpMetresPerSimSecond: 3,
             strength: 1,
             idleSound: baseRegistry.actors.get('shambler')!.idleSound,
-            sounds: zombieSounds,
+            sounds: actorSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             severedImpulseScale: 1,
             severedSpurt: {
@@ -2866,7 +2866,7 @@ describe('content references', () => {
   });
 });
 
-const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
+const templateActorFile = base.find(({ source }) => source === 'zombies.json')!;
 const templateShambler = {
   severedItems: Object.fromEntries(
     Object.keys(baseRegistry.actors.get('shambler')!.regions).map((region) => [region, null]),
@@ -2874,7 +2874,7 @@ const templateShambler = {
   ...Object.fromEntries(
     Object.entries(
       structuredClone(
-        (templateZombieFile.data as { actors: { id: string }[] }).actors.find(({ id }) => id === 'shambler')!,
+        (templateActorFile.data as { actors: { id: string }[] }).actors.find(({ id }) => id === 'shambler')!,
       ),
     ).filter(([key]) => !['loot', 'severedItems', 'footstepSound', 'capability'].includes(key)),
   ),

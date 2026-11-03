@@ -56,9 +56,9 @@ const hordeModeAt = (time: number): HordeState['mode'] => {
 
 describe('sun-owned day phases', () => {
   it('keeps sun exposure, sky, zombie sight, and spawn words on the authored solar phase', () => {
-    const zombie = { ...shambler, hearing: 0 };
-    expect(zombie.sight).toBeGreaterThan(zombie.nightSight);
-    const betweenRanges = (zombie.sight + zombie.nightSight) / 2;
+    const actor = { ...shambler, hearing: 0 };
+    expect(actor.sight).toBeGreaterThan(actor.nightSight);
+    const betweenRanges = (actor.sight + actor.nightSight) / 2;
     const target: Vec3 = [betweenRanges / scale.blockSize, 1, 0];
     const dayLightIntensities: number[] = [];
     const nightLightIntensities: number[] = [];
@@ -83,7 +83,7 @@ describe('sun-owned day phases', () => {
       }
 
       const seesAtRange = perceivePlayer({
-        def: zombie,
+        def: actor,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: { ...player, pos: target },
@@ -93,7 +93,7 @@ describe('sun-owned day phases', () => {
         isSolid: () => false,
         tuning: registry.senses.get('player')!,
       });
-      const sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * state.sightBlend;
+      const sightRange = actor.nightSight + (actor.sight - actor.nightSight) * state.sightBlend;
       expect(seesAtRange, `sight at ${time}`).toBe(sightRange >= betweenRanges);
     }
 
@@ -107,12 +107,12 @@ describe('sun-owned day phases', () => {
     }).filter(({ state }) => state.phase === 'dawn' || state.phase === 'dusk');
     const lowBlend = twilight.find(({ state }) => state.sightBlend > 0.3 && state.sightBlend < 0.5)!;
     const highBlend = twilight.find(({ state }) => state.sightBlend > 0.5 && state.sightBlend < 0.7)!;
-    const zombie = { ...shambler, hearing: 0 };
-    const rangeAt = (fraction: number) => zombie.nightSight + (zombie.sight - zombie.nightSight) * fraction;
+    const actor = { ...shambler, hearing: 0 };
+    const rangeAt = (fraction: number) => actor.nightSight + (actor.sight - actor.nightSight) * fraction;
     const seesAt = (distance: number, time: number) => {
       const state = dayPhaseAt(cycle, time);
       return perceivePlayer({
-        def: zombie,
+        def: actor,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: { ...player, pos: [distance / scale.blockSize, 1, 0] },

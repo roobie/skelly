@@ -16,7 +16,7 @@ describe('gauntlet crisis HQ threat and supplies', () => {
       const hq = site.placements.filter((placement) => placement.template.id.includes('crisis_hq'));
       expect(hq.length, `${scenario.id} places the HQ`).toBeGreaterThan(0);
       const markers = hq.flatMap(placedSpawns);
-      const soldiers = markers.filter(({ zombie }) => zombie === 'military_shambler').length;
+      const soldiers = markers.filter(({ zombie: actor }) => actor === 'military_shambler').length;
       expect(soldiers, `${scenario.id} HQ soldier markers`).toBeGreaterThan(markers.length - soldiers);
       expect(hq.flatMap(placedGroundLoot).length, `${scenario.id} HQ loot piles`).toBeGreaterThan(0);
     }
@@ -31,7 +31,7 @@ describe('gauntlet lab acid zombies', () => {
       // storey that lost all its acid zombies still appears with its expected count.
       const storeys = site.plan.composition?.storeys ?? [];
       expect(storeys.length, `${scenario.id} numbers more than one lab storey`).toBeGreaterThan(1);
-      const isAcid = ({ zombie }: { zombie: string }) => zombie === 'acid_zombie';
+      const isAcid = ({ zombie: actor }: { zombie: string }) => actor === 'acid_zombie';
       const lab = site.placements.filter((placement) => placement.template.id === scenario.serviceTemplate);
       expect(lab.length, `${scenario.id} places the lab`).toBe(1);
       const labAcid = lab.flatMap(placedSpawns).filter(isAcid);

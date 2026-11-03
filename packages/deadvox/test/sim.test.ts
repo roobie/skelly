@@ -558,8 +558,8 @@ describe('Simulation', () => {
     const b = new Simulation({ seed: 7 });
     const draw = (sim: Simulation, id: string) => Array.from({ length: 5 }, () => sim.rng(id).next());
     expect(draw(a, 'zombies')).toEqual(draw(b, 'zombies'));
-    const zombies = a.rng('zombies');
+    const actors = a.rng('zombies');
     const loot = a.rng('loot');
-    expect(zombies.next()).not.toBe(loot.next());
+    expect(actors.next()).not.toBe(loot.next());
   });
 });

@@ -189,10 +189,10 @@ describe('passable but opaque vegetation', () => {
     const playerCombat = new PlayerCombat(system);
     const id = system.add(registry.actors.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
     system.tick(1 / 20);
-    const zombie = system.store.get(id)!;
-    expect(zombie.mode).not.toBe('chase');
+    const actor = system.store.get(id)!;
+    expect(actor.mode).not.toBe('chase');
     system.setFrozen(true);
-    const { center } = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, 0.5)).head.find(
+    const { center } = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, 0.5)).head.find(
       (box) => box.bone === 'head',
     )!;
     const origin: [number, number, number] = [center[0], center[1], 0.5];

@@ -804,7 +804,10 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   session.sim.paused = false;
   const doorOrigin: Vec3 = [0, 1, 0];
   const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
-  const listenerId = session.actors.add({ ...registry.actors.get('shambler')!, sight: 0, nightSight: 0 }, [8, 1, 0.5]);
+  const listenerId = session.actors.add(
+    { ...registry.actors.get('shambler')!, sight: Number.MIN_VALUE, nightSight: Number.MIN_VALUE },
+    [8, 1, 0.5],
+  );
   const listener = session.zombieStore.get(listenerId)!;
   expect(listener.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
@@ -862,12 +865,12 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     groundAt: () => scale.blockSize,
   } as unknown as Engine;
   expect(spawnUnawareShambler(debugEngine, session.body, session.actors)).toBe(true);
-  const [id, zombie] = [...session.zombieStore.entries()][0]!;
+  const [id, actor] = [...session.zombieStore.entries()][0]!;
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(zombie.mode).not.toBe('chase');
-  expect(zombie.lastPerceived).toBeUndefined();
+  expect(actor.mode).not.toBe('chase');
+  expect(actor.lastPerceived).toBeUndefined();
   const events = session.sim.events.reader();
   expect(session.playPlayerSound('player_hurt_light', session.sim.time, { sourceLabel: 'debug test noise' })).toBe(
     true,
@@ -882,12 +885,12 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
   }
-  expect(zombie.mode).toBe('hesitate');
-  expect(zombie.investigationTier).toBe('near');
-  expect(zombie.lastPerceived).toEqual(noise.pos);
+  expect(actor.mode).toBe('hesitate');
+  expect(actor.investigationTier).toBe('near');
+  expect(actor.lastPerceived).toEqual(noise.pos);
 
   const renderer = new MobActorMeshes(scale.blockSize, 2, {
-    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
+    zombies: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
   });
   try {
     const camera = new PerspectiveCamera(55, 1, 0.01, 50);
@@ -937,21 +940,20 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   }
   session.actors.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
   session.frame(0.5);
-  const members = () => [...session.zombieStore.entries()].filter(([, zombie]) => zombie.hordeId === 'noise-fixture');
+  const members = () => [...session.zombieStore.entries()].filter(([, actor]) => actor.hordeId === 'noise-fixture');
   const meanX = () => {
     const group = members();
-    return group.reduce((total, [, zombie]) => total + zombie.body.pos[0] / group.length, 0);
+    return group.reduce((total, [, actor]) => total + actor.body.pos[0] / group.length, 0);
   };
   expect(members().length).toBeGreaterThan(0);
-  expect(members().every(([, zombie]) => zombie.tier === 'background')).toBe(true);
+  expect(members().every(([, actor]) => actor.tier === 'background')).toBe(true);
   const before = meanX();
   const shotgun = registry.sounds.get('shotgun_blast')!;
   const shotgunRadius = shotgun.noise.radiusMetres * shambler.hearing;
   const groupDistance = Math.max(
     ...members().map(
-      ([, zombie]) =>
-        Math.hypot(zombie.body.pos[0] - session.body.pos[0], zombie.body.pos[2] - session.body.pos[2]) *
-        scale.blockSize,
+      ([, actor]) =>
+        Math.hypot(actor.body.pos[0] - session.body.pos[0], actor.body.pos[2] - session.body.pos[2]) * scale.blockSize,
     ),
   );
   expect(groupDistance).toBeLessThan(shotgunRadius);
@@ -967,7 +969,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   }
 
   const horde = session.actors.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
-  expect(members().every(([, zombie]) => zombie.lastVocalNoiseId === noise.id)).toBe(true);
+  expect(members().every(([, actor]) => actor.lastVocalNoiseId === noise.id)).toBe(true);
   expect(horde?.lastNoiseId).toBe(noise.id);
   expect(horde?.mode).toBe('noise');
   expect(horde?.target[0]).toBeLessThan(before);

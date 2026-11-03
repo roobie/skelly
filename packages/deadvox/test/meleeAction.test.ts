@@ -112,21 +112,21 @@ const makeSystem = (
 
 const makeTarget = (system: ActorSystem, type: ActorDef = SHAMBLER) => {
   const id = system.add(type, [0, 1, 4], [0, 0, 1]);
-  const zombie = system.store.get(id)!;
-  zombie.body.onGround = true;
+  const actor = system.store.get(id)!;
+  actor.body.onGround = true;
   system.setFrozen(true);
-  return { id, zombie };
+  return { id, actor };
 };
 
 const regionRay = (
-  zombie: Actor,
+  actor: Actor,
   id: number,
   region: 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg',
 ): { origin: Vec3; direction: Vec3 } => {
-  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE));
   const box = region === 'head' ? posed.head.find((candidate) => candidate.bone === 'head')! : posed[region][0]!;
   const { center } = box;
-  const front = [-zombie.facing[0], 0, -zombie.facing[2]] as Vec3;
+  const front = [-actor.facing[0], 0, -actor.facing[2]] as Vec3;
   const origin: Vec3 = [
     center[0] + (front[0] * 0.75) / BLOCK_SIZE,
     center[1] + 1,
@@ -136,7 +136,7 @@ const regionRay = (
   const length = Math.hypot(...delta);
   return { origin, direction: delta.map((value) => value / length) as Vec3 };
 };
-const headRay = (zombie: Actor, id: number) => regionRay(zombie, id, 'head');
+const headRay = (actor: Actor, id: number) => regionRay(actor, id, 'head');
 
 const start = (
   system: ActorSystem,
@@ -184,7 +184,7 @@ describe('melee pose and contact contract', () => {
     const hits: number[] = [];
     const system = makeSystem(FLOOR, [], [], { weaponHits: hits });
     const target = makeTarget(system);
-    const ray = headRay(target.zombie, target.id);
+    const ray = headRay(target.actor, target.id);
     expect(start(system, ray, 'blunt', BASE_WEAPON)).toBe(true);
     advance(system, 0.25);
     advance(system, 0.8);
@@ -304,10 +304,10 @@ describe('player melee action', () => {
   it('does no damage before contact, then resolves exactly once at the bounded contact tick using click-time aim', () => {
     const results: string[] = [];
     const system = makeSystem(FLOOR, results);
-    const { id, zombie } = makeTarget(system);
-    const ray = headRay(zombie, id);
+    const { id, actor } = makeTarget(system);
+    const ray = headRay(actor, id);
     expect(system.aimAt(ray.origin, ray.direction, BASE_WEAPON)?.inReach).toBe(true);
-    const initialHealth = zombie.regions.head!;
+    const initialHealth = actor.regions.head!;
     const needs = { stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 };
     expect(
       startPlayerMelee(combatFor(system), needs, {
@@ -320,7 +320,7 @@ describe('player melee action', () => {
       }),
     ).toBe('started');
     expect(needs.stamina).toBe(96);
-    expect(zombie.regions.head).toBe(initialHealth);
+    expect(actor.regions.head).toBe(initialHealth);
     expect(combatFor(system).activeMeleeAction?.contactAt).toBe(
       meleeContactTime(BASE_WEAPON.cooldown, BASE_WEAPON.contactFraction!, BASE_WEAPON.windupCapSimSeconds!),
     );
@@ -337,23 +337,23 @@ describe('player melee action', () => {
     for (let tick = 0; tick < 4; tick++) {
       advance(system, 0.05);
     }
-    expect(zombie.regions.head).toBe(initialHealth);
+    expect(actor.regions.head).toBe(initialHealth);
     expect(results).toEqual([]);
     advance(system, 0.05);
-    expect(zombie.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
+    expect(actor.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
     expect(results).toEqual(['hit']);
     for (let tick = 0; tick < 16; tick++) {
       advance(system, 0.05);
     }
-    expect(zombie.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
+    expect(actor.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
     expect(results).toHaveLength(1);
     expect(combatFor(system).snapshotState().playerAttackWait).toBe(0);
   });
 
   it('routes immediate geometry queries through the shared resolver without owning continuation state', () => {
     const system = makeSystem();
-    const { id, zombie } = makeTarget(system);
-    const ray = headRay(zombie, id);
+    const { id, actor } = makeTarget(system);
+    const ray = headRay(actor, id);
     const internal = system as unknown as {
       resolveMeleeNow: (origin: Vec3, direction: Vec3, weapon: MeleeWeapon) => number | undefined;
     };
@@ -454,7 +454,7 @@ describe('player melee action', () => {
     expect(combatFor(missSystem).snapshotState().playerAttackWait).toBeCloseTo(0.55);
 
     const unblocked = makeSystem();
-    const { id, zombie: target } = makeTarget(unblocked);
+    const { id, actor: target } = makeTarget(unblocked);
     const ray = headRay(target, id);
     const aim = unblocked.aimAt(ray.origin, ray.direction, BASE_WEAPON)!;
     const midDistanceBlocks = (aim.distanceMetres / BLOCK_SIZE) * 0.5;
@@ -465,14 +465,14 @@ describe('player melee action', () => {
     const wallResults: string[] = [];
     const wallSystem = makeSystem(solid, wallResults);
     const wallTarget = makeTarget(wallSystem);
-    const wallRay = headRay(wallTarget.zombie, wallTarget.id);
+    const wallRay = headRay(wallTarget.actor, wallTarget.id);
     expect(wallSystem.aimAt(wallRay.origin, wallRay.direction, BASE_WEAPON)).toBeUndefined();
     expect(start(wallSystem, wallRay)).toBe(true);
     for (let tick = 0; tick < 5; tick++) {
       advance(wallSystem, 0.05);
     }
     expect(wallResults).toEqual(['miss']);
-    expect(wallTarget.zombie.regions.head).toBe(SHAMBLER.regions.head);
+    expect(wallTarget.actor.regions.head).toBe(SHAMBLER.regions.head);
     expect(combatFor(wallSystem).snapshotState().playerAttackWait).toBeCloseTo(0.55);
   });
 
@@ -492,8 +492,8 @@ describe('player melee action', () => {
   ])('preserves $profile hit sound through live ticks and restored actions', ({ profile, expected, weapon, hands }) => {
     const originalSounds: string[] = [];
     const original = makeSystem(FLOOR, [], originalSounds);
-    const { id, zombie } = makeTarget(original);
-    const ray = headRay(zombie, id);
+    const { id, actor } = makeTarget(original);
+    const ray = headRay(actor, id);
     expect(combatFor(original).beginMeleeSwing({ ...ray, weapon, profile, twoHanded: false, hands })).toBe(true);
     for (let tick = 0; tick < 4; tick++) {
       advance(original, 0.05, hands);
@@ -516,13 +516,13 @@ describe('player melee action', () => {
   it('saves the remaining phase, hits once after restore, alternates fists, and cancels when hands change', () => {
     const originalResults: string[] = [];
     const original = makeSystem(FLOOR, originalResults);
-    const { id, zombie } = makeTarget(original);
-    const ray = headRay(zombie, id);
+    const { id, actor } = makeTarget(original);
+    const ray = headRay(actor, id);
     expect(start(original, ray)).toBe(true);
     for (let tick = 0; tick < 4; tick++) {
       advance(original, 0.05);
     }
-    const initialHealth = zombie.regions.head!;
+    const initialHealth = actor.regions.head!;
     const state = original.snapshotState();
     const actionState = combatFor(original).snapshotState();
     const restoredResults: string[] = [];
@@ -597,7 +597,7 @@ describe('player melee action', () => {
     expect(combatFor(fists).activeMeleeAction?.hand).toBe('left');
 
     const swapping = makeSystem();
-    const { id: swapId, zombie: swapTarget } = makeTarget(swapping);
+    const { id: swapId, actor: swapTarget } = makeTarget(swapping);
     expect(start(swapping, headRay(swapTarget, swapId))).toBe(true);
     const health = swapTarget.regions.head;
     advance(swapping, 0.1, { right: 12, left: null });
@@ -662,14 +662,14 @@ describe('player melee action', () => {
     };
     const hitsToKill = (type: 'blunt' | 'cut' | 'pierce', seed: number): number => {
       const system = makeSystem(FLOOR, [], [], { seed });
-      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const { id, actor } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
         { ...FISTS_MELEE, damage: 20, reach: 3, cooldown: 1, type },
         registry.meleeClasses.get(type)!,
       );
       let hits = 0;
       while (system.store.get(id) && hits < 10) {
-        const ray = headRay(zombie, id);
+        const ray = headRay(actor, id);
         system.swing(ray.origin, ray.direction, weapon);
         hits += 1;
       }
@@ -694,14 +694,14 @@ describe('player melee action', () => {
     const sameBaseDamage = armHealth / ((bluntScale + cutScale) / 2);
     const remainingArm = (type: 'blunt' | 'cut'): number => {
       const system = makeSystem();
-      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const { id, actor } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
         { ...FISTS_MELEE, damage: sameBaseDamage, damageVariance: 0, reach: 3, cooldown: 1, type },
         registry.meleeClasses.get(type)!,
       );
-      const ray = regionRay(zombie, id, 'leftArm');
+      const ray = regionRay(actor, id, 'leftArm');
       system.swing(ray.origin, ray.direction, weapon);
-      return zombie.regions.leftArm!;
+      return actor.regions.leftArm!;
     };
 
     expect(remainingArm('cut')).toBe(0);
@@ -715,14 +715,14 @@ describe('player melee action', () => {
     };
     const hitWithVariance = (damageVariance: number) => {
       const system = makeSystem(FLOOR, [], [], { seed: 419 });
-      const { id, zombie } = makeTarget(system, withoutDismemberment);
-      const ray = regionRay(zombie, id, 'torso');
+      const { id, actor } = makeTarget(system, withoutDismemberment);
+      const ray = regionRay(actor, id, 'torso');
       const weapon = resolveMeleeWeapon(
         { ...FISTS_MELEE, damage: 1, reach: 3, cooldown: 1, type: 'blunt', damageVariance },
         registry.meleeClasses.get('blunt')!,
       );
       expect(system.swing(ray.origin, ray.direction, weapon)).toBe(id);
-      return zombie.dismemberRng.state();
+      return actor.dismemberRng.state();
     };
 
     expect(hitWithVariance(0)).toEqual(hitWithVariance(registry.meleeClasses.get('blunt')!.damageVariance));
@@ -735,7 +735,7 @@ describe('player melee action', () => {
     };
     const contactDamage = (type: 'blunt' | 'cut' | 'pierce', seed: number, damageVariance?: number): number => {
       const system = makeSystem(FLOOR, [], [], { seed });
-      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const { id, actor } = makeTarget(system, withoutDismemberment);
       const weapon = resolveMeleeWeapon(
         {
           ...FISTS_MELEE,
@@ -747,9 +747,9 @@ describe('player melee action', () => {
         },
         registry.meleeClasses.get(type)!,
       );
-      const ray = regionRay(zombie, id, 'torso');
+      const ray = regionRay(actor, id, 'torso');
       system.swing(ray.origin, ray.direction, weapon);
-      return SHAMBLER.regions.torso! - zombie.regions.torso!;
+      return SHAMBLER.regions.torso! - actor.regions.torso!;
     };
     const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
     const span = (type: 'blunt' | 'cut' | 'pierce') => {

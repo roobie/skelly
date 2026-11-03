@@ -2545,7 +2545,7 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   in progress is not saved. The times and the quality are content on the zombie
   type. See `src/core/schema/actors.ts`, `ActorSchema` (`downed`); `src/game/downedBody.ts`,
   `downedBodyPlan`; `src/core/actorSystem.ts`, `ActorSystem.finishDowned`; and
-  `src/game/session.ts`, `standingZombieBodies`.
+  `src/game/session.ts`, `standingActorBodies`.
 - **Gore is presentation only.** Every damaging hit sprays blood from the
   wound, mostly along the strike and some back toward the attacker, more for a
   heavier hit. A severed part's launch and the blood its cut throws are presentation
@@ -2573,7 +2573,7 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   Splats are decoration, so they fade rather than being saved, which would add
   to every save. The simulation reports each shambler wound through a one-way
   callback and reads nothing back, and
-  `test/zombies.test.ts` checks that a run with a listener matches one without.
+  `test/actorSystem.test.ts` checks that a run with a listener matches one without.
   Droplets and splats live in fixed pools, drips come from the nearest few
   bodies, and a cap limits the droplets started per frame. Everything here
   covers the amalgam too, which is fused from shamblers. See
@@ -2807,7 +2807,7 @@ Loss adds neither a notice nor a sound. Zombie loot can yield nothing, and a
 line about an unseen body would narrate what the character cannot know; see
 `INTERFACE.md`, "Text". Zombie drops search wider because they have no retained
 owner; player routes keep their ordinary candidates and refuse because they do
-have one. See `src/game/session.ts`, `placeZombieDrop`;
+have one. See `src/game/session.ts`, `placeActorDrop`;
 `src/core/furnitureMove.ts`, `spreadZombieDrop` and `spreadFrom`; and
 `src/game/streamer.ts`, `Streamer.isReady`.
 

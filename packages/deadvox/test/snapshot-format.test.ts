@@ -114,7 +114,7 @@ const applyBudgetPiles = (runtime: ReturnType<typeof createRuntime>) => {
 };
 
 // Exercise idempotent column arrival; one group marker can own several live actors.
-const touchBudgetFurnitureAndZombies = (runtime: ReturnType<typeof createRuntime>) => {
+const touchBudgetFurnitureAndActors = (runtime: ReturnType<typeof createRuntime>) => {
   const touchedContainers = [...runtime.entities.all].filter((entity) => entity.pockets);
   for (const entity of touchedContainers) {
     runtime.entities.markSearched(entity);
@@ -478,9 +478,9 @@ describe('canonical save format', () => {
       [source.player.body.pos[0] + 1, source.player.body.pos[1], source.player.body.pos[2]],
       [0, 0, 1],
     );
-    const zombie = source.zombies.store.get(id)!;
+    const actor = source.zombies.store.get(id)!;
     source.zombies.setFrozen(true);
-    const posed = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, scale.blockSize));
+    const posed = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, scale.blockSize));
     const { center } = posed.head.find((box) => box.bone === 'head')!;
     const origin: import('../src/core/coords.ts').Vec3 = [
       source.player.body.pos[0],
@@ -518,7 +518,7 @@ describe('canonical save format', () => {
         hands,
       }),
     ).toBe('started');
-    const initialHealth = zombie.regions.head!;
+    const initialHealth = actor.regions.head!;
     const action = source.session.playerCombat.activeMeleeAction!;
     const step = 1 / 60;
     const contactTick = Math.ceil(action.contactAt / step);
@@ -571,8 +571,8 @@ describe('canonical save format', () => {
     regions.head! /= 2;
     regions.torso! /= 2;
     const source = createRuntime(damaged);
-    const zombie = source.zombies.store.get(id)!;
-    expect(zombie.regions).toEqual(regions);
+    const actor = source.zombies.store.get(id)!;
+    expect(actor.regions).toEqual(regions);
 
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
@@ -580,8 +580,8 @@ describe('canonical save format', () => {
     const loaded = createRuntime(decoded.snapshot);
     const restored = loaded.zombies.store.get(id)!;
 
-    expect(restored.regions).not.toBe(zombie.regions);
-    expect(restored.regions).toEqual(zombie.regions);
+    expect(restored.regions).not.toBe(actor.regions);
+    expect(restored.regions).toEqual(actor.regions);
     expect(capture(loaded)).toEqual(decoded.snapshot);
   });
 
@@ -641,7 +641,7 @@ describe('canonical save format', () => {
     const runtime = createRuntime(undefined, true);
     const worldStats = applyBudgetWorldEdits(runtime);
     const pileStats = applyBudgetPiles(runtime);
-    const population = touchBudgetFurnitureAndZombies(runtime);
+    const population = touchBudgetFurnitureAndActors(runtime);
     expect(worldStats.visitedChunks).toBeGreaterThan(0);
     expect(worldStats.editedChunks).toBeGreaterThan(0);
     expect(worldStats.editedChunks).toBeLessThan(worldStats.visitedChunks);

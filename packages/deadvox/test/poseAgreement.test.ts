@@ -26,7 +26,7 @@ const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
 
-const livePoseZombie = (type = SHAMBLER) => {
+const livePoseActor = (type = SHAMBLER) => {
   let target: Vec3 = [100, 1, 100];
   let damage = 0;
   const system = new ActorSystem({
@@ -49,29 +49,29 @@ const livePoseZombie = (type = SHAMBLER) => {
     },
   });
   const id = system.add(type, [2, 1, 3], [0, 0, -1]);
-  const zombie = system.store.get(id)!;
+  const actor = system.store.get(id)!;
   return {
     system,
     id,
-    zombie,
+    actor,
     damage: () => damage,
     approach: (distance = 1.2) => {
-      target = [zombie.body.pos[0] + zombie.facing[0] * distance, 2, zombie.body.pos[2] + zombie.facing[2] * distance];
+      target = [actor.body.pos[0] + actor.facing[0] * distance, 2, actor.body.pos[2] + actor.facing[2] * distance];
     },
   };
 };
 
 const startTurnedAttack = () => {
-  const live = livePoseZombie();
+  const live = livePoseActor();
   live.system.tick(1 / 20);
   live.approach();
   live.system.tick(1 / 6000);
   return live;
 };
 
-const rendererFor = (zombie: Actor) =>
+const rendererFor = (actor: Actor) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
-    zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
+    zombies: new Map([[actor.type.id, { ...actor.type, figureSeeds: [actor.figureSeed] }]]),
   });
 
 const offsetForBox = ({
@@ -120,8 +120,8 @@ const offsetForBox = ({
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
-const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Actor) => {
-  const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+const maxOffset = (renderer: MobActorMeshes, id: number, actor: Actor) => {
+  const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
   const { figure } = posedActor(input);
   const hit = posedHumanoidRegionBoxes(input);
   let worst = {
@@ -157,22 +157,22 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Actor) => {
 
 describe('rendered and hit shambler poses', () => {
   it('matches a frozen lunge pose after windup cancellation', () => {
-    const { system, id, zombie, damage } = startTurnedAttack();
-    expect(zombie.attackWindup).toBeGreaterThan(0);
-    expect(zombie.attackWait).toBeGreaterThan(0);
-    const renderer = rendererFor(zombie);
+    const { system, id, actor, damage } = startTurnedAttack();
+    expect(actor.attackWindup).toBeGreaterThan(0);
+    expect(actor.attackWait).toBeGreaterThan(0);
+    const renderer = rendererFor(actor);
     try {
       renderer.sync(system.store, 0, 1);
-      const wait = zombie.attackWait;
+      const wait = actor.attackWait;
       system.setFrozen(true);
-      expect(zombie.attackWindup).toBe(0);
-      expect(zombie.attackWait).toBe(wait);
+      expect(actor.attackWindup).toBe(0);
+      expect(actor.attackWait).toBe(wait);
       const frozen = system.snapshotState();
       system.tick(SHAMBLER.attack.windupSimSeconds + SHAMBLER.attack.cooldownSimSeconds);
       expect(system.snapshotState()).toEqual(frozen);
       expect(damage()).toBe(0);
       renderer.sync(system.store, 0, 1, true);
-      const mismatch = maxOffset(renderer, id, zombie);
+      const mismatch = maxOffset(renderer, id, actor);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
       expect(mismatch.worstRotation.rotationDeltaDeg).toBeLessThan(0.1);
       expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
@@ -183,22 +183,22 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it.each(['runner', 'crawler'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
-    const { system, id, zombie, approach } = livePoseZombie(registry.actors.get(model)!);
+    const { system, id, actor, approach } = livePoseActor(registry.actors.get(model)!);
     approach(10);
-    for (let tick = 0; tick < 60 && zombie.gaitPhase === 0; tick++) {
+    for (let tick = 0; tick < 60 && actor.gaitPhase === 0; tick++) {
       system.tick(1 / 60);
     }
-    expect(zombie.mode).toBe('chase');
-    const head = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
+    expect(actor.mode).toBe('chase');
+    const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE)).head.find(
       (box) => box.bone === 'head',
     )!.center;
     expect(system.swing([head[0], head[1] + 1, head[2] - 1.5], [0, -1, 1.5], { ...FISTS_MELEE, damage: 1 })).toBe(id);
-    expect(zombie.hitFlinchTime).toBe(0);
+    expect(actor.hitFlinchTime).toBe(0);
     system.tick(HIT_FLINCH_DURATION / 4);
-    expect(zombie.gaitPhase).toBeGreaterThan(0);
-    expect(zombie.hitFlinchTime).toBeGreaterThan(0);
+    expect(actor.gaitPhase).toBeGreaterThan(0);
+    expect(actor.hitFlinchTime).toBeGreaterThan(0);
     system.setFrozen(true);
-    const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
     const { hitFlinchTime: _flinch, ...baseInput } = input;
     const flinched = posedActor(input);
     const basePose = posedActor(baseInput);
@@ -206,10 +206,10 @@ describe('rendered and hit shambler poses', () => {
     expect(flinched.pose.rotations.head).not.toEqual(basePose.pose.rotations.head);
     expect(recovered.transforms).toEqual(basePose.transforms);
 
-    const renderer = rendererFor(zombie);
+    const renderer = rendererFor(actor);
     try {
       renderer.sync(system.store, 0, 1, true);
-      const mismatch = maxOffset(renderer, id, zombie);
+      const mismatch = maxOffset(renderer, id, actor);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);
       expect(mismatch.worstRotation.rotationDeltaDeg).toBeLessThan(0.1);
       expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
@@ -274,8 +274,8 @@ describe('rendered and hit shambler poses', () => {
       hurtPlayer: () => undefined,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const zombie = system.store.get(id)!;
-    const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+    const actor = system.store.get(id)!;
+    const input = actorPoseInputFor(actor, id, BLOCK_SIZE);
     const { stanceWeight: _savedStanceWeight, ...legacyInput } = input;
     const untrackedChase = posedActor({ ...legacyInput, chasing: true });
     const trackedChase = posedActor({ ...input, chasing: true, stanceWeight: 1 });
@@ -304,27 +304,27 @@ describe('rendered and hit shambler poses', () => {
       hurtPlayer: () => undefined,
     });
     const freshId = freshSystem.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const freshZombie = freshSystem.store.get(freshId)!;
-    expect(freshZombie.stanceWeight).toBeUndefined();
+    const freshActor = freshSystem.store.get(freshId)!;
+    expect(freshActor.stanceWeight).toBeUndefined();
     freshSystem.tick(1 / 20);
-    expect(freshZombie.mode).toBe('chase');
-    expect(freshZombie.stanceWeight).toBe(1);
+    expect(freshActor.mode).toBe('chase');
+    expect(freshActor.stanceWeight).toBe(1);
   });
 
   it('aimAt hits the rendered head centre during a frozen lunge and turned head-look', () => {
-    const { system, id, zombie } = startTurnedAttack();
-    expect(zombie.attackWindup).toBeGreaterThan(0);
-    expect(zombie.attackWait).toBeGreaterThan(0);
-    expect(Math.abs(zombie.headYaw)).toBeGreaterThan(0);
+    const { system, id, actor } = startTurnedAttack();
+    expect(actor.attackWindup).toBeGreaterThan(0);
+    expect(actor.attackWait).toBeGreaterThan(0);
+    expect(Math.abs(actor.headYaw)).toBeGreaterThan(0);
     system.setFrozen(true);
 
-    const renderer = rendererFor(zombie);
+    const renderer = rendererFor(actor);
     try {
       renderer.sync(system.store, 0, 1, true);
-      const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
+      const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE)).head.find(
         (box) => box.bone === 'head',
       )!;
-      const local = humanoidRegionBoxes(zombie.figureSeed).head.find((box) => box.bone === 'head')!.center;
+      const local = humanoidRegionBoxes(actor.figureSeed).head.find((box) => box.bone === 'head')!.center;
       const matrix = renderer.boneMatrix(id, 'head')!;
       const center = [0, 1, 2].map(
         (axis) =>

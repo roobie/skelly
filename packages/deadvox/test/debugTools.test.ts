@@ -164,7 +164,7 @@ describe('debug starting equipment', () => {
       physics: physicsFor(SCALE),
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
-      onSever: (_id, _zombie, _part, hit) => {
+      onSever: (_id, _actor, _part, hit) => {
         launchImpulse = hit.impulse;
       },
     });
@@ -173,10 +173,10 @@ describe('debug starting equipment', () => {
       dismember: { chance: 0, headOnKillChance: 1 },
     };
     const id = system.add(shambler, [1.85 / SCALE.blockSize, 1, 0], [-1, 0, 0]);
-    const zombie = system.store.get(id)!;
-    zombie.figureSeed = 1;
-    zombie.regions.head = weapon.damage;
-    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, SCALE.blockSize)).head;
+    const actor = system.store.get(id)!;
+    actor.figureSeed = 1;
+    actor.regions.head = weapon.damage;
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, SCALE.blockSize)).head;
     const target = boxes
       .map((box) => box.voxelCentroid)
       .find((candidate) => {
@@ -190,7 +190,7 @@ describe('debug starting equipment', () => {
     const ray = direction.map((value) => value / length) as Vec3;
     expect(system.swing(playerEye, ray, FISTS_MELEE)).toBeUndefined();
     expect(system.swing(playerEye, ray, weapon)).toBe(id);
-    expect(zombie.regions.head).toBe(0);
+    expect(actor.regions.head).toBe(0);
     expect(launchImpulse).toBeCloseTo(10 * shambler.severedImpulseScale);
   });
 

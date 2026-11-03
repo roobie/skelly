@@ -86,7 +86,7 @@ it('refuses unsupported parking bays', () => {
 });
 
 const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
-const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutActorIds = new Set(layout.shamblers.map(({ type }) => type));
 const layoutValidationBase = [
   // Named spawn windows resolve against a day cycle.
   base.find(({ source }) => source === 'dayCycle.json')!,
@@ -102,11 +102,11 @@ const layoutValidationBase = [
           layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
         };
       }),
-      actors: [...layoutZombieIds].map((id) => {
-        const zombie = structuredClone(registry.actors.get(id)!);
-        zombie.loot = undefined;
-        zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
-        return zombie;
+      actors: [...layoutActorIds].map((id) => {
+        const actor = structuredClone(registry.actors.get(id)!);
+        actor.loot = undefined;
+        actor.severedItems = Object.fromEntries(Object.keys(actor.regions).map((region) => [region, null]));
+        return actor;
       }),
       // The zombies name the tool quality that dismembers them, so one tool has to have it.
       items: [
@@ -118,7 +118,7 @@ const layoutValidationBase = [
           size: [1, 1],
           tool: {
             qualities: Object.fromEntries(
-              [...layoutZombieIds].flatMap((id) => {
+              [...layoutActorIds].flatMap((id) => {
                 const dismember = registry.actors.get(id)!.downed?.dismember;
                 return dismember ? [[dismember.quality, dismember.level]] : [];
               }),
@@ -126,7 +126,7 @@ const layoutValidationBase = [
           },
         },
       ],
-      sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.actors.get(id)!.sounds)))].map(
+      sounds: [...new Set([...layoutActorIds].flatMap((id) => Object.values(registry.actors.get(id)!.sounds)))].map(
         (id) => structuredClone(registry.sounds.get(id)!),
       ),
       // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
@@ -551,12 +551,12 @@ describe('authored layout acceptance', () => {
     } as SiteLayoutDef;
 
     const amalgamIssues = authoredLayoutIssues(site, fixtureRegistry).map(([path]) => path);
-    const smallZombieSite = {
+    const smallActorSite = {
       ...site,
       shamblers: [{ ...site.shamblers[0]!, type: 'shambler' }],
     };
 
-    expect(authoredLayoutIssues(smallZombieSite, fixtureRegistry).map(([path]) => path)).not.toContain(
+    expect(authoredLayoutIssues(smallActorSite, fixtureRegistry).map(([path]) => path)).not.toContain(
       '.shamblers[0].position',
     );
     expect(amalgamIssues).toContain('.shamblers[0].position');

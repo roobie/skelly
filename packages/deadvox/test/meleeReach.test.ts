@@ -56,23 +56,23 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     hurtPlayer: () => undefined,
   });
   const id = system.add(registry.actors.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);
-  const zombie = system.store.get(id)!;
-  zombie.figureSeed = seed;
-  zombie.mode = pose.mode;
-  zombie.horizontalSpeed = pose.speed;
-  zombie.gaitPhase = pose.gaitPhase;
-  zombie.attackWindup = pose.attackWindup;
-  zombie.attackWait =
+  const actor = system.store.get(id)!;
+  actor.figureSeed = seed;
+  actor.mode = pose.mode;
+  actor.horizontalSpeed = pose.speed;
+  actor.gaitPhase = pose.gaitPhase;
+  actor.attackWindup = pose.attackWindup;
+  actor.attackWait =
     pose.attackWindup > 0
-      ? zombie.type.attack.cooldownSimSeconds - (zombie.type.attack.windupSimSeconds - pose.attackWindup)
+      ? actor.type.attack.cooldownSimSeconds - (actor.type.attack.windupSimSeconds - pose.attackWindup)
       : 0;
-  return { system, id, zombie };
+  return { system, id, actor };
 };
 
-const poseInput = (zombie: ReturnType<typeof makeSystem>['zombie']) => actorPoseInputFor(zombie, 1, BLOCK_SIZE);
+const poseInput = (actor: ReturnType<typeof makeSystem>['actor']) => actorPoseInputFor(actor, 1, BLOCK_SIZE);
 
-const regionCentroid = (zombie: ReturnType<typeof makeSystem>['zombie'], region: HumanoidHitRegion): Vec3 => {
-  const boxes = posedHumanoidRegionBoxes(poseInput(zombie))[region].filter((box) => {
+const regionCentroid = (actor: ReturnType<typeof makeSystem>['actor'], region: HumanoidHitRegion): Vec3 => {
+  const boxes = posedHumanoidRegionBoxes(poseInput(actor))[region].filter((box) => {
     if (region === 'head') {
       return true;
     }
@@ -97,11 +97,11 @@ const normalized = (direction: Vec3): Vec3 => {
 };
 
 const visibleVoxel = (
-  zombie: ReturnType<typeof makeSystem>['zombie'],
+  actor: ReturnType<typeof makeSystem>['actor'],
   bones: readonly string[],
   expectedRegion: HumanoidHitRegion,
 ): Vec3 | undefined => {
-  const input = poseInput(zombie);
+  const input = poseInput(actor);
   const boxes = posedHumanoidRegionBoxes(input);
   return posedActorBoneVoxelCenters(input, bones)
     .map(({ center }) => ({
@@ -124,8 +124,8 @@ const visibleVoxel = (
     })?.center;
 };
 
-const visibleTorsoVoxel = (zombie: ReturnType<typeof makeSystem>['zombie']): Vec3 | undefined =>
-  visibleVoxel(zombie, ['chest', 'spine', 'pelvis'], 'torso');
+const visibleTorsoVoxel = (actor: ReturnType<typeof makeSystem>['actor']): Vec3 | undefined =>
+  visibleVoxel(actor, ['chest', 'spine', 'pelvis'], 'torso');
 
 const swingAt = ({
   seed,
@@ -142,15 +142,15 @@ const swingAt = ({
   target: Vec3;
   weapon: (typeof weapons)[number];
 }): boolean => {
-  const { system, id, zombie } = makeSystem(seed, pose, distance);
+  const { system, id, actor } = makeSystem(seed, pose, distance);
   const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
-  const before = { ...zombie.regions };
+  const before = { ...actor.regions };
   const hit = system.swing(playerEye, direction, weapon);
-  if (hit !== id || zombie.regions[region]! >= before[region]!) {
+  if (hit !== id || actor.regions[region]! >= before[region]!) {
     return false;
   }
   return (Object.keys(before) as HumanoidHitRegion[]).every(
-    (other) => other === region || zombie.regions[other] === before[other],
+    (other) => other === region || actor.regions[other] === before[other],
   );
 };
 
@@ -160,8 +160,8 @@ const swingAtReachDistance = (
   weapon: (typeof weapons)[number],
   distanceMetres: number,
 ): boolean => {
-  const { system, id, zombie } = makeSystem(seed, pose, 1.08);
-  const target = visibleTorsoVoxel(zombie);
+  const { system, id, actor } = makeSystem(seed, pose, 1.08);
+  const target = visibleTorsoVoxel(actor);
   if (!target) {
     return false;
   }
@@ -172,21 +172,21 @@ const swingAtReachDistance = (
   }
   const offset = (distanceMetres - aim.distanceMetres) / BLOCK_SIZE;
   const origin = playerEye.map((coordinate, axis) => coordinate - direction[axis]! * offset) as Vec3;
-  const before = zombie.regions.torso!;
-  return system.swing(origin, direction, weapon) === id && zombie.regions.torso! < before;
+  const before = actor.regions.torso!;
+  return system.swing(origin, direction, weapon) === id && actor.regions.torso! < before;
 };
 
 describe('player melee reach at shambler attack distance', () => {
   it('provides a pure aim query that agrees with swing for the posed head, chest, arm, and above-head rays', () => {
     const weapon = runtimeWeapon(registry.items.get('baseball_bat')!.weapon!.melee!);
     const rays = [
-      { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'head') },
-      { name: 'chest', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleTorsoVoxel(zombie)! },
-      { name: 'arm', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'leftArm') },
+      { name: 'head', target: (actor: ReturnType<typeof makeSystem>['actor']) => regionCentroid(actor, 'head') },
+      { name: 'chest', target: (actor: ReturnType<typeof makeSystem>['actor']) => visibleTorsoVoxel(actor)! },
+      { name: 'arm', target: (actor: ReturnType<typeof makeSystem>['actor']) => regionCentroid(actor, 'leftArm') },
       {
         name: 'above-head',
-        target: (zombie: ReturnType<typeof makeSystem>['zombie']) => {
-          const head = regionCentroid(zombie, 'head');
+        target: (actor: ReturnType<typeof makeSystem>['actor']) => {
+          const head = regionCentroid(actor, 'head');
           return [head[0], head[1] + 1, head[2]] as Vec3;
         },
       },
@@ -194,17 +194,17 @@ describe('player melee reach at shambler attack distance', () => {
     const cases = FIGURE_SEEDS.flatMap((seed) =>
       [poses[0]!, poses[2]!].flatMap((pose) =>
         rays.map((ray) => {
-          const { system, id, zombie } = makeSystem(seed, pose, 1.08);
-          const target = ray.target(zombie);
+          const { system, id, actor } = makeSystem(seed, pose, 1.08);
+          const target = ray.target(actor);
           const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
           const before = system.snapshotState();
           const aim = system.aimAt(playerEye, direction, weapon);
           expect(system.snapshotState(), `${ray.name} query mutates simulation state`).toEqual(before);
-          const { system: swingSystem, id: swingId, zombie: swingZombie } = makeSystem(seed, pose, 1.08);
-          const beforeHealth = { ...swingZombie.regions };
+          const { system: swingSystem, id: swingId, actor: swingActor } = makeSystem(seed, pose, 1.08);
+          const beforeHealth = { ...swingActor.regions };
           const swingResult = swingSystem.swing(playerEye, direction, weapon);
           const changed = (Object.keys(beforeHealth) as HumanoidHitRegion[]).find(
-            (region) => swingZombie.regions[region]! < beforeHealth[region]!,
+            (region) => swingActor.regions[region]! < beforeHealth[region]!,
           );
           expect(aim?.inReach ? [aim.id, aim.region] : undefined, `${ray.name} seed ${seed} ${pose.name}`).toEqual(
             changed === undefined ? undefined : [swingId, changed],
@@ -221,8 +221,8 @@ describe('player melee reach at shambler attack distance', () => {
 
   it('reports the nearest visible posed region beyond reach without changing state', () => {
     const weapon = runtimeWeapon(registry.items.get('baseball_bat')!.weapon!.melee!);
-    const { system, zombie } = makeSystem(1, poses[0]!, 3.5);
-    const target = regionCentroid(zombie, 'head');
+    const { system, actor } = makeSystem(1, poses[0]!, 3.5);
+    const target = regionCentroid(actor, 'head');
     const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
     const before = system.snapshotState();
     const aim = system.aimAt(playerEye, direction, weapon);
@@ -239,13 +239,13 @@ describe('player melee reach at shambler attack distance', () => {
     const scenarios = FIGURE_SEEDS.flatMap((seed) =>
       poses.flatMap((pose) =>
         attackDistances.map((distance) => {
-          const { zombie } = makeSystem(seed, pose, distance);
+          const { actor } = makeSystem(seed, pose, distance);
           return {
             seed,
             pose,
             distance,
-            head: regionCentroid(zombie, 'head'),
-            torso: visibleTorsoVoxel(zombie),
+            head: regionCentroid(actor, 'head'),
+            torso: visibleTorsoVoxel(actor),
           };
         }),
       ),
@@ -276,8 +276,8 @@ describe('player melee reach at shambler attack distance', () => {
   });
 
   it('keeps the first-intersected arm in front of the torso on an occluded ray', () => {
-    const { system, id, zombie } = makeSystem(1, poses[0]!, 1.08);
-    const input = poseInput(zombie);
+    const { system, id, actor } = makeSystem(1, poses[0]!, 1.08);
+    const input = poseInput(actor);
     const torsoCandidates = posedActorBoneVoxelCenters(input, ['chest', 'spine', 'pelvis']);
     const target = torsoCandidates.find(({ center }) => {
       const direction = normalized(center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
@@ -285,12 +285,12 @@ describe('player melee reach at shambler attack distance', () => {
     });
     expect(target, 'find a torso voxel occluded by an arm').toBeDefined();
     const direction = normalized(target!.center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
-    const before = { ...zombie.regions };
+    const before = { ...actor.regions };
     const aim = system.aimAt(playerEye, direction, FISTS_MELEE);
     expect(['leftArm', 'rightArm']).toContain(aim?.region);
     expect(system.swing(playerEye, direction, FISTS_MELEE)).toBe(id);
-    expect(zombie.regions[aim!.region]!).toBeLessThan(before[aim!.region]!);
-    expect(zombie.regions.torso).toBe(before.torso);
+    expect(actor.regions[aim!.region]!).toBeLessThan(before[aim!.region]!);
+    expect(actor.regions.torso).toBe(before.torso);
   });
 
   it('hits on both sides of every weapon reach edge', () => {

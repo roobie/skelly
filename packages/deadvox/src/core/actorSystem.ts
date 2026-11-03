@@ -1082,7 +1082,7 @@ export interface HearingInput {
   tuning: SenseDef;
 }
 // Phases share this scratch to avoid per-zombie allocation, so write each per-zombie field before its first read.
-// `test/zombies.test.ts`, `vocalNoiseDoesNotLeakBetweenZombiePasses`, guards the cross-pass case.
+// `test/actorSystem.test.ts`, `vocalNoiseDoesNotLeakBetweenActorPasses`, guards the cross-pass case.
 interface ActorTickScratch {
   dt: number;
   time: number;

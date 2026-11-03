@@ -196,7 +196,7 @@
         "**/deadvox/test/mobActors.test.ts",
         "**/deadvox/test/poseAgreement.test.ts",
         "**/deadvox/test/actorClips.test.ts",
-        "**/deadvox/test/zombies.test.ts",
+        "**/deadvox/test/actorSystem.test.ts",
         "**/deadvox/test/actorAudio.test.ts",
         "**/deadvox/test/actorRegions.test.ts"
       ],

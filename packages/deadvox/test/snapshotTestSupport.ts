@@ -64,11 +64,11 @@ const fixtureTerrain: Terrain = {
   surface: fixtureSite.surface,
   stamp: (chunk) => fixtureSite.stamp(chunk),
 };
-const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.actorsIn(cx, cz).length > 0);
-if (!foundZombieColumn) {
+const foundActorColumn = fixtureColumns.find(([cx, cz]) => fixtureSite.actorsIn(cx, cz).length > 0);
+if (!foundActorColumn) {
   throw new Error('Snapshot fixture has no zombie column');
 }
-export const fixtureZombieColumn: [number, number] = foundZombieColumn;
+export const fixtureZombieColumn: [number, number] = foundActorColumn;
 const chunksByColumn = new Map<string, Chunk[]>();
 const fixtureChunksFor = (columns: readonly [number, number][]): Chunk[] =>
   columns.flatMap(([cx, cz]) => {
@@ -256,7 +256,7 @@ export function createRuntime(
     ...(snapshot ? { restore: snapshot } : {}),
     ...(handedness ? { handedness } : {}),
   });
-  const { sim, inventory, entities, actors: zombies, spawner, rest, survival, quickbar, playerAudio } = session;
+  const { sim, inventory, entities, actors, spawner, rest, survival, quickbar, playerAudio } = session;
   if (session.restoredLook) {
     Object.assign(view, session.restoredLook);
   }
@@ -295,9 +295,9 @@ export function createRuntime(
     if (container) {
       entities.markSearched(container);
     }
-    const first = zombies.store.entries().next().value as [number, unknown] | undefined;
-    if (first && (restFixture || zombies.store.size > 1)) {
-      zombies.store.remove(first[0]);
+    const first = actors.store.entries().next().value as [number, unknown] | undefined;
+    if (first && (restFixture || actors.store.size > 1)) {
+      actors.store.remove(first[0]);
     }
     world.setBlock(editCx * CHUNK + 1, editChunk.cy * CHUNK + 1, editCz * CHUNK + 1, blockId('planks'));
   }
@@ -325,7 +325,7 @@ export function createRuntime(
     entities,
     sharedEntities,
     handling: session.queue,
-    zombies,
+    zombies: actors,
     spawner,
     rest,
     survival,
@@ -431,8 +431,8 @@ export const inspect = (runtime: Runtime): unknown => {
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       hordes: runtime.zombies.snapshotState().hordes,
-      entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const { type, behaviorRng, soundRng, renderPrevious: _renderPrevious, tier: _tier, ...fields } = zombie;
+      entries: [...runtime.zombies.store.entries()].map(([id, actor]) => {
+        const { type, behaviorRng, soundRng, renderPrevious: _renderPrevious, tier: _tier, ...fields } = actor;
         return [
           id,
           {
@@ -497,10 +497,10 @@ export const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
 const IDLE_GROANER_DISTANCE = 20;
 export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
-  const firstZombie = runtime.zombies.store.entries().next().value as
+  const firstActor = runtime.zombies.store.entries().next().value as
     | [number, import('../src/core/actorSystem.ts').Actor]
     | undefined;
-  if (!firstZombie) {
+  if (!firstActor) {
     throw new Error('Snapshot continuation requires a live shambler');
   }
   const playerNoise = runtime.emitPlayerSound('player_strain', runtime.sim.time);
@@ -514,7 +514,7 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   ]);
   // Admit deliberately timed audio actors through restoration, never through live actor fields.
   const saved = structuredClone(capture(runtime));
-  const listener = saved.world.actors.actors.find(({ id }) => id === firstZombie[0])!.actor;
+  const listener = saved.world.actors.actors.find(({ id }) => id === firstActor[0])!.actor;
   listener.body.pos = [playerPos[0] + 0.25, playerPos[1], playerPos[2]];
   listener.body.vel = [0, 0, 0];
   listener.body.onGround = true;

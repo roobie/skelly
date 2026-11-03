@@ -110,7 +110,7 @@ const runEngagement = (seed: number): EngagementResult => {
         steer(playerBody, SCALE, 0, { forward: 0, right: -1, jump: false, sprint: true, walk: false });
         stepBody(playerBody, dt, FLOOR, {
           ...physicsFor(SCALE),
-          obstacles: [...system.store.entries()].map(([, zombie]) => zombie.body),
+          obstacles: [...system.store.entries()].map(([, actor]) => actor.body),
         });
       }
 

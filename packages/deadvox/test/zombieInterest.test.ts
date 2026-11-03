@@ -37,9 +37,9 @@ const fixture = (radiusMetres = 4) => {
   };
   const cries: Actor[] = [];
   const options = {
-    onSound: (event: string, _pos: Vec3, zombie?: Actor) => {
-      if (zombie && event === zombie.type.sounds.alert) {
-        cries.push(zombie);
+    onSound: (event: string, _pos: Vec3, actor?: Actor) => {
+      if (actor && event === actor.type.sounds.alert) {
+        cries.push(actor);
       }
     },
     player: () => player,
@@ -64,72 +64,72 @@ const fixture = (radiusMetres = 4) => {
 describe('shambler interest', () => {
   it('pauses and turns its head toward a quiet sound without walking', () => {
     const f = fixture();
-    const zombie = f.add();
-    const before = [...zombie.body.pos];
+    const actor = f.add();
+    const before = [...actor.body.pos];
     f.step();
-    expect(zombie.mode).toBe('hesitate');
-    expect(zombie.body.pos[0]).toBe(before[0]);
-    expect(zombie.body.pos[2]).toBe(before[2]);
-    expect(Math.abs(zombie.headYaw)).toBeGreaterThan(0);
+    expect(actor.mode).toBe('hesitate');
+    expect(actor.body.pos[0]).toBe(before[0]);
+    expect(actor.body.pos[2]).toBe(before[2]);
+    expect(Math.abs(actor.headYaw)).toBeGreaterThan(0);
   });
 
   it('a loud sound at the threshold skips hesitation', () => {
     const f = fixture(type.hearingModel.loudNoiseRadiusMetres);
-    const zombie = f.add();
+    const actor = f.add();
     f.step();
-    expect(zombie.mode).toBe('investigate');
+    expect(actor.mode).toBe('investigate');
   });
 
   it('a loud far-tier sound interrupts an existing quiet pause', () => {
     const f = fixture();
-    const zombie = f.add();
+    const actor = f.add();
     f.step();
-    expect(zombie.mode).toBe('hesitate');
+    expect(actor.mode).toBe('hesitate');
     f.player.vocalNoise = { id: 2, pos: [30, 1, 0], radiusMetres: 10, expiresAt: 2 };
     f.step();
-    expect(zombie.mode).toBe('investigate');
-    expect(zombie.investigationTier).toBe('far');
-    expect(zombie.hesitationFrom).toBeUndefined();
+    expect(actor.mode).toBe('investigate');
+    expect(actor.investigationTier).toBe('far');
+    expect(actor.hesitationFrom).toBeUndefined();
   });
 
   it('an idle refusal biases the next stroll and makes the next sound suspicious', () => {
     const f = fixture();
-    const zombie = f.add();
+    const actor = f.add();
     f.step();
     f.step(0.15);
     f.step(0.06);
-    expect(zombie.mode).toBe('idle');
-    expect(zombie.refusedAt).toBeDefined();
-    expect(zombie.leanTarget).toEqual(f.player.vocalNoise!.pos);
+    expect(actor.mode).toBe('idle');
+    expect(actor.refusedAt).toBeDefined();
+    expect(actor.leanTarget).toEqual(f.player.vocalNoise!.pos);
     f.step(0.11);
-    expect(zombie.mode).toBe('stroll');
-    expect(zombie.strollHeading[0]).toBeGreaterThan(0);
-    expect(zombie.leanTarget).toBeUndefined();
+    expect(actor.mode).toBe('stroll');
+    expect(actor.strollHeading[0]).toBeGreaterThan(0);
+    expect(actor.leanTarget).toBeUndefined();
     f.player.vocalNoise = { ...f.player.vocalNoise!, id: 2, expiresAt: 2 };
     f.step();
-    expect(zombie.mode).toBe('investigate');
+    expect(actor.mode).toBe('investigate');
   });
 
   it('a strolling listener pursues after the pause rather than refusing', () => {
     const f = fixture();
     f.player.vocalNoise = undefined;
-    const zombie = f.add();
+    const actor = f.add();
     f.step(0.11);
-    expect(zombie.mode).toBe('stroll');
+    expect(actor.mode).toBe('stroll');
     f.player.vocalNoise = { id: 2, pos: [6, 1, 0], radiusMetres: 4, expiresAt: 2 };
     f.step();
-    expect(zombie.mode).toBe('hesitate');
+    expect(actor.mode).toBe('hesitate');
     f.step(0.21);
-    expect(zombie.mode).toBe('investigate');
+    expect(actor.mode).toBe('investigate');
   });
 
   it('horde members beeline even for a quiet sound', () => {
     const f = fixture();
     f.system.addHorde('interest-fixture', type, [0, 1, 0], 1);
     f.step();
-    const members = [...f.system.store.entries()].map(([, zombie]) => zombie);
+    const members = [...f.system.store.entries()].map(([, actor]) => actor);
     expect(members.length).toBeGreaterThan(0);
-    expect(members.every((zombie) => zombie.mode === 'investigate')).toBe(true);
+    expect(members.every((actor) => actor.mode === 'investigate')).toBe(true);
   });
 
   it('chains within the caller radius, cascades, and preserves the caller target point', () => {
@@ -151,10 +151,10 @@ describe('shambler interest', () => {
     const beyond = f.add([40, 1, 0], callerType);
     f.step();
     expect(caller.mode).toBe('investigate');
-    for (const zombie of [listener, cascade]) {
-      expect(zombie.mode).toBe('investigate');
-      expect(zombie.lastPerceived).toEqual(caller.lastPerceived);
-      expect(zombie.lastPerceived).not.toEqual(caller.body.pos);
+    for (const actor of [listener, cascade]) {
+      expect(actor.mode).toBe('investigate');
+      expect(actor.lastPerceived).toEqual(caller.lastPerceived);
+      expect(actor.lastPerceived).not.toEqual(caller.body.pos);
     }
     expect(beyond.mode).toBe('idle');
     expect(beyond.lastPerceived).toBeUndefined();
@@ -247,8 +247,8 @@ describe('shambler interest', () => {
     );
     f.step();
     expect(crowd[0]!.stimulusAt).toBeDefined();
-    const pursuing = crowd.filter((zombie) => zombie.stimulusAt !== undefined);
-    const reach = Math.max(...pursuing.map((zombie) => Math.hypot(zombie.home[0], zombie.home[2]) * scale.blockSize));
+    const pursuing = crowd.filter((actor) => actor.stimulusAt !== undefined);
+    const reach = Math.max(...pursuing.map((actor) => Math.hypot(actor.home[0], actor.home[2]) * scale.blockSize));
     // biome-ignore lint/suspicious/noConsole: This fixture measures undamped reach without pinning a tuning-dependent count.
     console.info(
       `Undamped dense-yard spread: ${pursuing.length}/${crowd.length} pursuing; ${reach.toFixed(2)} metres from source.`,
@@ -271,13 +271,13 @@ describe('shambler interest', () => {
       },
     };
     const crowd = [f.add([0, 1, 0], def), f.add([6, 1, 0], def), f.add([12, 1, 0], def)];
-    const counts = () => crowd.map((zombie) => f.cries.filter((caller) => caller === zombie).length);
+    const counts = () => crowd.map((actor) => f.cries.filter((caller) => caller === actor).length);
     const settle = () => {
       f.player.vocalNoise = undefined;
       for (let tick = 0; tick < 200; tick++) {
         f.step();
       }
-      expect(crowd.every((zombie) => zombie.mode === 'idle' || zombie.mode === 'stroll')).toBe(true);
+      expect(crowd.every((actor) => actor.mode === 'idle' || actor.mode === 'stroll')).toBe(true);
     };
     const stimulate = (id: number) => {
       f.player.vocalNoise = {
@@ -350,7 +350,7 @@ describe('shambler interest', () => {
 
   it('round-trips a live hesitation and refusal lean through validated saves', () => {
     const f = fixture();
-    const zombie = f.add();
+    const actor = f.add();
     f.step();
     const restore = () => {
       const snapshot = f.system.snapshotState();
@@ -362,7 +362,7 @@ describe('shambler interest', () => {
     expect(restore().actors[0]!.actor.mode).toBe('hesitate');
     f.step(0.15);
     f.step(0.06);
-    expect(zombie.leanTarget).toBeDefined();
+    expect(actor.leanTarget).toBeDefined();
     const snapshot = structuredClone(restore());
     snapshot.actors[0]!.actor.refusedAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');

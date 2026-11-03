@@ -16,23 +16,23 @@ const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
-const posed = (zombie: Actor) =>
+const posed = (actor: Actor) =>
   posedHumanoidRegionBoxes({
-    seed: zombie.figureSeed,
-    position: zombie.body.pos,
-    facing: zombie.facing,
-    headYaw: zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
-    chasing: zombie.mode === 'chase',
-    attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
-    severed: zombie.severed,
+    seed: actor.figureSeed,
+    position: actor.body.pos,
+    facing: actor.facing,
+    headYaw: actor.headYaw,
+    gaitPhase: actor.gaitPhase,
+    speed: actor.horizontalSpeed,
+    chasing: actor.mode === 'chase',
+    attackWindup: actor.attackWindup,
+    attackWindupSeconds: actor.type.attack.windupSimSeconds,
+    severed: actor.severed,
     blockSize: BLOCK_SIZE,
   });
-const regionRay = (zombie: Actor) => {
-  const box = posed(zombie).rightArm.find((candidate) => candidate.bone === 'forearm.R')!;
-  const front: Vec3 = [-zombie.facing[0], 0, -zombie.facing[2]];
+const regionRay = (actor: Actor) => {
+  const box = posed(actor).rightArm.find((candidate) => candidate.bone === 'forearm.R')!;
+  const front: Vec3 = [-actor.facing[0], 0, -actor.facing[2]];
   return {
     origin: [
       box.center[0] + (front[0] * 0.45) / BLOCK_SIZE,
@@ -71,18 +71,18 @@ describe('melee while debug-frozen', () => {
         physics: physicsFor(SCALE),
         tuning: TEST_SENSE_TUNING,
         hurtPlayer: () => undefined,
-        onSever: (sourceId, sourceZombie, part, hit) => {
+        onSever: (sourceId, sourceActor, part, hit) => {
           severedParts.push(part);
-          renderer.zombieSevered(sourceId, part, hit, sourceZombie);
+          renderer.zombieSevered(sourceId, part, hit, sourceActor);
         },
       });
       const id = system.add(armKill, [0, 1, 0], [0, 0, -1]);
-      const zombie = system.store.get(id)!;
+      const actor = system.store.get(id)!;
       renderer.sync(system.store, 1 / 60, 1);
       system.setFrozen(true);
-      const ray = regionRay(zombie);
+      const ray = regionRay(actor);
       expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
-      expect(zombie.severed).toContain('upperArm.R');
+      expect(actor.severed).toContain('upperArm.R');
       expect(severedParts).toEqual(['upperArm.R']);
       expect(renderer.boneMatrix(id, 'head')).toBeDefined();
       expect(renderer.debrisCountFor(id)).toBe(1);

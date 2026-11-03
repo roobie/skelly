@@ -174,7 +174,7 @@ test('lost trace data closes its stream without publishing an artifact', async (
   }
 });
 
-test('CPU attribution counts descendants once and keeps GC and native gaps separate', () => {
+test('CPU attribution counts descendants once, includes parentless actor steps and keeps GC and native gaps separate', () => {
   const node = (id, functionName, children = []) => ({ id, callFrame: { functionName }, children });
   const ranking = rankProfile({
     nodes: [

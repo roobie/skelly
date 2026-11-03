@@ -97,16 +97,16 @@ describe('stimulus memory', () => {
     const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const system = new ActorSystem({ ...senses(target, wall), seed: 113 });
-    const zombie = system.store.get(system.add(type, [20, 1, 0]))!;
-    zombie.body.onGround = true;
+    const actor = system.store.get(system.add(type, [20, 1, 0]))!;
+    actor.body.onGround = true;
     const dt = 1 / 20;
     let time = dt;
     // A blocked shambler slides along the wall, so it can drift past the active radius and out of
     // tickActive's selection during the 180 s wait; tick every tier to keep the memory timer under test.
     system.tick(dt, time);
-    expect(zombie.mode).toBe('investigate');
-    expect(zombie.body.pos[0]).toBeGreaterThan(10);
-    const { stimulusAt } = zombie;
+    expect(actor.mode).toBe('investigate');
+    expect(actor.body.pos[0]).toBeGreaterThan(10);
+    const { stimulusAt } = actor;
     if (stimulusAt === undefined) {
       throw new Error('Active zombie did not record the heard sound time');
     }
@@ -116,12 +116,12 @@ describe('stimulus memory', () => {
       time += dt;
       system.tick(dt, time);
     }
-    expect(zombie.mode).toBe('investigate');
-    expect(zombie.body.pos[0]).toBeGreaterThan(10);
+    expect(actor.mode).toBe('investigate');
+    expect(actor.body.pos[0]).toBeGreaterThan(10);
     time += dt;
     system.tick(dt, time);
-    expect(zombie.mode).toBe('return');
-    expect(zombie.lastPerceived).toBeUndefined();
+    expect(actor.mode).toBe('return');
+    expect(actor.lastPerceived).toBeUndefined();
   });
 
   it('round-trips forgotten zombie and horde state with a fresh zombie', () => {
@@ -131,19 +131,19 @@ describe('stimulus memory', () => {
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const options = { ...senses(target, wall), seed: 113 };
     const system = new ActorSystem(options);
-    const zombie = system.store.get(system.add(type, [20, 1, 0]))!;
+    const actor = system.store.get(system.add(type, [20, 1, 0]))!;
     system.addHorde('forgotten-memory-fixture', type, [200, 1, 0], 1);
-    zombie.body.onGround = true;
+    actor.body.onGround = true;
     const dt = 1 / 20;
     let time = dt;
     system.tickActive(dt, time);
     system.tickBackground(dt, time);
-    expect(zombie.mode).toBe('investigate');
-    expect(zombie.stimulusAt).toBeDefined();
-    expect(zombie.lastPerceived).toBeDefined();
-    expect(zombie.investigationTier).toBeDefined();
+    expect(actor.mode).toBe('investigate');
+    expect(actor.stimulusAt).toBeDefined();
+    expect(actor.lastPerceived).toBeDefined();
+    expect(actor.investigationTier).toBeDefined();
     expect(system.snapshotState().hordes[0]?.stimulusAt).toBe(time);
-    const stimulusAt = zombie.stimulusAt!;
+    const stimulusAt = actor.stimulusAt!;
     const deadline = stimulusAt + type.stimulusMemorySimSeconds;
     while (time < deadline + dt) {
       time += dt;
@@ -151,11 +151,11 @@ describe('stimulus memory', () => {
       system.tickBackground(dt, time);
     }
 
-    expect(zombie.mode).toBe('return');
-    expect(zombie.stimulusAt).toBeUndefined();
-    expect(zombie.lastPerceived).toBeUndefined();
-    expect(zombie.investigationTier).toBeUndefined();
-    expect(zombie.searchAnchor).toBeUndefined();
+    expect(actor.mode).toBe('return');
+    expect(actor.stimulusAt).toBeUndefined();
+    expect(actor.lastPerceived).toBeUndefined();
+    expect(actor.investigationTier).toBeUndefined();
+    expect(actor.searchAnchor).toBeUndefined();
     expect(system.snapshotState().hordes[0]?.stimulusAt).toBeUndefined();
 
     system.add(type, [40, 1, 0]);

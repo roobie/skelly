@@ -307,10 +307,10 @@ try {
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
   const drawnModel = (typeId) => {
     const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
-    for (const [id, zombie] of session.actors.store.entries()) {
-      const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
+    for (const [id, actor] of session.actors.store.entries()) {
+      const state = actor.type.id === typeId && view.zombieMeshes.states?.get(id);
       const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
-      if (variant?.model === figureVariantOf(zombie.type) && variant.mesh.count > 0) {
+      if (variant?.model === figureVariantOf(actor.type) && variant.mesh.count > 0) {
         return variant.model;
       }
     }
@@ -336,9 +336,9 @@ try {
   const acidId = await page.waitForFunction(
     () => {
       const { session, view } = globalThis.firefoxUiTest;
-      const away = ([, zombie]) => Math.hypot(...zombie.body.pos.map((value, axis) => value - session.body.pos[axis]));
+      const away = ([, actor]) => Math.hypot(...actor.body.pos.map((value, axis) => value - session.body.pos[axis]));
       const [found] = [...session.actors.store.entries()]
-        .filter(([, zombie]) => zombie.type.id === 'acid_zombie')
+        .filter(([, actor]) => actor.type.id === 'acid_zombie')
         .sort((a, b) => away(a) - away(b));
       const state = found && view.zombieMeshes.states?.get(found[0]);
       const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
@@ -361,11 +361,11 @@ try {
   const acidDeath = await page.evaluate(
     (id) => {
       const { session } = globalThis.firefoxUiTest;
-      const { actors: zombies } = session;
+      const { actors } = session;
       const {
         pos: [x, y, z],
         height: bodyHeight,
-      } = zombies.store.get(id).body;
+      } = actors.store.get(id).body;
       // Only the head kills this body; a shot that strikes the torso first only downs it. Walls may stand beside
       // it, so level rays from around and up the body look for one whose first visible region is its head.
       const weapon = { damage: 1000, reach: 100, cooldown: 0, impulse: 0 };
@@ -374,18 +374,18 @@ try {
         const [dx, dz] = [Math.cos((turn * Math.PI) / 8), Math.sin((turn * Math.PI) / 8)];
         for (let height = bodyHeight; height > 0 && !shot; height -= 0.2) {
           const origin = [x + 2 * dx, y + height, z + 2 * dz];
-          const aim = zombies.aimAt(origin, [-dx, 0, -dz], weapon);
+          const aim = actors.aimAt(origin, [-dx, 0, -dz], weapon);
           if (aim?.id === id && aim.region === 'head') {
             shot = { origin, directions: [[-dx, 0, -dz]] };
           }
         }
       }
       if (shot) {
-        zombies.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
+        actors.firePellets({ ...shot, damage: weapon.damage, impulse: 0, rangeMetres: weapon.reach });
       }
       return {
         aimed: shot !== undefined,
-        died: zombies.store.get(id) === undefined,
+        died: actors.store.get(id) === undefined,
         piles: JSON.stringify(session.inventory.snapshotState().piles),
       };
     },

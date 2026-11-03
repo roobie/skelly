@@ -16,7 +16,7 @@ import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 import { LOOK_FIXTURE } from './lookFixture.ts';
 
-const fixtureZombieTypes = [
+const fixtureActorTypes = [
   { id: 'fixture_roamer', name: 'Fixture roamer', authoredOnly: false },
   { id: 'shamblers', name: 'Fixture authored', authoredOnly: true },
 ];
@@ -30,7 +30,7 @@ describe('debug action dispatch', () => {
     const { actions } = makeActions();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
-      if (fixtureZombieTypes.some((type) => action.id === `debug.spawn-zombie.${type.id}`)) {
+      if (fixtureActorTypes.some((type) => action.id === `debug.spawn-zombie.${type.id}`)) {
         expect(action.key).toBe('');
         continue;
       }
@@ -136,13 +136,13 @@ describe('debug action dispatch', () => {
   });
   it('offers and dispatches every supplied zombie type, including authored-only types', () => {
     const { actions, spawnRequests } = makeActions();
-    for (const type of fixtureZombieTypes) {
+    for (const type of fixtureActorTypes) {
       const id = `debug.spawn-zombie.${type.id}`;
       expect(actions.filter((action) => action.id === id)).toHaveLength(1);
       expect(dispatchDebugAction(actions, id)).toBe(true);
       expect(dispatchDebugAction(actions, id, true)).toBe(true);
     }
-    expect(spawnRequests).toEqual(fixtureZombieTypes.map((type) => ({ typeId: type.id, count: 1 })));
+    expect(spawnRequests).toEqual(fixtureActorTypes.map((type) => ({ typeId: type.id, count: 1 })));
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
@@ -282,7 +282,7 @@ const makeActions = (
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
-    zombieTypes: fixtureZombieTypes,
+    zombieTypes: fixtureActorTypes,
     look,
     build,
     spawnMenu,

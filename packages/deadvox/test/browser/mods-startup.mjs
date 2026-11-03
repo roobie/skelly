@@ -68,14 +68,14 @@ export const selectFixtureMods = async (page) => {
 
 export const assertFixtureMods = async (page, fixture) => {
   const [item] = fixture.items;
-  const [zombie] = fixture.actors;
+  const [actor] = fixture.actors;
   const actual = await page.evaluate(
-    ({ itemId, zombieId }) => {
+    ({ itemId, zombieId: actorId }) => {
       const { registry } = globalThis.firefoxUiTest;
-      return { item: registry.items.get(itemId), speed: registry.actors.get(zombieId)?.speed };
+      return { item: registry.items.get(itemId), speed: registry.actors.get(actorId)?.speed };
     },
-    { itemId: item.id, zombieId: zombie.id },
+    { itemId: item.id, zombieId: actor.id },
   );
   assert.equal(actual.item.name, item.name, 'the URL definition reaches the running registry');
-  assert.deepEqual(actual.speed, zombie.speed, 'the selected mod reaches the running world');
+  assert.deepEqual(actual.speed, actor.speed, 'the selected mod reaches the running world');
 };

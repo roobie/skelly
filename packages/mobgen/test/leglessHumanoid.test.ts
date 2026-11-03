@@ -9,11 +9,11 @@ import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const crawler = TEMPLATES.find((template) => template.name === 'legless-humanoid')!;
+const leglessHumanoid = TEMPLATES.find((template) => template.name === 'legless-humanoid')!;
 // Fixture seeds: Deadvox authors the shipped pool, so this file keeps its own.
 const SHAMBLER_FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const SHAMBLER_SEED_SET = new Set<number>(SHAMBLER_FIGURE_SEEDS);
-const CRAWLER_SWEEP_SEEDS = Array.from({ length: 64 }, (_, index) => index + 1).filter(
+const LEGLESS_HUMANOID_SWEEP_SEEDS = Array.from({ length: 64 }, (_, index) => index + 1).filter(
   (seed) => !SHAMBLER_SEED_SET.has(seed),
 );
 const LOWER_LEG_BONE = /^(shin|foot)\./;
@@ -39,7 +39,7 @@ const pullElbowProperties = (
 
 const trailingSupportProperties = (seed: number): boolean[] => {
   const properties: boolean[] = [];
-  const realized = realize(generate(crawler, seed));
+  const realized = realize(generate(leglessHumanoid, seed));
   const pose = crawlPose(realized);
   const lowest = posedVoxelSurfaceBounds(realized, pose).byBone;
   const transforms = boneTransforms(realized.body.bones, pose);
@@ -69,9 +69,9 @@ const trailingSupportProperties = (seed: number): boolean[] => {
   return properties;
 };
 
-describe('crawler', () => {
+describe('legless humanoid', () => {
   it('validates ground support from the generated voxel contacts', () => {
-    const realized = realize(generate(crawler, 1));
+    const realized = realize(generate(leglessHumanoid, 1));
     const [nx, ny] = realized.voxels.dims;
     let lowestRow = Number.POSITIVE_INFINITY;
     for (let index = 0; index < realized.voxels.owner.length; index++) {
@@ -91,7 +91,7 @@ describe('crawler', () => {
   });
 
   it('uses upper-thigh stumps rather than intact lower legs', () => {
-    const { body } = realize(generate(crawler, 1));
+    const { body } = realize(generate(leglessHumanoid, 1));
     expect(body.bones.some((bone) => bone.id.startsWith('thigh.'))).toBe(true);
     expect(body.bones.some((bone) => LOWER_LEG_BONE.test(bone.id))).toBe(false);
   });
@@ -125,7 +125,7 @@ describe('crawler', () => {
     const seeds = SHAMBLER_FIGURE_SEEDS;
     const representativeSeeds = [...new Set([seeds[0]!, seeds.at(-1)!])];
     for (const seed of representativeSeeds) {
-      const realized = realize(generate(crawler, seed));
+      const realized = realize(generate(leglessHumanoid, seed));
       const rest = crawlPose(realized);
       const leftReach = crawlGaitPose(realized, 0.5, 1);
       const rightReach = crawlGaitPose(realized, Math.PI + 0.5, 1);
@@ -192,8 +192,8 @@ describe('crawler', () => {
     expect(properties.every(Boolean)).toBe(true);
   });
 
-  sweepGroup('additional crawler support seeds', () => {
-    it.each(CRAWLER_SWEEP_SEEDS)('grounds trailing rig supports for figure seed %i', (seed) => {
+  sweepGroup('additional legless humanoid support seeds', () => {
+    it.each(LEGLESS_HUMANOID_SWEEP_SEEDS)('grounds trailing rig supports for figure seed %i', (seed) => {
       const properties = trailingSupportProperties(seed);
       expect(properties.length).toBeGreaterThan(0);
       expect(properties.every(Boolean)).toBe(true);

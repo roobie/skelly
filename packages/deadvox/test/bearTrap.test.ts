@@ -110,16 +110,16 @@ describe('bear trap', () => {
     const h = runtime();
     const trap = h.lay([3, 1, 0]);
     const id = h.session.actors.add(walker, [6.5, 1, 0.5], [-1, 0, 0]);
-    const zombie = h.session.zombieStore.get(id)!;
-    const legs = Object.values(zombie.regions).reduce((sum, health) => sum + health, 0);
+    const actor = h.session.zombieStore.get(id)!;
+    const legs = Object.values(actor.regions).reduce((sum, health) => sum + health, 0);
     for (let step = 0; step < 600 && trap.trap?.state === 'armed'; step++) {
       h.run(FRAME);
     }
     expect(trap.trap).toMatchObject({ state: 'holding', zombie: id });
-    expect(Object.values(zombie.regions).reduce((sum, health) => sum + health, 0)).toBeLessThan(legs);
-    const held = [...zombie.body.pos];
+    expect(Object.values(actor.regions).reduce((sum, health) => sum + health, 0)).toBeLessThan(legs);
+    const held = [...actor.body.pos];
     h.run(trapDef.trap!.holdSimSeconds / 2);
-    expect([zombie.body.pos[0], zombie.body.pos[2]]).toEqual([held[0], held[2]]);
+    expect([actor.body.pos[0], actor.body.pos[2]]).toEqual([held[0], held[2]]);
   });
 
   it('restrains and injures the player who steps in it', () => {
@@ -208,18 +208,18 @@ describe('bear trap horizon', () => {
     expect(inventory.add(trap, { kind: 'pile', pos })).toBe(true);
     trap.trap = { state: 'armed' };
     const traps = new BearTraps(inventory);
-    const injureZombie = vi.fn();
+    const injureActor = vi.fn();
     const contacts = (player: Vec3) => ({
       player,
       zombies: [[7, [farX + 0.5, 1, 0.5]] as const],
       blockSize: scale.blockSize,
       alive: () => true,
       hurtPlayer: vi.fn(),
-      injureZombie,
+      injureZombie: injureActor,
     });
     expect(traps.step(1, contacts([0.5, 1, 0.5]))).toEqual([]);
     expect(trap.trap).toEqual({ state: 'armed' });
-    expect(injureZombie).not.toHaveBeenCalled();
+    expect(injureActor).not.toHaveBeenCalled();
     traps.step(1, contacts([farX - 10, 1, 0.5]));
     expect(trap.trap).toMatchObject({ state: 'holding', zombie: 7 });
   });

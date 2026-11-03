@@ -1239,7 +1239,7 @@ try {
     const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
     return {
       seed: engine.config.ragdollSweep,
-      staged: [...session.actors.store.entries()].some(([, zombie]) => zombie.incapacitated),
+      staged: [...session.actors.store.entries()].some(([, actor]) => actor.incapacitated),
       viewerDownrange:
         viewer !== undefined &&
         rack !== undefined &&
