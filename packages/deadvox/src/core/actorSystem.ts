@@ -1172,34 +1172,7 @@ export class ActorSystem {
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
       scratch.rng = actor.behaviorRng;
-      let target = actor.mode === 'hesitate' ? undefined : (this.agentHorde.hordeTarget(actor) ?? actor.lastPerceived);
-      scratch.sees = actor.mode === 'chase';
-      if (scratch.sees) {
-        target = player.pos;
-      }
-      let direction: Vec3;
-      let speed: number;
-      if (target) {
-        const offset = sub(target, actor.body.pos);
-        const distance = Math.hypot(offset[0], offset[2]) * blockSize;
-        direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
-        speed =
-          distance > 0.5
-            ? Math.min(
-                actor.type.speed.chaseMetresPerSimSecond,
-                actor.type.speed.backgroundStepMetres / dt,
-                distance / dt,
-              )
-            : 0;
-        if (direction[0] !== 0 || direction[2] !== 0) {
-          actor.facing = copy(direction);
-        }
-      } else {
-        this.agent.selectMovementIntent();
-        const { direction: movementDirection, desiredSpeed } = scratch;
-        direction = movementDirection;
-        speed = desiredSpeed;
-      }
+      let { direction, speed } = this.agent.backgroundIntent(scratch);
       if (actorCrawls(actor)) {
         speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
       }
@@ -1223,9 +1196,7 @@ export class ActorSystem {
       }
       const travelled = horizontalDistance(before, actor.body.pos) * blockSize;
       actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
-      if (actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
-        this.agent.beginIdle(actor);
-      }
+      this.agent.finishBackgroundStroll(actor);
     }
   }
 

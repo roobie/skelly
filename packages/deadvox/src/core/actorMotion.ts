@@ -94,7 +94,7 @@ const strikeOrigin = (
 /** Shared by both attack start (telegraph) and attack resolve (after the windup elapses): the attack's
  * reach rule, then a clear line from its origin to the player's chest. Used identically at both times so
  * "still in reach" at resolve means exactly what "in reach" meant at start. */
-export const withinAttackReach = (probe: AttackReachProbe): boolean => {
+const withinAttackReach = (probe: AttackReachProbe): boolean => {
   const { actor, playerPos, blockSize, isSolid } = probe;
   const reachMetres = actorAttackReachMetres(actor);
   if (reachMetres <= 0) {
@@ -251,7 +251,7 @@ export const cutsFor = (actor: Actor) => {
   return { parts: figure.severableParts, bones: figure.realized.body.bones };
 };
 /** True once an arm's cut reaches above its last part: a lost hand alone still lets it grab with the stump. */
-export const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
+const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
   arm.length > 0 && hidden.has(arm[Math.max(0, arm.length - 2)]!);
 /** Both disabled arms leave nothing to grab or claw with; an already-started windup is not cancelled. */
 export const canStillAttack = (actor: Actor): boolean => {

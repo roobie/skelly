@@ -3,7 +3,7 @@ read_if:
   - you build or change how a zombie holds the player, or a move's `grapple` content
   - you add a hit response, a fall, a ladder or a knockback that should end a hold or throw the player
   - you tune how a held player moves, turns or breaks free
-  - you add a type that grabs, or a target other than the player
+  - you add a type that grabs, a target other than the player, or move shared attack-body queries
 ---
 
 # Grapple
@@ -24,7 +24,7 @@ The code word is grapple. "Grab" already means the ladder grab, the pickup anima
 
 **The session keeps a list of records.** Each record names the grabber, the target and the region. The list shape costs a little against a single field on the player, and buys multiple grabbers and non-player targets later without a reshape. The first slice only ever produces zombie-holds-player records.
 
-**Every tick, each grapple re-checks its cause.** The grabber must be alive, the gripping arm must still work by the same rule that ends attacks (`src/core/actorSystem.ts`, `armDisabled`), the grabber must be in reach with a clear line, and the duration must not be exceeded. A grapple also ends on damage over its break threshold, on a stagger (`docs/stagger.md`, "The rules"), and on an impulse over a threshold. One release function owns every exit, so a hold can never outlive its cause, and nothing like a killed grabber or a severed arm needs its own release path. The impulse rule is the single rule brute knockback will meet when it lands (`EPIC.md`, "5. Holding ground").
+**A grapple must not outlive its cause.** The planned hold must re-check that the grabber is alive, its gripping arm works by the attack rule (`src/core/actorMotion.ts`, `armDisabled`), reach and line remain clear, and duration has not expired. Damage over the break threshold, stagger (`docs/stagger.md`, "The rules") or sufficient impulse must also release it. One release function must own every exit, so death or a severed arm needs no separate release path. Brute knockback must meet that same impulse rule (`EPIC.md`, "5. Holding ground").
 
 **Knockback on a held player throws.** When a knockback lands on a player a brute holds, the impulse rule releases the grapple and a throw impulse is added at release, so a held player flies farther than a free one. The throw is the first effect a zombie's grapple has beyond the slow, and it is allowed because it lands at release, not while held: nothing a held player does changes, and the only grapple-side cost is that knockback reads the record list. Throw strength is a number on the brute's content, not a brute branch in code, so a second throwing type is content (`PILLARS.md`, "Content forward compatibility"). The throw belongs to the knockback work, which has no code yet, and not to the first grapple slice.
 

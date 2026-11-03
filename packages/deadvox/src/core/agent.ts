@@ -804,11 +804,49 @@ export class AgentController {
       actor.attackWait = type.attack.cooldownSimSeconds;
     }
   }
+
+  backgroundIntent(scratch: ActorTickScratch): { direction: Vec3; speed: number } {
+    const { actor, player, blockSize, dt } = scratch;
+    let target = actor.mode === 'hesitate' ? undefined : (this.agentHorde.hordeTarget(actor) ?? actor.lastPerceived);
+    scratch.sees = actor.mode === 'chase';
+    if (scratch.sees) {
+      target = player.pos;
+    }
+    let direction: Vec3;
+    let speed: number;
+    if (target) {
+      const offset = sub(target, actor.body.pos);
+      const distance = Math.hypot(offset[0], offset[2]) * blockSize;
+      direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
+      speed =
+        distance > 0.5
+          ? Math.min(
+              actor.type.speed.chaseMetresPerSimSecond,
+              actor.type.speed.backgroundStepMetres / dt,
+              distance / dt,
+            )
+          : 0;
+      if (direction[0] !== 0 || direction[2] !== 0) {
+        actor.facing = copy(direction);
+      }
+    } else {
+      this.selectMovementIntent();
+      const { direction: movementDirection, desiredSpeed } = scratch;
+      direction = movementDirection;
+      speed = desiredSpeed;
+    }
+    return { direction, speed };
+  }
+  finishBackgroundStroll(actor: Actor): void {
+    if (actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+      this.beginIdle(actor);
+    }
+  }
 }
 
-export const OBSTACLE_PROBE_DISTANCE_METRES = 0.75;
-export const OBSTACLE_PROBE_SPEED = 4;
-export const OBSTACLE_WANDER_ANGLES = [
+const OBSTACLE_PROBE_DISTANCE_METRES = 0.75;
+const OBSTACLE_PROBE_SPEED = 4;
+const OBSTACLE_WANDER_ANGLES = [
   Math.PI / 4,
   -Math.PI / 4,
   Math.PI / 2,
@@ -818,9 +856,9 @@ export const OBSTACLE_WANDER_ANGLES = [
   Math.PI,
 ] as const;
 /** The slanted headings that still gain ground toward an intent, which a zombie held up tries to get past a piece. */
-export const OBSTACLE_BYPASS_ANGLES = [Math.PI / 4, -Math.PI / 4] as const;
-export const WAY_AROUND_STEPS = 8;
-export interface ObstacleProbe {
+const OBSTACLE_BYPASS_ANGLES = [Math.PI / 4, -Math.PI / 4] as const;
+const WAY_AROUND_STEPS = 8;
+interface ObstacleProbe {
   body: Body;
   intent: Vec3;
   isSolid: SolidAt;
@@ -831,7 +869,7 @@ export interface ObstacleProbe {
  * Where a body stands after walking `distanceMetres` along a heading, sliding along whatever blocks it. A contact
  * zeroes the blocked axis' speed, so a probe that must get past an edge asks for the heading again each of `steps`.
  */
-export const probeHeading = (
+const probeHeading = (
   { body, isSolid, physics, blockSize }: ObstacleProbe,
   heading: Vec3,
   distanceMetres: number,

@@ -3117,7 +3117,7 @@ keeps working at a piece only when the piece is its one way through, within a
 reach its type names in content; the same reason holds it at a door leaf, so one
 rule covers doors and furniture, and a zombie walks around clutter it can pass
 instead of wrecking it. While it bashes it stays at the piece instead of sliding
-or wandering along the wall. See `src/core/actorSystem.ts`, `ActorSystem.bashObstacle`.
+or wandering along the wall. See `src/core/agent.ts`, `AgentController.bashObstacle`.
 
 ### Models
 
