@@ -123,11 +123,7 @@ describe('actor footsteps', () => {
     run(system, 4);
     expect(played.length).toBe(strollSteps);
 
-    const oneDistance = advanceActorFootsteps(
-      initialActorFootstepClock(SHAMBLER.stepLength),
-      1.2,
-      SHAMBLER.stepLength,
-    );
+    const oneDistance = advanceActorFootsteps(initialActorFootstepClock(SHAMBLER.stepLength), 1.2, SHAMBLER.stepLength);
     const twiceDistance = advanceActorFootsteps(
       initialActorFootstepClock(SHAMBLER.stepLength),
       2.4,

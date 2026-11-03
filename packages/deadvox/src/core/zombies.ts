@@ -24,7 +24,7 @@ import type { Vec3 } from './coords.ts';
 import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
-import { advanceActorFootsteps, initialActorFootstepClock, type ActorFootstepClock } from './footsteps.ts';
+import { type ActorFootstepClock, advanceActorFootsteps, initialActorFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
 import { type Modifier, modified } from './modifiers.ts';
