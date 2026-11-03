@@ -26,7 +26,7 @@ import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFi
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
-import { initialShamblerFootstepClock } from '../src/core/footsteps.ts';
+import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -319,7 +319,7 @@ const makeZombie = (
     spitWait: 0,
     spitRng: Rng.stream(0, 'test-zombie-spit'),
     gaitPhase: 0,
-    footstepClock: initialShamblerFootstepClock(type.stepLength),
+    footstepClock: initialActorFootstepClock(type.stepLength),
     wanderClock: 0,
     severed,
     carved: [],

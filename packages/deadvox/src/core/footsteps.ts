@@ -77,22 +77,22 @@ export const advanceFootsteps = (
   };
 };
 
-export interface ShamblerFootstepClock {
+export interface ActorFootstepClock {
   distanceUntilStep: number;
   nextLongStep: boolean;
 }
 
 /** Alternating short/long strides make the shamblers' ground cadence uneven, without a wall-clock timer. */
-export const initialShamblerFootstepClock = (stepLengthMetres: number): ShamblerFootstepClock => ({
+export const initialActorFootstepClock = (stepLengthMetres: number): ActorFootstepClock => ({
   distanceUntilStep: stepLengthMetres * 0.72,
   nextLongStep: true,
 });
 
-export const advanceShamblerFootsteps = (
-  clock: ShamblerFootstepClock,
+export const advanceActorFootsteps = (
+  clock: ActorFootstepClock,
   travelledMetres: number,
   stepLengthMetres: number,
-): { clock: ShamblerFootstepClock; steps: number } => {
+): { clock: ActorFootstepClock; steps: number } => {
   if (!(travelledMetres > 0)) {
     return { clock, steps: 0 };
   }

@@ -3633,7 +3633,7 @@ decoration.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   few moving shamblers emit footsteps at once, so a horde does not become a wall of
-  noise; see `src/core/zombies.ts`, `SHAMBLER_FOOTSTEP_VOICE_CAP`. The MVP reuses pitched-down
+  noise; see `src/core/zombies.ts`, `ACTOR_FOOTSTEP_VOICE_CAP`. The MVP reuses pitched-down
   player footstep recordings as an explicit stand-in; body size also shifts
   their playback pitch.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory

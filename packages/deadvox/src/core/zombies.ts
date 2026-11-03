@@ -24,7 +24,7 @@ import type { Vec3 } from './coords.ts';
 import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
-import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
+import { advanceActorFootsteps, initialActorFootstepClock, type ActorFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
 import { type Modifier, modified } from './modifiers.ts';
@@ -319,7 +319,7 @@ export interface HitImpulse {
   readonly impulse: number;
 }
 /** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
-const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
+const ACTOR_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
   type: ActorDef;
@@ -401,7 +401,7 @@ export interface Zombie {
   /** Unwrapped gait phase; advances by π for each travelled stepLength metres. */
   gaitPhase: number;
   /** Surface footfall cadence advances only with grounded travel. */
-  footstepClock: ShamblerFootstepClock;
+  footstepClock: ActorFootstepClock;
   /** Elapsed wandering time, independent of the distance-driven gait. */
   wanderClock: number;
   /** Fixed-step slack/aggravated stance cross-fade (0..1); optional for backward-compatible saves. */
@@ -485,7 +485,7 @@ const validObstacleWanderState = (zombie: ZombieState): boolean =>
       zombie.obstacleWanderHeading.every(Number.isFinite))) &&
   typeof zombie.obstacleContact === 'boolean' &&
   (zombie.obstacleSlideSide === -1 || zombie.obstacleSlideSide === 0 || zombie.obstacleSlideSide === 1);
-const validShamblerFootstepClock = (clock: ShamblerFootstepClock): boolean =>
+const validActorFootstepClock = (clock: ActorFootstepClock): boolean =>
   Boolean(clock) &&
   Number.isFinite(clock.distanceUntilStep) &&
   clock.distanceUntilStep > 0 &&
@@ -509,7 +509,7 @@ const validZombieEventState = (zombie: ZombieState): boolean =>
   zombie.carved.every(
     (cell, index) => Number.isSafeInteger(cell) && cell >= 0 && (index === 0 || cell > zombie.carved[index - 1]!),
   ) &&
-  validShamblerFootstepClock(zombie.footstepClock);
+  validActorFootstepClock(zombie.footstepClock);
 /** Holes play could make: only a type that carves has any, each on flesh in its grid, never the core cell. */
 const validCarvedCells = (type: ActorDef, figureSeed: number, carved: readonly number[]): boolean => {
   if (!type.carving) {
@@ -2282,7 +2282,7 @@ export class ZombieSystem {
       staggerSimSeconds: 0,
       spitWait: 0,
       gaitPhase: 0,
-      footstepClock: initialShamblerFootstepClock(type.stepLength),
+      footstepClock: initialActorFootstepClock(type.stepLength),
       wanderClock: 0,
       stepOffset: 0,
       severed: [],
@@ -3509,7 +3509,7 @@ export class ZombieSystem {
         return [];
       }
       const travelledMetres = horizontalDistance(zombie.renderPrevious.pos, zombie.body.pos) * blockSize;
-      const advance = advanceShamblerFootsteps(zombie.footstepClock, travelledMetres, zombie.type.stepLength);
+      const advance = advanceActorFootsteps(zombie.footstepClock, travelledMetres, zombie.type.stepLength);
       zombie.footstepClock = advance.clock;
       return travelledMetres > 0 ? [{ id, zombie, steps: advance.steps }] : [];
     });
@@ -3520,7 +3520,7 @@ export class ZombieSystem {
             horizontalDistance(a.zombie.body.pos, player.pos) - horizontalDistance(b.zombie.body.pos, player.pos) ||
             a.id - b.id,
         )
-        .slice(0, SHAMBLER_FOOTSTEP_VOICE_CAP)
+        .slice(0, ACTOR_FOOTSTEP_VOICE_CAP)
         .map(({ zombie }) => zombie),
     );
     for (const { id, zombie, steps } of footfallCandidates) {

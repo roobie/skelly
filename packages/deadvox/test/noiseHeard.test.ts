@@ -30,7 +30,7 @@ const registry = baseRegistry();
 const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
-const shamblerFootstepEvents = new Set<SoundId | undefined>(
+const actorFootstepEvents = new Set<SoundId | undefined>(
   [...registry.zombies.values()].flatMap((actor) =>
     actor.footstepSound === undefined
       ? []
@@ -657,7 +657,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     observe(
       scenario,
       'chasing shambler footsteps',
-      played.slice(from).some(({ sound }) => shamblerFootstepEvents.has(sound.event)),
+      played.slice(from).some(({ sound }) => actorFootstepEvents.has(sound.event)),
     );
   };
 

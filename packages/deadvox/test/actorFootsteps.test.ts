@@ -4,10 +4,10 @@ import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {
-  advanceShamblerFootsteps,
+  advanceActorFootsteps,
   footstepEventAt,
   footstepEventForBlock,
-  initialShamblerFootstepClock,
+  initialActorFootstepClock,
 } from '../src/core/footsteps.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -95,7 +95,7 @@ const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Zombie['typ
   return played.length;
 };
 
-describe('shambler footsteps', () => {
+describe('actor footsteps', () => {
   it('uses real grounded travel distance, stays silent while still, and steps more often while chasing', () => {
     const { system, store, played } = makeWorld(sense([100, 1, 100], [-1, 0, 0]));
     const zombie = system.add(
@@ -123,13 +123,13 @@ describe('shambler footsteps', () => {
     run(system, 4);
     expect(played.length).toBe(strollSteps);
 
-    const oneDistance = advanceShamblerFootsteps(
-      initialShamblerFootstepClock(SHAMBLER.stepLength),
+    const oneDistance = advanceActorFootsteps(
+      initialActorFootstepClock(SHAMBLER.stepLength),
       1.2,
       SHAMBLER.stepLength,
     );
-    const twiceDistance = advanceShamblerFootsteps(
-      initialShamblerFootstepClock(SHAMBLER.stepLength),
+    const twiceDistance = advanceActorFootsteps(
+      initialActorFootstepClock(SHAMBLER.stepLength),
       2.4,
       SHAMBLER.stepLength,
     );
