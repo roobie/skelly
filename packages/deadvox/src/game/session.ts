@@ -144,6 +144,7 @@ import {
   type Zombie,
   ZombieSystem,
 } from '../core/zombies.ts';
+import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
 import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
@@ -179,7 +180,6 @@ import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION } from './unpacking.ts';
-import { applyActorPlayerHit } from './actorPlayerHit.ts';
 
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
