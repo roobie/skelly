@@ -805,9 +805,8 @@ export const buildHumanoid = (genome: Genome): Body => {
 };
 
 const LOWER_CRAWLER_BONE = /^(shin|foot)\./;
-const CRAWLER_STUMP_FRACTION = 0.55;
 
-const cutCrawlerBones = (bones: readonly Bone[]): { bones: Bone[]; cuts: Map<string, Vec3> } => {
+const cutCrawlerBones = (bones: readonly Bone[], fraction: number): { bones: Bone[]; cuts: Map<string, Vec3> } => {
   const cuts = new Map<string, Vec3>();
   const retained = bones.flatMap((bone) => {
     if (LOWER_CRAWLER_BONE.test(bone.id)) {
@@ -817,9 +816,9 @@ const cutCrawlerBones = (bones: readonly Bone[]): { bones: Bone[]; cuts: Map<str
       return [bone];
     }
     const cut: Vec3 = [
-      bone.head[0] + (bone.tail[0] - bone.head[0]) * CRAWLER_STUMP_FRACTION,
-      bone.head[1] + (bone.tail[1] - bone.head[1]) * CRAWLER_STUMP_FRACTION,
-      bone.head[2] + (bone.tail[2] - bone.head[2]) * CRAWLER_STUMP_FRACTION,
+      bone.head[0] + (bone.tail[0] - bone.head[0]) * fraction,
+      bone.head[1] + (bone.tail[1] - bone.head[1]) * fraction,
+      bone.head[2] + (bone.tail[2] - bone.head[2]) * fraction,
     ];
     cuts.set(bone.id, cut);
     return [{ ...bone, tail: cut }];
@@ -889,8 +888,8 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
 };
 
 /** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
-const amputateCrawlerLegs = (body: Body, genome: Genome): Body => {
-  const { bones, cuts } = cutCrawlerBones(body.bones);
+const amputateCrawlerLegs = (body: Body, genome: Genome, fraction: number): Body => {
+  const { bones, cuts } = cutCrawlerBones(body.bones, fraction);
   const boneHeads = new Map(body.bones.map((bone) => [bone.id, bone.head]));
   const features = body.features.flatMap((feature) => trimCrawlerFeature(feature, cuts.get(feature.bone), boneHeads));
   for (const [bone, center] of cuts) {
@@ -936,20 +935,16 @@ const HUMANOID_REGION_BONES: NonNullable<BodyPlanDef['regionBones']> = {
 
 registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
-  build: (genome) => buildHumanoid(genome),
+  build: (genome, template) => {
+    const body = buildHumanoid(genome);
+    return template.legCut === undefined ? body : amputateCrawlerLegs(body, genome, template.legCut);
+  },
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
-  limbBones: HUMANOID_LIMB_BONES,
-  regionBones: HUMANOID_REGION_BONES,
-});
-
-registerBodyPlan('crawler', {
-  sample: sampleHumanoid,
-  build: (genome) => amputateCrawlerLegs(buildHumanoid(genome), genome),
-  paramOrder: HUMANOID_PARAM_ORDER,
-  woundBones: WOUNDABLE_BONES,
-  budgets: heightHeadBudgets,
-  limbBones: HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
+  limbBones: (template) =>
+    template.legCut === undefined
+      ? HUMANOID_LIMB_BONES
+      : HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
   regionBones: HUMANOID_REGION_BONES,
 });

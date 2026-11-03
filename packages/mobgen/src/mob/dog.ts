@@ -1,7 +1,7 @@
 // The dog body plan: a quadruped infected animal, built deterministically from a genome's sampled
 // params. It is its own body plan rather than a humanoid variant because its support, pose and gait all
 // come from four paws on the ground, not two feet. dogPose/dogGaitPose/dogHitPose layer a limping,
-// lurching walk over the rest pose the way crawler.ts does for the prone crawler.
+// lurching walk over the rest pose the way crawl.ts does for a prone humanoid.
 
 import type { Body, Feature, Material } from '../core/body.ts';
 import { RIGHT, UP } from '../core/conventions.ts';

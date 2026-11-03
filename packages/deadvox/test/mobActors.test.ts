@@ -1055,7 +1055,7 @@ describe('MobActorMeshes', () => {
         });
         return { type, realized: actorFigure(type, figureSeed).realized, id: store.add(zombie) };
       });
-      expect(entries.some(({ type }) => type.figure === 'crawler')).toBe(true);
+      expect(entries.some(({ type }) => type.figure === 'legless-humanoid')).toBe(true);
       renderer.sync(store, 1 / 60, 1);
       for (const { type, realized, id } of entries) {
         expect(realized.body.bones.length, type.id).toBeGreaterThan(0);

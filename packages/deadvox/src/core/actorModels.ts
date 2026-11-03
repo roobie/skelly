@@ -7,7 +7,7 @@ export const BODY_PLANS = {
 export const FIGURE_VARIANTS = {
   humanoid: { bodyPlan: 'humanoid', model: 'humanoid' },
   runner: { bodyPlan: 'humanoid', model: 'runner' },
-  crawler: { bodyPlan: 'humanoid', model: 'crawler' },
+  'legless-humanoid': { bodyPlan: 'humanoid', model: 'legless-humanoid' },
   brute: { bodyPlan: 'humanoid', model: 'brute' },
   acid: { bodyPlan: 'acid', model: 'acid' },
   'fused-mass': { bodyPlan: 'fused-mass', model: 'fused-mass' },

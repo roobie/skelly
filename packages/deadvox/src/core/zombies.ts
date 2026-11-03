@@ -2584,7 +2584,7 @@ export class ZombieSystem {
     if (zombie.hitFlinchTime !== undefined) {
       const nextFlinchTime = zombie.hitFlinchTime + dt;
       zombie.hitFlinchTime =
-        nextFlinchTime > actorHitFlinchDuration(zombieCrawls(zombie) ? 'crawler' : figureVariantOf(zombie.type))
+        nextFlinchTime > actorHitFlinchDuration(zombieCrawls(zombie) ? 'legless-humanoid' : figureVariantOf(zombie.type))
           ? undefined
           : nextFlinchTime;
     }

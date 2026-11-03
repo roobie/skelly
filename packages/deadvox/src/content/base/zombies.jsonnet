@@ -466,7 +466,7 @@ local content = {
       "name": "Crawler",
       "cause": "a crawler",
       "model": "humanoid",
-      "figure": "crawler",
+      "figure": "legless-humanoid",
       "figureSeeds": crawlerFigureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 0.08,

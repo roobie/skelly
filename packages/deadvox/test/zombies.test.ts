@@ -1,10 +1,12 @@
 import process from 'node:process';
 import { mulMV, quatToMat3 } from '@mobgen/core/math.ts';
-import { crawlerGaitPose } from '@mobgen/mob/crawler.ts';
+import { templateByName } from '@mobgen/core/template.ts';
+import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, figureSeedPool } from '../src/core/actorFigure.ts';
-import { actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
+import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
+import { actorPoseInputFor, HIT_FLINCH_DURATION, posedActor, zombieCrawls } from '../src/core/actorPose.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
@@ -1932,6 +1934,30 @@ describe('shambler scenarios', () => {
     expect(runner.body.pos[0]).toBeGreaterThan(Math.abs(runner.body.pos[2]));
   });
 
+  it('a born legs-cut humanoid keeps authored speed even after a stump injury', () => {
+    const type = {
+      ...CRAWLER,
+      speed: { ...CRAWLER.speed, chaseMetresPerSimSecond: simRate(2), crawlMetresPerSimSecond: simRate(0.1) },
+    };
+    const system = new ZombieSystem(senses(() => player([20, 1, 0])));
+    const id = system.add({ ...type, dismember: { chance: 0, headOnKillChance: 0 } }, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    const ray = outwardRay(zombie, 'leftLeg', 'thigh.L', id);
+    const weapon = { ...FISTS_MELEE, cooldown: 0 };
+    const hits = Math.ceil(zombie.regions.leftLeg! / weapon.damage);
+    const struck = Array.from({ length: hits }, () => system.swing(ray.origin, ray.direction, weapon));
+    expect(struck.length).toBeGreaterThan(0);
+    expect(struck.every((hit) => hit === id)).toBe(true);
+    expect(zombie.regions.leftLeg).toBe(0);
+    run(system, 1);
+    expect(templateByName(bodyPlanModel(figureVariantOf(type))).bodyPlan).toBe('humanoid');
+    expect(actorFigure(type, zombie.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(false);
+    expect(zombieCrawls(zombie)).toBe(false);
+    expect(actorPoseInputFor(zombie, id, BLOCK_SIZE).crawling).toBe(false);
+    expect(zombie.horizontalSpeed).toBeGreaterThan(type.speed.crawlMetresPerSimSecond);
+    expect(zombie.horizontalSpeed).toBeLessThanOrEqual(type.speed.chaseMetresPerSimSecond);
+  });
+
   it('crawler attacks offer only leg hit regions and identify their attacker', () => {
     const hitChoices: (readonly { region: BodyRegion; weight: number }[])[] = [];
     const attackers: number[] = [];
@@ -2039,7 +2065,7 @@ describe('shambler scenarios', () => {
       expect(zombie.body.pos).not.toEqual(before);
       const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
       const posed = posedActor(input);
-      const crawl = crawlerGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
+      const crawl = crawlGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(zombie.type.id).toBe(type.id);
       expect(posed.figure).toBe(actorFigure(zombie.type, zombie.figureSeed));

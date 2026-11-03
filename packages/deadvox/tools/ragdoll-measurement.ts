@@ -1,5 +1,5 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
-import { crawlerPose } from '@mobgen/mob/crawler.ts';
+import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import graphics from '../src/content/base/graphics.json' with { type: 'json' };
 import inventory from '../src/content/base/inventory.json' with { type: 'json' };
@@ -37,7 +37,7 @@ export async function measureRagdolls() {
           world.spawn({
             realized: figure,
             model,
-            pose: model === 'crawler' ? crawlerPose(figure) : { root: [0, 0, 0], rotations: {} },
+            pose: model === 'legless-humanoid' ? crawlPose(figure) : { root: [0, 0, 0], rotations: {} },
             excluded: new Set(
               [
                 ...severedBoneSet(

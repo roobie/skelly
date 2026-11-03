@@ -1,11 +1,11 @@
 local hinge(bones, limits) = { bones: bones, limits: [limits, [0, 0], [0, 0]] };
 local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, swing] };
 {
-  models: ['humanoid', 'runner', 'brute', 'crawler', 'fused-mass'],
+  models: ['humanoid', 'runner', 'brute', 'legless-humanoid', 'fused-mass'],
   shortenedLegs: { absent: ['shin.L', 'shin.R'], omit: ['shin.L', 'shin.R', 'foot.L', 'foot.R'] },
   compound: { root: 'core', memberRoot: 'pelvis', limits: [[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]] },
   sweep: {
-    models: ['humanoid', 'runner', 'brute', 'crawler'],
+    models: ['humanoid', 'runner', 'brute', 'legless-humanoid'],
     cuts: [[], ['head'], ['upperArm.L'], ['thigh.L', 'thigh.R'], []],
     spacingMetres: 3,
     startMetres: [0, -15],
@@ -33,7 +33,7 @@ local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, sw
   kindMotion: {
     runner: { launchSpeed: 1.2 },
     brute: { launchSpeed: 1.2 },
-    crawler: { launchSpeed: 1.2 },
+    'legless-humanoid': { launchSpeed: 1.2 },
   },
   crawlFall: {
     fallSeconds: 0.85,

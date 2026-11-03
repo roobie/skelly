@@ -1,6 +1,6 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen is a workspace source alias.
 import { quatToMat3 } from '@mobgen/core/math.ts';
-import { crawlerPose } from '@mobgen/mob/crawler.ts';
+import { crawlPose } from '@mobgen/mob/crawl.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
@@ -80,7 +80,7 @@ describe('render ragdoll', () => {
     try {
       const corpse = world.spawn({
         realized: figure,
-        pose: model === 'crawler' ? crawlerPose(figure) : pose,
+        pose: model === 'legless-humanoid' ? crawlPose(figure) : pose,
         position: [0, 0, 0],
         yaw: 0,
         direction: -1,
@@ -119,7 +119,7 @@ describe('render ragdoll', () => {
     { model: 'humanoid', cuts: [] },
     { model: 'runner', cuts: ['head'] },
     { model: 'brute', cuts: ['upperArm.L'] },
-    { model: 'crawler', cuts: ['thigh.L', 'thigh.R'] },
+    { model: 'legless-humanoid', cuts: ['thigh.L', 'thigh.R'] },
   ])('$model settles above ground with $cuts absent', assertRest);
 
   sweepGroup('ragdoll seed sweep', () => {

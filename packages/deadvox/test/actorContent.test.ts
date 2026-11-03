@@ -22,7 +22,7 @@ it('admits an independent actor id selecting an existing body plan', () => {
   expect(actorFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
 });
 
-it.each(['runner', 'crawler', 'brute'] as const)('admits a %s figure as a property of humanoid anatomy', (figure) => {
+it.each(['runner', 'legless-humanoid', 'brute'] as const)('admits a %s figure as a property of humanoid anatomy', (figure) => {
   const source = claimed(baseRegistry().zombies, 'settlementHorde')!;
   const actor = {
     ...source,

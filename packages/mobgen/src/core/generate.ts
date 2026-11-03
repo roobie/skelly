@@ -54,7 +54,7 @@ export interface BodyPlanDef {
   /** Bone ids a wound may sit on. */
   readonly woundBones: readonly string[];
   readonly budgets: (genome: Genome, template: Template) => Budgets;
-  readonly limbBones: readonly string[];
+  readonly limbBones: readonly string[] | ((template: Template) => readonly string[]);
   /** Bones forming each hit region, for plans a consumer resolves shots against; a bone missing from a
    * realized body adds nothing. Region membership is the plan's, because each skeleton names its own bones. */
   readonly regionBones?: Readonly<Record<BodyRegion, readonly string[]>>;
@@ -227,8 +227,10 @@ export const recommendedProfileFor = (genome: Genome, voxelSize = genome.voxelSi
   }
   const template = templateByName(genome.template);
   const body = build({ ...genome, voxelSize: template.voxelSize });
+  const declaredLimbs = planOf(template.bodyPlan).limbBones;
+  const limbBones = typeof declaredLimbs === 'function' ? declaredLimbs(template) : declaredLimbs;
   const diameters = body.features
-    .filter((feature) => feature.op === 'add' && planOf(template.bodyPlan).limbBones.includes(feature.bone))
+    .filter((feature) => feature.op === 'add' && limbBones.includes(feature.bone))
     .map(({ shape }) => {
       switch (shape.kind) {
         case 'capsule':

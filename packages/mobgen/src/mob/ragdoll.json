@@ -90,7 +90,7 @@
     "brute": {
       "launchSpeed": 1.2
     },
-    "crawler": {
+    "legless-humanoid": {
       "launchSpeed": 1.2
     },
     "runner": {
@@ -159,7 +159,7 @@
       }
     ]
   },
-  "models": ["humanoid", "runner", "brute", "crawler", "fused-mass"],
+  "models": ["humanoid", "runner", "brute", "legless-humanoid", "fused-mass"],
   "motion": {
     "hitDirectionWeight": 1,
     "launchSpeed": 1.2,
@@ -179,7 +179,7 @@
     "cuts": [[], ["head"], ["upperArm.L"], ["thigh.L", "thigh.R"], []],
     "finishSeconds": 12,
     "lieSeconds": 120,
-    "models": ["humanoid", "runner", "brute", "crawler"],
+    "models": ["humanoid", "runner", "brute", "legless-humanoid"],
     "spacingMetres": 3,
     "startMetres": [0, -15],
     "viewer": {

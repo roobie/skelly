@@ -22,7 +22,7 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 34, pitchDeg: 24 },
     turnRateDegPerSecond: 140,
   },
-  crawler: {
+  'legless-humanoid': {
     neck: { yawDeg: 28, pitchDeg: 50 },
     head: { yawDeg: 38, pitchDeg: 42 },
     turnRateDegPerSecond: 110,

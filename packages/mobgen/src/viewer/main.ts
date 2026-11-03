@@ -31,7 +31,7 @@ import {
 } from '../mob/acidPoses.ts';
 import { acidTemplate } from '../mob/acidTemplate.ts';
 import { ATTACK_CLIPS, type AttackClip, attackClipById, attackClipFor, attackPose } from '../mob/attack.ts';
-import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
+import { crawlGaitPose, crawlHitPose, crawlPose } from '../mob/crawl.ts';
 import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
 import { dogTemplate } from '../mob/dogTemplate.ts';
@@ -61,7 +61,7 @@ const TEMPLATES: readonly Template[] = [...VIEWER_TEMPLATES, dogTemplate, acidTe
 
 /** Plans posed by the shared humanoid walk, idle, attack and death. */
 const usesHumanoidRig = (template: Template): boolean =>
-  template.bodyPlan === 'humanoid' || template.bodyPlan === 'skeleton';
+  (template.bodyPlan === 'humanoid' && template.legCut === undefined) || template.bodyPlan === 'skeleton';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const view = $<HTMLElement>('view');
@@ -184,7 +184,7 @@ interface Loaded {
 
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
-let crawlerPhase = 0;
+let crawlPhase = 0;
 // Ground distance the dog has advanced; drives the walk directly, so its planted paws stay planted at any
 // speed (see dogGaitPose). Reset on load like the other walk clocks.
 let dogDistance = 0;
@@ -479,7 +479,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
       // A fresh load starts whole; `severedCuts` is cleared below, so this pose is deliberately intact.
       initialPose = dogPose(realized, dogStance(genome));
     } else {
-      initialPose = crawlerPose(realized);
+      initialPose = crawlPose(realized);
     }
     actor.applyPose(initialPose);
     loaded = { ...loaded, params, extents, legGeometry, walkActor };
@@ -496,7 +496,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   reactionsFieldset.hidden = false;
   current = loaded;
   clock = INITIAL_CLOCK;
-  crawlerPhase = 0;
+  crawlPhase = 0;
   dogDistance = 0;
   gridZ = 0;
   attackTime = undefined;
@@ -707,8 +707,8 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
   if (!walking || speed <= 0 || !current) {
     return;
   }
-  if (current.template.bodyPlan === 'crawler') {
-    crawlerPhase += speed * dt * Math.PI;
+  if (current.template.legCut !== undefined) {
+    crawlPhase += speed * dt * Math.PI;
     gridZ = (gridZ + speed * dt) % 0.5;
     groundGroup.position.z = gridZ;
     return;
@@ -778,12 +778,12 @@ const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
 
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
-const applyCrawlerFrame = (loaded: Loaded, dt: number): void => {
+const applyCrawlFrame = (loaded: Loaded, dt: number): void => {
   const speed = walkOn.checked ? Number(speedInput.value) : 0;
   advanceWalk(dt, walkOn.checked, speed);
   advanceHit(dt);
-  const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
-  const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
+  const basePose = crawlGaitPose(loaded.realized, crawlPhase, speed);
+  const pose = hitTime === undefined ? basePose : crawlHitPose(loaded.realized, basePose, hitTime, hitSide);
   applyLookAt(loaded, pose, dt);
 };
 
@@ -829,8 +829,8 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   if (loaded.template.bodyPlan === 'fused-mass') {
     return;
   }
-  if (loaded.template.bodyPlan === 'crawler') {
-    applyCrawlerFrame(loaded, dt);
+  if (loaded.template.legCut !== undefined) {
+    applyCrawlFrame(loaded, dt);
     return;
   }
   if (loaded.template.bodyPlan === 'dog') {

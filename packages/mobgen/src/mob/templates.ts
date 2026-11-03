@@ -110,13 +110,14 @@ const runner: Template = {
   },
 };
 
-const crawler: Template = {
-  name: 'crawler',
+const leglessHumanoid: Template = {
+  name: 'legless-humanoid',
   attackClip: 'lunge-grab',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
   description: 'Prone, low-profile corpse with reaching arms and trailing leg stumps.',
-  bodyPlan: 'crawler',
+  bodyPlan: 'humanoid',
+  legCut: 0.55,
   voxelSize: 0.5 / 12,
   bodyMassKg: 55,
   massFractions: HUMANOID_MASS_FRACTIONS,
@@ -168,8 +169,10 @@ const brute: Template = {
   },
 };
 
-export const TEMPLATES: readonly Template[] = [humanoid, runner, crawler, brute];
-export const HUMANOID_TEMPLATES = TEMPLATES.filter((template) => template.bodyPlan === 'humanoid');
+export const TEMPLATES: readonly Template[] = [humanoid, runner, leglessHumanoid, brute];
+export const HUMANOID_TEMPLATES = TEMPLATES.filter(
+  (template) => template.bodyPlan === 'humanoid' && template.legCut === undefined,
+);
 for (const t of TEMPLATES) {
   registerTemplate(t);
 }

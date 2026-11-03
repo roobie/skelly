@@ -3,13 +3,13 @@ import { generate, realize } from '../src/core/generate.ts';
 import { applyPoint } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
 import { posedVoxelSurfaceBounds } from '../src/core/voxelBounds.ts';
-import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../src/mob/crawler.ts';
+import { crawlGaitPose, crawlHitPose, crawlPose } from '../src/mob/crawl.ts';
 import { severedBoneSet } from '../src/mob/dismember.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
-const crawler = TEMPLATES.find((template) => template.name === 'crawler')!;
+const crawler = TEMPLATES.find((template) => template.name === 'legless-humanoid')!;
 // Fixture seeds: Deadvox authors the shipped pool, so this file keeps its own.
 const SHAMBLER_FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const SHAMBLER_SEED_SET = new Set<number>(SHAMBLER_FIGURE_SEEDS);
@@ -23,7 +23,7 @@ const pullElbowProperties = (
   phase: number,
   side: 'L' | 'R',
 ): { lateral: boolean; rearward: boolean; nearGround: boolean } => {
-  const pullEnd = crawlerGaitPose(realized, phase, 1);
+  const pullEnd = crawlGaitPose(realized, phase, 1);
   const pullTransforms = boneTransforms(realized.body.bones, pullEnd);
   const upper = realized.body.bones.find((bone) => bone.id === `upperArm.${side}`)!;
   const transform = pullTransforms.get(upper.id)!;
@@ -40,7 +40,7 @@ const pullElbowProperties = (
 const trailingSupportProperties = (seed: number): boolean[] => {
   const properties: boolean[] = [];
   const realized = realize(generate(crawler, seed));
-  const pose = crawlerPose(realized);
+  const pose = crawlPose(realized);
   const lowest = posedVoxelSurfaceBounds(realized, pose).byBone;
   const transforms = boneTransforms(realized.body.bones, pose);
   const tolerance = 2 * realized.voxels.size;
@@ -106,8 +106,8 @@ describe('crawler', () => {
     const legs = realized.body.bones.filter((bone) => LEG_BONE.test(bone.id) && !hidden.has(bone.id));
     const lowerLegs = legs.filter((bone) => LOWER_LEG_BONE.test(bone.id));
     expect(lowerLegs.length).toBeGreaterThan(0);
-    const gait = crawlerGaitPose(realized, 0.5, 1);
-    for (const pose of [crawlerPose(realized), gait, crawlerHitPose(realized, gait, 0.08, 0.5)]) {
+    const gait = crawlGaitPose(realized, 0.5, 1);
+    for (const pose of [crawlPose(realized), gait, crawlHitPose(realized, gait, 0.08, 0.5)]) {
       const surfaces = posedVoxelSurfaceBounds(realized, pose).byBone;
       const transforms = boneTransforms(realized.body.bones, pose);
       expect(Math.min(...legs.map((bone) => surfaces.get(bone.id)!))).toBeGreaterThanOrEqual(-1e-9);
@@ -126,14 +126,14 @@ describe('crawler', () => {
     const representativeSeeds = [...new Set([seeds[0]!, seeds.at(-1)!])];
     for (const seed of representativeSeeds) {
       const realized = realize(generate(crawler, seed));
-      const rest = crawlerPose(realized);
-      const leftReach = crawlerGaitPose(realized, 0.5, 1);
-      const rightReach = crawlerGaitPose(realized, Math.PI + 0.5, 1);
+      const rest = crawlPose(realized);
+      const leftReach = crawlGaitPose(realized, 0.5, 1);
+      const rightReach = crawlGaitPose(realized, Math.PI + 0.5, 1);
       expect(leftReach.rotations['upperArm.L']).not.toEqual(rest.rotations['upperArm.L']);
       expect(leftReach.rotations['upperArm.R']).toEqual(rest.rotations['upperArm.R']);
       expect(rightReach.rotations['upperArm.R']).not.toEqual(rest.rotations['upperArm.R']);
       expect(rightReach.rotations['upperArm.L']).toEqual(rest.rotations['upperArm.L']);
-      expect(crawlerGaitPose(realized, 0.5, 0)).toEqual(rest);
+      expect(crawlGaitPose(realized, 0.5, 0)).toEqual(rest);
 
       for (const side of ['L', 'R'] as const) {
         const phase = (side === 'L' ? 0 : Math.PI) + Math.PI * 0.82;
@@ -154,7 +154,7 @@ describe('crawler', () => {
         [4.8, 1],
         [6, 0.5],
       ] as const) {
-        const gait = crawlerGaitPose(realized, phase, speed);
+        const gait = crawlGaitPose(realized, phase, speed);
         const gaitSurfaces = posedVoxelSurfaceBounds(realized, gait);
         expect(gaitSurfaces.lowest).toBeGreaterThanOrEqual(-realized.voxels.size / 2);
         expect(gaitSurfaces.lowest).toBeLessThanOrEqual(tolerance);
@@ -166,7 +166,7 @@ describe('crawler', () => {
         expect(torsoBottom).toBeGreaterThanOrEqual(-tolerance);
         expect(armBottom).toBeLessThanOrEqual(tolerance);
         expect(armBottom).toBeGreaterThanOrEqual(-tolerance);
-        const flinch = crawlerHitPose(realized, gait, 0.08, 0.5);
+        const flinch = crawlHitPose(realized, gait, 0.08, 0.5);
         expect(flinch.rotations.head).not.toEqual(gait.rotations.head);
         const flinchSurfaces = posedVoxelSurfaceBounds(realized, flinch);
         expect(flinchSurfaces.lowest).toBeGreaterThanOrEqual(-realized.voxels.size / 2);
@@ -181,7 +181,7 @@ describe('crawler', () => {
         expect(flinchTorsoBottom).toBeGreaterThanOrEqual(-tolerance);
         expect(flinchArmBottom).toBeLessThanOrEqual(tolerance);
         expect(flinchArmBottom).toBeGreaterThanOrEqual(-tolerance);
-        expect(crawlerHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
+        expect(crawlHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
       }
     }
   });

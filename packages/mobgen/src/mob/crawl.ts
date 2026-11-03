@@ -1,5 +1,5 @@
 // Prone crawler rest pose: the humanoid rig is lowered onto its front, with the head raised, arms reaching
-// forward and leg stumps trailing. crawlerGaitPose layers alternating arm reach, plant and pull onto it.
+// forward and leg stumps trailing. crawlGaitPose layers alternating arm reach, plant and pull onto it.
 
 import type { Realized } from '../core/generate.ts';
 import { applyPoint, IDENTITY_M, type Mat3, mulMM, rotX, rotZ, smoothstep, transpose } from '../core/math.ts';
@@ -49,7 +49,7 @@ const solveThighPitch = (
     }
   }
   if (bestAngle === undefined) {
-    throw new Error(`crawlerPose: no trailing support pitch found for ${boneId}`);
+    throw new Error(`crawlPose: no trailing support pitch found for ${boneId}`);
   }
   rotations[boneId] = rotX(bestAngle);
 };
@@ -105,7 +105,7 @@ const trailLowerLeg = (realized: Realized, rotations: Record<string, Mat3>, side
 };
 
 /** Static prone pose, fitted to the torso and support-bone voxel surfaces for each realized figure. */
-export const crawlerPose = (realized: Realized): Pose => {
+export const crawlPose = (realized: Realized): Pose => {
   const cached = poseCache.get(realized);
   if (cached) {
     return cached;
@@ -122,7 +122,7 @@ export const crawlerPose = (realized: Realized): Pose => {
     solveThighPitch(realized, rotations, `thigh.${side}`, torsoGroundY);
     trailLowerLeg(realized, rotations, side);
   }
-  const pose = groundCrawlerPose(realized, { root: ROOT, rotations });
+  const pose = groundCrawlPose(realized, { root: ROOT, rotations });
   poseCache.set(realized, pose);
   return pose;
 };
@@ -143,7 +143,7 @@ const GROUND_CONTACT_BONES = [
   'foot.R',
 ];
 
-export const groundCrawlerPose = (realized: Realized, pose: Pose): Pose => {
+export const groundCrawlPose = (realized: Realized, pose: Pose): Pose => {
   const probe: Pose = { root: [pose.root[0], 0, pose.root[2]], rotations: pose.rotations };
   const surfaces = posedVoxelSurfaceBoundsForBones(realized, probe, GROUND_CONTACT_BONES);
   const lowest = Math.min(...surfaces.values());
@@ -173,8 +173,8 @@ const dragAngles = (progress: number): { upper: number; upperRoll: number; forea
 };
 
 /** Alternates arm reach, plant and pull from distance-driven phase; the trailing leg stumps never step. */
-export const crawlerGaitPose = (realized: Realized, phase: number, speed: number): Pose => {
-  const base = crawlerPose(realized);
+export const crawlGaitPose = (realized: Realized, phase: number, speed: number): Pose => {
+  const base = crawlPose(realized);
   if (speed <= 0 || !Number.isFinite(phase)) {
     return base;
   }
@@ -189,11 +189,11 @@ export const crawlerGaitPose = (realized: Realized, phase: number, speed: number
   const sideRoll = side === 'L' ? -angles.upperRoll : angles.upperRoll;
   rotations[upper] = mulMM(mulMM(rotations[upper] ?? IDENTITY_M, rotX(angles.upper)), rotZ(sideRoll));
   rotations[forearm] = mulMM(rotations[forearm] ?? IDENTITY_M, rotX(angles.forearm));
-  return groundCrawlerPose(realized, { ...base, rotations });
+  return groundCrawlPose(realized, { ...base, rotations });
 };
 
 /** A short brace/recoil layered over the current crawl pose and re-grounded against its support bones. */
-export const crawlerHitPose = (realized: Realized, base: Pose, time: number, side = 0): Pose => {
+export const crawlHitPose = (realized: Realized, base: Pose, time: number, side = 0): Pose => {
   if (!(time > 0) || time >= HIT_FLINCH.duration) {
     return base;
   }
@@ -209,5 +209,5 @@ export const crawlerHitPose = (realized: Realized, base: Pose, time: number, sid
   addRotation('head', rotX(6 * intensity));
   addRotation('upperArm.L', rotZ(-2 * intensity * side));
   addRotation('upperArm.R', rotZ(2 * intensity * side));
-  return groundCrawlerPose(realized, { ...base, rotations });
+  return groundCrawlPose(realized, { ...base, rotations });
 };

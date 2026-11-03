@@ -6,7 +6,7 @@ import { type Template, templateByName } from '@mobgen/core/template.ts';
 import { acidAttackPose, acidHitPose, acidStrideLength, acidWalkPose, acidWindupPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { type AttackClip, attackClipFor, attackPose, attackRotations } from '@mobgen/mob/attack.ts';
-import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/crawler.ts';
+import { crawlGaitPose, crawlHitPose, groundCrawlPose } from '@mobgen/mob/crawl.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
@@ -64,7 +64,9 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
 };
 
 export const zombieCrawls = (zombie: Zombie): boolean => {
-  if (templateByName(bodyPlanModel(figureVariantOf(zombie.type))).bodyPlan !== 'humanoid') {
+  const template = templateByName(bodyPlanModel(figureVariantOf(zombie.type)));
+  // Born legs-cut bodies already use their authored locomotion, not the injury speed cap.
+  if (template.bodyPlan !== 'humanoid' || template.legCut !== undefined) {
     return false;
   }
   if (zombie.regions.leftLeg! <= 0 || zombie.regions.rightLeg! <= 0) {
@@ -230,16 +232,16 @@ const withAttackPose = (context: ModelPoseContext, base: Pose, attackTime: numbe
   if (attackTime === undefined || attackTime > clip.duration) {
     return base;
   }
-  if (context.template.bodyPlan === 'crawler') {
+  if (context.template.legCut !== undefined) {
     const { rotations } = attackRotations(context.actor, clip, attackTime, base);
-    return groundCrawlerPose(context.figure.realized, { ...base, rotations });
+    return groundCrawlPose(context.figure.realized, { ...base, rotations });
   }
   return attackPose(context.actor, clip, attackTime, base);
 };
 
 const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side: number): Pose => {
-  if (context.template.bodyPlan === 'crawler') {
-    return crawlerHitPose(context.figure.realized, base, time, side);
+  if (context.template.legCut !== undefined) {
+    return crawlHitPose(context.figure.realized, base, time, side);
   }
   return flinchPoseWithClip(context.actor, time, base, { clip: flinchClipFor(context.template), side });
 };
@@ -388,12 +390,12 @@ export const posedActor = (input: ActorPoseInput): PosedActor => {
   }
   const seeded = actorForSeed(model, input.seed);
   const { actor, bones } = seeded;
-  const template = templateByName(input.crawling ? 'crawler' : model);
+  const template = templateByName(input.crawling ? 'legless-humanoid' : model);
   const attackTime = attackTimeFor(input, attackClipFor(template));
   const walk =
-    template.bodyPlan === 'crawler'
-      ? crawlerGaitPose(figure.realized, input.gaitPhase, input.speed)
-      : humanoidWalkPose(seeded, input, input.stanceWeight ?? targetStanceWeight(input));
+    template.legCut === undefined
+      ? humanoidWalkPose(seeded, input, input.stanceWeight ?? targetStanceWeight(input))
+      : crawlGaitPose(figure.realized, input.gaitPhase, input.speed);
   const context = { template, figure, actor };
   const basePose = withAttackPose(context, walk, attackTime);
   const headPose: Pose =
@@ -431,5 +433,5 @@ export const actorHitFlinchDuration = (model: string): number => {
     return acidTemplate.animation.hitDuration;
   }
   const template = templateByName(bodyPlanModel(model));
-  return template.bodyPlan === 'crawler' ? HIT_FLINCH_DURATION : flinchClipFor(template).duration;
+  return template.legCut === undefined ? flinchClipFor(template).duration : HIT_FLINCH_DURATION;
 };

@@ -22,6 +22,8 @@ export interface Template {
   readonly name: string;
   readonly description: string;
   readonly bodyPlan: BodyPlan;
+  /** Retained fraction of each upper thigh; when present, cuts lower legs and selects ground-crawl poses. */
+  readonly legCut?: number;
   readonly voxelSize: number;
   /** Nominal total actor mass, used by template-aware part mass assignments. */
   readonly bodyMassKg: number;
