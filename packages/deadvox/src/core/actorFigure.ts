@@ -15,7 +15,7 @@ export const figureSeedPool = (zombies: ReadonlyMap<string, ActorFigureType>): r
   ...new Set([...zombies.values()].flatMap((type) => type.figureSeeds ?? [])),
 ];
 
-/** The content type realized as the amalgam model, chosen by its model rather than its id. */
+/** The content type realized as the fused-mass model, chosen by its model rather than its id. */
 export const fusedMassTypeOf = <T extends ActorFigureType>(zombies: ReadonlyMap<string, T>): T | undefined =>
   [...zombies.values()].find((type) => type.model === 'fused-mass');
 

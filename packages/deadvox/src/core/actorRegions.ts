@@ -212,7 +212,7 @@ const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string,
   );
 };
 
-/** All manifest-region boxes for one actor pose, including amalgam member IDs. */
+/** All manifest-region boxes for one actor pose, including fused-mass member IDs. */
 const posedAllRegionBoxes = (input: ActorPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
   regionBoxesForContext(poseContextFor(input));
 
@@ -230,7 +230,7 @@ export const posedHumanoidRegionBoxes = (
 export const posedFusedMassRegionBoxes = (input: ActorPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const context = poseContextFor(input);
   if (input.model !== 'fused-mass' || !('manifest' in context.figure)) {
-    throw new Error('Amalgam region boxes require an amalgam pose input');
+    throw new Error('Fused-mass region boxes require a fused-mass pose input');
   }
   return regionBoxesForContext(context);
 };

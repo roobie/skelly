@@ -13,7 +13,7 @@ import { type Ragdoll, type RagdollWorld, ragdollContent } from './ragdoll.ts';
 import type { RigidBody, RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
-// The amalgam's carved flesh (core/fusedMassCarving.ts, Zombie.carved), drawn two ways: the body rebuilt
+// The fused-mass body's carved flesh (core/fusedMassCarving.ts, Zombie.carved), drawn two ways: the body rebuilt
 // without its carved voxels, so each hole shows from every side with flesh-coloured walls, and the chunk a
 // hit knocks out, flying off as render-only debris. Neither touches the simulation.
 
@@ -146,7 +146,7 @@ export const buildCarvedGeometry = (realized: Realized, carved: readonly number[
   const { voxels, body } = realized;
   const hole = body.bones.length;
   if (hole + 1 > 255) {
-    throw new Error(`An amalgam with ${hole} bones has no owner value left for its carved cells`);
+    throw new Error(`A fused-mass body with ${hole} bones has no owner value left for its carved cells`);
   }
   const owner = Uint8Array.from(voxels.owner);
   for (const cell of carved) {

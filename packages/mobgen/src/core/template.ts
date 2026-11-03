@@ -82,7 +82,7 @@ export const templateByName = (name: string): Template => {
 const templateStatus = (t: Template): TemplateStatus => t.status ?? 'ready';
 
 /** Resolves a registered template for a path that hands a model to a consumer (the Deadvox spawn and
- * amalgam boundaries, and the `generate` export CLI), refusing a comparison-only one so a model kept
+ * fused-mass boundaries, and the `generate` export CLI), refusing a comparison-only one so a model kept
  * only for side-by-side checks cannot reach a player. */
 export const consumableTemplate = (name: string): Template => {
   const t = templateByName(name);

@@ -49,7 +49,7 @@ export type ActorHitRegion = HumanoidHitRegion | 'core.trunk' | `member.${number
 
 export type ActorRegions = Record<string, number>;
 
-const AMALGAM_REGION_KEYS = ['core.trunk', ...HUMANOID_REGION_NAMES.map((region) => `member.${region}`)];
+const FUSED_MASS_REGION_KEYS = ['core.trunk', ...HUMANOID_REGION_NAMES.map((region) => `member.${region}`)];
 
 const BODY_PLAN = picklist(Object.keys(BODY_PLANS) as BodyPlan[]);
 
@@ -141,7 +141,7 @@ export const ActorSchema = strictObject({
   figure: optional(picklist(Object.keys(FIGURE_VARIANTS) as ActorModel[])),
   /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
   bodyScale: optional(Positive),
-  /** Mobgen figure seeds an individual of this type is drawn from. Every model but the amalgam, whose figure seed is fixed, defines them. */
+  /** Mobgen figure seeds an individual of this type is drawn from. Every model but fused-mass, whose figure seed is fixed, defines them. */
   figureSeeds: optional(
     pipe(
       array(pipe(number(), integer('must be a whole number'), minValue(1, 'must be 1 or more'))),
@@ -151,7 +151,7 @@ export const ActorSchema = strictObject({
   ),
   /** Overrides body-height pitch scaling for this type's voice cues. */
   soundPitchMultiplier: optional(Positive),
-  /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
+  /** Health keyed by hit-region id; humanoid bodies use six anatomy keys, fused-mass bodies use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
   /** Explicitly null when this region leaves no item. */
   severedItems: record(pipe(string(), nonEmpty('must not be empty')), nullable(Id)),
@@ -309,7 +309,7 @@ export const ActorSchema = strictObject({
    * absent means it never staggers. */
   stagger: optional(strictObject({ impulseThreshold: Positive, durationSimSeconds: PositiveSimSeconds })),
   /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/fusedMassCarving.ts): the struck voxel
-   * and every voxel within the radius of it. Amalgams only. */
+   * and every voxel within the radius of it. Fused-mass bodies only. */
   carving: optional(
     strictObject({
       radiusMetresPerDamage: pipe(NonNegative, maxValue(0.01, 'must be at most 0.01')),
@@ -355,7 +355,7 @@ export const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ActorSch
   zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
 
 export const zombieRegionsMatchModel = (zombie: InferOutput<typeof ActorSchema>): boolean => {
-  const expected = zombie.model === 'fused-mass' ? AMALGAM_REGION_KEYS : HUMANOID_REGION_NAMES;
+  const expected = zombie.model === 'fused-mass' ? FUSED_MASS_REGION_KEYS : HUMANOID_REGION_NAMES;
   const keys = Object.keys(zombie.regions);
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
 };

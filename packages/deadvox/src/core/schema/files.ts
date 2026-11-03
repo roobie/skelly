@@ -62,24 +62,24 @@ const SECTION_DESCRIPTOR = {
         array(ActorSchema),
         check(
           (types) => types.every((zombie) => zombie.model !== 'fused-mass' || zombie.bodyScale !== undefined),
-          'amalgam must define bodyScale',
+          'fused-mass must define bodyScale',
         ),
         check(
           (types) => types.every((zombie) => zombie.model === 'fused-mass' || zombie.carving === undefined),
-          'only an amalgam may define carving',
+          'only a fused-mass body may define carving',
         ),
         check(
           (types) => types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.downed === undefined)),
-          'every type but the amalgam, which never lies downed, must define downed',
+          'every type but fused-mass, which never lies downed, must define downed',
         ),
         check(
           (types) => types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.figureSeeds === undefined)),
-          'every type but the amalgam, whose figure seed is fixed, must define figureSeeds',
+          'every type but fused-mass, whose figure seed is fixed, must define figureSeeds',
         ),
         check(
           (types) =>
             types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.attack.grabBandMetres === undefined)),
-          'every type but the amalgam, which strikes from its core, must define attack.grabBandMetres',
+          'every type but fused-mass, which strikes from its core, must define attack.grabBandMetres',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
         check(

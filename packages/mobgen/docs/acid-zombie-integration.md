@@ -69,11 +69,10 @@ module. Their owners are `src/core/body.ts`, `Bone` and `MaterialDef`;
 ### Landing it without weakening other mobs' validation
 
 The port changes contracts, not rules. No existing budget, limit or rule set is loosened to
-make room. Each existing plan (humanoid, crawler, dog, amalgam) gets `budgets` and
-`limbBones` hooks that reproduce its old scaling exactly, including the coarse cell margin.
-The proof is that every existing mobgen test, validation run and Deadvox load passes with
-no budget or fixture edits. A budget edit in that round signals a lost behaviour and is a
-defect.
+make room. A new body's integration must preserve the other plans' scaling, including
+coarse cell margins. See `src/core/generate.ts`, `BodyPlanDef`, for the budget and limb
+boundaries. A budget edit made only to pass integration checks hides a lost behaviour
+and is a defect.
 
 The voxel grid's local material table must remain the shared consumer boundary: a
 compatibility shim would keep two competing material contracts. See

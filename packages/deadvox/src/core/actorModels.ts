@@ -1,7 +1,7 @@
 export const BODY_PLANS = {
   humanoid: { generator: 'humanoid-figure-v1' },
   acid: { generator: 'humanoid-figure-v1' },
-  'fused-mass': { generator: 'amalgam-figure-v1' },
+  'fused-mass': { generator: 'fused-mass-figure-v1' },
 } as const;
 
 export const FIGURE_VARIANTS = {

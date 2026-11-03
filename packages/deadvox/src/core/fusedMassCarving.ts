@@ -6,7 +6,7 @@ import { type FusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.t
 import { raycast } from './raycast.ts';
 import type { ActorDef } from './schema.ts';
 
-// A damaging hit on an amalgam knocks out the voxels around where it struck, leaving a hole. The hole is
+// A damaging hit on a fused-mass body knocks out the voxels around where it struck, leaving a hole. The hole is
 // simulation state (Zombie.carved), so it survives a save and a replay. It never changes region health,
 // damage or severing, but later hits see it: a shot enters a hole and strikes the flesh behind, and passes
 // through a hole that goes all the way (`fleshHit`).
@@ -37,7 +37,7 @@ const restBoxCenter = (figure: FusedMassFigure, bone: string): readonly number[]
   }
   const center = centers.get(bone);
   if (!center) {
-    throw new Error(`Amalgam has no region box for bone ${bone}`);
+    throw new Error(`Fused-mass body has no region box for bone ${bone}`);
   }
   return center;
 };
@@ -126,7 +126,7 @@ export interface FleshHit {
 }
 
 /**
- * The first visible flesh along a ray through an amalgam's posed region boxes, in block units. For each box
+ * The first visible flesh along a ray through a fused-mass body's posed region boxes, in block units. For each box
  * the ray enters, it walks that box's own bone's voxels in the rest grid, skipping carved cells. So a ray
  * beside the flesh but inside a box misses, a ray into a hole strikes the flesh behind it, and a ray through
  * a hole that goes all the way meets nothing there. `direction` is a unit vector.
@@ -218,7 +218,7 @@ export const protectedCoreCell = (figure: FusedMassFigure): number => {
     }
   }
   if (best < 0) {
-    throw new Error(`Amalgam seed ${figure.seed} has no core voxels`);
+    throw new Error(`Fused-mass seed ${figure.seed} has no core voxels`);
   }
   protectedCells.set(figure, best);
   return best;

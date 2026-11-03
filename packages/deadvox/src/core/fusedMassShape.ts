@@ -4,7 +4,7 @@ import type { FusedMassFigure } from './fusedMassFigure.ts';
 import { type BodyShape, CONTACT_SKIN } from './physics.ts';
 import { BRICK_BITS, type BrickOut, brickHas, brickLayer, type SolidBricks } from './solidBricks.ts';
 
-// The amalgam moves as its own flesh, not a box (#563): an octree over its rest-pose voxels, in its own frame
+// The fused-mass body moves as its own flesh, not a box (#563): an octree over its rest-pose voxels, in its own frame
 // and turned to its facing, is tested against the world's solid bricks (core/solidBricks.ts), and each side
 // prunes the other, so a wall or an empty brick costs a few box tests. The rest pose stands for the moving
 // body: limbs that sway are not followed.
@@ -73,7 +73,7 @@ const layerBox = (mask: number): number => {
   return box;
 };
 
-/** The octree's layout for one figure at one block size, shared by every amalgam with that figure. */
+/** The octree's layout for one figure at one block size, shared by every fused-mass body with that figure. */
 interface ShapeTree {
   readonly owner: Uint8Array;
   readonly dims: readonly [number, number, number];
@@ -263,7 +263,7 @@ const turnedBoxOverlaps = (
 /** What a live voxel the walk reaches is tested against: the target box, or the solid blocks of one brick. */
 type VoxelTest = 'box' | 'brick';
 
-/** One amalgam's flesh as a collision shape: shed members and carved holes leave it, and it turns to face. */
+/** One fused-mass body's flesh as a collision shape: shed members and carved holes leave it, and it turns to face. */
 export class FusedMassShape implements BodyShape {
   private readonly tree: ShapeTree;
   private readonly terrain: SolidBricks;
@@ -327,7 +327,7 @@ export class FusedMassShape implements BodyShape {
   }
 
   /**
-   * Drops the flesh the amalgam has lost: redone only when its carved list (replaced on every carve) or its
+   * Drops the flesh the fused-mass body has lost: redone only when its carved list (replaced on every carve) or its
    * severed count moves.
    */
   keep(carved: readonly number[], severedCount: number, lost: () => MissingFlesh): void {

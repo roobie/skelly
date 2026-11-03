@@ -115,7 +115,7 @@ const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3)
       }
     }
   }
-  throw new Error('Could not aim at an exposed amalgam member region');
+  throw new Error('Could not aim at an exposed fused-mass member region');
 };
 
 const poseInputForFigure = (
@@ -170,7 +170,7 @@ const stepHeadingAlignment = (before: Vec3, after: Vec3, target: Vec3): number |
   return (moveX * dx + moveZ * dz) / (movementLength * Math.hypot(dx, dz));
 };
 
-it('selects the amalgam content type by its model, not its id', () => {
+it('selects the fused-mass content type by its model, not its id', () => {
   const amalgam = fusedMassTypeOf(registry.zombies)!;
   const renamed = new Map([...registry.zombies].map(([id, type]) => [id === amalgam.id ? 'renamed' : id, type]));
   expect(amalgam.model).toBe('fused-mass');
@@ -199,7 +199,7 @@ const boundsOfPosedRegions = (regions: ReturnType<typeof posedFusedMassRegionBox
 };
 
 /**
- * The centre of each flesh voxel in the amalgam's own frame (facing -z, from its ground origin), and the voxel edge,
+ * The centre of each flesh voxel in the fused-mass body's own frame (facing -z, from its ground origin), and the voxel edge,
  * in blocks: the rest pose the rendered figure stands in.
  */
 const fleshVoxels = (figure: ReturnType<typeof fusedMassFigure>): { voxel: number; centres: Vec3[] } => {
@@ -348,7 +348,7 @@ const runObstacleCase = (
   };
 };
 
-describe('amalgam body and combat seam', () => {
+describe('fused-mass body and combat seam', () => {
   it('authors a slow beeline and delayed heavier strike', () => {
     const amalgam = registry.zombies.get('amalgam')!;
     const shambler = registry.zombies.get('shambler')!;
@@ -521,7 +521,7 @@ describe('amalgam body and combat seam', () => {
     expect(heardBody).toBe(true);
   });
 
-  it('uses the shared flinch transform for rendered and hit-region amalgam pose', () => {
+  it('uses the shared flinch transform for rendered and hit-region fused-mass pose', () => {
     const type = registry.zombies.get('amalgam')!;
     let heardBody = false;
     const combatSystem = new ZombieSystem({
@@ -709,7 +709,7 @@ describe('amalgam body and combat seam', () => {
     expect(groundedShambler.leftGround).toBe(false);
   });
 
-  it('routes a firearm projectile hit into the manifest-backed amalgam region', () => {
+  it('routes a firearm projectile hit into the manifest-backed fused-mass region', () => {
     const simulation = system();
     const id = simulation.add(registry.zombies.get('amalgam')!, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
@@ -1022,7 +1022,7 @@ describe('attack line', () => {
   });
 });
 
-describe('amalgam flesh carving', () => {
+describe('fused-mass flesh carving', () => {
   const amalgam = registry.zombies.get('amalgam')!;
   const carving = amalgam.carving!;
   const { carving: _ignored, ...uncarvedAmalgam } = amalgam;

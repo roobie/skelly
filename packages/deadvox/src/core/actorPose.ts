@@ -25,7 +25,7 @@ export interface ActorPoseInput {
   readonly seed: number;
   readonly model?: string;
   readonly crawling?: boolean;
-  /** Authored scale for amalgam's generated body. */
+  /** Authored scale for the fused-mass generated body. */
   readonly bodyScale?: number;
   /** Simulation position in block units. */
   readonly position: Vec3;
