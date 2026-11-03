@@ -69,6 +69,7 @@ import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { type ErrorReportContext, setErrorReportContext } from '../ui/errorReport.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { renderGraphicsOptions } from '../ui/graphicsOptions.ts';
+import { mountGuidance } from '../ui/guidedSteps.ts';
 import {
   type HandlingPresentationSource,
   quickbarKey,
@@ -105,7 +106,6 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest, type WaitViewAction } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
-import { mountTutorial } from '../ui/tutorial.ts';
 import { vehicleInspectionViewModel } from '../ui/vehicleInspection.ts';
 import { showWin } from '../ui/win.ts';
 import { mountWorldLoading } from '../ui/worldLoading.ts';
@@ -133,6 +133,7 @@ import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, observeRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { freeLookAllowsCommand, freeLookAllowsUse } from './freeLook.ts';
 import { FurnitureActionSelection, furnitureActionsFor } from './furnitureActions.ts';
+import { GuidedSteps } from './guidedSteps.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
@@ -209,7 +210,6 @@ import {
   type ThirdPersonOrbitAngle,
 } from './thirdPersonOrbit.ts';
 import { TierNotice } from './tierNotice.ts';
-import { Tutorial } from './tutorial.ts';
 import { tutorialUrl } from './tutorialUrl.ts';
 import { Unpacking } from './unpacking.ts';
 import { finishLoadingFrame, WorldLoading } from './worldLoading.ts';
@@ -683,33 +683,31 @@ const autosaveTuning = (registry: Engine['registry']) => {
   return autosave;
 };
 
-const assertPracticeIsolation = (options: StartPlayOptions): void => {
-  if (options.tutorial && (options.saveController || options.restore)) {
+const assertPracticeIsolation = (options: StartPlayOptions, guided: boolean): void => {
+  if (guided && (options.saveController || options.restore)) {
     throw new Error('Practice cannot bind a save or restore a world');
   }
 };
 
 const leaveTutorial = () => location.assign(tutorialUrl(location.href, false));
-const createPlayTutorial = (engine: Engine, enabled: boolean | undefined) => {
-  if (!enabled) {
+const createPlayGuidance = (engine: Engine) => {
+  const definition = engine.site?.guidance;
+  if (!definition) {
     return {};
   }
   const marks = engine.site?.playtestMarks;
   const exitMark = engine.site?.practiceExitMark;
-  const lightKit = engine.site?.lightPractice;
-  if (!(marks && exitMark && lightKit)) {
-    throw new Error('Practice requires an authored exit and light module content');
+  if (!(marks && exitMark)) {
+    throw new Error('Guidance requires authored stage marks');
   }
-  const tutorial = new Tutorial(
+  const guide = new GuidedSteps(
     engine.spawn.pos.map((coordinate) => coordinate / engine.config.scale.blockSize) as Vec3,
     engine.spawn.yaw,
     stageMarkArea(marks.beats, exitMark),
-    lightKit,
+    definition,
   );
-  const drawTutorial = mountTutorial(tutorial, screenTextOf(engine.registry).tutorial, leaveTutorial, () =>
-    location.reload(),
-  );
-  return { tutorial, drawTutorial };
+  const drawGuidance = mountGuidance(guide, leaveTutorial, () => location.reload());
+  return { guide, drawGuidance };
 };
 
 /** Says once, on the first live frame, that a focus fell back; loading and the main menu would use up its time. */
@@ -728,7 +726,7 @@ export const startPlay = (
   debugModule?: DebugModule,
   options: StartPlayOptions = {},
 ): { enter: () => void } => {
-  assertPracticeIsolation(options);
+  assertPracticeIsolation(options, Boolean(engine.site?.guidance));
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const lines = actionText(registry);
   const restRefusals = { rest: lines.play.restRefused, sleep: lines.play.sleepRefused };
@@ -739,7 +737,7 @@ export const startPlay = (
   configureReplayStreaming(engine, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
-  const { tutorial, drawTutorial } = createPlayTutorial(engine, options.tutorial);
+  const { guide, drawGuidance } = createPlayGuidance(engine);
 
   const playerStart = playerStartFromWorld(engine, scale, config.debugStart, {
     restoring: options.restore !== undefined,
@@ -1027,15 +1025,15 @@ export const startPlay = (
       }
     },
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
-    onConsumed: (type) => tutorial?.consumed(type),
-    onHandlingOutcome: (item, outcome) => tutorial?.weapons.handling(item, outcome, registry),
-    onDischarge: (item, sighted) => tutorial?.weapons.discharged(item, sighted, registry),
+    onConsumed: (type) => guide?.consumed(type),
+    onHandlingOutcome: (item, outcome) => guide?.weapons.handling(item, outcome, registry),
+    onDischarge: (item, sighted) => guide?.weapons.discharged(item, sighted, registry),
     onCompletedSwing: (isFist) => {
-      if (tutorial?.stage === 'melee' && isFist) {
-        tutorial.weapons.melee = true;
+      if (isFist) {
+        guide?.unarmedHit();
       }
     },
-    onBatterySwapped: (lightType) => tutorial?.batterySwapped(lightType),
+    onBatterySwapped: (lightType) => guide?.batterySwapped(lightType),
     onFirearmEjection: (effect) =>
       caseEffects.spawn({
         ...effect,
@@ -1194,8 +1192,8 @@ export const startPlay = (
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet, {
     calendar: () => sim.calendar,
-    opened: (type) => tutorial?.opened(type),
-    unpacked: (type) => tutorial?.weapons.unpackedAmmo(type),
+    opened: (type) => guide?.opened(type),
+    unpacked: (type) => guide?.weapons.unpackedAmmo(type),
   });
   const sharpening = new Sharpening(inventory, queue, {
     character: session.character,
@@ -2033,7 +2031,7 @@ export const startPlay = (
     inspect: (uid) => {
       const item = inventory.itemByUid(uid);
       if (item) {
-        tutorial?.weapons.inspected(item, registry);
+        guide?.weapons.inspected(item, registry);
       }
     },
     work: actOnWork,
@@ -4195,30 +4193,33 @@ export const startPlay = (
     }
   };
 
-  const updateTutorial = () => {
+  const updateGuidance = () => {
+    if (!guide) {
+      return;
+    }
+    const { observe } = guide.definition;
     for (const item of Object.values(inventory.hands)) {
       if (item) {
-        tutorial?.weapons.wielded(item, registry);
+        guide.weapons.wielded(item, registry);
       }
     }
-    tutorial?.observe({
+    guide.observe({
       position: body.pos,
       yaw: input.yaw,
       crouching: session.stance === 'crouching',
-      doorOpen: [...entities.all].some((entity) => entity.type === 'wood_door' && entity.open),
-      searched: [...entities.all].some((entity) => entity.type === 'tutorial_cabinet' && entity.searched),
+      doorOpen: [...entities.all].some((entity) => entity.type === observe.door && entity.open),
+      searched: [...entities.all].some((entity) => entity.type === observe.searched && entity.searched),
       looted: inventory.looted.size > 0,
       wielded:
-        Object.values(inventory.hands).some((item) => item?.type === 'canned_beans') &&
-        Object.values(inventory.hands).some((item) => item?.type === 'can_opener'),
-      lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
+        observe.hands?.every((type) => Object.values(inventory.hands).some((item) => item?.type === type)) === true,
+      lightOn: survival.lit?.type === observe.light && survival.lit?.on === true,
       litType: survival.lit?.on === true ? survival.lit.type : undefined,
       paused: mainMenuOpen && started,
     });
-    drawTutorial?.({
+    drawGuidance?.({
       inventory,
       inventoryOpen: screen.isOpen,
-      lightOn: survival.lit?.type === 'flashlight' && survival.lit.on === true,
+      lightOn: survival.lit?.type === observe.light && survival.lit?.on === true,
     });
   };
 
@@ -4316,7 +4317,7 @@ export const startPlay = (
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
     options.saveController?.afterFrame();
-    updateTutorial();
+    updateGuidance();
     observePlaytestFrame(elapsedReal, now);
     debugTools?.advanceRagdollSweep(dt);
     const { sky } = view.syncWorld({
@@ -4498,7 +4499,7 @@ export const startPlay = (
       $('death'),
       registry,
       summary,
-      options.tutorial ? leaveTutorial : () => location.assign(newWorldQuery(location.search, config.seed)),
+      guide ? leaveTutorial : () => location.assign(newWorldQuery(location.search, config.seed)),
     );
   };
   if (options.saveController) {

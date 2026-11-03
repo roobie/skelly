@@ -1,13 +1,14 @@
 import type { Registry } from '../core/content.ts';
+import type { HandlingFact } from '../core/guidanceFacts.ts';
 import { defOf, type Item } from '../core/items.ts';
+import type { GuidanceDef } from '../core/schema/guidance.ts';
 import type { FirearmOutcome } from './firearmHandling.ts';
 
-export type PracticeGun = 'revolver' | 'pump';
-export type WeaponLesson = 'unpack' | 'wield' | 'inspect' | 'partial' | 'ready' | 'reload' | 'sighted' | 'unload';
+type Track = GuidanceDef['handling'][number];
 
 interface Progress {
-  kind: PracticeGun;
-  facts: Set<WeaponLesson>;
+  track: Track;
+  facts: Set<HandlingFact>;
   shot: boolean;
   caseRemoved: boolean;
   reloaded: boolean;
@@ -16,10 +17,15 @@ interface Progress {
 }
 
 /** Passive, per-instance facts: swapping guns cannot splice together a handling sequence. */
-export class TutorialWeapons {
+export class HandlingLessons {
   private readonly guns = new Map<number, Progress>();
   private readonly unpacked = new Set<string>();
-  melee = false;
+
+  private readonly tracks: GuidanceDef['handling'];
+
+  constructor(tracks: GuidanceDef['handling']) {
+    this.tracks = tracks;
+  }
 
   unpackedAmmo(type: string): void {
     this.unpacked.add(type);
@@ -27,19 +33,14 @@ export class TutorialWeapons {
 
   private progress(item: Item, registry: Registry): Progress | undefined {
     const { firearm } = defOf(registry, item.type);
-    let kind: PracticeGun | undefined;
-    if (firearm?.revolver) {
-      kind = 'revolver';
-    } else if (firearm?.pump) {
-      kind = 'pump';
-    }
-    if (!kind) {
+    const track = this.tracks.find(({ mechanism }) => firearm?.[mechanism]);
+    if (!track) {
       return;
     }
     let progress = this.guns.get(item.uid);
     if (!progress) {
       progress = {
-        kind,
+        track,
         facts: new Set(),
         shot: false,
         caseRemoved: false,
@@ -75,7 +76,7 @@ export class TutorialWeapons {
     if (event === 'load') {
       progress.insertedSinceClosure = true;
     }
-    if (event === 'load' && progress.shot && (progress.kind === 'pump' || progress.caseRemoved)) {
+    if (event === 'load' && progress.shot && (!progress.track.reloadRequiresCaseRemoval || progress.caseRemoved)) {
       progress.reloaded = true;
     }
     if (event === 'live-ejected') {
@@ -120,15 +121,19 @@ export class TutorialWeapons {
     progress.shot = true;
   }
 
-  lesson(kind: PracticeGun): WeaponLesson | undefined {
-    const candidates = [...this.guns.values()].filter((gun) => gun.kind === kind);
-    const lessons: WeaponLesson[] = ['unpack', 'wield', 'inspect', 'partial', 'ready', 'reload', 'sighted', 'unload'];
-    const next = (gun: Progress) => lessons.find((lesson) => !gun.facts.has(lesson));
+  lesson(trackId: string): string | undefined {
+    const track = this.tracks.find(({ id }) => id === trackId);
+    if (!track) {
+      throw new Error(`Unknown handling track "${trackId}"`);
+    }
+    const candidates = [...this.guns.values()].filter((gun) => gun.track === track);
+    const next = (gun: Progress) =>
+      track.lessons.find((lesson) => !lesson.facts.every((fact) => gun.facts.has(fact)))?.id;
     if (candidates.some((gun) => next(gun) === undefined)) {
       return;
     }
     if (candidates.length === 0) {
-      return 'unpack';
+      return track.lessons[0]!.id;
     }
     return next(candidates.reduce((a, b) => (a.facts.size >= b.facts.size ? a : b)));
   }

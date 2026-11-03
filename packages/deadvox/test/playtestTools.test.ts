@@ -11,8 +11,7 @@ import {
   SessionMetrics,
   snapshotTimerQuantumForUserAgent,
 } from '../src/game/playtestTools.ts';
-import type { Tutorial } from '../src/game/tutorial.ts';
-import { stageTopics } from '../src/ui/tutorial.ts';
+import { baseRegistry } from './baseRegistry.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const contextWordSeparator = /[^a-z0-9-]+/;
@@ -445,39 +444,17 @@ describe('controls card', () => {
 
     expect(ids.filter((id, index) => ids.indexOf(id) !== index)).toEqual([]);
   });
-  it('opens each tutorial stage on the binding it practises and no browser row', () => {
-    const practised: Record<Tutorial['stage'], string> = {
-      move: 'movement.forward',
-      door: 'world.interact',
-      loot: 'ui.inventory-toggle',
-      hands: 'inventory.hands',
-      open: 'hand.use-dominant',
-      eat: 'hand.use-dominant',
-      drink: 'hand.use-dominant',
-      light: 'hand.use-dominant',
-      escape: 'player.crouch-toggle',
-      pause: 'ui.main-menu-toggle',
-      finish: 'ui.main-menu-toggle',
-      'light-on': 'hand.use-dominant',
-      'light-swap': 'quickbar.use.1',
-      'light-relight': 'hand.use-dominant',
-      revolver: 'firearm.reload',
-      pump: 'firearm.reload',
-      melee: 'stance.ready',
-      complete: 'ui.main-menu-toggle',
-    };
+  it('resolves authored guidance topics to game controls rather than browser rows', () => {
+    const guides = [...baseRegistry().layouts.values()].flatMap((layout) => (layout.guidance ? [layout.guidance] : []));
+    expect(guides.length).toBeGreaterThan(0);
     const rows = controlsCardRows(new BindingRegistry(INPUT_BINDINGS));
-    const topicRows = Object.entries(practised).map(([stage, action]) => {
-      const topic = stageTopics[stage as Tutorial['stage']];
-      const ids = filterControlsCardRows(rows, topic).map(({ id }) => id);
-      return {
-        stage,
-        practised: ids.includes(action),
-        browser: ids.filter((id) => id.startsWith('browser.')),
-        unbound: topic.filter((id) => !ids.includes(id)),
-      };
-    });
-
-    expect(topicRows.filter((row) => !row.practised || row.browser.length > 0 || row.unbound.length > 0)).toEqual([]);
+    for (const guide of guides) {
+      for (const step of guide.steps) {
+        const ids = filterControlsCardRows(rows, step.topics).map(({ id }) => id);
+        expect(step.topics.length).toBeGreaterThan(0);
+        expect(step.topics.filter((id) => !ids.includes(id))).toEqual([]);
+        expect(ids.filter((id) => id.startsWith('browser.'))).toEqual([]);
+      }
+    }
   });
 });

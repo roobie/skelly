@@ -4,11 +4,12 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { startupContent } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
+import { guidanceFixture } from './fixtures/guidance.ts';
 
 const BUNDLED_CONTENT = startupContent();
 
+import { GuidedSteps as Tutorial, type GuidanceObservation as TutorialObservation } from '../src/game/guidedSteps.ts';
 import { Survival } from '../src/game/survival.ts';
-import { Tutorial, type TutorialObservation } from '../src/game/tutorial.ts';
 import { tutorialRequested, tutorialUrl } from '../src/game/tutorialUrl.ts';
 import { Simulation } from './simulationFixture.ts';
 
@@ -24,9 +25,10 @@ const observation = (): TutorialObservation => ({
   litType: undefined,
   paused: false,
 });
-const lightKit = BUNDLED_CONTENT.registry.layouts.get('tutorial')!.practice!.light;
+const lightDefinition = [...BUNDLED_CONTENT.registry.items.values()].find((item) => item.light?.power)!;
+const lightKit = { light: lightDefinition.id, battery: lightDefinition.light!.power!.battery };
 const fixture = () => {
-  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, lightKit);
+  const tutorial = new Tutorial([0, 1, 0], 0, { x0: 10, z0: 10, x1: 12, z1: 12 }, guidanceFixture(lightKit.light));
   const state = observation();
   const observe = () => tutorial.observe(state);
   return { tutorial, state, observe };
@@ -78,14 +80,14 @@ describe('practice objectives', () => {
     state.position = [11, 1, 11];
     observe();
     expect(tutorial.stage).toBe('pause');
-    expect(tutorial.canStartLight).toBe(false);
+    expect(tutorial.canChoose('light-choice')).toBe(false);
     state.paused = true;
     observe();
     expect(tutorial.stage).toBe('finish');
-    expect(tutorial.canStartLight).toBe(true);
-    tutorial.chooseWeapons();
+    expect(tutorial.canChoose('light-choice')).toBe(true);
+    tutorial.choose('weapons');
     expect(tutorial.stage).toBe('revolver');
-    tutorial.startLight();
+    tutorial.choose('light-choice');
     observe();
     expect(tutorial.stage).toBe('revolver');
     expect(new URL(tutorialUrl('https://example.org/deadvox/?tutorial=1', false)).search).toBe('');
@@ -127,8 +129,8 @@ describe('practice objectives', () => {
     swap();
     queue.tick(queue.remaining);
     expect(tutorial.stage).toBe('finish');
-    tutorial.startLight();
-    expect(tutorial.canStartLight).toBe(false);
+    tutorial.choose('light-choice');
+    expect(tutorial.canChoose('light-choice')).toBe(false);
     state.litType = undefined;
     observe();
     expect(tutorial.stage).toBe('light-on');
@@ -147,7 +149,7 @@ describe('practice objectives', () => {
     state.litType = lightKit.light;
     observe();
     expect(tutorial.stage).toBe('finish');
-    tutorial.chooseWeapons();
+    tutorial.choose('weapons');
     expect(tutorial.stage).toBe('revolver');
   });
 

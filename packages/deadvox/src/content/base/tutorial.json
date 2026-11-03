@@ -512,6 +512,1827 @@
       ],
       "demo": true,
       "ground": 0,
+      "guidance": {
+        "choices": [
+          {
+            "action": "choose",
+            "at": ["finish"],
+            "id": "weapons",
+            "label": "Weapons practice",
+            "once": true
+          },
+          {
+            "action": "exit",
+            "at": ["finish", "complete"],
+            "id": "finish",
+            "label": "Finish practice",
+            "once": false
+          },
+          {
+            "action": "choose",
+            "at": ["finish", "complete"],
+            "id": "light-choice",
+            "label": "Light and power (optional)",
+            "once": true
+          }
+        ],
+        "chrome": {
+          "closeInventory": "Close inventory",
+          "controls": "Practice controls",
+          "exit": "Exit practice",
+          "inventory": "Inventory",
+          "restart": "Restart practice",
+          "unsaved": "Unsaved practice",
+          "wieldSelectedItem": "Wield selected item"
+        },
+        "handling": [
+          {
+            "id": "revolver",
+            "lessons": [
+              {
+                "facts": ["unpack"],
+                "id": "unpack"
+              },
+              {
+                "facts": ["wield"],
+                "id": "wield"
+              },
+              {
+                "facts": ["inspect"],
+                "id": "inspect"
+              },
+              {
+                "facts": ["partial"],
+                "id": "partial"
+              },
+              {
+                "facts": ["ready"],
+                "id": "ready"
+              },
+              {
+                "facts": ["reload"],
+                "id": "reload"
+              },
+              {
+                "facts": ["sighted"],
+                "id": "sighted"
+              },
+              {
+                "facts": ["unload"],
+                "id": "unload"
+              }
+            ],
+            "mechanism": "revolver",
+            "reloadRequiresCaseRemoval": true
+          },
+          {
+            "id": "pump",
+            "lessons": [
+              {
+                "facts": ["unpack"],
+                "id": "unpack"
+              },
+              {
+                "facts": ["wield"],
+                "id": "wield"
+              },
+              {
+                "facts": ["inspect"],
+                "id": "inspect"
+              },
+              {
+                "facts": ["partial"],
+                "id": "partial"
+              },
+              {
+                "facts": ["ready"],
+                "id": "ready"
+              },
+              {
+                "facts": ["reload"],
+                "id": "reload"
+              },
+              {
+                "facts": ["sighted"],
+                "id": "sighted"
+              },
+              {
+                "facts": ["unload"],
+                "id": "unload"
+              }
+            ],
+            "mechanism": "pump",
+            "reloadRequiresCaseRemoval": false
+          }
+        ],
+        "observe": {
+          "door": "wood_door",
+          "hands": ["canned_beans", "can_opener"],
+          "light": "flashlight",
+          "searched": "tutorial_cabinet"
+        },
+        "rules": [
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "move",
+            "when": {
+              "blocks": 6,
+              "kind": "displacement"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "look",
+            "when": {
+              "kind": "turn",
+              "radians": 0.25
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "door",
+            "when": {
+              "kind": "door"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "loot",
+            "when": {
+              "kind": "loot"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "hands",
+            "when": {
+              "kind": "hands"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "opened",
+            "when": {
+              "item": "canned_beans",
+              "kind": "opened"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "eaten",
+            "when": {
+              "item": "beans",
+              "kind": "consumed"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "drunk",
+            "when": {
+              "item": "water_bottle",
+              "kind": "consumed"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "light",
+            "when": {
+              "kind": "light-cycle"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "crouch",
+            "when": {
+              "kind": "crouch"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "escape",
+            "when": {
+              "kind": "area"
+            }
+          },
+          {
+            "at": ["pause"],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "paused",
+            "when": {
+              "kind": "pause"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": ["light-choice"],
+              "none": []
+            },
+            "id": "light-on",
+            "when": {
+              "item": "flashlight",
+              "kind": "lit"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": ["light-choice"],
+              "none": []
+            },
+            "id": "light-swap",
+            "when": {
+              "item": "flashlight",
+              "kind": "battery-swapped"
+            }
+          },
+          {
+            "at": [],
+            "enabled": {
+              "all": ["light-choice", "light-swap"],
+              "none": []
+            },
+            "id": "light-relight",
+            "when": {
+              "item": "flashlight",
+              "kind": "lit"
+            }
+          },
+          {
+            "at": ["melee"],
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "id": "melee",
+            "when": {
+              "kind": "unarmed-hit"
+            }
+          }
+        ],
+        "steps": [
+          {
+            "complete": {
+              "all": ["move", "look"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "action": "movement.forward",
+                    "label": "Forward"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "movement.back",
+                    "label": "Back"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "movement.left",
+                    "label": "Left"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "movement.right",
+                    "label": "Right"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "pointer.look",
+                    "label": "Look"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "move",
+            "notes": [],
+            "topics": ["movement.forward", "movement.back", "movement.left", "movement.right", "pointer.look"]
+          },
+          {
+            "complete": {
+              "all": ["door"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "action": "world.interact",
+                    "label": "Open station door"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "door",
+            "notes": [],
+            "topics": ["world.interact"]
+          },
+          {
+            "complete": {
+              "all": ["loot"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "action": "inventory.previous",
+                    "label": "Select previous"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.next",
+                    "label": "Select next"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.take",
+                    "label": "Take selected"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.hands",
+                    "label": "Wield selected"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.wear",
+                    "label": "Wear or remove"
+                  },
+                  {
+                    "lineBreak": true
+                  },
+                  {
+                    "action": "inventory.search",
+                    "label": "Search supplies"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.find",
+                    "label": "Find items"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.wield-or-pocket",
+                    "label": "Wield or stow"
+                  }
+                ],
+                "when": {
+                  "inventoryOpen": true
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "loot",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.previous",
+              "inventory.next",
+              "inventory.take",
+              "inventory.hands",
+              "inventory.wear",
+              "inventory.search",
+              "inventory.find",
+              "inventory.wield-or-pocket"
+            ]
+          },
+          {
+            "complete": {
+              "all": [],
+              "any": ["hands", "opened"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "wield": "Can of beans · Can opener"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "hands",
+            "notes": [],
+            "topics": ["ui.inventory-toggle", "inventory.hands"]
+          },
+          {
+            "complete": {
+              "all": ["opened"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "label": "Open can",
+                    "use": "can_opener"
+                  }
+                ],
+                "when": {
+                  "held": ["canned_beans", "can_opener"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Can of beans · Can opener"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "open",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off"
+            ]
+          },
+          {
+            "complete": {
+              "all": ["eaten"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "label": "Eat beans",
+                    "use": "opened_beans"
+                  }
+                ],
+                "when": {
+                  "held": ["opened_beans"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Opened beans — Take / wield"
+                  }
+                ],
+                "when": {
+                  "carried": "opened_beans"
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "label": "Open can",
+                    "use": "canned_beans"
+                  }
+                ],
+                "when": {
+                  "held": ["canned_beans"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Can of beans"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "eat",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off"
+            ]
+          },
+          {
+            "complete": {
+              "all": ["drunk"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "label": "Drink",
+                    "use": "water_bottle"
+                  }
+                ],
+                "when": {
+                  "held": ["water_bottle"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Water bottle"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "drink",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off"
+            ]
+          },
+          {
+            "complete": {
+              "all": ["light"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "label": "Switch off",
+                    "use": "flashlight"
+                  }
+                ],
+                "when": {
+                  "held": ["flashlight"],
+                  "lightOn": true
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "label": "Switch on",
+                    "use": "flashlight"
+                  }
+                ],
+                "when": {
+                  "held": ["flashlight"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Flashlight — On / off"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "light",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off"
+            ]
+          },
+          {
+            "complete": {
+              "all": ["escape", "crouch"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "action": "player.crouch-toggle",
+                    "label": "Crouch"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "text": "Reach the dirt path bend north-west of the station"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "escape",
+            "notes": [],
+            "topics": ["player.crouch-toggle"]
+          },
+          {
+            "complete": {
+              "all": ["paused"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "action": "ui.main-menu-toggle",
+                    "label": "Main menu"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "pause",
+            "notes": [],
+            "topics": ["ui.main-menu-toggle"]
+          },
+          {
+            "complete": {
+              "all": ["light-on"],
+              "none": []
+            },
+            "enabled": {
+              "all": ["light-choice"],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "label": "Switch on",
+                    "use": "flashlight"
+                  }
+                ],
+                "when": {
+                  "held": ["flashlight"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wieldItem": "flashlight"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "light-on",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off"
+            ]
+          },
+          {
+            "complete": {
+              "all": ["light-swap"],
+              "none": []
+            },
+            "enabled": {
+              "all": ["light-choice"],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "itemName": "aa_battery"
+                  },
+                  {
+                    "text": ": "
+                  },
+                  {
+                    "action": "quickbar.assign.1",
+                    "label": "Assign quickbar 1"
+                  }
+                ],
+                "when": {
+                  "held": ["flashlight"],
+                  "inventoryOpen": true
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "inventory": true
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "quickbar.use.1",
+                    "label": "Tap to take the battery, hold to put it in"
+                  }
+                ],
+                "when": {
+                  "held": ["flashlight"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wieldItem": "flashlight"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "light-swap",
+            "notes": [],
+            "topics": ["ui.inventory-toggle", "inventory.hands", "quickbar.assign.1", "quickbar.use.1"]
+          },
+          {
+            "complete": {
+              "all": ["light-relight"],
+              "none": []
+            },
+            "enabled": {
+              "all": ["light-choice"],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "label": "Switch on",
+                    "use": "flashlight"
+                  }
+                ],
+                "when": {
+                  "held": ["flashlight"]
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wieldItem": "flashlight"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "light-relight",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off"
+            ]
+          },
+          {
+            "complete": {
+              "all": [],
+              "any": [],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": ["weapons"]
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "action": "ui.main-menu-toggle",
+                    "label": "Main menu"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "finish",
+            "notes": [],
+            "topics": ["ui.main-menu-toggle"]
+          },
+          {
+            "complete": {
+              "all": [],
+              "handling": "revolver",
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Ammunition details"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.hands",
+                    "label": "Wield ammunition box"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.best-pocket",
+                    "label": "Carry loose ammunition"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.wear",
+                    "label": "Wear backpack"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "inventoryOpen": true,
+                  "lesson": {
+                    "id": "unpack",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Ammunition details"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.hands",
+                    "label": "Wield selected item"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.best-pocket",
+                    "label": "Carry loose ammunition"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.wear",
+                    "label": "Wear backpack"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "inventoryOpen": true
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Boxed ammunition — Wield"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Unpack dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Unpack off hand"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "unpack",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Revolver"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "wield",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Ammunition details"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "inspect",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Partial load"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Load — hold / stop — release"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Close cylinder — double press"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "partial",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Ready fire"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "Ready"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Fire dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Fire off hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "aim.ads-toggle",
+                    "label": "Sights off"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "ready",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Reload after firing"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Load — hold / stop — release"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Close cylinder — double press"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "Ready"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Fire dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Fire off hand"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "reload",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Sighted fire"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "aim.ads-toggle",
+                    "label": "Sights"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Close cylinder — double press"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "Ready"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Fire dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Fire off hand"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "sighted",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Revolver — "
+                  },
+                  {
+                    "text": "Unload live rounds"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Load — hold / stop — release"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Unload — press, then hold"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Close cylinder — double press"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "unload",
+                    "track": "revolver"
+                  }
+                }
+              },
+              {
+                "parts": [],
+                "when": {}
+              }
+            ],
+            "id": "revolver",
+            "notes": [
+              "Range — north-west dirt path · Range supplies — Backpack / boxed ammunition",
+              "I need loose ammunition on me and a free hand to load the revolver. I can stop loading before it is full.",
+              "Pumping chambers a shell from the tube; unloading ejects live rounds. Ammunition is finite; Restart practice replaces the whole attempt."
+            ],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off",
+              "inventory.best-pocket",
+              "inventory.wear",
+              "firearm.reload",
+              "stance.ready",
+              "aim.ads-toggle"
+            ]
+          },
+          {
+            "complete": {
+              "all": [],
+              "handling": "pump",
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Ammunition details"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.hands",
+                    "label": "Wield ammunition box"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.best-pocket",
+                    "label": "Carry loose ammunition"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.wear",
+                    "label": "Wear backpack"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "inventoryOpen": true,
+                  "lesson": {
+                    "id": "unpack",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Ammunition details"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.hands",
+                    "label": "Wield selected item"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.best-pocket",
+                    "label": "Carry loose ammunition"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.wear",
+                    "label": "Wear backpack"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "inventoryOpen": true
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Boxed ammunition — Wield"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Unpack dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Unpack off hand"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "unpack",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "wield": "Pump shotgun"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "wield",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Ammunition details"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "inspect",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Partial load"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Load — hold / stop — release"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Pump — double press"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "partial",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Ready fire"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "Ready"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Fire dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Fire off hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "aim.ads-toggle",
+                    "label": "Sights off"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "ready",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Reload after firing"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Load — hold / stop — release"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Pump — double press"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "Ready"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Fire dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Fire off hand"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "reload",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Sighted fire"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "aim.ads-toggle",
+                    "label": "Sights"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Pump — double press"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "Ready"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Fire dominant hand"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-off",
+                    "label": "Fire off hand"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "sighted",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Pump shotgun — "
+                  },
+                  {
+                    "text": "Unload live rounds"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Load — hold / stop — release"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Unload — press, then hold"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "firearm.reload",
+                    "label": "Pump — double press"
+                  }
+                ],
+                "when": {
+                  "lesson": {
+                    "id": "unload",
+                    "track": "pump"
+                  }
+                }
+              },
+              {
+                "parts": [],
+                "when": {}
+              }
+            ],
+            "id": "pump",
+            "notes": [
+              "Range — north-west dirt path · Range supplies — Backpack / boxed ammunition",
+              "I need loose ammunition on me and a free hand to load the revolver. I can stop loading before it is full.",
+              "Pumping chambers a shell from the tube; unloading ejects live rounds. Ammunition is finite; Restart practice replaces the whole attempt."
+            ],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.hands",
+              "inventory.activate",
+              "hand.use-dominant",
+              "hand.use-off",
+              "inventory.best-pocket",
+              "inventory.wear",
+              "firearm.reload",
+              "stance.ready",
+              "aim.ads-toggle"
+            ]
+          },
+          {
+            "complete": {
+              "all": ["melee"],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "text": "Empty hands"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.drop",
+                    "label": "Put down selected item"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "inventory.best-pocket",
+                    "label": "Stow selected item"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  }
+                ],
+                "when": {
+                  "inventoryOpen": true
+                }
+              },
+              {
+                "parts": [
+                  {
+                    "text": "Empty hands"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "inventory": true
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "stance.ready",
+                    "label": "En garde"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "hand.use-dominant",
+                    "label": "Punch"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "melee",
+            "notes": [],
+            "topics": [
+              "ui.inventory-toggle",
+              "inventory.drop",
+              "inventory.best-pocket",
+              "stance.ready",
+              "hand.use-dominant"
+            ]
+          },
+          {
+            "complete": {
+              "all": [],
+              "any": [],
+              "none": []
+            },
+            "enabled": {
+              "all": [],
+              "none": []
+            },
+            "hints": [
+              {
+                "parts": [
+                  {
+                    "text": "Weapons practice complete"
+                  },
+                  {
+                    "text": " · "
+                  },
+                  {
+                    "action": "ui.main-menu-toggle",
+                    "label": "Main menu"
+                  }
+                ],
+                "when": {}
+              }
+            ],
+            "id": "complete",
+            "notes": [],
+            "topics": ["ui.main-menu-toggle"]
+          }
+        ]
+      },
       "id": "tutorial",
       "lootContext": {
         "tier": "Tier1",

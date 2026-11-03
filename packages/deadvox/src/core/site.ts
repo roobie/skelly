@@ -21,7 +21,7 @@ import {
 } from './loot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng } from './random.ts';
-import type { FixedLootItemDef, FixedLootOverrideDef, LightPracticeDef } from './schema.ts';
+import type { FixedLootItemDef, FixedLootOverrideDef } from './schema.ts';
 import type { StageMark } from './stageMarks.ts';
 import { type Placement, placedGroundLoot, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
@@ -83,9 +83,8 @@ export interface PlaytestMarks {
 }
 
 export interface Site {
-  /** An authored practice site's optional light module. */
-  readonly lightPractice?: LightPracticeDef;
   readonly practiceExitMark?: string;
+  readonly guidance?: import('./schema/guidance.ts').GuidanceDef | undefined;
   /** Finished authored footprints eligible for world-derived sky transport. */
   readonly authoredPlacements?: readonly Placement[];
   /** An authored site's playtest beats and key fixed loot. */

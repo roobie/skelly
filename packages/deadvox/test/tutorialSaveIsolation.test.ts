@@ -2,10 +2,15 @@ import { expect, it } from 'vitest';
 import type { Engine } from '../src/game/engine.ts';
 import { startPlay } from '../src/game/play.ts';
 import type { SaveController } from '../src/ui/saveController.ts';
+import { baseRegistry } from './baseRegistry.ts';
 
-it('rejects a save-bound practice session before accessing any runtime or save owner', () => {
+it('rejects a save-bound content-selected guide before runtime actions or save access', () => {
+  const { guidance } = [...baseRegistry().layouts.values()].find((layout) => layout.guidance)!;
   const engine = new Proxy({} as Engine, {
-    get: () => {
+    get: (_target, key) => {
+      if (key === 'site') {
+        return { guidance };
+      }
       throw new Error('Runtime accessed before save-isolation admission');
     },
   });
@@ -14,7 +19,7 @@ it('rejects a save-bound practice session before accessing any runtime or save o
       throw new Error('Save accessed before save-isolation admission');
     },
   });
-  expect(() => startPlay(engine, undefined, { tutorial: true, saveController })).toThrow(
+  expect(() => startPlay(engine, undefined, { saveController })).toThrow(
     'Practice cannot bind a save or restore a world',
   );
 });

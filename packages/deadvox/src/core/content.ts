@@ -13,6 +13,7 @@ import { resolveSpawnTime, type SpawnTimeWindow } from './clock.ts';
 import { checkDamageKinds } from './damageContent.ts';
 import { checkDropSounds } from './dropSounds.ts';
 import { liftableFurniture } from './furnitureMove.ts';
+import { guidanceIssues } from './guidance.ts';
 import { visibleGridName } from './inventoryGridName.ts';
 import {
   footprintScaleIssue,
@@ -1828,6 +1829,21 @@ const checkKeys = (registry: Registry, report: Report) => {
   }
 };
 
+const checkLayoutGuidance = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
+  if (layout.guidance) {
+    if (!layout.practice) {
+      report('layouts', layout.id, '.guidance', 'guidance requires an authored exit mark');
+    }
+    for (const [path, message] of guidanceIssues(layout.guidance, registry)) {
+      report('layouts', layout.id, `.guidance${path}`, message);
+    }
+  }
+  const light = layout.practice?.light;
+  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
+    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
+  }
+};
+
 const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
   if (layout.weatheringProfile && !registry.weathering.has(layout.weatheringProfile)) {
     report('layouts', layout.id, '.weatheringProfile', `no weathering profile "${layout.weatheringProfile}"`);
@@ -1845,10 +1861,7 @@ const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report
     }
     keys.add(vehicle.placementKey);
   }
-  const light = layout.practice?.light;
-  if (light && registry.items.get(light.light)?.light?.power?.battery !== light.battery) {
-    report('layouts', layout.id, '.practice.light', `"${light.light}" is not a light that takes "${light.battery}"`);
-  }
+  checkLayoutGuidance(layout, registry, report);
 };
 
 const reportMissingCamoSettings = (block: BlockDef, report: Report): void => {

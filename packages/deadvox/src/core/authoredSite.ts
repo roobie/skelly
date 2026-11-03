@@ -20,7 +20,7 @@ import { placementKeyLoot } from './placementLoot.ts';
 import type { PublicCartographicFeature } from './publicCartography.ts';
 import { Rng, simplexNoise2 } from './random.ts';
 import type { Scale } from './scale.ts';
-import type { LightPracticeDef, SiteLayoutDef } from './schema.ts';
+import type { SiteLayoutDef } from './schema.ts';
 import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   focusPose,
@@ -155,8 +155,8 @@ export class AuthoredSite implements Site {
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
-  readonly lightPractice?: LightPracticeDef;
   readonly practiceExitMark?: string;
+  readonly guidance?: import('./schema/guidance.ts').GuidanceDef | undefined;
   readonly seed: number;
   readonly registry: Registry;
   readonly showroom: ShowroomDef | undefined;
@@ -205,8 +205,8 @@ export class AuthoredSite implements Site {
         })),
       ),
     };
+    this.guidance = layout.guidance;
     if (layout.practice) {
-      this.lightPractice = layout.practice.light;
       this.practiceExitMark = layout.practice.exitMark;
     }
     this.showroom = layout.showroom;

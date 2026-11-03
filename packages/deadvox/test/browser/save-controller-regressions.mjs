@@ -25,7 +25,7 @@ const observation = {
   enforce: 'pre',
   transform(code, id) {
     if (id.endsWith('/src/content/base/tutorial.json')) {
-      // An independently named mark must drive both live guide startup and the exit route.
+      // Independent content identities catch runtime dispatch by scenario-specific names.
       const content = JSON.parse(code);
       for (const layout of content.layouts) {
         const previous = layout.practice.exitMark;
@@ -33,6 +33,12 @@ const observation = {
         layout.beats = layout.beats.map((mark) =>
           mark.id === previous ? { ...mark, id: layout.practice.exitMark } : mark,
         );
+        const [first] = layout.guidance.steps;
+        const oldStage = first.id;
+        first.id = 'fixture_arrival';
+        for (const row of [...layout.guidance.rules, ...layout.guidance.choices]) {
+          row.at = row.at.map((stageId) => (stageId === oldStage ? first.id : stageId));
+        }
       }
       return JSON.stringify(content);
     }
@@ -132,6 +138,11 @@ try {
         'practice never creates a persistence owner',
       );
       await page.locator('#go').waitFor({ state: 'visible' });
+      assert.equal(
+        await page.locator('[data-tutorial-stage]').getAttribute('data-tutorial-stage'),
+        'fixture_arrival',
+        'the live guide renders its authored stage identity rather than a built-in stage',
+      );
       const binding = await page.evaluate(async () => {
         const { inputBindings } = await import('/src/game/inputBindings.ts');
         const id = 'movement.forward';
@@ -158,9 +169,9 @@ try {
       assert.equal(
         await page.evaluate(async () => {
           const { controlsCardRows, filterControlsCardRows } = await import('/src/game/controls.ts');
-          const { stageTopics } = await import('/src/ui/tutorial.ts');
+          const { topics } = gauntletWitness.engine.site.guidance.steps[0];
           const search = document.querySelector('#controls-search');
-          const expected = filterControlsCardRows(controlsCardRows(), stageTopics.move).map(({ id }) => id);
+          const expected = filterControlsCardRows(controlsCardRows(), topics).map(({ id }) => id);
           const actual = [...document.querySelectorAll('#controls [data-input-action]')].map(
             (row) => row.dataset.inputAction,
           );
@@ -182,8 +193,8 @@ try {
         }
       }, binding);
       const canHints = await page.evaluate(async () => {
-        const { Tutorial } = await import('/src/game/tutorial.ts');
-        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/game/guidedSteps.ts');
+        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { Unpacking } = await import('/src/game/unpacking.ts');
@@ -204,8 +215,8 @@ try {
         ) {
           throw new Error('Can fixture must fit');
         }
-        const lightKit = gauntletWitness.engine.site.lightPractice;
-        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
+        const definition = gauntletWitness.engine.site.guidance;
+        const lootTutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, definition);
         lootTutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -217,7 +228,7 @@ try {
           lightOn: false,
           paused: false,
         });
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, definition);
         tutorial.observe({
           position: [8, 0, 0],
           yaw: 1,
@@ -235,10 +246,8 @@ try {
         });
         gauntletWitness.manual = true;
         try {
-          const tutorialText = gauntletWitness.engine.registry.ui.get('core').screenText.tutorial;
           const draw = mountTutorial(
             tutorial,
-            tutorialText,
             () => undefined,
             () => undefined,
           );
@@ -248,7 +257,6 @@ try {
             );
           mountTutorial(
             lootTutorial,
-            tutorialText,
             () => undefined,
             () => undefined,
           )({
@@ -281,7 +289,9 @@ try {
             sealed,
             opened,
             eating: actions(),
-            stage: tutorial.stage,
+            awaitingConsumption: tutorial.step.complete.all.some((id) =>
+              tutorial.definition.rules.some((rule) => rule.id === id && rule.when.kind === 'consumed'),
+            ),
           };
         } finally {
           gauntletWitness.manual = false;
@@ -295,10 +305,10 @@ try {
       assert(canHints.sealed.includes('hand.use-off'), 'the held opener points to its hand activation');
       assert(canHints.opened.includes('inventory.activate'), 'open inventory offers held-item activation');
       assert(canHints.eating.includes('hand.use-dominant'), 'held food points back to hand activation');
-      assert.equal(canHints.stage, 'eat', 'opening and wielding alone are not consumption');
+      assert.equal(canHints.awaitingConsumption, true, 'opening and wielding alone are not consumption');
       const weaponsHints = await page.evaluate(async () => {
-        const { Tutorial } = await import('/src/game/tutorial.ts');
-        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/game/guidedSteps.ts');
+        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { Inventory } = await import('/src/core/inventory.ts');
         const { HandlingQueue } = await import('/src/core/handling.ts');
         const { FirearmMechanics } = await import('/src/game/firearmHandling.ts');
@@ -310,8 +320,8 @@ try {
         const inventory = new Inventory(gauntletWitness.engine.registry);
         const queue = new HandlingQueue(inventory);
         let finished = false;
-        const lightKit = inventory.registry.layouts.get('tutorial').practice.light;
-        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, lightKit);
+        const definition = inventory.registry.layouts.get('tutorial').guidance;
+        const tutorial = new Tutorial([0, 0, 0], 0, { x0: 7, x1: 9, z0: 0, z1: 2 }, definition);
         tutorial.opened('canned_beans');
         tutorial.consumed('beans');
         tutorial.consumed('water_bottle');
@@ -336,19 +346,25 @@ try {
         try {
           const draw = mountTutorial(
             tutorial,
-            inventory.registry.ui.get('core').screenText.tutorial,
             () => {
               finished = true;
             },
             () => undefined,
           );
           draw(presentation);
+          const exitChoice = definition.choices.find(
+            (choice) => choice.action === 'exit' && tutorial.canChoose(choice.id),
+          );
           const offered =
-            tutorial.stage === 'finish' &&
-            !finished &&
-            Boolean(document.querySelector('[data-tutorial-choice="finish"]'));
-          document.querySelector('[data-tutorial-choice="weapons"]').click();
-          const branched = tutorial.stage === 'revolver' && !finished;
+            !finished && Boolean(exitChoice && document.querySelector(`[data-tutorial-choice="${exitChoice.id}"]`));
+          const handlingChoice = definition.choices.find(
+            (choice) =>
+              choice.action === 'choose' &&
+              tutorial.canChoose(choice.id) &&
+              definition.steps.some((step) => step.enabled.none.includes(choice.id)),
+          );
+          document.querySelector(`[data-tutorial-choice="${handlingChoice.id}"]`).click();
+          const branched = tutorial.step.complete.handling !== undefined && !finished;
           const bag = inventory.create('hiking_backpack');
           const box = inventory.create('cartridge_box_357_h_magnum');
           if (!(inventory.add(bag, { kind: 'worn' }) && inventory.add(box, { kind: 'hand', side: 'right' }))) {
@@ -449,13 +465,13 @@ try {
       await page.click('#go');
       await page.waitForFunction(() => globalThis.tutorialSession.sim.paused === false);
       await page.evaluate(async () => {
-        const { Tutorial } = await import('/src/game/tutorial.ts');
-        const { mountTutorial } = await import('/src/ui/tutorial.ts');
+        const { GuidedSteps: Tutorial } = await import('/src/game/guidedSteps.ts');
+        const { mountGuidance: mountTutorial } = await import('/src/ui/guidedSteps.ts');
         const { engine, session } = gauntletWitness;
         // A separate observer starts at this lesson; the playing session still owns movement and stance.
         const { stageMarkArea } = await import('/src/core/stageMarks.ts');
         const exit = stageMarkArea(engine.site.playtestMarks.beats, engine.site.practiceExitMark);
-        const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.lightPractice);
+        const tutorial = new Tutorial([0, 0, 0], 0, exit, engine.site.guidance);
         tutorial.opened('canned_beans');
         tutorial.consumed('beans');
         tutorial.consumed('water_bottle');
@@ -474,7 +490,6 @@ try {
         tutorial.observe({ ...prerequisites, lightOn: false });
         const draw = mountTutorial(
           tutorial,
-          engine.registry.ui.get('core').screenText.tutorial,
           () => undefined,
           () => undefined,
         );
@@ -489,8 +504,15 @@ try {
           return tutorial.stage;
         };
         gauntletWitness.manual = true;
-        globalThis.tutorialExitFixture = { tutorial, exit, observe };
-        if (observe() !== 'escape') {
+        const { definition } = tutorial;
+        const stageFor = (kind) =>
+          definition.steps.find((step) =>
+            step.complete.all.some((id) => definition.rules.some((rule) => rule.id === id && rule.when.kind === kind)),
+          ).id;
+        const exitStage = stageFor('area');
+        const pauseStage = stageFor('pause');
+        globalThis.tutorialExitFixture = { tutorial, exit, observe, exitStage, pauseStage };
+        if (observe() !== exitStage) {
           throw new Error('Exit fixture must begin with an unfinished escape lesson');
         }
       });
@@ -527,8 +549,8 @@ try {
         await releaseForward();
       }
       assert.equal(
-        await page.evaluate(() => tutorialExitFixture.observe()),
-        'escape',
+        await page.evaluate(() => tutorialExitFixture.observe() === tutorialExitFixture.exitStage),
+        true,
         'reaching the named destination without crouching is not enough',
       );
       await pressAction(page, 'player.crouch-toggle');
@@ -537,9 +559,9 @@ try {
           gauntletWitness.session.frame(1 / 60);
           const stage = tutorialExitFixture.observe();
           gauntletWitness.manual = false;
-          return stage;
+          return stage === tutorialExitFixture.pauseStage;
         }),
-        'pause',
+        true,
         'ordinary crouch input at the named destination completes the exit lesson',
       );
       await page.evaluate(() => {

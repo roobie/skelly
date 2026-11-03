@@ -23,6 +23,7 @@ import {
 } from 'valibot';
 import { hasSegment } from '../authoredTerrain.mjs';
 import { LootContextSchema, LootTierSchema, UsageSchema } from '../loot.ts';
+import { GuidanceSchema } from './guidance.ts';
 import { Count, Fraction, GameTimeOfDay, Id, Name } from './primitives.ts';
 import { CellCoordinate, CellPosition, FixedLootItem, KitRefSchema, SpawnWindowSchema } from './templates.ts';
 
@@ -143,6 +144,7 @@ const ShowroomSchema = strictObject({
 });
 
 export const SiteLayoutSchema = strictObject({
+  guidance: optional(GuidanceSchema),
   /** Layout keys are URL scene names, including camel-case names. */
   id: pipe(string(), regex(/^[a-zA-Z][a-zA-Z0-9_]*$/, 'must be a URL scene name')),
   lootContext: LootContextSchema,
@@ -215,11 +217,13 @@ export const SiteLayoutSchema = strictObject({
   practice: optional(
     strictObject({
       exitMark: Id,
-      light: strictObject({
-        light: Id,
-        battery: Id,
-        labels: strictObject({ start: Name, on: Name, assign: Name, swap: Name, relight: Name }),
-      }),
+      light: optional(
+        strictObject({
+          light: Id,
+          battery: Id,
+          labels: strictObject({ start: Name, on: Name, assign: Name, swap: Name, relight: Name }),
+        }),
+      ),
     }),
   ),
 });

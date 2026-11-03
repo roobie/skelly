@@ -117,9 +117,16 @@ UI work, not a prerequisite for recording the content relationship. The start-st
 contract belongs to `packages/deadvox/docs/url-mods.md`, "Start state in mods".
 
 Scenario rows own guided steps, stage marks and attempt recording because a different
-run must not require runtime identity branches. Observation mechanisms do not stage
-or mutate the world; staging that needs another mechanism requires its own decision.
-See `packages/deadvox/src/core/stageMarks.ts`, `stageMarkArea` and `stageMarksAt`.
+run must not require runtime identity branches. Guidance observes completed actions
+and selects presentation; it cannot issue gameplay commands or bypass action owners.
+Handling history belongs to an observed item instance so separate items cannot be
+combined into one completed lesson. See `packages/deadvox/src/game/guidedSteps.ts`,
+`GuidedSteps`; `packages/deadvox/src/game/handlingLessons.ts`, `HandlingLessons`;
+and `packages/deadvox/src/ui/guidedSteps.ts`, `mountGuidance`.
+
+Observation mechanisms do not stage or mutate the world; staging that needs another
+mechanism requires its own decision. See `packages/deadvox/src/core/stageMarks.ts`,
+`stageMarkArea` and `stageMarksAt`.
 
 Theme mods stand alone without wiring themselves into any product's distribution.
 A small, player-selected compatibility mod supplies that wiring: for example, magic

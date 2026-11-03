@@ -4,13 +4,14 @@ import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { openingTargetForHand } from '../src/game/canOpening.ts';
+import { GuidedSteps as Tutorial } from '../src/game/guidedSteps.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
-import { Tutorial } from '../src/game/tutorial.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry, fixtureEconomy } from './economyFixtures.ts';
+import { guidanceFixture } from './fixtures/guidance.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const fixture = (side: HandSide = 'right', quality = 2) => {
@@ -177,8 +178,8 @@ describe('held can opening', () => {
 
   it('a tutorial opening is earned by completion, not activation or cancellation', () => {
     const f = fixture();
-    const lightKit = baseRegistry().layouts.get('tutorial')!.practice!.light;
-    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, lightKit);
+    const guide = guidanceFixture('fixture_light');
+    const tutorial = new Tutorial([0, 0, 0], 0, { x0: 20, x1: 21, z0: 20, z1: 21 }, guide);
     f.opened.mockImplementation(() => tutorial.opened('canned_beans'));
     expect(f.unpacking.activate(f.can)).toBeUndefined();
     f.queue.cancel();

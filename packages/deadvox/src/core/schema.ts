@@ -33,7 +33,6 @@ export type {
   KitAnchor,
   KitPort,
   KitRef,
-  LightPracticeDef,
   LookDefaultsDef,
   LootEntry,
   MapAssemblyDef,

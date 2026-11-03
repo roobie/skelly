@@ -123,6 +123,7 @@ breach.breaking(shape.colliding({
       { id: 'tutorial_exit', area: { x0: -10, z0: -15, x1: -6, z1: -11 } },
       { id: 'tutorial_firing_line', area: { x0: -24, z0: -22, x1: -22, z1: -20 } },
     ],
+    guidance: (import 'guidance.libsonnet')(self.practice.light),
     practice: { exitMark: 'tutorial_exit', light: {
       light: 'flashlight',
       battery: 'aa_battery',
