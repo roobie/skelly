@@ -10,7 +10,7 @@ import {
 const root = FileInfo.path(tiled.projectFilePath);
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CLASSES = ['building', 'player_spawn', 'shambler', 'horde', 'woodland', 'track', 'ridge', 'hill', 'beat'];
-const ENUM_TYPES = { template: 'template_id', zombie: 'zombie_type' };
+const ENUM_TYPES = { template: 'template_id', actor: 'actor_type' };
 
 function readJson(path) {
   const file = new TextFile(path, TextFile.ReadOnly);
@@ -54,7 +54,7 @@ function content() {
       templates.push(entry);
     }
   }
-  return { templates, zombies: readJson(`${base}/zombies.json`).actors };
+  return { templates, actors: readJson(`${base}/zombies.json`).actors };
 }
 function scalar(object, name, fallback) {
   const property = object.property(name);
@@ -206,8 +206,8 @@ function addSpawn(object, info, context) {
     layout.player = { position, bearing: finite(scalar(object, 'bearing', 0), `${name}.bearing`) };
     return;
   }
-  const type = scalar(object, 'zombie');
-  if (!pack.zombies.some((t) => t.id === type)) {
+  const type = scalar(object, 'actor');
+  if (!pack.actors.some((t) => t.id === type)) {
     throw new Error(`${name}: unknown zombie type ${type}`);
   }
   const chance = finite(scalar(object, 'chance', 1), `${name}.chance`);
@@ -436,10 +436,10 @@ export function generatePropertyTypes() {
       valuesAsFlags: false,
     },
     {
-      name: 'zombie_type',
+      name: 'actor_type',
       type: 'enum',
       storageType: 'string',
-      values: pack.zombies.map((t) => t.id).sort(),
+      values: pack.actors.map((t) => t.id).sort(),
       valuesAsFlags: false,
     },
     {
@@ -454,7 +454,7 @@ export function generatePropertyTypes() {
     {
       name: 'shambler',
       members: [
-        member('zombie', 'string', '', 'zombie_type'),
+        member('actor', 'string', '', 'actor_type'),
         member('chance', 'float', 1),
         member('window_from', 'string', ''),
         member('window_to', 'string', ''),

@@ -1796,9 +1796,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "shambler"
             }
           ]
@@ -1816,9 +1816,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "shambler"
             }
           ]
@@ -1836,9 +1836,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "shambler"
             }
           ]
@@ -1856,9 +1856,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "shambler"
             }
           ]
@@ -1876,9 +1876,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "shambler"
             },
             {
@@ -1901,9 +1901,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "shambler"
             },
             {
@@ -1926,9 +1926,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "military_shambler"
             }
           ]
@@ -1946,9 +1946,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "military_shambler"
             }
           ]
@@ -1966,9 +1966,9 @@
           "visible": true,
           "properties": [
             {
-              "name": "zombie",
+              "name": "actor",
               "type": "string",
-              "propertytype": "zombie_type",
+              "propertytype": "actor_type",
               "value": "amalgam"
             }
           ]
@@ -1984,7 +1984,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 106,
@@ -1997,7 +1997,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 107,
@@ -2010,7 +2010,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 108,
@@ -2023,7 +2023,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 109,
@@ -2036,7 +2036,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 110,
@@ -2049,7 +2049,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 111,
@@ -2062,7 +2062,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 112,
@@ -2075,7 +2075,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 113,
@@ -2088,7 +2088,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 114,
@@ -2101,7 +2101,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 115,
@@ -2114,7 +2114,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 116,
@@ -2127,7 +2127,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 117,
@@ -2140,7 +2140,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 118,
@@ -2153,7 +2153,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 119,
@@ -2166,7 +2166,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 120,
@@ -2179,7 +2179,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 121,
@@ -2192,7 +2192,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 122,
@@ -2205,7 +2205,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 123,
@@ -2218,7 +2218,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 124,
@@ -2231,7 +2231,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 125,
@@ -2244,7 +2244,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 126,
@@ -2257,7 +2257,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 127,
@@ -2270,7 +2270,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 128,
@@ -2283,7 +2283,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 129,
@@ -2296,7 +2296,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 130,
@@ -2309,7 +2309,7 @@
           "height": 0,
           "rotation": 0,
           "visible": true,
-          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler" }]
+          "properties": [{ "name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler" }]
         },
         {
           "id": 131,

@@ -192,7 +192,7 @@ describe('Tiled spawn-window export', () => {
       objects: [
         object('player_spawn', 5, 5, { elevation: 0.5, bearing: 0 }),
         object('shambler', 8, 8, {
-          zombie: 'shambler',
+          actor: 'shambler',
           chance: 1,
           elevation: 0.5,
           [WINDOW_FROM]: 'dusk',
@@ -304,7 +304,7 @@ describe('Tiled spawn-window export', () => {
       isObjectLayer: true,
       objects: [
         object('player_spawn', 5, 5, { elevation: 0.5, bearing: 0 }),
-        object('shambler', 8, 8, { zombie: 'shambler', elevation: 0.5, [WINDOW_TO]: 'dawn' }),
+        object('shambler', 8, 8, { actor: 'shambler', elevation: 0.5, [WINDOW_TO]: 'dawn' }),
       ],
     };
     const map = {

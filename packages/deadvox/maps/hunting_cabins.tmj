@@ -57,10 +57,10 @@
           "properties": [{"name": "bearing", "type": "float", "value": 180}]},
         {"id": 7, "name": "Western treeline shambler", "type": "shambler", "point": true,
           "x": 34, "y": 90, "width": 0, "height": 0, "rotation": 0, "visible": true,
-          "properties": [{"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"}]},
+          "properties": [{"name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler"}]},
         {"id": 8, "name": "Eastern treeline shambler", "type": "shambler", "point": true,
           "x": 97, "y": 91, "width": 0, "height": 0, "rotation": 0, "visible": true,
-          "properties": [{"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"}]}
+          "properties": [{"name": "actor", "type": "string", "propertytype": "actor_type", "value": "shambler"}]}
       ]
     },
     {
