@@ -308,7 +308,7 @@ export const ActorSchema = strictObject({
   /** A melee hit with at least this impulse holds the zombie still and spoils its attack (docs/stagger.md);
    * absent means it never staggers. */
   stagger: optional(strictObject({ impulseThreshold: Positive, durationSimSeconds: PositiveSimSeconds })),
-  /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/amalgamCarving.ts): the struck voxel
+  /** Flesh a damaging hit knocks off the body, leaving a hole (src/core/fusedMassCarving.ts): the struck voxel
    * and every voxel within the radius of it. Amalgams only. */
   carving: optional(
     strictObject({

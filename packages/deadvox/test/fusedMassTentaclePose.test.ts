@@ -5,7 +5,7 @@ import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
 import { AMALGAM_FIGURE_SEED, amalgamFigure, amalgamStrikeOrigin } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from '../src/render/amalgamTentaclePose.ts';
+import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from '../src/render/fusedMassTentaclePose.ts';
 
 interface CoreVoxelPointInput {
   readonly figure: ReturnType<typeof amalgamFigure>;
@@ -59,7 +59,7 @@ const coreVoxelInteriorMargin = (input: CoreVoxelPointInput): number => {
   );
 };
 
-describe('amalgam attack tentacle pose', () => {
+describe('fused-mass attack tentacle pose', () => {
   it('extends toward the player through windup and strike, then retracts within attack reach', () => {
     const start: [number, number, number] = [0, 0, 0];
     const target: [number, number, number] = [3, 0, 4];
@@ -67,7 +67,7 @@ describe('amalgam attack tentacle pose', () => {
     const windupSeconds = 0.4;
     const cooldownSeconds = 1.8;
     const pose = (attackWindup: number, attackWait: number) =>
-      amalgamTentaclePose({
+      fusedMassTentaclePose({
         start,
         target,
         facing: [0, 0, -1],
@@ -127,14 +127,14 @@ describe('amalgam attack tentacle pose', () => {
     const restCore = restTransforms.get('core')!;
     const flinchAtRestTranslation = new Map(flinchTransforms);
     flinchAtRestTranslation.set('core', { ...flinchTransforms.get('core')!, t: restCore.t });
-    const restAnchor = amalgamCoreInteriorAnchor({
+    const restAnchor = fusedMassCoreInteriorAnchor({
       figure,
       transforms: restTransforms,
       hidden: new Set(),
       yaw,
       position,
     });
-    const flinchAnchor = amalgamCoreInteriorAnchor({
+    const flinchAnchor = fusedMassCoreInteriorAnchor({
       figure,
       transforms: flinchAtRestTranslation,
       hidden: new Set(),
@@ -147,8 +147,8 @@ describe('amalgam attack tentacle pose', () => {
 
     for (const scenario of poses) {
       const transforms = boneTransforms(figure.realized.body.bones, scenario.pose);
-      const start = amalgamCoreInteriorAnchor({ figure, transforms, hidden: scenario.hidden, yaw, position });
-      const tentacle = amalgamTentaclePose({
+      const start = fusedMassCoreInteriorAnchor({ figure, transforms, hidden: scenario.hidden, yaw, position });
+      const tentacle = fusedMassTentaclePose({
         start,
         target,
         facing: [0, 0, -1],
@@ -177,7 +177,7 @@ describe('amalgam attack tentacle pose', () => {
       root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
       rotations: {},
     };
-    const rendered = amalgamCoreInteriorAnchor({
+    const rendered = fusedMassCoreInteriorAnchor({
       figure,
       transforms: boneTransforms(figure.realized.body.bones, restPose),
       hidden: new Set(),
@@ -193,7 +193,7 @@ describe('amalgam attack tentacle pose', () => {
   });
 
   it('stays retracted when the amalgam has no remaining attack reach', () => {
-    const pose = amalgamTentaclePose({
+    const pose = fusedMassTentaclePose({
       start: [0, 0, 0],
       target: [1, 0, 0],
       facing: [1, 0, 0],

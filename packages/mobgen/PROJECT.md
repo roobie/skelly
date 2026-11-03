@@ -5,7 +5,7 @@ read_if:
   - "you're changing the dog shambler's body-plan or gait constraints"
   - "you're changing the skeleton's body plan or deciding its game contracts"
   - "you're reviewing the amalgam's visual quality pass in #378"
-  - "you're changing the Mobgen/Deadvox boundary or the amalgam's movement-cost trade-off"
+  - "you change or rename the Mobgen/Deadvox fused-mass geometry boundary or its movement-cost trade-off"
   - "you're marking a template ready or comparison-only"
   - "you change the crowd gore-mask encoding"
   - "you change template materials or coarse skeletal material assignment"
@@ -42,7 +42,7 @@ The viewer must not approve a fall the game never draws. Sharing the game's cont
 
 **Losing a leg must read as a collapse caused by the hit, not a pose swap.** The living fall remains presentation-only so simulation movement and timing never wait for a visual recovery. Reuse corpse contact physics, then catch up to the current crawl pose rather than moving the simulation to the fallen body. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.beginCrawlFall` and `MobActorMeshes.packCrawlFall`, and `src/mob/ragdoll.jsonnet`, `crawlFall`.
 
-Contact rather than a pose rule should settle an open jaw. Acid bodies burst instead of falling. Limbs and carved flesh share the corpse world so a flying part can land on another body; sinking bodies must stop colliding so later falls cannot land on invisible flesh. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.startRagdoll`, `MobActorMeshes.finishDownedCorpse` and `MobActorMeshes.packCorpse`, and `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld`. Flesh has an independent presentation cap so carving cannot evict a corpse or a severed limb. Terrain follows the moving body because launch tuning must not outrun a fixed starting patch. See `packages/deadvox/src/render/amalgamFlesh.ts`, `FleshChunks`, `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld.buildGround`, and `src/mob/ragdoll.jsonnet`, `flesh`.
+Contact rather than a pose rule should settle an open jaw. Shared corpse contact lets a flying part land on another body, but sinking bodies must not become invisible supports. See `packages/deadvox/src/render/mobActors.ts`, `MobActorMeshes.startRagdoll`, `MobActorMeshes.finishDownedCorpse` and `MobActorMeshes.packCorpse`, and `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld`. Carving must not evict a corpse or a severed limb, and launch tuning must not outrun the available terrain. See `packages/deadvox/src/render/fusedMassFlesh.ts`, `FleshChunks`, `packages/deadvox/src/render/ragdoll.ts`, `RagdollWorld.buildGround`, and `src/mob/ragdoll.jsonnet`, `flesh`.
 
 Humanoid coarse builds intentionally omit forearm and hand flesh while retaining forced marrow for connectivity. Those bones explicitly declare a marrow material so this omission preserves their appearance without a core skin fallback. See `src/mob/humanoid.ts`, `buildBones`, and `src/core/body.ts`, `Bone`.
 
@@ -91,6 +91,6 @@ Mobgen supplies the generated body used by Deadvox collision, hit regions and re
 
 The Mobgen viewer keeps the amalgam static because arbitrarily oriented member heads have no single humanoid gaze target. Do not enable its gaze solver until it can resolve each member's head transform. See `src/viewer/main.ts`, `applyLiveFrame`, `src/mob/amalgam.ts`, and `src/mob/lookAt.ts`, `lookAtPose`.
 
-Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. The generated shape's movement cost is held to the budget in `packages/deadvox/DESIGN.md`, "Exact collision"; see `packages/deadvox/src/core/amalgamShape.ts`, `AmalgamShape`.
+Issue #378 tracks the open visual-quality pass; the approved body remains a proposal for that judgment, not a fixed gameplay or encounter rule. The generated shape's movement cost is held to the budget in `packages/deadvox/DESIGN.md`, "Exact collision"; see `packages/deadvox/src/core/fusedMassShape.ts`, `FusedMassShape`.
 
 Population-quality assertions belong in explicit sweeps because they measure distributions, not an individual actor's contract. See `test/sweeps.ts`, `sweepGroup`, `test/generate.test.ts` and `src/cli/stats.ts`.

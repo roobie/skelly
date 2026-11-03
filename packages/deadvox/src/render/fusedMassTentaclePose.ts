@@ -3,7 +3,7 @@ import { type Mat3, mulMV, type Transform } from '@mobgen/core/math.ts';
 import type { AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 
-export interface AmalgamTentaclePoseInput {
+export interface FusedMassTentaclePoseInput {
   readonly start: Vec3;
   readonly target: Vec3;
   readonly facing: Vec3;
@@ -14,14 +14,14 @@ export interface AmalgamTentaclePoseInput {
   readonly attackCooldownDurationSimSeconds: number;
 }
 
-export interface AmalgamTentaclePose {
+export interface FusedMassTentaclePose {
   readonly start: Vec3;
   readonly end: Vec3;
   readonly extension: number;
 }
 
 /** The figure's core interior point on the posed core, in world metres. */
-export const amalgamCoreInteriorAnchor = ({
+export const fusedMassCoreInteriorAnchor = ({
   figure,
   transforms,
   yaw,
@@ -36,10 +36,10 @@ export const amalgamCoreInteriorAnchor = ({
 }): Vec3 => {
   const core = transforms.get('core');
   if (!core) {
-    throw new Error('Amalgam tentacle anchor requires a posed core');
+    throw new Error('Fused-mass tentacle anchor requires a posed core');
   }
   if (hidden.has('core')) {
-    throw new Error('Amalgam tentacle anchor requires visible posed core voxels');
+    throw new Error('Fused-mass tentacle anchor requires visible posed core voxels');
   }
   const posedLocal = mulMV(core.r, figure.coreInteriorPoint.map((coordinate) => coordinate * figure.scale) as Vec3);
   const worldOffset = mulMV(yaw, [
@@ -58,7 +58,7 @@ const smoothstep = (value: number): number => value * value * (3 - 2 * value);
  * tentacle runs straight from `start` toward `target`, at most `reachMetres` long, as the simulation's
  * attack line does (core/zombies.ts, `withinAttackReach`).
  */
-export const amalgamTentaclePose = ({
+export const fusedMassTentaclePose = ({
   start,
   target,
   facing,
@@ -67,7 +67,7 @@ export const amalgamTentaclePose = ({
   attackWindupDurationSimSeconds,
   attackWaitSimSeconds,
   attackCooldownDurationSimSeconds,
-}: AmalgamTentaclePoseInput): AmalgamTentaclePose => {
+}: FusedMassTentaclePoseInput): FusedMassTentaclePose => {
   let extension = 0;
   if (reachMetres > 0 && attackWindupSimSeconds > 0 && attackWindupDurationSimSeconds > 0) {
     extension = smoothstep(1 - clamp01(attackWindupSimSeconds / attackWindupDurationSimSeconds));

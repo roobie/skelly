@@ -43,7 +43,7 @@ read_if:
   - you're changing the rendering of zombie actor models
   - you're considering a coarser mesh or level of detail for distant zombie bodies
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
-  - you're changing how the amalgam's flesh meets terrain, the player or shots
+  - you change or rename fused-mass geometry used by the amalgam for terrain, player or shot contact
   - you're measuring or reducing amalgam collision cost against its per-tick budget
   - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're changing the crawler's established silhouette
@@ -2966,26 +2966,22 @@ Debug spawn placement must leave room to observe an approach without embedding t
 
 A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
 
-The line starts at a fixed interior point of the core at rest pose, so the simulation's check and the rendered tentacle start in the same place; the render follows the posed core, so the two part only during a hit flinch. A fixed point also keeps a change in the player's bearing from moving the root between the core's lobes. The tentacle extends along the line through wind-up and strike, then retracts, capped by the same reach; it adds no collision, hit region or saved state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/amalgamFigure.ts`, `amalgamStrikeOrigin`; `src/render/amalgamTentaclePose.ts`, `amalgamTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
+The rendered tentacle and simulation strike must share an origin so the visible attack explains contact. A fixed interior point keeps a change in the player's bearing from moving the root between the core's lobes; presentation must not add simulation state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/amalgamFigure.ts`, `amalgamStrikeOrigin`; `src/render/fusedMassTentaclePose.ts`, `fusedMassTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
-A damaging hit on the amalgam knocks a chunk of flesh out of it and leaves a hole. The hole starts at the flesh voxel the hit test struck ("Exact collision" below), so there is no second hit test. A severed member's voxels went with the member, so a shot passes through where they were, as the hit test and the renderer do. Every damaging hit takes at least the struck voxel, and the type's carving rule adds every visible flesh voxel within a radius that grows with the hit's damage, up to a cap. The rule is tuned so a full close shotgun blast to the centre knocks out a chunk several voxels across, which reads on a body the amalgam's size; a lighter hit takes less, down to the struck voxel. One shot's pellets make one hole per amalgam, sized by their summed damage and centred on the struck voxel nearest their middle: one shot reads as one chunk, and pellets along one line can't tunnel through the body. The core voxel the tentacle roots in is never removed, so the core always keeps flesh. See `src/content/base/zombies.jsonnet`, the amalgam's `carving`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/amalgamCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
+Carving reuses the hit test's struck voxel so visible wounds cannot disagree with contact. One shot should read as one chunk, not let successive pellets tunnel through the body. The tentacle's root must retain flesh so the attack cannot appear to start in a hole. See `src/content/base/zombies.jsonnet`, `carving`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/fusedMassCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
 
 Holes change where shots land and where the body fits, never how much it can take: a hole shows damage the regions already took, so damage, region health and severing are as they would be without holes. `test/amalgam.test.ts` compares the hit that carves with the same hit without holes. A hole is simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `wirePayloadSchema`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
 
-**Exact collision.** Terrain, the player and shots meet the amalgam's flesh, not its boxes. Rounded lobes make box-only collision stop it short of gaps its body fits and take shots that pass beside visible flesh. Hold near-wall collision work to at most 0.1 ms per amalgam per tick at p95, including snug corridors, so about ten simultaneous amalgams remain affordable. Measure collision work separately from perception and attack, rather than comparing unlike tick costs. The generated shape is a gameplay collision input, so Mobgen's voxel and triangle budgets don't establish its movement cost: keep collision-query measurements distinct from them. Read terrain through `worldBricks` as the game does: a stand-in brick source with a costlier read charges the shape for the stand-in. In open terrain, collision should cost no more than a box. Holes count for shots and movement as long as maintaining them stays cheap beside the tests themselves. See `src/bench/amalgam-cpu.mjs`, `scenarios`, for the rerunnable workload and measurement boundary.
+**Exact collision.** Terrain, the player and shots meet the amalgam's flesh, not its boxes. Rounded lobes make box-only collision stop it short of gaps its body fits and take shots that pass beside visible flesh. Hold near-wall collision work to at most 0.1 ms per amalgam per tick at p95, including snug corridors, so about ten simultaneous amalgams remain affordable. Measure collision work separately from perception and attack, rather than comparing unlike tick costs. The generated shape is a gameplay collision input, so Mobgen's voxel and triangle budgets don't establish its movement cost: keep collision-query measurements distinct from them. Read terrain through `worldBricks` as the game does: a stand-in brick source with a costlier read charges the shape for the stand-in. In open terrain, collision should cost no more than a box. Holes count for shots and movement as long as maintaining them stays cheap beside the tests themselves. See `src/bench/fused-mass-cpu.mjs`, `scenarios`, for the measurement boundary.
 
-A ray that enters a posed region box walks that bone's voxels and strikes the first flesh still there, so a ray beside the flesh misses, a shot into a hole strikes the flesh behind it, and a shot through a hole that goes all the way passes. See `src/core/amalgamCarving.ts`, `fleshHit`.
+Visible holes must also be holes to shots, or carving would mislead aim. See `src/core/fusedMassCarving.ts`, `fleshHit`.
 
-Movement and hit tests use the amalgam's flesh rather than its bounding box,
-including carved holes; its rest pose stands for the moving body, not swaying
-limbs. Shape-aware movement must let the amalgam and forward walkers turn off
-terrain they press against, without pushing flesh through blocks. Refuse a turn
-that cannot be freed and undo a step that leaves the body hanging on an
-obstacle. A body resting on unchanged terrain skips collision work. Use these
-rules for the cost target as well as plausibility: shape collision should not
-make many simultaneous amalgams unaffordable. See `AmalgamShape` in
-`src/core/amalgamShape.ts` and `ZombieSystem.settleTurn` in
-`src/core/zombies.ts`.
+Shape-aware movement must let bodies turn off terrain they press against without
+pushing flesh through blocks or leaving the body hanging on an obstacle. The rest
+pose stands for the moving body because following swaying limbs would add contact
+work without useful movement fidelity. Repeated contact must remain cheap enough
+for simultaneous amalgams. See `src/core/fusedMassShape.ts`, `FusedMassShape`, and
+`src/core/zombies.ts`, `ZombieSystem.settleTurn`.
 
 Keep invariant geometry out of the repeated contact search: turns and small
 translations revisit the same tree and terrain layer shapes. Hoisting that
@@ -2994,13 +2990,13 @@ assuming nearby poses share collision answers. A filled leaf can answer as a
 box only while no holes or height filter invalidate that equivalence; push-out
 still needs individual overlapping voxels. Do not rebuild a per-facing
 height-extents table: its upkeep costs more than the collision it avoids. See
-`src/core/amalgamShape.ts`, `AmalgamShape.nodeOverlaps` and `layerBox`.
+`src/core/fusedMassShape.ts`, `FusedMassShape.nodeOverlaps` and `layerBox`.
 
 **Movement and corners.** A type's `locomotion` says how it moves relative to its facing. A `forward` walker, as every shambler type is, moves only where it faces, so it turns before it heads somewhere new. The amalgam is `omnidirectional`: it moves toward its goal at once while its facing turns toward the goal at the type's turn rate, so its sight, its reach and its look still follow the facing. A body its size that must face where it walks spends its time turning before it can move off a wall or toward a player beside it. Its pose has no gait, so moving sideways or backwards shows no foot slide.
 
 It keeps a shambler's decisions, the same senses, targets and modes, but steers its size round corners, door frames, pillars and wall ends, so it stays a threat instead of grinding against them. `ZombieSystem.wallAhead` notices a wall by moving a body's shape the lookahead distance along its aim and testing that shape against terrain, so a block corner the centre line clears but the body catches still counts as contact. A shambler's body box and the amalgam's flesh both pass that shape-along-aim test, the amalgam's shape being its flesh. A shambler then slides off to a seeded side and sometimes wanders, while at a new contact the amalgam slides to the side its flesh can move to: met at a slant, that is the side the wall leads it along, and caught on a door frame, the side that frees it, where a random side could back it out of the doorway it is squeezing through. If both sides are open, or neither side is free as when snug in a doorway, it draws its side as a shambler does. This costs one shape test per moving tick and two more when a contact starts. See `src/core/schema/actors.ts`, `ActorSchema`; `src/content/base/zombies.jsonnet`, the amalgam type; and `src/core/zombies.ts`, `steer`, `ZombieSystem.wallAhead` and `ZombieSystem.openSide`.
 
-Carving must expose flesh-coloured hole walls from every side, and a corpse must retain its visible wounds. Flying flesh and landing splats are presentation, not extra simulation entities: they make the hit readable without burdening saves or combat with decorative debris. Keep flesh's presentation budget independent of bodies and severed limbs so carving cannot erase those visual witnesses. See `src/render/amalgamFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
+Carving must expose flesh-coloured hole walls from every side, and a corpse must retain its visible wounds. Flying flesh and landing splats are presentation, not extra simulation entities: they make the hit readable without burdening saves or combat with decorative debris. Keep flesh's presentation budget independent of bodies and severed limbs so carving cannot erase those visual witnesses. See `src/render/fusedMassFlesh.ts`, `buildCarvedGeometry` and `FleshChunks`, and `src/render/mobActors.ts`, `MobActorMeshes.zombieCarved`.
 
 The runner's threat comes from speed rather than stronger attacks; the crawler's
 low posture confines its bite to the legs. Keep their moves, hit regions, sounds and

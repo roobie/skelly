@@ -19,14 +19,14 @@ import { physicsFor, playerTuning } from '../game/player.ts';
 
 const args = process.argv.slice(2);
 if (args.length > 0 && (args.length !== 2 || args[0] !== '--shape-ref' || !/^[0-9a-f]{7,40}$/.test(args[1]))) {
-  throw new Error('Usage: npm run bench:amalgam -- [--shape-ref commit-sha]');
+  throw new Error('Usage: npm run bench:fused-mass -- [--shape-ref commit-sha]');
 }
-const shapeUrl = new URL('../core/amalgamShape.ts', import.meta.url).href;
+const shapeUrl = new URL('../core/fusedMassShape.ts', import.meta.url).href;
 let substituted = false;
 if (args.length > 0) {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../../..');
   const source = stripTypeScriptTypes(
-    execFileSync('git', ['-C', root, 'show', `${args[1]}:packages/deadvox/src/core/amalgamShape.ts`], {
+    execFileSync('git', ['-C', root, 'show', `${args[1]}:packages/deadvox/src/core/fusedMassShape.ts`], {
       encoding: 'utf8',
     }),
   );

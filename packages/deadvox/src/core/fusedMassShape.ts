@@ -1,6 +1,6 @@
-import type { MissingFlesh } from './amalgamCarving.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
+import type { MissingFlesh } from './fusedMassCarving.ts';
 import { type BodyShape, CONTACT_SKIN } from './physics.ts';
 import { BRICK_BITS, type BrickOut, brickHas, brickLayer, type SolidBricks } from './solidBricks.ts';
 
@@ -264,7 +264,7 @@ const turnedBoxOverlaps = (
 type VoxelTest = 'box' | 'brick';
 
 /** One amalgam's flesh as a collision shape: shed members and carved holes leave it, and it turns to face. */
-export class AmalgamShape implements BodyShape {
+export class FusedMassShape implements BodyShape {
   private readonly tree: ShapeTree;
   private readonly terrain: SolidBricks;
   /** Per node: live voxels (leaves) and the tight local box around them, min then max, in blocks. */

@@ -25,12 +25,12 @@ import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
 import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { initialActorFootstepClock } from '../src/core/footsteps.ts';
+import { carveAround, missingFlesh } from '../src/core/fusedMassCarving.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -38,8 +38,8 @@ import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombie
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
-import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
+import { CARVED_NEIGHBOUR } from '../src/render/fusedMassFlesh.ts';
 import { Gore } from '../src/render/gore.ts';
 import {
   fallDirectionAwayFromPlayer,

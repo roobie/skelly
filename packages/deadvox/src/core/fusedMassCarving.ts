@@ -11,7 +11,7 @@ import type { ActorDef } from './schema.ts';
 // damage or severing, but later hits see it: a shot enters a hole and strikes the flesh behind, and passes
 // through a hole that goes all the way (`fleshHit`).
 
-export type AmalgamCarving = NonNullable<ActorDef['carving']>;
+export type FusedMassCarving = NonNullable<ActorDef['carving']>;
 
 /** A ray in the figure's rest voxel grid, where floor() of a point is its cell (i, j, k). */
 interface GridRay {
@@ -254,7 +254,7 @@ export const carveAround = ({
   damage,
 }: {
   readonly figure: AmalgamFigure;
-  readonly carving: AmalgamCarving;
+  readonly carving: FusedMassCarving;
   readonly missing: MissingFlesh;
   readonly struck: number;
   readonly damage: number;

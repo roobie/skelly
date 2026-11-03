@@ -5,7 +5,6 @@ import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/actorRegions.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/amalgamCarving.ts';
 import {
   AMALGAM_FIGURE_SEED,
   amalgamCollisionEnvelope,
@@ -13,9 +12,10 @@ import {
   amalgamFigureForType,
   amalgamStrikeOrigin,
 } from '../src/core/amalgamFigure.ts';
-import { AmalgamShape } from '../src/core/amalgamShape.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/fusedMassCarving.ts';
+import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -1193,7 +1193,7 @@ describe('amalgam flesh carving', () => {
   it('turns its movement shape as the posed figure turns, and keeps it in step with its holes, carve by carve', () => {
     const target = coreTarget();
     const { simulation, zombie } = target;
-    const kept = simulation.shapeOf(zombie.body) as AmalgamShape;
+    const kept = simulation.shapeOf(zombie.body) as FusedMassShape;
     for (const [key, yaw] of [
       ['first', 0],
       ['second', 0.15],
@@ -1211,8 +1211,8 @@ describe('amalgam flesh carving', () => {
       );
       simulation.shapeOf(zombie.body);
     }
-    const built = (carved: readonly number[]): AmalgamShape => {
-      const shape = new AmalgamShape(figure, BLOCK_SIZE, testedBricks(FLOOR));
+    const built = (carved: readonly number[]): FusedMassShape => {
+      const shape = new FusedMassShape(figure, BLOCK_SIZE, testedBricks(FLOOR));
       shape.keep(carved, 0, () => missingFlesh(figure, { carved, severed: [] }));
       return shape;
     };
@@ -1227,7 +1227,7 @@ describe('amalgam flesh carving', () => {
     const centres = fleshVoxels(figure).centres.map((point) =>
       [0, 1, 2].map((row) => [0, 1, 2].reduce((sum, column) => sum + turn(row, column) * point[column]!, 0)),
     );
-    const probe = (shape: AmalgamShape): boolean[] => {
+    const probe = (shape: FusedMassShape): boolean[] => {
       shape.face(facing);
       return centres.map(([x, y, z]) =>
         shape.overlapsBox([0, 0, 0], [x! - 0.01, y! - 0.01, z! - 0.01], [x! + 0.01, y! + 0.01, z! + 0.01]),

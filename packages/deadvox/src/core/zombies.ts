@@ -22,20 +22,11 @@ import {
   rayBoxEntry,
 } from './actorRegions.ts';
 import {
-  carveAround,
-  centralCell,
-  fleshHit,
-  type MissingFlesh,
-  missingFlesh,
-  protectedCoreCell,
-} from './amalgamCarving.ts';
-import {
   AMALGAM_FIGURE_SEED,
   amalgamCollisionEnvelope,
   amalgamFigureForType,
   amalgamStrikeOrigin,
 } from './amalgamFigure.ts';
-import { AmalgamShape } from './amalgamShape.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
@@ -44,6 +35,15 @@ import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { type ActorFootstepClock, advanceActorFootsteps, initialActorFootstepClock } from './footsteps.ts';
+import {
+  carveAround,
+  centralCell,
+  fleshHit,
+  type MissingFlesh,
+  missingFlesh,
+  protectedCoreCell,
+} from './fusedMassCarving.ts';
+import { FusedMassShape } from './fusedMassShape.ts';
 import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
 import { lightSenseRangeScale } from './lights.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
@@ -219,7 +219,7 @@ export interface ZombieAim {
   readonly boxes: readonly PosedBoneBox[];
   /** The box the ray struck: entered first, or for an amalgam, the one whose flesh it met. */
   readonly hitBox: PosedBoneBox;
-  /** The amalgam flesh cell the ray struck (core/amalgamCarving.ts, `fleshHit`). */
+  /** The amalgam flesh cell the ray struck (core/fusedMassCarving.ts, `fleshHit`). */
   readonly cell?: number | undefined;
 }
 
@@ -1644,7 +1644,7 @@ interface RegionHit {
  * Shoves a body off the terrain its shape's turn of `turn` radians swung into, if a push can, and drops its
  * velocity back toward what it was pushed off; see ZombieSystem.settleTurn.
  */
-const pushTurn = (body: Body, shape: AmalgamShape, turn: number): boolean => {
+const pushTurn = (body: Body, shape: FusedMassShape, turn: number): boolean => {
   const { pos, vel } = body;
   const push = shape.pushOut(pos, turn * shape.radius);
   if (!push) {
@@ -1662,7 +1662,7 @@ const pushTurn = (body: Body, shape: AmalgamShape, turn: number): boolean => {
 /** An amalgam body's exact shape, and the last facing it turned to clear of terrain. */
 interface AmalgamCollider {
   readonly zombie: Zombie;
-  readonly shape: AmalgamShape;
+  readonly shape: FusedMassShape;
   facing: Vec3;
   /** Where it last came to rest on the ground, so a step that could change nothing is skipped. */
   rest?: { readonly pos: Vec3; readonly facing: Vec3; readonly version: number } | undefined;
@@ -1713,7 +1713,7 @@ export class ZombieSystem {
         zombie?.type.model === 'fused-mass'
           ? {
               zombie,
-              shape: new AmalgamShape(
+              shape: new FusedMassShape(
                 amalgamFigureForType(zombie.type, zombie.figureSeed),
                 this.options.blockSize,
                 this.solidBricks,

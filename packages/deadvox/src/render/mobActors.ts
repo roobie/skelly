@@ -129,10 +129,10 @@ import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
-import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
-import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
 import type { ColumnReveal } from './columnReveal.ts';
+import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './fusedMassFlesh.ts';
+import { fusedMassCoreInteriorAnchor, fusedMassTentaclePose } from './fusedMassTentaclePose.ts';
 import { woundSeverity } from './gore.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { PoseTextureUpdates } from './poseTextureUpdates.ts';
@@ -1167,7 +1167,7 @@ export class MobActorMeshes implements ActorRenderer {
       amalgam.realized.body.bones,
       zombie.severed.map((part) => partRoots.get(part) ?? part),
     );
-    const start = amalgamCoreInteriorAnchor({
+    const start = fusedMassCoreInteriorAnchor({
       figure: amalgam,
       transforms,
       hidden,
@@ -1175,7 +1175,7 @@ export class MobActorMeshes implements ActorRenderer {
       position: placement.worldPos,
     });
     const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
-    const pose = amalgamTentaclePose({
+    const pose = fusedMassTentaclePose({
       start,
       target,
       facing,

@@ -2,7 +2,7 @@
 read_if:
   - you build any round of the acid zombie's integration
   - you change the acid body's standing-height fitting or shape measurements
-  - you change mobgen's material, budget or carve contracts while the acid zombie lands
+  - you change or rename mobgen's material, budget or carve boundaries while the acid zombie lands
   - you add a non-humanoid mob that Deadvox must hit, sever, pose or light
   - you change acid animation, gaze or the spit mouth anchor
   - you change Deadvox body-plan selection or its mobgen realization boundary
@@ -75,12 +75,13 @@ The proof is that every existing mobgen test, validation run and Deadvox load pa
 no budget or fixture edits. A budget edit in that round signals a lost behaviour and is a
 defect.
 
-Materials cross the builder, viewer, CLI and Deadvox boundary. Consumers decode through
-the voxel grid's local table rather than a shared palette, because a compatibility shim
-would keep two competing material contracts. See `src/core/voxelize.ts`, `materialOf`;
-`src/viewer/scene.ts`, `vertexColors`; `src/cli/view.ts`, `printView`; and
-`packages/deadvox/src/render/amalgamFlesh.ts`, `mergeBoneMeshes`. Declarative material dependencies
-also enter the generated-body fingerprint; see `packages/deadvox/tools/simulationFingerprint.ts`,
+The voxel grid's local material table must remain the shared consumer boundary: a
+compatibility shim would keep two competing material contracts. See
+`src/core/voxelize.ts`, `materialOf`; `src/viewer/scene.ts`, `vertexColors`;
+`src/cli/view.ts`, `printView`; and
+`packages/deadvox/src/render/fusedMassFlesh.ts`, `mergeBoneMeshes`. Material dependencies
+must participate in generated-body identity so tuning changes cannot bypass save
+admission; see `packages/deadvox/tools/simulationFingerprint.ts`,
 `collectSimulationSourceGraph`.
 
 ### Other mobs' outputs that can change

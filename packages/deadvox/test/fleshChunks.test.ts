@@ -1,7 +1,7 @@
 import { Group } from 'three';
 import { expect, it } from 'vitest';
 import { actorFigure } from '../src/core/actorFigure.ts';
-import { FleshChunks } from '../src/render/amalgamFlesh.ts';
+import { FleshChunks } from '../src/render/fusedMassFlesh.ts';
 import { RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import { WORLD_GRAVITY } from './playerFixture.ts';
 

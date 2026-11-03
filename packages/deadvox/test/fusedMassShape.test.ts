@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AMALGAM_FIGURE_SEED, amalgamFigure } from '../src/core/amalgamFigure.ts';
-import { AmalgamShape } from '../src/core/amalgamShape.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { FusedMassShape } from '../src/core/fusedMassShape.ts';
 import { testedBricks } from '../src/core/solidBricks.ts';
 
 const source = amalgamFigure(AMALGAM_FIGURE_SEED, 1);
@@ -22,12 +22,12 @@ const cube = {
 };
 const pos: Vec3 = [0, 0, 0];
 const shapeFor = (solid: (x: number, y: number, z: number) => boolean) => {
-  const shape = new AmalgamShape(cube, 1, testedBricks(solid));
+  const shape = new FusedMassShape(cube, 1, testedBricks(solid));
   shape.keep([], 0, () => ({ carved: new Set(), severedOwners: new Set() }));
   return shape;
 };
 
-describe('amalgam filled-leaf collision', () => {
+describe('fused-mass filled-leaf collision', () => {
   it('retains carved holes inside a formerly filled leaf for boxes and terrain', () => {
     const shape = shapeFor((x, y, z) => x === 0 && y === 0 && z === 0);
     const min: Vec3 = [-0.2, 0.2, -0.2];
