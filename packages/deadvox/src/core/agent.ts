@@ -17,7 +17,6 @@ import {
 import { type Actor, type AgentMode, copy } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
 import type { ActorTickScratch } from './actorTickScratch.ts';
-
 import type { AgentHorde } from './agentHorde.ts';
 import {
   farBearingTarget,
@@ -770,6 +769,31 @@ export class AgentController {
     actor.obstacleSlideSide = 0;
     actor.obstacleWanderHeading = undefined;
     actor.obstacleWanderRemaining = 0;
+  }
+
+  updateMovementDecisionAfterStep(
+    stroll: boolean,
+    actor: Actor,
+    dt: number,
+    travelled: number,
+    scratch: ActorTickScratch,
+  ) {
+    if (stroll && actor.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
+      const requested = actor.horizontalSpeed * dt;
+      if (travelled + 1e-4 < requested * 0.1) {
+        this.beginIdle(actor);
+      }
+    }
+    if (stroll && actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+      this.beginIdle(actor);
+    }
+    if (actor.mode === 'search' && actor.searchStrolling && actor.horizontalSpeed > 0.01) {
+      const requested = actor.horizontalSpeed * dt;
+      if (travelled + 1e-4 < requested * 0.1) {
+        actor.searchStrolling = false;
+        actor.modeTimer = inRange(scratch.rng, actor.type.wander.idleSimSeconds);
+      }
+    }
   }
 }
 

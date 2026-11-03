@@ -1426,22 +1426,7 @@ export class ActorSystem {
     if (actor.mode === 'idle' || actor.mode === 'stroll') {
       actor.wanderClock += dt;
     }
-    if (stroll && actor.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
-      const requested = actor.horizontalSpeed * dt;
-      if (travelled + 1e-4 < requested * 0.1) {
-        this.agent.beginIdle(actor);
-      }
-    }
-    if (stroll && actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
-      this.agent.beginIdle(actor);
-    }
-    if (actor.mode === 'search' && actor.searchStrolling && actor.horizontalSpeed > 0.01) {
-      const requested = actor.horizontalSpeed * dt;
-      if (travelled + 1e-4 < requested * 0.1) {
-        actor.searchStrolling = false;
-        actor.modeTimer = inRange(scratch.rng, actor.type.wander.idleSimSeconds);
-      }
-    }
+    this.agent.updateMovementDecisionAfterStep(stroll, actor, dt, travelled, scratch);
   }
 
   private reachableActorMoves(actor: Actor, actorPos: Vec3, playerPos: Vec3): ActorMove[] {
