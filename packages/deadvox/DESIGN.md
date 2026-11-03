@@ -45,6 +45,7 @@ read_if:
   - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you change or rename fused-mass geometry used by the amalgam for terrain, player or shot contact
   - you're measuring or reducing amalgam collision cost against its per-tick budget
+  - you're changing carving's visual tuning intention, tentacle reach or the moving body's collision pose
   - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're changing the crawler's established silhouette
   - you're changing crawler gait, hit response or generation validation
@@ -2966,9 +2967,9 @@ Debug spawn placement must leave room to observe an approach without embedding t
 
 A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
 
-The rendered tentacle and simulation strike must share an origin so the visible attack explains contact. A fixed interior point keeps a change in the player's bearing from moving the root between the core's lobes; presentation must not add simulation state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/fusedMassFigure.ts`, `fusedMassStrikeOrigin`; `src/render/fusedMassTentaclePose.ts`, `fusedMassTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
+The rendered tentacle and simulation strike must share an origin and the same reach cap so the visible attack explains contact. A fixed interior point keeps a change in the player's bearing from moving the root between the core's lobes; presentation must not add simulation state. See `src/core/zombies.ts`, `withinAttackReach`; `src/core/fusedMassFigure.ts`, `fusedMassStrikeOrigin`; `src/render/fusedMassTentaclePose.ts`, `fusedMassTentaclePose`; and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
-Carving reuses the hit test's struck voxel so visible wounds cannot disagree with contact. One shot should read as one chunk, not let successive pellets tunnel through the body. The tentacle's root must retain flesh so the attack cannot appear to start in a hole. See `src/content/base/zombies.jsonnet`, `carving`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/fusedMassCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
+Carving reuses the hit test's struck voxel so visible wounds cannot disagree with contact. One shot should read as one chunk, not let successive pellets tunnel through the body. On a body this size, a full close shotgun blast should read as a chunk several voxels across; that visual intention guides carving's authored values. The tentacle's root must retain flesh so the attack cannot appear to start in a hole. See `src/content/base/zombies.jsonnet`, `carving`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/fusedMassCarving.ts`, `carveAround` and `protectedCoreCell`; and `src/core/zombies.ts`, `ZombieSystem.carve`.
 
 Holes change where shots land and where the body fits, never how much it can take: a hole shows damage the regions already took, so damage, region health and severing are as they would be without holes. `test/amalgam.test.ts` compares the hit that carves with the same hit without holes. A hole is simulation state, the amalgam's removed voxels as `Zombie.carved`, so it is deterministic, survives a save and replays. A restore refuses holes no play could make: a cell outside the grid or without flesh, the protected core voxel, or any hole on a type that doesn't carve. See `src/core/saveFormat.ts`, `wirePayloadSchema`, and `src/core/zombies.ts`, `ZombieSystem.restoreState`.
 
@@ -2978,8 +2979,7 @@ Visible holes must also be holes to shots, or carving would mislead aim. See `sr
 
 Shape-aware movement must let bodies turn off terrain they press against without
 pushing flesh through blocks or leaving the body hanging on an obstacle. The rest
-pose stands for the moving body because following swaying limbs would add contact
-work without useful movement fidelity. Repeated contact must remain cheap enough
+pose stands for the moving body. Repeated contact must remain cheap enough
 for simultaneous amalgams. See `src/core/fusedMassShape.ts`, `FusedMassShape`, and
 `src/core/zombies.ts`, `ZombieSystem.settleTurn`.
 
