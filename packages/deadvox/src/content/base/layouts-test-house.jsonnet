@@ -94,7 +94,6 @@ local liquidRecoveryStock = [
     },
     bays: bays,
     vehicles: [{ blueprint: 'hatchback', placementKey: 'testHouse.parked-hatchback' } + bays[0]],
-    repairStock: 'test_house_garage',
     handlingRange: { beside: { x0: -23, z0: -13, x1: 17, z1: 6 }, floor: 21 },
     shamblers: [],
     woodlands: [{ polygon: [[-85, -65], [-32, -65], [-28, -18], [-26, 45], [-80, 65]], density: 0.95 }],

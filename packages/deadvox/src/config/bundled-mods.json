@@ -1,6 +1,11 @@
 {
   "mods": [
     {
+      "detail": "Garage repair supplies.",
+      "id": "test-house-debug",
+      "label": "Test-house fixtures"
+    },
+    {
       "detail": "Zombies deal less damage, move slower, sense less and fall sooner.",
       "id": "beginner",
       "label": "Beginner"

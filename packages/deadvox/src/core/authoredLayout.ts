@@ -210,14 +210,6 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     checkSpawn([position[0], position[2]], path);
     supported(position, path);
   });
-  if (layout.repairStock !== undefined) {
-    const stock = placements.filter(({ template }) => template.id === layout.repairStock);
-    if (stock.length !== 1) {
-      issues.push(['.repairStock', `"${layout.repairStock}" must name exactly one building in this site`]);
-    } else if (!placedPieces(stock[0]!).some(({ furniture }) => registry.furniture.get(furniture)?.container)) {
-      issues.push(['.repairStock', `"${layout.repairStock}" has no container furniture`]);
-    }
-  }
   if (layout.showroom) {
     issues.push(...showroomIssues(layout, registry, solidAt));
   }

@@ -150,7 +150,7 @@ const installedLootTypes = (
 };
 
 /** An item no loot context admits: it exists only where content places it by hand. */
-export const neverSpawns = (economy: ItemEconomy): boolean => economy.tiers.length === 0 || economy.usage.length === 0;
+const neverSpawns = (economy: ItemEconomy): boolean => economy.tiers.length === 0 || economy.usage.length === 0;
 
 /** Why one item is refused; authored placement also admits an item that never spawns, but not craft escrow. */
 const admissionIssue = (item: ItemDef, context: LootContext, placed: boolean): string | undefined => {

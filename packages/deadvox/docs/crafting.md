@@ -66,6 +66,11 @@ Cooking uses a lit station for recipes that require heat. Losing it stops the pl
 
 A screen selection is not proof that its frame-owned panel has rendered. Presentation checks must wait for the target's visible panel rather than racing a synchronous visibility read against presentation; see `src/ui/craftController.ts`, `mountCraftPanel`.
 
-The test-house repair stock demonstrates reachable plans rather than pinning a stock catalogue. Keep derivation separate from authored destinations so recipe changes do not require maintaining a second stock list: content names the building whose containers receive the stock, and game logic derives what goes in. A repair that needs a workstation is stocked only when that station stands in the building, so the stock never promises a repair the player cannot do there. See `src/game/testHouseRepair.ts`, `repairStockRecipes`, and `src/content/base/layouts-test-house.jsonnet`, `repairStock`.
+Debug garage stock is authored evaluation content, not a recipe-coverage oracle. A new
+tool or changed recipe requires a hand edit; unlisted supplies remain absent rather than
+being synthesized by game logic. See `docs/test-house.md`, "Garage".
 
-`checkReachability` proves recipes reachable from world sources and skips demo layouts, because debug stock must not make a recipe look reachable in normal play. The test house is a demo layout, so its stock is tested by planning each repair with live reach from a stand point inside the building, beside a damaged target. That also proves the containers and the station are within reach of each other. See `src/core/reachability.ts`, `checkReachability`, and `test/repairCorner.test.ts`, `planFromBuilding`.
+`checkReachability` skips demo layouts because evaluation stock must not make a recipe
+look reachable in ordinary play. Fixed-stock checks protect admission and authored item
+state, not completeness against the recipe catalogue. See `src/core/reachability.ts`,
+`checkReachability`, and `test/debugScenarioMod.test.ts`.

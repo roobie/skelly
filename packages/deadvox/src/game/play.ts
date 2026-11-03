@@ -190,7 +190,6 @@ import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
-import { populateTestHouseRepairCorner } from './testHouseRepair.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -1219,13 +1218,6 @@ export const startPlay = (
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
-    populateTestHouseRepairCorner({
-      inventory,
-      registry,
-      site: config.site,
-      debug: config.debug,
-      source: engine.site,
-    });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {

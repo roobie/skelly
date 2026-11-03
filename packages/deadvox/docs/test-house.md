@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change the test house, its garage, its fixture stock or its debug gate
+  - you change the test house, its garage, its fixture stock or its debug scenario mod
   - you change parking bays or where the test house places vehicles
   - you change the haven's rooms, landscape, lake or south-facing view
   - you add a feature demonstration near the test-house spawn
@@ -20,8 +20,10 @@ read_if:
 The test house is both an evaluation bed and a personal haven. Its layout belongs to
 content so changing the place does not require changing game logic. Keep the authored
 house in `src/content/base/templates-test-house.jsonnet`, `templates`, and the lot in
-`src/content/base/layouts-test-house.jsonnet`, `layouts`. Derivation of repair stock
-and range supply remains logic, not a second copy of the place.
+`src/content/base/layouts-test-house.jsonnet`, `layouts`. Garage evaluation stock belongs
+to the debug scenario mod rather than a runtime overlay; selecting that mod, not a
+scenario id or debug check, must admit its authored stock. See
+`src/config/bundled/test-house-debug.jsonnet`, `layouts`.
 
 The charging corner belongs to the same template and layout sources, rather than a
 separate runtime look-piece overlay, so furniture, fixture loot and power share one
@@ -38,7 +40,7 @@ loot supply. The demo flag is an economy boundary, not a save policy; see
 ## Haven and land
 
 The home is a haven rather than another demonstration room: rooms hold domestic
-furnishings, while the showroom and garage own evaluation props and derived stock.
+furnishings, while the showroom and garage own evaluation props and stock.
 Separate kitchen, bedroom and lounge spaces make that boundary legible. The south
 window and roof terrace give the lounge and the outdoor sitting space the same open
 view, rather than looking into a test yard. Warm powered light, plaster and timber
@@ -71,11 +73,11 @@ later additions from the normal/debug decision below.
 
 ## Normal and debug additions
 
-The house must remain selectable without debug mode. The range and test stock belong
-behind debug mode so evaluation supplies do not become ordinary play rewards. Every
-addition must explicitly decide whether it belongs in normal mode or only debug mode,
-and record its reason here. Re-evaluate this choice whenever the house gains something;
-there is no blanket permission based on where an earlier prop was placed.
+The house must remain selectable without debug mode. Evaluation supplies must not become
+ordinary play rewards: garage stock requires its debug scenario mod, while the range
+requires the debug profile. Every addition must explicitly decide whether it belongs in
+the ordinary house or evaluation staging, and record its reason here. Re-evaluate that
+choice whenever the house gains something; an earlier prop grants no blanket permission.
 
 Ordinary furnishings, charging and liquid-service stock stay in normal mode because
 they demonstrate ordinary interactions without a derived supply catalogue. Sharing the
@@ -86,10 +88,11 @@ setup. See `src/content/base/templates-test-house.jsonnet`, `test_house_showroom
 The liquid-recovery look also belongs in normal mode: authored instance state lets
 ordinary inventory choices be inspected without privileged setup. See
 `src/content/base/layouts-test-house.jsonnet`, `liquidRecoveryStock`.
-Derived repair stock and the handling range are debug-only because their purpose is
-repeatable system evaluation. See `src/game/play.ts`, `populateTestHouseRepairCorner`, and
-`src/game/worldSetup.ts`, `DebugTestHouseSite`. The range's owning rule remains in
-`DESIGN.md`, "Debug scenes".
+Garage stock requires explicit mod selection so repeatable repair evaluation does not
+add ordinary rewards. Saves made with that stock require the same admitted mod; a URL
+must select it through `?mods=` rather than infer it from the scene or debug profile.
+See `src/config/bundled/test-house-debug.jsonnet`, `layouts`.
+The handling range's owning rule remains in `DESIGN.md`, "Debug scenes".
 
 Repair looks wait for the crafting requirements view in #1469 rather than keeping a
 temporary showroom preview. A preview that names this scenario in runtime would put
@@ -170,44 +173,31 @@ start overrides. See `src/game/config.ts`, `focus`, and `src/game/worldSetup.ts`
 
 ## Garage
 
-The garage gathers vehicle and repair work in one building so that a single visit can
-evaluate both. Bay 1 holds the parked vehicle and bay 2 stays empty floor, so part work
-has a place to stand that the parked vehicle does not take. Bays are layout content and
-vehicles are placed from them, so moving a bay moves everything parked in it. See
-`src/content/base/layouts-test-house.jsonnet`, `bays`. The doors open onto open ground
-because a vehicle must be able to drive out of either bay; `test/testHouse.test.ts`
-checks that for every parked blueprint.
+The garage gathers vehicle and repair work so one visit can evaluate both. Keep work
+space and drive-out routes clear rather than making the parked vehicle occupy every
+bay. Bays and parked placements share a content owner so moving a bay moves what stands
+in it. See `src/content/base/layouts-test-house.jsonnet`, `bays`.
 
-The garage building, its workbench, grinding wheel, shelving, ceiling lights and roof
-ladder stay in normal mode as ordinary furnishings. The lights are on the house supply
-like the home's lamps, because the site is one grid. The ladder climbs the doorless west
-wall so that roof access never crosses a bay. See
+The building and its ordinary furnishings stay in normal mode. Shared house power makes
+its lighting part of the same home, and roof access must not cross a vehicle bay. See
 `src/content/base/templates-test-house.jsonnet`, `test_house_garage_ladder`.
 
-The repair stock in its containers is debug-only, as above. The layout's `repairStock`
-names the building that receives it, so the house no longer needs piles of its own. See
-`src/core/authoredLayout.ts`, `repairStock`.
+Evaluation stock is hand-kept `buildings[].fixedLoot` in the debug scenario mod, not
+runtime synthesis. This keeps scenario identity and debug checks out of stock admission.
+Accept an author edit for each new tool or changed recipe: an unlisted tool is silently
+absent, and recipe changes do not replenish or rearrange the shelves. No completeness
+checker is implied. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`, and
+`src/config/bundled/test-house-garage.libsonnet`.
 
-The shelves hold the spawnable tools, vehicle service tools included, so that any repair
-or service can be tried in one place. The list is derived from content, so a new
-spawnable tool reaches the shelves without a test-house edit. A tool that never spawns is
-not derived: content places it by hand, so it stands where an author chose rather than
-wherever the next pocket is free. See `src/game/testHouseRepair.ts`, `garageToolTypes`.
+Repair targets and components must remain within reach of their stations. Their authored
+conditions and contents belong with their container destinations, not a second runtime
+placement owner. Ordinary authored spawning owns arrival and restoration. See
+`src/core/schema/layouts.ts`, `FixedLootOverride`, and `src/core/authoredSite.ts`,
+`AuthoredSite`.
 
-The engine hoist is such a tool. It is floor-standing, and a shelf pocket hid it, so the
-garage template stands it on the floor by the bays, where it reads at a glance. Hand
-placement of an item loot never rolls is allowed by the rule in `docs/content.md`. See
-`src/content/base/templates-test-house.jsonnet`, `test_house_garage`.
-
-A repair needs its target and its station in reach together, so repair targets and
-components go in the containers nearest a workstation. See `src/game/testHouseRepair.ts`,
-`nearStations`.
-
-Debug stock is placed at session start, before the garage's column arrives, so its
-containers are spawned then, from the site's own furniture spawns, so they keep their
-authored pose and contents. Arrival finds them standing and adds nothing twice, which
-keeps the stock where it was placed. See `src/game/testHouseRepair.ts`,
-`standingContainer`.
+Keep floor-standing service equipment visible by the bays rather than hiding it in a
+shelf pocket. Hand placement of an item loot never rolls is allowed by `docs/content.md`.
+See `src/content/base/templates-test-house.jsonnet`, `test_house_garage`.
 
 ## Benchmark scale
 

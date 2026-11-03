@@ -13,6 +13,10 @@
       "output": "packages/deadvox/src/config/bundled/beginner.json"
     },
     {
+      "source": "packages/deadvox/src/config/bundled/test-house-debug.jsonnet",
+      "output": "packages/deadvox/src/config/bundled/test-house-debug.json"
+    },
+    {
       "source": "packages/deadvox/src/config/perf-baseline.jsonnet",
       "output": "packages/deadvox/src/config/perf-baseline.json"
     },

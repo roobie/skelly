@@ -173,8 +173,6 @@ export const SiteLayoutSchema = strictObject({
   ),
   /** Vehicle parking bays: a vehicle's origin and facing, whether or not one is parked there. */
   bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
-  /** The building template whose containers receive derived repair stock; derivation remains game logic. */
-  repairStock: optional(Id),
   showroom: optional(ShowroomSchema),
   /** Debug lane placement is independent of landscape bounds, so enlarging a view does not move test supplies. */
   handlingRange: optional(strictObject({ beside: LayoutRect, floor: HalfMetres })),
