@@ -3696,12 +3696,7 @@ export class ZombieSystem {
       });
     } else if (contact.kind === 'zombie') {
       const { id, zombie, region, cell } = contact.hit;
-      const damage = damageToActor(
-        zombie.type,
-        state.damage,
-        move.damageKind,
-        zombieRegionClass(region) as BodyRegion,
-      );
+      const damage = damageToActor(zombie.type, state.damage, move.damageKind, zombieRegionClass(region) as BodyRegion);
       if (damage > 0) {
         const strike = this.applyMeleeHit({
           id,
