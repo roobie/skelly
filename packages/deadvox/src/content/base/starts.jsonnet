@@ -36,16 +36,37 @@ local layouts = std.flattenArrays([
   (import 'rural-police.jsonnet').layouts,
   (import 'rural-substation.jsonnet').layouts,
 ]);
+local normalStarts = [common + {
+  id: std.asciiLower(layout.id),
+  site: layout.id,
+} + (if std.objectHas(layout, 'startTimeGameTimeOfDay') then {
+  startTimeGameTimeOfDay: layout.startTimeGameTimeOfDay,
+} else {}) for layout in layouts] + [
+  common + { id: 'gauntlet', site: 'gauntlet' },
+  common + { id: 'city', site: 'city' },
+  common + { id: 'forest', site: 'forest' },
+  common + { id: 'weatheringtest', site: 'weatheringTest', debugOnly: true, startTimeGameTimeOfDay: day.noonGameTimeOfDay },
+];
+local pistolMagazine = import 'gungen/magazine_pistol_9.model.json';
+local pistolItems = (import 'items-pistol.jsonnet').items;
+local round = std.filter(function(item) item.id == 'cartridge_9x19', pistolItems)[0];
+local pistolKit = [
+  { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+  { id: 'pistol', item: 'pistol_service', destination: { kind: 'hand', role: 'dominant' } },
+  {
+    id: 'magazine', item: 'magazine_pistol_9',
+    cartridges: std.repeat([round.id], pistolMagazine.gun.capacity),
+    destination: { kind: 'slot', parent: 'pistol', slot: 'magazine' },
+  },
+  { id: 'rounds', item: round.id, count: round.stack, destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
+];
 {
-  starts: [common + {
-    id: std.asciiLower(layout.id),
-    site: layout.id,
-  } + (if std.objectHas(layout, 'startTimeGameTimeOfDay') then {
-    startTimeGameTimeOfDay: layout.startTimeGameTimeOfDay,
-  } else {}) for layout in layouts] + [
-    common + { id: 'gauntlet', site: 'gauntlet' },
-    common + { id: 'city', site: 'city' },
-    common + { id: 'forest', site: 'forest' },
-    common + { id: 'weatheringtest', site: 'weatheringTest', debugOnly: true, startTimeGameTimeOfDay: day.noonGameTimeOfDay },
+  starts: normalStarts + [
+    { [key]: start[key] for key in std.objectFields(start) if key != 'defaultForSite' } + {
+      id: start.id + '_debug_pistol',
+      debugOnly: true,
+      kit: start.kit + pistolKit,
+    }
+    for start in normalStarts
   ],
 }

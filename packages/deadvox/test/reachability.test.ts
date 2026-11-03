@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { RecipeDef } from '../src/core/content.ts';
-import { checkReachability } from '../src/core/reachability.ts';
+import { checkReachability, checkStartReachability } from '../src/core/reachability.ts';
+import type { StartDef } from '../src/core/schema/starts.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -61,6 +62,52 @@ const knowledgeFixture = (
 const noWorldSources = { sites: new Set<string>() };
 
 describe('static reachability', () => {
+  it('keeps a start recipe and kit root out of another start in the same stack', () => {
+    const registry = knowledgeFixture([{ id: 'fixture_recipe', skills: {} }]);
+    registry.items.set('fixture_stock', { ...registry.items.get('fixture_recipe_result')!, id: 'fixture_stock' });
+    registry.recipes.get('fixture_recipe')!.components = [[{ item: 'fixture_stock', count: 1 }]];
+    const supplied: StartDef = {
+      id: 'fixture_supplied_start',
+      site: 'city',
+      wounds: [],
+      skills: {},
+      recipes: ['fixture_recipe'],
+      kit: [{ id: 'stock', item: 'fixture_stock', destination: { kind: 'hand', role: 'dominant' } }],
+    };
+    const empty: StartDef = { ...supplied, id: 'fixture_empty_start', kit: [], recipes: [] };
+    registry.starts = new Map([supplied, empty].map((row) => [row.id, row]));
+    expect(checkStartReachability(registry, supplied, noWorldSources).toolReachable.has('fixture_recipe_result')).toBe(
+      true,
+    );
+    const missing = checkStartReachability(registry, empty, noWorldSources);
+    expect(missing.toolReachable.has('fixture_recipe_result')).toBe(false);
+    expect(missing.issues.map(({ path }) => path)).toEqual(['.knowledge', '.components[0][0].item']);
+  });
+
+  it('uses the selected start skill provider as a recipe-unlock root', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_unlock', skills: { crafting: 1 }, skillUnlock: { skill: 'crafting', level: 1 } },
+    ]);
+    registry.skills = new Map([
+      ['fixtureProvider', { id: 'fixtureProvider', name: 'Fixture skill', capability: 'crafting' }],
+    ]);
+    const start: StartDef = {
+      id: 'fixture_trained_start',
+      site: 'city',
+      kit: [],
+      wounds: [],
+      recipes: [],
+      skills: { fixtureProvider: 1 },
+    };
+    expect(checkStartReachability(registry, start, noWorldSources).toolReachable.has('fixture_unlock_result')).toBe(
+      true,
+    );
+    start.skills = {};
+    expect(checkStartReachability(registry, start, noWorldSources).toolReachable.has('fixture_unlock_result')).toBe(
+      false,
+    );
+  });
+
   it('keeps whole-game reachability when its scope names every site', () => {
     const sites = new Set([...baseline.layouts.keys(), ...baseline.scenarios.keys()]);
     expect(checkReachability(baseline, undefined, { sites })).toEqual(checkReachability(baseline));

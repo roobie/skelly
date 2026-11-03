@@ -1494,6 +1494,2364 @@
       "startTimeGameTimeOfDay": "12:00",
       "storeys": 1,
       "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "lone_house_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "lone_house",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "testhouse_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "testHouse",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "playtest_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "playtest",
+      "skills": {},
+      "startTimeGameTimeOfDay": "15:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "cabins_demo_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "cabins_demo",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "stair_demo_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "stair_demo",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "voice_size_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "voice_size",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "lake_demo_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "lake_demo",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "tutorial_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "tutorial",
+      "skills": {},
+      "startTimeGameTimeOfDay": "17:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "lock_test_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "lock_test",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "hunting_cabins_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "hunting_cabins",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "crisis_hq_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "crisis_hq",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "rural_medical_post_demo_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "rural_medical_post_demo",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "rural_police_spike_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "rural_police_spike",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "rural_substation_demo_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "rural_substation_demo",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "gauntlet_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "gauntlet",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "city_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "city",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "forest_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "forest",
+      "skills": {},
+      "startTimeGameTimeOfDay": "10:00",
+      "storeys": 1,
+      "wounds": []
+    },
+    {
+      "debugOnly": true,
+      "density": null,
+      "id": "weatheringtest_debug_pistol",
+      "kit": [
+        {
+          "condition": 0.69999999999999996,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "jeans",
+          "item": "jeans"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "sneakers",
+          "item": "sneakers"
+        },
+        {
+          "condition": 0.80000000000000004,
+          "count": 1,
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "hoodie",
+          "item": "hoodie"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "beans",
+          "item": "canned_beans"
+        },
+        {
+          "destination": {
+            "kind": "pocket",
+            "parent": "hoodie",
+            "pocket": 0
+          },
+          "id": "matches",
+          "item": "matches"
+        },
+        {
+          "count": 2,
+          "destination": {
+            "kind": "pocket",
+            "parent": "jeans",
+            "pocket": 2
+          },
+          "id": "bandages",
+          "item": "bandage"
+        },
+        {
+          "destination": {
+            "kind": "worn"
+          },
+          "id": "backpack",
+          "item": "hiking_backpack"
+        },
+        {
+          "destination": {
+            "kind": "hand",
+            "role": "dominant"
+          },
+          "id": "pistol",
+          "item": "pistol_service"
+        },
+        {
+          "cartridges": [
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19",
+            "cartridge_9x19"
+          ],
+          "destination": {
+            "kind": "slot",
+            "parent": "pistol",
+            "slot": "magazine"
+          },
+          "id": "magazine",
+          "item": "magazine_pistol_9"
+        },
+        {
+          "count": 50,
+          "destination": {
+            "kind": "pocket",
+            "parent": "backpack",
+            "pocket": 0
+          },
+          "id": "rounds",
+          "item": "cartridge_9x19"
+        }
+      ],
+      "recipes": [
+        "torch",
+        "candle",
+        "repair_kit",
+        "repair_crowbar",
+        "sawn_plank",
+        "door_bar",
+        "make_rope",
+        "grind_kitchen_knife",
+        "hone_kitchen_knife",
+        "grind_kabar",
+        "hone_kabar",
+        "grind_machete",
+        "hone_machete"
+      ],
+      "seed": 1,
+      "site": "weatheringTest",
+      "skills": {},
+      "startTimeGameTimeOfDay": "12:00",
+      "storeys": 1,
+      "wounds": []
     }
   ]
 }

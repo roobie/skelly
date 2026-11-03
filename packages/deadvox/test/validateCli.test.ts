@@ -102,10 +102,18 @@ describe('validate CLI', () => {
   it('reports an unreachable component from static reachability', () => {
     const root = makeMinimalPack('content');
     try {
-      const run = validateAt(root, 'test/fixtures/content/reachability-unfound.json');
+      const fixture = 'test/fixtures/content/reachability-unfound.json';
+      expect(validateAt(root, fixture).stdout).not.toContain('neither found nor craftable');
+      writeFileSync(
+        join(root, 'start.json'),
+        JSON.stringify({
+          starts: [{ id: 'fixture_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: ['torch'] }],
+        }),
+      );
+      const run = validateAt(root, fixture, 'start.json');
       expect(run.status).toBe(1);
       expect(run.stdout).toContain(
-        'recipes[0].components[0][0].item: item "fixture_unfound" is neither found nor craftable',
+        'recipes[0].components[0][0].item: Start "fixture_start": item "fixture_unfound" is neither found nor craftable',
       );
     } finally {
       rmSync(root, { recursive: true, force: true });

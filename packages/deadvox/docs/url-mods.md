@@ -24,7 +24,7 @@ Start definitions use ordinary admission rather than a private preset path; see 
 
 The entry pack chooses the default normal run so reusable topics need not know its identity. Fresh product games select admitted rows and place their normal kit through ordinary owners; see `src/core/packAdmission.ts`, `PackManifestSchema`, `src/game/config.ts`, `configFromUrl`, and `src/game/play.ts`, `startPlay`. A generated world is still a mechanism selected by content, not an authored scenario identity in runtime code.
 
-Initial recipe knowledge belongs to the selected start; skill-earned unlocks remain character-owned. See `src/core/character.ts`, `initializeProgression`. Until PR #1539 migrates debug presets, debug setup still runs through `src/debug/index.ts`, `attachDebugTools`.
+Initial recipe knowledge belongs to the selected start; skill-earned unlocks remain character-owned. See `src/core/character.ts`, `initializeProgression`. The short-firearm preview is an admitted debug-only start, selected through the ordinary start selector. Until PR #1539 migrates the remaining debug presets, their setup still runs through `src/debug/index.ts`, `attachDebugTools`.
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 
@@ -36,7 +36,8 @@ Name kit parents before their children so placement order is deterministic rathe
 
 Validation runs at two boundaries:
 
-- **Pack admission** attributes unresolved references and invalid kit ownership to their start row, using the same diagnostics as other content. See `src/core/startIssues.ts`, `startIssues`, and `src/core/content.ts`, `referenceIssues`.
+- **Pack admission** attributes unresolved references, conflicting site defaults and invalid kit ownership to their start row, using the same diagnostics as other content. See `src/core/startIssues.ts`, `startIssues`, and `src/core/content.ts`, `referenceIssues`.
+- **Playable-stack validation** checks each start's recipe, kit and skill roots separately so another start cannot conceal missing knowledge. World sources remain stack-wide: static type reachability is not proof that every recipe can be completed within each individual site. A lower-layer stack without starts needs no playable-world closure. See `src/core/reachability.ts`, `checkStartReachability`, and `src/cli/validate.ts`, `validate`.
 - **New game** must use ordinary inventory placement and fitting so content cannot bypass pocket size or slot certification. A refusal stops startup with source and entry attribution instead of silently dropping the item. See `src/core/startState.ts`, `applyStartState`; progression remains character-owned through `src/core/character.ts`, `initializeProgression`.
 
 Callers must identify a fresh game explicitly. Continue and replay restore the saved world and must not reapply kit, wounds or progression, including advancing the item allocator. See `src/core/startState.ts`, `applyStartState`.

@@ -22,7 +22,7 @@ import {
 } from '../core/content.ts';
 import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
 import { admitPacks, packStartIssues } from '../core/packAdmission.ts';
-import { checkReachability } from '../core/reachability.ts';
+import { checkStartReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
 
@@ -49,6 +49,24 @@ const presentationAssetIssues = (registry: Registry, root: string): ContentIssue
       path: origin.path,
       message,
     }));
+  });
+
+const playableStartIssues = (registry: Registry, write: (line: string) => void): ContentIssue[] =>
+  [...registry.starts.values()].flatMap((start) => {
+    const reachable = checkStartReachability(registry, start);
+    write(
+      `Start "${start.id}": component closure ${reachable.components.size} item types (${reachable.found.size} found)`,
+    );
+    write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
+    write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
+    return reachable.issues.map((issue) => {
+      const origin = registry.contentOrigins.get(`recipes:${issue.recipe}`)!;
+      return {
+        source: origin.source,
+        path: origin.path + issue.path,
+        message: `Start "${start.id}": ${issue.message}`,
+      };
+    });
   });
 
 /** Runs the CLI rules and returns the exit code, so semantic tests avoid process startup. */
@@ -94,18 +112,7 @@ export const validate = (
   }
   const { registry, issues, origins } = buildRegistry(sources);
   issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
-  const reachable = checkReachability(
-    registry,
-    new Set([...registry.starts.values()].flatMap((start) => start.recipes)),
-  );
-  for (const issue of reachable.issues) {
-    const origin = origins.get(`recipes:${issue.recipe}`)!;
-    issues.push({ source: origin.source, path: origin.path + issue.path, message: issue.message });
-  }
-  write(`Component closure: ${reachable.components.size} item types (${reachable.found.size} found)`);
-  write(`Reachable components: ${[...reachable.components].sort().join(', ')}`);
-  write(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
-  write(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
+  issues.push(...playableStartIssues(registry, write));
   issues.push(...requiredContentIssues(registry), ...controlIssues(registry, origins, new Set(base)));
   const catalogue = read(CATALOGUE);
   if (catalogue !== undefined) {

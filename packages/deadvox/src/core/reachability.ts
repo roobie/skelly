@@ -4,6 +4,7 @@ import { claimed } from './capabilities.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { scenarioSources } from './scenarioComposition.ts';
+import type { StartDef } from './schema/starts.ts';
 import type { ScenarioDef, SiteLayoutDef } from './schema.ts';
 import { ordinarySpawnWeights } from './settlementSpawns.ts';
 import { type CompiledTemplate, compileMapPiece, compileTemplate, kitSlotChoices } from './templates.ts';
@@ -213,6 +214,8 @@ const worldZombieTypes = (
 export interface ReachabilityScope {
   /** Site ids whose authored sources are included; absent means every playable site. */
   readonly sites?: ReadonlySet<string>;
+  readonly items?: ReadonlySet<string>;
+  readonly skills?: ReadonlySet<string>;
 }
 
 const compiledSource = (registry: Registry, id: string): CompiledTemplate | undefined => {
@@ -339,7 +342,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
   for (const fixed of scenarioContent.fixedLoot.flatMap((source) => source.items)) {
     placed.add(fixed.item);
   }
-  const found = new Set([...rolled, ...placed]);
+  const found = new Set([...rolled, ...placed, ...(scope.items ?? [])]);
   addItemOutputs(registry, found);
   return { found, placed, rolled, workstations, workstationQualities };
 };
@@ -495,6 +498,7 @@ interface ReachableKnowledgeAndSkillsContext {
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
   known: ReadonlySet<string>;
+  startingSkills: ReadonlySet<string>;
 }
 
 const reachableKnowledgeAndSkills = ({
@@ -503,9 +507,10 @@ const reachableKnowledgeAndSkills = ({
   workstations,
   workstationQualities,
   known,
+  startingSkills,
 }: ReachableKnowledgeAndSkillsContext) => {
   const knowledge = knownRecipes(registry, found, known);
-  const skills = new Set<string>();
+  const skills = new Set(startingSkills);
   let previous: number;
   do {
     previous = knowledge.size + skills.size;
@@ -539,6 +544,7 @@ export const checkReachability = (
     workstations,
     workstationQualities,
     known,
+    startingSkills: scope?.skills ?? new Set(),
   });
   const components = closure({ registry, found, tools: false, knowledge, skills, workstationQualities });
   const toolReachable = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
@@ -565,3 +571,15 @@ export const checkReachability = (
     unreachable: eligible.filter((id) => !components.has(id)).sort(),
   };
 };
+
+export const checkStartReachability = (registry: Registry, start: StartDef, scope: ReachabilityScope = {}) =>
+  checkReachability(registry, new Set(start.recipes), {
+    ...scope,
+    items: new Set(start.kit.flatMap((entry) => [entry.item, ...(entry.cartridges ?? [])])),
+    skills: new Set(
+      Object.entries(start.skills).flatMap(([id, level]) => {
+        const role = registry.skills.get(id)?.capability;
+        return level > 0 && role ? [role] : [];
+      }),
+    ),
+  });

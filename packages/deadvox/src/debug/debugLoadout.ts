@@ -8,7 +8,6 @@ import { opticViewSettings } from '../core/opticView.ts';
 const LOADOUTS = [
   'ar',
   'ak',
-  'pistol',
   'pump',
   'hunting',
   'magazine',
@@ -54,8 +53,6 @@ export const equipDebugLoadout = (
   }
   if (choice === 'revolver' || choice === 'revolver-open') {
     equipRevolver(inventory, backpack, choice === 'revolver-open');
-  } else if (choice === 'pistol') {
-    equipPistol(inventory, backpack);
   } else if (choice === 'pump') {
     equipPump(inventory, backpack);
   } else if (choice === 'hunting') {
@@ -104,28 +101,6 @@ const equipPreviewOptic = (inventory: Inventory, type: string): void => {
 const equipRiotHelmet = (inventory: Inventory): void => {
   if (!inventory.add(inventory.create('riot_helmet'), { kind: 'worn' })) {
     throw new Error('Could not wear riot helmet preview');
-  }
-};
-
-const equipPistol = (inventory: Inventory, backpack: Item): void => {
-  const gun = inventory.create('pistol_service');
-  const magazine = inventory.create('magazine_pistol_9');
-  magazine.cartridges = Array.from(
-    { length: magazineSpec(inventory.registry, magazine.type)!.capacity },
-    () => 'cartridge_9x19',
-  );
-  inventory.fitSlot(gun, 'magazine', magazine);
-  if (
-    !(
-      inventory.add(gun, { kind: 'hand', side: dominantSide(inventory.character) }) &&
-      inventory.add(inventory.create('cartridge_9x19', defOf(inventory.registry, 'cartridge_9x19').stack ?? 1), {
-        kind: 'pocket',
-        owner: backpack,
-        pocket: 0,
-      })
-    )
-  ) {
-    throw new Error('Could not equip pistol preview loadout');
   }
 };
 

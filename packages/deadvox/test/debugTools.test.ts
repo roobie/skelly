@@ -17,6 +17,7 @@ import { stepNoclip } from '../src/debug/noclip.ts';
 import { requireStart } from '../src/game/startSelection.ts';
 import { startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { shortFirearmStart } from './fixtures/debugStarts.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -231,9 +232,9 @@ describe('debug starting equipment', () => {
     expect(packed.length).toBeGreaterThan(1);
   });
 
-  it('loadout=pistol equips a filled compatible magazine and spare ammunition', () => {
+  it('an authored short-firearm start fits a filled compatible magazine and spare ammunition', () => {
     const inventory = new Inventory(registry);
-    expect(equipDebugLoadout(inventory, true, true, '?loadout=pistol')).toBe(true);
+    applyStartKit(inventory, shortFirearmStart(registry));
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const definition = registry.items.get(gun.type)!;
     const model = registry.models.get(definition.model!)!;

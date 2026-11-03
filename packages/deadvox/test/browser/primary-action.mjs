@@ -24,7 +24,12 @@ const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new
 const authoredStarts = JSON.parse(await readFile(resolve(projectRoot, 'src/content/base/starts.json'), 'utf8')).starts;
 const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
 assert(houseStart, 'the product supplies an authored start for the existing house flow');
-const debugLoadoutModule = '/src/debug/debugLoadout.ts';
+const debugHouseStart = authoredStarts.find(
+  (row) => row.debugOnly && row.site === houseStart.site && row.kit.some((entry) => entry.cartridges?.length > 0),
+);
+assert(debugHouseStart, 'the product supplies a loaded-firearm debug start for the existing flow');
+const startStateModule = '/src/core/startState.ts';
+const debugStartsModule = '/test/fixtures/debugStarts.ts';
 const firearmActionModule = '/src/core/firearmAction.ts';
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
@@ -1876,7 +1881,7 @@ try {
       await page.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&start=${encodeURIComponent(houseStart.id)}&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&start=${encodeURIComponent(debugHouseStart.id)}&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
           renderOverride,
         ),
       );
@@ -1901,8 +1906,17 @@ try {
     });
     assert.equal(
       await page.evaluate(() => globalThis.primaryActionTest.engine.config.startId),
-      houseStart.id,
-      'the full-product flow runs its selected authored start',
+      debugHouseStart.id,
+      'the full-product flow runs its selected content-owned debug preset',
+    );
+    assert.equal(
+      await page.evaluate(() => {
+        const { inventory } = globalThis.primaryActionTest;
+        const held = inventory.hands[inventory.character.handedness];
+        return Object.values(held?.slots ?? {}).some((item) => item.cartridges?.length > 0);
+      }),
+      true,
+      'the selected debug row supplies a loaded magazine before flow setup',
     );
     const identity = await page.evaluate(() => {
       const { inventory, session } = globalThis.primaryActionTest;
@@ -3541,15 +3555,22 @@ try {
     await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
     await page.mouse.up({ button: 'right' });
     const pistol = await page.evaluate(
-      async ({ loadoutModule, actionModule }) => {
+      async ({ startModule, presetsModule, actionModule, options }) => {
         const r = globalThis.primaryActionTest;
-        const { equipDebugLoadout } = await import(loadoutModule);
+        const { applyStartKit } = await import(startModule);
+        const { shortFirearmStart } = await import(presetsModule);
         const { actionCycleSeconds } = await import(actionModule);
+        const { dropTarget } = await import(options);
         r.clearHand(r.dominant);
         r.clearHand(r.off);
-        if (!equipDebugLoadout(r.inventory, true, true, '?loadout=pistol')) {
-          throw new Error('Pistol debug loadout was refused');
+        const pos = r.session.body.pos.map(Math.floor);
+        for (const worn of new Set(Object.values(r.inventory.worn))) {
+          if (worn && !r.inventory.move(worn, dropTarget(r.inventory, worn, pos).target).ok) {
+            throw new Error('Could not clear worn items for the authored debug preset');
+          }
         }
+        const preset = shortFirearmStart(r.inventory.registry, r.engine.config.site);
+        applyStartKit(r.inventory, preset);
         const gun = r.inventory.hands[r.dominant];
         const definition = r.inventory.registry.items.get(gun.type);
         const model = r.inventory.registry.models.get(definition.model);
@@ -3588,7 +3609,12 @@ try {
           cycle: actionCycleSeconds(model.gun.action, 'fire'),
         };
       },
-      { loadoutModule: debugLoadoutModule, actionModule: firearmActionModule },
+      {
+        startModule: startStateModule,
+        presetsModule: debugStartsModule,
+        actionModule: firearmActionModule,
+        options: optionsModule,
+      },
     );
     await page.mouse.down({ button: 'right' });
     await page.waitForFunction((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), pistol.uid);
