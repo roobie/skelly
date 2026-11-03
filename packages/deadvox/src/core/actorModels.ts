@@ -1,11 +1,11 @@
 export const BODY_PLANS = {
-  humanoid: { generator: 'shambler-figure-v1' },
-  acid: { generator: 'shambler-figure-v1' },
+  humanoid: { generator: 'humanoid-figure-v1' },
+  acid: { generator: 'humanoid-figure-v1' },
   'fused-mass': { generator: 'amalgam-figure-v1' },
 } as const;
 
 export const FIGURE_VARIANTS = {
-  humanoid: { bodyPlan: 'humanoid', model: 'shambler' },
+  humanoid: { bodyPlan: 'humanoid', model: 'humanoid' },
   runner: { bodyPlan: 'humanoid', model: 'runner' },
   crawler: { bodyPlan: 'humanoid', model: 'crawler' },
   brute: { bodyPlan: 'humanoid', model: 'brute' },

@@ -430,7 +430,7 @@ export interface MobActorMeshesOptions {
   readonly canvas?: HTMLCanvasElement | undefined;
   readonly reveal?: ColumnReveal;
   /** The zombie types to draw: a variant per model they select and figure seed they author. */
-  readonly zombies: ReadonlyMap<string, DrawnZombieType>;
+  readonly zombies: ReadonlyMap<string, DrawnActorType>;
   /** Builds only the first this-many figure seeds of each model. */
   readonly poolSize?: number;
   /** A chunk of carved flesh came to rest at this centre (metres), for gore to mark. */
@@ -468,7 +468,7 @@ const anchorWorld = (
   return [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
 };
 
-type DrawnZombieType = ActorFigureType & {
+type DrawnActorType = ActorFigureType & {
   readonly model: ActorModel;
   readonly carving?: { readonly interiorColor: string } | undefined;
 };
@@ -540,7 +540,7 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ActorF
       params: genome.params as HumanoidParams,
       seed: genome.seed,
     },
-    lookAt: LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : bodyPlanModel(model)]!,
+    lookAt: LOOK_AT_PROFILES[model === 'fused-mass' ? 'humanoid' : bodyPlanModel(model)]!,
     severedRoots: severedRootsFor(figure),
     headPart: 'severableParts' in figure ? figure.severableParts.head[0] : undefined,
   };
@@ -549,7 +549,7 @@ const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ActorF
 /** Each model the types select, with the figure seeds they author for it in authored order, the first
  * `poolSize` of them; the amalgam's seed is fixed. */
 const figureSeedsByModel = (
-  zombies: ReadonlyMap<string, DrawnZombieType>,
+  zombies: ReadonlyMap<string, DrawnActorType>,
   poolSize: number | undefined,
 ): ReadonlyMap<ActorModel, readonly number[]> => {
   const byModel = new Map<ActorModel, number[]>();

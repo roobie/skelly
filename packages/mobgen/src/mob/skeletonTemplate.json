@@ -220,7 +220,7 @@
       "min": 0.90000000000000002
     }
   },
-  "sizeReference": "shambler",
+  "sizeReference": "humanoid",
   "status": "comparison-only",
   "supportBones": ["foot.L", "foot.R"]
 }

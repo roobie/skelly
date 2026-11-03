@@ -100,7 +100,7 @@ describe('crawler', () => {
     { name: 'one severed leg', cuts: ['thigh.L'] },
     { name: 'damaged but retained legs', cuts: [] },
   ])('keeps visible humanoid legs trailing flat above the floor with $name', ({ cuts }) => {
-    const humanoid = TEMPLATES.find((template) => template.name === 'shambler')!;
+    const humanoid = TEMPLATES.find((template) => template.name === 'humanoid')!;
     const realized = realize(generate(humanoid, 1));
     const hidden = severedBoneSet(realized.body.bones, cuts);
     const legs = realized.body.bones.filter((bone) => LEG_BONE.test(bone.id) && !hidden.has(bone.id));

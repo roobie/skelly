@@ -153,7 +153,7 @@ at the mobgen boundary, keeping each plan's region ownership authoritative rathe
 forcing the acid body's distinct bones through humanoid names. See
 `packages/deadvox/src/core/schema/actors.ts`, `BODY_PLAN`;
 `packages/deadvox/src/core/actorModels.ts`, `bodyPlanModel`;
-`src/mob/shamblerFigure.ts`, `zombieFigure`; and
+`src/mob/humanoidFigure.ts`, `actorFigure`; and
 `packages/deadvox/src/core/zombieRegions.ts`.
 
 - **Hit regions.** Each plan says which of its bones form head, torso and limbs, because

@@ -1,5 +1,5 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
-import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { actorFigure as humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import { amalgamFigure } from './amalgamFigure.ts';
 
@@ -19,7 +19,7 @@ export const figureSeedPool = (zombies: ReadonlyMap<string, ActorFigureType>): r
 export const amalgamTypeOf = <T extends ActorFigureType>(zombies: ReadonlyMap<string, T>): T | undefined =>
   [...zombies.values()].find((type) => type.model === 'fused-mass');
 
-/** One realization boundary for every content-selected Deadvox zombie model. */
+/** One realization boundary for every content-selected actor model. */
 export const actorFigure = (type: ActorFigureType, seed: number) => {
   if (type.model !== 'fused-mass') {
     return humanoidFigure(bodyPlanModel(figureVariantOf(type)), seed);

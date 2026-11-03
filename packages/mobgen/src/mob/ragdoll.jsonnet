@@ -1,11 +1,11 @@
 local hinge(bones, limits) = { bones: bones, limits: [limits, [0, 0], [0, 0]] };
 local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, swing] };
 {
-  models: ['shambler', 'runner', 'brute', 'crawler', 'amalgam'],
+  models: ['humanoid', 'runner', 'brute', 'crawler', 'amalgam'],
   shortenedLegs: { absent: ['shin.L', 'shin.R'], omit: ['shin.L', 'shin.R', 'foot.L', 'foot.R'] },
   compound: { root: 'core', memberRoot: 'pelvis', limits: [[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]] },
   sweep: {
-    models: ['shambler', 'runner', 'brute', 'crawler'],
+    models: ['humanoid', 'runner', 'brute', 'crawler'],
     cuts: [[], ['head'], ['upperArm.L'], ['thigh.L', 'thigh.R'], []],
     spacingMetres: 3,
     startMetres: [0, -15],

@@ -22,12 +22,12 @@ interface AssignedPartProof {
   readonly assigned: ReturnType<typeof templatePartMassProperties>;
 }
 let cachedProofs: AssignedPartProof[] | undefined;
-const shamblerPartProofs = (): AssignedPartProof[] => {
-  cachedProofs ??= computeShamblerPartProofs();
+const humanoidPartProofs = (): AssignedPartProof[] => {
+  cachedProofs ??= computeHumanoidPartProofs();
   return cachedProofs;
 };
-const computeShamblerPartProofs = (): AssignedPartProof[] => {
-  const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+const computeHumanoidPartProofs = (): AssignedPartProof[] => {
+  const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
   const proofs: AssignedPartProof[] = [];
   for (let seed = 1; seed <= 5; seed++) {
     const generated = generateValid(template, seed)!;
@@ -89,7 +89,7 @@ describe('massProperties', () => {
   });
 
   it('honors authored mass shares for severable parts with overrides', () => {
-    const authored = shamblerPartProofs().filter(({ expectedMass }) => expectedMass !== undefined);
+    const authored = humanoidPartProofs().filter(({ expectedMass }) => expectedMass !== undefined);
     expect(authored.length).toBeGreaterThan(0);
     for (const { assigned, expectedMass } of authored) {
       expect(assigned.mass).toBeCloseTo(expectedMass!, 10);
@@ -97,7 +97,7 @@ describe('massProperties', () => {
   });
 
   it('keeps template-assigned part COM equal to density-derived COM', () => {
-    for (const { assigned, density } of shamblerPartProofs()) {
+    for (const { assigned, density } of humanoidPartProofs()) {
       for (const axis of [0, 1, 2]) {
         expect(Math.abs(assigned.center[axis]! - density.center[axis]!)).toBeLessThan(1e-9);
       }
@@ -105,7 +105,7 @@ describe('massProperties', () => {
   });
 
   it('scales the density-derived part inertia by its assigned mass ratio', () => {
-    for (const { assigned, density } of shamblerPartProofs()) {
+    for (const { assigned, density } of humanoidPartProofs()) {
       for (const row of [0, 1, 2]) {
         for (const column of [0, 1, 2]) {
           const expected = density.inertia[row]![column]! * (assigned.mass / density.mass);

@@ -1,6 +1,6 @@
 // Text renderer: judge head/face shape from the terminal (we can't render WebGL here).
-//   npm run view -- --template shambler --seed 7
-//   npm run view -- --template shambler --seed 7 --valid --region body --view side
+//   npm run view -- --template humanoid --seed 7
+//   npm run view -- --template humanoid --seed 7 --valid --region body --view side
 //   npm run view -- --template brute --seed 11 --voxel 0.04 --view all
 // Prints orthographic front/side/top projections at rest pose: one grid of the nearest
 // voxel's material letter per column, and one depth-relief grid (0 = nearest voxel in

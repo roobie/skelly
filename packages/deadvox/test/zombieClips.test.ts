@@ -4,13 +4,13 @@ import { attackClipFor, attackPose } from '@mobgen/mob/attack.ts';
 import { footRestExtents } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { flinchPoseWithClip, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { shambler } from '@mobgen/mob/templates.ts';
+import { humanoid } from '@mobgen/mob/templates.ts';
 import { afterAll, describe, expect, it } from 'vitest';
 import { flinchSideForId, posedShambler, type ShamblerPoseInput } from '../src/core/zombiePose.ts';
 
-const template = { ...shambler, attackClip: 'swipe', flinchClip: 'runner-hit-flinch' };
+const template = { ...humanoid, attackClip: 'swipe', flinchClip: 'runner-hit-flinch' };
 registerTemplate(template);
-afterAll(() => registerTemplate(shambler));
+afterAll(() => registerTemplate(humanoid));
 const input: ShamblerPoseInput = {
   model: 'humanoid',
   seed: 1,

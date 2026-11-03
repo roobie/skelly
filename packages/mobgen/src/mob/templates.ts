@@ -20,7 +20,7 @@ const HUMANOID_MASS_FRACTIONS = {
 } as const;
 
 /** Params every humanoid template must supply (see mob/humanoid.ts's HUMANOID_PARAM_ORDER). */
-const shamblerParams: Template['params'] = {
+const humanoidParams: Template['params'] = {
   height: { min: 1.55, max: 1.9 },
   girth: { min: 0.85, max: 1.25 },
   shoulderWidth: { min: 0.85, max: 1.15 },
@@ -58,8 +58,8 @@ const shamblerParams: Template['params'] = {
   footLift: { min: 0.02, max: 0.06 },
 };
 
-export const shambler: Template = {
-  name: 'shambler',
+export const humanoid: Template = {
+  name: 'humanoid',
   flinchClip: 'hit-flinch',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
@@ -69,7 +69,7 @@ export const shambler: Template = {
   voxelSize: 0.5 / 12,
   bodyMassKg: 70,
   massFractions: HUMANOID_MASS_FRACTIONS,
-  params: shamblerParams,
+  params: humanoidParams,
   supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2000 },
@@ -91,7 +91,7 @@ const runner: Template = {
   bodyMassKg: 60,
   massFractions: HUMANOID_MASS_FRACTIONS,
   params: {
-    ...shamblerParams,
+    ...humanoidParams,
     height: { min: 1.75, max: 2.0 },
     girth: { min: 0.75, max: 1.0 },
     hunch: { min: 0, max: 8 },
@@ -121,7 +121,7 @@ const crawler: Template = {
   bodyMassKg: 55,
   massFractions: HUMANOID_MASS_FRACTIONS,
   params: {
-    ...shamblerParams,
+    ...humanoidParams,
     height: { min: 1.35, max: 1.65 },
     girth: { min: 0.9, max: 1.2 },
     armLength: { min: 1.1, max: 1.3 },
@@ -150,7 +150,7 @@ const brute: Template = {
   bodyMassKg: 140,
   massFractions: HUMANOID_MASS_FRACTIONS,
   params: {
-    ...shamblerParams,
+    ...humanoidParams,
     height: { min: 2.0, max: 2.3 },
     girth: { min: 1.1, max: 1.4 },
     shoulderWidth: { min: 1.25, max: 1.55 },
@@ -168,7 +168,7 @@ const brute: Template = {
   },
 };
 
-export const TEMPLATES: readonly Template[] = [shambler, runner, crawler, brute];
+export const TEMPLATES: readonly Template[] = [humanoid, runner, crawler, brute];
 export const HUMANOID_TEMPLATES = TEMPLATES.filter((template) => template.bodyPlan === 'humanoid');
 for (const t of TEMPLATES) {
   registerTemplate(t);

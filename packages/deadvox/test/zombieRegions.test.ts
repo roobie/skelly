@@ -4,8 +4,8 @@ import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { idlePose } from '@mobgen/mob/idle.ts';
-import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
@@ -48,7 +48,7 @@ const add = (a: readonly number[], b: readonly number[]): Vec3 => [a[0]! + b[0]!
 const sub = (a: readonly number[], b: readonly number[]): Vec3 => [a[0]! - b[0]!, a[1]! - b[1]!, a[2]! - b[2]!];
 
 const posed = (seed: number, testPose: PoseCase) => {
-  const figure = shamblerFigure(seed);
+  const figure = humanoidFigure(seed);
   const { realized, genome } = figure;
   const { body, voxels } = realized;
   const { bones } = body;

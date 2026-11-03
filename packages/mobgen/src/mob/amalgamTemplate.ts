@@ -1,6 +1,6 @@
 import { registerTemplate, type Template } from '../core/template.ts';
 import { AMALGAM_MEMBER_IDS, MAX_AMALGAM_MEMBERS, MIN_AMALGAM_MEMBERS } from './amalgam.ts';
-import { shambler, TEMPLATES } from './templates.ts';
+import { humanoid, TEMPLATES } from './templates.ts';
 
 const memberParam = (member: number, name: string): string => `member.${member}.${name}`;
 const amalgamParams: Template['params'] = {
@@ -10,11 +10,11 @@ const amalgamParams: Template['params'] = {
       (_, index) => MIN_AMALGAM_MEMBERS + index,
     ),
   },
-  height: shambler.params.height!,
-  headScale: shambler.params.headScale!,
+  height: humanoid.params.height!,
+  headScale: humanoid.params.headScale!,
   ...Object.fromEntries(
     AMALGAM_MEMBER_IDS.flatMap((member) =>
-      Object.entries(shambler.params).map(([name, spec]) => [memberParam(member, name), spec]),
+      Object.entries(humanoid.params).map(([name, spec]) => [memberParam(member, name), spec]),
     ),
   ),
   ...Object.fromEntries(
@@ -32,17 +32,17 @@ const amalgamParams: Template['params'] = {
 
 export const amalgamTemplate: Template = {
   name: 'amalgam',
-  materials: shambler.materials,
-  ...(shambler.materialHsl ? { materialHsl: shambler.materialHsl } : {}),
-  description: 'Procedurally fused shamblers in random orientations around a shared core.',
+  materials: humanoid.materials,
+  ...(humanoid.materialHsl ? { materialHsl: humanoid.materialHsl } : {}),
+  description: 'Procedurally fused humanoids in random orientations around a shared core.',
   bodyPlan: 'amalgam',
-  voxelSize: shambler.voxelSize,
-  bodyMassKg: shambler.bodyMassKg * MAX_AMALGAM_MEMBERS,
+  voxelSize: humanoid.voxelSize,
+  bodyMassKg: humanoid.bodyMassKg * MAX_AMALGAM_MEMBERS,
   params: amalgamParams,
   supportBones: 'ground-contacts',
   budgets: {
-    totalVoxels: { min: 1, max: shambler.budgets.totalVoxels.max * MAX_AMALGAM_MEMBERS * 2 },
-    totalTriangles: { min: 1, max: shambler.budgets.totalTriangles.max * MAX_AMALGAM_MEMBERS * 3 },
+    totalVoxels: { min: 1, max: humanoid.budgets.totalVoxels.max * MAX_AMALGAM_MEMBERS * 2 },
+    totalTriangles: { min: 1, max: humanoid.budgets.totalTriangles.max * MAX_AMALGAM_MEMBERS * 3 },
     groups: {},
   },
 };

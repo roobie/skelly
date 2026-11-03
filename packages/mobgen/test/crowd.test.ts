@@ -23,8 +23,8 @@ import {
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const AMALGAM_SEARCH_SEEDS = 64;
-const shambler = TEMPLATES.find((t) => t.name === 'shambler')!;
-const found = generateValid(shambler, 1)!;
+const humanoid = TEMPLATES.find((t) => t.name === 'humanoid')!;
+const found = generateValid(humanoid, 1)!;
 const { body } = realize(found.genome);
 const { bones } = body;
 

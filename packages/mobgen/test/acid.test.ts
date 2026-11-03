@@ -5,7 +5,7 @@ import { cross, dot, length } from '../src/core/math.ts';
 import { aabbOf, evalShape, topOf, union } from '../src/core/sdf.ts';
 import { type Genome, type ParamSpec, registerTemplate } from '../src/core/template.ts';
 import { acidTemplate } from '../src/mob/acidTemplate.ts';
-import { shambler } from '../src/mob/templates.ts';
+import { humanoid } from '../src/mob/templates.ts';
 
 const rangeOf = (spec: ParamSpec | undefined) => {
   if (spec === undefined || typeof spec === 'number' || !('min' in spec)) {
@@ -55,9 +55,9 @@ const breadthOf = (body: Body) => {
   return bounds.max[0] - bounds.min[0];
 };
 
-it('acid draws height and voxel size from the shambler content rather than a copied range', () => {
-  expect(acidTemplate.params.height).toBe(shambler.params.height);
-  expect(acidTemplate.voxelSize).toBe(shambler.voxelSize);
+it('acid draws height and voxel size from the humanoid content rather than a copied range', () => {
+  expect(acidTemplate.params.height).toBe(humanoid.params.height);
+  expect(acidTemplate.voxelSize).toBe(humanoid.voxelSize);
 });
 
 it('an upright head at minimum head height fits its skeletal tip inside the drawn standing height', () => {
@@ -88,7 +88,7 @@ it.each(rows.map((params, index) => ({ params, index })))(
     const { genome, realized } = result!;
     expect(realized.report.issues).toEqual([]);
     const height = genome.params.height!;
-    const referenceRange = rangeOf(shambler.params.height);
+    const referenceRange = rangeOf(humanoid.params.height);
     expect(height).toBeGreaterThanOrEqual(referenceRange.min);
     expect(height).toBeLessThanOrEqual(referenceRange.max);
     expect(standingTop(realized.body)).toBeCloseTo(height, 10);

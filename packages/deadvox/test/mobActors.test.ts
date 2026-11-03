@@ -413,8 +413,8 @@ describe('facing convention', () => {
 
 describe('feet at body.pos.y (mobgen pose convention)', () => {
   it('a standing pose puts the lowest foot corner at local y = 0, so placing the rig at body.pos.y needs no extra offset', () => {
-    const shamblerTemplate = TEMPLATES.find((t) => t.name === 'shambler')!;
-    const found = generateValid(shamblerTemplate, 1)!;
+    const humanoidTemplate = TEMPLATES.find((t) => t.name === 'humanoid')!;
+    const found = generateValid(humanoidTemplate, 1)!;
     const { body, voxels } = realize(found.genome);
     const extents = footRestExtents(body.bones, voxels);
     const walkActor = {
@@ -1735,7 +1735,7 @@ describe('MobActorMeshes dismemberment', () => {
       const zombie = makeZombie([2, 0, -3], [1, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
-      const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+      const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
       const realized = realize(generateValid(template, 1)!.genome);
       const boneIds = [...severedBoneSet(realized.body.bones, ['forearm.L'])];
       const before = new Map(boneIds.map((bone) => [bone, renderer.boneMatrix(id, bone)!]));
@@ -1798,7 +1798,7 @@ describe('MobActorMeshes dismemberment', () => {
         variants: readonly { rigidParts: ReadonlyMap<string, { mass: number }> }[];
       };
       const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
-      const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+      const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
       const { realized } = generateValid(template, 1)!;
       const { bones } = realized.body;
       const indices = new Map(bones.map((bone, index) => [bone.id, index]));
@@ -1819,7 +1819,7 @@ describe('MobActorMeshes dismemberment', () => {
     }
   });
   it('debris OBB contains the posed limb at spawn', () => {
-    const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+    const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
     const { realized } = generateValid(template, 1)!;
     const handRenderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {

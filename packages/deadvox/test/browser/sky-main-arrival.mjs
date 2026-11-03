@@ -104,7 +104,7 @@ const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : fig
 // authored seeds; any other build error still fails the run. A base that builds per-model seeds needs no seed rewrite.
 // The overlay retains branch body-plan identities, while mobgen profiles, templates and ragdoll catalogs keep
 // implementation names; reverting either side would mix content and mechanism contracts.
-// See `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+// See `packages/mobgen/src/mob/humanoidFigure.ts`, `actorFigure`.
 export function adaptMainSeedPool(source) {
   return source
     .replaceAll('ZombieModel', 'ActorModel')
@@ -131,7 +131,7 @@ export function adaptMainSeedPool(source) {
     .replaceAll("'amalgam'", "'fused-mass'")
     .replace(
       "LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : model]",
-      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'shambler' : bodyPlanModel(model)]",
+      "LOOK_AT_PROFILES[model === 'fused-mass' ? 'humanoid' : bodyPlanModel(model)]",
     )
     .replace('templatesByModel.get(v.model)', 'templatesByModel.get(bodyPlanModel(v.model))')
     .replace(

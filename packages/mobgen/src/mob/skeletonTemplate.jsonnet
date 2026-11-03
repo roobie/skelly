@@ -8,7 +8,7 @@ local material(color, emissive=0) = { color: color, emissive: emissive };
   attackClip: 'swipe',
   flinchClip: 'hit-flinch',
   bodyMassKg: 12,
-  sizeReference: 'shambler',
+  sizeReference: 'humanoid',
   supportBones: ['foot.L', 'foot.R'],
   materials: {
     bone: material([0.86, 0.83, 0.71]),

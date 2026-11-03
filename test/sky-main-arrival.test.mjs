@@ -156,18 +156,18 @@ return types.map((type) => {
     'ragdollContent',
     body.join('\n'),
   );
-  const mechanisms = { humanoid: 'shambler', 'fused-mass': 'amalgam', crawler: 'crawler' };
+  const mechanisms = { humanoid: 'humanoid', 'fused-mass': 'amalgam', crawler: 'crawler' };
   const actual = inspect(
     [{ model: 'humanoid' }, { model: 'fused-mass' }, { model: 'humanoid', figure: 'crawler' }],
     (variant) => mechanisms[variant],
     (type) => type.figure ?? type.model,
-    { shambler: 'humanoid-gaze', crawler: 'crawler-gaze' },
+    { humanoid: 'humanoid-gaze', crawler: 'crawler-gaze' },
     new Map([
-      ['shambler', 'humanoid-template'],
+      ['humanoid', 'humanoid-template'],
       ['amalgam', 'mass-template'],
       ['crawler', 'crawler-template'],
     ]),
-    { models: ['shambler', 'amalgam'] },
+    { models: ['humanoid', 'amalgam'] },
   );
   assert.deepEqual(actual, [
     { seeded: true, special: false, lookAt: 'humanoid-gaze', template: 'humanoid-template', ragdoll: true },

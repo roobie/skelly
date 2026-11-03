@@ -3022,7 +3022,7 @@ draw two seeds as one body and quietly shrink authored variety, so it is refused
 a figure variant whose template rejects shared seeds authors its own. See
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
 `src/render/mobActors.ts`, `figureSeedsByModel`; and
-`packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
+`packages/mobgen/src/mob/humanoidFigure.ts`, `actorFigure`.
 
 All mobs look toward the player only when they perceive the player. Hearing and
 noticed lights can also draw gaze; hearing direction uses deterministic jitter,

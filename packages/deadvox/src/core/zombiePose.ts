@@ -10,10 +10,10 @@ import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { type HumanoidFigure, actorFigure as humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { ActorFigure } from './actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
@@ -127,7 +127,7 @@ interface SeededActor {
   idleBases?: Readonly<Record<IdleStance, Pose>>;
 }
 
-const actorForFigure = (figure: ShamblerFigure): SeededActor => {
+const actorForFigure = (figure: HumanoidFigure): SeededActor => {
   const {
     realized: {
       body: { bones },
@@ -221,7 +221,7 @@ const attackTimeFor = (
 
 interface ModelPoseContext {
   readonly template: Template;
-  readonly figure: ShamblerFigure;
+  readonly figure: HumanoidFigure;
   readonly actor: WalkActor;
 }
 
@@ -318,7 +318,7 @@ const acidAttackTimeFor = (input: ShamblerPoseInput): number | undefined => {
 const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
   bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
 
-const posedAcid = (input: ShamblerPoseInput, figure: ShamblerFigure): PosedShambler => {
+const posedAcid = (input: ShamblerPoseInput, figure: HumanoidFigure): PosedShambler => {
   const { realized } = figure;
   const { bones } = realized.body;
   const distance = (input.gaitPhase / (2 * Math.PI)) * acidStrideLength(realized);

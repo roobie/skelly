@@ -4,7 +4,7 @@
 import type { Mat3 } from '@mobgen/core/math.ts';
 import { mulMM, transpose } from '@mobgen/core/math.ts';
 import type { boneTransforms } from '@mobgen/core/pose.ts';
-import { type BoneVoxelBox, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { type BoneVoxelBox, humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { ZombieHitRegion, ZombieRegion } from './schema.ts';
 import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
@@ -79,7 +79,7 @@ interface BoneVoxelSummary {
   readonly count: number;
 }
 
-type PoseFigure = ReturnType<typeof shamblerFigure> | AmalgamFigure;
+type PoseFigure = ReturnType<typeof humanoidFigure> | AmalgamFigure;
 const voxelSummaries = new Map<string, ReadonlyMap<string, BoneVoxelSummary>>();
 const voxelSummaryFor = (key: string, figure: PoseFigure): ReadonlyMap<string, BoneVoxelSummary> => {
   let summary = voxelSummaries.get(key);
@@ -325,4 +325,4 @@ export const posedRegionHitDistance = (
 
 /** Return each unposed box in the chosen figure (exposed for proof and renderer parity tests). */
 export const shamblerRegionBoxes = (seed: number): Readonly<Record<ZombieRegion, readonly BoneVoxelBox[]>> =>
-  shamblerFigure(seed).boxes;
+  humanoidFigure(seed).boxes;

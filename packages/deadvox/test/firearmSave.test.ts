@@ -33,7 +33,7 @@ const registry = baseRegistry();
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+  generators: { worldgen: 'worldgen-v2', humanoidFigure: 'humanoid-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 const contentLookup = (kind: SaveContentKind, id: string): boolean => lookupSaveContent(registry, kind, id);

@@ -159,7 +159,7 @@
       }
     ]
   },
-  "models": ["shambler", "runner", "brute", "crawler", "amalgam"],
+  "models": ["humanoid", "runner", "brute", "crawler", "amalgam"],
   "motion": {
     "hitDirectionWeight": 1,
     "launchSpeed": 1.2,
@@ -179,7 +179,7 @@
     "cuts": [[], ["head"], ["upperArm.L"], ["thigh.L", "thigh.R"], []],
     "finishSeconds": 12,
     "lieSeconds": 120,
-    "models": ["shambler", "runner", "brute", "crawler"],
+    "models": ["humanoid", "runner", "brute", "crawler"],
     "spacingMetres": 3,
     "startMetres": [0, -15],
     "viewer": {

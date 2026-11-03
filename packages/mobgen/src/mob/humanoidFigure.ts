@@ -8,20 +8,20 @@ import './templates.ts';
 // Side effect: registers the acid body plan and template beside the shipped archetypes.
 import './acidTemplate.ts';
 
-export type ShamblerHitRegion = BodyRegion;
+export type HumanoidHitRegion = BodyRegion;
 export interface BoneVoxelBox {
   readonly bone: string;
   /** Centre and half-size in the bone's rest frame, metres. The half-size includes half a voxel + 1 mm. */
   readonly center: readonly [number, number, number];
   readonly halfSize: readonly [number, number, number];
 }
-export interface ShamblerFigure {
+export interface HumanoidFigure {
   readonly seed: number;
   readonly genome: NonNullable<ReturnType<typeof generateValid>>['genome'];
   readonly realized: NonNullable<ReturnType<typeof generateValid>>['realized'];
-  readonly boxes: Readonly<Record<ShamblerHitRegion, readonly BoneVoxelBox[]>>;
+  readonly boxes: Readonly<Record<HumanoidHitRegion, readonly BoneVoxelBox[]>>;
   /** Per region, the parts a cut may start at, parents first; empty where the dispositions allow none. */
-  readonly severableParts: Readonly<Record<ShamblerHitRegion, readonly string[]>>;
+  readonly severableParts: Readonly<Record<HumanoidHitRegion, readonly string[]>>;
   /** Rest-frame voxel centres by owner bone; also used to reject empty upper corners of posed head OBBs. */
   readonly voxelCentersByBone: ReadonlyMap<string, readonly (readonly [number, number, number])[]>;
 }
@@ -30,7 +30,7 @@ interface Bounds {
   min: [number, number, number];
   max: [number, number, number];
 }
-const cache = new Map<string, ShamblerFigure>();
+const cache = new Map<string, HumanoidFigure>();
 
 const includeOwnedVoxel = (
   bone: string,
@@ -53,7 +53,7 @@ const includeOwnedVoxel = (
   }
 };
 
-const findBoneVoxelData = (realized: ShamblerFigure['realized']) => {
+const findBoneVoxelData = (realized: HumanoidFigure['realized']) => {
   const limits = new Map<string, Bounds>();
   const voxelCentersByBone = new Map<string, [number, number, number][]>();
   const { voxels, body } = realized;
@@ -72,7 +72,7 @@ const findBoneVoxelData = (realized: ShamblerFigure['realized']) => {
 };
 
 const buildRegionBoxes = (
-  regionBones: Readonly<Record<ShamblerHitRegion, readonly string[]>>,
+  regionBones: Readonly<Record<HumanoidHitRegion, readonly string[]>>,
   limits: ReadonlyMap<string, Bounds>,
   margin: number,
 ) =>
@@ -93,10 +93,10 @@ const buildRegionBoxes = (
         ];
       }),
     ]),
-  ) as unknown as Record<ShamblerHitRegion, readonly BoneVoxelBox[]>;
+  ) as unknown as Record<HumanoidHitRegion, readonly BoneVoxelBox[]>;
 
 /** Realizes a seeded mobgen template once; model and input seed are the persistent selection key. */
-export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
+export const actorFigure = (model: string, seed: number): HumanoidFigure => {
   const key = `${model}:${seed}`;
   const cached = cache.get(key);
   if (cached) {
@@ -108,7 +108,7 @@ export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
   // A seed must be valid itself: falling through to the next valid seed would draw it as that seed's body.
   const generated = generateValid(template, seed, { maxAttempts: 1 });
   if (!generated) {
-    throw new Error(`Zombie figure ${model} seed ${seed} is not valid`);
+    throw new Error(`Actor figure ${model} seed ${seed} is not valid`);
   }
   const { regionBones } = planOf(template.bodyPlan);
   if (!regionBones) {
@@ -116,7 +116,7 @@ export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
   }
   const { limits, voxelCentersByBone } = findBoneVoxelData(generated.realized);
   const boxes = buildRegionBoxes(regionBones, limits, generated.realized.voxels.size / 2 + 0.001);
-  const figure: ShamblerFigure = {
+  const figure: HumanoidFigure = {
     seed,
     genome: generated.genome,
     realized: generated.realized,
@@ -128,5 +128,4 @@ export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
   return figure;
 };
 
-/** Exact shambler seeds remain the known-valid baseline used by its fixtures and renderer. */
-export const shamblerFigure = (seed: number): ShamblerFigure => zombieFigure('shambler', seed);
+export const humanoidFigure = (seed: number): HumanoidFigure => actorFigure('humanoid', seed);

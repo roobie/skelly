@@ -6,7 +6,7 @@ import { VIEWER_TEMPLATES as TEMPLATES } from '../src/mob/amalgamTemplate.ts';
 import { LOOK_AT_REST, lookAtPose } from '../src/mob/lookAt.ts';
 import { LOOK_AT_PROFILES } from '../src/mob/lookAtProfiles.ts';
 
-const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+const template = TEMPLATES.find((candidate) => candidate.name === 'humanoid')!;
 const realized = realize(generate(template, 7));
 const restPose: Pose = { root: [0, 0, 0], rotations: {} };
 const baseTransforms = boneTransforms(realized.body.bones, restPose);

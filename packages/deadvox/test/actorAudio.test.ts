@@ -1,4 +1,4 @@
-import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { describe, expect, it } from 'vitest';
 import { actorVoiceLaw } from '../src/game/actorAudio.ts';
 import { BASE_SENSE_TUNING } from './senseFixture.ts';
@@ -6,7 +6,7 @@ import { BASE_SENSE_TUNING } from './senseFixture.ts';
 // Fixture seeds: the law is calibrated on whatever pool it is given, so this file keeps its own.
 const FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
 const { pitchClamp, bodyPitch } = actorVoiceLaw(FIGURE_SEEDS, BASE_SENSE_TUNING.actorVoice);
-const figures = FIGURE_SEEDS.map((seed) => shamblerFigure(seed).realized.body);
+const figures = FIGURE_SEEDS.map((seed) => humanoidFigure(seed).realized.body);
 const bodyHeight = (body: (typeof figures)[number]): number => {
   const y = body.bones.flatMap(({ head, tail }) => [head[1], tail[1]]);
   return Math.max(...y) - Math.min(...y);

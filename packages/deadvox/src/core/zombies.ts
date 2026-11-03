@@ -1,5 +1,5 @@
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { actorFigure as humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
@@ -972,7 +972,7 @@ const holdSpitGround = (scratch: ZombieTickScratch, toward: Vec3): void => {
 
 // ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
 // The body's bone dispositions say what each hit region may lose, so no skeleton's bone names are listed
-// here; see packages/mobgen/src/mob/shamblerFigure.ts, `ShamblerFigure`. The random roll picks among arm
+// here; see packages/mobgen/src/mob/humanoidFigure.ts, `HumanoidFigure`. The random roll picks among arm
 // parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
 
 const cutsFor = (zombie: Zombie) => {

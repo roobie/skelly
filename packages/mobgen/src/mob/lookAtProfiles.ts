@@ -12,7 +12,7 @@ export interface LookAtProfile {
 export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
   acid: data.gaze,
   skeleton: skeleton.gaze,
-  shambler: {
+  humanoid: {
     neck: { yawDeg: 25, pitchDeg: 20 },
     head: { yawDeg: 35, pitchDeg: 25 },
     turnRateDegPerSecond: 120,

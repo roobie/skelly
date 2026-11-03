@@ -1,5 +1,5 @@
 local figureSeeds = std.range(1, 8);
-// A seed must realize a valid body for its type's model by itself (mobgen's `zombieFigure` refuses one that
+// A seed must realize a valid body for its type's model by itself (mobgen's `actorFigure` refuses one that
 // does not), so a model whose template rejects some shared seeds authors its own.
 local crawlerFigureSeeds = [1, 2, 3, 5, 6, 7, 11];
 local acidFigureSeeds = [1, 2, 3, 4, 6, 8];

@@ -99,7 +99,7 @@ export interface PoolGenResult {
   readonly nextSeed: number;
 }
 
-/** Generates one pool entry: template cycles shambler/runner/brute (poolIndex % TEMPLATES.length),
+/** Generates one pool entry: template cycles the ordinary templates,
  * seed search starts at `fromSeed` (pass 1 for the first entry of a template, then each result's own
  * `nextSeed` for the next one of that same template). */
 export const generatePoolEntry = (poolIndex: number, fromSeed: number): PoolGenResult => {

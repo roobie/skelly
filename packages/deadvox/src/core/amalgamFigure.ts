@@ -9,7 +9,7 @@ import { amalgamManifest } from '@mobgen/mob/amalgam.ts';
 // marked comparison-only.
 import '@mobgen/mob/amalgamTemplate.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import type { BoneVoxelBox } from '@mobgen/mob/shamblerFigure.ts';
+import type { BoneVoxelBox } from '@mobgen/mob/humanoidFigure.ts';
 import type { Vec3 } from './coords.ts';
 
 type AmalgamRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
@@ -188,7 +188,7 @@ export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
   if (!(Number.isFinite(scale) && scale > 0)) {
     throw new Error(`Invalid amalgam body scale ${scale}`);
   }
-  // Like `zombieFigure`, a seed must be valid itself rather than fall through to another seed's body.
+  // Like `actorFigure`, a seed must be valid itself rather than fall through to another seed's body.
   const generated = generateValid(consumableTemplate('amalgam'), seed, { maxAttempts: 1 });
   if (!generated) {
     throw new Error(`No valid amalgam realization from seed ${seed}`);

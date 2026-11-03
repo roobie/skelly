@@ -129,7 +129,7 @@ describe('buildSkinnedActor', () => {
 });
 
 describe('buildCrowdRender', () => {
-  const poolB = generatePoolEntry(1, 500).entry; // a second, distinct variant (runner, not shambler)
+  const poolB = generatePoolEntry(1, 500).entry; // a second, distinct variant (runner, not humanoid)
   const pool = [entry, poolB];
   const renders = pool.map((e) => buildPoolRender(e, 'crowd')) as CrowdPoolRender[];
 

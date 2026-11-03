@@ -29,7 +29,7 @@ export const mountChargerFlow = (base: Registry, root: HTMLElement) => {
   const version = {
     simulationHash: 'a'.repeat(64),
     schemaVersion: SAVE_SCHEMA_VERSION,
-    generators: { worldgen: 'worldgen-v2', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
+    generators: { worldgen: 'worldgen-v2', humanoidFigure: 'humanoid-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
     contentPacks: [{ id: 'fixture', version: '1', canonicalHash: '0'.repeat(64) }],
   };
   const mount = () => {

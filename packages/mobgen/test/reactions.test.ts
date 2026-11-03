@@ -9,7 +9,7 @@ import { flinchClipFor, flinchPose, HIT_FLINCH } from '../src/mob/reactions.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const actorOf = () => {
-  const found = generateValid(TEMPLATES.find((t) => t.name === 'shambler')!, 1)!;
+  const found = generateValid(TEMPLATES.find((t) => t.name === 'humanoid')!, 1)!;
   return {
     bones: found.realized.body.bones,
     extents: footRestExtents(found.realized.body.bones, found.realized.voxels),

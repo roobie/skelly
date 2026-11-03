@@ -1,5 +1,5 @@
 import type { Body } from '@mobgen/core/body.ts';
-import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import type { SenseDef } from '../core/schema.ts';
 
 export type ActorVoiceTuning = SenseDef['actorVoice'];
@@ -35,7 +35,7 @@ export const actorVoiceLaw = (figureSeeds: readonly number[], tuning: ActorVoice
     throw new Error('The shambler voice law needs at least one authored figure seed');
   }
   const oldLawPitch = (height: number): number => Math.sqrt(tuning.oldLawReferenceHeightMetres / height);
-  const poolHeights = figureSeeds.map((seed) => bodyHeight(shamblerFigure(seed).realized.body));
+  const poolHeights = figureSeeds.map((seed) => bodyHeight(humanoidFigure(seed).realized.body));
   const smallestHeight = Math.min(...poolHeights);
   const tallestHeight = Math.max(...poolHeights);
   const smallestOldLawPitch = oldLawPitch(smallestHeight);
