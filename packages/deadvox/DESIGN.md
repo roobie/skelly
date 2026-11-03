@@ -14,7 +14,7 @@ read_if:
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
-  - you change zombie hesitation, refusal, interest chaining or attention phase ordering
+  - you change zombie hesitation, refusal, interest chaining, attention phase ordering or decision-code ownership
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
   - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
@@ -297,8 +297,8 @@ See `src/core/collision.ts`, `worldMeleeBlocker`; and `src/core/actorSystem.ts`,
 Sound passes open wire because chain-link barely dampens it. Sound blocking has
 its own content property: sight is the wrong key because foliage hides without
 muffling. Furniture still owns whether its closed state blocks sound.
-See `src/core/collision.ts`, `worldSoundBlocking`; `src/core/actorSystem.ts`,
-`ActorSystem.updatePerception`; and `src/game/audio.ts`, `GameAudio`.
+See `src/core/collision.ts`, `worldSoundBlocking`; `src/core/agent.ts`,
+`AgentController.updatePerception`; and `src/game/audio.ts`, `GameAudio`.
 
 The partial-block set remains under discussion in #221; do not implement it
 before playtest 1. Its purposes, in priority order, are roof silhouettes,
@@ -3020,14 +3020,10 @@ a figure variant whose template rejects shared seeds authors its own. See
 `src/render/mobActors.ts`, `figureSeedsByModel`; and
 `packages/mobgen/src/mob/humanoidFigure.ts`, `templateFigure`.
 
-All mobs look toward the player only when they perceive the player. Hearing and
-noticed lights can also draw gaze; hearing direction uses deterministic jitter,
-and a noticed light uses the same near-perception presentation as noise. Gaze,
-labels, and spectator-camera movement never affect hit geometry, saves, replay,
-or simulation fingerprints. The test-noise action is different because it
-intentionally enters the simulation's sound path. The mobgen viewer has no
-perception state, so its gaze follows its camera. See `src/core/actorSystem.ts`,
-`ActorSystem.updateAttention`; `packages/mobgen/src/mob/crawl.ts`, `crawlGaitPose`;
+Presentation must not change simulation outcomes. Test noise is different because
+it intentionally enters the simulation's sound path. The mobgen viewer has no
+perception state, so its gaze follows its camera. See `src/core/agent.ts`,
+`AgentController.updateAttention`; `packages/mobgen/src/mob/crawl.ts`, `crawlGaitPose`;
 and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
 When #370 is addressed, define hesitation and pursuit decisions on non-violent
@@ -3070,9 +3066,9 @@ crouch rules. See `src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise`
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering so local avoidance does not distract a shambler from an exposed target. See `src/core/agentPerception.ts`, `seesPlayer`; and `src/core/actorSystem.ts`, `ActorSystem.tick`.
 - Keep the established per-tick order because later phases consume state produced by earlier simulation steps. Named phases make that dependency reviewable; see `src/core/actorSystem.ts`, `ActorSystem.tick`.
-- **Quiet-sound hesitation:** An uncommitted individual pauses and turns toward a quiet noise before deciding; loudness, not a sound category, makes a noise urgent. Idle listeners refuse, while listeners already strolling pursue after the pause: movement expresses existing interest without a heard-noise history or a random pursue roll. Refusal biases the next stroll toward the sound and briefly makes another noise urgent. Searchers and pursuing bodies retain their existing attention rules; sight and light can interrupt the pause. Hordes beeline because their group response should remain decisive. Player movement hearing remains continuous rather than restarting a discrete-noise pause. See `src/core/actorSystem.ts`, `ActorSystem.updateAttention` and `ActorSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Quiet-sound hesitation:** Loudness, not a sound category, makes a noise urgent. Movement expresses existing interest without a heard-noise history or a random pursue roll. Hordes should remain decisive, and continuous movement hearing must not restart a discrete-noise pause. See `src/core/agent.ts`, `AgentController.updateAttention` and `AgentController.tickHesitation`; and `src/core/actorSystem.ts`, `ActorSystem.beginStroll`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Idle voices:** Each nearby enemy lengthens an idle cue's interval, so a crowd does not become a steady stream of idle audio that gets to be too much. Radius and the density curve are authored per type. See `src/core/actorSystem.ts`, `ActorSystem.updateIdleSound`; `src/core/schema/actors.ts`, `ActorSchema`; and `src/content/base/zombies.jsonnet`, the shambler type.
-- **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. A per-body cry cooldown stops ping-pong when horde members become uncommitted again: shamblers are slow to react. Recruitment stays loudness-driven without hop damping, because the cooldown limits cries rather than interest. Saving the last cry prevents loading from restarting the echo. Resolving calls before movement prevents entity order from delaying listeners, and a transient queue keeps pending calls out of saves. See `src/core/actorSystem.ts`, `ActorSystem.cryAlert`, `ActorSystem.announcePursuit` and `ActorSystem.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
+- **Shared interest:** Searching and returning bodies already act on their own memory, so recruiting them would re-arm echoes. Sharing the target and its uncertainty keeps listeners interested in the stimulus rather than the caller. The cry cooldown limits cries rather than interest, preventing ping-pong without hop damping. Persisting the last cry prevents loading from restarting the echo. Draining calls before movement prevents entity order from delaying listeners, and pending calls must not enter saves. See `src/core/agent.ts`, `AgentController.cryAlert`, `AgentController.announcePursuit` and `AgentController.processChainStimuli`; tuning belongs to `src/content/base/zombies.jsonnet`, `hearingModel`.
 - **Attention and attacks:** Sight and hearing remain the authorities for choosing targets, so interest chaining must not replace visible prey. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `src/core/agentPerception.ts`, `seesPlayer` and `farBearingTarget`; and `src/core/actorMotion.ts`, `withinAttackReach`.
 - **Background steps:** Background zombies beeline in big, cheap steps. Each type's content caps how far one step moves it, because that cap, not the chase speed, sets how fast a fast type closes in while unseen. The background tick rate stays in code: it is the scheduler's cadence, saved with its phase, so it is engine timing rather than tuning. See `src/core/schema/actors.ts`, `ActorSchema`, and `src/core/actorSystem.ts`, `ActorSystem.tickBackground`.
 - **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/actorSystem.ts`, `ActorSystem.updateHordes` and `ActorSystem.tickBackground`.

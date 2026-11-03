@@ -11,14 +11,12 @@ import {
   headingAt,
   horizontalDistance,
   inRange,
-  onTerrainFloor,
   pickByWeight,
   pushTurn,
   steer,
   stepChaseMotion,
   sub,
   type TerrainFloorAt,
-  terrainStance,
   turnToward,
   unit,
   withinAttackReach,
@@ -68,14 +66,7 @@ import {
   validVec3State,
 } from './actorState.ts';
 import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
-import {
-  farBearingTarget,
-  hearingTier,
-  hearVocalNoise,
-  sameInvestigationFloor,
-  seesPlayer,
-  visibleLightTarget,
-} from './agentPerception.ts';
+import { hearVocalNoise } from './agentPerception.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
@@ -115,6 +106,7 @@ export const BACKGROUND_ACTOR_SLICE_COUNT = 30;
 export const BACKGROUND_ACTOR_SLICE_RATE = BACKGROUND_ACTOR_RATE * BACKGROUND_ACTOR_SLICE_COUNT;
 
 import type { PlayerSense } from './actorSense.ts';
+import { AgentController } from './agent.ts';
 import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
 
@@ -740,6 +732,8 @@ interface FusedMassCollider {
 }
 
 export class ActorSystem {
+  private readonly agent: AgentController;
+
   readonly store: EntityStore<Actor>;
   private readonly options: ActorSystemOptions;
   private globs: { state: AcidGlobState; type: ActorDef }[] = [];
@@ -754,7 +748,6 @@ export class ActorSystem {
     return this.globs.map(({ state }) => state);
   }
   private readonly tickScratch = createActorTickScratch();
-  private readonly chainStimuli: { caller: Actor; origin: Vec3; target: Vec3 }[] = [];
   private readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
   private frozen = false;
   private readonly solidBricks: SolidBricks;
@@ -771,6 +764,15 @@ export class ActorSystem {
     this.options = options;
     this.store = options.store ?? new MapEntityStore<Actor>();
     this.solidBricks = options.solidBricks ?? testedBricks(options.isSolid);
+
+    this.agent = new AgentController(
+      this.options,
+      this.tickScratch,
+      this.store,
+      (actor) => this.beginIdle(actor),
+      (actor) => this.beginSearch(actor),
+      (actor) => this.hordeTarget(actor),
+    );
   }
 
   /** The amalgam's flesh as its body's shape, turned to its facing; every other body moves as its box. */
@@ -1518,11 +1520,11 @@ export class ActorSystem {
       scratch.type = actor.type;
       scratch.rng = actor.behaviorRng;
       this.updateActorTimers();
-      this.updatePerception();
-      this.updateAttention();
-      this.forgetIndividualStimulus(actor, time);
+      this.agent.updatePerception();
+      this.agent.updateAttention();
+      this.agent.forgetIndividualStimulus(actor, time);
     }
-    this.processChainStimuli(time);
+    this.agent.processChainStimuli(time);
     for (const [id, actor] of entries) {
       if (actor.incapacitated) {
         continue;
@@ -1611,271 +1613,6 @@ export class ActorSystem {
     actor.attackWait = Math.max(0, actor.attackWait - dt);
     actor.spitWait = Math.max(0, actor.spitWait - dt);
     actor.staggerSimSeconds = Math.max(0, actor.staggerSimSeconds - dt);
-  }
-
-  private updatePerception(): void {
-    const scratch = this.tickScratch;
-    const { actor, type, pos, player, dayState, blockSize, isOpaque, time, rng, perception } = scratch;
-    const soundBlocking = this.options.isSoundBlocking ?? scratch.isSolid;
-    perception.def = type;
-    perception.from = pos;
-    perception.facing = actor.facing;
-    perception.player = player;
-    perception.dayPhase = dayState.phase;
-    perception.sightBlend = dayState.sightBlend;
-    perception.blockSize = blockSize;
-    perception.isSolid = isOpaque;
-    perception.isSunExposedAt = this.options.isSunExposedAt;
-    perception.tuning = this.options.tuning;
-    scratch.sees = seesPlayer(perception);
-    scratch.lightTarget = visibleLightTarget({
-      def: type,
-      from: pos,
-      facing: actor.facing,
-      player,
-      dayPhase: dayState.phase,
-      blockSize,
-      isOpaque,
-      isSunExposedAt: this.options.isSunExposedAt,
-      tuning: this.options.tuning,
-    });
-    if (
-      scratch.lightTarget &&
-      actor.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
-    ) {
-      scratch.lightTarget = undefined;
-    }
-    if (scratch.sees && actor.obstacleWanderRemaining > 0) {
-      actor.obstacleWanderRemaining = 0;
-      actor.obstacleWanderHeading = undefined;
-    }
-    const hearing = scratch.hearingInput;
-    hearing.def = type;
-    hearing.from = pos;
-    hearing.player = player;
-    hearing.blockSize = blockSize;
-    hearing.isSolid = soundBlocking;
-    hearing.rng = rng;
-    hearing.tuning = this.options.tuning;
-    scratch.vocal = undefined;
-    if (player.vocalNoise && actor.lastVocalNoiseId !== player.vocalNoise.id) {
-      actor.lastVocalNoiseId = player.vocalNoise.id;
-      scratch.vocal = hearVocalNoise({
-        def: type,
-        from: pos,
-        noise: player.vocalNoise,
-        time,
-        blockSize,
-        isSolid: soundBlocking,
-        rng,
-        tuning: this.options.tuning,
-      });
-    }
-    scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
-  }
-
-  private tickHesitation(): boolean {
-    const { actor, time, sees, player, lightTarget, dt, vocal } = this.tickScratch;
-    const loud = vocal && player.vocalNoise!.radiusMetres >= actor.type.hearingModel.loudNoiseRadiusMetres;
-    if (sees || loud || lightTarget || actor.hordeId !== undefined) {
-      return false;
-    }
-    actor.modeTimer = Math.max(0, actor.modeTimer - dt);
-    if (actor.modeTimer > 0) {
-      return true;
-    }
-    if (actor.hesitationFrom === 'stroll') {
-      actor.mode = 'investigate';
-      actor.stimulusAt = time;
-    } else {
-      actor.leanTarget = copy(actor.lastPerceived!);
-      actor.refusedAt = time;
-      actor.lastPerceived = undefined;
-      actor.stimulusAt = undefined;
-      this.beginIdle(actor);
-    }
-    actor.hesitationFrom = undefined;
-    this.announcePursuit('hesitate');
-    return true;
-  }
-
-  private updateAttention(): void {
-    const { actor, time, sees, tier, player, lightTarget } = this.tickScratch;
-    const previous = actor.mode;
-    if (previous === 'hesitate' && this.tickHesitation()) {
-      return;
-    }
-    this.resolveAttention();
-    const suspicious =
-      actor.refusedAt !== undefined && time - actor.refusedAt < actor.type.hearingModel.refusalSuspicionSimSeconds;
-    if (
-      (previous === 'idle' || previous === 'stroll') &&
-      actor.mode === 'investigate' &&
-      tier &&
-      this.tickScratch.vocal &&
-      !sees &&
-      !lightTarget &&
-      actor.hordeId === undefined &&
-      !suspicious &&
-      player.vocalNoise!.radiusMetres < actor.type.hearingModel.loudNoiseRadiusMetres
-    ) {
-      actor.hesitationFrom = previous;
-      actor.mode = 'hesitate';
-      actor.modeTimer = inRange(actor.behaviorRng, actor.type.hearingModel.hesitationSimSeconds);
-    }
-    if (actor.mode !== 'hesitate') {
-      actor.hesitationFrom = undefined;
-    }
-    this.announcePursuit(previous);
-  }
-
-  private announcePursuit(previous: AgentMode): void {
-    const { actor, time } = this.tickScratch;
-    if (
-      (actor.mode === 'chase' || actor.mode === 'investigate') &&
-      previous !== 'chase' &&
-      previous !== 'investigate'
-    ) {
-      actor.leanTarget = undefined;
-      this.cryAlert(actor, time);
-    }
-  }
-
-  private cryAlert(actor: Actor, time: number): void {
-    if (actor.lastAlertAt !== undefined && time - actor.lastAlertAt < actor.type.hearingModel.alertCooldownSimSeconds) {
-      return;
-    }
-    actor.lastAlertAt = time;
-    this.options.onSound?.(actor.type.sounds.alert, copy(actor.body.pos), actor);
-    this.chainStimuli.push({ caller: actor, origin: copy(actor.body.pos), target: copy(actor.lastPerceived!) });
-  }
-
-  private processChainStimuli(time: number): void {
-    // Drain to closure before movement so entity iteration cannot delay a later caller's listeners.
-    for (const stimulus of this.chainStimuli) {
-      const { chainRadiusMetres, chainChance } = stimulus.caller.type.hearingModel;
-      for (const [, actor] of this.store.entries()) {
-        if (
-          actor.incapacitated ||
-          (actor.mode !== 'idle' && actor.mode !== 'stroll' && actor.mode !== 'hesitate') ||
-          horizontalDistance(actor.body.pos, stimulus.origin) * this.options.blockSize > chainRadiusMetres ||
-          actor.soundRng.next() >= chainChance
-        ) {
-          continue;
-        }
-        actor.mode = 'investigate';
-        actor.hesitationFrom = undefined;
-        actor.investigationTier = 'far';
-        actor.searchAnchor = undefined;
-        actor.searchTimer = 0;
-        actor.searchStrolling = false;
-        actor.leanTarget = undefined;
-        actor.lastPerceived = copy(stimulus.target);
-        actor.stimulusAt = time;
-        this.cryAlert(actor, time);
-      }
-    }
-    this.chainStimuli.length = 0;
-  }
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve precedence between sight, near/far noise, prior chase, and horde attention.
-  private resolveAttention(): void {
-    const scratch = this.tickScratch;
-    const { actor, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
-    if (sees) {
-      actor.mode = 'chase';
-      actor.investigationTier = undefined;
-      actor.searchAnchor = undefined;
-      actor.searchTimer = 0;
-      actor.searchStrolling = false;
-      actor.lastPerceived = copy(player.pos);
-    } else if (tier === 'near') {
-      actor.mode = 'investigate';
-      actor.investigationTier = 'near';
-      actor.searchAnchor = undefined;
-      actor.searchTimer = 0;
-      actor.searchStrolling = false;
-      actor.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
-    } else if (lightTarget) {
-      actor.mode = 'investigate';
-      actor.investigationTier = 'near';
-      actor.searchAnchor = undefined;
-      actor.searchTimer = 0;
-      actor.searchStrolling = false;
-      actor.lastPerceived = copy(lightTarget);
-    } else if (
-      tier === 'far' &&
-      (actor.mode === 'idle' || actor.mode === 'stroll' || actor.mode === 'search' || actor.mode === 'hesitate')
-    ) {
-      actor.mode = 'investigate';
-      actor.investigationTier = 'far';
-      actor.searchAnchor = undefined;
-      actor.searchTimer = 0;
-      actor.searchStrolling = false;
-      actor.lastPerceived =
-        vocal?.tier === 'far'
-          ? vocal.target
-          : farBearingTarget({ def: actor.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
-      const { terrainFloor } = this.options;
-      const footprint = {
-        halfWidth: actor.body.halfWidth,
-        halfDepth: actor.body.halfDepth ?? actor.body.halfWidth,
-      };
-      if (terrainFloor && onTerrainFloor(pos, terrainFloor, footprint)) {
-        actor.lastPerceived[1] = terrainStance(actor.lastPerceived[0], actor.lastPerceived[2], terrainFloor, footprint);
-      }
-    } else if (actor.mode === 'chase') {
-      actor.mode = 'investigate';
-      actor.investigationTier = 'near';
-    }
-    if (sees || tier || lightTarget) {
-      actor.stimulusAt = scratch.time;
-    }
-    const groupTarget = sees || tier ? undefined : this.hordeTarget(actor);
-    if (groupTarget) {
-      actor.mode = 'investigate';
-      actor.investigationTier = 'far';
-      actor.searchAnchor = undefined;
-      actor.searchTimer = 0;
-      actor.searchStrolling = false;
-      actor.lastPerceived = groupTarget;
-    }
-  }
-
-  private forgetIndividualStimulus(actor: Actor, time: number): void {
-    if (
-      actor.hordeId !== undefined ||
-      actor.mode !== 'investigate' ||
-      actor.stimulusAt === undefined ||
-      time - actor.stimulusAt < actor.type.stimulusMemorySimSeconds
-    ) {
-      return;
-    }
-    actor.stimulusAt = undefined;
-    actor.lastPerceived = undefined;
-    actor.investigationTier = undefined;
-    actor.searchAnchor = undefined;
-    actor.searchTimer = 0;
-    actor.searchStrolling = false;
-    actor.mode = 'return';
-  }
-
-  private checkInvestigationArrival(): void {
-    const scratch = this.tickScratch;
-    const { actor, pos } = scratch;
-    if (actor.mode !== 'investigate') {
-      return;
-    }
-    const target = actor.lastPerceived ?? actor.home;
-    if (
-      Math.hypot(...sub(target, pos)) * scratch.blockSize <= 1 &&
-      sameInvestigationFloor(pos, target, this.options.terrainFloor, {
-        halfWidth: actor.body.halfWidth,
-        halfDepth: actor.body.halfDepth ?? actor.body.halfWidth,
-      })
-    ) {
-      this.beginSearch(actor);
-    }
   }
 
   private indexIdleSoundDensity(): void {
@@ -2578,11 +2315,11 @@ export class ActorSystem {
       scratch.type = actor.type;
       scratch.rng = actor.behaviorRng;
       this.updateActorTimers();
-      this.updatePerception();
-      this.updateAttention();
-      this.forgetIndividualStimulus(actor, time);
+      this.agent.updatePerception();
+      this.agent.updateAttention();
+      this.agent.forgetIndividualStimulus(actor, time);
     }
-    this.processChainStimuli(time);
+    this.agent.processChainStimuli(time);
     for (const [id, actor] of entries) {
       if (actor.incapacitated) {
         continue;
@@ -2593,7 +2330,7 @@ export class ActorSystem {
       scratch.type = actor.type;
       scratch.rng = actor.behaviorRng;
       scratch.sees = actor.mode === 'chase';
-      this.checkInvestigationArrival();
+      this.agent.checkInvestigationArrival();
 
       this.selectMovementIntent();
 
