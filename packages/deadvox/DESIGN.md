@@ -48,7 +48,7 @@ read_if:
   - you're changing carving's visual tuning intention, tentacle reach or the moving body's collision pose
   - you're changing the holes hits carve in the amalgam or the flesh chunks that fly off
   - you're changing the crawler's established silhouette
-  - you're changing crawler gait, hit response or generation validation
+  - you're changing crawler gait, hit response, anatomy naming or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you're changing the derived day phases that drive the sky, zombie sight, hordes or spawn words
   - you change shambler attention, movement, obstacle response or floor-transition behavior
@@ -3026,10 +3026,9 @@ and a noticed light uses the same near-perception presentation as noise. Gaze,
 labels, and spectator-camera movement never affect hit geometry, saves, replay,
 or simulation fingerprints. The test-noise action is different because it
 intentionally enters the simulation's sound path. The mobgen viewer has no
-perception state, so its gaze follows its camera. See `ZombieSystem.updateAttention`
-in `src/core/zombies.ts`. The crawler gait and support rules live in
-`crawlerGaitPose` in `packages/mobgen/src/mob/crawler.ts` and `resolveSupportBones` in
-`packages/mobgen/src/core/generate.ts`.
+perception state, so its gaze follows its camera. See `src/core/zombies.ts`,
+`ZombieSystem.updateAttention`; `packages/mobgen/src/mob/crawl.ts`, `crawlGaitPose`;
+and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
 When #370 is addressed, define hesitation and pursuit decisions on non-violent
 sounds. When #371 is addressed, define how nearby shamblers respond to a
@@ -3618,14 +3617,11 @@ decoration.
   hearing and the shared occlusion model.
 - **A shambler's presence should be audible even when it stands still.** It
   should sometimes moan or groan so the player can hear that one is there.
-  `shambler_idle` provides an occasional groan while idling or strolling. Each
-  shambler's vocals and body-made sounds shift lower with its realized body
-  height, so larger figures sound heavier and the runner/brute templates inherit
-  the same law. It is calibrated on the whole authored figure pool and also
-  pitches figures without seeds of their own, so its anchors and clamp are one
-  sense tuning rather than a zombie type's; see `src/game/actorAudio.ts`,
-  `actorVoiceLaw`. Body-size pitch tuning affects playback only, never
-  hearing or simulation; the `voice_size` comparison site exposes its endpoints.
+  Larger figures should sound heavier regardless of their build or product
+  identity, so humanoid voice-law tuning is shared rather than type-specific.
+  Body-size pitch affects playback only, never hearing or simulation. See
+  `src/game/actorAudio.ts`, `actorVoiceLaw`, and `src/content/base/senses.jsonnet`,
+  `actorVoice`.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   few moving shamblers emit footsteps at once, so a horde does not become a wall of

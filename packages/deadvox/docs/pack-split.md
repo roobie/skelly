@@ -4,7 +4,7 @@ read_if:
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
-  - you name body-plan mechanisms descriptively or separate anatomy from figure properties
+  - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
   - you plan the gated SkellyEngine runtime and content extraction (#1532)
@@ -93,16 +93,17 @@ separately from the mechanisms they modify. See
 `docs/decisions/0006-firearm-handling.md` and "Skill providers".
 
 **Creature framework.** Senses, attention, modes and attacks are reusable mechanisms;
-zombie types are Deadvox content. Body-plan mechanisms use descriptive anatomy names:
-humanoid replaces shambler, fused-mass replaces amalgam, and other forms are named by
-shape. Product content ids may keep setting names. Descriptive mechanisms let another
-product reuse anatomy without inheriting Deadvox's setting. A body plan names anatomy:
-speed, gait and size are properties of a humanoid, not reasons to invent another anatomy. Figure variants retain
-those distinct realizations without turning actor properties into body plans or requiring
-another product to inherit zombie vocabulary. Actor identity does not select its
-implementation: see `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`,
-`figureVariantOf` and `bodyPlanModel`,
-and `src/core/schema/actors.ts`, `ActorSchema` and `zombieRegionsMatchModel`.
+zombie types are Deadvox content. Body plans name anatomy by shape, not behaviour or
+character, so another product can reuse a figure without inheriting Deadvox's setting.
+Product content ids may keep setting names. Speed, gait and size are figure properties,
+not reasons to invent another anatomy. Cut legs do not create a new plan: a legs-cut
+humanoid remains humanoid, with its cut and crawl posing selected by template content.
+Build words describe the figure rather than its behaviour or character. Figure variants
+retain those realizations without making actor identity select implementation. See
+`src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and
+`bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
+`src/core/actorPose.ts`, `zombieCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
+and `zombieRegionsMatchModel`.
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
 `src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,

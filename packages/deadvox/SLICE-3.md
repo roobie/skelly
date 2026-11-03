@@ -5,7 +5,7 @@ read_if:
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - you're changing the apex enemy's scope or its finale encounter
   - you're interpreting BR's camera-directed gaze ruling for zombie models
-  - you're changing crawler gait, hit response or generation validation
+  - you're changing crawler gait, hit response, anatomy naming or generation validation
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
   - "you're tracking the #181 beat 4 site, its loot and radio choices"
@@ -292,7 +292,7 @@ The first set is the runner and the crawler, plus an apex enemy so the playtest 
 
 **Crawler form and pose:** the crawler is a prone ground-crawler that drags itself on its arms, with thigh stumps rather than full legs, and it must rest on the ground rather than hover. A low all-fours humanoid and a short hunched humanoid are future mobs, not crawler variants.
 
-The grounded prone form and perception-directed gaze make the crawler's shape and attention readable. Gaze stays presentation-only, while the drag gait and runner/crawler flinches affect hit geometry so attacks follow the visible pose; they add no saved state but change replay compatibility. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded form. See `packages/mobgen/src/mob/crawler.ts`, `crawlerGaitPose`, `src/core/actorPose.ts`, `posedActor`, and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
+The grounded prone form and perception-directed gaze make the crawler's shape and attention readable. Gaze stays presentation-only, while the drag gait and runner/crawler flinches affect hit geometry so attacks follow the visible pose; they add no saved state but change replay compatibility. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded form. See `packages/mobgen/src/mob/crawl.ts`, `crawlGaitPose`, `src/core/actorPose.ts`, `posedActor`, and `packages/mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
 **Legendary direction:** legendary effects are mostly vanity. The 3.1 skill work carries the scale and legendary contract (#274); effects beyond vanity are out of this slice.
 

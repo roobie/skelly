@@ -1,8 +1,8 @@
 ---
 read_if:
   - "you're changing mobgen's core, authoring or body-plan boundaries"
-  - "you're changing the crawler's body-plan or gait constraints"
-  - "you're changing the dog shambler's body-plan or gait constraints"
+  - "you're changing humanoid leg cuts, crawl posing or figure-build naming"
+  - "you're changing the quadruped body plan or the dog template's gait constraints"
   - "you're changing the skeleton's body plan or deciding its game contracts"
   - "you're reviewing the amalgam's visual quality pass in #378"
   - "you change or rename the Mobgen/Deadvox fused-mass geometry boundary or its movement-cost trade-off"
@@ -52,9 +52,9 @@ The closed, unmerged [recipe spike PR #1531](https://github.com/roobie/skelly/pu
 
 ## Body-plan constraints
 
-The crawler is a distinct prone creature, not a humanoid gait variant: its arm-drag silhouette and trailing leg stumps define its identity. Other proposed forms need their own body plans. See `src/mob/crawler.ts`, `crawlerPose`, `crawlerGaitPose`, `crawlerHitPose`, and `test/crawler.test.ts`.
+Body plans name anatomy; build and locomotion remain figure properties. A humanoid with cut legs retains its plan because its remaining bones are the same rig, not another anatomy. Template content owns the cut and selects crawl posing, which injured legged bodies can also borrow. The arm-drag silhouette and trailing stumps distinguish the crawler as product content without inventing a body plan. See `src/core/template.ts`, `Template.legCut`, `src/mob/templates.ts`, `HUMANOID_TEMPLATES`, `src/mob/crawl.ts`, `crawlPose`, `crawlGaitPose`, `crawlHitPose`, and `test/crawler.test.ts`.
 
-The dog shambler is a quadruped: four paws, a hanging head and a limping diagonal gait whose opposite-corner pairs (fore-left with hind-right, fore-right with hind-left) define it, so it is its own body plan rather than a crouched humanoid. The four paws are the declared supports, and the template is `comparison-only` (`src/core/template.ts`, `TemplateStatus`): it is kept to compare gaits against other quadrupeds, is not fit for a player to meet, and so is never shipped. Consumers refuse it through `consumableTemplate` and the viewer labels it. See `src/mob/dog.ts`, `buildDog`, `dogPose`, `dogGaitPose`, `dogHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, and `test/dog.test.ts`.
+The dog's four-paw anatomy needs a quadruped plan rather than a crouched humanoid. Its template remains comparison-only because gait comparisons do not establish fitness for a player encounter. Consumer refusal belongs at the readiness boundary, not in the plan's name. See `src/mob/quadruped.ts`, `buildQuadruped`, `quadrupedPose`, `quadrupedGaitPose`, `quadrupedHitPose`, `src/mob/dogTemplate.ts`, `dogTemplate`, `src/core/template.ts`, `consumableTemplate`, and `test/dog.test.ts`.
 
 The skeleton is its own body plan on the humanoid rig, so the shared humanoid poses drive it without a skeleton-specific animation path. Its thin parts are smaller than the sampling tolerance can preserve, so they snap to voxel rows and columns rather than vanishing or merging with a neighbour. It has no flesh, so its bones declare no marrow material, and its stance width is the template's explicit `stepWidth` rather than a girth-derived body width. It stays `comparison-only` until its game contracts are decided. See `src/mob/skeleton.ts`, `buildSkeleton`, `src/mob/skeletonTemplate.jsonnet`, `src/mob/gait.ts`, `stanceWidthTarget`, and `test/skeleton.test.ts`.
 
@@ -77,7 +77,7 @@ supplement), not a claim to reproduce a healthy dog's speed-dependent gait trans
 cycle distance-driven avoids foot jumps when speed changes. Joint flex and footfall-linked torso
 motion must be solved around fixed ground targets, not layered onto planted legs afterwards. The
 impaired diagonal retains its relative shortening so increased stride does not erase the shambler's
-limp. See `src/mob/dog.ts`, `DOG_TROT`, `dogStepGeometry`, `dogStrideLength` and `dogGaitPose`.
+limp. See `src/mob/quadruped.ts`, `QUADRUPED_TROT`, `quadrupedStepGeometry`, `quadrupedStrideLength` and `quadrupedGaitPose`.
 
 ### Template readiness
 
