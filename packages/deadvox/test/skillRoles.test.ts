@@ -59,6 +59,7 @@ const sourcesWithoutSkills = () =>
         ...file,
         skills: undefined,
         skillProgression: undefined,
+        starts: file.starts?.filter((start) => Object.keys(start.skills).length === 0),
         items: file.items?.map((item) => ({ ...item, disassembly: undefined, salvageLiquidRecovery: undefined })),
         layouts: file.layouts?.map((layout) => ({
           ...layout,

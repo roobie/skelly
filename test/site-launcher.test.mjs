@@ -59,7 +59,6 @@ const authoredLayoutIds = () =>
 const intentionallyUnofferedDeadvoxParams = {
   start: 'An admitted start-row selector; a player start picker is separate UI work.',
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
-  optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',
   skyRoute:
     'A bounded hardware diagnostic owns its complete launch preset; it is not an independent launcher tuning option.',
@@ -243,7 +242,6 @@ describe('site launchers track the games’ URL parameters', () => {
       'packages/deadvox/src/core/weatheringUrl.ts',
       'packages/deadvox/src/bench/run.ts',
       'packages/deadvox/src/bench/shamblers.ts',
-      'packages/deadvox/src/debug/debugLoadout.ts',
     ]);
     const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
     for (const name of omitted) {

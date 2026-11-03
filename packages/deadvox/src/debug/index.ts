@@ -1,7 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { getBuildRevision } from '../core/buildInfo.ts';
-import { dominantSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import { requireDayCycle, type ZombieDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -41,10 +40,6 @@ import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
-import { setDebugFirearmsSkill } from './debugFirearmsSkill.ts';
-import { setDebugInventoryManagementSkill } from './debugInventoryManagementSkill.ts';
-import { equipDebugBackpack, equipDebugLoadout } from './debugLoadout.ts';
-import { setDebugWound } from './debugWound.ts';
 import {
   actionsByGroup,
   type GroupedAction,
@@ -77,8 +72,6 @@ export const measureSnapshotForSession: DebugModule['measureSnapshotForSession']
 import { spawnDebugItem } from './spawnItem.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { TransientDebugDraw } from './transientDraw.ts';
-
-const COMPASS_DEBUG_LOADOUT = 'compass';
 
 const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
   const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
@@ -1142,22 +1135,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const keyTrace = new KeyTrace();
   keyboardInput.trace = undefined;
   let keyTraceEnabled = false;
-  setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
-  setDebugInventoryManagementSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
-  setDebugWound(hooks.sim.body, location.search, hooks.engine.config.debug, hooks.newGame);
-  if (!equipDebugLoadout(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
-    equipDebugBackpack(hooks.inventory, hooks.engine.config.debug, hooks.newGame);
-    if (
-      hooks.newGame &&
-      new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
-      !hooks.inventory.hands[dominantSide(hooks.inventory.character)]
-    ) {
-      hooks.inventory.add(hooks.inventory.create('compass'), {
-        kind: 'hand',
-        side: dominantSide(hooks.inventory.character),
-      });
-    }
-  }
   const kitOverlay = new KitOverlay(hooks.engine.site?.authoredPlacements);
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;

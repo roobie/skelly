@@ -2854,7 +2854,7 @@ A grenade thrown into the horde is meant to be the playtest's climax: the one mo
 - **The blast is the player's noise, heard from where it went off.** It carries further than any other sound, so it draws zombies from far around to the blast rather than to the thrower.
 - **The blast sounds like an explosion; the flash is a placeholder.** The sound is a recorded explosion, because a pitched-down gunshot read as a gun rather than the climax the grenade is for. See `src/content/base/sounds.jsonnet`, `grenade_blast`, and `src/render/blastFlashes.ts`, `BlastFlashes`.
 
-`?debug=1&loadout=grenade` starts with one in hand and more packed (`src/debug/debugLoadout.ts`, `equipDebugLoadout`).
+Grenade previews use admitted debug starts rather than mutating a restored inventory; see `docs/url-mods.md`, "Start state in mods".
 
 ## Zombies
 

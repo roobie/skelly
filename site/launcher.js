@@ -71,15 +71,6 @@ const page = (state) => html`  <main>
             <label class="check" id="deadvox-debug-field" ?hidden=${!visible('deadvox-debug-field', state)}>
               <input name="debug" data-url-param="debug" type="checkbox" data-state-key="debug" .checked=${state.deadvox.debug} .disabled=${!enabled('deadvox', 'debug', state)}/> Enable development tools (?debug=1)
             </label>
-            <label id="deadvox-loadout-field" ?hidden=${!visible('deadvox-loadout-field', state)}>Debug loadout
-              <select name="loadout" data-url-param="loadout" data-state-key="loadout" .value=${state.deadvox.loadout} .disabled=${!enabled('deadvox', 'loadout', state)}>
-                <option value="">None</option>
-                <option value="pump">Pump</option>
-                <option value="ar">AR</option>
-                <option value="ak">AK</option>
-                <option value="magazine">Empty magazine</option>
-              </select>
-            </label>
             <label id="deadvox-at-field" ?hidden=${!visible('deadvox-at-field', state)}>Debug start position (m): x,z[,yaw°]
               <input name="at" data-url-param="at" type="text" placeholder="x,z[,yaw]" autocomplete="off"  data-state-key="at" .value=${state.deadvox.at} .disabled=${!enabled('deadvox', 'at', state)}/>
             </label>
@@ -258,7 +249,6 @@ const model = {
     actors: '',
     mods: [],
     debug: false,
-    loadout: '',
     at: '',
     focus: '',
     handedness: '',
@@ -298,7 +288,6 @@ const visibility = {
   'deadvox-actors-field': (d) => d.bench === '',
   'deadvox-mods-field': (d) => d.bench === '',
   'deadvox-debug-field': (d) => d.bench === '',
-  'deadvox-loadout-field': (d) => d.bench === '' && d.debug,
   'deadvox-at-field': (d) => d.bench === '' && d.debug,
   // Focus picks a showroom prop, and only the test house has a showroom.
   'deadvox-focus-field': (d) => d.bench === '' && d.debug && d.site === 'testHouse',
@@ -330,7 +319,6 @@ const deadvoxControlVisibility = {
   actors: 'deadvox-actors-field',
   mods: 'deadvox-mods-field',
   debug: 'deadvox-debug-field',
-  loadout: 'deadvox-loadout-field',
   at: 'deadvox-at-field',
   focus: 'deadvox-focus-field',
   handedness: 'deadvox-handedness-field',
@@ -398,7 +386,6 @@ const addDebugParams = (params, d) => {
   setDefault(params, 'at', d.at.trim(), '');
   setDefault(params, 'handedness', d.handedness, '');
   setDefault(params, 'wobbleFlat', d.wobbleFlat.trim(), '');
-  setDefault(params, 'loadout', d.loadout, '');
   setDefault(params, 'weathering', d.weathering.trim(), '');
   setDefault(params, 'weatheringVariation', d.weatheringVariation.trim(), '');
   setDefault(params, 'weatheringSplit', d.weatheringSplit.trim(), '');
@@ -633,7 +620,6 @@ const onPreset = (e) => {
   Object.assign(model.deadvox, presets[name], {
     at: '',
     focus: '',
-    loadout: '',
     lastDefault: '',
   });
   refresh('deadvox');

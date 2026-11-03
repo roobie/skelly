@@ -215,8 +215,8 @@ id; see `src/core/weatheringUrl.ts`, `resolveWeatheringUrl`. #1532 owns moving t
 profiles to their shared and product topics; capability selection does not move
 content.
 
-Setting-name schema picklists, body/render branches and debug loadouts remain part
-of #1532's extraction. Mechanism names describe behavior rather than setting or
+Setting-name schema picklists and body/render branches remain part of #1532's
+extraction. Debug presets use authored starts; see `docs/url-mods.md`, "Start state in mods". Mechanism names describe behavior rather than setting or
 scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 "Vocabulary". #393 owns the bounded tunables inventory, not a parallel list here.
 

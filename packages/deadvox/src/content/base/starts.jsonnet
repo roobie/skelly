@@ -47,26 +47,6 @@ local normalStarts = [common + {
   common + { id: 'forest', site: 'forest' },
   common + { id: 'weatheringtest', site: 'weatheringTest', debugOnly: true, startTimeGameTimeOfDay: day.noonGameTimeOfDay },
 ];
-local pistolMagazine = import 'gungen/magazine_pistol_9.model.json';
-local pistolItems = (import 'items-pistol.jsonnet').items;
-local round = std.filter(function(item) item.id == 'cartridge_9x19', pistolItems)[0];
-local pistolKit = [
-  { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
-  { id: 'pistol', item: 'pistol_service', destination: { kind: 'hand', role: 'dominant' } },
-  {
-    id: 'magazine', item: 'magazine_pistol_9',
-    cartridges: std.repeat([round.id], pistolMagazine.gun.capacity),
-    destination: { kind: 'slot', parent: 'pistol', slot: 'magazine' },
-  },
-  { id: 'rounds', item: round.id, count: round.stack, destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
-];
 {
-  starts: normalStarts + [
-    { [key]: start[key] for key in std.objectFields(start) if key != 'defaultForSite' } + {
-      id: start.id + '_debug_pistol',
-      debugOnly: true,
-      kit: start.kit + pistolKit,
-    }
-    for start in normalStarts
-  ],
+  starts: normalStarts + (import 'debug-starts.libsonnet')(normalStarts),
 }

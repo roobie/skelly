@@ -3,7 +3,7 @@
     {
       id: 'shotgun_blast',
       description: 'Fire a chambered pump shotgun; it needs racking before the next shot.',
-      debugHint: '?debug=1&loadout=pump: unpack the sealed box, then load loose shells into the pump and rack it.',
+      debugHint: '?debug=1&start=gauntlet_debug_pump: unpack the sealed box, then load loose shells into the pump and rack it.',
       variants: ['assets/audio/shotgun-model12-01.ogg', 'assets/audio/shotgun-model12-02.ogg'],
       gain: 0.8,
       lowShelf: { frequencyHz: 240, gainDb: 7 },

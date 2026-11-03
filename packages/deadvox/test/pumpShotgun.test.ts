@@ -16,8 +16,8 @@ import { bodyOverlapsTerrain, stepBody } from '../src/core/physics.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundId } from '../src/core/soundEvents.ts';
+import { applyStartKit } from '../src/core/startState.ts';
 import { World } from '../src/core/world.ts';
-import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
@@ -29,6 +29,7 @@ import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
+import { debugStartWith } from './fixtures/debugStarts.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -479,13 +480,16 @@ describe('real pump ammunition', () => {
     expect(f.inventory.itemByUid(f.box.uid)).toBe(f.box);
   });
 
-  it('gives the pump loadout one stack of loose shells, which the pump loads from', () => {
+  it('loads loose ammunition from an authored pump start', () => {
     const inventory = new Inventory(registry);
-    expect(equipDebugLoadout(inventory, true, true, '?loadout=pump')).toBe(true);
+    applyStartKit(
+      inventory,
+      debugStartWith(registry, (item) => Boolean(item.firearm?.pump)),
+    );
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
-    expect(looseShells()).toHaveLength(1);
     const [stack] = looseShells();
+    expect(stack).toBeDefined();
     expect(stack!.count).toBeGreaterThan(1);
     const carried = stack!.count;
     const queue = new HandlingQueue(inventory);

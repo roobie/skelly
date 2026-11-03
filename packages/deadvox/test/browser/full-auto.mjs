@@ -162,7 +162,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=regional_map-right-lowered&mannequinWear=jacket,jeans,rubber_boots,utility_vest,school_backpack&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=regional_map-right-lowered&mannequinWear=jacket,jeans,rubber_boots,utility_vest,school_backpack&start=testhouse_debug_ar&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -532,7 +532,7 @@ try {
 
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
-    // ?loadout=ar holds the AR with a full magazine fitted; work the charging handle as a player would.
+    // The selected start holds a full fitted magazine; charge it as a player would.
     const rifle = inventory.hands.right;
     if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
       throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
@@ -807,7 +807,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&loadout=ar&firearmsCombat=0&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

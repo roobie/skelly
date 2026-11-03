@@ -1,9 +1,10 @@
 import { expect, it } from 'vitest';
 import { dominantSide, offSide } from '../src/core/character.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { applyStartKit } from '../src/core/startState.ts';
 import { World } from '../src/core/world.ts';
-import { equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { debugStartWith } from './fixtures/debugStarts.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import { registry } from './snapshotTestSupport.ts';
 
@@ -40,7 +41,10 @@ const handlingTimes = (painful: boolean) => {
   if (painful) {
     sim.body.impact(10, 'torso', { kind: 'cut' });
   }
-  const equipped = equipDebugLoadout(inventory, true, true, '?loadout=pump');
+  applyStartKit(
+    inventory,
+    debugStartWith(inventory.registry, (item) => Boolean(item.firearm?.pump)),
+  );
   const gun = inventory.hands[dominantSide(inventory.character)]!;
   const loading = firearms.loadNext(gun.uid, sim.time);
   const rag = inventory.create('rag');
@@ -48,7 +52,7 @@ const handlingTimes = (painful: boolean) => {
   const treating = survival.use(rag);
   const treatment = sim.actions.snapshotState().job;
   return {
-    started: [equipped, loading, held, treating],
+    started: [loading, held, treating],
     slowdown: sim.body.pain.effects.handlingSlowdown,
     reload: queue.jobs[0]!.duration,
     treatment: treatment?.jobType === 'treatment' ? treatment.duration : undefined,
@@ -59,7 +63,7 @@ it('pain lengthens a reload and leaves a treatment as long as ever', () => {
   const calm = handlingTimes(false);
   const hurt = handlingTimes(true);
   for (const run of [calm, hurt]) {
-    expect(run.started).toEqual([true, undefined, true, undefined]);
+    expect(run.started).toEqual([undefined, true, undefined]);
   }
   expect(hurt.slowdown).toBeGreaterThan(calm.slowdown);
   expect(hurt.reload).toBeGreaterThan(calm.reload);

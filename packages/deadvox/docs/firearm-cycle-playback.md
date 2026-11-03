@@ -3,11 +3,12 @@ read_if:
   - you change rifle cycle playback or exported action bindings
   - you change how rack and magazine jobs present on the held gun
   - you review the boundary between mechanical state, ejection and presentation
+  - you change how a firearm preview selects and applies its start
 ---
 
 # Rifle cycle playback
 
-A debug loadout initializes a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. The rifles are simulation items that fire chambered cartridges fed from the fitted magazine; see `src/debug/debugLoadout.ts`, `equipDebugLoadout`, and `DESIGN.md`, "Rifles".
+A debug start initializes only a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. See `src/core/startState.ts`, `applyStartState`, and `docs/url-mods.md`, "Start state in mods".
 
 Racking, changing and removing a magazine are ordinary handling actions. Their durations and cycle geometry come from the Gungen export; handling blocks firing, reduces movement and prevents sprinting. Automatic action motion is presentation on a mechanical cycle, not a cancellable manual queue job. See `src/game/firearmHandling.ts`, `FirearmMechanics`.
 

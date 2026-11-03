@@ -122,9 +122,9 @@ See `packages/deadvox/src/core/startIssues.ts`, `startIssues`, and
 
 Fresh normal product starts use admitted rows and the entry pack's default, including
 selection of generated worlds and explicit initial recipe knowledge. Skill-earned
-recipe unlocks stay with the character owner. Until PR #1539 migrates debug presets,
-that path retains its existing owners. The start-state contract and the pending
-cutover's owners belong to
+recipe unlocks stay with the character owner. Debug presets also use admitted rows,
+so development tools do not silently alter the selected run's initial state. The
+start-state contract belongs to
 `packages/deadvox/docs/url-mods.md`, "Start state in mods".
 
 Scenario rows own guided steps, stage marks and attempt recording because a different

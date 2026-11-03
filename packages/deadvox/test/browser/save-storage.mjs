@@ -200,7 +200,7 @@ try {
         }
       });
       globalThis.addEventListener('DOMContentLoaded', () => {
-        if (!new URLSearchParams(location.search).has('loadout')) {
+        if (!new URLSearchParams(location.search).has('start')) {
           return;
         }
         let frames = 0;
@@ -1064,7 +1064,7 @@ try {
       });
     }
     const pumpUrl = new URL(appUrl);
-    pumpUrl.searchParams.set('loadout', 'pump');
+    pumpUrl.searchParams.set('start', 'gauntlet_debug_pump');
     await navigationPhase('destination save discovery', async () => {
       await navigatePage('navigation-only goto pump loadout', () =>
         page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),

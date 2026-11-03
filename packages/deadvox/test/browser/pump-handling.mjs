@@ -169,7 +169,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
+      `http://127.0.0.1:${address.port}/?debug=1&start=testhouse_debug_pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
     ),
     { waitUntil: 'domcontentloaded' },
   );
