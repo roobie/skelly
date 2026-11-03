@@ -198,3 +198,8 @@ export const terrainStance = (
 };
 export const onTerrainFloor = (pos: Vec3, terrainFloor: TerrainFloorAt, footprint: HorizontalFootprint): boolean =>
   Math.round(pos[1]) === terrainStance(pos[0], pos[2], terrainFloor, footprint);
+export function haltActor(actor: Actor) {
+  actor.horizontalSpeed = 0;
+  actor.body.vel[0] = 0;
+  actor.body.vel[2] = 0;
+}

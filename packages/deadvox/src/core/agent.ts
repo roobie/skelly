@@ -1,6 +1,7 @@
 import {
   angleOf,
   approachAngle,
+  haltActor,
   headingAt,
   horizontalDistance,
   inRange,
@@ -36,7 +37,11 @@ export class AgentController {
   private readonly store: EntityStore<Actor>;
   private readonly agentHorde: AgentHorde;
   private readonly holdSpitGround: (scratch: ActorTickScratch, toward: Vec3) => void;
-  private readonly reachableActorMoves: (actor: Actor, actorPos: Vec3, playerPos: Vec3) => Actor['type']['attack']['moves'];
+  private readonly reachableActorMoves: (
+    actor: Actor,
+    actorPos: Vec3,
+    playerPos: Vec3,
+  ) => Actor['type']['attack']['moves'];
   constructor({
     options,
     tickScratch,
@@ -364,9 +369,7 @@ export class AgentController {
     actor.lookTimer = 0;
     actor.bodyLookTarget = angleOf(actor.facing);
     actor.headYawTarget = 0;
-    actor.horizontalSpeed = 0;
-    actor.body.vel[0] = 0;
-    actor.body.vel[2] = 0;
+    haltActor(actor);
   }
 
   private beginStroll(actor: Actor): void {
@@ -417,9 +420,7 @@ export class AgentController {
     actor.lookTimer = 0;
     actor.bodyLookTarget = angleOf(actor.facing);
     actor.headYawTarget = 0;
-    actor.horizontalSpeed = 0;
-    actor.body.vel[0] = 0;
-    actor.body.vel[2] = 0;
+    haltActor(actor);
   }
 
   private beginSearchStroll(actor: Actor): void {
