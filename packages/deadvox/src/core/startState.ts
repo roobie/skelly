@@ -39,18 +39,12 @@ const placeEntry = (
   }
 };
 
-export const applyStartState = (
-  inventory: Inventory,
-  start: StartDef,
-  context: { fresh: boolean; character: Character; body: Body },
-): void => {
-  if (!context.fresh) {
-    return;
-  }
+const startFailure = (inventory: Inventory, start: StartDef, path: string, reason: unknown): never => {
   const origin = inventory.registry.contentOrigins.get(`starts:${start.id}`);
-  const fail = (path: string, reason: unknown): never => {
-    throw new Error(`Start "${start.id}" (${origin?.source ?? 'unattributed start'}) ${path}: ${String(reason)}`);
-  };
+  throw new Error(`Start "${start.id}" (${origin?.source ?? 'unattributed start'}) ${path}: ${String(reason)}`);
+};
+
+export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
   const parents = new Map<string, Item>();
   for (const entry of start.kit) {
     try {
@@ -61,20 +55,31 @@ export const applyStartState = (
       placeEntry(inventory, entry, item, parents);
       parents.set(entry.id, item);
     } catch (error) {
-      fail(`kit entry "${entry.id}"`, error);
+      startFailure(inventory, start, `kit entry "${entry.id}"`, error);
     }
   }
+};
+
+export const applyStartState = (
+  inventory: Inventory,
+  start: StartDef,
+  context: { fresh: boolean; character: Character; body: Body },
+): void => {
+  if (!context.fresh) {
+    return;
+  }
+  applyStartKit(inventory, start);
   try {
     context.character.initializeProgression(start.skills, start.recipes);
   } catch (error) {
-    fail('progression', error);
+    startFailure(inventory, start, 'progression', error);
   }
   for (const [index, wound] of start.wounds.entries()) {
     const tier = context.body.tuning.bleeding.tiers.findIndex(({ id }) => id === wound.bleeding);
     try {
       context.body.impact(0, wound.region, { bleeding: tier, infectionAtRisk: false });
     } catch (error) {
-      fail(`wounds[${index}]`, error);
+      startFailure(inventory, start, `wounds[${index}]`, error);
     }
   }
 };

@@ -10,7 +10,6 @@ import {
 } from '../src/bench/post.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
-import type { StartupContent } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
 import { heightFogUniforms, setHeightFogTuning } from '../src/render/heightFog.ts';
@@ -24,7 +23,7 @@ const registry = baseRegistry();
 
 describe('benchmark weathering', () => {
   it('uses its own registry profile, not the play default, so retuning the default leaves the bench workload alone', () => {
-    const config = makeConfig(1, 64, { registry } as unknown as StartupContent);
+    const config = makeConfig(1, 64, { ...startupContent(), registry });
     applyBenchWeathering(config);
     expect(config.weatheringProfileId).not.toBe(defaultWeatheringId);
     expect(config.weathering).toBeDefined();

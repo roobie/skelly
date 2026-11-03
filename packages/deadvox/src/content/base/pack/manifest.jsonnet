@@ -11,7 +11,7 @@ local content = [
   'models-gun-parts', 'models-items', 'models-melee', 'player', 'power', 'range', 'readables',
   'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
   'rural-substation-fixtures', 'rural-substation', 'saves', 'scenarios', 'senses',
-  'site-generation', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
+  'site-generation', 'starts', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
   'templates', 'tutorial', 'ui', 'vegetation', 'vehicles', 'weathering', 'zombies',
@@ -48,6 +48,7 @@ local assets = import '../assets/manifest.json';
   version: '1',
   tier: 'product',
   product: true,
+  defaultStart: 'gauntlet',
   dependencies: [],
   overrides: [],
   files: [{ path: name + '.json', kind: 'content' } for name in content] +

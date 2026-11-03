@@ -3,7 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the executable and source checkout for A/B tests
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -21,6 +21,9 @@ const groups = ['flow', 'replays'];
 const [, , group] = process.argv;
 assert(groups.includes(group), `usage: primary-action.mjs <${groups.join('|')}>`);
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const authoredStarts = JSON.parse(await readFile(resolve(projectRoot, 'src/content/base/starts.json'), 'utf8')).starts;
+const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
+assert(houseStart, 'the product supplies an authored start for the existing house flow');
 const debugLoadoutModule = '/src/debug/debugLoadout.ts';
 const firearmActionModule = '/src/core/firearmAction.ts';
 const inputBindingsModule = '/src/game/inputBindings.ts';
@@ -1873,7 +1876,7 @@ try {
       await page.goto(
         browserStageUrl(
           'primary-action',
-          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+          `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&start=${encodeURIComponent(houseStart.id)}&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
           renderOverride,
         ),
       );
@@ -1896,6 +1899,11 @@ try {
           document.querySelector('#world-loading').hidden,
       );
     });
+    assert.equal(
+      await page.evaluate(() => globalThis.primaryActionTest.engine.config.startId),
+      houseStart.id,
+      'the full-product flow runs its selected authored start',
+    );
     const identity = await page.evaluate(() => {
       const { inventory, session } = globalThis.primaryActionTest;
       return {

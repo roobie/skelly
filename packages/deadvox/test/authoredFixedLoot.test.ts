@@ -38,7 +38,7 @@ import { FIXTURE_MATERIAL, fixtureBreach, fixtureLootPoint } from './economyFixt
 import { PLAYER, physicsFor } from './playerFixture.ts';
 
 const sources = readdirSync('src/content/base')
-  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
+  .filter((file) => file.endsWith('.json') && !file.startsWith('layouts') && file !== 'starts.json')
   .sort()
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown }));
 const layout = (

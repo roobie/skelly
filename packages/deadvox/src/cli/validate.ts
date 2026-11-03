@@ -21,7 +21,7 @@ import {
   requiredContentIssues,
 } from '../core/content.ts';
 import { modelPresentationAssetIssues } from '../core/itemPresentation.ts';
-import { admitPacks } from '../core/packAdmission.ts';
+import { admitPacks, packStartIssues } from '../core/packAdmission.ts';
 import { checkReachability } from '../core/reachability.ts';
 import { CONTENT_SECTION_KEYS, CONTENT_SECTIONS } from '../core/schema.ts';
 import { controlIssues } from './controlIssues.ts';
@@ -93,7 +93,7 @@ export const validate = (
     }
   }
   const { registry, issues, origins } = buildRegistry(sources);
-  issues.unshift(...admitted.issues);
+  issues.unshift(...admitted.issues, ...packStartIssues(admitted.packs, registry));
   const reachable = checkReachability(registry);
   for (const issue of reachable.issues) {
     const origin = origins.get(`recipes:${issue.recipe}`)!;

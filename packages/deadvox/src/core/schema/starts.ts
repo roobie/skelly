@@ -28,6 +28,8 @@ const KitDestinationSchema = union([
 export const StartSchema = strictObject({
   id: Id,
   site: Name,
+  defaultForSite: optional(literal(true)),
+  debugOnly: optional(literal(true)),
   seed: optional(pipe(number(), integer())),
   storeys: optional(pipe(Count, minValue(1))),
   density: optional(nullable(Fraction)),

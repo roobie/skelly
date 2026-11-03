@@ -285,6 +285,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'dayCycle.midnightGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'dayCycle.noonGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'layouts.startTimeGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
+  { path: 'starts.startTimeGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'layouts.shamblers.window.fromGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'layouts.shamblers.window.toGameTimeOfDay', clock: 'Game', unit: 'TimeOfDay', dimension: 'timeOfDay' },
   { path: 'actors.wander.idleSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

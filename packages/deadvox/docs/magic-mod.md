@@ -4,6 +4,7 @@ read_if:
   - you're planning the high-fantasy product the magic mod is a big piece of
   - you're writing a compatibility mod that brings the magic mod into another product, such as Deadvox
   - you're building character attributes, content-declared modifiers, timed effects, resource pools or traits
+  - you extend authored starts with traits or other character-state owners
   - you generalize skill capability providers into a composable effect resolver
   - you're deciding what a character attribute governs, or whether a new one is needed
   - you're choosing which engine verbs or content kinds the mod rules work adds first
@@ -313,12 +314,11 @@ consumer, as analgesics are for effects; mana is the second.
 
 ### 4. Traits and start state
 
-Neither traits nor start state is content: schools need trait entries, and the start kit
-is code (`src/game/loadout.ts`, `startingLoadout`). The start-state design is
-`docs/url-mods.md`, "Start state in mods". Traits change during play, which Deadvox needs
-as much as the magic mod: mutation pressure spreads outward from Deadvox's labs
-(`DESIGN.md`, "Points of interest"), so mutation is a consumer outside magic and gap 4 need
-not wait for it.
+Normal start kits are content; see `src/core/startState.ts`, `applyStartState`, and
+`docs/url-mods.md`, "Start state in mods". Traits still need a content mechanism because
+schools grant them at the start and mutation changes them during play. Deadvox's mutation
+pressure spreads outward from its labs (`DESIGN.md`, "Points of interest"), so that
+mechanism has a consumer outside magic and need not wait for it.
 
 #### What a trait carries
 

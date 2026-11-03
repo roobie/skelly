@@ -16,7 +16,7 @@ beforeAll(async () => {
 });
 
 it('admits the same ordered bundled registry and origins without repeating the stamped proofs', async () => {
-  const full = startupContent();
+  const { defaultStart: _entryDefault, ...full } = startupContent();
   const bundle = await BundleAdmission.prepare(baseSources, stamp, proofHash);
   expect(bundle).toBeDefined();
   const proof = vi.spyOn(cityPlan, 'scenarioPlanIssues');

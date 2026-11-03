@@ -3,6 +3,7 @@ import {
   boolean,
   type InferOutput,
   minLength,
+  optional,
   picklist,
   pipe,
   regex,
@@ -11,7 +12,7 @@ import {
   string,
 } from 'valibot';
 import { isPlainRecord } from './canonicalJson.ts';
-import type { ContentIssue, ContentSource } from './content.ts';
+import type { ContentIssue, ContentSource, Registry } from './content.ts';
 import { contentDigest, contentSourceKey } from './contentHash.ts';
 import { CONTENT_SECTION_KEYS } from './schema.ts';
 
@@ -22,6 +23,7 @@ export const PackManifestSchema = strictObject({
   version: name,
   tier: picklist(['core', 'theme', 'product', 'scenario']),
   product: boolean(),
+  defaultStart: optional(name),
   dependencies: array(name),
   overrides: array(strictObject({ pack: name, entry: name })),
   files: array(strictObject({ path: filePath, kind: picklist(['content', 'json', 'asset']) })),
@@ -32,6 +34,24 @@ export interface PackInput {
   manifest: PackManifest;
   files: ContentSource[];
 }
+
+export const packStartIssues = (packs: readonly PackInput[], registry: Registry): ContentIssue[] =>
+  packs.flatMap((pack) => {
+    const id = pack.manifest.defaultStart;
+    if (id === undefined) {
+      return [];
+    }
+    const start = registry.starts.get(id);
+    return start && !start.debugOnly
+      ? []
+      : [
+          {
+            source: pack.source,
+            path: 'defaultStart',
+            message: `Pack ${pack.manifest.id}: no admitted normal default start "${id}"`,
+          },
+        ];
+  });
 
 export const packContentHash = (pack: PackInput): Promise<string> =>
   contentDigest(contentSourceKey([{ source: 'pack', data: pack.manifest }, ...pack.files]));

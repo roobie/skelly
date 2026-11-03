@@ -8,20 +8,22 @@ import { magazineSpec } from '../src/core/magazine.ts';
 import { mountedOptic, opticViewSettings } from '../src/core/opticView.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { applyStartKit } from '../src/core/startState.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { equipDebugBackpack, equipDebugLoadout } from '../src/debug/debugLoadout.ts';
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
-import { startingLoadout } from '../src/game/loadout.ts';
-import { baseRegistry } from './baseRegistry.ts';
+import { requireStart } from '../src/game/startSelection.ts';
+import { startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
-const registry = baseRegistry();
+const content = startupContent();
+const { registry } = content;
 const SCALE = makeScale(0.5);
 const FLOOR = (_x: number, y: number) => y === 0;
 const INTENT = { forward: 1, right: 0, jump: false, sprint: false, walk: false };
@@ -195,7 +197,7 @@ describe('debug starting equipment', () => {
 
   it('gives a fresh debug game an empty worn hiking backpack and nothing else', () => {
     const inventory = new Inventory(registry);
-    startingLoadout(inventory);
+    applyStartKit(inventory, requireStart(content, content.defaultStart));
     const before = new Set(Array.from(inventory.items(), ({ item }) => item));
     equipDebugBackpack(inventory, true, true);
 
@@ -273,18 +275,6 @@ describe('debug starting equipment', () => {
       }
       expect(previewed, optic.id).toBe(true);
     }
-  });
-
-  it('wears sneakers in an ordinary starting loadout', () => {
-    const inventory = new Inventory(registry);
-    startingLoadout(inventory);
-    expect(inventory.worn.feet?.type).toBe('sneakers');
-  });
-
-  it('keeps ordinary starting hands empty', () => {
-    const inventory = new Inventory(registry);
-    startingLoadout(inventory);
-    expect(inventory.hands).toEqual({});
   });
 });
 

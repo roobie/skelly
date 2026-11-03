@@ -30,7 +30,10 @@ const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
       return { source: mod.source, path: '', message: 'Expected a mod object' };
     }
-    const { id, version, tier, product, dependencies, overrides, ...data } = parsed as Record<string, unknown>;
+    const { id, version, tier, product, defaultStart, dependencies, overrides, ...data } = parsed as Record<
+      string,
+      unknown
+    >;
     if (typeof id !== 'string' || !id.trim()) {
       return { source: mod.source, path: 'id', message: 'Mod id required: non-empty string' };
     }
@@ -42,6 +45,7 @@ const readMod = (mod: BrowserMod): IdentifiedSource | ContentIssue => {
       version,
       tier,
       product,
+      ...(defaultStart === undefined ? {} : { defaultStart }),
       dependencies,
       overrides,
       files: [{ path: 'content.json', kind: 'content' }],

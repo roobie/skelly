@@ -1,4 +1,5 @@
 {
+  "defaultStart": "gauntlet",
   "dependencies": [],
   "files": [
     {
@@ -280,6 +281,10 @@
     {
       "kind": "content",
       "path": "site-generation.json"
+    },
+    {
+      "kind": "content",
+      "path": "starts.json"
     },
     {
       "kind": "content",

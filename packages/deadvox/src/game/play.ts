@@ -53,6 +53,7 @@ import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import { soundVariantKey } from '../core/soundSynth.ts';
 import { stageMarkArea } from '../core/stageMarks.ts';
+import { applyStartState } from '../core/startState.ts';
 import { fillText as fillScreenText } from '../core/textTemplate.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration, realTimestamp } from '../core/time.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/zombies.ts';
@@ -161,7 +162,6 @@ import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample }
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import type { ItemAction } from './itemActions.ts';
 import { registerLayoutVehicles } from './layoutVehicles.ts';
-import { startingLoadout } from './loadout.ts';
 import {
   meleeProfileForWeapon,
   meleeWeaponFromContent,
@@ -190,6 +190,7 @@ import { createScreenCommandDispatcher } from './screenCommandDispatcher.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { Sharpening } from './sharpening.ts';
 import { SpectatorCamera } from './spectatorCamera.ts';
+import { requireStart } from './startSelection.ts';
 import {
   isOrbitResetMovementAction,
   isPlayerFigureWhole,
@@ -1217,7 +1218,11 @@ export const startPlay = (
   }
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
-    startingLoadout(inventory);
+    applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
+      fresh: true,
+      character: session.character,
+      body: sim.body,
+    });
   }
   const { load: applyColumnLoad, unload: applyColumnUnload } = columnArrival(session, engine);
   const replayDriver = createInputReplayDriver(replayPlayer, {

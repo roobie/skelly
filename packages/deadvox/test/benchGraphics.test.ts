@@ -40,12 +40,13 @@ const tuning = {
 };
 
 it('benchmark engines use mod defaults despite saved graphics preferences and debug URL overrides', () => {
-  const content = buildRegistry([
+  const result = buildRegistry([
     { source: 'base/dayCycle.json', data: baseDayCycle },
     { source: 'base/weathering.json', data: baseWeathering },
     {
       source: 'fixture',
       data: {
+        starts: [{ id: 'fixture_graphics_start', site: 'city', kit: [], wounds: [], skills: {}, recipes: [] }],
         graphics: [
           {
             id: fixtureIds.graphics,
@@ -79,6 +80,7 @@ it('benchmark engines use mod defaults despite saved graphics preferences and de
       },
     },
   ]);
+  const content = { ...result, defaultStart: 'fixture_graphics_start' };
   const { registry } = content;
   owner.setup = { registry, skyFields: { fields: [] } };
   let saved = '';

@@ -120,9 +120,10 @@ must use ordinary item and character owners rather than privileged preset state.
 See `packages/deadvox/src/core/startIssues.ts`, `startIssues`, and
 `packages/deadvox/src/core/startState.ts`, `applyStartState`.
 
-Until PR #1539 connects entry defaults and migrates new-game callers, admitted start
-rows do not replace the product's existing kit, initial-recipe or debug setup paths.
-The start-state contract and that cutover's owners belong to
+Fresh normal product starts use admitted rows and the entry pack's default, including
+selection of generated worlds. Until PR #1539 migrates implicit initial recipes and
+debug presets, those two paths retain their existing owners. The start-state contract
+and the pending cutover's owners belong to
 `packages/deadvox/docs/url-mods.md`, "Start state in mods".
 
 Scenario rows own guided steps, stage marks and attempt recording because a different

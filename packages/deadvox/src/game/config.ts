@@ -8,6 +8,7 @@ import type { WeatheringDef } from '../core/schema.ts';
 import { resolveWeatheringUrl } from '../core/weatheringUrl.ts';
 import { sweepFromUrl } from '../render/ragdollConfig.ts';
 import type { StartupContent } from './bundledContent.ts';
+import { requireStart, startForSite } from './startSelection.ts';
 
 export const DEFAULT_RADIUS_M = 96;
 const MIN_RADIUS_M = 32;
@@ -15,6 +16,7 @@ const MAX_RADIUS_M = 256;
 
 export interface GameConfig {
   content: StartupContent;
+  startId: string;
   seed: number;
   scale: Scale;
   /** View (mesh) radius in metres. */
@@ -71,22 +73,6 @@ export type ActorRenderer = 'boxes' | 'detailed';
 
 const defaultStart = (content: StartupContent): number => requireDayCycle(content.registry).defaultStartGameTimeOfDay;
 
-/** `?time=` wins, then the layout's own time; the weathering test site defaults to noon. */
-const startTime = (
-  content: StartupContent,
-  site: string,
-  layoutTime: number | undefined,
-  requestedTime: string | null,
-): number => {
-  if (requestedTime !== null) {
-    return parseTimeOfDay(requestedTime) ?? defaultStart(content);
-  }
-  if (layoutTime !== undefined) {
-    return layoutTime;
-  }
-  return site === 'weatheringTest' ? requireDayCycle(content.registry).noonGameTimeOfDay : defaultStart(content);
-};
-
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (
   seed: number,
@@ -94,6 +80,7 @@ export const makeConfig = (
   content: StartupContent,
   blockSize = BLOCK_SIZE,
 ): GameConfig => {
+  const selectedStart = requireStart(content, content.defaultStart);
   const scale = makeScale(blockSize);
   const profile = claimed(content.registry.weathering, 'defaultWeathering');
   const profileId = claimedId(content.registry.weathering, 'defaultWeathering');
@@ -103,6 +90,7 @@ export const makeConfig = (
   }
   return {
     content,
+    startId: selectedStart.id,
     seed,
     scale,
     radiusM,
@@ -110,12 +98,12 @@ export const makeConfig = (
     readyRadiusChunks: chunksFor(scale, Math.min(radiusM, graphics.readyRadiusM)),
     streamHysteresisChunks: graphics.streamHysteresisM / (CHUNK * scale.blockSize),
     fogFarPlaneScale: graphics.fogFarPlaneScale,
-    start: defaultStart(content),
+    start: selectedStart.startTimeGameTimeOfDay ?? defaultStart(content),
     debug: false,
-    site: 'gauntlet',
+    site: selectedStart.site,
     authoredDecals: true,
-    storeys: 1,
-    density: null,
+    storeys: selectedStart.storeys ?? 1,
+    density: selectedStart.density ?? null,
     weatheringProfileId: profileId,
     weatheringDefaultProfileId: profileId,
     weathering: profile ? { ...profile } : undefined,
@@ -236,6 +224,27 @@ export const applyWeatheringConfig = (
   config.weathering = weathering?.settings;
 };
 
+const applyStartConfig = (config: GameConfig, params: URLSearchParams): void => {
+  const { content } = config;
+  const requestedStart = params.get('start');
+  const selected = requireStart(content, requestedStart ?? content.defaultStart, config.debug);
+  const siteSelection = siteFromUrl(params, selected.site, content.registry);
+  const start =
+    requestedStart === null && params.has('site') ? startForSite(content, siteSelection.site, config.debug) : selected;
+  config.startId = start.id;
+  config.site = siteSelection.site;
+  config.seed = params.has('seed')
+    ? Number(params.get('seed')) | 0
+    : (start.seed ?? crypto.getRandomValues(new Int32Array(1))[0]!);
+  config.storeys = params.has('storeys') ? siteSelection.storeys : (start.storeys ?? 1);
+  config.density = params.has('density') ? siteSelection.density : (start.density ?? null);
+  const requestedTime = params.get('time');
+  config.start =
+    requestedTime === null
+      ? (start.startTimeGameTimeOfDay ?? defaultStart(content))
+      : (parseTimeOfDay(requestedTime) ?? defaultStart(content));
+};
+
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
  * A site uses its authored weathering profile or the default; debug URLs can select a profile and tune its values, or set `?weatheringSplit=<x metres>` to limit it to world x at or east of the split. The debug tools also read and write look parameters, documented in src/debug/lookUrl.ts.
@@ -243,16 +252,13 @@ export const applyWeatheringConfig = (
 export const configFromUrl = (params: URLSearchParams, content: StartupContent): GameConfig => {
   const radius = Number(params.get('radius') ?? DEFAULT_RADIUS_M);
   const config = makeConfig(
-    Number(params.get('seed') ?? 1) | 0,
+    Number(params.get('seed')) | 0,
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
     content,
   );
-  Object.assign(config, siteFromUrl(params, 'gauntlet', content.registry));
-  config.authoredDecals = params.get('decals') !== '0';
-  const layoutTime = content.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
-  const requestedTime = params.get('time');
-  config.start = startTime(content, config.site, layoutTime, requestedTime);
   config.debug = params.get('debug') === '1';
+  applyStartConfig(config, params);
+  config.authoredDecals = params.get('decals') !== '0';
   Object.assign(config, sweepFromUrl(params, config));
   applyWeatheringConfig(config, params);
   const weatheringSplit = debugWeatheringSplitFromUrl(params, config.debug, config.site);

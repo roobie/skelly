@@ -34,7 +34,8 @@ function writeBaseRegistry(path: string, startupPath: string) {
   if (startup.issues.length > 0) {
     throw new Error(JSON.stringify(startup.issues));
   }
-  writeCached(startupPath, startup);
+  const manifest = JSON.parse(readFileSync(join(directory, 'pack/manifest.json'), 'utf8')) as { defaultStart: string };
+  writeCached(startupPath, { ...startup, defaultStart: manifest.defaultStart });
 }
 
 export function setup(project: Pick<TestProject, 'provide' | 'onTestsRerun'>) {

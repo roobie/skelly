@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { BundleAdmission } from '../src/core/bundleAdmission.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { admitPacks, type PackInput, packContentHash } from '../src/core/packAdmission.ts';
+import { admitPacks, type PackInput, packContentHash, packStartIssues } from '../src/core/packAdmission.ts';
 
 const pack = (id: string, dependencies: string[] = []): PackInput => ({
   source: `${id}/pack.json`,
@@ -15,6 +15,23 @@ const pack = (id: string, dependencies: string[] = []): PackInput => ({
     files: [{ path: 'rows.json', kind: 'content' }],
   },
   files: [{ source: 'rows.json', data: {} }],
+});
+
+it('requires an entry default to resolve to an admitted normal start', () => {
+  const input = pack('fixture.entry');
+  input.manifest.defaultStart = 'fixture_start';
+  const empty = buildRegistry([]).registry;
+  expect(packStartIssues([input], empty)).toEqual([
+    expect.objectContaining({ source: input.source, path: 'defaultStart' }),
+  ]);
+  const row = { id: input.manifest.defaultStart, site: 'city', kit: [], wounds: [], skills: {}, recipes: [] };
+  const supplied = (debugOnly = false) =>
+    buildRegistry([
+      { source: 'fixture-starts', data: { starts: [{ ...row, ...(debugOnly ? { debugOnly: true } : {}) }] } },
+    ]).registry;
+  expect(packStartIssues([input], supplied())).toEqual([]);
+  expect(packStartIssues([input], supplied(true))).not.toEqual([]);
+  expect(packStartIssues([pack('fixture.definitions')], empty)).toEqual([]);
 });
 
 it('refuses a missing dependency without admitting any of the stack', () => {

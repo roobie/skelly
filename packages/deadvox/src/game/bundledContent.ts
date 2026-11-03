@@ -1,6 +1,6 @@
 import { BundleAdmission, type BundleStamp } from '../core/bundleAdmission.ts';
 import { buildRegistry, type ContentSource } from '../core/content.ts';
-import { admitPacks, type PackInput } from '../core/packAdmission.ts';
+import { admitPacks, type PackInput, packStartIssues } from '../core/packAdmission.ts';
 import { bundledPacks } from './bundledPacks.ts';
 
 declare const __DEADVOX_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
@@ -19,7 +19,7 @@ const packs: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
 export const bundledPackInputs: readonly PackInput[] = packs;
 const admission = admitPacks(packs);
 export const baseSources: readonly ContentSource[] = admission.sources;
-export type StartupContent = ReturnType<typeof buildRegistry>;
+export type StartupContent = ReturnType<typeof buildRegistry> & { defaultStart?: string | undefined };
 
 const admissions = await Promise.all(
   admission.packs.map(async (pack) => ({
@@ -39,6 +39,9 @@ export const buildBundledContent = (
 ): StartupContent => {
   const selected = admitPacks([...packs, ...mods]);
   const result = buildRegistry(selected.sources, { bundle, modsSelected });
-  result.issues.unshift(...selected.issues);
-  return result;
+  result.issues.unshift(...selected.issues, ...packStartIssues(selected.packs, result.registry));
+  return {
+    ...result,
+    defaultStart: selected.packs.findLast(({ manifest }) => manifest.defaultStart !== undefined)?.manifest.defaultStart,
+  };
 };

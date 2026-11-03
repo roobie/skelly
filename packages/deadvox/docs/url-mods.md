@@ -22,7 +22,9 @@ Start rows belong to scenario content because location and kit depend on the map
 
 Start definitions use ordinary admission rather than a private preset path; see `src/core/schema/starts.ts`, `StartSchema`, and `src/core/schema/files.ts`, `CONTENT_SECTIONS`. Shared topics need no scenario or start row because definitions are inert until a playable stack supplies its run.
 
-Until PR #1539 connects entry defaults and migrates new-game callers, product starts still use `src/game/loadout.ts`, `startingLoadout`, skill-owned initial recipes in `src/core/character.ts`, `startingKnownRecipes`, and the debug setup helpers in `src/debug/index.ts`, `attachDebugTools`. Admission and the row application mechanism alone do not cut those callers over.
+The entry pack chooses the default normal run so reusable topics need not know its identity. Fresh product games select admitted rows and place their normal kit through ordinary owners; see `src/core/packAdmission.ts`, `PackManifestSchema`, `src/game/config.ts`, `configFromUrl`, and `src/game/play.ts`, `startPlay`. A generated world is still a mechanism selected by content, not an authored scenario identity in runtime code.
+
+Until PR #1539 migrates implicit recipe knowledge and debug presets, initial recipes still come from `src/core/character.ts`, `startingKnownRecipes`, and debug setup still runs through `src/debug/index.ts`, `attachDebugTools`. Normal start selection does not complete those ownership changes.
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 

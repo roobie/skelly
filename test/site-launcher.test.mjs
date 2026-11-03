@@ -57,6 +57,7 @@ const authoredLayoutIds = () =>
     .flatMap((name) => JSON.parse(read(`${DEADVOX_CONTENT}/${name}`)).layouts.map((layout) => layout.id));
 
 const intentionallyUnofferedDeadvoxParams = {
+  start: 'An admitted start-row selector; a player start picker is separate UI work.',
   ragdollSweep: 'A seeded debug-only corpse sample, not a launcher gameplay option.',
   optic: 'A content-ID selector for certified optic review loadouts, not a standalone gameplay option.',
   decals: 'A presentation comparison switch for authored-decal review, not a launcher gameplay option.',

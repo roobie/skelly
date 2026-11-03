@@ -17,7 +17,17 @@ it('selects the active authored layout policy and supplies none for a rowless di
   );
   const original = configFromUrl(new URLSearchParams());
   const layout = makeAttemptLayout();
-  const registry = { ...original.content.registry, layouts: new Map([[layout.id, layout]]) };
+  const start = {
+    ...original.content.registry.starts.get(original.startId)!,
+    id: 'fixture_policy_start',
+    site: layout.id,
+    defaultForSite: true as const,
+  };
+  const registry = {
+    ...original.content.registry,
+    layouts: new Map([[layout.id, layout]]),
+    starts: new Map([...original.content.registry.starts, [start.id, start]]),
+  };
   const content = { ...original.content, registry };
   const setup = (params: string) => {
     const config = readConfig(new URLSearchParams(params), content);
