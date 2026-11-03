@@ -4,7 +4,6 @@ import { safeParse } from 'valibot';
 import { inject } from 'vitest';
 import baseUi from '../src/content/base/ui.json' with { type: 'json' };
 import { type ContentSource, type Registry, schemaIssues } from '../src/core/content.ts';
-import { registrySection } from '../src/core/registrySection.ts';
 import { CONTENT_SECTION_KEYS, ContentFileSchema, type ScreenText } from '../src/core/schema.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import type { TerrainShape } from '../src/core/worldgen.ts';
@@ -48,7 +47,7 @@ export const overlayContent = (registry: Registry, sources: readonly ContentSour
         continue;
       }
       (file[section] ?? []).forEach((def, i) => {
-        (registry[registrySection(section)] as Map<string, typeof def>).set(def.id, def);
+        (registry[section] as Map<string, typeof def>).set(def.id, def);
         registry.contentOrigins.set(`${section}:${def.id}`, { source, path: `${section}[${i}]` });
       });
     }

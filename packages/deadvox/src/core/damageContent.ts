@@ -109,7 +109,7 @@ export const checkDamageKinds = (registry: Registry, report: Report): void => {
   for (const item of registry.items.values()) {
     checkItem(item, checkerFor(registry, report, 'items', item.id), registry);
   }
-  for (const actor of registry.zombies.values()) {
+  for (const actor of registry.actors.values()) {
     checkActor(actor, checkerFor(registry, report, 'actors', actor.id));
   }
 };

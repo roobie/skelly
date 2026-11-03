@@ -13,7 +13,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const { registry } = startupContent();
-const ACID = registry.zombies.get('acid_zombie')!;
+const ACID = registry.actors.get('acid_zombie')!;
 const SPIT = ACID.acidSpit!;
 const DAY_CYCLE = requireDayCycle(registry);
 const SCALE = makeScale(0.5);

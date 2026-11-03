@@ -12,7 +12,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const base = registry.zombies.get('shambler')!;
+const base = registry.actors.get('shambler')!;
 const scale = makeScale(0.5);
 const type: ActorDef = {
   ...base,
@@ -344,7 +344,7 @@ describe('shambler interest', () => {
     expect(savedListener.stimulusAt).toBe(f.time() + 0.05);
     expect(savedListener.lastAlertAt).toBe(firstCryAt);
     const invalid = structuredClone(snapshot);
-    invalid.zombies[0]!.zombie.lastAlertAt = -1;
+    invalid.actors[0]!.actor.lastAlertAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid zombie state');
   });
 
@@ -359,12 +359,12 @@ describe('shambler interest', () => {
       expect(restored.snapshotState()).toEqual(snapshot);
       return snapshot;
     };
-    expect(restore().zombies[0]!.zombie.mode).toBe('hesitate');
+    expect(restore().actors[0]!.actor.mode).toBe('hesitate');
     f.step(0.15);
     f.step(0.06);
     expect(zombie.leanTarget).toBeDefined();
     const snapshot = structuredClone(restore());
-    snapshot.zombies[0]!.zombie.refusedAt = -1;
+    snapshot.actors[0]!.actor.refusedAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');
   });
 });

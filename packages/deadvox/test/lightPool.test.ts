@@ -23,7 +23,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FIXTURE_LIMIT = TEST_SENSE_TUNING.light.renderedFixtureLimit;
 const TEST_LIGHTS = [

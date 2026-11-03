@@ -115,7 +115,7 @@ describe('browser mod admission', () => {
     ]);
     expect(result.content.registry.items.has(data.items[0]!.id)).toBe(true);
     const zombie = data.actors[0]!;
-    expect(result.content.registry.zombies.get(zombie.id)?.speed).toEqual(zombie.speed);
+    expect(result.content.registry.actors.get(zombie.id)?.speed).toEqual(zombie.speed);
     expect(result.content.origins.get(`actors:${zombie.id}`)?.source).toBe('fixture.json/content.json');
     vi.stubGlobal(
       'Worker',
@@ -138,8 +138,8 @@ describe('browser mod admission', () => {
     expect(result.canStart).toBe(false);
     expect(result.issues.get('fixture.json')?.length).toBeGreaterThan(0);
     expect(result.content.registry.items.size).toBe(base.registry.items.size);
-    expect(result.content.registry.zombies.get(data.actors[0]!.id)).toEqual(
-      base.registry.zombies.get(data.actors[0]!.id),
+    expect(result.content.registry.actors.get(data.actors[0]!.id)).toEqual(
+      base.registry.actors.get(data.actors[0]!.id),
     );
     expect(result.content.origins).toEqual(base.origins);
     expect(base.registry.items.has(data.items[0]!.id)).toBe(false);

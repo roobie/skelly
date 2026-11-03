@@ -426,11 +426,11 @@ describe('canonical save format', () => {
   it('round-trips a hesitating and refused zombie through the save envelope', async () => {
     const source = capture(createRuntime());
     const hesitation = structuredClone(source);
-    const hesitating = hesitation.world.zombies.zombies[0]!.zombie;
+    const hesitating = hesitation.world.actors.actors[0]!.actor;
     hesitating.mode = 'hesitate';
     hesitating.hesitationFrom = 'idle';
     const refused = structuredClone(source);
-    const refusing = refused.world.zombies.zombies[0]!.zombie;
+    const refusing = refused.world.actors.actors[0]!.actor;
     refusing.refusedAt = 1;
     refusing.leanTarget = [1, 2, 3];
 
@@ -441,7 +441,7 @@ describe('canonical save format', () => {
       })),
     );
     for (const { snapshot, decoded } of roundTrips) {
-      expect(decoded.snapshot.world.zombies.zombies[0]!.zombie).toEqual(snapshot.world.zombies.zombies[0]!.zombie);
+      expect(decoded.snapshot.world.actors.actors[0]!.actor).toEqual(snapshot.world.actors.actors[0]!.actor);
     }
   });
 
@@ -474,7 +474,7 @@ describe('canonical save format', () => {
       source.zombies.store.remove(id);
     }
     const id = source.zombies.add(
-      registry.zombies.get('shambler')!,
+      registry.actors.get('shambler')!,
       [source.player.body.pos[0] + 1, source.player.body.pos[1], source.player.body.pos[2]],
       [0, 0, 1],
     );
@@ -564,9 +564,9 @@ describe('canonical save format', () => {
 
   it('persists severed and damaged zombie regions through encode, decode, and restore', async () => {
     const initial = createRuntime();
-    const id = initial.zombies.add(registry.zombies.get('shambler')!, [3, 4, 5]);
+    const id = initial.zombies.add(registry.actors.get('shambler')!, [3, 4, 5]);
     const damaged = structuredClone(capture(initial));
-    const { regions } = damaged.world.zombies.zombies.find((entry) => entry.id === id)!.zombie;
+    const { regions } = damaged.world.actors.actors.find((entry) => entry.id === id)!.actor;
     regions.leftArm = 0;
     regions.head! /= 2;
     regions.torso! /= 2;
@@ -602,7 +602,7 @@ describe('canonical save format', () => {
     let source = createRuntime(undefined, true, columns);
     expect(startRest(source, 'rest')).toBeUndefined();
     advance(source, 2);
-    source.zombies.add(registry.zombies.get('shambler')!, source.player.body.pos);
+    source.zombies.add(registry.actors.get('shambler')!, source.player.body.pos);
     source = prepareAudioContinuation(source);
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
@@ -658,7 +658,7 @@ describe('canonical save format', () => {
       worldStats.editedChunks,
     );
     expect(snapshot.world.spawned.length).toBe(population.spawned);
-    expect(snapshot.world.zombies.zombies.length).toBe(population.alive);
+    expect(snapshot.world.actors.actors.length).toBe(population.alive);
     expect(snapshot.character.inventory.piles.length).toBe(pileStats.pileCount + pileStats.baselinePileCount);
     expect(snapshot.character.inventory.piles.reduce((sum, pile) => sum + pile.items.length, 0)).toBe(
       pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems,

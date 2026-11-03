@@ -64,13 +64,13 @@ const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
     hurtPlayer: (damage) => hits.push(damage),
   });
   const type = {
-    ...registry.zombies.get('shambler')!,
+    ...registry.actors.get('shambler')!,
     attack: {
-      ...registry.zombies.get('shambler')!.attack,
+      ...registry.actors.get('shambler')!.attack,
       reach: reachMetres,
       windupSimSeconds: simSeconds(0.2),
       moves: moves ?? [
-        { ...registry.zombies.get('shambler')!.attack.moves[0]!, id: 'fixture_thrust', motion: 'thrust' },
+        { ...registry.actors.get('shambler')!.attack.moves[0]!, id: 'fixture_thrust', motion: 'thrust' },
       ],
     },
   };
@@ -129,7 +129,7 @@ it('requires enough content-defined zombie reach to start and land a thrust thro
 });
 
 it('chooses only motion-clear moves at contact when a zombie also has a blocked high-weight move', () => {
-  const template = baseRegistry().zombies.get('shambler')!.attack.moves[0]!;
+  const template = baseRegistry().actors.get('shambler')!.attack.moves[0]!;
   const thrust = { ...template, id: 'fixture_thrust', motion: 'thrust' as const, damage: 1, weight: 1 };
   const wrestle = { ...template, id: 'fixture_wrestle', motion: 'wrestle' as const, damage: 5, weight: 1000 };
   const { system, zombie, hits } = fixture(2.1, [wrestle, thrust]);
@@ -155,7 +155,7 @@ it('rechecks the blocker at zombie contact when a solid wall replaces the wire d
 });
 
 it('blocks the shambler swing and piercing bite through wire even when their reach is sufficient', () => {
-  const { moves } = baseRegistry().zombies.get('shambler')!.attack;
+  const { moves } = baseRegistry().actors.get('shambler')!.attack;
   expect(moves.length).toBeGreaterThan(0);
   for (const move of moves) {
     const { system, zombie, hits, wire } = fixture(2.1, [move]);
@@ -198,7 +198,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: (damage) => hits.push(damage),
     });
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const id = system.add(type, [0, 1, 0], [0, 0, 1]);
     const zombie = system.store.get(id)!;
     const reach = actorAttackReachMetres(zombie);

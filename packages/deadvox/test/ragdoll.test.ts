@@ -25,7 +25,7 @@ describe('render ragdoll', () => {
       .filter(([, plan]) => ragdollContent.models.includes(plan.model))
       .map(([plan]) => plan),
   )('%s partitions every skeleton bone once with one limited link per non-root group', async (model) => {
-    const type = model === 'fused-mass' ? fusedMassTypeOf(baseRegistry().zombies)! : { model };
+    const type = model === 'fused-mass' ? fusedMassTypeOf(baseRegistry().actors)! : { model };
     const figure = actorFigure(type, model === 'fused-mass' ? FUSED_MASS_FIGURE_SEED : 17).realized;
     const groups = ragdollGroups(figure.body.bones);
     const indices = groups.flatMap((group) => group.indices);

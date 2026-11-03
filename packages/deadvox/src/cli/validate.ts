@@ -142,8 +142,7 @@ export const validate = (
     write(`FAIL  ${issue.source} ${issue.path}: ${issue.message}`);
   }
   const counts = CONTENT_SECTION_KEYS.map((section) => {
-    const count =
-      section === 'blocks' ? registry.blocks.length - 1 : registry[section === 'actors' ? 'zombies' : section].size;
+    const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
     return `${count} ${CONTENT_SECTIONS[section].label}`;
   });
   counts.push(`${assets} asset sources`);

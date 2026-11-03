@@ -477,7 +477,7 @@ describe('camp gate templates', () => {
       }
       return y <= groundBlock;
     };
-    const zombies = [...registry.zombies.values()];
+    const zombies = [...registry.actors.values()];
     expect(zombies.length).toBeGreaterThan(0);
 
     const crossesOpening = (dimensions: { halfWidth: number; halfDepth: number; height: number }): boolean => {
@@ -537,7 +537,7 @@ describe('camp gate templates', () => {
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
     const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
     for (const marker of markers) {
-      const body = actorBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
+      const body = actorBodyDimensions(registry.actors.get(marker.type)!, BLOCK_SIZE);
       const footY = marker.position[1] / BLOCK_SIZE;
       const bodyTargets: Point3[] = [0, 0.25, 0.5, 0.75, 1].map((fraction) => [
         marker.position[0] / BLOCK_SIZE,

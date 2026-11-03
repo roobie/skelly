@@ -55,7 +55,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
-  const id = system.add(registry.zombies.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);
+  const id = system.add(registry.actors.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);
   const zombie = system.store.get(id)!;
   zombie.figureSeed = seed;
   zombie.mode = pose.mode;
@@ -234,7 +234,7 @@ describe('player melee reach at shambler attack distance', () => {
   });
 
   it('reaches visible posed head and torso voxels for every weapon, seed, and attack distance', () => {
-    const shamblerReach = registry.zombies.get('shambler')!.attack.reach;
+    const shamblerReach = registry.actors.get('shambler')!.attack.reach;
     const attackDistances = [shamblerReach * 0.9, shamblerReach];
     const scenarios = FIGURE_SEEDS.flatMap((seed) =>
       poses.flatMap((pose) =>

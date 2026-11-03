@@ -23,7 +23,7 @@ try {
       .map((file) => ({ source: file, data: JSON.parse(readFileSync(resolve(contentDirectory, file), 'utf8')) })),
   );
   const PLAYER = playerTuning(registry);
-  const type = { ...registry.zombies.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
+  const type = { ...registry.actors.get('shambler'), dismember: { chance: 0, headOnKillChance: 0 } };
   const player = {
     pos: [100, 2, 100],
     vel: [0, 0, 0],

@@ -39,7 +39,7 @@ const swingAtShambler = (weapon: MeleeWeapon): Readonly<SoundEmission>[] => {
     },
   });
   const player = session.body.pos;
-  session.zombies.add(registry.zombies.get('shambler')!, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+  session.actors.add(registry.actors.get('shambler')!, [player[0], player[1], player[2] - 1], [0, 0, 1]);
   const hands = { right: null, left: null };
 
   const swung = session.playerCombat.beginMeleeSwing({

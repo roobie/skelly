@@ -13,7 +13,7 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const cycle = requireDayCycle(registry);
-const shambler = registry.zombies.get('shambler')!;
+const shambler = registry.actors.get('shambler')!;
 const scale = makeScale(0.5);
 const floor = (_x: number, y: number) => y === 0;
 const player = {
@@ -83,7 +83,7 @@ describe('sun-owned day phases', () => {
       }
 
       const seesAtRange = perceivePlayer({
-        zombie,
+        def: zombie,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: { ...player, pos: target },
@@ -112,7 +112,7 @@ describe('sun-owned day phases', () => {
     const seesAt = (distance: number, time: number) => {
       const state = dayPhaseAt(cycle, time);
       return perceivePlayer({
-        zombie,
+        def: zombie,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: { ...player, pos: [distance / scale.blockSize, 1, 0] },

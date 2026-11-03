@@ -92,10 +92,7 @@ export interface ContentIssue {
 }
 
 type RegistryMaps = {
-  [S in Exclude<ContentSection, 'blocks'> as S extends 'actors' ? 'zombies' : S]: Map<
-    string,
-    NonNullable<ContentFile[S]>[number]
-  >;
+  [S in Exclude<ContentSection, 'blocks'>]: Map<string, NonNullable<ContentFile[S]>[number]>;
 };
 
 export interface Registry extends RegistryMaps {
@@ -113,7 +110,6 @@ export interface Registry extends RegistryMaps {
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
 import { FIGURE_VARIANTS } from './actorModels.ts';
-import { registrySection } from './registrySection.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;
@@ -265,7 +261,7 @@ interface Origin {
 const emptyRegistry = (): Registry => ({
   // Object.fromEntries loses key-specific types; every ordinary section receives its native map.
   ...(Object.fromEntries(
-    SECTIONS.filter((section) => section !== 'blocks').map((section) => [registrySection(section), new Map()]),
+    SECTIONS.filter((section) => section !== 'blocks').map((section) => [section, new Map()]),
   ) as RegistryMaps),
   blocks: [AIR],
   blockIds: new Map([[AIR.id, 0]]),
@@ -299,7 +295,7 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
       if (section === 'blocks') {
         continue;
       }
-      const map = registry[registrySection(section)];
+      const map = registry[section];
       (file[section] ?? []).forEach((def, i) => {
         if (section === 'skills') {
           const skill = def as NonNullable<ContentFile['skills']>[number];
@@ -1309,7 +1305,7 @@ const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [strin
   if (entry.fixed && furniture?.cover) {
     found.push(['.fixed', 'a cover must be liftable, so it cannot be fitted']);
   }
-  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
+  if (entry.spawn !== undefined && !registry.actors.has(entry.spawn)) {
     found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
   }
   return found;
@@ -1574,7 +1570,7 @@ const checkActorFigure = (zombie: ActorDef, report: Report): void => {
 
 const checkZombies = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
-  for (const zombie of registry.zombies.values()) {
+  for (const zombie of registry.actors.values()) {
     checkSeveredItems(registry, zombie, report);
     checkActorFigure(zombie, report);
     if (zombie.footstepSound !== undefined && !registry.soundFamilies.has(zombie.footstepSound)) {
@@ -1912,7 +1908,7 @@ const checkEventRules = (registry: Registry, scenario: ScenarioDef, report: Repo
     }
     ids.add(rule.id);
     rule.effects.forEach((effect, effectIndex) => {
-      if (!registry.zombies.has(effect.zombie)) {
+      if (!registry.actors.has(effect.zombie)) {
         report(
           'scenarios',
           scenario.id,
@@ -1929,7 +1925,7 @@ const checkScenarioPopulation = (registry: Registry, scenario: ScenarioDef, repo
     ['settlementHorde', scenario.population.hordes > 0, 'hordes'],
     ['settlementWanderer', scenario.population.settlementPressure, 'settlementPressure'],
   ] as const) {
-    if (required && !claimed(registry.zombies, capability)) {
+    if (required && !claimed(registry.actors, capability)) {
       report('scenarios', scenario.id, `.population.${field}`, `missing required capability "${capability}"`);
     }
   }

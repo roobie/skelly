@@ -51,7 +51,7 @@ export interface DebugHooks {
   readonly debugModifierHeld: () => boolean;
   /** The camera's current roll in radians (damage feedback; 0 otherwise). */
   readonly roll: () => number;
-  readonly zombies: () => ActorSystem | undefined;
+  readonly actors: () => ActorSystem | undefined;
   readonly zombieRenderer: ActorRenderer;
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;

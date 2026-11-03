@@ -51,7 +51,7 @@ const { registry, issues } = buildFixtureRegistry([
     },
   },
 ]);
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FLOOR: SolidAt = (_x, y) => y === 0;
 

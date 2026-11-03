@@ -489,7 +489,7 @@ export class AuthoredSite implements Site {
       }));
     this.hordes = (layout.hordes ?? []).map(({ id, position }) => ({
       id: `${layout.id}_${id}`,
-      type: claimedId(registry.zombies, 'settlementHorde'),
+      type: claimedId(registry.actors, 'settlementHorde'),
       pos: blocks(position),
       members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));

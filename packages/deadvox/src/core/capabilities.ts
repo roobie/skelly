@@ -1,5 +1,4 @@
 import type { ContentIssue, Registry } from './content.ts';
-import { registrySection } from './registrySection.ts';
 
 export const CONTENT_CAPABILITIES = {
   actors: { settlementHorde: 'optional', settlementWanderer: 'optional' },
@@ -62,10 +61,7 @@ const requiredForStack = (registry: Registry, section: string, requirement: stri
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   for (const [section, capabilities] of Object.entries(CONTENT_CAPABILITIES)) {
-    const entries = registry[registrySection(section as keyof typeof CONTENT_CAPABILITIES)] as ReadonlyMap<
-      string,
-      Claimant
-    >;
+    const entries = registry[section as keyof typeof CONTENT_CAPABILITIES] as ReadonlyMap<string, Claimant>;
     for (const [capability, requirement] of Object.entries(capabilities)) {
       const providers = claimants(entries, capability);
       if (providers.length === 0 && !(requireAll && requiredForStack(registry, section, requirement))) {

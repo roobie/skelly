@@ -511,7 +511,7 @@ describe('game audio playback', () => {
   });
 
   it('uses the same one-step wall decision for zombie hearing and positional sound', async () => {
-    const shambler = baseRegistry.zombies.get('shambler')!;
+    const shambler = baseRegistry.actors.get('shambler')!;
     let blocked = false;
     const solidAt: SolidAt = (x, y, z) => blocked && x === 4 && y === 2 && z === 0;
     const { audio, play, context, isSolid } = setup(solidAt);
@@ -523,7 +523,7 @@ describe('game audio playback', () => {
     const noise = { id: 1, pos: [source[0], zombie[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
     const hear = (seed: number) =>
       hearVocalNoise({
-        zombie: shambler,
+        def: shambler,
         from: zombie,
         noise,
         time: 1,

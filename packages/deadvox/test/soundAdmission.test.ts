@@ -122,9 +122,9 @@ describe('simulation sound admission', () => {
   it('applies a zombie type’s authored pitch multiplier to its mob sound', () => {
     const selected: Readonly<SoundEmission>[] = [];
     const session = makeSession((emission) => selected.push(emission));
-    const type = registry.zombies.get('amalgam')!;
-    session.zombies.add(type, [6, 8, 9], [0, 0, 1]);
-    session.zombies.tick(1 / 60);
+    const type = registry.actors.get('amalgam')!;
+    session.actors.add(type, [6, 8, 9], [0, 0, 1]);
+    session.actors.tick(1 / 60);
 
     const sound = selected.find(({ event }) => event.startsWith('amalgam_'));
     expect(sound).toBeDefined();

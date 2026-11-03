@@ -351,7 +351,7 @@ export const createPlayView = (
           gravityMetresPerSimSecondSquared,
           canvas: engine.renderer?.domElement,
           reveal: meshes,
-          zombies: registry.zombies,
+          zombies: registry.actors,
           onBurst: (position, zombie) => acidEffects.deathSplash(position, zombie),
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (zombie) => gore.severity(zombie),
@@ -534,7 +534,7 @@ export const createPlayView = (
       itemThrows.update(time, inventory);
       blastFlashes.update(dt);
       leverProps.update(dt);
-      acidEffects.sync(acidGlobs, acidPuddles, registry.zombies, dt);
+      acidEffects.sync(acidGlobs, acidPuddles, registry.actors, dt);
       acidEffects.syncDroplets(zombieMeshes.anchors?.() ?? [], dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);

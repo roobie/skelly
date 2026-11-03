@@ -196,7 +196,7 @@ const worldZombieTypes = (
   const types = new Set(layouts.flatMap((layout) => layout.shamblers.map((spawn) => spawn.type)));
   const populations = [...scenarios].map((scenario) => scenario.population);
   if (layouts.some((layout) => layout.hordes?.length) || populations.some((population) => population.hordes > 0)) {
-    const provider = claimed(registry.zombies, 'settlementHorde');
+    const provider = claimed(registry.actors, 'settlementHorde');
     if (provider) {
       types.add(provider.id);
     }
@@ -330,7 +330,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
     addTemplateSources(registry, template, sources);
   }
   for (const id of sources.zombieTypes) {
-    const loot = registry.zombies.get(id)?.loot;
+    const loot = registry.actors.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);
     }

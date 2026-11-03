@@ -103,7 +103,7 @@ const layoutValidationBase = [
         };
       }),
       actors: [...layoutZombieIds].map((id) => {
-        const zombie = structuredClone(registry.zombies.get(id)!);
+        const zombie = structuredClone(registry.actors.get(id)!);
         zombie.loot = undefined;
         zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((region) => [region, null]));
         return zombie;
@@ -119,14 +119,14 @@ const layoutValidationBase = [
           tool: {
             qualities: Object.fromEntries(
               [...layoutZombieIds].flatMap((id) => {
-                const dismember = registry.zombies.get(id)!.downed?.dismember;
+                const dismember = registry.actors.get(id)!.downed?.dismember;
                 return dismember ? [[dismember.quality, dismember.level]] : [];
               }),
             ),
           },
         },
       ],
-      sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.zombies.get(id)!.sounds)))].map(
+      sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.actors.get(id)!.sounds)))].map(
         (id) => structuredClone(registry.sounds.get(id)!),
       ),
       // The track surfaces are real blocks, minus the footstep sounds this fixture does not carry.
@@ -373,7 +373,7 @@ describe('authored layout acceptance', () => {
     expect(amalgams.length).toBeGreaterThan(0);
     const { blockSize } = makeScale(0.5);
     for (const marker of amalgams) {
-      const body = actorBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
+      const body = actorBodyDimensions(registry.actors.get(marker.type)!, blockSize);
       const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
       const nearestTrackEdge = Math.min(
         ...camp.tracks.map(
@@ -480,7 +480,7 @@ describe('authored layout acceptance', () => {
         )
         .map(({ id, position }) => ({
           id: `${playtest.id}_${id}`,
-          type: claimedId(registry.zombies, 'settlementHorde'),
+          type: claimedId(registry.actors, 'settlementHorde'),
           pos: position.map((metres) => metres / scale.blockSize),
         }));
     const minX = Math.floor(playtest.bounds.x0 / scale.blockSize / CHUNK) - 1;

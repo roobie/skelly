@@ -171,7 +171,7 @@ describe('authored readable text', () => {
     const session = createSession({
       registry: {
         ...registry,
-        zombies: BUNDLED_CONTENT.registry.zombies,
+        actors: BUNDLED_CONTENT.registry.actors,
         figures: BUNDLED_CONTENT.registry.figures,
         models: BUNDLED_CONTENT.registry.models,
         siteGeneration: BUNDLED_CONTENT.registry.siteGeneration,

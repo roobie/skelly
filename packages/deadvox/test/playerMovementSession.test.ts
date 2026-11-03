@@ -332,9 +332,9 @@ describe('long-gun skill ownership', () => {
     const before = session.character.snapshotState();
     expect(session.firearms.fire(shot)).toBe(false);
     expect(session.character.snapshotState()).toEqual(before);
-    const zombieType = [...content.zombies.values()][0]!;
-    session.zombies.add(zombieType, [0, 1, -3], [0, 0, 1]);
-    const hits = vi.spyOn(session.zombies, 'firePellets');
+    const zombieType = [...content.actors.values()][0]!;
+    session.actors.add(zombieType, [0, 1, -3], [0, 0, 1]);
+    const hits = vi.spyOn(session.actors, 'firePellets');
     expect(session.firearms.fire({ ...shot, ready: true })).toBe(true);
     expect(hits).toHaveReturnedWith(expect.objectContaining({ hits: expect.any(Number) }));
     expect(hits.mock.results[0]!.value.hits).toBeGreaterThan(0);
@@ -644,7 +644,7 @@ type Session = Runtime['session'];
 const horizontalDistance = (from: readonly number[], to: readonly number[]): number =>
   Math.hypot(to[0]! - from[0]!, to[2]! - from[2]!);
 
-const shambler = registry.zombies.get('shambler')!;
+const shambler = registry.actors.get('shambler')!;
 const { loot: _loot, ...lootless } = shambler;
 // One blow downs it at the torso; its head stays on, so it lies there instead of dying. No limb comes off,
 // and its pockets are empty, so anything on the ground came from clearing it.
@@ -656,14 +656,14 @@ const FRAGILE: ActorDef = {
 
 /** Adds a shambler facing -z and downs it with a blow to the chest, as the player would. */
 const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie: Actor } => {
-  const id = session.zombies.add(FRAGILE, position, [0, 0, -1]);
-  const zombie = session.zombies.store.get(id)!;
+  const id = session.actors.add(FRAGILE, position, [0, 0, -1]);
+  const zombie = session.actors.store.get(id)!;
   const { blockSize } = makeScale(0.5);
   const chest = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, blockSize)).torso.find(
     (box) => box.bone === 'chest',
   )!.center;
   const origin: Vec3 = [chest[0], chest[1], chest[2] + 0.45 / blockSize];
-  if (session.zombies.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !zombie.incapacitated) {
+  if (session.actors.swing(origin, [0, 0, -1], FISTS_MELEE) !== id || !zombie.incapacitated) {
     throw new Error('The blow did not down the shambler');
   }
   return { id, zombie };
@@ -709,8 +709,8 @@ describe('attacker modifiers', () => {
     const strike = (boost: boolean) => {
       const runtime = makeRuntime({ content });
       const { session } = runtime;
-      const id = session.zombies.add(type, [1.2, 1, 0], [-1, 0, 0]);
-      const zombie = session.zombies.store.get(id)!;
+      const id = session.actors.add(type, [1.2, 1, 0], [-1, 0, 0]);
+      const zombie = session.actors.store.get(id)!;
       expect(zombie.modifiers).toEqual([]);
       if (boost) {
         zombie.modifiers.push({ effect: 'attack.damage', multiply: 2, add: 4 });
@@ -1213,7 +1213,7 @@ describe('clearing a downed shambler', () => {
     const { id } = downShambler(session, [0, 1, -2]);
     expect(session.clearDownedBody(id, 'finish-off')).toBeUndefined();
     runtime.advance(framesFor(downed.finishOff.simSeconds));
-    expect(session.zombies.store.get(id)).toBeUndefined();
+    expect(session.actors.store.get(id)).toBeUndefined();
     expect(groundItems(session)).toEqual([]);
   });
 
@@ -1234,7 +1234,7 @@ describe('clearing a downed shambler', () => {
     expect(session.inventory.add(session.inventory.create(tool.id), { kind: 'hand', side: 'right' })).toBe(true);
     expect(session.clearDownedBody(id, 'dismember')).toBeUndefined();
     runtime.advance(framesFor(simSeconds));
-    expect(session.zombies.store.get(id)).toBeUndefined();
+    expect(session.actors.store.get(id)).toBeUndefined();
     expect(zombie.severed).toEqual(expect.arrayContaining(['upperArm.L', 'upperArm.R', 'head']));
     expect(groundItems(session)).toHaveLength(3);
   });
@@ -1270,7 +1270,7 @@ describe('clearing a downed shambler', () => {
     runtime.advance(beforeEnd);
     premise(session, zombie);
     runtime.advance(framesFor(downed.finishOff.simSeconds) - beforeEnd);
-    expect(session.zombies.store.get(id)).toBe(zombie);
+    expect(session.actors.store.get(id)).toBe(zombie);
     expect(zombie.incapacitated).toBe(true);
   });
 });

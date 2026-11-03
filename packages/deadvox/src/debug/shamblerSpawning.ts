@@ -13,7 +13,7 @@ export const spawnZombieType = (
   options: { readonly typeId: string; readonly count: number },
 ): number => {
   const { typeId, count } = options;
-  const type = engine.registry.zombies.get(typeId);
+  const type = engine.registry.actors.get(typeId);
   if (!type) {
     return 0;
   }
@@ -38,7 +38,7 @@ export const spawnShamblers = (engine: Engine, player: Body, zombies: ActorSyste
 
 /** Debug-only fixture: place one close shambler behind solid geometry so it starts unaware. */
 export const spawnUnawareShambler = (engine: Engine, player: Body, zombies: ActorSystem): boolean => {
-  const type = engine.registry.zombies.get('shambler');
+  const type = engine.registry.actors.get('shambler');
   if (!type) {
     return false;
   }

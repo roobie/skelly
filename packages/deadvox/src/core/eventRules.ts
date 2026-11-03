@@ -12,7 +12,7 @@ export interface EventRuleAdvance {
   dayPhase: DayPhase;
   /** Where the player stands; a released horde heads here. */
   player: Readonly<Vec3>;
-  registry: Pick<Registry, 'zombies'>;
+  registry: Pick<Registry, 'actors'>;
   zombies: Pick<ActorSystem, 'releaseHorde'>;
 }
 
@@ -34,7 +34,7 @@ export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, regi
     }
     run.fire(rule.id, calendar);
     rule.effects.forEach((effect, index) => {
-      const type = registry.zombies.get(effect.zombie);
+      const type = registry.actors.get(effect.zombie);
       if (!type) {
         throw new Error(`Event rule ${rule.id} names no zombie type "${effect.zombie}"`);
       }

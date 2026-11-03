@@ -9,7 +9,7 @@ export const HORDE_MEMBERS = [20, 50] as const;
 const ZOMBIE_COUNT = [6, 10] as const;
 
 export const settlementHordeSpawn = (
-  registry: Pick<Registry, 'zombies'>,
+  registry: Pick<Registry, 'actors'>,
   seed: number,
   road: Rect,
   { roadHeightAt, id }: { readonly roadHeightAt: (x: number) => number; readonly id: string },
@@ -18,21 +18,21 @@ export const settlementHordeSpawn = (
   const x = Math.floor(road.x0 + (road.x1 - road.x0) * 0.68);
   return {
     id,
-    type: claimedId(registry.zombies, 'settlementHorde'),
+    type: claimedId(registry.actors, 'settlementHorde'),
     pos: [x + 0.5, roadHeightAt(x) + 1, (road.z0 + road.z1) / 2],
     members: rng.int(...HORDE_MEMBERS),
   };
 };
 
-export const ordinarySpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<string, number> =>
+export const ordinarySpawnWeights = (registry: Pick<Registry, 'actors'>): Map<string, number> =>
   new Map(
-    [...registry.zombies]
+    [...registry.actors]
       .filter(([, zombie]) => !zombie.authoredOnly)
       .map(([type, zombie]) => [type, zombie.spawnWeight]),
   );
 
 export const settlementActorSpawns = (
-  registry: Pick<Registry, 'zombies'>,
+  registry: Pick<Registry, 'actors'>,
   seed: number,
   road: Rect,
   options: {
@@ -45,7 +45,7 @@ export const settlementActorSpawns = (
 ): ActorSpawn[] => {
   const { roadHeightAt, markers } = options;
   const rng = Rng.stream(seed, 'settlement-zombies');
-  const wanderer = claimedId(registry.zombies, 'settlementWanderer');
+  const wanderer = claimedId(registry.actors, 'settlementWanderer');
   const spawnWeights = options.spawnWeights ?? new Map([[wanderer, 1]]);
   const selected = markers.filter((spawn) => rng.chance(spawn.chance * (spawnWeights.get(spawn.zombie) ?? 1)));
   const weightedTypes = [...spawnWeights].filter(([, weight]) => weight > 0);

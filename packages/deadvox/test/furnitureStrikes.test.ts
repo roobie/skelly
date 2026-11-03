@@ -44,7 +44,7 @@ const { registry, issues } = buildFixtureRegistry([
 if (issues.length > 0) {
   throw new Error(JSON.stringify(issues));
 }
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const FLOOR: SolidAt = (_x, y) => y === 0;
 const WARDROBE_AT: Vec3 = [4, 1, 0];

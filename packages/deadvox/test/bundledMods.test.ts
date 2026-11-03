@@ -21,17 +21,17 @@ describe('beginner bundled mod', () => {
   });
 
   it('scales every hostile kind consistently from its core row', () => {
-    const [firstId, firstPlain] = base.zombies.entries().next().value!;
-    const firstEasy = beginner.content.registry.zombies.get(firstId)!;
+    const [firstId, firstPlain] = base.actors.entries().next().value!;
+    const firstEasy = beginner.content.registry.actors.get(firstId)!;
     const factors = {
       damage: firstEasy.attack.moves[0]!.damage / firstPlain.attack.moves[0]!.damage,
       speed: firstEasy.speed.wanderMetresPerSimSecond / firstPlain.speed.wanderMetresPerSimSecond,
       detection: firstEasy.sight / firstPlain.sight,
       health: firstEasy.regions.head! / firstPlain.regions.head!,
     };
-    expect(beginner.content.registry.zombies.size).toBe(base.zombies.size);
-    for (const [id, plain] of base.zombies) {
-      const easy = beginner.content.registry.zombies.get(id)!;
+    expect(beginner.content.registry.actors.size).toBe(base.actors.size);
+    for (const [id, plain] of base.actors) {
+      const easy = beginner.content.registry.actors.get(id)!;
       expect(easy, id).toBeDefined();
       plain.attack.moves.forEach((move, index) => {
         expect(easy.attack.moves[index]!.damage).toBeCloseTo(move.damage * factors.damage, 9);
@@ -52,7 +52,7 @@ describe('beginner bundled mod', () => {
     const none = selectBundledMods(bundledModIdsFromUrl(new URLSearchParams('seed=3')));
     expect(none.issues).toEqual([]);
     expect(none.admitted).toEqual([]);
-    expect(none.content.registry.zombies).toEqual(base.zombies);
+    expect(none.content.registry.actors).toEqual(base.actors);
   });
 
   it('refuses an unknown bundled id visibly', () => {
@@ -88,11 +88,11 @@ describe('beginner mode saves', () => {
 });
 
 describe('beginner mode light spotting', () => {
-  const farthestSpotted = (zombie: ReturnType<typeof base.zombies.get>): number => {
+  const farthestSpotted = (zombie: ReturnType<typeof base.actors.get>): number => {
     let farthest = 0;
     for (let metres = 0.5; metres <= 150; metres += 0.5) {
       const seen = perceivePlayer({
-        zombie: zombie!,
+        def: zombie!,
         from: [0, 1, 0],
         facing: [1, 0, 0],
         player: {
@@ -118,9 +118,9 @@ describe('beginner mode light spotting', () => {
   };
 
   it('spots a carried light from a shorter range than without the mod', () => {
-    for (const [id, plain] of base.zombies) {
+    for (const [id, plain] of base.actors) {
       const lightOnly = {
-        ...beginner.content.registry.zombies.get(id)!,
+        ...beginner.content.registry.actors.get(id)!,
         sight: plain.sight,
         nightSight: plain.nightSight,
       };

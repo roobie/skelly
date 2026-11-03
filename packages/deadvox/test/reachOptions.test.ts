@@ -201,7 +201,7 @@ const reachTargets = {
   body: (_inventory, pos) => {
     const zombie = {
       incapacitated: true,
-      type: [...registry.zombies.values()].find((definition) => definition.downed)!,
+      type: [...registry.actors.values()].find((definition) => definition.downed)!,
       body: { pos: [pos[0] + 0.5, pos[1], pos[2] + 0.5], halfWidth: 0.4, height: 0.5 },
     } as Actor;
     return (player) => [downedBodyPlan(player, zombie, 'finish-off').ok];

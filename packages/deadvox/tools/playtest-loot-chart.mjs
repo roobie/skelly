@@ -170,7 +170,7 @@ const templateZombieLines = (spawns) => {
   return [
     '    Template zombies:',
     ...spawns.map((spawn) => {
-      const zombie = registry.zombies.get(spawn.zombie);
+      const zombie = registry.actors.get(spawn.zombie);
       const chance = `${(spawn.chance * 100).toFixed(1)}%`;
       const markerWord = spawn.count === 1 ? 'marker' : 'markers';
       const drop = zombie?.loot === undefined ? 'no drop table' : `drops via \`${zombie.loot}\` (see Zombie drops)`;
@@ -214,7 +214,7 @@ for (const { spawns } of buildings) {
   }
 }
 for (const _horde of playtest.hordes ?? []) {
-  const hordeSource = sourceForZombie(claimedId(registry.zombies, 'settlementHorde'));
+  const hordeSource = sourceForZombie(claimedId(registry.actors, 'settlementHorde'));
   hordeSource.hordes += 1;
 }
 
@@ -240,7 +240,7 @@ const outsideLootLines = () => {
   ];
   const tableUsers = new Map();
   for (const [typeId, source] of [...zombieSources].sort(([a], [b]) => a.localeCompare(b))) {
-    const zombie = registry.zombies.get(typeId);
+    const zombie = registry.actors.get(typeId);
     const tableId = zombie?.loot;
     const loot = tableId === undefined ? 'no drop table' : `\`${tableId}\``;
     lines.push(`- ${zombie?.name ?? typeId} (${zombieSourceText(source)}): ${loot}`);

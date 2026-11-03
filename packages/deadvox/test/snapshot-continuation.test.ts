@@ -40,7 +40,7 @@ describe('zombie attack causes', () => {
     }
 
     const events = runtime.sim.events.reader();
-    const runner = registry.zombies.get('runner')!;
+    const runner = registry.actors.get('runner')!;
     const playerPos = runtime.session.body.pos;
     runtime.zombies.add(runner, [playerPos[0] + 0.5, playerPos[1], playerPos[2]], [-1, 0, 0]);
     advance(runtime, 300);
@@ -79,7 +79,7 @@ describe('fixture save/load continuation', () => {
     const playerSpawn: [number, number, number] = [center[0] - 180, center[1], center[2]];
     const start = 23 * 3600;
     const source = createRuntime(undefined, false, oneColumn, { start, spawn: playerSpawn });
-    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, BACKGROUND_ACTOR_SLICE_COUNT);
+    source.zombies.addHorde('save-fixture', registry.actors.get('shambler')!, center, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(source.zombies.snapshotState().hordes.length).toBeGreaterThan(0);
     advance(source, 60);
     expect(source.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
@@ -100,7 +100,7 @@ describe('fixture save/load continuation', () => {
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
-    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySimSeconds;
+    const forgetAt = stimulusAt + registry.actors.get('shambler')!.stimulusMemorySimSeconds;
     loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
     loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ACTOR_SLICE_COUNT);
@@ -110,7 +110,7 @@ describe('fixture save/load continuation', () => {
     expect(plainDataTree(forgottenNoiseSave)).toBe(true);
     const forgottenNoiseBytes = await encodeFixture(forgottenNoiseSave);
     const forgottenNoiseDecoded = await decodeSave(forgottenNoiseBytes, { version: formatVersion, contentLookup });
-    expect(forgottenNoiseDecoded.snapshot.world.zombies).toEqual(forgottenNoiseSave.world.zombies);
+    expect(forgottenNoiseDecoded.snapshot.world.actors).toEqual(forgottenNoiseSave.world.actors);
   });
 
   it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
@@ -397,7 +397,7 @@ describe('fixture save/load continuation', () => {
     advance(uninterrupted, 4);
     advance(split, 4);
     for (const runtime of [uninterrupted, split]) {
-      runtime.zombies.add(registry.zombies.get('shambler')!, [...runtime.player.body.pos]);
+      runtime.zombies.add(registry.actors.get('shambler')!, [...runtime.player.body.pos]);
     }
     expect(split.player.body.onGround).toBe(false);
     uninterrupted = prepareAudioContinuation(uninterrupted);
@@ -413,11 +413,11 @@ describe('fixture save/load continuation', () => {
     ]);
     expect(snapshot.character.playerAudio.vocalNoise).not.toBeNull();
     expect(snapshot.character.playerAudio.vocalNoise!.expiresAt - split.sim.time).toBeCloseTo(0.25);
-    expect(snapshot.world.zombies.zombies[0]!.zombie).toHaveProperty('footstepClock');
+    expect(snapshot.world.actors.actors[0]!.actor).toHaveProperty('footstepClock');
     expect(snapshot.character.playerAudio.soundPicker.events).toContainEqual(
       expect.objectContaining({ event: 'player_strain', lastPlayedAt: split.sim.time }),
     );
-    expect(snapshot.world.zombies.zombies.some(({ zombie }) => zombie.idleSoundTimer > 0)).toBe(true);
+    expect(snapshot.world.actors.actors.some(({ actor: zombie }) => zombie.idleSoundTimer > 0)).toBe(true);
     expect(snapshot.character.handling.jobs).toEqual([]);
     expect(plainDataTree(snapshot)).toBe(true);
     expect(frozenTree(snapshot)).toBe(true);
@@ -477,7 +477,7 @@ describe('fixture save/load continuation', () => {
     let original = runtimeFrom();
     expect(startRest(original, 'rest')).toBeUndefined();
     advance(original, 2);
-    original.zombies.add(registry.zombies.get('shambler')!, original.player.body.pos);
+    original.zombies.add(registry.actors.get('shambler')!, original.player.body.pos);
     original = prepareAudioContinuation(original);
     const saved = capture(original);
     expect(saved.world.columns.length).toBeGreaterThan(0);
@@ -500,22 +500,22 @@ describe('fixture save/load continuation', () => {
     );
     expect(() => runtimeFrom(noCursor)).toThrow('Scheduler system set does not match snapshot');
 
-    expect(saved.world.zombies.zombies.length).toBeGreaterThan(0);
+    expect(saved.world.actors.actors.length).toBeGreaterThan(0);
     const noRngWord = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    const [a, b, c] = noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng;
-    noRngWord.world.zombies.zombies[0]!.zombie.behaviorRng = [a, b, c] as never;
+    const [a, b, c] = noRngWord.world.actors.actors[0]!.actor.behaviorRng;
+    noRngWord.world.actors.actors[0]!.actor.behaviorRng = [a, b, c] as never;
     expect(() => runtimeFrom(noRngWord)).toThrow('Invalid zombie state');
 
     const noZombieSoundRng = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noZombieSoundRng.world.zombies.zombies[0]!.zombie, 'soundRng');
+    Reflect.deleteProperty(noZombieSoundRng.world.actors.actors[0]!.actor, 'soundRng');
     expect(() => runtimeFrom(noZombieSoundRng)).toThrow('Invalid zombie state');
 
     const noIdleSoundTimer = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noIdleSoundTimer.world.zombies.zombies[0]!.zombie, 'idleSoundTimer');
+    Reflect.deleteProperty(noIdleSoundTimer.world.actors.actors[0]!.actor, 'idleSoundTimer');
     expect(() => runtimeFrom(noIdleSoundTimer)).toThrow('Invalid zombie state');
 
     const noLastNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
-    Reflect.deleteProperty(noLastNoiseId.world.zombies.zombies[0]!.zombie, 'lastVocalNoiseId');
+    Reflect.deleteProperty(noLastNoiseId.world.actors.actors[0]!.actor, 'lastVocalNoiseId');
     expect(() => runtimeFrom(noLastNoiseId)).toThrow('Invalid zombie state');
 
     const noVocalNoiseId = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;

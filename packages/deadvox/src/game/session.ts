@@ -826,7 +826,7 @@ export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
-  const actorVoice = actorVoiceLaw(figureSeedPool(registry.zombies), claimed(registry.senses, 'player')!.actorVoice);
+  const actorVoice = actorVoiceLaw(figureSeedPool(registry.actors), claimed(registry.senses, 'player')!.actorVoice);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const Player = playerTuning(registry);
@@ -2567,7 +2567,7 @@ export const createSession = (options: SessionOptions) => {
       return found;
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
-    zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
+    zombieSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
     playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
@@ -2745,7 +2745,7 @@ export const createSession = (options: SessionOptions) => {
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,
-    zombies: zombieSystem,
+    actors: zombieSystem,
     playerCombat,
     zombieStore,
     spawner,
@@ -2962,7 +2962,7 @@ export const createSession = (options: SessionOptions) => {
         aim,
         survival,
         quickbar: quickbar.snapshotState(inventory),
-        zombies: zombieSystem,
+        actors: zombieSystem,
         playerCombat,
         spawner,
         rolledColumns,

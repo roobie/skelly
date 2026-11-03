@@ -732,7 +732,7 @@ describe('long-action interruptions', () => {
 
     const { health } = sim.body;
     const events = sim.events.reader();
-    const id = session.zombies.add(registry.zombies.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
+    const id = session.actors.add(registry.actors.get('shambler')!, [60, 1, 0], [-1, 0, 0]);
     let chasedAtCap = false;
     for (let i = 0; i < 600 && session.rest.action; i++) {
       frame();

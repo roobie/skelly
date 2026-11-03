@@ -49,7 +49,7 @@ export class ActorSpawner {
       this.consider(spawn, { cx, cz, registry, zombies });
     }
     for (const horde of site.hordesIn?.(cx, cz) ?? []) {
-      const type = registry.zombies.get(horde.type);
+      const type = registry.actors.get(horde.type);
       const key = `horde:${horde.id}`;
       if (type && !this.spawned.has(key)) {
         zombies.addHorde(key, type, horde.pos, horde.members);
@@ -102,7 +102,7 @@ export class ActorSpawner {
   }
 
   private spawnOnce(key: string, spawn: ActorSpawn, registry: Registry, zombies: ActorSystem): void {
-    const type = registry.zombies.get(spawn.type);
+    const type = registry.actors.get(spawn.type);
     if (type) {
       this.spawned.add(key);
       zombies.add(type, spawn.pos, [1, 0, 0]);

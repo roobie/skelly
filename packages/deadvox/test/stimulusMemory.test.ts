@@ -11,7 +11,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const BLOCK_SIZE = makeScale(0.5).blockSize;
 const PHYSICS = physicsFor(makeScale(0.5));
 const FLOOR: SolidAt = (_x, y) => y === 0;
@@ -162,7 +162,7 @@ describe('stimulus memory', () => {
     const snapshot = system.snapshotState();
     const canonical = canonicalJsonBytes(snapshot);
     const restored = new ActorSystem(options);
-    restored.restoreState(snapshot, (id) => registry.zombies.get(id));
+    restored.restoreState(snapshot, (id) => registry.actors.get(id));
     expect(canonicalJsonBytes(restored.snapshotState())).toEqual(canonical);
   });
 });

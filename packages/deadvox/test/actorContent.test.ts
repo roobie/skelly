@@ -7,7 +7,7 @@ import { baseSources } from '../src/game/bundledContent.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 it('admits an independent actor id selecting an existing body plan', () => {
-  const source = [...baseRegistry().zombies.values()].find((type) => type.figureSeeds?.length)!;
+  const source = [...baseRegistry().actors.values()].find((type) => type.figureSeeds?.length)!;
   const actor = {
     ...source,
     id: 'fixture_independent_actor',
@@ -17,7 +17,7 @@ it('admits an independent actor id selecting an existing body plan', () => {
   };
   const { registry, issues } = buildRegistry([...baseSources, { source: 'fixture-actor', data: { actors: [actor] } }]);
   expect(issues).toEqual([]);
-  const admitted = registry.zombies.get(actor.id)!;
+  const admitted = registry.actors.get(actor.id)!;
   expect(admitted).toBeDefined();
   expect(actorFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
 });
@@ -25,7 +25,7 @@ it('admits an independent actor id selecting an existing body plan', () => {
 it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
   'admits a %s figure as a property of humanoid anatomy',
   (figure) => {
-    const source = claimed(baseRegistry().zombies, 'settlementHorde')!;
+    const source = claimed(baseRegistry().actors, 'settlementHorde')!;
     const actor = {
       ...source,
       id: 'fixture_humanoid_variant',
@@ -39,7 +39,7 @@ it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
       { source: 'fixture-variant', data: { actors: [actor] } },
     ]);
     expect(issues).toEqual([]);
-    const admitted = registry.zombies.get(actor.id)!;
+    const admitted = registry.actors.get(actor.id)!;
     expect(admitted.model).toBe('humanoid');
     expect(actorFigure(admitted, 1).genome.template).toBe(figure);
     const invalid = validateContent({
@@ -53,7 +53,7 @@ it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
 );
 
 it('rejects a figure property whose anatomy differs from the selected body plan', () => {
-  const source = claimed(baseRegistry().zombies, 'settlementHorde')!;
+  const source = claimed(baseRegistry().actors, 'settlementHorde')!;
   const { issues } = buildRegistry([
     ...baseSources,
     {
@@ -67,7 +67,7 @@ it('rejects a figure property whose anatomy differs from the selected body plan'
 });
 
 it('uses independently named providers for horde and wanderer settlement roles', () => {
-  const template = claimed(baseRegistry().zombies, 'settlementHorde')!;
+  const template = claimed(baseRegistry().actors, 'settlementHorde')!;
   const horde = { ...template, id: 'fixture_horde_actor', capability: ['settlementHorde'] };
   const wanderer = { ...template, id: 'fixture_wanderer_actor', capability: ['settlementWanderer'] };
   const { registry, issues } = buildRegistry([
@@ -90,7 +90,7 @@ it('uses independently named providers for horde and wanderer settlement roles',
 it.each(['settlementHorde', 'settlementWanderer'] as const)(
   'refuses a population request with no %s provider',
   (role) => {
-    const provider = claimed(baseRegistry().zombies, role)!;
+    const provider = claimed(baseRegistry().actors, role)!;
     const capability = provider.capability!.filter((claim) => claim !== role);
     const { issues } = buildRegistry([
       ...baseSources,
@@ -103,7 +103,7 @@ it.each(['settlementHorde', 'settlementWanderer'] as const)(
 );
 
 it('refuses competing actor role claims instead of choosing a spawn by load order', () => {
-  const provider = claimed(baseRegistry().zombies, 'settlementHorde')!;
+  const provider = claimed(baseRegistry().actors, 'settlementHorde')!;
   const { issues } = buildRegistry([
     ...baseSources,
     { source: 'fixture-competing-role', data: { actors: [{ ...provider, id: 'fixture_competitor' }] } },
@@ -114,7 +114,7 @@ it('refuses competing actor role claims instead of choosing a spawn by load orde
 });
 
 it('rejects an actor selecting an undeclared footstep family', () => {
-  const source = claimed(baseRegistry().zombies, 'settlementWanderer')!;
+  const source = claimed(baseRegistry().actors, 'settlementWanderer')!;
   const { issues } = buildRegistry([
     ...baseSources,
     {

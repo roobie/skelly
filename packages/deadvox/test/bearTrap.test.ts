@@ -31,11 +31,11 @@ const trapDef: ItemDef = {
     zombieLegDamage: 4,
   },
 };
-const walker: ActorDef = { ...base.zombies.get('shambler')!, id: 'fixture_walker' };
+const walker: ActorDef = { ...base.actors.get('shambler')!, id: 'fixture_walker' };
 const content = {
   ...base,
   items: new Map(base.items).set(trapDef.id, trapDef),
-  zombies: new Map(base.zombies).set(walker.id, walker),
+  actors: new Map(base.actors).set(walker.id, walker),
 };
 const scale = makeScale(0.5);
 const FRAME = 1 / 60;
@@ -109,7 +109,7 @@ describe('bear trap', () => {
   it('springs on a zombie that walks into its cell, which does not steer around it', () => {
     const h = runtime();
     const trap = h.lay([3, 1, 0]);
-    const id = h.session.zombies.add(walker, [6.5, 1, 0.5], [-1, 0, 0]);
+    const id = h.session.actors.add(walker, [6.5, 1, 0.5], [-1, 0, 0]);
     const zombie = h.session.zombieStore.get(id)!;
     const legs = Object.values(zombie.regions).reduce((sum, health) => sum + health, 0);
     for (let step = 0; step < 600 && trap.trap?.state === 'armed'; step++) {
@@ -158,10 +158,10 @@ describe('bear trap', () => {
     h.run(trapDef.trap!.disarmSimSeconds + 0.1);
     expect(trap.trap).toBeUndefined();
     expect(h.hits).not.toHaveBeenCalled();
-    const id = h.session.zombies.add(walker, [1.5, 1, 0.5], [-1, 0, 0]);
+    const id = h.session.actors.add(walker, [1.5, 1, 0.5], [-1, 0, 0]);
     h.run(0.1);
     expect(trap.trap).toBeUndefined();
-    expect(h.session.zombies.store.get(id)).toBeDefined();
+    expect(h.session.actors.store.get(id)).toBeDefined();
   });
 
   it('sets, disarms and recovers the one trap item', () => {

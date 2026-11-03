@@ -200,7 +200,7 @@ export const templateResolves = (registry: Registry, template: TemplateDef): boo
       ? registry.blockIds.has(entry)
       : (entry.furniture === undefined || registry.furniture.has(entry.furniture)) &&
         (entry.loot === undefined || registry.loot.has(entry.loot)) &&
-        (entry.spawn === undefined || registry.zombies.has(entry.spawn)),
+        (entry.spawn === undefined || registry.actors.has(entry.spawn)),
   );
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: palette compilation resolves furniture and spawn encodings in one authored scan.

@@ -64,11 +64,11 @@ const registry = baseRegistry();
 const DAY_CYCLE = requireDayCycle(registry);
 const DUSK = resolveSpawnTime(registry.dayCycle!, 'dusk');
 const dayStateAtHour = (hour: number) => dayPhaseAt(DAY_CYCLE, hour * 3600);
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SHAMBLER_MOVE_DAMAGES = SHAMBLER.attack.moves.map(({ damage }) => damage);
-const RUNNER = registry.zombies.get('runner')!;
-const CRAWLER = registry.zombies.get('crawler')!;
-const ACID = registry.zombies.get('acid_zombie')!;
+const RUNNER = registry.actors.get('runner')!;
+const CRAWLER = registry.actors.get('crawler')!;
+const ACID = registry.actors.get('acid_zombie')!;
 const speedRates = (wander: number, chase: number) => ({
   ...SHAMBLER.speed,
   wanderMetresPerSimSecond: simRate(wander),
@@ -483,7 +483,7 @@ describe('shambler perception', () => {
     };
     const distant: Vec3 = [100, 0, 0];
     const perception = {
-      zombie: type,
+      def: type,
       from: [0, 0, 0] as Vec3,
       facing: [1, 0, 0] as Vec3,
       player: player(distant, [-1, 0, 0], 'walking'),
@@ -496,7 +496,7 @@ describe('shambler perception', () => {
     expect(perceivePlayer(perception)).toBe(false);
     expect(
       hearVocalNoise({
-        zombie: type,
+        def: type,
         from: perception.from,
         noise: { id: 1, pos: distant, radiusMetres: 5, expiresAt: 1 },
         time: 0,
@@ -535,7 +535,7 @@ describe('shambler perception', () => {
       movement: PlayerSense['movement'] = 'still',
     ) =>
       perceivePlayer({
-        zombie: SHAMBLER,
+        def: SHAMBLER,
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: player(at, [-1, 0, 0], movement, lit),
@@ -573,7 +573,7 @@ describe('shambler perception', () => {
     expect(sees([muffledHearingEdge('sprint') + 1, 2, 0], 12, false, opaque, 'sprinting')).toBe(false);
     const hears = (at: Vec3, movement: PlayerSense['movement'], wall: SolidAt = () => false) =>
       perceivePlayer({
-        zombie: { ...SHAMBLER, sight: 1, nightSight: 1 },
+        def: { ...SHAMBLER, sight: 1, nightSight: 1 },
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: player(at, [-1, 0, 0], movement),
@@ -608,7 +608,7 @@ describe('shambler perception', () => {
       zombie?: typeof SHAMBLER;
     }) =>
       perceivePlayer({
-        zombie,
+        def: zombie,
         from,
         facing: [1, 0, 0],
         player: player([distanceMetres / BLOCK_SIZE, 2, 0], [-1, 0, 0], movement, false, crouching),
@@ -655,7 +655,7 @@ describe('shambler perception', () => {
     const distanceMetres = (baseline + source.lightSeenFrom) / 2;
     const playerVisible = (hour: number, sunlit: boolean) =>
       perceivePlayer({
-        zombie: SHAMBLER,
+        def: SHAMBLER,
         from: [0, 0, 0],
         facing: [1, 0, 0],
         player: { ...source, pos: [distanceMetres / BLOCK_SIZE, 0, 0] },
@@ -708,7 +708,7 @@ describe('shambler perception', () => {
     expect(daylightSky(sunlitSample, 12)).toBe(true);
 
     const shadowPlayer = perceivePlayer({
-      zombie: SHAMBLER,
+      def: SHAMBLER,
       from: [0, 0, 0],
       facing: [1, 0, 0],
       player: {
@@ -749,7 +749,7 @@ describe('shambler perception', () => {
     const visible = (crouching: boolean, blocked: boolean) => {
       const eyeHeightMetres = PLAYER.eye - (crouching ? eyeDropMetres : 0);
       return perceivePlayer({
-        zombie: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
+        def: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
         from: [0, 0, 0],
         facing: [1, 0, 0],
         player: {
@@ -1993,10 +1993,10 @@ describe('shambler scenarios', () => {
     source.add(CRAWLER, [0, 1, 2], [1, 0, 0]);
     run(source, 0.5);
     const snapshot = source.snapshotState();
-    expect(snapshot.zombies).toHaveLength(2);
-    expect(snapshot.zombies.map(({ zombie }) => zombie.type).sort()).toEqual(['crawler', 'runner']);
+    expect(snapshot.actors).toHaveLength(2);
+    expect(snapshot.actors.map(({ actor: zombie }) => zombie.type).sort()).toEqual(['crawler', 'runner']);
     const expected = new Map(
-      snapshot.zombies.map(({ id, zombie }) => [
+      snapshot.actors.map(({ id, actor: zombie }) => [
         id,
         {
           type: zombie.type,
@@ -2008,7 +2008,7 @@ describe('shambler scenarios', () => {
       ]),
     );
     const restored = new ActorSystem(senses(() => player([20, 1, 0])));
-    restored.restoreState(snapshot, (id) => registry.zombies.get(id));
+    restored.restoreState(snapshot, (id) => registry.actors.get(id));
     expect(restored.store.size).toBe(2);
     for (const [id, zombie] of restored.store.entries()) {
       expect({
@@ -2028,7 +2028,7 @@ describe('shambler scenarios', () => {
     }
     const expected = [...system.store.entries()].map(([id, zombie]) => [id, zombie.figureSeed]);
     const restored = new ActorSystem(senses(() => player([100, 2, 0])));
-    restored.restoreState(system.snapshotState(), (id) => registry.zombies.get(id));
+    restored.restoreState(system.snapshotState(), (id) => registry.actors.get(id));
     expect([...restored.store.entries()].map(([id, zombie]) => [id, zombie.figureSeed])).toEqual(expected);
   });
 
@@ -2036,17 +2036,17 @@ describe('shambler scenarios', () => {
     const system = new ActorSystem({ ...senses(() => player([100, 2, 0])), seed: 0x7_14 });
     system.add(SHAMBLER, [0, 1, 0], [0, 0, -1]);
     const authored = system.snapshotState();
-    const [entry] = authored.zombies;
+    const [entry] = authored.actors;
     const snapshot = {
       ...authored,
-      zombies: [{ ...entry!, zombie: { ...entry!.zombie, figureSeed: Math.max(...SHAMBLER.figureSeeds!) + 1 } }],
+      actors: [{ ...entry!, actor: { ...entry!.actor, figureSeed: Math.max(...SHAMBLER.figureSeeds!) + 1 } }],
     };
     const restored = new ActorSystem(senses(() => player([100, 2, 0])));
-    expect(() => restored.restoreState(snapshot, (id) => registry.zombies.get(id))).toThrow('Invalid zombie state');
+    expect(() => restored.restoreState(snapshot, (id) => registry.actors.get(id))).toThrow('Invalid zombie state');
   });
 
   it('realizes a figure for every authored seed of every type', () => {
-    for (const type of registry.zombies.values()) {
+    for (const type of registry.actors.values()) {
       for (const seed of type.figureSeeds ?? []) {
         expect(() => actorFigure(type, seed)).not.toThrow();
       }
@@ -2074,7 +2074,7 @@ describe('shambler scenarios', () => {
       expect(boxes.rightLeg.length).toBeGreaterThan(0);
       expect(boxes.torso.length).toBeGreaterThan(0);
       const restored = new ActorSystem(senses(() => player([100, 2, 0])));
-      restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
+      restored.restoreState(system.snapshotState(), (typeId) => registry.actors.get(typeId));
       const loaded = restored.store.get(id)!;
       expect(posedActor(actorPoseInputFor(loaded, id, BLOCK_SIZE)).pose).toEqual(posed.pose);
       expect(loaded.regions).toEqual(zombie.regions);
@@ -2932,7 +2932,7 @@ describe('facing-directed movement', () => {
 describe('two-tier shambler hearing', () => {
   const hearing = (seed: number, from: Vec3, source: PlayerSense, isSolid: SolidAt = () => false) =>
     hearPlayer({
-      zombie: SHAMBLER,
+      def: SHAMBLER,
       from,
       player: source,
       blockSize: BLOCK_SIZE,
@@ -2980,7 +2980,7 @@ describe('two-tier shambler hearing', () => {
     const noise = { id: 1, pos: [10, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
     const hear = (pos: Vec3, isSolid: SolidAt = () => false) =>
       hearVocalNoise({
-        zombie: SHAMBLER,
+        def: SHAMBLER,
         from,
         noise: { ...noise, pos },
         time: 0.5,
@@ -3598,7 +3598,7 @@ describe('attack windup', () => {
     expect(stanceWeight).toBeGreaterThan(0);
     expect(stepOffset).toBeLessThan(0);
     const restored = new ActorSystem(sense);
-    restored.restoreState(system.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    restored.restoreState(system.snapshotState(), (typeId) => registry.actors.get(typeId));
     expect(restored.store.get(id)!.hitFlinchTime).toBe(savedTime);
     expect(restored.store.get(id)!.stanceWeight).toBe(stanceWeight);
     expect(restored.store.get(id)!.stepOffset).toBe(stepOffset);
@@ -3645,7 +3645,7 @@ describe('attack windup', () => {
 
     const searchFrame = frame;
     const restored = makeSystem();
-    restored.restoreState(uninterrupted.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    restored.restoreState(uninterrupted.snapshotState(), (typeId) => registry.actors.get(typeId));
     const firstAfterRestore = searchFrame + 1;
     uninterrupted.tick(dt, firstAfterRestore * dt);
     restored.tick(dt, firstAfterRestore * dt);
@@ -3672,7 +3672,7 @@ describe('attack windup', () => {
     expect(state).not.toHaveProperty('routeClock');
     expect(state).not.toHaveProperty('routeSearchCursor');
     const restored = new ActorSystem(senses(() => player([100, 2, 0]), FLOOR));
-    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
+    restored.restoreState(state, (typeId) => registry.actors.get(typeId));
     expect(restored.snapshotState()).toEqual(state);
   });
 
@@ -3689,7 +3689,7 @@ describe('attack windup', () => {
 
     const state = system.snapshotState();
     const restored = new ActorSystem(senses(() => player([0, 2, 0]), FLOOR));
-    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
+    restored.restoreState(state, (typeId) => registry.actors.get(typeId));
 
     expect(restored.store.get(id)!.attackWindup).toBe(before);
   });
@@ -3881,8 +3881,8 @@ describe('dismemberment', () => {
       const id = system.add(type, [4, 1, 4], [0, 0, -1]);
       const zombie = system.store.get(id)!;
       renderer = new MobActorMeshes(BLOCK_SIZE, 64, {
-        zombies: registry.zombies,
-        poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.zombies), zombie.figureSeed),
+        zombies: registry.actors,
+        poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.actors), zombie.figureSeed),
       });
       renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
       renderer.sync(system.store, 0, 1);

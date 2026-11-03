@@ -53,7 +53,7 @@ const { registry } = buildRegistry(
 );
 const scale = makeScale(0.5);
 const PLAYER = playerTuning(registry);
-const type = fusedMassTypeOf(registry.zombies);
+const type = fusedMassTypeOf(registry.actors);
 const envelope = fusedMassCollisionEnvelope(fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED), scale.blockSize);
 const dt = 1 / 60;
 const ticks = 75;
@@ -184,7 +184,7 @@ for (const { name, corridor } of scenarios) {
     collectCollision = mode === 'collision';
     for (let run = -warmups; run < runs; run++) {
       const trial = createSystem();
-      trial.restoreState(initial, (typeId) => (typeId === type.id ? actorType : registry.zombies.get(typeId)));
+      trial.restoreState(initial, (typeId) => (typeId === type.id ? actorType : registry.actors.get(typeId)));
       trial.stepActorBody = function () {
         if (!collectCollision) {
           return originalStep.call(this);

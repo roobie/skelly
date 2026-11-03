@@ -226,7 +226,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   supported(layout.player.position, '.player.position');
   checkSpawn([layout.player.position[0], layout.player.position[2]], '.player.position');
   const authoredHordes = layout.hordes ?? [];
-  const hordeType = claimed(registry.zombies, 'settlementHorde');
+  const hordeType = claimed(registry.actors, 'settlementHorde');
   if (authoredHordes.length > 0 && !hordeType) {
     issues.push(['.hordes', 'missing required capability "settlementHorde"']);
   }
@@ -251,7 +251,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     }
   });
   layout.shamblers.forEach((spawn, i) => {
-    const type = registry.zombies.get(spawn.type);
+    const type = registry.actors.get(spawn.type);
     if (!type) {
       issues.push([`.shamblers[${i}].type`, `no zombie type "${spawn.type}"`]);
     }

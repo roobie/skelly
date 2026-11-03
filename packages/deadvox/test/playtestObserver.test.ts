@@ -276,7 +276,7 @@ describe('snapshot diagnostic oracle', () => {
       entities: { all: new Set([entity]) },
       searching: () => true,
       queue: { jobs: [{ kind: 'action', jobType: 'furniture.search', elapsed: 1 }] },
-      zombies: { snapshotState: () => ({}) },
+      actors: { snapshotState: () => ({}) },
       spawner: { snapshotState: () => [] },
       survival: { snapshotState: () => ({}) },
       playerAudio: {},

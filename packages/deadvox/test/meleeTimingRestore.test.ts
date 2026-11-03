@@ -71,7 +71,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
     ...(restore ? { restore } : {}),
     ...(handedness ? { handedness } : {}),
   });
-  session.zombies.setFrozen(true);
+  session.actors.setFrozen(true);
   session.sim.paused = false;
   return {
     session,

@@ -256,7 +256,7 @@ export function createRuntime(
     ...(snapshot ? { restore: snapshot } : {}),
     ...(handedness ? { handedness } : {}),
   });
-  const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
+  const { sim, inventory, entities, actors: zombies, spawner, rest, survival, quickbar, playerAudio } = session;
   if (session.restoredLook) {
     Object.assign(view, session.restoredLook);
   }
@@ -507,14 +507,14 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   if (!(playerNoise && runtime.playerAudio.vocalNoise)) {
     throw new Error('Could not seed player vocal noise');
   }
-  const groaner = runtime.zombies.add(registry.zombies.get('shambler')!, [
+  const groaner = runtime.zombies.add(registry.actors.get('shambler')!, [
     playerPos[0] + IDLE_GROANER_DISTANCE,
     playerPos[1],
     playerPos[2],
   ]);
   // Admit deliberately timed audio actors through restoration, never through live actor fields.
   const saved = structuredClone(capture(runtime));
-  const listener = saved.world.zombies.zombies.find(({ id }) => id === firstZombie[0])!.zombie;
+  const listener = saved.world.actors.actors.find(({ id }) => id === firstZombie[0])!.actor;
   listener.body.pos = [playerPos[0] + 0.25, playerPos[1], playerPos[2]];
   listener.body.vel = [0, 0, 0];
   listener.body.onGround = true;
@@ -524,7 +524,7 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   listener.idleSoundTimer = 100;
   listener.lastVocalNoiseId = 0;
   saved.character.playerAudio.vocalNoise!.expiresAt = runtime.sim.time + 0.25;
-  const idle = saved.world.zombies.zombies.find(({ id }) => id === groaner)!.zombie;
+  const idle = saved.world.actors.actors.find(({ id }) => id === groaner)!.actor;
   idle.body.onGround = true;
   idle.mode = 'idle';
   idle.modeTimer = 100;

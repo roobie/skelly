@@ -22,7 +22,7 @@ import { ActorSystem } from './zombieSystemFixture.ts';
 const BASE = 'src/content/base';
 const FIXTURE_FAMILY = 'fixture_steps';
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const PHYSICS = physicsFor(SCALE);

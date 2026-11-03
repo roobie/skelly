@@ -265,8 +265,8 @@ describe('loot source routing', () => {
       expect(session.inventory.add(session.inventory.create(bulk), { kind: 'pile', pos: landed })).toBe(true);
     }
     prepare?.({ session, world, block, pos });
-    const base = [...registry.zombies.values()][0]!;
-    const id = session.zombies.add(
+    const base = [...registry.actors.values()][0]!;
+    const id = session.actors.add(
       {
         ...base,
         id: 'fixture_corpse',
@@ -283,7 +283,7 @@ describe('loot source routing', () => {
       },
       pos,
     );
-    session.zombies.detonate({
+    session.actors.detonate({
       blast: { damageKind: 'blunt', radiusMetres: 6, damage: 1_000_000, impulse: 1 },
       fragments: { damageKind: 'pierce', origin: [0, 4, 0], directions: [], damage: 0, impulse: 0, rangeMetres: 0 },
     });

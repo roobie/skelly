@@ -19,7 +19,7 @@ import { formatVersion } from './snapshotTestSupport.ts';
 
 const { registry } = startupContent();
 const profile = [...registry.scenarios.values()][0]!;
-const zombie = [...registry.zombies.values()][0]!;
+const zombie = [...registry.actors.values()][0]!;
 const worldOptions = { blockSize: 0.5, site: profile.id, storeys: 1, density: null };
 const AFTER = gameHours(2);
 /** Inside the one loaded chunk, beside the player. */
@@ -78,7 +78,7 @@ const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {
   };
   const due = session.scenarioRun!.startedAtGameTimestamp + AFTER;
   const fired = () => capture().character.scenarioRun!.eventsFiredAtGameTimestamp[rule.id];
-  const released = () => capture().world.zombies.hordes.filter(({ id }) => id.startsWith('event:')).length;
+  const released = () => capture().world.actors.hordes.filter(({ id }) => id.startsWith('event:')).length;
   return { session, capture, jump, due, fired, released };
 };
 

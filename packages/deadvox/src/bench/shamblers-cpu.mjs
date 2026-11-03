@@ -23,7 +23,7 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) })),
 );
 const PLAYER = playerTuning(registry);
-const shambler = registry.zombies.get('shambler');
+const shambler = registry.actors.get('shambler');
 if (!shambler) {
   console.error('The base content has no shambler definition.');
   process.exit(1);

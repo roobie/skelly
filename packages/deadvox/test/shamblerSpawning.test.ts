@@ -15,11 +15,11 @@ const registry = baseRegistry();
 const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
 
-const footprint = (type: typeof registry.zombies extends ReadonlyMap<string, infer T> ? T : never): number => {
+const footprint = (type: typeof registry.actors extends ReadonlyMap<string, infer T> ? T : never): number => {
   const body = actorBodyDimensions(type, SCALE.blockSize);
   return Math.max(body.halfWidth, body.halfDepth ?? body.halfWidth);
 };
-const largestType = [...registry.zombies.values()].reduce((best, type) =>
+const largestType = [...registry.actors.values()].reduce((best, type) =>
   footprint(type) > footprint(best) ? type : best,
 );
 

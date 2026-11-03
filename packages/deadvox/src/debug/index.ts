@@ -1123,7 +1123,7 @@ export const loadSkyRoute = async () => (await import('./skyRoute.ts')).attachSk
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
   const s = hooks.engine.config.scale.blockSize;
   const advanceRagdollSweep = stageRagdollSweep({
-    system: hooks.zombies(),
+    system: hooks.actors(),
     renderer: hooks.zombieRenderer,
     registry: hooks.engine.registry,
     origin: hooks.body.pos,
@@ -1312,7 +1312,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // MenuPointer routes the wheel to the pane under the cursor, including this panel.
   const actions = createDebugActions({
     hooks,
-    zombieTypes: hooks.engine.registry.zombies.values(),
+    zombieTypes: hooks.engine.registry.actors.values(),
     impactLaser: hooks.impactLaser,
     interactionRay: {
       enabled: () => interactionRayEnabled,
@@ -1331,7 +1331,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       noclip = !noclip;
     },
     spawnUnawareShambler: () => {
-      const zombies = hooks.zombies();
+      const zombies = hooks.actors();
       const placed = zombies ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, zombies) : false;
       spawnStatus = placed ? 'Placed an unaware shambler behind a wall' : 'No nearby wall could hide a shambler';
       if (placed) {
@@ -1349,9 +1349,9 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
         }
       }
     },
-    isFrozen: () => hooks.zombies()?.isFrozen ?? false,
+    isFrozen: () => hooks.actors()?.isFrozen ?? false,
     toggleFrozen: () => {
-      const zombies = hooks.zombies();
+      const zombies = hooks.actors();
       zombies?.setFrozen(!zombies.isFrozen);
     },
     isGameFrozen: () => gameFrozen,
@@ -1359,7 +1359,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       gameFrozen = !gameFrozen;
     },
     spawnShambler: (count) => {
-      const zombies = hooks.zombies();
+      const zombies = hooks.actors();
       const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
@@ -1367,11 +1367,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       }
     },
     spawnZombie: (typeId, count) => {
-      const zombies = hooks.zombies();
+      const zombies = hooks.actors();
       const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, { typeId, count }) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
-        const name = hooks.engine.registry.zombies.get(typeId)?.name ?? typeId;
+        const name = hooks.engine.registry.actors.get(typeId)?.name ?? typeId;
         hooks.showNotice(
           placed === 1 ? `A ${name.toLowerCase()} is approaching` : `${placed} ${name.toLowerCase()}s are approaching`,
         );
@@ -1475,7 +1475,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           rangeBlocks,
         )
       : undefined;
-    const zombies = hooks.zombies();
+    const zombies = hooks.actors();
     const aimTarget =
       ray?.active && zombies
         ? firearmBoreTarget({

@@ -171,8 +171,8 @@ const stepHeadingAlignment = (before: Vec3, after: Vec3, target: Vec3): number |
 };
 
 it('selects the fused-mass content type by its model, not its id', () => {
-  const amalgam = fusedMassTypeOf(registry.zombies)!;
-  const renamed = new Map([...registry.zombies].map(([id, type]) => [id === amalgam.id ? 'renamed' : id, type]));
+  const amalgam = fusedMassTypeOf(registry.actors)!;
+  const renamed = new Map([...registry.actors].map(([id, type]) => [id === amalgam.id ? 'renamed' : id, type]));
   expect(amalgam.model).toBe('fused-mass');
   expect(fusedMassTypeOf(renamed)).toBe(amalgam);
 });
@@ -295,7 +295,7 @@ const runObstacleCase = (
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
-  const type = registry.zombies.get(typeId)!;
+  const type = registry.actors.get(typeId)!;
   const configuredType = canJumpObstacles === undefined ? type : { ...type, canJumpObstacles };
   const id = simulation.add(configuredType, [centerX, 1, startZ], [0, 0, 1]);
   let crossed = false;
@@ -350,8 +350,8 @@ const runObstacleCase = (
 
 describe('fused-mass body and combat seam', () => {
   it('authors a slow beeline and delayed heavier strike', () => {
-    const amalgam = registry.zombies.get('amalgam')!;
-    const shambler = registry.zombies.get('shambler')!;
+    const amalgam = registry.actors.get('amalgam')!;
+    const shambler = registry.actors.get('shambler')!;
     expect(amalgam.speed.chaseMetresPerSimSecond).toBeLessThan(shambler.speed.chaseMetresPerSimSecond);
     const heaviest = (type: typeof amalgam) => Math.max(...type.attack.moves.map((move) => move.damage));
     expect(heaviest(amalgam)).toBeGreaterThan(heaviest(shambler));
@@ -424,8 +424,8 @@ describe('fused-mass body and combat seam', () => {
   });
 
   it('maps its four cues to shambler recordings and authors a lower pitch', () => {
-    const amalgam = registry.zombies.get('amalgam')!;
-    const shambler = registry.zombies.get('shambler')!;
+    const amalgam = registry.actors.get('amalgam')!;
+    const shambler = registry.actors.get('shambler')!;
     expect(amalgam.soundPitchMultiplier).toBeDefined();
     expect(amalgam.soundPitchMultiplier!).toBeLessThan(1);
     for (const action of ['idle', 'alert', 'attack', 'hurt'] as const) {
@@ -436,8 +436,8 @@ describe('fused-mass body and combat seam', () => {
   });
 
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
-    expect(registry.zombies.get('amalgam')?.authoredOnly).toBe(true);
-    const amalgamType = registry.zombies.get('amalgam')!;
+    expect(registry.actors.get('amalgam')?.authoredOnly).toBe(true);
+    const amalgamType = registry.actors.get('amalgam')!;
     const figure = fusedMassFigure(3, amalgamType.bodyScale!);
     const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const { bounds, originOffset } = figure;
@@ -479,7 +479,7 @@ describe('fused-mass body and combat seam', () => {
   });
 
   it('keeps Deadvox metre bounds aligned with the generated mobgen body', () => {
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const figure = fusedMassFigure(3, type.bodyScale!);
     const generatedBounds = voxelBounds(
       figure.realized.voxels,
@@ -492,7 +492,7 @@ describe('fused-mass body and combat seam', () => {
   });
 
   it('realizes the authored figure when perception emits an amalgam alert sound', () => {
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const noisyPlayer: PlayerSense = {
       ...player(),
       pos: [1000, 1, 1000],
@@ -522,7 +522,7 @@ describe('fused-mass body and combat seam', () => {
   });
 
   it('uses the shared flinch transform for rendered and hit-region fused-mass pose', () => {
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     let heardBody = false;
     const combatSystem = new ActorSystem({
       player,
@@ -576,7 +576,7 @@ describe('fused-mass body and combat seam', () => {
   });
 
   it('walks through an opening its flesh fits but its old collision box does not', () => {
-    const amalgam = registry.zombies.get('amalgam')!;
+    const amalgam = registry.actors.get('amalgam')!;
     const figure = fusedMassFigureForType(amalgam, FUSED_MASS_FIGURE_SEED);
     const envelope = fusedMassCollisionEnvelope(figure, BLOCK_SIZE);
     const start: Vec3 = [0.5, 1, 8];
@@ -650,7 +650,7 @@ describe('fused-mass body and combat seam', () => {
       tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
     });
-    const zombie = simulation.store.get(simulation.add(registry.zombies.get('amalgam')!, start, [0, 0, -1]))!;
+    const zombie = simulation.store.get(simulation.add(registry.actors.get('amalgam')!, start, [0, 0, -1]))!;
     let struck = false;
     for (let tick = 0; tick < 3600 && !struck; tick++) {
       simulation.tick(1 / 60);
@@ -662,7 +662,7 @@ describe('fused-mass body and combat seam', () => {
   it('turns off a pillar its flesh is pressed against to strike a player behind it, walking where it faces', () => {
     // Moving freely, it carries its flesh off the pillar as it turns; walking only where it faces, it must turn
     // first, which the pillar would block.
-    const amalgam = { ...registry.zombies.get('amalgam')!, locomotion: 'forward' as const };
+    const amalgam = { ...registry.actors.get('amalgam')!, locomotion: 'forward' as const };
     const pillar = (x: number, y: number, z: number): boolean => x >= 0 && x <= 1 && z >= -1 && z <= 0 && y > 0;
     let sense: PlayerSense = player();
     const pillarSystem = () =>
@@ -711,7 +711,7 @@ describe('fused-mass body and combat seam', () => {
 
   it('routes a firearm projectile hit into the manifest-backed fused-mass region', () => {
     const simulation = system();
-    const id = simulation.add(registry.zombies.get('amalgam')!, [0, 1, 0]);
+    const id = simulation.add(registry.actors.get('amalgam')!, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
     const ray = findMemberRay(simulation, id);
     const before = { ...zombie.regions };
@@ -744,7 +744,7 @@ describe('fused-mass body and combat seam', () => {
 
   it('survives a pump blast and loses a member before the core dies', () => {
     const simulation = system();
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
     const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
@@ -816,7 +816,7 @@ describe('fused-mass body and combat seam', () => {
 
   it('removes a severed member from attack reach while preserving the other members', () => {
     const simulation = system();
-    const id = simulation.add(registry.zombies.get('amalgam')!, [0, 1, 0]);
+    const id = simulation.add(registry.actors.get('amalgam')!, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
     const reach = actorAttackReachMetres(zombie);
     const severOne = () => {
@@ -852,10 +852,10 @@ describe('fused-mass body and combat seam', () => {
 
   it('rejects a fused-mass save with a seed that has no rendered variant', () => {
     const simulation = system();
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
-    const { zombie } = state.zombies.find((entry) => entry.id === id)!;
+    const { actor: zombie } = state.actors.find((entry) => entry.id === id)!;
     const unsupportedSeed = FUSED_MASS_FIGURE_SEED + 1;
     const unsupportedFigure = fusedMassFigureForType(type, unsupportedSeed);
     zombie.figureSeed = unsupportedSeed;
@@ -870,20 +870,20 @@ describe('fused-mass body and combat seam', () => {
     zombie.body.halfDepth = envelope.halfDepth;
     zombie.body.height = envelope.height;
 
-    expect(() => system().restoreState(state, (typeId) => registry.zombies.get(typeId))).toThrow(
+    expect(() => system().restoreState(state, (typeId) => registry.actors.get(typeId))).toThrow(
       `Invalid amalgam figure seed for entity ${id}`,
     );
   });
 
   it('round-trips a fused-mass seed, dynamic regions and rectangular envelope through the save codec', async () => {
     const runtime = createRuntime();
-    const id = runtime.zombies.add(registry.zombies.get('amalgam')!, [0, 1, 0]);
+    const id = runtime.zombies.add(registry.actors.get('amalgam')!, [0, 1, 0]);
     const original = runtime.zombies.store.get(id)!;
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), {
       contentLookup,
       version: formatVersion,
     });
-    const saved = decoded.snapshot.world.zombies.zombies.find(({ zombie }) => zombie.type === 'amalgam')?.zombie;
+    const saved = decoded.snapshot.world.actors.actors.find(({ actor: zombie }) => zombie.type === 'amalgam')?.actor;
 
     expect(saved?.figureSeed).toBe(original.figureSeed);
     expect(saved?.regions).toEqual(original.regions);
@@ -894,7 +894,7 @@ describe('fused-mass body and combat seam', () => {
 
   it('severs one manifest member, preserves the core and other members, and restores that state', () => {
     const simulation = system();
-    const type = registry.zombies.get('amalgam')!;
+    const type = registry.actors.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
     const membersBefore = activeFusedMassMembers(zombie);
@@ -930,7 +930,7 @@ describe('fused-mass body and combat seam', () => {
 
     const saved = simulation.snapshotState();
     const restored = system();
-    restored.restoreState(saved, (typeId) => registry.zombies.get(typeId));
+    restored.restoreState(saved, (typeId) => registry.actors.get(typeId));
     expect(restored.snapshotState()).toEqual(saved);
     expect(activeFusedMassMembers(restored.store.get(id)!).map(({ partId }) => partId)).toEqual(
       activeFusedMassMembers(zombie).map(({ partId }) => partId),
@@ -964,7 +964,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
     hurtPlayer: (amount) => hits.push(amount),
   });
   const feet: Vec3 = [0, 1, 0];
-  const id = simulation.add(registry.zombies.get(typeId)!, feet, [0, 0, 1]);
+  const id = simulation.add(registry.actors.get(typeId)!, feet, [0, 0, 1]);
   const zombie = simulation.store.get(id)!;
   const reachMetres = actorAttackReachMetres(zombie);
   const offsetMetres =
@@ -1023,7 +1023,7 @@ describe('attack line', () => {
 });
 
 describe('fused-mass flesh carving', () => {
-  const amalgam = registry.zombies.get('amalgam')!;
+  const amalgam = registry.actors.get('amalgam')!;
   const carving = amalgam.carving!;
   const { carving: _ignored, ...uncarvedAmalgam } = amalgam;
   const buck = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
@@ -1087,11 +1087,11 @@ describe('fused-mass flesh carving', () => {
     target.pellets(buck.pellets, buck.damage);
     expect(target.zombie.carved.length).toBeGreaterThan(0);
     const decoded = await decodeSave(await encodeFixture(capture(runtime)), { contentLookup, version: formatVersion });
-    expect(decoded.snapshot.world.zombies.zombies.find(({ id }) => id === target.id)?.zombie.carved).toEqual(
+    expect(decoded.snapshot.world.actors.actors.find(({ id }) => id === target.id)?.actor.carved).toEqual(
       target.zombie.carved,
     );
     const restored = system();
-    restored.restoreState(runtime.zombies.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    restored.restoreState(runtime.zombies.snapshotState(), (typeId) => registry.actors.get(typeId));
     expect(restored.store.get(target.id)!.carved).toEqual(target.zombie.carved);
   });
 
@@ -1102,10 +1102,10 @@ describe('fused-mass flesh carving', () => {
     { hole: 'a hole on a type that does not carve', typeId: 'shambler', carved: [0] },
   ])('refuses a save with $hole', ({ typeId, carved }) => {
     const simulation = system();
-    const id = simulation.add(registry.zombies.get(typeId)!, [0, 1, 0]);
+    const id = simulation.add(registry.actors.get(typeId)!, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
-    state.zombies.find((entry) => entry.id === id)!.zombie.carved = carved;
-    expect(() => system().restoreState(state, (type) => registry.zombies.get(type))).toThrow(
+    state.actors.find((entry) => entry.id === id)!.actor.carved = carved;
+    expect(() => system().restoreState(state, (type) => registry.actors.get(type))).toThrow(
       `Invalid carved cells for entity ${id}`,
     );
   });
@@ -1115,11 +1115,11 @@ describe('fused-mass flesh carving', () => {
     const simulation = system();
     const id = simulation.add(amalgam, [0, 1, 0]);
     const state = structuredClone(simulation.snapshotState());
-    state.zombies.find((entry) => entry.id === id)!.zombie.severed = figure.manifest.parts
+    state.actors.find((entry) => entry.id === id)!.actor.severed = figure.manifest.parts
       .filter((part) => part.severable)
       .map((part) => part.id);
     const restored = system();
-    restored.restoreState(state, (type) => registry.zombies.get(type));
+    restored.restoreState(state, (type) => registry.actors.get(type));
     const zombie = restored.store.get(id)!;
     const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
     const { hidden } = posedActor(input);

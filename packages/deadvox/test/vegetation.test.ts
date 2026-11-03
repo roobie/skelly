@@ -115,7 +115,7 @@ describe('passable but opaque vegetation', () => {
     const opaque = worldOpaque(world, registry, entities);
     const sense = () =>
       perceivePlayer({
-        zombie: registry.zombies.get('shambler')!,
+        def: registry.actors.get('shambler')!,
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: {
@@ -187,7 +187,7 @@ describe('passable but opaque vegetation', () => {
       onMeleeResult: (result) => hits.push(result.damage),
     });
     const playerCombat = new PlayerCombat(system);
-    const id = system.add(registry.zombies.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
+    const id = system.add(registry.actors.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
     system.tick(1 / 20);
     const zombie = system.store.get(id)!;
     expect(zombie.mode).not.toBe('chase');
@@ -351,7 +351,7 @@ describe('passable but opaque vegetation', () => {
       expect(
         footstepEventForBlock(
           block,
-          [...registry.zombies.values()].find((actor) => actor.footstepSound)!.footstepSound!,
+          [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
         ),
       ).toBe(shamblerWood);
     }
@@ -361,7 +361,7 @@ describe('passable but opaque vegetation', () => {
       expect(
         footstepEventForBlock(
           block,
-          [...registry.zombies.values()].find((actor) => actor.footstepSound)!.footstepSound!,
+          [...registry.actors.values()].find((actor) => actor.footstepSound)!.footstepSound!,
         ),
       ).toBe(shamblerFoliage);
     }

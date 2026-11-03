@@ -969,9 +969,9 @@ describe('real pump ammunition', () => {
       notice: () => undefined,
       onRead: () => undefined,
     });
-    const type = registry.zombies.get('shambler')!;
-    const a = open.zombies.add(type, [0, 0, -8]);
-    const b = blocked.zombies.add(type, [0, 0, -8]);
+    const type = registry.actors.get('shambler')!;
+    const a = open.actors.add(type, [0, 0, -8]);
+    const b = blocked.actors.add(type, [0, 0, -8]);
     const shot: PelletShot = {
       damageKind: 'pierce',
       origin: [0, 2, 0],
@@ -982,8 +982,8 @@ describe('real pump ammunition', () => {
       rangeMetres: 50,
     };
     const before = structuredClone(open.zombieStore.get(a)!.regions);
-    expect(open.zombies.firePellets(shot).hits).toBe(1);
-    expect(blocked.zombies.firePellets(shot).hits).toBe(0);
+    expect(open.actors.firePellets(shot).hits).toBe(1);
+    expect(blocked.actors.firePellets(shot).hits).toBe(0);
     expect(open.zombieStore.get(a)!.regions).not.toEqual(before);
     expect(blocked.zombieStore.get(b)!.regions).toEqual(before);
     expect(open.playerCombat.activeMeleeAction).toBeUndefined();

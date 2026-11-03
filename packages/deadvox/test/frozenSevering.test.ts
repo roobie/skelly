@@ -12,7 +12,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
@@ -51,7 +51,7 @@ describe('melee while debug-frozen', () => {
       regions: { ...SHAMBLER.regions, rightArm: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.zombies, poolSize: 2 });
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.actors, poolSize: 2 });
     try {
       renderer.setWorld(FLOOR, BLOCK_SIZE);
       const severedParts: string[] = [];

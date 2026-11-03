@@ -23,7 +23,7 @@ export const spawnShamblerRing = ({
   zombies: ActorSystem;
   tier?: 'active' | 'background';
 }): void => {
-  const type = registry.zombies.get('shambler');
+  const type = registry.actors.get('shambler');
   if (!type) {
     throw new Error('Cannot run shambler benchmark: shambler content is missing.');
   }

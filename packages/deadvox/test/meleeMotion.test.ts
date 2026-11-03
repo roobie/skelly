@@ -7,7 +7,7 @@ it('requires motion on weapon attacks, the unarmed attack and zombie melee moves
   const registry = baseRegistry();
   const item = structuredClone(registry.items.get('kitchen_knife')!);
   const unarmed = structuredClone(registry.meleeClasses.get('fists')!);
-  const zombie = structuredClone(registry.zombies.get('shambler')!);
+  const zombie = structuredClone(registry.actors.get('shambler')!);
   const cases: { pack: unknown; attack: Record<string, unknown> }[] = [
     { pack: { items: [item] }, attack: item.weapon!.melee },
     { pack: { meleeClasses: [unarmed] }, attack: unarmed.unarmed! },

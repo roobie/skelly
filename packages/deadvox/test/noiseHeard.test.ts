@@ -31,7 +31,7 @@ const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
 const actorFootstepEvents = new Set<SoundId | undefined>(
-  [...registry.zombies.values()].flatMap((actor) =>
+  [...registry.actors.values()].flatMap((actor) =>
     actor.footstepSound === undefined
       ? []
       : registry.blocks.map((block) => footstepEventForBlock(block, actor.footstepSound!)),
@@ -46,7 +46,7 @@ const blockBlow: ActorDef['attack']['moves'][number] = {
   damageKind: 'blunt',
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
-const shamblerDef = registry.zombies.get('shambler')!;
+const shamblerDef = registry.actors.get('shambler')!;
 const blockAttacker: ActorDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
 const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
@@ -615,9 +615,9 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
 
   const exerciseFight = (scenario: NoiseScenario) => {
     const { session, world, state, played, advance } = scenario;
-    const shambler = registry.zombies.get('shambler')!;
+    const shambler = registry.actors.get('shambler')!;
     const player = session.body.pos;
-    const id = session.zombies.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+    const id = session.actors.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
     state.actor = session.zombieStore.get(id)!;
     const health = Object.values(state.actor.regions).reduce((sum, value) => sum + value, 0);
     state.intent = { ...IDLE, useDominant: true };
@@ -664,7 +664,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   const exerciseBlocks = (scenario: NoiseScenario) => {
     const { session, state, played, advance } = scenario;
     const player = session.body.pos;
-    const id = session.zombies.add(blockAttacker, [player[0], player[1], player[2] - 1], [0, 0, 1]);
+    const id = session.actors.add(blockAttacker, [player[0], player[1], player[2] - 1], [0, 0, 1]);
     state.actor = session.zombieStore.get(id)!;
     state.blocking = true;
     const blockEvents = ['player_block_full', 'player_block_partial'];
@@ -804,7 +804,7 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   session.sim.paused = false;
   const doorOrigin: Vec3 = [0, 1, 0];
   const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
-  const listenerId = session.zombies.add(registry.zombies.get('shambler')!, [8, 1, 0.5]);
+  const listenerId = session.actors.add(registry.actors.get('shambler')!, [8, 1, 0.5]);
   const listener = session.zombieStore.get(listenerId)!;
   expect(listener.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
@@ -861,7 +861,7 @@ it('debug test noise reaches a shambler behind a wall and starts its hearing gaz
     isOpaque: isSolid,
     groundAt: () => scale.blockSize,
   } as unknown as Engine;
-  expect(spawnUnawareShambler(debugEngine, session.body, session.zombies)).toBe(true);
+  expect(spawnUnawareShambler(debugEngine, session.body, session.actors)).toBe(true);
   const [id, zombie] = [...session.zombieStore.entries()][0]!;
   for (let frame = 0; frame < 3; frame++) {
     session.frame(1 / 60);
@@ -931,11 +931,11 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
     },
   });
   session.sim.paused = false;
-  const shambler = registry.zombies.get('shambler');
+  const shambler = registry.actors.get('shambler');
   if (!shambler) {
     throw new Error('Missing shambler fixture');
   }
-  session.zombies.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
+  session.actors.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
   session.frame(0.5);
   const members = () => [...session.zombieStore.entries()].filter(([, zombie]) => zombie.hordeId === 'noise-fixture');
   const meanX = () => {
@@ -966,7 +966,7 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
     session.frame(1 / 60);
   }
 
-  const horde = session.zombies.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
+  const horde = session.actors.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
   expect(members().every(([, zombie]) => zombie.lastVocalNoiseId === noise.id)).toBe(true);
   expect(horde?.lastNoiseId).toBe(noise.id);
   expect(horde?.mode).toBe('noise');
@@ -1000,7 +1000,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
       throw new Error('Unexpected reading in firearm hearing-range fixture');
     },
   });
-  const shambler = registry.zombies.get('shambler');
+  const shambler = registry.actors.get('shambler');
   const tuning = registry.senses.get('player');
   if (!(shambler && tuning)) {
     throw new Error('Missing shambler hearing fixture');
@@ -1063,7 +1063,7 @@ it('applies attachment noise factors and far-tier cutoffs to suppressed AR shots
     const farReachMetres = noise.radiusMetres * shambler.hearing * shambler.hearingModel.farMultiplier;
     const hearAtDistance = (distanceMetres: number) =>
       hearVocalNoise({
-        zombie: shambler,
+        def: shambler,
         from: [noise.pos[0] + distanceMetres / scale.blockSize, noise.pos[1], noise.pos[2]],
         noise,
         time: session.sim.time,

@@ -564,7 +564,7 @@ const validHordeSnapshotState = (
 export interface ActorSystemState {
   nextEntityId: number;
   nextPuddleId: number;
-  zombies: { id: number; zombie: ActorState }[];
+  actors: { id: number; actor: ActorState }[];
   hordes: HordeState[];
   acidGlobs: AcidGlobState[];
   acidPuddles: AcidPuddleState[];
@@ -1069,7 +1069,7 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
 };
 
 export interface PerceptionInput {
-  zombie: ActorDef;
+  def: ActorDef;
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
@@ -1083,7 +1083,7 @@ export interface PerceptionInput {
 
 export type HearingTier = 'near' | 'far';
 export interface HearingInput {
-  zombie: ActorDef;
+  def: ActorDef;
   from: Vec3;
   player: PlayerSense;
   blockSize: number;
@@ -1198,7 +1198,7 @@ const hearingRange = (zombie: ActorDef, movement: PlayerMovement): number => {
 };
 
 const hearingTier = ({
-  zombie,
+  def: zombie,
   from,
   player,
   blockSize,
@@ -1231,13 +1231,13 @@ const hearingTier = ({
 };
 
 const farBearingTarget = ({
-  zombie,
+  def: zombie,
   from,
   source,
   blockSize,
   rng,
 }: {
-  zombie: ActorDef;
+  def: ActorDef;
   from: Vec3;
   source: Vec3;
   blockSize: number;
@@ -1263,7 +1263,7 @@ export const hearPlayer = (input: HearingInput): HeardNoise | undefined => {
 };
 
 export interface VocalNoiseInput {
-  zombie: ActorDef;
+  def: ActorDef;
   from: Vec3;
   noise: VocalNoise;
   time: number;
@@ -1275,7 +1275,7 @@ export interface VocalNoiseInput {
 
 /** Applies the shared coarse wall step and two-tier bearing model to a player sound. */
 export const hearVocalNoise = ({
-  zombie,
+  def: zombie,
   from,
   noise,
   time,
@@ -1304,14 +1304,14 @@ export const hearVocalNoise = ({
   if (distance <= hearingRadius * zombie.hearingModel.farMultiplier) {
     return {
       tier: 'far',
-      target: farBearingTarget({ zombie, from, source: noise.pos, blockSize, rng }),
+      target: farBearingTarget({ def: zombie, from, source: noise.pos, blockSize, rng }),
     };
   }
   return undefined;
 };
 
 const seesPlayer = ({
-  zombie,
+  def: zombie,
   from,
   facing,
   player,
@@ -1352,7 +1352,7 @@ const seesPlayer = ({
 };
 
 const canSeeLight = ({
-  zombie,
+  def: zombie,
   from,
   look,
   source,
@@ -1362,7 +1362,7 @@ const canSeeLight = ({
   isSunExposedAt,
   tuning,
 }: {
-  zombie: ActorDef;
+  def: ActorDef;
   from: Vec3;
   look: Vec3;
   source: SensedLightSource;
@@ -1394,7 +1394,7 @@ const canSeeLight = ({
 };
 
 const visibleLightTarget = ({
-  zombie,
+  def: zombie,
   from,
   facing,
   player,
@@ -1404,7 +1404,7 @@ const visibleLightTarget = ({
   isSunExposedAt,
   tuning,
 }: {
-  zombie: ActorDef;
+  def: ActorDef;
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
@@ -1418,7 +1418,17 @@ const visibleLightTarget = ({
   let nearest: SensedLightSource | undefined;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (const source of player.lightSources ?? []) {
-    const distance = canSeeLight({ zombie, from, look, source, dayPhase, blockSize, isOpaque, isSunExposedAt, tuning });
+    const distance = canSeeLight({
+      def: zombie,
+      from,
+      look,
+      source,
+      dayPhase,
+      blockSize,
+      isOpaque,
+      isSunExposedAt,
+      tuning,
+    });
     if (distance !== undefined && distance < nearestDistance) {
       nearest = source;
       nearestDistance = distance;
@@ -1620,9 +1630,9 @@ const hordeSnapshotProjectors = {
   rng: ({ rng }) => [...rng.state()] as RngState,
 } satisfies HordeSnapshotProjectors;
 
-const snapshotActor = (id: number, zombie: Actor): { id: number; zombie: ActorSnapshot } => ({
+const snapshotActor = (id: number, zombie: Actor): { id: number; actor: ActorSnapshot } => ({
   id,
-  zombie: projectSnapshot(zombie, actorSnapshotProjectors) as ActorSnapshot,
+  actor: projectSnapshot(zombie, actorSnapshotProjectors) as ActorSnapshot,
 });
 
 const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
@@ -1838,7 +1848,7 @@ export class ActorSystem {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
       nextPuddleId: this.nextPuddleId,
-      zombies: [...this.store.entries()].map(([id, zombie]) => snapshotActor(id, zombie)),
+      actors: [...this.store.entries()].map(([id, zombie]) => snapshotActor(id, zombie)),
       hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
       acidPuddles: this.puddles.map(({ state }) => ({ ...state, pos: [...state.pos] })),
@@ -1899,9 +1909,9 @@ export class ActorSystem {
       }
       return { state: { ...glob, pos: copy(glob.pos), velocity: copy(glob.velocity) }, type };
     });
-    const entries = state.zombies.map(
+    const entries = state.actors.map(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted zombie invariant before mutating the entity store.
-      ({ id, zombie }) => {
+      ({ id, actor: zombie }) => {
         if (
           !Number.isSafeInteger(id) ||
           id < 1 ||
@@ -2412,7 +2422,7 @@ export class ActorSystem {
       if (noise && noise.id !== horde.lastNoiseId) {
         horde.lastNoiseId = noise.id;
         const heard = hearVocalNoise({
-          zombie: member.type,
+          def: member.type,
           from: center,
           noise,
           time,
@@ -2597,7 +2607,7 @@ export class ActorSystem {
     const scratch = this.tickScratch;
     const { zombie, type, pos, player, dayState, blockSize, isOpaque, time, rng, perception } = scratch;
     const soundBlocking = this.options.isSoundBlocking ?? scratch.isSolid;
-    perception.zombie = type;
+    perception.def = type;
     perception.from = pos;
     perception.facing = zombie.facing;
     perception.player = player;
@@ -2609,7 +2619,7 @@ export class ActorSystem {
     perception.tuning = this.options.tuning;
     scratch.sees = seesPlayer(perception);
     scratch.lightTarget = visibleLightTarget({
-      zombie: type,
+      def: type,
       from: pos,
       facing: zombie.facing,
       player,
@@ -2630,7 +2640,7 @@ export class ActorSystem {
       zombie.obstacleWanderHeading = undefined;
     }
     const hearing = scratch.hearingInput;
-    hearing.zombie = type;
+    hearing.def = type;
     hearing.from = pos;
     hearing.player = player;
     hearing.blockSize = blockSize;
@@ -2641,7 +2651,7 @@ export class ActorSystem {
     if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
       zombie.lastVocalNoiseId = player.vocalNoise.id;
       scratch.vocal = hearVocalNoise({
-        zombie: type,
+        def: type,
         from: pos,
         noise: player.vocalNoise,
         time,
@@ -2798,7 +2808,7 @@ export class ActorSystem {
       zombie.lastPerceived =
         vocal?.tier === 'far'
           ? vocal.target
-          : farBearingTarget({ zombie: zombie.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
+          : farBearingTarget({ def: zombie.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
       const { terrainFloor } = this.options;
       const footprint = {
         halfWidth: zombie.body.halfWidth,
@@ -3362,7 +3372,7 @@ export class ActorSystem {
         blockSize: this.options.blockSize,
         isSolid:
           this.options.meleeBlocker?.({
-            kind: 'zombie',
+            kind: 'actor',
             motion: move.motion,
             reachMetres: actorAttackReachMetres(zombie),
           }) ?? this.options.isSolid,

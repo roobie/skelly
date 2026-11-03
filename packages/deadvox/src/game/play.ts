@@ -1216,7 +1216,7 @@ export const startPlay = (
   if (!(options.saveController || options.restore)) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
-  const { zombies: zombieSystem, playerCombat, zombieStore } = session;
+  const { actors: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
       fresh: true,
@@ -1723,7 +1723,7 @@ export const startPlay = (
       },
     },
     roll: () => view.cameraRoll,
-    zombies: () => zombieSystem,
+    actors: () => zombieSystem,
     zombieRenderer: zombieMeshes,
     spectatorCamera: {
       enabled: () => spectator.enabled,

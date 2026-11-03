@@ -11,7 +11,7 @@ import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
-const shambler = registry.zombies.get('shambler')!;
+const shambler = registry.actors.get('shambler')!;
 const move: ActorDef['attack']['moves'][number] = {
   id: 'fixture-hit',
   motion: 'swing',
@@ -101,7 +101,7 @@ const strike = ({ content = registry, blocking = true, seed = 73 } = {}) => {
     },
   });
   session.sim.paused = false;
-  session.zombies.add(attacker, [1.2, 1, 0], [-1, 0, 0]);
+  session.actors.add(attacker, [1.2, 1, 0], [-1, 0, 0]);
   const hit = vi.spyOn(session.sim, 'hit');
   const maxFrames = Math.ceil((attacker.attack.windupSimSeconds + 2) * 60);
   for (let frame = 0; frame < maxFrames && hit.mock.calls.length === 0 && blocks.length === 0; frame++) {

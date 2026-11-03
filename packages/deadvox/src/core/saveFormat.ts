@@ -60,7 +60,7 @@ export type SaveContentKind =
   | 'item'
   | 'furniture'
   | 'climbable'
-  | 'zombie'
+  | 'actor'
   | 'sound'
   | 'damageKind'
   | 'meleeDamageKind'
@@ -108,7 +108,7 @@ interface EncodedChunk extends SavedChunk {
 interface Region {
   vehicles: { order: number; id: number; vehicle: VehicleInstancesState['instances'][number]['vehicle'] }[];
   chunks: EncodedChunk[];
-  zombies: { order: number; id: number; zombie: ActorState }[];
+  actors: { order: number; id: number; actor: ActorState }[];
   entities: { order: number; entity: BlockEntityState }[];
   piles: { order: number; pile: InventoryState['piles'][number] }[];
 }
@@ -119,7 +119,7 @@ interface WirePayload {
     options: SaveWorldIdentity;
     power?: SaveSnapshot['world']['power'];
     regions: Record<string, Region>;
-    zombieSystem: {
+    actorSystem: {
       nextEntityId: number;
       nextPuddleId: number;
       hordes: HordeState[];
@@ -880,13 +880,13 @@ const wirePayloadSchema = obj({
             runs: arr(savedRun, 1),
           }),
         ),
-        zombies: arr(obj({ order: nonNegativeInt, id: positiveInt, zombie })),
+        actors: arr(obj({ order: nonNegativeInt, id: positiveInt, actor: zombie })),
         vehicles: arr(obj({ order: nonNegativeInt, id: positiveInt, vehicle: vehicleSchema })),
         entities: arr(obj({ order: nonNegativeInt, entity: blockEntitySchema })),
         piles: arr(obj({ order: nonNegativeInt, pile: pileSchema })),
       }),
     ),
-    zombieSystem: obj({
+    actorSystem: obj({
       nextEntityId: positiveInt,
       nextPuddleId: nonNegativeInt,
       hordes: arr(horde),
@@ -1249,7 +1249,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
     const key = `${x},${z}`;
     let region = regions.get(key);
     if (!region) {
-      region = { chunks: [], zombies: [], entities: [], piles: [], vehicles: [] };
+      region = { chunks: [], actors: [], entities: [], piles: [], vehicles: [] };
       regions.set(key, region);
     }
     return region;
@@ -1262,9 +1262,9 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       chunkOrder += 1;
     }
   }
-  snapshot.world.zombies.zombies.forEach((entry, order) => {
-    const [x, , z] = entry.zombie.body.pos;
-    getRegion(regionIndex(x, worldOptions.blockSize), regionIndex(z, worldOptions.blockSize)).zombies.push({
+  snapshot.world.actors.actors.forEach((entry, order) => {
+    const [x, , z] = entry.actor.body.pos;
+    getRegion(regionIndex(x, worldOptions.blockSize), regionIndex(z, worldOptions.blockSize)).actors.push({
       ...entry,
       order,
     });
@@ -1298,12 +1298,12 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         clock: snapshot.character.simulation.clock,
       },
       regions: Object.fromEntries(regions),
-      zombieSystem: {
-        nextEntityId: snapshot.world.zombies.nextEntityId,
-        nextPuddleId: snapshot.world.zombies.nextPuddleId,
-        hordes: [...snapshot.world.zombies.hordes],
-        acidGlobs: [...snapshot.world.zombies.acidGlobs],
-        acidPuddles: [...snapshot.world.zombies.acidPuddles],
+      actorSystem: {
+        nextEntityId: snapshot.world.actors.nextEntityId,
+        nextPuddleId: snapshot.world.actors.nextPuddleId,
+        hordes: [...snapshot.world.actors.hordes],
+        acidGlobs: [...snapshot.world.actors.acidGlobs],
+        acidPuddles: [...snapshot.world.actors.acidPuddles],
       },
       vehiclesNextId: snapshot.world.vehicles.nextId,
       blockEntitiesNextUid: savedInventory.entities.nextUid,
@@ -1350,12 +1350,12 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
 
 function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   const chunks: EncodedChunk[] = [];
-  const zombies: { order: number; id: number; zombie: ActorState }[] = [];
+  const zombies: { order: number; id: number; actor: ActorState }[] = [];
   const entities: BlockEntityState[] = [];
   const piles: InventoryState['piles'] = [];
   for (const region of Object.values(wire.world.regions)) {
     chunks.push(...region.chunks);
-    zombies.push(...region.zombies);
+    zombies.push(...region.actors);
     entities.push(...region.entities.map(({ order: _order, entity }) => entity));
     piles.push(...region.piles.map(({ order: _order, pile }) => pile));
   }
@@ -1381,7 +1381,7 @@ function restoreWirePayload(wire: WirePayload): SaveSnapshot {
           ({ order: _order, ...entry }) => entry,
         ),
       },
-      zombies: { ...wire.world.zombieSystem, zombies: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
+      actors: { ...wire.world.actorSystem, actors: ordered(zombies).map(({ order: _order, ...entry }) => entry) },
       spawned: [...wire.world.spawned],
       rolledColumns: [...wire.world.rolledColumns],
       blockDamage: structuredClone(wire.world.blockDamage),
@@ -1488,7 +1488,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     regions.add(regionKey);
     if (
       region.chunks.length +
-        region.zombies.length +
+        region.actors.length +
         region.entities.length +
         region.piles.length +
         region.vehicles.length ===
@@ -1516,7 +1516,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
         throw new Error(`Chunk ${key} is in the wrong region`);
       }
     }
-    for (const { order, id, zombie: saved } of region.zombies) {
+    for (const { order, id, actor: saved } of region.actors) {
       zombieOrders.push(order);
       if (zombieIds.has(id)) {
         throw new Error(`Duplicate zombie id ${id}`);
@@ -1607,13 +1607,13 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     throw new Error('Invalid next block entity id');
   }
   const maxZombie = [...zombieIds].reduce((maximum, id) => Math.max(maximum, id), 0);
-  if (snapshot.world.zombies.nextEntityId <= maxZombie) {
+  if (snapshot.world.actors.nextEntityId <= maxZombie) {
     throw new Error('Next zombie id does not exceed saved zombie ids');
   }
   if (snapshot.world.id === snapshot.character.id) {
     throw new Error('World and character IDs must be distinct');
   }
-  if (new Set(snapshot.world.zombies.zombies.map(({ id }) => id)).size !== snapshot.world.zombies.zombies.length) {
+  if (new Set(snapshot.world.actors.actors.map(({ id }) => id)).size !== snapshot.world.actors.actors.length) {
     throw new Error('Duplicate zombie id');
   }
   if (
@@ -1841,14 +1841,14 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   if (grabbed) {
     check('climbable', grabbed.type, 'character.player.ladder.grabbedUid');
   }
-  snapshot.world.zombies.acidPuddles.forEach((puddle, index) => {
-    check('zombie', puddle.type, `world.zombies.acidPuddles[${index}].type`);
+  snapshot.world.actors.acidPuddles.forEach((puddle, index) => {
+    check('actor', puddle.type, `world.actors.acidPuddles[${index}].type`);
   });
-  for (const [index, glob] of snapshot.world.zombies.acidGlobs.entries()) {
-    check('zombie', glob.type, `world.zombies.acidGlobs[${index}].type`);
+  for (const [index, glob] of snapshot.world.actors.acidGlobs.entries()) {
+    check('actor', glob.type, `world.actors.acidGlobs[${index}].type`);
   }
-  for (const [index, savedZombie] of snapshot.world.zombies.zombies.entries()) {
-    check('zombie', savedZombie.zombie.type, `world.zombies[${index}].type`);
+  for (const [index, savedZombie] of snapshot.world.actors.actors.entries()) {
+    check('actor', savedZombie.actor.type, `world.actors[${index}].type`);
   }
   for (const [index, [id]] of snapshot.character.inventory.looted.entries()) {
     check('item', id, `character.inventory.looted[${index}][0]`);
@@ -1884,10 +1884,10 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
             chunks: arr(obj({ cy: safeInt, palette: arr(str({ id: true }), 1), runs: arr(savedRun, 1) }), 1),
           }),
         ),
-        zombies: obj({
+        actors: obj({
           nextEntityId: positiveInt,
           nextPuddleId: nonNegativeInt,
-          zombies: arr(obj({ id: positiveInt, zombie })),
+          actors: arr(obj({ id: positiveInt, actor: zombie })),
           hordes: arr(horde),
           acidGlobs: arr(acidGlob),
           acidPuddles: arr(acidPuddle),
@@ -1920,15 +1920,15 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   assertBreathHoldState(snapshot.character.aim.breath);
   validateActionReferences(snapshot);
-  assertAcidGlobSources(snapshot.world.zombies);
+  assertAcidGlobSources(snapshot.world.actors);
   const hordes = new Map<string, HordeState>();
-  for (const hordeState of snapshot.world.zombies.hordes) {
+  for (const hordeState of snapshot.world.actors.hordes) {
     if (hordes.has(hordeState.id)) {
       throw new Error(`Duplicate horde ${hordeState.id}`);
     }
     hordes.set(hordeState.id, hordeState);
   }
-  for (const { zombie: zombieState } of snapshot.world.zombies.zombies) {
+  for (const { actor: zombieState } of snapshot.world.actors.actors) {
     if ((zombieState.hordeId === undefined) !== (zombieState.hordeOffset === undefined)) {
       throw new Error('Incomplete zombie horde membership');
     }
@@ -1948,7 +1948,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {
     throw new Error('Invalid next block entity id');
   }
-  if (snapshot.world.zombies.nextEntityId <= Math.max(0, ...snapshot.world.zombies.zombies.map(({ id }) => id))) {
+  if (snapshot.world.actors.nextEntityId <= Math.max(0, ...snapshot.world.actors.actors.map(({ id }) => id))) {
     throw new Error('Next zombie id does not exceed saved zombie ids');
   }
   if (WORLD_REGION_METRES / (CHUNK * 0.5) <= 0) {

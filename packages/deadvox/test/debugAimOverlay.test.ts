@@ -36,7 +36,7 @@ const standing = (position: Vec3, facing: Vec3) => {
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
-  const id = system.add(registry.zombies.get('shambler')!, position, facing);
+  const id = system.add(registry.actors.get('shambler')!, position, facing);
   return { system, id, zombie: system.store.get(id)! };
 };
 

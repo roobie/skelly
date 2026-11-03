@@ -15,7 +15,7 @@ const FIXTURE_SEED = 1;
 
 describe('actor models', () => {
   it('lets content select every ready mobgen zombie template the renderer draws', () => {
-    const [row] = registry.zombies.values();
+    const [row] = registry.actors.values();
     const refused = [...TEMPLATES, acidTemplate, fusedMassTemplate]
       .filter((template) => (template.status ?? 'ready') === 'ready')
       .filter((template) =>
@@ -37,7 +37,7 @@ describe('actor models', () => {
   });
 
   it('realizes a figure for every model content can select', () => {
-    const amalgam = fusedMassTypeOf(registry.zombies)!;
+    const amalgam = fusedMassTypeOf(registry.actors)!;
     for (const model of Object.keys(FIGURE_VARIANTS)) {
       const [type, seed] = model === 'fused-mass' ? [amalgam, FUSED_MASS_FIGURE_SEED] : [{ model }, FIXTURE_SEED];
       expect(() => actorFigure(type, seed), model).not.toThrow();

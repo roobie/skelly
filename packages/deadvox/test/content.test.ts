@@ -59,7 +59,7 @@ const baseRegistry = baseBuild.registry;
 
 describe('content-owned item and world policies', () => {
   it('refuses zombie abilities without a runtime mechanism', () => {
-    const zombie = [...baseRegistry.zombies.values()][0]!;
+    const zombie = [...baseRegistry.actors.values()][0]!;
     for (const ability of [
       'leap',
       'scream',
@@ -82,7 +82,7 @@ describe('content-owned item and world policies', () => {
       delete missing[field];
       expect(safeParse(ContentFileSchema, { items: [missing] }).success).toBe(false);
     }
-    const zombie = { ...[...baseRegistry.zombies.values()][0]! } as Record<string, unknown>;
+    const zombie = { ...[...baseRegistry.actors.values()][0]! } as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(true);
     zombie.severedItems = undefined;
     expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(false);
@@ -93,7 +93,7 @@ describe('content-owned item and world policies', () => {
   });
 
   it('requires a positive finite takeoff speed on each zombie type', () => {
-    const zombie = [...baseRegistry.zombies.values()][0]!;
+    const zombie = [...baseRegistry.actors.values()][0]!;
     expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(true);
     for (const jumpMetresPerSimSecond of [undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
       expect(safeParse(ContentFileSchema, { actors: [{ ...zombie, jumpMetresPerSimSecond }] }).success).toBe(false);
@@ -101,7 +101,7 @@ describe('content-owned item and world policies', () => {
   });
 
   it('validates severed-item references and complete region policy', () => {
-    const zombie = { ...structuredClone(baseRegistry.zombies.get('shambler')!), loot: undefined };
+    const zombie = { ...structuredClone(baseRegistry.actors.get('shambler')!), loot: undefined };
     zombie.severedItems = Object.fromEntries(Object.keys(zombie.regions).map((key) => [key, null]));
     const region = Object.keys(zombie.regions)[0]!;
     const support = {
@@ -380,7 +380,7 @@ describe('content', () => {
   });
 
   it('keeps soldier spawns within camp authoring and preserves the shambler design', () => {
-    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    const soldier = baseRegistry.actors.get('military_shambler')!;
     const templateSpawns = [...baseRegistry.templates.values()].flatMap((template) =>
       compileTemplate(baseRegistry, template)
         .spawns.filter(({ zombie }) => zombie === soldier.id)
@@ -398,7 +398,7 @@ describe('content', () => {
       true,
     );
 
-    const shambler = baseRegistry.zombies.get('shambler')!;
+    const shambler = baseRegistry.actors.get('shambler')!;
     const sharedShamblerData = Object.fromEntries(
       Object.entries(shambler).filter(([key]) => !['id', 'name', 'cause', 'loot', 'capability'].includes(key)),
     );
@@ -407,12 +407,12 @@ describe('content', () => {
   });
 
   it('excludes authored-only kinds from ordinary settlement spawn weights', () => {
-    const soldier = baseRegistry.zombies.get('military_shambler')!;
+    const soldier = baseRegistry.actors.get('military_shambler')!;
     expect(ordinarySpawnWeights(baseRegistry).has(soldier.id)).toBe(false);
   });
 
   it('gives every zombie kind only kit items its corpse can drop', () => {
-    const dead = [...baseRegistry.zombies.values()].flatMap((kind) => {
+    const dead = [...baseRegistry.actors.values()].flatMap((kind) => {
       const { context } = corpseLootPoint(kind.loot ?? '', 0, [0, 0, 0]);
       return reachableLootItems(kind.loot)
         .filter(({ item }) => lootTypeIssue(baseRegistry, item, context) !== undefined)
@@ -538,8 +538,8 @@ describe('content', () => {
   });
 
   it('keeps runner attack damage within the shambler damage ceilings', () => {
-    const shambler = baseRegistry.zombies.get('shambler')!;
-    const runner = baseRegistry.zombies.get('runner')!;
+    const shambler = baseRegistry.actors.get('shambler')!;
+    const runner = baseRegistry.actors.get('runner')!;
     const highestShamblerDamage = Math.max(...shambler.attack.moves.map(({ damage }) => damage));
     const weightedDamage = (moves: typeof shambler.attack.moves) =>
       moves.reduce((total, { damage, weight }) => total + damage * weight, 0) /
@@ -1672,7 +1672,7 @@ describe('content', () => {
     const sections = CONTENT_SECTION_KEYS.filter((key) => key !== 'blocks');
     expect(sections.length).toBeGreaterThan(0);
     for (const section of sections) {
-      expect(registry[section === 'actors' ? 'zombies' : section], section).toBeInstanceOf(Map);
+      expect(registry[section], section).toBeInstanceOf(Map);
     }
   });
 });
@@ -2649,7 +2649,7 @@ describe('content references', () => {
       palette: { C: { furniture: furniture.id, loot: lootId } },
       layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => 'C'.repeat(width))),
     };
-    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
+    const zombie = structuredClone(baseRegistry.actors.get('shambler')!);
     zombie.id = 'fixture_military_looter';
     zombie.footstepSound = undefined;
     zombie.capability = undefined;
@@ -2743,7 +2743,7 @@ describe('content references', () => {
             canJumpObstacles: true,
             jumpMetresPerSimSecond: 3,
             strength: 1,
-            idleSound: baseRegistry.zombies.get('shambler')!.idleSound,
+            idleSound: baseRegistry.actors.get('shambler')!.idleSound,
             sounds: zombieSounds,
             severedItems: { head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null },
             severedImpulseScale: 1,
@@ -2756,7 +2756,7 @@ describe('content references', () => {
             },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: {
-              ...baseRegistry.zombies.get('shambler')!.speed,
+              ...baseRegistry.actors.get('shambler')!.speed,
               wanderMetresPerSimSecond: 0.8,
               chaseMetresPerSimSecond: 2.5,
               backgroundStepMetres: 1,
@@ -2869,7 +2869,7 @@ describe('content references', () => {
 const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
 const templateShambler = {
   severedItems: Object.fromEntries(
-    Object.keys(baseRegistry.zombies.get('shambler')!.regions).map((region) => [region, null]),
+    Object.keys(baseRegistry.actors.get('shambler')!.regions).map((region) => [region, null]),
   ),
   ...Object.fromEntries(
     Object.entries(
@@ -2887,7 +2887,7 @@ const templateSoundDefinitions = (
     sounds: { id: string }[];
   }
 ).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
-const templateDismember = baseRegistry.zombies.get('shambler')!.downed!.dismember;
+const templateDismember = baseRegistry.actors.get('shambler')!.downed!.dismember;
 const templateBase = [
   {
     source: 'template-blocks.json',

@@ -352,7 +352,7 @@ export const templateSpawnClearanceIssues = (registry: Registry, template: Compi
   const space = new TemplateSpace(registry, template);
   const [sx, sy, sz] = template.size;
   return template.spawns.flatMap((spawn, index) => {
-    const type = registry.zombies.get(spawn.zombie);
+    const type = registry.actors.get(spawn.zombie);
     if (!type) {
       return [];
     }

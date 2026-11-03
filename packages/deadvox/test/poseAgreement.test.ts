@@ -21,7 +21,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
@@ -183,7 +183,7 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it.each(['runner', 'crawler'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
-    const { system, id, zombie, approach } = livePoseZombie(registry.zombies.get(model)!);
+    const { system, id, zombie, approach } = livePoseZombie(registry.actors.get(model)!);
     approach(10);
     for (let tick = 0; tick < 60 && zombie.gaitPhase === 0; tick++) {
       system.tick(1 / 60);
@@ -357,7 +357,7 @@ describe('rendered and hit shambler poses', () => {
 
 describe('shared acid pose', () => {
   it('keeps a wandering head turn inside every framed joint limit without a hit reaction', () => {
-    const acid = registry.zombies.get('acid_zombie')!;
+    const acid = registry.actors.get('acid_zombie')!;
     // Just inside the half-arc a wandering acid zombie can pick for its head.
     const reachable = ((acid.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
     for (const headYaw of [reachable, -reachable]) {

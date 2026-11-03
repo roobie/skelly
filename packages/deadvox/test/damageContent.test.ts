@@ -13,7 +13,7 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
   const base = baseRegistry();
   const kind = 'fixture_sonic';
   const templateClass = [...base.meleeClasses.values()].find((entry) => !entry.unarmed)!;
-  const templateActor = claimed(base.zombies, 'settlementWanderer')!;
+  const templateActor = claimed(base.actors, 'settlementWanderer')!;
   const templateWeapon = [...base.items.values()].find((entry) => entry.weapon?.melee)!;
   const tuning = {
     ...bodyWithFixtureKind(claimed(base.body, 'player')!, kind),
@@ -62,7 +62,7 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
   body.impact(4, 'torso', { kind: selected });
   expect(body.health).toBeLessThan(100);
   expect(body.shock).toBeLessThan(100);
-  expect(damageToActor(registry.zombies.get(actor.id)!, 4, selected, 'torso')).toBe(2);
+  expect(damageToActor(registry.actors.get(actor.id)!, 4, selected, 'torso')).toBe(2);
   const material = [...registry.blockMaterials.values()][0]!;
   expect(bashBlock({ material: { ...material, minimumStrength: 0 }, damage: 0 }, { kind, strength: 4 }).damage).toBe(2);
 });
@@ -70,8 +70,8 @@ it('uses a content-only damage kind on bodies, actors and terrain with an existi
 it('gives every bundled actor an explicit resistance for every declared kind and body region', () => {
   const registry = baseRegistry();
   expect(registry.damageKinds.size).toBeGreaterThan(0);
-  expect(registry.zombies.size).toBeGreaterThan(0);
-  for (const actor of registry.zombies.values()) {
+  expect(registry.actors.size).toBeGreaterThan(0);
+  for (const actor of registry.actors.values()) {
     for (const kind of registry.damageKinds.keys()) {
       for (const region of BODY_REGIONS) {
         expect(Object.hasOwn(actor.damageResistance?.[kind] ?? {}, region), `${actor.id}: ${kind}.${region}`).toBe(

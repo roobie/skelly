@@ -74,7 +74,7 @@ export const worldSoundBlocking = (world: World, registry: Registry, options: Ch
   };
 };
 
-type MeleePassAttack = { motion: MeleeMotion } & ({ kind: 'player' } | { kind: 'zombie'; reachMetres: number });
+type MeleePassAttack = { motion: MeleeMotion } & ({ kind: 'player' } | { kind: 'actor'; reachMetres: number });
 export type MeleeBlocker = (attack: MeleePassAttack) => SolidAt;
 
 export const worldMeleeBlocker = (world: World, registry: Registry, options: ChannelCollisionOptions): MeleeBlocker => {
@@ -96,7 +96,7 @@ export const worldMeleeBlocker = (world: World, registry: Registry, options: Cha
     }
     return (
       !pass.motions.includes(attack.motion) ||
-      (attack.kind === 'zombie' && attack.reachMetres < pass.minimumZombieReachMetres)
+      (attack.kind === 'actor' && attack.reachMetres < pass.minimumZombieReachMetres)
     );
   };
 };

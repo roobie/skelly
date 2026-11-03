@@ -310,9 +310,9 @@ describe('ladders', () => {
 
   it('is not climbed by a shambler under a player on the roof', () => {
     const runtime = houseWithLadder([1, roofTop, 1]);
-    const id = runtime.session.zombies.add(registry.zombies.get('shambler')!, [-3, 1, 1], [1, 0, 0]);
+    const id = runtime.session.actors.add(registry.actors.get('shambler')!, [-3, 1, 1], [1, 0, 0]);
     runtime.advance(600);
-    const shambler = runtime.session.zombies.store.get(id)!;
+    const shambler = runtime.session.actors.store.get(id)!;
     // It came for the player as far as the wall, into the ladder's cells, and stayed on the ground.
     expect(shambler.body.pos[0] + shambler.body.halfWidth).toBeGreaterThan(-1);
     expect(shambler.body.pos[1]).toBeLessThan(1 + PLAYER.stepHeight / scale.blockSize);

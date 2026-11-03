@@ -40,7 +40,7 @@ it('draws a background actor partway between its own slice updates when synced o
     activeActorRadiusMetres: 10,
   });
   // Far enough that the system classifies both as background; the nearer one is drawn first.
-  const shambler = registry.zombies.get('shambler')!;
+  const shambler = registry.actors.get('shambler')!;
   const watchedId = system.add(shambler, [24, 1, 0], [-1, 0, 0]);
   const otherId = system.add(shambler, [24, 1, 6], [-1, 0, 0]);
   const watchedSlice = watchedId % BACKGROUND_ACTOR_SLICE_COUNT;

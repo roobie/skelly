@@ -13,14 +13,14 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const RUNNER = registry.zombies.get('runner')!;
+const RUNNER = registry.actors.get('runner')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number): boolean => y === 0;
 let renderer!: MobActorMeshes;
 
 beforeAll(() => {
-  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.zombies });
+  renderer = new MobActorMeshes(BLOCK_SIZE, 4, { zombies: registry.actors });
 });
 
 afterAll(() => renderer.dispose());

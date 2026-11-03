@@ -30,7 +30,7 @@ export interface SaveSnapshot {
     blockDamage: SavedBlockDamage;
     vehicles: VehicleInstancesState;
     power?: PowerState;
-    zombies: ActorSystemState;
+    actors: ActorSystemState;
     spawned: readonly string[];
     rolledColumns: readonly string[];
   };
@@ -75,7 +75,7 @@ export interface SnapshotSessionInput {
   aim: { snapshotState: () => Readonly<AimSnapshotState> };
   survival: Survival;
   quickbar: readonly (number | null)[];
-  zombies: ActorSystem;
+  actors: ActorSystem;
   playerCombat: PlayerCombat;
   spawner: ActorSpawner;
   rolledColumns: ReadonlySet<string>;
@@ -106,7 +106,7 @@ export const snapshotSession = ({
   aim,
   survival,
   quickbar,
-  zombies,
+  actors: zombies,
   playerCombat,
   spawner,
   rolledColumns,
@@ -136,7 +136,7 @@ export const snapshotSession = ({
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
       blockDamage: world.blockDamage.snapshotState() as SavedBlockDamage,
       vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,
-      zombies: zombies.snapshotState() as ActorSystemState,
+      actors: zombies.snapshotState() as ActorSystemState,
       spawned: [...spawner.snapshotState()],
       rolledColumns: [...rolledColumns],
     },

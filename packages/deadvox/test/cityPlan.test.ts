@@ -320,7 +320,7 @@ describe('one finished city plan', () => {
         ...registry,
         furniture: new Map([...registry.furniture, [note.id, note]]),
         templates,
-        zombies: new Map([...registry.zombies, ...native.zombies]),
+        actors: new Map([...registry.actors, ...native.actors]),
       };
       const plan = buildCityPlan({
         seed: 73,

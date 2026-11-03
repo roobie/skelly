@@ -51,8 +51,8 @@ export const contentLookup = (registry: Registry, kind: SaveContentKind, id: str
       return registry.furniture.has(id);
     case 'climbable':
       return Boolean(registry.furniture.get(id)?.climbable);
-    case 'zombie':
-      return registry.zombies.has(id);
+    case 'actor':
+      return registry.actors.has(id);
     case 'sound':
       return registry.sounds.has(id);
     case 'damageKind':

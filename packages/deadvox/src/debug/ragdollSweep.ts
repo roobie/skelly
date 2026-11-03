@@ -31,7 +31,7 @@ export function stageRagdollSweep({
   const tuning = ragdollContent.sweep;
   const downed: EntityId[] = [];
   for (const [row, model] of tuning.models.entries()) {
-    const type = [...registry.zombies.values()].find(
+    const type = [...registry.actors.values()].find(
       (candidate) => bodyPlanModel(figureVariantOf(candidate)) === model,
     )!;
     for (const [column, cuts] of tuning.cuts.entries()) {
@@ -65,7 +65,7 @@ export function stageRagdollSweep({
   }
   const living: { id: EntityId; cuts: string[] }[] = [];
   for (const [row, model] of tuning.models.entries()) {
-    const type = [...registry.zombies.values()].find(
+    const type = [...registry.actors.values()].find(
       (candidate) => bodyPlanModel(figureVariantOf(candidate)) === model,
     )!;
     for (const [column, cuts] of tuning.crawlCuts.entries()) {

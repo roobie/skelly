@@ -169,7 +169,7 @@ describe('debug starting equipment', () => {
       },
     });
     const shambler = {
-      ...registry.zombies.get('shambler')!,
+      ...registry.actors.get('shambler')!,
       dismember: { chance: 0, headOnKillChance: 1 },
     };
     const id = system.add(shambler, [1.85 / SCALE.blockSize, 1, 0], [-1, 0, 0]);

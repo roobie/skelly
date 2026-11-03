@@ -922,7 +922,7 @@ describe('restored session world state', () => {
     expect([...loaded.entities.all].map((entity) => [entity.uid, entity.pockets?.map((p) => p.length)])).toEqual(
       countsBefore,
     );
-    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.actors.actors.length);
 
     const fresh = loaded.site.furnitureIn(...loaded.columns[0]!)[0]!;
     const freshSpec = {
@@ -937,6 +937,6 @@ describe('restored session world state', () => {
     } as unknown as Site;
     loaded.session.onColumn(loaded.columns[0]![0] + 100, loaded.columns[0]![1], unseenSite);
     expect(loaded.entities.at(...freshSpec.pos)?.type).toBe(freshSpec.type);
-    expect(loaded.zombies.store.size).toBe(snapshot.world.zombies.zombies.length + 1);
+    expect(loaded.zombies.store.size).toBe(snapshot.world.actors.actors.length + 1);
   });
 });

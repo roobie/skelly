@@ -12,7 +12,7 @@ const mutableSections = [
   'items',
   'furniture',
   'loot',
-  'zombies',
+  'actors',
   'templates',
   'recipes',
   'layouts',
@@ -481,23 +481,23 @@ describe('static reachability', () => {
       breach: fixtureBreach(),
       material: FIXTURE_MATERIAL,
     });
-    const shambler = registry.zombies.get('shambler')!;
-    registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
-    registry.zombies.set('fixture_spawn', {
+    const shambler = registry.actors.get('shambler')!;
+    registry.actors.set('shambler', { ...shambler, loot: 'wanderer' });
+    registry.actors.set('fixture_spawn', {
       ...shambler,
       id: 'fixture_spawn',
       capability: undefined,
       loot: 'spawned',
       authoredOnly: true,
     });
-    registry.zombies.set('fixture_direct', {
+    registry.actors.set('fixture_direct', {
       ...shambler,
       id: 'fixture_direct',
       capability: undefined,
       loot: 'direct',
       authoredOnly: true,
     });
-    registry.zombies.set('fixture_zero', {
+    registry.actors.set('fixture_zero', {
       ...shambler,
       id: 'fixture_zero',
       capability: undefined,

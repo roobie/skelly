@@ -21,7 +21,7 @@ it('keeps a wire fence solid to bodies and physical rays but open to zombie sigh
   const opaque = worldOpaque(world, registry, entities);
   const sees = () =>
     perceivePlayer({
-      zombie: registry.zombies.get('shambler')!,
+      def: registry.actors.get('shambler')!,
       from: [0.5, 2, 1.5],
       facing: [1, 0, 0],
       player: {

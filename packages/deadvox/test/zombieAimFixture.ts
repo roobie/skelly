@@ -60,7 +60,7 @@ export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Ve
     origin[1] + direction[1] * 8 - 2,
     origin[2] + direction[2] * 8,
   ];
-  system.add(registry.zombies.get('shambler')!, targetPosition, [-direction[0], 0, -direction[2]]);
+  system.add(registry.actors.get('shambler')!, targetPosition, [-direction[0], 0, -direction[2]]);
   const target = system.aimAt(origin, direction, FISTS_MELEE);
   if (!target) {
     throw new Error('The camera ray did not intersect the fixture shambler');

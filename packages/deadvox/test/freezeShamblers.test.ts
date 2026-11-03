@@ -11,7 +11,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
-const SHAMBLER = registry.zombies.get('shambler')!;
+const SHAMBLER = registry.actors.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
@@ -155,7 +155,7 @@ describe('debug shambler freeze', () => {
     const source = makeSystem([100, 1, 100]);
     source.add(SHAMBLER, [0, 1, 0], [0, 0, -1]);
     const state = structuredClone(source.snapshotState());
-    Object.assign(state.zombies[0]!.zombie, {
+    Object.assign(state.actors[0]!.actor, {
       attackWait: 1,
       idleSoundTimer: 2,
       modeTimer: 3,

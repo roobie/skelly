@@ -70,7 +70,7 @@ type AmmoData = NonNullable<ItemDef['ammo']>;
 
 /** Region health a projectile should take: the cartridge's damage, scaled on the head, less the region's resistance. */
 const expectedLoss = (ammo: AmmoData, region: HumanoidHitRegion, before: ActorRegions): number => {
-  const shambler = registry.zombies.get('shambler')!;
+  const shambler = registry.actors.get('shambler')!;
   const scale = region === 'head' ? (ammo.headDamageMultiplier ?? 1) : 1;
   const resistance = shambler.damageResistance?.[ammo.damageKind]?.[region] ?? 0;
   return Math.min(before[region]!, ammo.damage * scale * (1 - resistance));
@@ -123,13 +123,13 @@ describe('rifle hits', () => {
   });
 
   it('damages exactly the posed region a projectile’s ray crosses, scaled on the head', () => {
-    const shambler = registry.zombies.get('shambler')!;
+    const shambler = registry.actors.get('shambler')!;
     /**
      * A fresh shambler at `x`, shot from in front of and above `target`'s bulkiest posed box, through its drawn
      * voxels, so the ray is sized from the spawned body; returns the region the ray crosses first, if any.
      */
     const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, target: HumanoidHitRegion) => {
-      const id = session.zombies.add(shambler, [x, 0, -8]);
+      const id = session.actors.add(shambler, [x, 0, -8]);
       const zombie = session.zombieStore.get(id)!;
       const [box] = [...posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK))[target]].sort(
         (a, b) => b.voxelCount - a.voxelCount,
@@ -139,7 +139,7 @@ describe('rifle hits', () => {
       const origin: Vec3 = [aim[0] + (front[0] * 0.75) / BLOCK, aim[1] + 1, aim[2] + (front[2] * 0.75) / BLOCK];
       const length = Math.hypot(aim[0] - origin[0], aim[1] - origin[1], aim[2] - origin[2]);
       const direction = aim.map((value, axis) => (value - origin[axis]!) / length) as Vec3;
-      const region = session.zombies.aimAt(origin, direction, {
+      const region = session.actors.aimAt(origin, direction, {
         type: ammo.damageKind,
         damage: 0,
         reach: ammo.rangeMetres,
@@ -147,7 +147,7 @@ describe('rifle hits', () => {
         impulse: 0,
       })?.region as HumanoidHitRegion | undefined;
       const before = { ...zombie.regions };
-      expect(session.zombies.firePellets(projectileShot(ammo, origin, [direction])).hits).toBe(region ? 1 : 0);
+      expect(session.actors.firePellets(projectileShot(ammo, origin, [direction])).hits).toBe(region ? 1 : 0);
       expect(changedRegions(before, zombie.regions)).toEqual(region ? [region] : []);
       if (region) {
         expect(before[region]! - zombie.regions[region]!).toBeCloseTo(expectedLoss(ammo, region, before));
@@ -176,7 +176,7 @@ describe('rifle hits', () => {
         magazines: session.magazines,
       });
       const ammo = registry.items.get(rifle.firearm!.roundType!)!.ammo!;
-      const zombie = session.zombieStore.get(session.zombies.add(registry.zombies.get('shambler')!, [0, 0, -6]))!;
+      const zombie = session.zombieStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!;
       const before = { ...zombie.regions };
       expect(session.firearms.fire(shotInput(rifle))).toBe(true);
       const [region, ...others] = changedRegions(before, zombie.regions);
@@ -192,7 +192,7 @@ describe('rifle hits', () => {
         rounds: 1,
         magazines: session.magazines,
       });
-      const zombie = session.zombieStore.get(session.zombies.add(registry.zombies.get('shambler')!, [0, 0, -6]))!;
+      const zombie = session.zombieStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!;
       const before = { ...zombie.regions };
       expect(session.firearms.fire(shotInput(rifle))).toBe(true);
       expect(changedRegions(before, zombie.regions)).toHaveLength(1);
@@ -244,7 +244,7 @@ describe('rifle hits', () => {
         (_x, y, z) => y < 0 || z < wallZ,
       );
       const zombie = withShambler
-        ? session.zombieStore.get(session.zombies.add(registry.zombies.get('shambler')!, [0, 0, -6]))!
+        ? session.zombieStore.get(session.actors.add(registry.actors.get('shambler')!, [0, 0, -6]))!
         : undefined;
       const before = zombie && { ...zombie.regions };
       const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {

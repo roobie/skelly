@@ -307,7 +307,7 @@ try {
   // ring finds no clear ground in sight of this stage's start, so these check zombies the world already holds.
   const drawnModel = (typeId) => {
     const { session, view, figureVariantOf } = globalThis.firefoxUiTest;
-    for (const [id, zombie] of session.zombies.store.entries()) {
+    for (const [id, zombie] of session.actors.store.entries()) {
       const state = zombie.type.id === typeId && view.zombieMeshes.states?.get(id);
       const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
       if (variant?.model === figureVariantOf(zombie.type) && variant.mesh.count > 0) {
@@ -337,7 +337,7 @@ try {
     () => {
       const { session, view } = globalThis.firefoxUiTest;
       const away = ([, zombie]) => Math.hypot(...zombie.body.pos.map((value, axis) => value - session.body.pos[axis]));
-      const [found] = [...session.zombies.store.entries()]
+      const [found] = [...session.actors.store.entries()]
         .filter(([, zombie]) => zombie.type.id === 'acid_zombie')
         .sort((a, b) => away(a) - away(b));
       const state = found && view.zombieMeshes.states?.get(found[0]);
@@ -361,7 +361,7 @@ try {
   const acidDeath = await page.evaluate(
     (id) => {
       const { session } = globalThis.firefoxUiTest;
-      const { zombies } = session;
+      const { actors: zombies } = session;
       const {
         pos: [x, y, z],
         height: bodyHeight,
@@ -399,7 +399,7 @@ try {
       return (
         view.zombieMeshes.boneMatrix(id, 'sac.0')?.every((value) => value === 0) &&
         view.acidEffects.dropletCount() >=
-          globalThis.firefoxUiTest.registry.zombies.get('acid_zombie').acidBody.deathSplash.droplets
+          globalThis.firefoxUiTest.registry.actors.get('acid_zombie').acidBody.deathSplash.droplets
       );
     },
     await acidId.jsonValue(),
