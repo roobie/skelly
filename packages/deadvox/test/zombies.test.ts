@@ -6,7 +6,7 @@ import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, figureSeedPool } from '../src/core/actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
-import { actorPoseInputFor, HIT_FLINCH_DURATION, posedActor, zombieCrawls } from '../src/core/actorPose.ts';
+import { actorCrawls, actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
@@ -41,8 +41,8 @@ import {
   lethalRegion,
   type PlayerSense,
   perceivePlayer,
-  pickZombieHitRegion,
-  pickZombieMove,
+  pickActorHitRegion,
+  pickActorMove,
   type Zombie,
 } from '../src/core/zombies.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
@@ -395,7 +395,7 @@ describe('zombie attack moves', () => {
     });
     const moves = [move('heavy', 3), move('light', 1)];
 
-    expect([0, 0.74, 0.76, 0.999].map((roll) => pickZombieMove(moves, roll).id)).toEqual([
+    expect([0, 0.74, 0.76, 0.999].map((roll) => pickActorMove(moves, roll).id)).toEqual([
       'heavy',
       'heavy',
       'light',
@@ -415,7 +415,7 @@ describe('zombie attack moves', () => {
     const picks = choices.map(({ weight }) => {
       const roll = (precedingWeight + weight / 2) / totalWeight;
       precedingWeight += weight;
-      return pickZombieHitRegion(choices, roll);
+      return pickActorHitRegion(choices, roll);
     });
     const regions = new Set<BodyRegion>(choices.map(({ region }) => region));
 
@@ -1952,7 +1952,7 @@ describe('shambler scenarios', () => {
     run(system, 1);
     expect(templateByName(bodyPlanModel(figureVariantOf(type))).bodyPlan).toBe('humanoid');
     expect(actorFigure(type, zombie.figureSeed).realized.body.bones.some((bone) => bone.id === 'shin.L')).toBe(false);
-    expect(zombieCrawls(zombie)).toBe(false);
+    expect(actorCrawls(zombie)).toBe(false);
     expect(actorPoseInputFor(zombie, id, BLOCK_SIZE).crawling).toBe(false);
     expect(zombie.horizontalSpeed).toBeGreaterThan(type.speed.crawlMetresPerSimSecond);
     expect(zombie.horizontalSpeed).toBeLessThanOrEqual(type.speed.chaseMetresPerSimSecond);

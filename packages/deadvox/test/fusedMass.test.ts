@@ -24,10 +24,10 @@ import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import {
-  activeAmalgamMembers,
+  activeFusedMassMembers,
+  actorAttackReachMetres,
   PLAYER_CHEST_METRES,
   type PlayerSense,
-  zombieAttackReachMetres,
 } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -107,7 +107,7 @@ const findRegionRay = ({
 const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3) => {
   const zombie = simulation.store.get(id)!;
   const regions = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
-  for (const member of activeAmalgamMembers(zombie)) {
+  for (const member of activeFusedMassMembers(zombie)) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
       if (ray) {
@@ -553,7 +553,7 @@ describe('fused-mass body and combat seam', () => {
     const { hitFlinchTime, ...withoutFlinch } = poseInput;
     expect(hitFlinchTime).toBeGreaterThan(0);
 
-    const memberRegion = activeAmalgamMembers(zombie)[0]!.regionIds[0]!;
+    const memberRegion = activeFusedMassMembers(zombie)[0]!.regionIds[0]!;
     const posedBoxes = posedFusedMassRegionBoxes(poseInput)[memberRegion] ?? [];
     const unflinchedBoxes = posedFusedMassRegionBoxes(withoutFlinch)[memberRegion] ?? [];
     const aim = combatSystem.aimAt(ray.origin, ray.direction, FISTS_MELEE);
@@ -818,7 +818,7 @@ describe('fused-mass body and combat seam', () => {
     const simulation = system();
     const id = simulation.add(registry.zombies.get('amalgam')!, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
-    const reach = zombieAttackReachMetres(zombie);
+    const reach = actorAttackReachMetres(zombie);
     const severOne = () => {
       const ray = findMemberRay(simulation, id);
       const damage = zombie.regions[ray.regionId]! + 1;
@@ -835,8 +835,8 @@ describe('fused-mass body and combat seam', () => {
     expect(reach).toBeGreaterThan(0);
     expect(reach).toBeCloseTo(zombie.type.attack.reach * zombie.type.bodyScale!);
     severOne();
-    expect(activeAmalgamMembers(zombie).length).toBeGreaterThan(0);
-    expect(zombieAttackReachMetres(zombie)).toBe(reach);
+    expect(activeFusedMassMembers(zombie).length).toBeGreaterThan(0);
+    expect(actorAttackReachMetres(zombie)).toBe(reach);
     const noMembers = {
       ...zombie,
       severed: [
@@ -846,8 +846,8 @@ describe('fused-mass body and combat seam', () => {
           .map((part) => part.id),
       ],
     };
-    expect(activeAmalgamMembers(noMembers)).toHaveLength(0);
-    expect(zombieAttackReachMetres(noMembers)).toBe(0);
+    expect(activeFusedMassMembers(noMembers)).toHaveLength(0);
+    expect(actorAttackReachMetres(noMembers)).toBe(0);
   });
 
   it('rejects a fused-mass save with a seed that has no rendered variant', () => {
@@ -897,7 +897,7 @@ describe('fused-mass body and combat seam', () => {
     const type = registry.zombies.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
-    const membersBefore = activeAmalgamMembers(zombie);
+    const membersBefore = activeFusedMassMembers(zombie);
     const ray = findMemberRay(simulation, id);
     const target = membersBefore.find((member) => member.partId === ray.partId)!;
     const { regionId } = ray;
@@ -918,7 +918,7 @@ describe('fused-mass body and combat seam', () => {
         expect(zombie.regions[region]).toBe(before[region]);
       }
     }
-    expect(activeAmalgamMembers(zombie).map(({ partId }) => partId)).toEqual(
+    expect(activeFusedMassMembers(zombie).map(({ partId }) => partId)).toEqual(
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
@@ -932,8 +932,8 @@ describe('fused-mass body and combat seam', () => {
     const restored = system();
     restored.restoreState(saved, (typeId) => registry.zombies.get(typeId));
     expect(restored.snapshotState()).toEqual(saved);
-    expect(activeAmalgamMembers(restored.store.get(id)!).map(({ partId }) => partId)).toEqual(
-      activeAmalgamMembers(zombie).map(({ partId }) => partId),
+    expect(activeFusedMassMembers(restored.store.get(id)!).map(({ partId }) => partId)).toEqual(
+      activeFusedMassMembers(zombie).map(({ partId }) => partId),
     );
   });
 });
@@ -966,7 +966,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
   const feet: Vec3 = [0, 1, 0];
   const id = simulation.add(registry.zombies.get(typeId)!, feet, [0, 0, 1]);
   const zombie = simulation.store.get(id)!;
-  const reachMetres = zombieAttackReachMetres(zombie);
+  const reachMetres = actorAttackReachMetres(zombie);
   const offsetMetres =
     typeId === 'amalgam'
       ? fusedMassStrikeOrigin(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie.facing)

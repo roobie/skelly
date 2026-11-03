@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { actorBodyDimensions, zombieAttackReachForType, zombieAttackReachMetres } from '../src/core/zombies.ts';
+import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/zombies.ts';
 import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -103,7 +103,7 @@ describe('debug shambler spawning', () => {
     const initialDistance =
       Math.hypot(body.pos[0] - zombie.body.pos[0], body.pos[2] - zombie.body.pos[2]) * SCALE.blockSize;
     expect(bodyIsClear(zombie.body, solid)).toBe(true);
-    expect(initialDistance).toBeGreaterThan(zombieAttackReachMetres(zombie));
+    expect(initialDistance).toBeGreaterThan(actorAttackReachMetres(zombie));
     for (let tick = 0; tick < 20 * 60; tick++) {
       zombies.tick(1 / 60);
     }
@@ -119,7 +119,7 @@ describe('debug shambler spawning', () => {
     const body = player();
     const floor = (_x: number, y: number) => y === 0;
     const openEngine = testEngine(floor, 73);
-    const minRadiusMetres = Math.max(8, zombieAttackReachForType(type) + 1);
+    const minRadiusMetres = Math.max(8, actorAttackReachForDef(type) + 1);
     const [position] = placeShamblerRing({
       count: 1,
       seed: openEngine.config.seed,

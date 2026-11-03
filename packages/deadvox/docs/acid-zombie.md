@@ -16,7 +16,7 @@ It is the first tier of an evolution line of acid enemies, and the line lives in
 
 ## Ability, not type
 
-`acidSpit` is a general ability component, not acid-zombie code. Any type that lists it in `abilities` spits, and its tunables live in that type's content: range band, wind-up, cooldown, the cooldown fraction a cancel costs, spread, glob speed, hit moves and puddle. Later tiers of the line reuse it by data alone, with harder numbers. Validation rejects a type that lists `acidSpit` without its tunables, and tunables on a type that doesn't list it. See `DESIGN.md`, "Types are data"; `PILLARS.md`, "Content forward compatibility"; and `src/core/schema/actors.ts`, `ActorSchema` and `ZOMBIE_ABILITIES`.
+Acid spit is a reusable ability rather than a type-specific mechanism, so later tiers can change its tuning through content alone. Admission must reject incomplete ability declarations rather than silently disabling them. See `DESIGN.md`, "Types are data"; `PILLARS.md`, "Content forward compatibility"; and `src/core/schema/actors.ts`, `ActorSchema` and `ACTOR_ABILITIES`.
 
 The spitter still has an ordinary `attack` for when the player reaches it. A spitter with no melee would make closing in risk-free, and the counter would collapse into "run up and hit it".
 

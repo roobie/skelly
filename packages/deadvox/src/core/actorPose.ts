@@ -63,9 +63,9 @@ export const acidSpitWindupProgress = (zombie: Zombie): number => {
   return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
 };
 
-export const zombieCrawls = (zombie: Zombie): boolean => {
+export const actorCrawls = (zombie: Zombie): boolean => {
   const template = templateByName(bodyPlanModel(figureVariantOf(zombie.type)));
-  // Born legs-cut bodies already use their authored locomotion, not the injury speed cap.
+  // Authored leg cuts already shape locomotion; they are not injuries requiring a speed cap.
   if (template.bodyPlan !== 'humanoid' || template.legCut !== undefined) {
     return false;
   }
@@ -90,7 +90,7 @@ export const actorPoseInputFor = (
     id,
     seed: zombie.figureSeed,
     model: figureVariantOf(zombie.type),
-    crawling: zombieCrawls(zombie),
+    crawling: actorCrawls(zombie),
     ...(zombie.type.bodyScale === undefined ? {} : { bodyScale: zombie.type.bodyScale }),
     position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? zombie.facing,

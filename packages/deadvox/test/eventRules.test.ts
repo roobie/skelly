@@ -12,7 +12,7 @@ import type { EventRuleDef } from '../src/core/schema.ts';
 import { gameHours } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { startupContent } from './baseRegistry.ts';
 import { fixtureScenario, fixtureScenarioSources } from './fixtures/scenario.ts';
 import { formatVersion } from './snapshotTestSupport.ts';
@@ -74,7 +74,7 @@ const fixture = (rule: EventRuleDef, restore?: Readonly<SaveSnapshot>) => {
   /** Debug time travel, then a frame long enough for one zombie tick to see the new calendar. */
   const jump = (calendar: number) => {
     session.sim.setDebugCalendarTime(calendar);
-    session.frame(1 / ZOMBIE_RATE);
+    session.frame(1 / ACTIVE_ACTOR_RATE);
   };
   const due = session.scenarioRun!.startedAtGameTimestamp + AFTER;
   const fired = () => capture().character.scenarioRun!.eventsFiredAtGameTimestamp[rule.id];

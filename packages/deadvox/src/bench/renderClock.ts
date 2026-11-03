@@ -1,5 +1,5 @@
-import { BACKGROUND_ZOMBIE_RATE } from '../core/zombies.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { BACKGROUND_ACTOR_RATE } from '../core/zombies.ts';
+import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
@@ -11,7 +11,7 @@ export const syncClock = (
   lastActiveStep: number,
   lastBackgroundStep: number,
 ): { alpha: number; backgroundAlpha: number; simSeconds: number } => ({
-  alpha: clamp01((simulationTime - lastActiveStep) * ZOMBIE_RATE),
-  backgroundAlpha: clamp01((simulationTime - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE),
+  alpha: clamp01((simulationTime - lastActiveStep) * ACTIVE_ACTOR_RATE),
+  backgroundAlpha: clamp01((simulationTime - lastBackgroundStep) * BACKGROUND_ACTOR_RATE),
   simSeconds: simulationTime,
 });

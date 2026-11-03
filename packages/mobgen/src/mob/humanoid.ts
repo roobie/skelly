@@ -804,12 +804,12 @@ export const buildHumanoid = (genome: Genome): Body => {
   return { bones, features, materials: resolveMaterials(templateByName(genome.template), p) };
 };
 
-const LOWER_CRAWLER_BONE = /^(shin|foot)\./;
+const LOWER_LEG_CUT_BONE = /^(shin|foot)\./;
 
-const cutCrawlerBones = (bones: readonly Bone[], fraction: number): { bones: Bone[]; cuts: Map<string, Vec3> } => {
+const cutLegBones = (bones: readonly Bone[], fraction: number): { bones: Bone[]; cuts: Map<string, Vec3> } => {
   const cuts = new Map<string, Vec3>();
   const retained = bones.flatMap((bone) => {
-    if (LOWER_CRAWLER_BONE.test(bone.id)) {
+    if (LOWER_LEG_CUT_BONE.test(bone.id)) {
       return [];
     }
     if (!bone.id.startsWith('thigh.')) {
@@ -826,12 +826,12 @@ const cutCrawlerBones = (bones: readonly Bone[], fraction: number): { bones: Bon
   return { bones: retained, cuts };
 };
 
-const trimCrawlerFeature = (
+const trimLegCutFeature = (
   feature: Feature,
   cut: Vec3 | undefined,
   boneHeads: ReadonlyMap<string, Vec3>,
 ): Feature[] => {
-  if (LOWER_CRAWLER_BONE.test(feature.bone)) {
+  if (LOWER_LEG_CUT_BONE.test(feature.bone)) {
     return [];
   }
   if (!cut || feature.op === 'paint') {
@@ -854,7 +854,7 @@ const trimCrawlerFeature = (
 };
 
 // Amputation removes the humanoid feet that otherwise align generated voxels with y = 0.
-const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): Body => {
+const translateLegsCutBodyToGround = (body: Body, size: number, seed: number): Body => {
   const voxels = voxelize(body, size, seed);
   let lowestRow = Number.POSITIVE_INFINITY;
   for (let index = 0; index < voxels.owner.length; index++) {
@@ -877,7 +877,7 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
       case 'box':
         return { ...feature, shape: { ...shape, center: translate(shape.center) } };
       default:
-        throw new Error('unsupported crawler shape');
+        throw new Error('unsupported legs-cut shape');
     }
   });
   return {
@@ -888,10 +888,10 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
 };
 
 /** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
-const amputateCrawlerLegs = (body: Body, genome: Genome, fraction: number): Body => {
-  const { bones, cuts } = cutCrawlerBones(body.bones, fraction);
+const amputateLegs = (body: Body, genome: Genome, fraction: number): Body => {
+  const { bones, cuts } = cutLegBones(body.bones, fraction);
   const boneHeads = new Map(body.bones.map((bone) => [bone.id, bone.head]));
-  const features = body.features.flatMap((feature) => trimCrawlerFeature(feature, cuts.get(feature.bone), boneHeads));
+  const features = body.features.flatMap((feature) => trimLegCutFeature(feature, cuts.get(feature.bone), boneHeads));
   for (const [bone, center] of cuts) {
     features.push({
       bone,
@@ -901,7 +901,7 @@ const amputateCrawlerLegs = (body: Body, genome: Genome, fraction: number): Body
       onto: ['skin'],
     });
   }
-  return translateCrawlerBodyToGround({ ...body, bones, features }, genome.voxelSize, genome.seed);
+  return translateLegsCutBodyToGround({ ...body, bones, features }, genome.voxelSize, genome.seed);
 };
 
 export const sampleWounds = (rng: Rng, count: number): Wound[] => {
@@ -937,7 +937,7 @@ registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
   build: (genome, template) => {
     const body = buildHumanoid(genome);
-    return template.legCut === undefined ? body : amputateCrawlerLegs(body, genome, template.legCut);
+    return template.legCut === undefined ? body : amputateLegs(body, genome, template.legCut);
   },
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
@@ -945,6 +945,6 @@ registerBodyPlan('humanoid', {
   limbBones: (template) =>
     template.legCut === undefined
       ? HUMANOID_LIMB_BONES
-      : HUMANOID_LIMB_BONES.filter((id) => !LOWER_CRAWLER_BONE.test(id)),
+      : HUMANOID_LIMB_BONES.filter((id) => !LOWER_LEG_CUT_BONE.test(id)),
   regionBones: HUMANOID_REGION_BONES,
 });

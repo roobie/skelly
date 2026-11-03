@@ -7,7 +7,7 @@ import { parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
-import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
+import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
@@ -131,10 +131,10 @@ for (const count of counts) {
       }
       const backgroundStart = process.hrtime.bigint();
       system.tickBackground(
-        1 / BACKGROUND_ZOMBIE_RATE,
+        1 / BACKGROUND_ACTOR_RATE,
         simTime,
-        frame % BACKGROUND_ZOMBIE_SLICE_COUNT,
-        BACKGROUND_ZOMBIE_SLICE_COUNT,
+        frame % BACKGROUND_ACTOR_SLICE_COUNT,
+        BACKGROUND_ACTOR_SLICE_COUNT,
       );
       if (collect) {
         backgroundSamples.push(Number(process.hrtime.bigint() - backgroundStart) / 1e6);

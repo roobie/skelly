@@ -121,14 +121,14 @@ import {
 } from 'three';
 import { type ActorFigureType, actorFigure, fusedMassTypeOf } from '../core/actorFigure.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
-import { acidSpitWindupProgress, actorPoseInputFor, posedActor, zombieCrawls } from '../core/actorPose.ts';
+import { acidSpitWindupProgress, actorCrawls, actorPoseInputFor, posedActor } from '../core/actorPose.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FUSED_MASS_FIGURE_SEED, type FusedMassFigure } from '../core/fusedMassFigure.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
-import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { actorAttackReachMetres, BACKGROUND_ACTOR_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
+import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import { BLOOD_STAIN_COLOR_FRAGMENT, BLOOD_STAIN_FRAGMENT_DECLARATIONS } from './bloodStain.ts';
 import type { ColumnReveal } from './columnReveal.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './fusedMassFlesh.ts';
@@ -211,7 +211,7 @@ const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 const backgroundActorBlend = (zombie: Zombie, simulationTime: number | undefined, fallback: number): number =>
   simulationTime === undefined || zombie.renderPrevious.time === undefined
     ? fallback
-    : clamp01((simulationTime - zombie.renderPrevious.time) * BACKGROUND_ZOMBIE_RATE);
+    : clamp01((simulationTime - zombie.renderPrevious.time) * BACKGROUND_ACTOR_RATE);
 const buildVariantGeometry = (realized: Realized): BufferGeometry =>
   mergeBoneMeshes(realized.meshes, realized.body.materials, realized.voxels);
 
@@ -298,7 +298,7 @@ const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize:
   }
   // The stored point and eye position differ vertically; horizontal equality identifies a player source without source state.
   // Allow one maximum-speed step between attention samples and the next render frame.
-  const tolerance = Math.max(blockSize / 1000, maxSpeed / ZOMBIE_RATE);
+  const tolerance = Math.max(blockSize / 1000, maxSpeed / ACTIVE_ACTOR_RATE);
   return Math.hypot(target[0] * blockSize - playerEye[0], target[2] * blockSize - playerEye[2]) <= tolerance;
 };
 
@@ -1103,7 +1103,7 @@ export class MobActorMeshes implements ActorRenderer {
       globalRow,
       instanceIndex,
       walkActor: { ...variant.walkActorTemplate, cache: createGaitCache() },
-      crawling: zombieCrawls(zombie),
+      crawling: actorCrawls(zombie),
       lastPose: undefined,
       lastPlacement: undefined,
       zombie: undefined,
@@ -1150,7 +1150,7 @@ export class MobActorMeshes implements ActorRenderer {
       return;
     }
     const target = this.playerChestPosition;
-    const reachMetres = zombieAttackReachMetres(zombie);
+    const reachMetres = actorAttackReachMetres(zombie);
     if (!target || reachMetres <= 0 || !lastPose) {
       meshes.shaft.visible = false;
       meshes.tip.visible = false;
@@ -1583,7 +1583,7 @@ export class MobActorMeshes implements ActorRenderer {
       return this.severDowned(id, part, hit, zombie);
     }
     const variant = this.variants[state.variantIndex]!;
-    if (zombie && !state.drawnFall && !(zombieCrawls(zombie) && !state.crawling && state.lastPose)) {
+    if (zombie && !state.drawnFall && !(actorCrawls(zombie) && !state.crawling && state.lastPose)) {
       const posed = this.posedFrame(state, zombie, this.currentRenderPlacement(zombie));
       state.lastPose = posed.pose;
       state.lastPlacement = posed.placement;
@@ -2084,7 +2084,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private beginCrawlFall(state: ZombieRenderState, variant: Variant, zombie: Zombie): void {
-    const crawling = zombieCrawls(zombie);
+    const crawling = actorCrawls(zombie);
     if (crawling && !state.crawling && state.lastPose && state.lastPlacement && !this.ragdolls?.failed) {
       this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       const placement = state.lastPlacement;

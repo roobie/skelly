@@ -19,16 +19,16 @@ import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import {
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  BACKGROUND_ZOMBIE_SLICE_RATE,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
   ZombieSystem,
 } from '../core/zombies.ts';
 import type { StartupContent } from '../game/bundledContent.ts';
 import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
-import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../game/simulationRates.ts';
 import type { StreamerStats } from '../game/streamer.ts';
 import { flashlightDaylightScale } from '../render/flashlight.ts';
 import { MobActorMeshes } from '../render/mobActors.ts';
@@ -383,20 +383,20 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
     }
     zombieAccumulator += dt;
     backgroundAccumulator += dt;
-    while (zombieAccumulator >= 1 / ZOMBIE_RATE) {
-      zombies.tickActive(1 / ZOMBIE_RATE);
-      zombieAccumulator -= 1 / ZOMBIE_RATE;
+    while (zombieAccumulator >= 1 / ACTIVE_ACTOR_RATE) {
+      zombies.tickActive(1 / ACTIVE_ACTOR_RATE);
+      zombieAccumulator -= 1 / ACTIVE_ACTOR_RATE;
     }
-    while (backgroundAccumulator >= 1 / BACKGROUND_ZOMBIE_SLICE_RATE) {
-      backgroundStepTime += 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
+    while (backgroundAccumulator >= 1 / BACKGROUND_ACTOR_SLICE_RATE) {
+      backgroundStepTime += 1 / BACKGROUND_ACTOR_SLICE_RATE;
       zombies.tickBackground(
-        1 / BACKGROUND_ZOMBIE_RATE,
+        1 / BACKGROUND_ACTOR_RATE,
         backgroundStepTime,
         backgroundSlice,
-        BACKGROUND_ZOMBIE_SLICE_COUNT,
+        BACKGROUND_ACTOR_SLICE_COUNT,
       );
-      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
-      backgroundAccumulator -= 1 / BACKGROUND_ZOMBIE_SLICE_RATE;
+      backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
+      backgroundAccumulator -= 1 / BACKGROUND_ACTOR_SLICE_RATE;
     }
     zombieMeshes.setCamera?.(camera);
     const renderTime = backgroundStepTime + backgroundAccumulator;

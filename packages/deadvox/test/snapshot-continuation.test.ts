@@ -9,7 +9,7 @@ import { terrainShapeOf } from '../src/core/sitePalette.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
-import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
+import { BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/zombies.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {
@@ -79,7 +79,7 @@ describe('fixture save/load continuation', () => {
     const playerSpawn: [number, number, number] = [center[0] - 180, center[1], center[2]];
     const start = 23 * 3600;
     const source = createRuntime(undefined, false, oneColumn, { start, spawn: playerSpawn });
-    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(source.zombies.snapshotState().hordes.length).toBeGreaterThan(0);
     advance(source, 60);
     expect(source.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
@@ -95,15 +95,15 @@ describe('fixture save/load continuation', () => {
 
     const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
-    const continuationFrames = BACKGROUND_ZOMBIE_SLICE_COUNT + 1;
+    const continuationFrames = BACKGROUND_ACTOR_SLICE_COUNT + 1;
     advance(source, continuationFrames);
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
     const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySimSeconds;
-    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
-    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ACTOR_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
 
     const forgottenNoiseSave = capture(loaded);

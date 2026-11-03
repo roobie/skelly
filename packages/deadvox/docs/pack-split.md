@@ -102,7 +102,7 @@ Build words describe the figure rather than its behaviour or character. Figure v
 retain those realizations without making actor identity select implementation. See
 `src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and
 `bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
-`src/core/actorPose.ts`, `zombieCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
+`src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
 and `zombieRegionsMatchModel`.
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see

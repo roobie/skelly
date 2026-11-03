@@ -2245,7 +2245,7 @@ its bodily cues should remain diegetic. See `Body.pain` in `src/core/body.ts` an
   separate prevents an injury label from granting passage through wire. Content
   validation requires the choice rather than inferring it from an actor or item
   identity. See `src/core/meleeMotion.ts`, `MELEE_MOTIONS`; and `src/core/schema/items.ts`,
-  `WeaponSchema`, `UnarmedAttackSchema` and `ZombieMovesSchema`.
+  `WeaponSchema` and `UnarmedAttackSchema`; and `src/core/schema/actors.ts`, `MeleeMovesSchema`.
 
   Misses and obstructions still spend stamina and cooldown, so swinging has a cost
   even without a hit. Saves retain the active move, including its motion, so Continue
@@ -2530,7 +2530,7 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   and movement change, preserving its type, identity and accumulated wounds.
   Crawling attacks still need an arm because the body must grab or claw. See `src/core/zombies.ts`,
   `canStillAttack` and `ZombieSystem.applyMeleeEffects`; `src/core/actorPose.ts`,
-  `zombieCrawls` and `posedActor`; and `src/core/actorRegions.ts`,
+  `actorCrawls` and `posedActor`; and `src/core/actorRegions.ts`,
   `posedHumanoidRegionBoxes`. Crawling derives from saved limb state rather than
   a separate flag so the two cannot disagree.
 - **A downed shambler is cleared by hand.** A destroyed torso with the head
@@ -2865,7 +2865,7 @@ Zombie types should compose shared mechanisms rather than require type-specific
 code. The planned ability components are `leap`, `scream`, `explode`,
 `acidSpit`, `heatAura`, `lightEmitter`, `armoured`, `regenerate` and `burrow`;
 this is design intent, not an inventory of implemented systems. The picklist in
-`src/core/schema/actors.ts`, `ZOMBIE_ABILITIES`, admits an ability only once its runtime
+`src/core/schema/actors.ts`, `ACTOR_ABILITIES`, admits an ability only once its runtime
 mechanism lands, because a content value no system reads is a silent no-op.
 
 | Tier | Type | Gist |
@@ -2955,15 +2955,15 @@ unloaded terrain, it waits like any unloaded actor until the abstract tier of
 
 Authored pitch lets the fused creature keep a distinct low voice without requiring separate recordings. See `src/content/base/zombies.jsonnet`, `soundPitchMultiplier`, `src/core/schema/actors.ts`, `ActorSchema`, and `src/game/session.ts`, `admitSound`. The generated manifest must remain the anatomy authority, avoiding a second hand-written list. A conservative envelope suffices where only overall size matters; visible contact needs flesh geometry instead. Authored jumping rules keep blocking independent of the jump probe's position within that envelope. See `src/content/base/zombies.jsonnet`, `amalgam`; `src/core/schema/actors.ts`, `ActorSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody` and `terrainStance`; `src/core/fusedMassFigure.ts`, `fusedMassFigure` and `fusedMassCollisionEnvelope`; `src/core/spawnClearance.ts`; and `src/core/physics.ts`, `Body` and `separateBodies`.
 
-Visible and gameplay size must not drift apart, so rendering, collision, hit regions and reach share the authored body scale. See `src/content/base/zombies.jsonnet`, `bodyScale`; `src/core/fusedMassFigure.ts`, `fusedMassFigureForType`; `src/core/actorRegions.ts`, `posedFusedMassRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
+Visible and gameplay size must not drift apart, so rendering, collision, hit regions and reach share the authored body scale. See `src/content/base/zombies.jsonnet`, `bodyScale`; `src/core/fusedMassFigure.ts`, `fusedMassFigureForType`; `src/core/actorRegions.ts`, `posedFusedMassRegionBoxes`; and `src/core/zombies.ts`, `actorAttackReachMetres`.
 
-Severing a shambler member removes that member's hit regions and its contribution to attacks and reach; the core and every other member continue unchanged. `activeAmalgamMembers` determines which members remain capable of attacking; `zombieAttackReachMetres` disables reach when none remain and keeps shared reach while any member survives. The save records each manifest region's health and severed member IDs, then reconstructs geometry from the saved figure seed. `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, `activeAmalgamMembers` and `zombieAttackReachMetres`, and `src/core/saveFormat.ts`, `wirePayloadSchema`, own that handoff. Initial member-health values inherit the shambler region values in `src/content/base/zombies.jsonnet`, keeping authored anatomy consistent; reviewing the realized body can identify any needed tuning.
+Member loss must stay local to that member so damage does not silently disable the rest of the fused body. Saving and restoring must preserve that distinction without a second anatomy definition. See `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, `activeFusedMassMembers` and `actorAttackReachMetres`; `src/core/saveFormat.ts`, `wirePayloadSchema`; and `src/content/base/zombies.jsonnet`, `amalgam.regions`.
 
 A center-mass pump blast should not end the fight immediately, while focused fire should allow member loss before core death. The resulting shell count is balance tuning, not a fixed gameplay contract. See `test/fusedMass.test.ts`; `src/content/base/zombies.jsonnet`, `amalgam.regions`; and `src/core/zombies.ts`, `ZombieSystem.firePellets`.
 
 The amalgam reuses `ZombieSystem`'s perception, attention, movement and attack lifecycle: it wanders slowly until it notices the player, then takes a direct, heavy approach, telegraphing its more severe attack before damage resolves. Its pace and attack severity live in the zombie type data rather than a scripted phase or code default. A hit snaps the shared `core` pose so the fused body reacts as one while renderer and hit-region FK stay aligned. See `src/content/base/zombies.jsonnet`, the amalgam type; `src/core/zombies.ts`, `ZombieSystem`; and `src/core/actorPose.ts`, `posedActor`.
 
-Debug spawn placement must leave room to observe an approach without embedding the body in solid geometry or changing its combat reach. See `src/debug/shamblerSpawning.ts`, `spawnZombieType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/zombies.ts`, `zombieAttackReachForType` and `actorBodyDimensions`.
+Debug spawn placement must leave room to observe an approach without embedding the body in solid geometry or changing its combat reach. See `src/debug/shamblerSpawning.ts`, `spawnZombieType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/zombies.ts`, `actorAttackReachForDef` and `actorBodyDimensions`.
 
 A surviving amalgam attacks with a tentacle that strikes in a straight line from its core to the player's chest, at any height, within its usual reach; anything solid across the line blocks it. A creature with a long tentacle should be able to reach a player standing above it, on a roof for example, and not only one level with it. The reach stays the same, so height costs distance rather than adding range. Humanoid zombies keep their grab: horizontal reach within a band matching a standing player.
 

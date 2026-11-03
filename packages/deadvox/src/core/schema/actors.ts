@@ -53,7 +53,7 @@ const FUSED_MASS_REGION_KEYS = ['core.trunk', ...HUMANOID_REGION_NAMES.map((regi
 
 const BODY_PLAN = picklist(Object.keys(BODY_PLANS) as BodyPlan[]);
 
-const ZOMBIE_ABILITIES = ['acidSpit'] as const;
+const ACTOR_ABILITIES = ['acidSpit'] as const;
 
 const DamageResistanceSchema = record(
   Id,
@@ -77,7 +77,7 @@ const DamageMoveSchema = strictObject({
   ),
 });
 
-const ZombieMovesSchema = pipe(
+const MeleeMovesSchema = pipe(
   array(strictObject({ ...DamageMoveSchema.entries, motion: picklist(MELEE_MOTIONS) })),
   nonEmpty('needs at least one move'),
 );
@@ -300,7 +300,7 @@ export const ActorSchema = strictObject({
       windupSimSeconds: PositiveSimSeconds,
       /** A grab lands only while the player's feet are less than this far above or below its own. */
       grabBandMetres: optional(Positive),
-      moves: ZombieMovesSchema,
+      moves: MeleeMovesSchema,
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
     check(({ moves }) => new Set(moves.map(({ id }) => id)).size === moves.length, 'zombie move ids must be unique'),
@@ -342,7 +342,7 @@ export const ActorSchema = strictObject({
       dismember: strictObject({ simSeconds: PositiveSimSeconds, quality: Id, level: QualityLevel }),
     }),
   ),
-  abilities: array(picklist(ZOMBIE_ABILITIES)),
+  abilities: array(picklist(ACTOR_ABILITIES)),
   /** Tunables of the `acidSpit` ability; present exactly when the type lists that ability. */
   acidSpit: optional(AcidSpitSchema),
   /** The acid model's glow, drips and death splash; present exactly when the model is `acid`. */

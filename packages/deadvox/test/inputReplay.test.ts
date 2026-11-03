@@ -9,7 +9,7 @@ import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
-import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
+import { BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
@@ -1337,7 +1337,7 @@ describe('input replay', () => {
     const start = capture(runtime);
     const cx = toChunk(Math.floor(firstZombie.body.pos[0]));
     const cz = toChunk(Math.floor(firstZombie.body.pos[2]));
-    const targetTick = BACKGROUND_ZOMBIE_SLICE_COUNT + (zombieId % BACKGROUND_ZOMBIE_SLICE_COUNT);
+    const targetTick = BACKGROUND_ACTOR_SLICE_COUNT + (zombieId % BACKGROUND_ACTOR_SLICE_COUNT);
     const generatedAroundZombie: ReplayColumnUpdate[] = [];
     for (let dz = -1; dz <= 1; dz++) {
       for (let dx = -1; dx <= 1; dx++) {

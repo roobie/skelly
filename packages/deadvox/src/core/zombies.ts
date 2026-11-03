@@ -4,12 +4,12 @@ import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import {
+  actorCrawls,
   actorHitFlinchDuration,
   actorPoseInputFor,
   advanceStanceWeight,
   posedMouth,
   targetStanceWeight,
-  zombieCrawls,
 } from './actorPose.ts';
 import {
   type ActorHitRegion,
@@ -85,9 +85,9 @@ export const loweredStanceTuning = <T>(tuning: { crouch: T; prone: T }, stance: 
   }
 };
 export type ZombieTier = 'active' | 'background' | 'unloaded';
-export const BACKGROUND_ZOMBIE_RATE = 2;
-export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
-export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
+export const BACKGROUND_ACTOR_RATE = 2;
+export const BACKGROUND_ACTOR_SLICE_COUNT = 30;
+export const BACKGROUND_ACTOR_SLICE_RATE = BACKGROUND_ACTOR_RATE * BACKGROUND_ACTOR_SLICE_COUNT;
 export type ZombieMode = 'idle' | 'stroll' | 'hesitate' | 'search' | 'chase' | 'investigate' | 'return';
 export const actorBodyDimensions = measureActorBody;
 
@@ -105,7 +105,7 @@ const requiredGrabBand = (type: ActorDef): number => {
   return type.attack.grabBandMetres;
 };
 
-export const zombieAttackReachForType = (type: ActorDef, figureSeed = FUSED_MASS_FIGURE_SEED): number =>
+export const actorAttackReachForDef = (type: ActorDef, figureSeed = FUSED_MASS_FIGURE_SEED): number =>
   type.model === 'fused-mass' ? type.attack.reach * fusedMassFigureForType(type, figureSeed).scale : type.attack.reach;
 
 /**
@@ -126,27 +126,27 @@ const projectileWeapon = (damage: number, reach: number, impulse: number, type: 
   impulse,
 });
 
-const zombieRegionClass = (region: ActorHitRegion): string =>
+const actorRegionClass = (region: ActorHitRegion): string =>
   region === 'core.trunk' ? 'torso' : (region.split('.').at(-1) ?? region);
 
 export const lethalRegion = (type: ActorDef, region: ActorHitRegion): boolean =>
-  region === 'core.trunk' || (type.model !== 'fused-mass' && zombieRegionClass(region) === 'head');
+  region === 'core.trunk' || (type.model !== 'fused-mass' && actorRegionClass(region) === 'head');
 
-const maxZombieRegionHealth = (type: ActorDef, region: ActorHitRegion): number | undefined => {
+const maxActorRegionHealth = (type: ActorDef, region: ActorHitRegion): number | undefined => {
   if (type.model === 'fused-mass') {
-    return type.regions[region === 'core.trunk' ? region : `member.${zombieRegionClass(region)}`];
+    return type.regions[region === 'core.trunk' ? region : `member.${actorRegionClass(region)}`];
   }
   return type.regions[region];
 };
 
-const zombieRegionsFor = (type: ActorDef, seed: number): ActorRegions => {
+const actorRegionsFor = (type: ActorDef, seed: number): ActorRegions => {
   if (type.model !== 'fused-mass') {
     return Object.fromEntries(HUMANOID_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ActorRegions;
   }
   const figure = fusedMassFigureForType(type, seed);
   return Object.fromEntries(
     figure.manifest.regions.map((region) => {
-      const health = maxZombieRegionHealth(type, region.id as ActorHitRegion);
+      const health = maxActorRegionHealth(type, region.id as ActorHitRegion);
       if (health === undefined) {
         throw new Error(`Zombie type ${type.id} has no health for amalgam region ${region.id}`);
       }
@@ -178,11 +178,11 @@ const pickByWeight = <T extends { weight: number }>(choices: readonly T[], roll:
 };
 
 /** The move of a landed hit, selected by its content weight. */
-export const pickZombieMove = <T extends { weight: number }>(moves: readonly T[], roll: number): T =>
+export const pickActorMove = <T extends { weight: number }>(moves: readonly T[], roll: number): T =>
   pickByWeight(moves, roll);
 
 /** The body region a landed move strikes, selected by its content weight. */
-export const pickZombieHitRegion = (choices: readonly ZombieHitRegionChoice[], roll: number): BodyRegion =>
+export const pickActorHitRegion = (choices: readonly ZombieHitRegionChoice[], roll: number): BodyRegion =>
   pickByWeight(choices, roll).region;
 
 export interface MeleeWeapon extends HitWeapon {
@@ -270,7 +270,7 @@ const meleeDamageForContact = (
   const spread = weapon.damageVariance;
   const rolled =
     spread === undefined ? weapon.damage : weapon.damage * zombie.dismemberRng.range(1 - spread, 1 + spread);
-  const regionClass = zombieRegionClass(region) as BodyRegion;
+  const regionClass = actorRegionClass(region) as BodyRegion;
   let multiplier = 1;
   if (regionClass === 'head') {
     multiplier = weapon.headDamageMultiplier ?? 1;
@@ -419,16 +419,16 @@ export interface Zombie {
   carved: number[];
 }
 
-export interface AmalgamMemberContribution {
+export interface FusedMassMemberContribution {
   readonly partId: string;
   readonly rootBone: string;
   readonly regionIds: readonly string[];
 }
 
 /** Active member ownership is the seam for per-member attacks and reach; core is never a severable member. */
-export const activeAmalgamMembers = (
+export const activeFusedMassMembers = (
   zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>,
-): readonly AmalgamMemberContribution[] => {
+): readonly FusedMassMemberContribution[] => {
   if (zombie.type.model !== 'fused-mass') {
     return [];
   }
@@ -439,11 +439,11 @@ export const activeAmalgamMembers = (
 };
 
 /** Remaining manifest members share the authored attack reach; with none, the unseverable core cannot attack. */
-export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>): number => {
-  if (zombie.type.model !== 'fused-mass' || activeAmalgamMembers(zombie).length === 0) {
+export const actorAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>): number => {
+  if (zombie.type.model !== 'fused-mass' || activeFusedMassMembers(zombie).length === 0) {
     return zombie.type.model === 'fused-mass' ? 0 : zombie.type.attack.reach;
   }
-  return zombieAttackReachForType(zombie.type, zombie.figureSeed);
+  return actorAttackReachForDef(zombie.type, zombie.figureSeed);
 };
 
 export type ZombieState = Omit<
@@ -677,7 +677,7 @@ export interface ZombieSystemOptions {
   bashObstacle?: (ahead: Body, strength: number) => boolean;
 }
 
-const AMALGAM_MEMBER_REGION = /^(member\.\d+)\./;
+const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
 
 type TerrainFloorAt = (x: number, z: number) => number;
 interface HorizontalFootprint {
@@ -738,7 +738,7 @@ const rayMayHitZombie = (zombie: Zombie, origin: Vec3, direction: Vec3, blockSiz
   );
 };
 const isActiveHitRegion = (zombie: Zombie, region: ActorHitRegion): boolean => {
-  const memberPart = zombie.type.model === 'fused-mass' ? AMALGAM_MEMBER_REGION.exec(region)?.[1] : undefined;
+  const memberPart = zombie.type.model === 'fused-mass' ? FUSED_MASS_MEMBER_REGION.exec(region)?.[1] : undefined;
   return zombie.regions[region]! > 0 && !(memberPart !== undefined && zombie.severed.includes(memberPart));
 };
 /** A body's regions with the one whose loss kills last, so a blast severs limbs before it kills. */
@@ -891,7 +891,7 @@ const strikeOrigin = (
  * "still in reach" at resolve means exactly what "in reach" meant at start. */
 const withinAttackReach = (probe: AttackReachProbe): boolean => {
   const { zombie, playerPos, blockSize, isSolid } = probe;
-  const reachMetres = zombieAttackReachMetres(zombie);
+  const reachMetres = actorAttackReachMetres(zombie);
   if (reachMetres <= 0) {
     return false;
   }
@@ -1934,7 +1934,7 @@ export class ZombieSystem {
         if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
           throw new Error(`Invalid zombie state for entity ${id}`);
         }
-        const expectedRegions = zombieRegionsFor(type, zombie.figureSeed);
+        const expectedRegions = actorRegionsFor(type, zombie.figureSeed);
         const expectedRegionIds = Object.keys(expectedRegions);
         if (
           !zombie.regions ||
@@ -2273,7 +2273,7 @@ export class ZombieSystem {
       stumbleElapsed: 0,
       stumbleDuration: 0,
       renderPrevious: { pos: copy(position), facing: copy(direction), headYaw: 0, gaitPhase: 0 },
-      regions: zombieRegionsFor(type, figureSeed),
+      regions: actorRegionsFor(type, figureSeed),
       figureSeed,
       incapacitated: false,
       attackWait: 0,
@@ -2540,7 +2540,7 @@ export class ZombieSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
-      if (zombieCrawls(zombie)) {
+      if (actorCrawls(zombie)) {
         speed = Math.min(speed, zombie.type.speed.crawlMetresPerSimSecond);
       }
       if (zombie.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
@@ -2584,8 +2584,7 @@ export class ZombieSystem {
     if (zombie.hitFlinchTime !== undefined) {
       const nextFlinchTime = zombie.hitFlinchTime + dt;
       zombie.hitFlinchTime =
-        nextFlinchTime >
-        actorHitFlinchDuration(zombieCrawls(zombie) ? 'legless-humanoid' : figureVariantOf(zombie.type))
+        nextFlinchTime > actorHitFlinchDuration(actorCrawls(zombie) ? 'legless-humanoid' : figureVariantOf(zombie.type))
           ? undefined
           : nextFlinchTime;
     }
@@ -3080,12 +3079,12 @@ export class ZombieSystem {
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
     const { zombie, type, dt } = scratch;
-    if (zombieCrawls(zombie)) {
+    if (actorCrawls(zombie)) {
       scratch.desiredSpeed = Math.min(scratch.desiredSpeed, type.speed.crawlMetresPerSimSecond);
       zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
     }
     if (
-      (!zombieCrawls(zombie) && zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
+      (!actorCrawls(zombie) && zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
       zombie.staggerSimSeconds > 0 ||
       this.options.restrained?.(scratch.id) === true
     ) {
@@ -3126,7 +3125,7 @@ export class ZombieSystem {
     zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
     scratch.jumpAttempted =
       zombie.type.canJumpObstacles &&
-      !zombieCrawls(zombie) &&
+      !actorCrawls(zombie) &&
       zombie.horizontalSpeed > 0.01 &&
       zombie.body.onGround &&
       canJumpObstacle({
@@ -3365,7 +3364,7 @@ export class ZombieSystem {
           this.options.meleeBlocker?.({
             kind: 'zombie',
             motion: move.motion,
-            reachMetres: zombieAttackReachMetres(zombie),
+            reachMetres: actorAttackReachMetres(zombie),
           }) ?? this.options.isSolid,
       }),
     );
@@ -3379,7 +3378,7 @@ export class ZombieSystem {
       if (zombie.attackWindup <= 0) {
         const moves = this.reachableZombieMoves(zombie, pos, player.pos);
         if (moves.length > 0) {
-          const move = pickZombieMove(moves, scratch.rng.next());
+          const move = pickActorMove(moves, scratch.rng.next());
           this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
         }
       }
@@ -3388,7 +3387,7 @@ export class ZombieSystem {
       zombie.staggerSimSeconds <= 0 &&
       zombie.attackWait <= 0 &&
       zombie.spitWindup <= 0 &&
-      (type.model === 'fused-mass' ? activeAmalgamMembers(zombie).length > 0 : canStillAttack(zombie)) &&
+      (type.model === 'fused-mass' ? activeFusedMassMembers(zombie).length > 0 : canStillAttack(zombie)) &&
       this.reachableZombieMoves(zombie, pos, player.pos).length > 0
     ) {
       this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
@@ -3423,7 +3422,7 @@ export class ZombieSystem {
       const reach = Math.hypot(toPlayer[0], toPlayer[2]);
       const aim = unit([heading[0] * reach, toPlayer[1], heading[2] * reach]);
       const release = { source: scratch.id, origin, aim, moves: spit.moves };
-      const move = pickZombieMove(spit.moves, zombie.spitRng.next());
+      const move = pickActorMove(spit.moves, zombie.spitRng.next());
       const speed = spit.globMetresPerSimSecond / blockSize;
       const { gravity } = this.options.physics;
       const flightSeconds = Math.hypot(...toPlayer) / speed;
@@ -3646,13 +3645,13 @@ export class ZombieSystem {
         continue;
       }
       const legs = (Object.keys(zombie.regions) as ActorHitRegion[]).filter((region) =>
-        ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)),
+        ['leftLeg', 'rightLeg'].includes(actorRegionClass(region)),
       );
       for (const region of legs) {
         if (zombie.regions[region]! <= 0) {
           continue;
         }
-        const burn = damageToActor(zombie.type, damage / legs.length, kind, zombieRegionClass(region) as BodyRegion);
+        const burn = damageToActor(zombie.type, damage / legs.length, kind, actorRegionClass(region) as BodyRegion);
         if (burn <= 0) {
           continue;
         }
@@ -3697,7 +3696,7 @@ export class ZombieSystem {
       });
     } else if (contact.kind === 'zombie') {
       const { id, zombie, region, cell } = contact.hit;
-      const damage = damageToActor(zombie.type, state.damage, move.damageKind, zombieRegionClass(region) as BodyRegion);
+      const damage = damageToActor(zombie.type, state.damage, move.damageKind, actorRegionClass(region) as BodyRegion);
       if (damage > 0) {
         const strike = this.applyMeleeHit({
           id,
@@ -3900,7 +3899,7 @@ export class ZombieSystem {
       reachMetres,
       inReach: distanceMetres <= reachMetres,
       health: zombie.regions[region]!,
-      maxHealth: maxZombieRegionHealth(zombie.type, region) ?? zombie.regions[region]!,
+      maxHealth: maxActorRegionHealth(zombie.type, region) ?? zombie.regions[region]!,
       boxes,
       hitBox: box,
       cell,
@@ -4164,7 +4163,7 @@ export class ZombieSystem {
 
   private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
     if (zombie.type.model === 'fused-mass') {
-      const member = AMALGAM_MEMBER_REGION.exec(region)?.[1];
+      const member = FUSED_MASS_MEMBER_REGION.exec(region)?.[1];
       if (member && healthAfter === 0) {
         this.sever(id, zombie, member, hit);
       }
@@ -4192,7 +4191,7 @@ export class ZombieSystem {
       return;
     }
     const legs = (Object.keys(zombie.regions) as ActorHitRegion[]).filter(
-      (region) => ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)) && zombie.regions[region]! > 0,
+      (region) => ['leftLeg', 'rightLeg'].includes(actorRegionClass(region)) && zombie.regions[region]! > 0,
     );
     for (const region of legs) {
       if (this.store.get(id) === zombie) {

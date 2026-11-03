@@ -35,7 +35,7 @@ import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
-import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
@@ -880,7 +880,7 @@ describe('MobActorMeshes', () => {
     zombie.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
     const playerNoise = perceptionLabelFor(zombie, true, playerEye, { blockSize, maxSpeed: PLAYER.sprint });
     const oneSprintStepLater: Vec3 = [
-      playerEye[0] + (PLAYER.sprint / ZOMBIE_RATE) * (1 - 1e-6),
+      playerEye[0] + (PLAYER.sprint / ACTIVE_ACTOR_RATE) * (1 - 1e-6),
       playerEye[1],
       playerEye[2],
     ];

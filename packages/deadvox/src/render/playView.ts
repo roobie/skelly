@@ -25,7 +25,7 @@ import type { BodyTuningDef, NightVision } from '../core/schema.ts';
 import type { PoweredLight } from '../core/sitePower.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
-import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ACTOR_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PainCue } from '../game/painCue.ts';
@@ -545,7 +545,7 @@ export const createPlayView = (
       corpses.sync(entities);
       decals?.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
-      const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
+      const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
       zombieMeshes.setCamera?.(camera);
       zombieMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
       zombieMeshes.setPlayerChestPosition?.(playerChest);

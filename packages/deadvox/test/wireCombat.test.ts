@@ -10,7 +10,7 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { type MeleeWeapon, PLAYER_CHEST_METRES, zombieAttackReachMetres } from '../src/core/zombies.ts';
+import { actorAttackReachMetres, type MeleeWeapon, PLAYER_CHEST_METRES } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
@@ -201,7 +201,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
     const type = registry.zombies.get('amalgam')!;
     const id = system.add(type, [0, 1, 0], [0, 0, 1]);
     const zombie = system.store.get(id)!;
-    const reach = zombieAttackReachMetres(zombie);
+    const reach = actorAttackReachMetres(zombie);
     const origin = fusedMassStrikeOrigin(fusedMassFigureForType(type, zombie.figureSeed), zombie.facing).map(
       (value, axis) => value / 0.5 + zombie.body.pos[axis]!,
     ) as Vec3;

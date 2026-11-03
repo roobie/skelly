@@ -131,9 +131,9 @@ import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import {
   type AcidGroundImpact,
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  BACKGROUND_ZOMBIE_SLICE_RATE,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
   type HitImpulse,
   loweredStanceTuning,
   type MeleeResult,
@@ -176,7 +176,7 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { ZOMBIE_RATE } from './simulationRates.ts';
+import { ACTIVE_ACTOR_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
 import { UNPACK_ACTION } from './unpacking.ts';
@@ -1816,7 +1816,7 @@ export const createSession = (options: SessionOptions) => {
   };
   sim.scheduler.register({
     id: 'zombies',
-    rate: ZOMBIE_RATE,
+    rate: ACTIVE_ACTOR_RATE,
     tick: (dt, time) => {
       const lit = (item: Item): void => {
         inventory.version += 1; // The item now draws without its lever.
@@ -1851,11 +1851,11 @@ export const createSession = (options: SessionOptions) => {
   });
   sim.scheduler.register({
     id: 'zombie-background',
-    rate: BACKGROUND_ZOMBIE_SLICE_RATE,
+    rate: BACKGROUND_ACTOR_SLICE_RATE,
     tick: (_dt, time) => {
       const sliceIndex = backgroundSliceIndex;
-      backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
-      zombieSystem.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, time, sliceIndex, BACKGROUND_ZOMBIE_SLICE_COUNT);
+      backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
+      zombieSystem.tickBackground(1 / BACKGROUND_ACTOR_RATE, time, sliceIndex, BACKGROUND_ACTOR_SLICE_COUNT);
       if (sliceIndex === 0) {
         lastBackgroundStep = time;
       }
@@ -2575,7 +2575,7 @@ export const createSession = (options: SessionOptions) => {
     lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
     const backgroundState = schedulerState.systems.find(({ id }) => id === 'zombie-background');
     lastBackgroundStep = backgroundState?.done ?? sim.time;
-    backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ZOMBIE_SLICE_COUNT;
+    backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ACTOR_SLICE_COUNT;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
     sim.actions.restoreState(restored.character.longAction);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });

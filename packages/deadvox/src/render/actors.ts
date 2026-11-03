@@ -2,7 +2,7 @@ import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMateria
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../core/actorRegions.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ACTOR_RATE, type Zombie } from '../core/zombies.ts';
 import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -151,7 +151,7 @@ export class ActorMeshes {
       const previousTime = zombie.renderPrevious.time;
       const actorBackgroundBlend =
         simulationTime !== undefined && previousTime !== undefined
-          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ZOMBIE_RATE))
+          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ACTOR_RATE))
           : backgroundBlend;
       return this.renderPose(
         id,
