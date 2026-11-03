@@ -31,7 +31,7 @@ export const ordinarySpawnWeights = (registry: Pick<Registry, 'zombies'>): Map<s
       .map(([type, zombie]) => [type, zombie.spawnWeight]),
   );
 
-export const settlementZombieSpawns = (
+export const settlementActorSpawns = (
   registry: Pick<Registry, 'zombies'>,
   seed: number,
   road: Rect,

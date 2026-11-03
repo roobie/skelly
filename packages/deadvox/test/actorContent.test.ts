@@ -1,7 +1,7 @@
 import { expect, it } from 'vitest';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
-import { settlementHordeSpawn, settlementZombieSpawns } from '../src/core/settlementSpawns.ts';
+import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlementSpawns.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -79,7 +79,7 @@ it('uses independently named providers for horde and wanderer settlement roles',
   expect(issues).toEqual([]);
   const road = { x0: 0, x1: 10, z0: 0, z1: 4 };
   expect(settlementHordeSpawn(registry, 1, road, { roadHeightAt: () => 0, id: 'fixture_horde' }).type).toBe(horde.id);
-  const spawns = settlementZombieSpawns(registry, 1, road, { markers: [], roadHeightAt: () => 0 });
+  const spawns = settlementActorSpawns(registry, 1, road, { markers: [], roadHeightAt: () => 0 });
   expect(spawns.length).toBeGreaterThan(0);
   expect(spawns.every(({ type }) => type === wanderer.id)).toBe(true);
 });

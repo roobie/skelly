@@ -5,7 +5,7 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { hash3, Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { ScenarioDef } from './schema.ts';
-import { ordinarySpawnWeights, settlementHordeSpawn, settlementZombieSpawns } from './settlementSpawns.ts';
+import { ordinarySpawnWeights, settlementActorSpawns, settlementHordeSpawn } from './settlementSpawns.ts';
 import { type ActorSpawn, type HordeSpawn, rectDistance } from './site.ts';
 import { terrainShapeOf } from './sitePalette.ts';
 import { footprint, type Placement, placedSpawns } from './templates.ts';
@@ -139,7 +139,7 @@ export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, populat
     const group = ordinary.slice(start, start + groupSize);
     const road = groupRoad(group, grid);
     const seed = Math.floor(hash3(site.seed, start, 0, 601) * 0x7f_ff_ff_ff);
-    for (const spawn of settlementZombieSpawns(site.registry, seed, road, {
+    for (const spawn of settlementActorSpawns(site.registry, seed, road, {
       markers: group.flatMap(placedSpawns),
       roadHeightAt: () => floor,
       spawnWeights: weights,

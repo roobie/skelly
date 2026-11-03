@@ -101,7 +101,7 @@ implementation: see `src/core/zombieModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`,
 and `src/core/schema/actors.ts`, `ActorSchema` and `zombieRegionsMatchModel`.
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
-`src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementZombieSpawns`,
+`src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,
 and `src/core/capabilities.ts`, `capabilityIssues`. Declared sound families let another
 actor reuse surface responses without pretending to be a particular creature; see
 `src/core/footsteps.ts`, `footstepEventForBlock`. Omission means silence.

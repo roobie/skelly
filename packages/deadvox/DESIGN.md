@@ -898,7 +898,7 @@ The gauntlet places one horde rather than one per building group, and stragglers
 carry more of the street pressure. This reuses population and spawn
 admission instead of inventing an enemy-density runtime. See `src/core/schema/scenarios.ts`,
 `ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
-`scenarioCityPopulation`; `src/core/settlementSpawns.ts`, `settlementZombieSpawns`; and
+`scenarioCityPopulation`; `src/core/settlementSpawns.ts`, `settlementActorSpawns`; and
 `src/core/actorSpawns.ts`, `ActorSpawner`.
 
 The route/save browser flow proves connectivity and persistence, not balance or
