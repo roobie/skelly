@@ -60,9 +60,9 @@ export class BearTraps {
   }
 
   /** Whether a shut trap holds the zombie with this id, or the player without one. */
-  holds(zombie?: EntityId): boolean {
+  holds(actor?: EntityId): boolean {
     for (const { item } of this.lying()) {
-      if (item.trap?.state === 'holding' && item.trap.zombie === zombie) {
+      if (item.trap?.state === 'holding' && item.trap.zombie === actor) {
         return true;
       }
     }
@@ -87,7 +87,7 @@ export class BearTraps {
       }
     }
     const player = cellOf(contacts.player);
-    const zombies = [...contacts.zombies].map(([id, pos]) => [id, cellOf(pos)] as const);
+    const actors = [...contacts.zombies].map(([id, pos]) => [id, cellOf(pos)] as const);
     const sprung: Sprung[] = [];
     for (const { item, pos, def } of traps) {
       if (item.trap?.state !== 'armed' || !inPlayerBlock(pos, contacts.player, contacts.blockSize)) {
@@ -99,12 +99,12 @@ export class BearTraps {
         contacts.hurtPlayer(def.playerInjury);
         continue;
       }
-      const caught = zombies.find(([, cell]) => sameCell(cell, pos));
+      const caught = actors.find(([, cell]) => sameCell(cell, pos));
       if (caught) {
-        const [zombie] = caught;
-        item.trap = { state: 'holding', zombie, remainingSimSeconds: def.holdSimSeconds };
-        sprung.push({ item, pos, zombie });
-        contacts.injureZombie(zombie, def.zombieLegDamage);
+        const [actor] = caught;
+        item.trap = { state: 'holding', zombie: actor, remainingSimSeconds: def.holdSimSeconds };
+        sprung.push({ item, pos, zombie: actor });
+        contacts.injureZombie(actor, def.zombieLegDamage);
       }
     }
     return sprung;

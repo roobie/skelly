@@ -58,55 +58,55 @@ export interface PoseRootOverride {
 }
 
 /** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
-export const acidSpitWindupProgress = (zombie: Actor): number => {
-  const spit = zombie.type.acidSpit;
-  return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
+export const acidSpitWindupProgress = (actor: Actor): number => {
+  const spit = actor.type.acidSpit;
+  return spit && actor.spitWindup > 0 ? 1 - actor.spitWindup / spit.windupSimSeconds : 0;
 };
 
-export const actorCrawls = (zombie: Actor): boolean => {
-  const template = templateByName(bodyPlanModel(figureVariantOf(zombie.type)));
+export const actorCrawls = (actor: Actor): boolean => {
+  const template = templateByName(bodyPlanModel(figureVariantOf(actor.type)));
   // Authored leg cuts already shape locomotion; they are not injuries requiring a speed cap.
   if (template.bodyPlan !== 'humanoid' || template.legCut !== undefined) {
     return false;
   }
-  if (zombie.regions.leftLeg! <= 0 || zombie.regions.rightLeg! <= 0) {
+  if (actor.regions.leftLeg! <= 0 || actor.regions.rightLeg! <= 0) {
     return true;
   }
-  if (zombie.severed.length === 0) {
+  if (actor.severed.length === 0) {
     return false;
   }
-  const { severableParts } = templateFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
-  return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => zombie.severed.includes(part));
+  const { severableParts } = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
+  return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => actor.severed.includes(part));
 };
 
 export const actorPoseInputFor = (
-  zombie: Actor,
+  actor: Actor,
   id: number,
   blockSize: number,
   root?: PoseRootOverride,
 ): ActorPoseInput => {
-  const position = root?.position ?? zombie.body.pos;
+  const position = root?.position ?? actor.body.pos;
   return {
     id,
-    seed: zombie.figureSeed,
-    model: figureVariantOf(zombie.type),
-    crawling: actorCrawls(zombie),
-    ...(zombie.type.bodyScale === undefined ? {} : { bodyScale: zombie.type.bodyScale }),
-    position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
-    facing: root?.facing ?? zombie.facing,
-    headYaw: root?.headYaw ?? zombie.headYaw,
-    gaitPhase: zombie.gaitPhase,
-    speed: zombie.horizontalSpeed,
-    chasing: zombie.mode === 'chase',
-    attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
-    attackWait: zombie.attackWait,
-    attackCooldown: zombie.type.attack.cooldownSimSeconds,
-    idleTime: zombie.wanderClock,
-    ...(zombie.stanceWeight === undefined ? {} : { stanceWeight: zombie.stanceWeight }),
-    ...(zombie.hitFlinchTime === undefined ? {} : { hitFlinchTime: zombie.hitFlinchTime }),
-    ...(zombie.spitWindup > 0 ? { spitProgress: acidSpitWindupProgress(zombie) } : {}),
-    severed: zombie.severed,
+    seed: actor.figureSeed,
+    model: figureVariantOf(actor.type),
+    crawling: actorCrawls(actor),
+    ...(actor.type.bodyScale === undefined ? {} : { bodyScale: actor.type.bodyScale }),
+    position: [position[0], position[1] + (actor.stepOffset ?? 0) / blockSize, position[2]],
+    facing: root?.facing ?? actor.facing,
+    headYaw: root?.headYaw ?? actor.headYaw,
+    gaitPhase: actor.gaitPhase,
+    speed: actor.horizontalSpeed,
+    chasing: actor.mode === 'chase',
+    attackWindup: actor.attackWindup,
+    attackWindupSeconds: actor.type.attack.windupSimSeconds,
+    attackWait: actor.attackWait,
+    attackCooldown: actor.type.attack.cooldownSimSeconds,
+    idleTime: actor.wanderClock,
+    ...(actor.stanceWeight === undefined ? {} : { stanceWeight: actor.stanceWeight }),
+    ...(actor.hitFlinchTime === undefined ? {} : { hitFlinchTime: actor.hitFlinchTime }),
+    ...(actor.spitWindup > 0 ? { spitProgress: acidSpitWindupProgress(actor) } : {}),
+    severed: actor.severed,
     blockSize,
   };
 };

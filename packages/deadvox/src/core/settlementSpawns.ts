@@ -6,7 +6,7 @@ import type { SpawnMarker } from './templates.ts';
 
 export const TEMPLATE_BLOCK_SIZE = 0.5;
 export const HORDE_MEMBERS = [20, 50] as const;
-const ZOMBIE_COUNT = [6, 10] as const;
+const ACTOR_COUNT = [6, 10] as const;
 
 export const settlementHordeSpawn = (
   registry: Pick<Registry, 'actors'>,
@@ -26,9 +26,7 @@ export const settlementHordeSpawn = (
 
 export const ordinarySpawnWeights = (registry: Pick<Registry, 'actors'>): Map<string, number> =>
   new Map(
-    [...registry.actors]
-      .filter(([, zombie]) => !zombie.authoredOnly)
-      .map(([type, zombie]) => [type, zombie.spawnWeight]),
+    [...registry.actors].filter(([, actor]) => !actor.authoredOnly).map(([type, actor]) => [type, actor.spawnWeight]),
   );
 
 export const settlementActorSpawns = (
@@ -63,9 +61,9 @@ export const settlementActorSpawns = (
     }
     return weightedTypes.at(-1)![0];
   };
-  const count = rng.int(...ZOMBIE_COUNT);
-  const spawns = selected.slice(0, count).map(({ zombie, pos, window: spawnWindow }) => ({
-    type: zombie,
+  const count = rng.int(...ACTOR_COUNT);
+  const spawns = selected.slice(0, count).map(({ zombie: actor, pos, window: spawnWindow }) => ({
+    type: actor,
     pos,
     ...(spawnWindow ? { window: spawnWindow } : {}),
   }));

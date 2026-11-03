@@ -106,7 +106,7 @@ export const firearmBoreTarget = ({
   eye,
   direction,
   surface,
-  zombies,
+  zombies: actors,
   blockSize,
   rangeBlocks,
   weapon,
@@ -121,19 +121,19 @@ export const firearmBoreTarget = ({
   readonly weapon: MeleeWeapon;
 }): FirearmBoreTarget => {
   const rayDirection = normalizeDirection(direction);
-  const zombie = zombies.aimAt(eye, rayDirection, weapon);
-  const zombieDistanceBlocks = zombie ? zombie.distanceMetres / blockSize : undefined;
-  const point = crosshairAimPoint(eye, rayDirection, rangeBlocks, [surface?.distanceBlocks, zombieDistanceBlocks]);
+  const actor = actors.aimAt(eye, rayDirection, weapon);
+  const actorDistanceBlocks = actor ? actor.distanceMetres / blockSize : undefined;
+  const point = crosshairAimPoint(eye, rayDirection, rangeBlocks, [surface?.distanceBlocks, actorDistanceBlocks]);
   const distanceBlocks = Math.min(
     rangeBlocks,
     surface?.distanceBlocks ?? rangeBlocks,
-    zombieDistanceBlocks ?? rangeBlocks,
+    actorDistanceBlocks ?? rangeBlocks,
   );
   return {
     point,
-    ...(surface || (zombie && zombieDistanceBlocks! <= rangeBlocks)
+    ...(surface || (actor && actorDistanceBlocks! <= rangeBlocks)
       ? { distanceMetres: distanceBlocks * blockSize }
       : {}),
-    ...(zombie ? { zombie } : {}),
+    ...(actor ? { zombie: actor } : {}),
   };
 };

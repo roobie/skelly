@@ -61,13 +61,13 @@ export class AcidEffects {
   }
 
   /** The sac bursting as an acid zombie dies: droplets thrown out from `position` (metres). Presentation only. */
-  deathSplash(position: Vec3, zombie: Actor): void {
-    const body = zombie.type.acidBody;
+  deathSplash(position: Vec3, actor: Actor): void {
+    const body = actor.type.acidBody;
     if (!body) {
       return;
     }
     const { droplets, speedMetresPerRealSecond, slowestSpeedFraction, sizeMetres } = body.deathSplash;
-    const floor = zombie.body.pos[1] * this.blockSize;
+    const floor = actor.body.pos[1] * this.blockSize;
     for (let index = 0; index < droplets; index++) {
       const azimuth = this.rng.range(0, 2 * Math.PI);
       const rise = this.rng.range(-0.2, 1);
@@ -85,23 +85,23 @@ export class AcidEffects {
 
   /** Acid dripping from each drawn acid mouth at its content rate. Presentation only. */
   private drip(anchors: Iterable<DrawnAnchors>, dt: number): void {
-    for (const { zombie, mouth } of anchors) {
-      const body = zombie.type.acidBody;
+    for (const { zombie: actor, mouth } of anchors) {
+      const body = actor.type.acidBody;
       if (!(body && mouth)) {
         continue;
       }
-      let due = (this.dripDue.get(zombie) ?? this.rng.range(0, 1)) - dt * body.drips.perRealSecond;
+      let due = (this.dripDue.get(actor) ?? this.rng.range(0, 1)) - dt * body.drips.perRealSecond;
       while (due <= 0) {
         this.droplet({
           position: mouth,
           velocity: [0, 0, 0],
           color: body.color,
           sizeMetres: body.drips.sizeMetres,
-          floor: zombie.body.pos[1] * this.blockSize,
+          floor: actor.body.pos[1] * this.blockSize,
         });
         due += 1;
       }
-      this.dripDue.set(zombie, due);
+      this.dripDue.set(actor, due);
     }
   }
 

@@ -113,20 +113,17 @@ const regionNames = (maxima: Actor['type']['regions']): readonly string[] => {
 
 /** How badly a body bleeds, 0 to 1, from its saved wounds: health lost across its regions, severed parts and
  * carved flesh. Derived, so drips and the bloodied tint survive a reload with no state of their own. */
-export const woundSeverity = (zombie: Pick<Actor, 'type' | 'regions' | 'severed' | 'carved'>): number => {
+export const woundSeverity = (actor: Pick<Actor, 'type' | 'regions' | 'severed' | 'carved'>): number => {
   let full = 0;
   let left = 0;
-  const maxima = zombie.type.regions;
+  const maxima = actor.type.regions;
   for (const region of regionNames(maxima)) {
     const max = maxima[region]!;
     full += max;
-    left += Math.min(max, Math.max(0, zombie.regions[region] ?? 0));
+    left += Math.min(max, Math.max(0, actor.regions[region] ?? 0));
   }
   const lost = full > 0 ? 1 - left / full : 0;
-  return Math.min(
-    1,
-    lost + zombie.severed.length * SEVERED_PART_SEVERITY + zombie.carved.length * CARVED_CELL_SEVERITY,
-  );
+  return Math.min(1, lost + actor.severed.length * SEVERED_PART_SEVERITY + actor.carved.length * CARVED_CELL_SEVERITY);
 };
 
 /** Fades each splat by its own opacity, which three's built-in materials have no per-instance slot for. */
@@ -235,17 +232,17 @@ export class Gore {
 
   /** A body's woundSeverity, worked out at most once per update: the drips and the stains on live bodies
    * (mobActors.ts) both read it every frame. */
-  severity(zombie: Actor): number {
-    const memo = this.severities.get(zombie);
+  severity(actor: Actor): number {
+    const memo = this.severities.get(actor);
     if (memo?.update === this.updates) {
       return memo.value;
     }
-    const value = woundSeverity(zombie);
+    const value = woundSeverity(actor);
     if (memo) {
       memo.update = this.updates;
       memo.value = value;
     } else {
-      this.severities.set(zombie, { update: this.updates, value });
+      this.severities.set(actor, { update: this.updates, value });
     }
     return value;
   }
@@ -372,8 +369,8 @@ export class Gore {
     }
     const [lx, ly, lz] = bodies.listener;
     const rangeBlocks = DRIP_RANGE_M / this.blockSize;
-    for (const [, zombie] of bodies.zombies.entries()) {
-      const { pos } = zombie.body;
+    for (const [, actor] of bodies.zombies.entries()) {
+      const { pos } = actor.body;
       const distanceBlocks = Math.hypot(pos[0] - lx, pos[1] - ly, pos[2] - lz);
       const full = this.dripperCount === this.tuning.dripSourceCap;
       if (
@@ -382,23 +379,23 @@ export class Gore {
       ) {
         continue;
       }
-      const severity = this.severity(zombie);
+      const severity = this.severity(actor);
       if (severity > 0) {
-        this.insertDripper(zombie, distanceBlocks, severity);
+        this.insertDripper(actor, distanceBlocks, severity);
       }
     }
   }
 
   /** Keeps the drippers sorted by distance: takes a free slot, or the farthest's when full, and moves it in
    * behind the last one nearer than it. */
-  private insertDripper(zombie: Actor, distanceBlocks: number, severity: number): void {
+  private insertDripper(actor: Actor, distanceBlocks: number, severity: number): void {
     let index = Math.min(this.dripperCount, this.tuning.dripSourceCap - 1);
     const slot = this.drippers[index]!;
     while (index > 0 && this.drippers[index - 1]!.distanceBlocks > distanceBlocks) {
       this.drippers[index] = this.drippers[index - 1]!;
       index -= 1;
     }
-    slot.zombie = zombie;
+    slot.zombie = actor;
     slot.distanceBlocks = distanceBlocks;
     slot.severity = severity;
     this.drippers[index] = slot;
@@ -408,13 +405,13 @@ export class Gore {
   private drip(dt: number): void {
     const s = this.blockSize;
     for (let index = 0; index < this.dripperCount; index++) {
-      const { zombie, severity } = this.drippers[index]!;
-      if (!(zombie && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
+      const { zombie: actor, severity } = this.drippers[index]!;
+      if (!(actor && this.rng.chance(DRIPS_PER_SECOND * severity * dt))) {
         continue;
       }
-      const { pos, halfWidth, height } = zombie.body;
+      const { pos, halfWidth, height } = actor.body;
       const reach = halfWidth * s;
-      const heightMetres = zombie.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
+      const heightMetres = actor.incapacitated ? DOWNED_DRIP_HEIGHT_M : height * s;
       const x = pos[0] * s + this.rng.range(-reach, reach);
       const y = pos[1] * s + heightMetres * this.rng.range(0.35, 0.85);
       const z = pos[2] * s + this.rng.range(-reach, reach);

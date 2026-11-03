@@ -295,8 +295,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const dir = [HEADING[0] / heading, HEADING[1] / heading] as const;
   let [x, , z] = engine.spawn.pos;
   let playerBody: Body | undefined;
-  let zombies: ActorSystem | undefined;
-  let zombieMeshes: MobActorMeshes | undefined;
+  let actors: ActorSystem | undefined;
+  let actorMeshes: MobActorMeshes | undefined;
   let movement: 'still' | 'jogging' | 'sprinting' = 'still';
   const place = (yaw: number, pitch: number) => {
     const ground = engine.groundAt(x, z);
@@ -315,7 +315,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const travelYaw = Math.atan2(-dir[0], -dir[1]);
   let aborted = false;
   const prepareShamblers = (): void => {
-    if (shamblerCount === 0 || zombies) {
+    if (shamblerCount === 0 || actors) {
       return;
     }
     try {
@@ -331,7 +331,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
-      zombies = new ActorSystem({
+      actors = new ActorSystem({
         activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
         seed: config.seed,
         isSolid: engine.isSolid,
@@ -357,39 +357,39 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         player: playerBody,
         engine,
         registry: engine.registry,
-        zombies,
+        zombies: actors,
       });
       const graphics = graphicsTuningOf(engine.registry);
-      zombieMeshes = new MobActorMeshes(s, shamblerCount, {
+      actorMeshes = new MobActorMeshes(s, shamblerCount, {
         zombies: engine.registry.actors,
         look: lookDefaultsOf(engine.registry).mobActors,
         maxCorpses: graphics.mobActors.maxCorpses,
         handlingReachMetres: reachTuning(engine.registry).reachMetres,
         gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
       });
-      engine.scene.add(zombieMeshes.group);
+      engine.scene.add(actorMeshes.group);
     } catch (error) {
       aborted = true;
       hud.textContent = error instanceof Error ? error.message : String(error);
     }
   };
-  let zombieAccumulator = 0;
+  let actorAccumulator = 0;
   let backgroundAccumulator = 0;
   let backgroundSlice = 0;
   let backgroundStepTime = 0;
   const advanceShamblers = (dt: number): void => {
-    if (!(zombies && zombieMeshes)) {
+    if (!(actors && actorMeshes)) {
       return;
     }
-    zombieAccumulator += dt;
+    actorAccumulator += dt;
     backgroundAccumulator += dt;
-    while (zombieAccumulator >= 1 / ACTIVE_ACTOR_RATE) {
-      zombies.tickActive(1 / ACTIVE_ACTOR_RATE);
-      zombieAccumulator -= 1 / ACTIVE_ACTOR_RATE;
+    while (actorAccumulator >= 1 / ACTIVE_ACTOR_RATE) {
+      actors.tickActive(1 / ACTIVE_ACTOR_RATE);
+      actorAccumulator -= 1 / ACTIVE_ACTOR_RATE;
     }
     while (backgroundAccumulator >= 1 / BACKGROUND_ACTOR_SLICE_RATE) {
       backgroundStepTime += 1 / BACKGROUND_ACTOR_SLICE_RATE;
-      zombies.tickBackground(
+      actors.tickBackground(
         1 / BACKGROUND_ACTOR_RATE,
         backgroundStepTime,
         backgroundSlice,
@@ -398,10 +398,10 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       backgroundSlice = (backgroundSlice + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
       backgroundAccumulator -= 1 / BACKGROUND_ACTOR_SLICE_RATE;
     }
-    zombieMeshes.setCamera?.(camera);
+    actorMeshes.setCamera?.(camera);
     const renderTime = backgroundStepTime + backgroundAccumulator;
-    const clock = syncClock(renderTime, renderTime - zombieAccumulator, backgroundStepTime);
-    zombieMeshes.sync(zombies.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
+    const clock = syncClock(renderTime, renderTime - actorAccumulator, backgroundStepTime);
+    actorMeshes.sync(actors.store, dt, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
   };
 
   let phase: Phase = 'load';

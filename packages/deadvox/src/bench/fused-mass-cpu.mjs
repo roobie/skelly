@@ -148,19 +148,19 @@ for (const { name, corridor } of scenarios) {
     corridor ? [envelope.halfWidth + 1, 1.001, 0] : [0.5, 1.001, envelope.halfDepth + 1],
     [0, 0, -1],
   );
-  const zombie = system.store.get(id);
-  const shape = system.shapeOf(zombie.body);
+  const actor = system.store.get(id);
+  const shape = system.shapeOf(actor.body);
   const axis = corridor ? 0 : 2;
-  const probe = [...zombie.body.pos];
+  const probe = [...actor.body.pos];
   probe[axis] -= 0.01;
   while (probe[axis] > 0 && !shape.overlapsTerrain(probe)) {
-    zombie.body.pos[axis] = probe[axis];
+    actor.body.pos[axis] = probe[axis];
     probe[axis] -= 0.01;
   }
-  if (shape.overlapsTerrain(zombie.body.pos) || !shape.overlapsTerrain(probe)) {
+  if (shape.overlapsTerrain(actor.body.pos) || !shape.overlapsTerrain(probe)) {
     throw new Error('Fixture must start free beside a wall');
   }
-  sense.pos = corridor ? [right / 2, 1, 10] : [zombie.body.pos[0] + 3, 1, zombie.body.pos[2] + 10];
+  sense.pos = corridor ? [right / 2, 1, 10] : [actor.body.pos[0] + 3, 1, actor.body.pos[2] + 10];
   const initial = system.snapshotState();
   const originalStep = system.stepActorBody;
   const originalSide = system.openSide;

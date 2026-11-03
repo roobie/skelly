@@ -85,11 +85,11 @@ export interface MissingFlesh {
 
 export const missingFlesh = (
   figure: FusedMassFigure,
-  zombie: { readonly carved: readonly number[]; readonly severed: readonly string[] },
+  actor: { readonly carved: readonly number[]; readonly severed: readonly string[] },
 ): MissingFlesh => {
-  const hidden = fusedMassSeveredBones(figure, zombie.severed);
+  const hidden = fusedMassSeveredBones(figure, actor.severed);
   return {
-    carved: new Set(zombie.carved),
+    carved: new Set(actor.carved),
     severedOwners: new Set(
       figure.realized.body.bones.flatMap((bone, index) => (hidden.has(bone.id) ? [index + 1] : [])),
     ),

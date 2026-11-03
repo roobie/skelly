@@ -44,22 +44,22 @@ export class ActorSpawner {
     }
   }
 
-  onColumn({ cx, cz, site, registry, zombies }: ActorColumnLoad): void {
+  onColumn({ cx, cz, site, registry, zombies: actors }: ActorColumnLoad): void {
     for (const spawn of site.actorsIn(cx, cz)) {
-      this.consider(spawn, { cx, cz, registry, zombies });
+      this.consider(spawn, { cx, cz, registry, zombies: actors });
     }
     for (const horde of site.hordesIn?.(cx, cz) ?? []) {
       const type = registry.actors.get(horde.type);
       const key = `horde:${horde.id}`;
       if (type && !this.spawned.has(key)) {
-        zombies.addHorde(key, type, horde.pos, horde.members);
+        actors.addHorde(key, type, horde.pos, horde.members);
         this.spawned.add(key);
       }
     }
   }
 
   /** Reconsiders only markers in columns already loaded. */
-  advance({ calendar, registry, zombies }: ActorSpawnAdvance): void {
+  advance({ calendar, registry, zombies: actors }: ActorSpawnAdvance): void {
     // Restore can load columns in another order; preserve marker-to-id and RNG assignment.
     const pending = [...this.pending].sort(([left], [right]) => {
       if (left === right) {
@@ -71,7 +71,7 @@ export class ActorSpawner {
       if (this.spawned.has(key)) {
         this.pending.delete(key);
       } else if (spawnWindowOpen(calendar, spawn.window, requireDayCycle(registry))) {
-        this.spawnOnce(key, spawn, registry, zombies);
+        this.spawnOnce(key, spawn, registry, actors);
         this.pending.delete(key);
       }
     }
@@ -88,7 +88,7 @@ export class ActorSpawner {
 
   private consider(
     spawn: ActorSpawn,
-    { cx, cz, registry, zombies }: Pick<ActorColumnLoad, 'cx' | 'cz' | 'registry' | 'zombies'>,
+    { cx, cz, registry, zombies: actors }: Pick<ActorColumnLoad, 'cx' | 'cz' | 'registry' | 'zombies'>,
   ): void {
     const key = `${spawn.type}:${spawn.pos.join(',')}`;
     if (this.spawned.has(key)) {
@@ -98,14 +98,14 @@ export class ActorSpawner {
       this.pending.set(key, { spawn: { ...spawn, window: spawn.window }, cx, cz });
       return;
     }
-    this.spawnOnce(key, spawn, registry, zombies);
+    this.spawnOnce(key, spawn, registry, actors);
   }
 
-  private spawnOnce(key: string, spawn: ActorSpawn, registry: Registry, zombies: ActorSystem): void {
+  private spawnOnce(key: string, spawn: ActorSpawn, registry: Registry, actors: ActorSystem): void {
     const type = registry.actors.get(spawn.type);
     if (type) {
       this.spawned.add(key);
-      zombies.add(type, spawn.pos, [1, 0, 0]);
+      actors.add(type, spawn.pos, [1, 0, 0]);
     }
   }
 }

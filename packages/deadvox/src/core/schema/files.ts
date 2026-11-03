@@ -61,24 +61,24 @@ const SECTION_DESCRIPTOR = {
       pipe(
         array(ActorSchema),
         check(
-          (types) => types.every((zombie) => zombie.model !== 'fused-mass' || zombie.bodyScale !== undefined),
+          (types) => types.every((actor) => actor.model !== 'fused-mass' || actor.bodyScale !== undefined),
           'fused-mass must define bodyScale',
         ),
         check(
-          (types) => types.every((zombie) => zombie.model === 'fused-mass' || zombie.carving === undefined),
+          (types) => types.every((actor) => actor.model === 'fused-mass' || actor.carving === undefined),
           'only a fused-mass body may define carving',
         ),
         check(
-          (types) => types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.downed === undefined)),
+          (types) => types.every((actor) => (actor.model === 'fused-mass') === (actor.downed === undefined)),
           'every type but fused-mass, which never lies downed, must define downed',
         ),
         check(
-          (types) => types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.figureSeeds === undefined)),
+          (types) => types.every((actor) => (actor.model === 'fused-mass') === (actor.figureSeeds === undefined)),
           'every type but fused-mass, whose figure seed is fixed, must define figureSeeds',
         ),
         check(
           (types) =>
-            types.every((zombie) => (zombie.model === 'fused-mass') === (zombie.attack.grabBandMetres === undefined)),
+            types.every((actor) => (actor.model === 'fused-mass') === (actor.attack.grabBandMetres === undefined)),
           'every type but fused-mass, which strikes from its core, must define attack.grabBandMetres',
         ),
         check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
@@ -87,7 +87,7 @@ const SECTION_DESCRIPTOR = {
           'acidSpit tunables must match the acidSpit ability',
         ),
         check(
-          (types) => types.every((zombie) => (zombie.model === 'acid') === (zombie.acidBody !== undefined)),
+          (types) => types.every((actor) => (actor.model === 'acid') === (actor.acidBody !== undefined)),
           'acidBody must be defined exactly for the acid model',
         ),
       ),

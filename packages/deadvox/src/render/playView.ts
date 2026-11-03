@@ -343,7 +343,7 @@ export const createPlayView = (
     models,
   }); // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
-  const zombieMeshes: ActorRenderer =
+  const actorMeshes: ActorRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
           ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
@@ -352,13 +352,13 @@ export const createPlayView = (
           canvas: engine.renderer?.domElement,
           reveal: meshes,
           zombies: registry.actors,
-          onBurst: (position, zombie) => acidEffects.deathSplash(position, zombie),
+          onBurst: (position, actor) => acidEffects.deathSplash(position, actor),
           onFleshLanded: (centre) => gore.landed(centre),
-          bloodiness: (zombie) => gore.severity(zombie),
+          bloodiness: (actor) => gore.severity(actor),
         })
       : new ActorMeshes(s, undefined, meshes);
-  zombieMeshes.setWorld?.(physicalSolid, s);
-  scene.add(zombieMeshes.group);
+  actorMeshes.setWorld?.(physicalSolid, s);
+  scene.add(actorMeshes.group);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);
   const damageFeedback = new DamageFeedback(look.damageFeedback);
   const painCue = new PainCue(look.painCue);
@@ -487,7 +487,7 @@ export const createPlayView = (
     held,
     flashlight,
     lightPool,
-    zombieMeshes,
+    zombieMeshes: actorMeshes,
     weather,
     dispose,
     get cameraRoll() {
@@ -521,11 +521,11 @@ export const createPlayView = (
       time,
       playerEye,
       playerChest,
-      lastZombieStep,
+      lastZombieStep: lastActorStep,
       lastBackgroundStep,
       dt,
       entities,
-      zombies,
+      zombies: actors,
       acidGlobs,
       acidPuddles,
       frozen,
@@ -535,7 +535,7 @@ export const createPlayView = (
       blastFlashes.update(dt);
       leverProps.update(dt);
       acidEffects.sync(acidGlobs, acidPuddles, registry.actors, dt);
-      acidEffects.syncDroplets(zombieMeshes.anchors?.() ?? [], dt);
+      acidEffects.syncDroplets(actorMeshes.anchors?.() ?? [], dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour, dayCycle), weather, dayCycle.weather);
       piles.sync(inventory, itemThrows.hiddenItemUids);
@@ -544,13 +544,13 @@ export const createPlayView = (
       furniture.sync(entities);
       corpses.sync(entities);
       decals?.sync(entities);
-      const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
+      const alpha = Math.max(0, Math.min(1, (time - lastActorStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ACTOR_RATE));
-      zombieMeshes.setCamera?.(camera);
-      zombieMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
-      zombieMeshes.setPlayerChestPosition?.(playerChest);
-      zombieMeshes.setPerceptionLabels?.(perceptionLabels);
-      zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
+      actorMeshes.setCamera?.(camera);
+      actorMeshes.setPlayerEyePosition?.(playerEye, playerTuning(registry).sprint);
+      actorMeshes.setPlayerChestPosition?.(playerChest);
+      actorMeshes.setPerceptionLabels?.(perceptionLabels);
+      actorMeshes.sync(actors, dt, alpha, frozen, backgroundAlpha, time);
       return { sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
@@ -667,7 +667,7 @@ export const createPlayView = (
         daylightScale: cameraDaylightScale,
         worldDaylightScale: engine.skylight ? 1 : cameraDaylightScale,
         fixtures: poweredLights(),
-        glows: acidGlows(zombieMeshes.anchors?.() ?? []),
+        glows: acidGlows(actorMeshes.anchors?.() ?? []),
       });
       updateFlare(nightVision, dt);
     },
@@ -687,7 +687,7 @@ export const createPlayView = (
       }
       drawCounters?.begin();
       try {
-        zombieMeshes.uploadPoses?.(renderer);
+        actorMeshes.uploadPoses?.(renderer);
         mood.render(
           () => {
             if (ownView) {

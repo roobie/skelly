@@ -337,7 +337,7 @@ const panelTemplate = ({
   setTimeOfDay,
   snapshotStatus,
   snapshotCopyStatus,
-  revealZombies,
+  revealZombies: revealActors,
   toggleReveal,
   measureSnapshot,
   keyTraceEnabled,
@@ -474,7 +474,7 @@ const panelTemplate = ({
         <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
       </div>
       <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
-      <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealZombies} @click=${toggleReveal}>Reveal zombies · ${revealZombies ? 'ON' : 'OFF'}</button></div>
+      <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealActors} @click=${toggleReveal}>Reveal zombies · ${revealActors ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
       <label>Set time <input id="debug-time" type="time" value=${clockInputValue} /> <button id="set-debug-time" type="button" @click=${(
@@ -651,8 +651,8 @@ export const createDebugActions = ({
   spawnUnawareShambler,
   shamblerCount,
   spawnShambler,
-  spawnZombie,
-  zombieTypes,
+  spawnZombie: spawnActor,
+  zombieTypes: actorTypes,
   isAimEnabled,
   toggleAim,
   isFrozen,
@@ -804,11 +804,11 @@ export const createDebugActions = ({
           hooks.emitTestNoise();
         },
       },
-      ...Array.from(zombieTypes, (type) => ({
+      ...Array.from(actorTypes, (type) => ({
         id: `debug.spawn-zombie.${type.id}`,
         label: `Spawn ${type.name}`,
         group: 'shamblers' as const,
-        run: () => spawnZombie(type.id, 1),
+        run: () => spawnActor(type.id, 1),
       })),
       {
         id: 'debug.melee-aim-toggle',
@@ -1152,7 +1152,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let replayDownload: { url: string; name: string } | undefined;
   let replayStatus = '';
   /** The aim readout is showing a shambler, which the looked-at readout then yields to. */
-  let zombieAimShown = false;
+  let actorAimShown = false;
   let panelOpen = false;
   let f3Open = false;
   let axesVisible = true;
@@ -1164,7 +1164,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let firearmsSkillCopyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
-  let revealZombies = false;
+  let revealActors = false;
   let snapshotStatus = '';
   let snapshotCopyStatus = '';
   let aimEnabled = true;
@@ -1331,8 +1331,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       noclip = !noclip;
     },
     spawnUnawareShambler: () => {
-      const zombies = hooks.actors();
-      const placed = zombies ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, zombies) : false;
+      const actors = hooks.actors();
+      const placed = actors ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, actors) : false;
       spawnStatus = placed ? 'Placed an unaware shambler behind a wall' : 'No nearby wall could hide a shambler';
       if (placed) {
         hooks.showNotice('An unaware shambler is nearby');
@@ -1351,24 +1351,24 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     isFrozen: () => hooks.actors()?.isFrozen ?? false,
     toggleFrozen: () => {
-      const zombies = hooks.actors();
-      zombies?.setFrozen(!zombies.isFrozen);
+      const actors = hooks.actors();
+      actors?.setFrozen(!actors.isFrozen);
     },
     isGameFrozen: () => gameFrozen,
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
     spawnShambler: (count) => {
-      const zombies = hooks.actors();
-      const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
+      const actors = hooks.actors();
+      const placed = actors ? spawnShamblers(hooks.engine, hooks.body, actors, count) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
       }
     },
     spawnZombie: (typeId, count) => {
-      const zombies = hooks.actors();
-      const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, { typeId, count }) : 0;
+      const actors = hooks.actors();
+      const placed = actors ? spawnZombieType(hooks.engine, hooks.body, actors, { typeId, count }) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         const name = hooks.engine.registry.actors.get(typeId)?.name ?? typeId;
@@ -1475,14 +1475,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           rangeBlocks,
         )
       : undefined;
-    const zombies = hooks.actors();
+    const actors = hooks.actors();
     const aimTarget =
-      ray?.active && zombies
+      ray?.active && actors
         ? firearmBoreTarget({
             eye: ray.eye,
             direction: ray.dir,
             surface: target,
-            zombies,
+            zombies: actors,
             blockSize: engine.config.scale.blockSize,
             rangeBlocks,
             weapon: unarmedMeleeWeapon(engine.registry.meleeClasses),
@@ -1541,7 +1541,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const key = JSON.stringify([
       panelOpen,
       f3Open,
-      revealZombies,
+      revealActors,
       snapshotStatus,
       keyTraceEnabled,
       spawnMenu.isOpen,
@@ -1571,10 +1571,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           setTimeOfDay: hooks.setTimeOfDay,
           snapshotStatus,
           snapshotCopyStatus,
-          revealZombies,
+          revealZombies: revealActors,
           toggleReveal: () => {
-            revealZombies = !revealZombies;
-            hooks.revealZombies(revealZombies);
+            revealActors = !revealActors;
+            hooks.revealZombies(revealActors);
             shellKey = '';
             drawShell();
           },
@@ -1851,7 +1851,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return aimEnabled;
     },
     updateAim(aim: ActorAim | undefined) {
-      zombieAimShown = aimEnabled && aim !== undefined;
+      actorAimShown = aimEnabled && aim !== undefined;
       aimOverlay.update(aimEnabled ? aim : undefined);
       if (aimReadout) {
         render(
@@ -1874,7 +1874,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       if (lookReadout) {
         const { engine } = hooks;
         const text =
-          active && !zombieAimShown
+          active && !actorAimShown
             ? describeLookedAt(
                 {
                   world: engine.world,
@@ -1919,7 +1919,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return spawnMenu.isOpen;
     },
     get revealZombies() {
-      return revealZombies;
+      return revealActors;
     },
     handleAction,
     closeMenus() {

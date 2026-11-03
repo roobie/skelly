@@ -232,11 +232,11 @@ interface FusedMassStrike {
 
 /** Where a hit struck a zombie's flesh, for its caller to carve, when the zombie carves. */
 const strikeOf = (
-  zombie: Actor,
+  actor: Actor,
   cell: number | undefined,
   damage: number,
   hit: HitImpulse,
-): FusedMassStrike | undefined => (cell === undefined || !zombie.type.carving ? undefined : { cell, damage, hit });
+): FusedMassStrike | undefined => (cell === undefined || !actor.type.carving ? undefined : { cell, damage, hit });
 
 interface MeleeHitContext {
   readonly id: EntityId;
@@ -262,14 +262,14 @@ interface MeleeEffectsContext {
 }
 
 const meleeDamageForContact = (
-  zombie: Actor,
+  actor: Actor,
   region: ActorHitRegion,
   weapon: HitWeapon,
   damageType: MeleeDamageType,
 ): number => {
   const spread = weapon.damageVariance;
   const rolled =
-    spread === undefined ? weapon.damage : weapon.damage * zombie.dismemberRng.range(1 - spread, 1 + spread);
+    spread === undefined ? weapon.damage : weapon.damage * actor.dismemberRng.range(1 - spread, 1 + spread);
   const regionClass = actorRegionClass(region) as BodyRegion;
   let multiplier = 1;
   if (regionClass === 'head') {
@@ -277,7 +277,7 @@ const meleeDamageForContact = (
   } else if (regionClass !== 'torso') {
     multiplier = weapon.limbDamageMultiplier ?? 1;
   }
-  return damageToActor(zombie.type, rolled * multiplier, damageType, regionClass);
+  return damageToActor(actor.type, rolled * multiplier, damageType, regionClass);
 };
 
 export const damageToActor = (
@@ -427,23 +427,23 @@ export interface FusedMassMemberContribution {
 
 /** Active member ownership is the seam for per-member attacks and reach; core is never a severable member. */
 export const activeFusedMassMembers = (
-  zombie: Pick<Actor, 'type' | 'figureSeed' | 'severed'>,
+  actor: Pick<Actor, 'type' | 'figureSeed' | 'severed'>,
 ): readonly FusedMassMemberContribution[] => {
-  if (zombie.type.model !== 'fused-mass') {
+  if (actor.type.model !== 'fused-mass') {
     return [];
   }
-  const severed = new Set(zombie.severed);
-  return fusedMassFigureForType(zombie.type, zombie.figureSeed)
+  const severed = new Set(actor.severed);
+  return fusedMassFigureForType(actor.type, actor.figureSeed)
     .manifest.parts.filter((part) => part.severable && !severed.has(part.id))
     .map((part) => ({ partId: part.id, rootBone: part.rootBone, regionIds: part.regionIds }));
 };
 
 /** Remaining manifest members share the authored attack reach; with none, the unseverable core cannot attack. */
-export const actorAttackReachMetres = (zombie: Pick<Actor, 'type' | 'figureSeed' | 'severed'>): number => {
-  if (zombie.type.model !== 'fused-mass' || activeFusedMassMembers(zombie).length === 0) {
-    return zombie.type.model === 'fused-mass' ? 0 : zombie.type.attack.reach;
+export const actorAttackReachMetres = (actor: Pick<Actor, 'type' | 'figureSeed' | 'severed'>): number => {
+  if (actor.type.model !== 'fused-mass' || activeFusedMassMembers(actor).length === 0) {
+    return actor.type.model === 'fused-mass' ? 0 : actor.type.attack.reach;
   }
-  return actorAttackReachForDef(zombie.type, zombie.figureSeed);
+  return actorAttackReachForDef(actor.type, actor.figureSeed);
 };
 
 export type ActorState = Omit<
@@ -468,48 +468,44 @@ export type ActorState = Omit<
 
 const validRngState = (state: unknown): state is RngState =>
   Array.isArray(state) && state.length === 4 && state.every((word) => Number.isSafeInteger(word));
-const validSpitTimers = (zombie: ActorState): boolean =>
-  Number.isFinite(zombie.spitWindup) &&
-  zombie.spitWindup >= 0 &&
-  Number.isFinite(zombie.spitWait) &&
-  zombie.spitWait >= 0;
-const validStaggerTime = (zombie: ActorState): boolean =>
-  Number.isFinite(zombie.staggerSimSeconds) && zombie.staggerSimSeconds >= 0;
-const validObstacleWanderState = (zombie: ActorState): boolean =>
-  Number.isFinite(zombie.obstacleWanderRemaining) &&
-  zombie.obstacleWanderRemaining >= 0 &&
-  zombie.obstacleWanderRemaining > 0 === (zombie.obstacleWanderHeading !== undefined) &&
-  (zombie.obstacleWanderHeading === undefined ||
-    (Array.isArray(zombie.obstacleWanderHeading) &&
-      zombie.obstacleWanderHeading.length === 3 &&
-      zombie.obstacleWanderHeading.every(Number.isFinite))) &&
-  typeof zombie.obstacleContact === 'boolean' &&
-  (zombie.obstacleSlideSide === -1 || zombie.obstacleSlideSide === 0 || zombie.obstacleSlideSide === 1);
+const validSpitTimers = (actor: ActorState): boolean =>
+  Number.isFinite(actor.spitWindup) && actor.spitWindup >= 0 && Number.isFinite(actor.spitWait) && actor.spitWait >= 0;
+const validStaggerTime = (actor: ActorState): boolean =>
+  Number.isFinite(actor.staggerSimSeconds) && actor.staggerSimSeconds >= 0;
+const validObstacleWanderState = (actor: ActorState): boolean =>
+  Number.isFinite(actor.obstacleWanderRemaining) &&
+  actor.obstacleWanderRemaining >= 0 &&
+  actor.obstacleWanderRemaining > 0 === (actor.obstacleWanderHeading !== undefined) &&
+  (actor.obstacleWanderHeading === undefined ||
+    (Array.isArray(actor.obstacleWanderHeading) &&
+      actor.obstacleWanderHeading.length === 3 &&
+      actor.obstacleWanderHeading.every(Number.isFinite))) &&
+  typeof actor.obstacleContact === 'boolean' &&
+  (actor.obstacleSlideSide === -1 || actor.obstacleSlideSide === 0 || actor.obstacleSlideSide === 1);
 const validActorFootstepClock = (clock: ActorFootstepClock): boolean =>
   Boolean(clock) &&
   Number.isFinite(clock.distanceUntilStep) &&
   clock.distanceUntilStep > 0 &&
   typeof clock.nextLongStep === 'boolean';
-const validZombieEventState = (zombie: ActorState): boolean =>
-  (zombie.hesitationFrom === undefined || zombie.hesitationFrom === 'idle' || zombie.hesitationFrom === 'stroll') &&
-  (zombie.mode !== 'hesitate' ||
-    (zombie.hesitationFrom !== undefined &&
-      Number.isFinite(zombie.modeTimer) &&
-      zombie.modeTimer >= 0 &&
-      validVec3State(zombie.lastPerceived!))) &&
-  (zombie.refusedAt === undefined || (Number.isFinite(zombie.refusedAt) && zombie.refusedAt >= 0)) &&
-  (zombie.leanTarget === undefined || validVec3State(zombie.leanTarget)) &&
-  (zombie.lastVocalNoiseId === null ||
-    (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
-  (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
-  (zombie.lastAlertAt === undefined || (Number.isFinite(zombie.lastAlertAt) && zombie.lastAlertAt >= 0)) &&
-  Array.isArray(zombie.severed) &&
-  zombie.severed.every((part) => typeof part === 'string') &&
-  Array.isArray(zombie.carved) &&
-  zombie.carved.every(
-    (cell, index) => Number.isSafeInteger(cell) && cell >= 0 && (index === 0 || cell > zombie.carved[index - 1]!),
+const validActorEventState = (actor: ActorState): boolean =>
+  (actor.hesitationFrom === undefined || actor.hesitationFrom === 'idle' || actor.hesitationFrom === 'stroll') &&
+  (actor.mode !== 'hesitate' ||
+    (actor.hesitationFrom !== undefined &&
+      Number.isFinite(actor.modeTimer) &&
+      actor.modeTimer >= 0 &&
+      validVec3State(actor.lastPerceived!))) &&
+  (actor.refusedAt === undefined || (Number.isFinite(actor.refusedAt) && actor.refusedAt >= 0)) &&
+  (actor.leanTarget === undefined || validVec3State(actor.leanTarget)) &&
+  (actor.lastVocalNoiseId === null || (Number.isSafeInteger(actor.lastVocalNoiseId) && actor.lastVocalNoiseId >= 0)) &&
+  (actor.stimulusAt === undefined || (Number.isFinite(actor.stimulusAt) && actor.stimulusAt >= 0)) &&
+  (actor.lastAlertAt === undefined || (Number.isFinite(actor.lastAlertAt) && actor.lastAlertAt >= 0)) &&
+  Array.isArray(actor.severed) &&
+  actor.severed.every((part) => typeof part === 'string') &&
+  Array.isArray(actor.carved) &&
+  actor.carved.every(
+    (cell, index) => Number.isSafeInteger(cell) && cell >= 0 && (index === 0 || cell > actor.carved[index - 1]!),
   ) &&
-  validActorFootstepClock(zombie.footstepClock);
+  validActorFootstepClock(actor.footstepClock);
 /** Holes play could make: only a type that carves has any, each on flesh in its grid, never the core cell. */
 const validCarvedCells = (type: ActorDef, figureSeed: number, carved: readonly number[]): boolean => {
   if (!type.carving) {
@@ -520,13 +516,13 @@ const validCarvedCells = (type: ActorDef, figureSeed: number, carved: readonly n
   const keep = protectedCoreCell(figure);
   return carved.every((cell) => cell < owner.length && owner[cell]! > 0 && cell !== keep);
 };
-const validHordeMemberState = (zombie: ActorState): boolean =>
-  (zombie.hordeId === undefined && zombie.hordeOffset === undefined) ||
-  (typeof zombie.hordeId === 'string' &&
-    zombie.hordeId.length > 0 &&
-    Array.isArray(zombie.hordeOffset) &&
-    zombie.hordeOffset.length === 3 &&
-    zombie.hordeOffset.every(Number.isFinite));
+const validHordeMemberState = (actor: ActorState): boolean =>
+  (actor.hordeId === undefined && actor.hordeOffset === undefined) ||
+  (typeof actor.hordeId === 'string' &&
+    actor.hordeId.length > 0 &&
+    Array.isArray(actor.hordeOffset) &&
+    actor.hordeOffset.length === 3 &&
+    actor.hordeOffset.every(Number.isFinite));
 
 export interface HordeState {
   id: string;
@@ -638,12 +634,12 @@ export interface ActorSystemOptions {
     kind: DamageKind,
   ) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
-  onDeath?: (id: EntityId, zombie: Actor) => void;
+  onDeath?: (id: EntityId, actor: Actor) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
-  onIncapacitated?: (id: EntityId, zombie: Actor) => void;
+  onIncapacitated?: (id: EntityId, actor: Actor) => void;
   /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
    * each arm and the head of a dismembered downed body (see finishDowned). */
-  onSevered?: (zombie: Actor, region: HumanoidHitRegion) => void;
+  onSevered?: (actor: Actor, region: HumanoidHitRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the shambler made the sound or was hit.
    * The player's own swing and hit set `playerMelee`, since content picks their events. */
   onSound?: (event: SoundId, position: Vec3, body?: Actor, playerMelee?: boolean) => void;
@@ -658,14 +654,14 @@ export interface ActorSystemOptions {
   onFootstep?: (position: Vec3, id: EntityId, mode: AgentMode, body: Actor) => void;
   /** Presentation only: a hit that did damage, melee or pellet, after its damage is applied. Gore draws from
    * it; the system reads nothing back. */
-  onWound?: (id: EntityId, zombie: Actor, hit: HitImpulse, damage: number) => void;
+  onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
   /** Called once for every part severed (src/core/actorSystem.ts's swing — the melee hit path), *after*
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
-  onSever?: (id: EntityId, zombie: Actor, part: string, hit: HitImpulse) => void;
+  onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
   /** Called when a hit knocks flesh out of an amalgam, *after* `zombie.carved` includes `cells`. `hit` is
    * the strike the hole centres on. */
-  onCarve?: (id: EntityId, zombie: Actor, cells: readonly number[], hit: HitImpulse) => void;
+  onCarve?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
   /** Reports the actual result of an attempted player melee swing; absent in normal play. */
   onMeleeResult?: (result: MeleeResult) => void;
   /** Presentation-only recoil for a confirmed hit. */
@@ -697,9 +693,9 @@ const terrainStance = (x: number, z: number, terrainFloor: TerrainFloorAt, footp
 const onTerrainFloor = (pos: Vec3, terrainFloor: TerrainFloorAt, footprint: HorizontalFootprint): boolean =>
   Math.round(pos[1]) === terrainStance(pos[0], pos[2], terrainFloor, footprint);
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
-const posedRegionsForZombie = ({
+const posedRegionsForActor = ({
   id,
-  zombie,
+  zombie: actor,
   blockSize,
   poseCache,
 }: {
@@ -712,41 +708,41 @@ const posedRegionsForZombie = ({
   if (cached) {
     return cached;
   }
-  const poseInput = actorPoseInputFor(zombie, id, blockSize);
+  const poseInput = actorPoseInputFor(actor, id, blockSize);
   const posed =
-    zombie.type.model === 'fused-mass' ? posedFusedMassRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
+    actor.type.model === 'fused-mass' ? posedFusedMassRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
   poseCache?.set(id, posed);
   return posed;
 };
-const rayMayHitZombie = (zombie: Actor, origin: Vec3, direction: Vec3, blockSize: number): boolean => {
-  const centerY = zombie.body.pos[1] + zombie.body.height * 0.5;
+const rayMayHitActor = (actor: Actor, origin: Vec3, direction: Vec3, blockSize: number): boolean => {
+  const centerY = actor.body.pos[1] + actor.body.height * 0.5;
   const nearestT = Math.max(
     0,
-    (zombie.body.pos[0] - origin[0]) * direction[0] +
+    (actor.body.pos[0] - origin[0]) * direction[0] +
       (centerY - origin[1]) * direction[1] +
-      (zombie.body.pos[2] - origin[2]) * direction[2],
+      (actor.body.pos[2] - origin[2]) * direction[2],
   );
   const perpendicular =
     Math.hypot(
-      origin[0] + direction[0] * nearestT - zombie.body.pos[0],
+      origin[0] + direction[0] * nearestT - actor.body.pos[0],
       origin[1] + direction[1] * nearestT - centerY,
-      origin[2] + direction[2] * nearestT - zombie.body.pos[2],
+      origin[2] + direction[2] * nearestT - actor.body.pos[2],
     ) * blockSize;
   return (
     perpendicular <=
-    Math.max(1, Math.hypot(zombie.body.halfWidth, zombie.body.halfDepth ?? zombie.body.halfWidth) * blockSize)
+    Math.max(1, Math.hypot(actor.body.halfWidth, actor.body.halfDepth ?? actor.body.halfWidth) * blockSize)
   );
 };
-const isActiveHitRegion = (zombie: Actor, region: ActorHitRegion): boolean => {
-  const memberPart = zombie.type.model === 'fused-mass' ? FUSED_MASS_MEMBER_REGION.exec(region)?.[1] : undefined;
-  return zombie.regions[region]! > 0 && !(memberPart !== undefined && zombie.severed.includes(memberPart));
+const isActiveHitRegion = (actor: Actor, region: ActorHitRegion): boolean => {
+  const memberPart = actor.type.model === 'fused-mass' ? FUSED_MASS_MEMBER_REGION.exec(region)?.[1] : undefined;
+  return actor.regions[region]! > 0 && !(memberPart !== undefined && actor.severed.includes(memberPart));
 };
 /** A body's regions with the one whose loss kills last, so a blast severs limbs before it kills. */
-const blastOrder = (zombie: Actor): ActorHitRegion[] => {
-  const regions = Object.keys(zombie.regions) as ActorHitRegion[];
+const blastOrder = (actor: Actor): ActorHitRegion[] => {
+  const regions = Object.keys(actor.regions) as ActorHitRegion[];
   return [
-    ...regions.filter((region) => !lethalRegion(zombie.type, region)),
-    ...regions.filter((region) => lethalRegion(zombie.type, region)),
+    ...regions.filter((region) => !lethalRegion(actor.type, region)),
+    ...regions.filter((region) => lethalRegion(actor.type, region)),
   ];
 };
 const sameInvestigationFloor = (
@@ -839,13 +835,13 @@ const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
  * and moves only where it faces, so it turns before it heads somewhere new; an omnidirectional one moves along
  * `move` at once and turns to face `goal`.
  */
-const steer = (zombie: Actor, move: Vec3, radians: number, goal: Vec3 = move): Vec3 => {
-  if (zombie.type.locomotion === 'omnidirectional') {
-    zombie.facing = turnToward(zombie.facing, goal, radians);
+const steer = (actor: Actor, move: Vec3, radians: number, goal: Vec3 = move): Vec3 => {
+  if (actor.type.locomotion === 'omnidirectional') {
+    actor.facing = turnToward(actor.facing, goal, radians);
     return move;
   }
-  zombie.facing = turnToward(zombie.facing, move, radians);
-  return zombie.facing;
+  actor.facing = turnToward(actor.facing, move, radians);
+  return actor.facing;
 };
 const inRange = (rng: Rng, range: { min: number; max: number }): number => rng.range(range.min, range.max);
 
@@ -862,26 +858,26 @@ interface AttackReachProbe {
 
 /** A grab reaches horizontally from the body, within its type's vertical band, chest to chest. */
 const grabOrigin = (
-  { zombie, zombiePos, playerPos, blockSize }: AttackReachProbe,
+  { zombie: actor, zombiePos: actorPos, playerPos, blockSize }: AttackReachProbe,
   reachMetres: number,
   chestOffset: number,
 ): Vec3 | undefined =>
-  horizontalDistance(playerPos, zombiePos) * blockSize > reachMetres ||
-  Math.abs(playerPos[1] - zombiePos[1]) * blockSize >= requiredGrabBand(zombie.type)
+  horizontalDistance(playerPos, actorPos) * blockSize > reachMetres ||
+  Math.abs(playerPos[1] - actorPos[1]) * blockSize >= requiredGrabBand(actor.type)
     ? undefined
-    : [zombiePos[0], zombiePos[1] + chestOffset, zombiePos[2]];
+    : [actorPos[0], actorPos[1] + chestOffset, actorPos[2]];
 
 /** An amalgam's tentacle strikes in a straight line from its core, at any height, as far as its reach. */
 const strikeOrigin = (
-  { zombie, zombiePos, blockSize }: AttackReachProbe,
+  { zombie: actor, zombiePos: actorPos, blockSize }: AttackReachProbe,
   reachMetres: number,
   playerChest: Vec3,
 ): Vec3 | undefined => {
-  const offset = fusedMassStrikeOrigin(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie.facing);
+  const offset = fusedMassStrikeOrigin(fusedMassFigureForType(actor.type, actor.figureSeed), actor.facing);
   const origin: Vec3 = [
-    zombiePos[0] + offset[0] / blockSize,
-    zombiePos[1] + offset[1] / blockSize,
-    zombiePos[2] + offset[2] / blockSize,
+    actorPos[0] + offset[0] / blockSize,
+    actorPos[1] + offset[1] / blockSize,
+    actorPos[2] + offset[2] / blockSize,
   ];
   return Math.hypot(...sub(playerChest, origin)) * blockSize > reachMetres ? undefined : origin;
 };
@@ -890,15 +886,15 @@ const strikeOrigin = (
  * reach rule, then a clear line from its origin to the player's chest. Used identically at both times so
  * "still in reach" at resolve means exactly what "in reach" meant at start. */
 const withinAttackReach = (probe: AttackReachProbe): boolean => {
-  const { zombie, playerPos, blockSize, isSolid } = probe;
-  const reachMetres = actorAttackReachMetres(zombie);
+  const { zombie: actor, playerPos, blockSize, isSolid } = probe;
+  const reachMetres = actorAttackReachMetres(actor);
   if (reachMetres <= 0) {
     return false;
   }
   const chestOffset = PLAYER_CHEST_METRES / blockSize;
   const playerChest: Vec3 = [playerPos[0], playerPos[1] + chestOffset, playerPos[2]];
   const origin =
-    zombie.type.model === 'fused-mass'
+    actor.type.model === 'fused-mass'
       ? strikeOrigin(probe, reachMetres, playerChest)
       : grabOrigin(probe, reachMetres, chestOffset);
   return origin !== undefined && clearLine(origin, playerChest, isSolid);
@@ -913,8 +909,8 @@ const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
 
 /** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
  * drawn-back head and its gaze. */
-const spitOrigin = (zombie: Actor, id: EntityId, blockSize: number): Vec3 =>
-  posedMouth({ ...actorPoseInputFor(zombie, id, blockSize), spitProgress: 1 });
+const spitOrigin = (actor: Actor, id: EntityId, blockSize: number): Vec3 =>
+  posedMouth({ ...actorPoseInputFor(actor, id, blockSize), spitProgress: 1 });
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
@@ -952,21 +948,15 @@ export interface AcidGroundImpact {
 type GlobContact =
   | { kind: 'solid'; distance: number; normal: Vec3 }
   | { kind: 'player'; distance: number }
-  | { kind: 'zombie'; distance: number; hit: RegionHit };
+  | { kind: 'actor'; distance: number; hit: RegionHit };
 
 /** A spitter that sees the player inside its range band stands and faces; outside the band it closes in. */
 const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
-  const { zombie, type, sees, metresToTarget, dt } = scratch;
+  const { zombie: actor, type, sees, metresToTarget, dt } = scratch;
   const band = type.acidSpit?.rangeBand;
-  if (
-    band &&
-    zombie.mode === 'chase' &&
-    sees &&
-    metresToTarget >= band.nearMetres &&
-    metresToTarget <= band.farMetres
-  ) {
+  if (band && actor.mode === 'chase' && sees && metresToTarget >= band.nearMetres && metresToTarget <= band.farMetres) {
     scratch.moving = false;
-    steer(zombie, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    steer(actor, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
 };
 
@@ -975,19 +965,19 @@ const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
 // here; see packages/mobgen/src/mob/humanoidFigure.ts, `HumanoidFigure`. The random roll picks among arm
 // parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
 
-const cutsFor = (zombie: Actor) => {
-  const figure = templateFigure(bodyPlanModel(figureVariantOf(zombie.type)), zombie.figureSeed);
+const cutsFor = (actor: Actor) => {
+  const figure = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
   return { parts: figure.severableParts, bones: figure.realized.body.bones };
 };
 
 /** The part a destroyed region cuts at, parents first, so the whole region goes; undefined where it can't be cut. */
-const regionCut = (zombie: Actor, region: HumanoidHitRegion): string | undefined => cutsFor(zombie).parts[region][0];
+const regionCut = (actor: Actor, region: HumanoidHitRegion): string | undefined => cutsFor(actor).parts[region][0];
 
 /** Arm parts still worth severing: neither severed nor below a severed part. Deepest first and left before
  * right, so the dismember roll draws the same parts in the same order on every humanoid-like arm. */
-const availableArmParts = (zombie: Actor): string[] => {
-  const { parts, bones } = cutsFor(zombie);
-  const hidden = severedBoneSet(bones, zombie.severed);
+const availableArmParts = (actor: Actor): string[] => {
+  const { parts, bones } = cutsFor(actor);
+  const hidden = severedBoneSet(bones, actor.severed);
   const ordered: string[] = [];
   for (let depth = Math.max(parts.leftArm.length, parts.rightArm.length) - 1; depth >= 0; depth--) {
     for (const arm of [parts.leftArm, parts.rightArm]) {
@@ -1007,12 +997,12 @@ const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boole
 /** Gameplay effect, first slice: with both arms disabled there's nothing left to grab or claw with — the
  * zombie can still chase, but never starts a new attack (see the windup start check in tick()).
  * Already-started windups aren't cancelled retroactively; this only gates a *new* one. */
-const canStillAttack = (zombie: Actor): boolean => {
-  if (zombie.severed.length === 0) {
+const canStillAttack = (actor: Actor): boolean => {
+  if (actor.severed.length === 0) {
     return true;
   }
-  const { parts, bones } = cutsFor(zombie);
-  const hidden = severedBoneSet(bones, zombie.severed);
+  const { parts, bones } = cutsFor(actor);
+  const hidden = severedBoneSet(bones, actor.severed);
   return !(armDisabled(parts.leftArm, hidden) && armDisabled(parts.rightArm, hidden));
 };
 
@@ -1184,21 +1174,21 @@ export interface HeardNoise {
   target: Vec3;
 }
 
-const hearingRange = (zombie: ActorDef, movement: PlayerMovement): number => {
+const hearingRange = (actor: ActorDef, movement: PlayerMovement): number => {
   if (movement === 'sprinting') {
-    return zombie.hearingRange.sprint * zombie.hearing;
+    return actor.hearingRange.sprint * actor.hearing;
   }
   if (movement === 'jogging') {
-    return zombie.hearingRange.jog * zombie.hearing;
+    return actor.hearingRange.jog * actor.hearing;
   }
   if (movement === 'walking') {
-    return zombie.hearingRange.walk * zombie.hearing;
+    return actor.hearingRange.walk * actor.hearing;
   }
   return 0;
 };
 
 const hearingTier = ({
-  def: zombie,
+  def: actor,
   from,
   player,
   blockSize,
@@ -1206,15 +1196,15 @@ const hearingTier = ({
   tuning,
 }: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
   const range =
-    hearingRange(zombie, player.movement) * (loweredStanceTuning(tuning, player.stance)?.hearingRangeScale ?? 1);
+    hearingRange(actor, player.movement) * (loweredStanceTuning(tuning, player.stance)?.hearingRangeScale ?? 1);
   if (range <= 0) {
     return undefined;
   }
   const distance = Math.hypot(...sub(player.pos, from)) * blockSize;
-  if (distance > range * zombie.hearingModel.farMultiplier) {
+  if (distance > range * actor.hearingModel.farMultiplier) {
     return undefined;
   }
-  const earOffset = zombie.earHeightMetres / blockSize;
+  const earOffset = actor.earHeightMetres / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
@@ -1224,14 +1214,14 @@ const hearingTier = ({
   if (distance <= effectiveRange) {
     return 'near';
   }
-  if (distance <= effectiveRange * zombie.hearingModel.farMultiplier) {
+  if (distance <= effectiveRange * actor.hearingModel.farMultiplier) {
     return 'far';
   }
   return undefined;
 };
 
 const farBearingTarget = ({
-  def: zombie,
+  def: actor,
   from,
   source,
   blockSize,
@@ -1244,9 +1234,9 @@ const farBearingTarget = ({
   rng: Rng;
 }): Vec3 => {
   const angle = Math.atan2(source[0] - from[0], source[2] - from[2]);
-  const error = rng.range(-zombie.hearingModel.bearingErrorRadians, zombie.hearingModel.bearingErrorRadians);
+  const error = rng.range(-actor.hearingModel.bearingErrorRadians, actor.hearingModel.bearingErrorRadians);
   const bearing = headingAt(angle + error);
-  const distance = zombie.hearingModel.investigationDistanceMetres / blockSize;
+  const distance = actor.hearingModel.investigationDistanceMetres / blockSize;
   return [from[0] + bearing[0] * distance, from[1], from[2] + bearing[2] * distance];
 };
 
@@ -1275,7 +1265,7 @@ export interface VocalNoiseInput {
 
 /** Applies the shared coarse wall step and two-tier bearing model to a player sound. */
 export const hearVocalNoise = ({
-  def: zombie,
+  def: actor,
   from,
   noise,
   time,
@@ -1288,30 +1278,30 @@ export const hearVocalNoise = ({
     return undefined;
   }
   const distance = Math.hypot(...sub(noise.pos, from)) * blockSize;
-  if (distance > noise.radiusMetres * zombie.hearing * zombie.hearingModel.farMultiplier) {
+  if (distance > noise.radiusMetres * actor.hearing * actor.hearingModel.farMultiplier) {
     return undefined;
   }
-  const earOffset = zombie.earHeightMetres / blockSize;
+  const earOffset = actor.earHeightMetres / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
   const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
     ? tuning.wall.hearingRangeScale
     : 1;
-  const hearingRadius = noise.radiusMetres * zombie.hearing * wallScale;
+  const hearingRadius = noise.radiusMetres * actor.hearing * wallScale;
   if (distance <= hearingRadius) {
     return { tier: 'near', target: copy(noise.pos) };
   }
-  if (distance <= hearingRadius * zombie.hearingModel.farMultiplier) {
+  if (distance <= hearingRadius * actor.hearingModel.farMultiplier) {
     return {
       tier: 'far',
-      target: farBearingTarget({ def: zombie, from, source: noise.pos, blockSize, rng }),
+      target: farBearingTarget({ def: actor, from, source: noise.pos, blockSize, rng }),
     };
   }
   return undefined;
 };
 
 const seesPlayer = ({
-  def: zombie,
+  def: actor,
   from,
   facing,
   player,
@@ -1327,19 +1317,19 @@ const seesPlayer = ({
   const dir = unit(delta);
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
-  const inCone = dot >= Math.cos((zombie.sightCone * Math.PI) / 180);
+  const inCone = dot >= Math.cos((actor.sightCone * Math.PI) / 180);
   if (!inCone || metres <= 0) {
     return false;
   }
-  let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
+  let sightRange = actor.nightSight + (actor.sight - actor.nightSight) * sightBlend;
   const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
   const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
-  const lightSpotScale = zombie.lightSightScale ?? 1;
+  const lightSpotScale = actor.lightSightScale ?? 1;
   const maximumRange = Math.max(sightRange, player.lit ? player.lightSeenFrom * playerLightScale * lightSpotScale : 0);
   if (metres > maximumRange) {
     return false;
   }
-  const rayOrigin: Vec3 = [from[0], from[1] + zombie.eyeHeightMetres / blockSize, from[2]];
+  const rayOrigin: Vec3 = [from[0], from[1] + actor.eyeHeightMetres / blockSize, from[2]];
   const rayTarget: Vec3 = [player.pos[0], player.pos[1] + player.eyeHeightMetres / blockSize, player.pos[2]];
   const toTarget = sub(rayTarget, rayOrigin);
   const clear = raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
@@ -1352,7 +1342,7 @@ const seesPlayer = ({
 };
 
 const canSeeLight = ({
-  def: zombie,
+  def: actor,
   from,
   look,
   source,
@@ -1378,23 +1368,23 @@ const canSeeLight = ({
   const exposure = source.carried ? 'carried' : 'world';
   if (
     distance <= 0 ||
-    distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light) * (zombie.lightSightScale ?? 1)
+    distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light) * (actor.lightSightScale ?? 1)
   ) {
     return undefined;
   }
   const direction = unit(delta);
   const dot = Math.max(-1, Math.min(1, look[0] * direction[0] + look[2] * direction[2]));
-  if (dot < Math.cos((zombie.sightCone * Math.PI) / 180)) {
+  if (dot < Math.cos((actor.sightCone * Math.PI) / 180)) {
     return undefined;
   }
-  const origin: Vec3 = [from[0], from[1] + zombie.eyeHeightMetres / blockSize, from[2]];
+  const origin: Vec3 = [from[0], from[1] + actor.eyeHeightMetres / blockSize, from[2]];
   const target: Vec3 = [source.pos[0], source.pos[1] + source.heightMetres / blockSize, source.pos[2]];
   const ray = sub(target, origin);
   return raycast(origin, unit(ray), Math.hypot(...ray), isOpaque) === undefined ? distance : undefined;
 };
 
 const visibleLightTarget = ({
-  def: zombie,
+  def: actor,
   from,
   facing,
   player,
@@ -1419,7 +1409,7 @@ const visibleLightTarget = ({
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (const source of player.lightSources ?? []) {
     const distance = canSeeLight({
-      def: zombie,
+      def: actor,
       from,
       look,
       source,
@@ -1527,7 +1517,7 @@ type HordeSnapshot = Pick<HordeState, HordeSnapshotField> &
   Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
 
 type ActorSnapshotProjectors = {
-  [K in ActorSnapshotField]-?: (zombie: Actor) => ActorSnapshot[K];
+  [K in ActorSnapshotField]-?: (actor: Actor) => ActorSnapshot[K];
 } & Record<Exclude<keyof ActorState, ActorSnapshotField>, never>;
 
 interface HordeSnapshotInput {
@@ -1551,71 +1541,71 @@ const projectSnapshot = <Source extends object>(
   );
 
 const actorSnapshotProjectors = {
-  type: (zombie) => zombie.type.id,
-  hordeId: (zombie) => zombie.hordeId,
-  hordeOffset: (zombie) => (zombie.hordeOffset === undefined ? undefined : ([...zombie.hordeOffset] as Vec3)),
-  body: (zombie) => ({ ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] }),
-  facing: (zombie) => [...zombie.facing],
-  home: (zombie) => [...zombie.home],
-  mode: (zombie) => zombie.mode,
-  investigationTier: (zombie) => zombie.investigationTier,
-  behaviorRng: (zombie) => [...zombie.behaviorRng.state()] as RngState,
-  soundRng: (zombie) => [...zombie.soundRng.state()] as RngState,
-  dismemberRng: (zombie) => [...zombie.dismemberRng.state()] as RngState,
-  spitRng: (zombie) => [...zombie.spitRng.state()] as RngState,
-  idleSoundTimer: (zombie) => zombie.idleSoundTimer,
-  lastVocalNoiseId: (zombie) => zombie.lastVocalNoiseId ?? null,
-  modeTimer: (zombie) => zombie.modeTimer,
-  hesitationFrom: (zombie) => zombie.hesitationFrom,
-  refusedAt: (zombie) => zombie.refusedAt,
-  leanTarget: (zombie) => (zombie.leanTarget === undefined ? undefined : copy(zombie.leanTarget)),
-  searchAnchor: (zombie) => (zombie.searchAnchor === undefined ? undefined : [...zombie.searchAnchor]),
-  searchTimer: (zombie) => zombie.searchTimer,
-  searchStrolling: (zombie) => zombie.searchStrolling,
-  searchHeading: (zombie) => [...zombie.searchHeading],
-  strollHeading: (zombie) => [...zombie.strollHeading],
-  horizontalSpeed: (zombie) => zombie.horizontalSpeed,
-  obstacleWanderHeading: (zombie) =>
-    zombie.obstacleWanderHeading === undefined ? undefined : ([...zombie.obstacleWanderHeading] as Vec3),
-  obstacleWanderRemaining: (zombie) => zombie.obstacleWanderRemaining,
-  obstacleContact: (zombie) => zombie.obstacleContact,
-  obstacleSlideSide: (zombie) => zombie.obstacleSlideSide,
-  bodyLookTarget: (zombie) => zombie.bodyLookTarget,
-  headYaw: (zombie) => zombie.headYaw,
-  headYawTarget: (zombie) => zombie.headYawTarget,
-  lookTimer: (zombie) => zombie.lookTimer,
-  swayValue: (zombie) => zombie.swayValue,
-  swayStart: (zombie) => zombie.swayStart,
-  swayTarget: (zombie) => zombie.swayTarget,
-  swayElapsed: (zombie) => zombie.swayElapsed,
-  swayDuration: (zombie) => zombie.swayDuration,
-  lurchValue: (zombie) => zombie.lurchValue,
-  lurchStart: (zombie) => zombie.lurchStart,
-  lurchTarget: (zombie) => zombie.lurchTarget,
-  lurchElapsed: (zombie) => zombie.lurchElapsed,
-  lurchDuration: (zombie) => zombie.lurchDuration,
-  stumbleFactor: (zombie) => zombie.stumbleFactor,
-  stumbleElapsed: (zombie) => zombie.stumbleElapsed,
-  stumbleDuration: (zombie) => zombie.stumbleDuration,
-  regions: (zombie) => ({ ...zombie.regions }),
-  figureSeed: (zombie) => zombie.figureSeed,
-  incapacitated: (zombie) => zombie.incapacitated,
-  lastPerceived: (zombie) => (zombie.lastPerceived === undefined ? undefined : [...zombie.lastPerceived]),
-  stimulusAt: (zombie) => zombie.stimulusAt,
-  lastAlertAt: (zombie) => zombie.lastAlertAt,
-  attackWait: (zombie) => zombie.attackWait,
-  attackWindup: (zombie) => zombie.attackWindup,
-  spitWindup: (zombie) => zombie.spitWindup,
-  staggerSimSeconds: (zombie) => zombie.staggerSimSeconds,
-  spitWait: (zombie) => zombie.spitWait,
-  gaitPhase: (zombie) => zombie.gaitPhase,
-  footstepClock: (zombie) => ({ ...zombie.footstepClock }),
-  wanderClock: (zombie) => zombie.wanderClock,
-  stanceWeight: (zombie) => zombie.stanceWeight,
-  stepOffset: (zombie) => zombie.stepOffset,
-  hitFlinchTime: (zombie) => zombie.hitFlinchTime,
-  severed: (zombie) => [...zombie.severed],
-  carved: (zombie) => [...zombie.carved],
+  type: (actor) => actor.type.id,
+  hordeId: (actor) => actor.hordeId,
+  hordeOffset: (actor) => (actor.hordeOffset === undefined ? undefined : ([...actor.hordeOffset] as Vec3)),
+  body: (actor) => ({ ...actor.body, pos: [...actor.body.pos], vel: [...actor.body.vel] }),
+  facing: (actor) => [...actor.facing],
+  home: (actor) => [...actor.home],
+  mode: (actor) => actor.mode,
+  investigationTier: (actor) => actor.investigationTier,
+  behaviorRng: (actor) => [...actor.behaviorRng.state()] as RngState,
+  soundRng: (actor) => [...actor.soundRng.state()] as RngState,
+  dismemberRng: (actor) => [...actor.dismemberRng.state()] as RngState,
+  spitRng: (actor) => [...actor.spitRng.state()] as RngState,
+  idleSoundTimer: (actor) => actor.idleSoundTimer,
+  lastVocalNoiseId: (actor) => actor.lastVocalNoiseId ?? null,
+  modeTimer: (actor) => actor.modeTimer,
+  hesitationFrom: (actor) => actor.hesitationFrom,
+  refusedAt: (actor) => actor.refusedAt,
+  leanTarget: (actor) => (actor.leanTarget === undefined ? undefined : copy(actor.leanTarget)),
+  searchAnchor: (actor) => (actor.searchAnchor === undefined ? undefined : [...actor.searchAnchor]),
+  searchTimer: (actor) => actor.searchTimer,
+  searchStrolling: (actor) => actor.searchStrolling,
+  searchHeading: (actor) => [...actor.searchHeading],
+  strollHeading: (actor) => [...actor.strollHeading],
+  horizontalSpeed: (actor) => actor.horizontalSpeed,
+  obstacleWanderHeading: (actor) =>
+    actor.obstacleWanderHeading === undefined ? undefined : ([...actor.obstacleWanderHeading] as Vec3),
+  obstacleWanderRemaining: (actor) => actor.obstacleWanderRemaining,
+  obstacleContact: (actor) => actor.obstacleContact,
+  obstacleSlideSide: (actor) => actor.obstacleSlideSide,
+  bodyLookTarget: (actor) => actor.bodyLookTarget,
+  headYaw: (actor) => actor.headYaw,
+  headYawTarget: (actor) => actor.headYawTarget,
+  lookTimer: (actor) => actor.lookTimer,
+  swayValue: (actor) => actor.swayValue,
+  swayStart: (actor) => actor.swayStart,
+  swayTarget: (actor) => actor.swayTarget,
+  swayElapsed: (actor) => actor.swayElapsed,
+  swayDuration: (actor) => actor.swayDuration,
+  lurchValue: (actor) => actor.lurchValue,
+  lurchStart: (actor) => actor.lurchStart,
+  lurchTarget: (actor) => actor.lurchTarget,
+  lurchElapsed: (actor) => actor.lurchElapsed,
+  lurchDuration: (actor) => actor.lurchDuration,
+  stumbleFactor: (actor) => actor.stumbleFactor,
+  stumbleElapsed: (actor) => actor.stumbleElapsed,
+  stumbleDuration: (actor) => actor.stumbleDuration,
+  regions: (actor) => ({ ...actor.regions }),
+  figureSeed: (actor) => actor.figureSeed,
+  incapacitated: (actor) => actor.incapacitated,
+  lastPerceived: (actor) => (actor.lastPerceived === undefined ? undefined : [...actor.lastPerceived]),
+  stimulusAt: (actor) => actor.stimulusAt,
+  lastAlertAt: (actor) => actor.lastAlertAt,
+  attackWait: (actor) => actor.attackWait,
+  attackWindup: (actor) => actor.attackWindup,
+  spitWindup: (actor) => actor.spitWindup,
+  staggerSimSeconds: (actor) => actor.staggerSimSeconds,
+  spitWait: (actor) => actor.spitWait,
+  gaitPhase: (actor) => actor.gaitPhase,
+  footstepClock: (actor) => ({ ...actor.footstepClock }),
+  wanderClock: (actor) => actor.wanderClock,
+  stanceWeight: (actor) => actor.stanceWeight,
+  stepOffset: (actor) => actor.stepOffset,
+  hitFlinchTime: (actor) => actor.hitFlinchTime,
+  severed: (actor) => [...actor.severed],
+  carved: (actor) => [...actor.carved],
 } satisfies ActorSnapshotProjectors;
 
 const hordeSnapshotProjectors = {
@@ -1630,9 +1620,9 @@ const hordeSnapshotProjectors = {
   rng: ({ rng }) => [...rng.state()] as RngState,
 } satisfies HordeSnapshotProjectors;
 
-const snapshotActor = (id: number, zombie: Actor): { id: number; actor: ActorSnapshot } => ({
+const snapshotActor = (id: number, actor: Actor): { id: number; actor: ActorSnapshot } => ({
   id,
-  actor: projectSnapshot(zombie, actorSnapshotProjectors) as ActorSnapshot,
+  actor: projectSnapshot(actor, actorSnapshotProjectors) as ActorSnapshot,
 });
 
 const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
@@ -1718,17 +1708,17 @@ export class ActorSystem {
   private colliderOf(body: Body): FusedMassCollider | undefined {
     let collider = this.shapes.get(body);
     if (collider === undefined) {
-      const zombie = [...this.store.entries()].find(([, candidate]) => candidate.body === body)?.[1];
+      const actor = [...this.store.entries()].find(([, candidate]) => candidate.body === body)?.[1];
       collider =
-        zombie?.type.model === 'fused-mass'
+        actor?.type.model === 'fused-mass'
           ? {
-              zombie,
+              zombie: actor,
               shape: new FusedMassShape(
-                fusedMassFigureForType(zombie.type, zombie.figureSeed),
+                fusedMassFigureForType(actor.type, actor.figureSeed),
                 this.options.blockSize,
                 this.solidBricks,
               ),
-              facing: copy(zombie.facing),
+              facing: copy(actor.facing),
             }
           : null;
       this.shapes.set(body, collider);
@@ -1736,20 +1726,20 @@ export class ActorSystem {
     if (!collider) {
       return undefined;
     }
-    const { zombie, shape } = collider;
-    shape.keep(zombie.carved, zombie.severed.length, () => this.missingFor(zombie));
-    shape.face(zombie.facing);
+    const { zombie: actor, shape } = collider;
+    shape.keep(actor.carved, actor.severed.length, () => this.missingFor(actor));
+    shape.face(actor.facing);
     return collider;
   }
 
   /** The flesh an amalgam has lost, rebuilt only when its holes or severed members change. */
-  private missingFor(zombie: Actor): MissingFlesh {
-    const cached = this.missing.get(zombie);
-    if (cached && cached.carved === zombie.carved && cached.severed === zombie.severed.length) {
+  private missingFor(actor: Actor): MissingFlesh {
+    const cached = this.missing.get(actor);
+    if (cached && cached.carved === actor.carved && cached.severed === actor.severed.length) {
       return cached.missing;
     }
-    const missing = missingFlesh(fusedMassFigureForType(zombie.type, zombie.figureSeed), zombie);
-    this.missing.set(zombie, { carved: zombie.carved, severed: zombie.severed.length, missing });
+    const missing = missingFlesh(fusedMassFigureForType(actor.type, actor.figureSeed), actor);
+    this.missing.set(actor, { carved: actor.carved, severed: actor.severed.length, missing });
     return missing;
   }
 
@@ -1759,36 +1749,36 @@ export class ActorSystem {
    * it doesn't also move back into what it was pushed off. When no push as far as the turn moved its flesh
    * frees it, it keeps the last facing that was clear. If both overlap (it started in terrain), the turn stands.
    */
-  private settleTurn(zombie: Actor): void {
-    const collider = this.colliderOf(zombie.body);
+  private settleTurn(actor: Actor): void {
+    const collider = this.colliderOf(actor.body);
     if (!collider) {
       return;
     }
     const { facing, shape } = collider;
-    if (zombie.facing[0] === facing[0] && zombie.facing[1] === facing[1] && zombie.facing[2] === facing[2]) {
+    if (actor.facing[0] === facing[0] && actor.facing[1] === facing[1] && actor.facing[2] === facing[2]) {
       return;
     }
-    const { pos } = zombie.body;
+    const { pos } = actor.body;
     if (shape.overlapsTerrain(pos)) {
       shape.face(facing);
       const wasClear = !shape.overlapsTerrain(pos);
-      shape.face(zombie.facing);
-      const turn = Math.abs(wrapAngle(angleOf(zombie.facing) - angleOf(facing)));
-      if (wasClear && !pushTurn(zombie.body, shape, turn)) {
+      shape.face(actor.facing);
+      const turn = Math.abs(wrapAngle(angleOf(actor.facing) - angleOf(facing)));
+      if (wasClear && !pushTurn(actor.body, shape, turn)) {
         shape.face(facing);
-        zombie.facing = copy(facing);
+        actor.facing = copy(facing);
         return;
       }
     }
-    collider.facing = copy(zombie.facing);
+    collider.facing = copy(actor.facing);
   }
   /**
    * Whether an amalgam's step this tick could change nothing, so its shape tests are skipped: it rests on
    * the ground where it last came to rest, neither moving nor turning, and no solid block has changed.
    */
-  private restsStill(zombie: Actor): boolean {
-    const rest = this.colliderOf(zombie.body)?.rest;
-    const { body, facing } = zombie;
+  private restsStill(actor: Actor): boolean {
+    const rest = this.colliderOf(actor.body)?.rest;
+    const { body, facing } = actor;
     if (
       !(rest && body.onGround) ||
       body.vel[0] !== 0 ||
@@ -1804,11 +1794,11 @@ export class ActorSystem {
     return true;
   }
 
-  private noteRest(zombie: Actor): void {
-    const collider = this.colliderOf(zombie.body);
+  private noteRest(actor: Actor): void {
+    const collider = this.colliderOf(actor.body);
     if (collider) {
-      collider.rest = zombie.body.onGround
-        ? { pos: copy(zombie.body.pos), facing: copy(zombie.facing), version: this.solidBricks.version }
+      collider.rest = actor.body.onGround
+        ? { pos: copy(actor.body.pos), facing: copy(actor.facing), version: this.solidBricks.version }
         : undefined;
     }
   }
@@ -1824,22 +1814,22 @@ export class ActorSystem {
     }
     this.frozen = frozen;
     if (frozen) {
-      for (const [, zombie] of this.store.entries()) {
-        this.captureRenderPrevious(zombie);
-        if (!zombie.incapacitated) {
-          zombie.attackWindup = 0;
-          zombie.spitWindup = 0;
+      for (const [, actor] of this.store.entries()) {
+        this.captureRenderPrevious(actor);
+        if (!actor.incapacitated) {
+          actor.attackWindup = 0;
+          actor.spitWindup = 0;
         }
       }
     }
   }
 
-  private captureRenderPrevious(zombie: Actor, time?: number): void {
-    zombie.renderPrevious = {
-      pos: copy(zombie.body.pos),
-      facing: copy(zombie.facing),
-      headYaw: zombie.headYaw,
-      gaitPhase: zombie.gaitPhase,
+  private captureRenderPrevious(actor: Actor, time?: number): void {
+    actor.renderPrevious = {
+      pos: copy(actor.body.pos),
+      facing: copy(actor.facing),
+      headYaw: actor.headYaw,
+      gaitPhase: actor.gaitPhase,
       ...(time === undefined ? {} : { time }),
     };
   }
@@ -1848,7 +1838,7 @@ export class ActorSystem {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
       nextPuddleId: this.nextPuddleId,
-      actors: [...this.store.entries()].map(([id, zombie]) => snapshotActor(id, zombie)),
+      actors: [...this.store.entries()].map(([id, actor]) => snapshotActor(id, actor)),
       hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
       acidGlobs: this.globs.map(({ state }) => ({ ...state, pos: [...state.pos], velocity: [...state.velocity] })),
       acidPuddles: this.puddles.map(({ state }) => ({ ...state, pos: [...state.pos] })),
@@ -1911,46 +1901,46 @@ export class ActorSystem {
     });
     const entries = state.actors.map(
       // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted zombie invariant before mutating the entity store.
-      ({ id, actor: zombie }) => {
+      ({ id, actor }) => {
         if (
           !Number.isSafeInteger(id) ||
           id < 1 ||
-          !validRngState(zombie.behaviorRng) ||
-          !validRngState(zombie.soundRng) ||
-          !validRngState(zombie.dismemberRng) ||
-          !validRngState(zombie.spitRng) ||
-          !validSpitTimers(zombie) ||
-          !validStaggerTime(zombie) ||
-          !Number.isFinite(zombie.idleSoundTimer) ||
-          zombie.idleSoundTimer < 0 ||
-          !validZombieEventState(zombie) ||
-          !validHordeMemberState(zombie) ||
-          !Number.isSafeInteger(zombie.figureSeed) ||
-          !validHitFlinchTime(zombie.hitFlinchTime) ||
-          !validStanceWeight(zombie.stanceWeight) ||
-          !validStepOffset(zombie.stepOffset) ||
-          !validObstacleWanderState(zombie) ||
-          typeof zombie.incapacitated !== 'boolean'
+          !validRngState(actor.behaviorRng) ||
+          !validRngState(actor.soundRng) ||
+          !validRngState(actor.dismemberRng) ||
+          !validRngState(actor.spitRng) ||
+          !validSpitTimers(actor) ||
+          !validStaggerTime(actor) ||
+          !Number.isFinite(actor.idleSoundTimer) ||
+          actor.idleSoundTimer < 0 ||
+          !validActorEventState(actor) ||
+          !validHordeMemberState(actor) ||
+          !Number.isSafeInteger(actor.figureSeed) ||
+          !validHitFlinchTime(actor.hitFlinchTime) ||
+          !validStanceWeight(actor.stanceWeight) ||
+          !validStepOffset(actor.stepOffset) ||
+          !validObstacleWanderState(actor) ||
+          typeof actor.incapacitated !== 'boolean'
         ) {
           throw new Error(`Invalid zombie state for entity ${id}`);
         }
-        const type = resolveType(zombie.type);
+        const type = resolveType(actor.type);
         if (!type) {
-          throw new Error(`Missing zombie type ${zombie.type}`);
+          throw new Error(`Missing zombie type ${actor.type}`);
         }
-        if (type.model === 'fused-mass' && zombie.figureSeed !== FUSED_MASS_FIGURE_SEED) {
+        if (type.model === 'fused-mass' && actor.figureSeed !== FUSED_MASS_FIGURE_SEED) {
           throw new Error(`Invalid amalgam figure seed for entity ${id}`);
         }
-        if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(zombie.figureSeed)) {
+        if (type.model !== 'fused-mass' && !requiredFigureSeeds(type).includes(actor.figureSeed)) {
           throw new Error(`Invalid zombie state for entity ${id}`);
         }
-        const expectedRegions = actorRegionsFor(type, zombie.figureSeed);
+        const expectedRegions = actorRegionsFor(type, actor.figureSeed);
         const expectedRegionIds = Object.keys(expectedRegions);
         if (
-          !zombie.regions ||
-          Object.keys(zombie.regions).length !== expectedRegionIds.length ||
+          !actor.regions ||
+          Object.keys(actor.regions).length !== expectedRegionIds.length ||
           expectedRegionIds.some((region) => {
-            const health = zombie.regions[region];
+            const health = actor.regions[region];
             return !Number.isFinite(health) || health! < 0 || health! > expectedRegions[region]!;
           })
         ) {
@@ -1958,66 +1948,66 @@ export class ActorSystem {
         }
         if (type.model === 'fused-mass') {
           const envelope = fusedMassCollisionEnvelope(
-            fusedMassFigureForType(type, zombie.figureSeed),
+            fusedMassFigureForType(type, actor.figureSeed),
             this.options.blockSize,
           );
           if (
-            zombie.body.halfWidth !== envelope.halfWidth ||
-            zombie.body.halfDepth !== envelope.halfDepth ||
-            zombie.body.height !== envelope.height
+            actor.body.halfWidth !== envelope.halfWidth ||
+            actor.body.halfDepth !== envelope.halfDepth ||
+            actor.body.height !== envelope.height
           ) {
             throw new Error(`Invalid amalgam collision envelope for entity ${id}`);
           }
           const validParts = new Set(
-            fusedMassFigureForType(type, zombie.figureSeed)
+            fusedMassFigureForType(type, actor.figureSeed)
               .manifest.parts.filter((part) => part.severable)
               .map((part) => part.id),
           );
           if (
-            new Set(zombie.severed).size !== zombie.severed.length ||
-            zombie.severed.some((part) => !validParts.has(part))
+            new Set(actor.severed).size !== actor.severed.length ||
+            actor.severed.some((part) => !validParts.has(part))
           ) {
             throw new Error(`Invalid amalgam severed parts for entity ${id}`);
           }
         }
-        if (!validCarvedCells(type, zombie.figureSeed, zombie.carved)) {
+        if (!validCarvedCells(type, actor.figureSeed, actor.carved)) {
           throw new Error(`Invalid carved cells for entity ${id}`);
         }
-        if (zombie.spitWindup > 0 && type.acidSpit === undefined) {
+        if (actor.spitWindup > 0 && type.acidSpit === undefined) {
           throw new Error(`Invalid acid spit state for entity ${id}`);
         }
-        const { type: _type, behaviorRng, soundRng, dismemberRng, spitRng, lastVocalNoiseId, ...fields } = zombie;
+        const { type: _type, behaviorRng, soundRng, dismemberRng, spitRng, lastVocalNoiseId, ...fields } = actor;
         const restored: Actor = {
           ...fields,
           type,
           modifiers: [],
-          regions: { ...zombie.regions },
+          regions: { ...actor.regions },
           behaviorRng: new Rng(behaviorRng),
           soundRng: new Rng(soundRng),
           dismemberRng: new Rng(dismemberRng),
           spitRng: new Rng(spitRng),
           lastVocalNoiseId: lastVocalNoiseId ?? undefined,
-          footstepClock: { ...zombie.footstepClock },
-          body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
-          facing: [...zombie.facing],
-          home: [...zombie.home],
-          ...(zombie.searchAnchor === undefined ? {} : { searchAnchor: [...zombie.searchAnchor] }),
-          searchHeading: [...zombie.searchHeading],
-          strollHeading: [...zombie.strollHeading],
-          ...(zombie.obstacleWanderHeading === undefined
+          footstepClock: { ...actor.footstepClock },
+          body: { ...actor.body, pos: [...actor.body.pos], vel: [...actor.body.vel] },
+          facing: [...actor.facing],
+          home: [...actor.home],
+          ...(actor.searchAnchor === undefined ? {} : { searchAnchor: [...actor.searchAnchor] }),
+          searchHeading: [...actor.searchHeading],
+          strollHeading: [...actor.strollHeading],
+          ...(actor.obstacleWanderHeading === undefined
             ? {}
-            : { obstacleWanderHeading: [...zombie.obstacleWanderHeading] as Vec3 }),
-          ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
-          ...(zombie.lastPerceived === undefined ? {} : { lastPerceived: [...zombie.lastPerceived] }),
-          tier: this.tierAt(zombie.body.pos, this.options.player()),
+            : { obstacleWanderHeading: [...actor.obstacleWanderHeading] as Vec3 }),
+          ...(actor.hordeOffset === undefined ? {} : { hordeOffset: [...actor.hordeOffset] as Vec3 }),
+          ...(actor.lastPerceived === undefined ? {} : { lastPerceived: [...actor.lastPerceived] }),
+          tier: this.tierAt(actor.body.pos, this.options.player()),
           renderPrevious: {
-            pos: [...zombie.body.pos],
-            facing: [...zombie.facing],
-            headYaw: zombie.headYaw,
-            gaitPhase: zombie.gaitPhase,
+            pos: [...actor.body.pos],
+            facing: [...actor.facing],
+            headYaw: actor.headYaw,
+            gaitPhase: actor.gaitPhase,
           },
-          severed: [...zombie.severed],
-          carved: [...zombie.carved],
+          severed: [...actor.severed],
+          carved: [...actor.carved],
         };
         return [id, restored] as const;
       },
@@ -2045,67 +2035,67 @@ export class ActorSystem {
         rng: new Rng(horde.rng),
       });
     }
-    for (const [, zombie] of this.store.entries()) {
-      if (zombie.hordeId !== undefined) {
-        const horde = this.hordes.get(zombie.hordeId)?.state;
-        if (!horde || horde.type !== zombie.type.id) {
-          throw new Error(`Missing or mismatched horde ${zombie.hordeId} for zombie`);
+    for (const [, actor] of this.store.entries()) {
+      if (actor.hordeId !== undefined) {
+        const horde = this.hordes.get(actor.hordeId)?.state;
+        if (!horde || horde.type !== actor.type.id) {
+          throw new Error(`Missing or mismatched horde ${actor.hordeId} for zombie`);
         }
       }
     }
   }
 
-  private tickLookAround(zombie: Actor, dt: number): void {
-    const { type, behaviorRng: rng } = zombie;
-    zombie.lookTimer -= dt;
-    if (zombie.lookTimer <= 0) {
-      zombie.bodyLookTarget =
-        angleOf(zombie.facing) +
+  private tickLookAround(actor: Actor, dt: number): void {
+    const { type, behaviorRng: rng } = actor;
+    actor.lookTimer -= dt;
+    if (actor.lookTimer <= 0) {
+      actor.bodyLookTarget =
+        angleOf(actor.facing) +
         rng.range(-type.wander.bodyLookArcDegrees, type.wander.bodyLookArcDegrees) * 0.5 * (Math.PI / 180);
-      zombie.headYawTarget =
+      actor.headYawTarget =
         rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
-      zombie.lookTimer = inRange(rng, type.wander.lookIntervalSimSeconds);
+      actor.lookTimer = inRange(rng, type.wander.lookIntervalSimSeconds);
     }
-    zombie.facing = turnToward(
-      zombie.facing,
-      headingAt(zombie.bodyLookTarget),
+    actor.facing = turnToward(
+      actor.facing,
+      headingAt(actor.bodyLookTarget),
       (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
     );
-    zombie.headYaw = approachAngle(
-      zombie.headYaw,
-      zombie.headYawTarget,
+    actor.headYaw = approachAngle(
+      actor.headYaw,
+      actor.headYawTarget,
       (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
     );
   }
 
-  private beginIdle(zombie: Actor): void {
-    zombie.mode = 'idle';
-    zombie.investigationTier = undefined;
-    zombie.searchAnchor = undefined;
-    zombie.searchTimer = 0;
-    zombie.searchStrolling = false;
-    zombie.modeTimer = inRange(zombie.behaviorRng, zombie.type.wander.idleSimSeconds);
-    zombie.lookTimer = 0;
-    zombie.bodyLookTarget = angleOf(zombie.facing);
-    zombie.headYawTarget = 0;
-    zombie.horizontalSpeed = 0;
-    zombie.body.vel[0] = 0;
-    zombie.body.vel[2] = 0;
+  private beginIdle(actor: Actor): void {
+    actor.mode = 'idle';
+    actor.investigationTier = undefined;
+    actor.searchAnchor = undefined;
+    actor.searchTimer = 0;
+    actor.searchStrolling = false;
+    actor.modeTimer = inRange(actor.behaviorRng, actor.type.wander.idleSimSeconds);
+    actor.lookTimer = 0;
+    actor.bodyLookTarget = angleOf(actor.facing);
+    actor.headYawTarget = 0;
+    actor.horizontalSpeed = 0;
+    actor.body.vel[0] = 0;
+    actor.body.vel[2] = 0;
   }
 
-  private beginStroll(zombie: Actor): void {
-    const { type, body, home, behaviorRng } = zombie;
+  private beginStroll(actor: Actor): void {
+    const { type, body, home, behaviorRng } = actor;
     const duration = inRange(behaviorRng, type.wander.strollSimSeconds);
     let heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
-    if (zombie.leanTarget) {
-      const toward = unit(sub(zombie.leanTarget, body.pos));
+    if (actor.leanTarget) {
+      const toward = unit(sub(actor.leanTarget, body.pos));
       const weight = type.hearingModel.refusalLean;
       heading = unit([
         heading[0] * (1 - weight) + toward[0] * weight,
         0,
         heading[2] * (1 - weight) + toward[2] * weight,
       ]);
-      zombie.leanTarget = undefined;
+      actor.leanTarget = undefined;
     }
     const endpoint: Vec3 = [
       body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
@@ -2118,40 +2108,40 @@ export class ActorSystem {
     if (Math.hypot(...heading) === 0) {
       heading = headingAt(behaviorRng.range(-Math.PI, Math.PI));
     }
-    zombie.mode = 'stroll';
-    zombie.investigationTier = undefined;
-    zombie.searchAnchor = undefined;
-    zombie.searchTimer = 0;
-    zombie.searchStrolling = false;
-    zombie.modeTimer = duration;
-    zombie.strollHeading = heading;
-    zombie.bodyLookTarget = angleOf(heading);
-    zombie.headYawTarget = 0;
+    actor.mode = 'stroll';
+    actor.investigationTier = undefined;
+    actor.searchAnchor = undefined;
+    actor.searchTimer = 0;
+    actor.searchStrolling = false;
+    actor.modeTimer = duration;
+    actor.strollHeading = heading;
+    actor.bodyLookTarget = angleOf(heading);
+    actor.headYawTarget = 0;
   }
 
-  private beginSearch(zombie: Actor): void {
-    const { type, behaviorRng: rng } = zombie;
-    zombie.mode = 'search';
-    zombie.investigationTier = undefined;
-    zombie.searchAnchor = copy(zombie.lastPerceived ?? zombie.body.pos);
-    zombie.searchTimer = inRange(rng, type.hearingModel.searchSimSeconds);
-    zombie.searchStrolling = false;
-    zombie.searchHeading = copy(zombie.facing);
-    zombie.modeTimer = inRange(rng, type.wander.idleSimSeconds);
-    zombie.lookTimer = 0;
-    zombie.bodyLookTarget = angleOf(zombie.facing);
-    zombie.headYawTarget = 0;
-    zombie.horizontalSpeed = 0;
-    zombie.body.vel[0] = 0;
-    zombie.body.vel[2] = 0;
+  private beginSearch(actor: Actor): void {
+    const { type, behaviorRng: rng } = actor;
+    actor.mode = 'search';
+    actor.investigationTier = undefined;
+    actor.searchAnchor = copy(actor.lastPerceived ?? actor.body.pos);
+    actor.searchTimer = inRange(rng, type.hearingModel.searchSimSeconds);
+    actor.searchStrolling = false;
+    actor.searchHeading = copy(actor.facing);
+    actor.modeTimer = inRange(rng, type.wander.idleSimSeconds);
+    actor.lookTimer = 0;
+    actor.bodyLookTarget = angleOf(actor.facing);
+    actor.headYawTarget = 0;
+    actor.horizontalSpeed = 0;
+    actor.body.vel[0] = 0;
+    actor.body.vel[2] = 0;
   }
 
-  private beginSearchStroll(zombie: Actor): void {
-    const { type, body, searchAnchor, behaviorRng: rng } = zombie;
+  private beginSearchStroll(actor: Actor): void {
+    const { type, body, searchAnchor, behaviorRng: rng } = actor;
     if (!searchAnchor) {
       return;
     }
-    const duration = Math.min(inRange(rng, type.hearingModel.searchStrollSimSeconds), zombie.searchTimer);
+    const duration = Math.min(inRange(rng, type.hearingModel.searchStrollSimSeconds), actor.searchTimer);
     let heading = headingAt(rng.range(-Math.PI, Math.PI));
     const endpoint: Vec3 = [
       body.pos[0] + (heading[0] * type.speed.wanderMetresPerSimSecond * duration) / this.options.blockSize,
@@ -2164,61 +2154,57 @@ export class ActorSystem {
     if (Math.hypot(...heading) === 0) {
       heading = headingAt(rng.range(-Math.PI, Math.PI));
     }
-    zombie.searchStrolling = true;
-    zombie.searchHeading = heading;
-    zombie.modeTimer = duration;
-    zombie.bodyLookTarget = angleOf(heading);
-    zombie.headYawTarget = 0;
+    actor.searchStrolling = true;
+    actor.searchHeading = heading;
+    actor.modeTimer = duration;
+    actor.bodyLookTarget = angleOf(heading);
+    actor.headYawTarget = 0;
   }
 
-  private stepChaseMotion(zombie: Actor, dt: number): { sway: number; speedFactor: number } {
-    const { chaseMotion } = zombie.type;
-    const rng = zombie.behaviorRng;
-    if (zombie.swayDuration === 0 || zombie.swayElapsed >= zombie.swayDuration) {
-      zombie.swayStart = zombie.swayValue;
-      zombie.swayTarget = rng.range(-chaseMotion.swayDegrees, chaseMotion.swayDegrees);
-      zombie.swayDuration = inRange(rng, chaseMotion.swayIntervalSimSeconds);
-      zombie.swayElapsed = 0;
+  private stepChaseMotion(actor: Actor, dt: number): { sway: number; speedFactor: number } {
+    const { chaseMotion } = actor.type;
+    const rng = actor.behaviorRng;
+    if (actor.swayDuration === 0 || actor.swayElapsed >= actor.swayDuration) {
+      actor.swayStart = actor.swayValue;
+      actor.swayTarget = rng.range(-chaseMotion.swayDegrees, chaseMotion.swayDegrees);
+      actor.swayDuration = inRange(rng, chaseMotion.swayIntervalSimSeconds);
+      actor.swayElapsed = 0;
     } else {
-      zombie.swayElapsed = Math.min(zombie.swayDuration, zombie.swayElapsed + dt);
+      actor.swayElapsed = Math.min(actor.swayDuration, actor.swayElapsed + dt);
     }
-    zombie.swayValue = lerp(zombie.swayStart, zombie.swayTarget, smooth01(zombie.swayElapsed / zombie.swayDuration));
+    actor.swayValue = lerp(actor.swayStart, actor.swayTarget, smooth01(actor.swayElapsed / actor.swayDuration));
 
-    if (zombie.lurchDuration === 0 || zombie.lurchElapsed >= zombie.lurchDuration) {
-      zombie.lurchStart = zombie.lurchValue;
-      zombie.lurchTarget = inRange(rng, chaseMotion.speedMultiplier);
-      zombie.lurchDuration = chaseMotion.lurchSimSeconds;
-      zombie.lurchElapsed = 0;
+    if (actor.lurchDuration === 0 || actor.lurchElapsed >= actor.lurchDuration) {
+      actor.lurchStart = actor.lurchValue;
+      actor.lurchTarget = inRange(rng, chaseMotion.speedMultiplier);
+      actor.lurchDuration = chaseMotion.lurchSimSeconds;
+      actor.lurchElapsed = 0;
     } else {
-      zombie.lurchElapsed = Math.min(zombie.lurchDuration, zombie.lurchElapsed + dt);
+      actor.lurchElapsed = Math.min(actor.lurchDuration, actor.lurchElapsed + dt);
     }
-    zombie.lurchValue = lerp(
-      zombie.lurchStart,
-      zombie.lurchTarget,
-      smooth01(zombie.lurchElapsed / zombie.lurchDuration),
-    );
+    actor.lurchValue = lerp(actor.lurchStart, actor.lurchTarget, smooth01(actor.lurchElapsed / actor.lurchDuration));
 
-    if (zombie.stumbleDuration === 0 && rng.chance(chaseMotion.stumbleChancePerSimSecond * dt)) {
-      zombie.stumbleDuration = inRange(rng, chaseMotion.stumbleDurationSimSeconds);
-      zombie.stumbleElapsed = 0;
+    if (actor.stumbleDuration === 0 && rng.chance(chaseMotion.stumbleChancePerSimSecond * dt)) {
+      actor.stumbleDuration = inRange(rng, chaseMotion.stumbleDurationSimSeconds);
+      actor.stumbleElapsed = 0;
     }
-    if (zombie.stumbleDuration > 0) {
-      zombie.stumbleElapsed = Math.min(zombie.stumbleDuration, zombie.stumbleElapsed + dt);
-      const entering = smooth01(Math.min(1, zombie.stumbleElapsed / chaseMotion.stumbleEaseSimSeconds));
+    if (actor.stumbleDuration > 0) {
+      actor.stumbleElapsed = Math.min(actor.stumbleDuration, actor.stumbleElapsed + dt);
+      const entering = smooth01(Math.min(1, actor.stumbleElapsed / chaseMotion.stumbleEaseSimSeconds));
       const leaving = smooth01(
-        Math.min(1, (zombie.stumbleDuration - zombie.stumbleElapsed) / chaseMotion.stumbleEaseSimSeconds),
+        Math.min(1, (actor.stumbleDuration - actor.stumbleElapsed) / chaseMotion.stumbleEaseSimSeconds),
       );
       const depth = Math.min(entering, leaving);
-      zombie.stumbleFactor = 1 - depth * (1 - chaseMotion.stumbleSpeedFraction);
-      if (zombie.stumbleElapsed >= zombie.stumbleDuration) {
-        zombie.stumbleDuration = 0;
-        zombie.stumbleElapsed = 0;
-        zombie.stumbleFactor = 1;
+      actor.stumbleFactor = 1 - depth * (1 - chaseMotion.stumbleSpeedFraction);
+      if (actor.stumbleElapsed >= actor.stumbleDuration) {
+        actor.stumbleDuration = 0;
+        actor.stumbleElapsed = 0;
+        actor.stumbleFactor = 1;
       }
     }
     return {
-      sway: zombie.swayValue * (Math.PI / 180),
-      speedFactor: zombie.lurchValue * zombie.stumbleFactor,
+      sway: actor.swayValue * (Math.PI / 180),
+      speedFactor: actor.lurchValue * actor.stumbleFactor,
     };
   }
 
@@ -2234,7 +2220,7 @@ export class ActorSystem {
             )
           ]!;
     const dimensions = actorBodyDimensions(type, this.options.blockSize);
-    const zombie: Actor = {
+    const actor: Actor = {
       type,
       modifiers: [],
       tier: this.tierAt(position, this.options.player()),
@@ -2298,14 +2284,14 @@ export class ActorSystem {
       severed: [],
       carved: [],
     };
-    const id = this.store.add(zombie);
+    const id = this.store.add(actor);
     // EntityStore ids are stable within the world's entity lifetime.
-    zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
-    zombie.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
-    zombie.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
-    zombie.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
-    zombie.idleSoundTimer = inRange(zombie.soundRng, zombie.type.idleSound.intervalSimSeconds);
-    this.beginIdle(zombie);
+    actor.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
+    actor.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
+    actor.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
+    actor.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
+    actor.idleSoundTimer = inRange(actor.soundRng, actor.type.idleSound.intervalSimSeconds);
+    this.beginIdle(actor);
     return id;
   }
 
@@ -2352,12 +2338,12 @@ export class ActorSystem {
   }
 
   private tickFrozen(dt: number, entries: readonly (readonly [EntityId, Actor])[] = [...this.store.entries()]): void {
-    for (const [, zombie] of entries) {
-      this.captureRenderPrevious(zombie);
-      if (!zombie.incapacitated) {
+    for (const [, actor] of entries) {
+      this.captureRenderPrevious(actor);
+      if (!actor.incapacitated) {
         continue;
       }
-      this.tickIncapacitated(zombie, dt);
+      this.tickIncapacitated(actor, dt);
     }
   }
 
@@ -2373,37 +2359,37 @@ export class ActorSystem {
 
   private classifyTiers(player: PlayerSense): readonly (readonly [EntityId, Actor])[] {
     const entries = [...this.store.entries()];
-    for (const [, zombie] of entries) {
-      zombie.tier = this.tierAt(zombie.body.pos, player);
+    for (const [, actor] of entries) {
+      actor.tier = this.tierAt(actor.body.pos, player);
     }
     return entries;
   }
 
   private hordeCenter(id: string): Vec3 | undefined {
-    const members = [...this.store.entries()].flatMap(([, zombie]) => (zombie.hordeId === id ? [zombie] : []));
+    const members = [...this.store.entries()].flatMap(([, actor]) => (actor.hordeId === id ? [actor] : []));
     if (members.length === 0) {
       return undefined;
     }
     return members.reduce<Vec3>(
-      (sum, zombie) => [
-        sum[0] + zombie.body.pos[0] / members.length,
-        sum[1] + zombie.body.pos[1] / members.length,
-        sum[2] + zombie.body.pos[2] / members.length,
+      (sum, actor) => [
+        sum[0] + actor.body.pos[0] / members.length,
+        sum[1] + actor.body.pos[1] / members.length,
+        sum[2] + actor.body.pos[2] / members.length,
       ],
       [0, 0, 0],
     );
   }
 
-  private hordeTarget(zombie: Actor): Vec3 | undefined {
-    if (zombie.hordeId === undefined || zombie.hordeOffset === undefined) {
+  private hordeTarget(actor: Actor): Vec3 | undefined {
+    if (actor.hordeId === undefined || actor.hordeOffset === undefined) {
       return undefined;
     }
-    const horde = this.hordes.get(zombie.hordeId)?.state;
+    const horde = this.hordes.get(actor.hordeId)?.state;
     return horde
       ? [
-          horde.target[0] + zombie.hordeOffset[0],
-          horde.target[1] + zombie.hordeOffset[1],
-          horde.target[2] + zombie.hordeOffset[2],
+          horde.target[0] + actor.hordeOffset[0],
+          horde.target[1] + actor.hordeOffset[1],
+          horde.target[2] + actor.hordeOffset[2],
         ]
       : undefined;
   }
@@ -2414,7 +2400,7 @@ export class ActorSystem {
     const isSolid = this.options.isSoundBlocking ?? this.options.isSolid;
     for (const { state: horde, rng } of this.hordes.values()) {
       const center = this.hordeCenter(horde.id);
-      const member = [...this.store.entries()].find(([, zombie]) => zombie.hordeId === horde.id)?.[1];
+      const member = [...this.store.entries()].find(([, actor]) => actor.hordeId === horde.id)?.[1];
       if (!(center && member)) {
         continue;
       }
@@ -2493,56 +2479,56 @@ export class ActorSystem {
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
     const entries = [...this.store.entries()].filter(
-      ([id, zombie]) => zombie.tier === 'background' && id % sliceCount === sliceIndex,
+      ([id, actor]) => actor.tier === 'background' && id % sliceCount === sliceIndex,
     );
     this.indexIdleSoundDensity();
-    for (const [id, zombie] of entries) {
-      this.captureRenderPrevious(zombie, time);
-      if (zombie.incapacitated) {
-        this.tickIncapacitated(zombie, dt);
+    for (const [id, actor] of entries) {
+      this.captureRenderPrevious(actor, time);
+      if (actor.incapacitated) {
+        this.tickIncapacitated(actor, dt);
         continue;
       }
       scratch.id = id;
-      scratch.zombie = zombie;
-      scratch.pos = zombie.body.pos;
-      scratch.type = zombie.type;
-      scratch.rng = zombie.behaviorRng;
+      scratch.zombie = actor;
+      scratch.pos = actor.body.pos;
+      scratch.type = actor.type;
+      scratch.rng = actor.behaviorRng;
       this.updateActorTimers();
       this.updatePerception();
       this.updateAttention();
-      this.forgetIndividualStimulus(zombie, time);
+      this.forgetIndividualStimulus(actor, time);
     }
     this.processChainStimuli(time);
-    for (const [id, zombie] of entries) {
-      if (zombie.incapacitated) {
+    for (const [id, actor] of entries) {
+      if (actor.incapacitated) {
         continue;
       }
       scratch.id = id;
-      scratch.zombie = zombie;
-      scratch.pos = zombie.body.pos;
-      scratch.type = zombie.type;
-      scratch.rng = zombie.behaviorRng;
-      let target = zombie.mode === 'hesitate' ? undefined : (this.hordeTarget(zombie) ?? zombie.lastPerceived);
-      scratch.sees = zombie.mode === 'chase';
+      scratch.zombie = actor;
+      scratch.pos = actor.body.pos;
+      scratch.type = actor.type;
+      scratch.rng = actor.behaviorRng;
+      let target = actor.mode === 'hesitate' ? undefined : (this.hordeTarget(actor) ?? actor.lastPerceived);
+      scratch.sees = actor.mode === 'chase';
       if (scratch.sees) {
         target = player.pos;
       }
       let direction: Vec3;
       let speed: number;
       if (target) {
-        const offset = sub(target, zombie.body.pos);
+        const offset = sub(target, actor.body.pos);
         const distance = Math.hypot(offset[0], offset[2]) * blockSize;
         direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
         speed =
           distance > 0.5
             ? Math.min(
-                zombie.type.speed.chaseMetresPerSimSecond,
-                zombie.type.speed.backgroundStepMetres / dt,
+                actor.type.speed.chaseMetresPerSimSecond,
+                actor.type.speed.backgroundStepMetres / dt,
                 distance / dt,
               )
             : 0;
         if (direction[0] !== 0 || direction[2] !== 0) {
-          zombie.facing = copy(direction);
+          actor.facing = copy(direction);
         }
       } else {
         this.selectMovementIntent();
@@ -2550,66 +2536,66 @@ export class ActorSystem {
         direction = movementDirection;
         speed = desiredSpeed;
       }
-      if (actorCrawls(zombie)) {
-        speed = Math.min(speed, zombie.type.speed.crawlMetresPerSimSecond);
+      if (actorCrawls(actor)) {
+        speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
       }
-      if (zombie.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
+      if (actor.staggerSimSeconds > 0 || this.options.restrained?.(id) === true) {
         speed = 0;
       }
-      zombie.horizontalSpeed = speed;
-      zombie.body.vel[0] = (direction[0] * speed) / blockSize;
-      zombie.body.vel[2] = (direction[2] * speed) / blockSize;
-      const before = copy(zombie.body.pos);
-      this.settleTurn(zombie);
-      if (zombie.body.onGround) {
-        stepBodyHorizontal(zombie.body, {
-          dx: zombie.body.vel[0] * dt,
-          dz: zombie.body.vel[2] * dt,
+      actor.horizontalSpeed = speed;
+      actor.body.vel[0] = (direction[0] * speed) / blockSize;
+      actor.body.vel[2] = (direction[2] * speed) / blockSize;
+      const before = copy(actor.body.pos);
+      this.settleTurn(actor);
+      if (actor.body.onGround) {
+        stepBodyHorizontal(actor.body, {
+          dx: actor.body.vel[0] * dt,
+          dz: actor.body.vel[2] * dt,
           isSolid,
           params: physics,
         });
       } else {
-        stepBody(zombie.body, dt, isSolid, physics);
+        stepBody(actor.body, dt, isSolid, physics);
       }
-      const travelled = horizontalDistance(before, zombie.body.pos) * blockSize;
-      zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
-      if (zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
-        this.beginIdle(zombie);
+      const travelled = horizontalDistance(before, actor.body.pos) * blockSize;
+      actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
+      if (actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+        this.beginIdle(actor);
       }
     }
   }
 
-  private tickIncapacitated(zombie: Actor, dt: number): void {
-    zombie.horizontalSpeed = 0;
-    zombie.attackWait = 0;
-    zombie.attackWindup = 0;
-    zombie.spitWindup = 0;
-    zombie.body.vel[0] = 0;
-    zombie.body.vel[2] = 0;
-    stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
+  private tickIncapacitated(actor: Actor, dt: number): void {
+    actor.horizontalSpeed = 0;
+    actor.attackWait = 0;
+    actor.attackWindup = 0;
+    actor.spitWindup = 0;
+    actor.body.vel[0] = 0;
+    actor.body.vel[2] = 0;
+    stepBody(actor.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [], shapeOf: this.shapeOf });
   }
 
   private updateActorTimers(): void {
-    const { zombie, dt } = this.tickScratch;
-    if (zombie.hitFlinchTime !== undefined) {
-      const nextFlinchTime = zombie.hitFlinchTime + dt;
-      zombie.hitFlinchTime =
-        nextFlinchTime > actorHitFlinchDuration(actorCrawls(zombie) ? 'legless-humanoid' : figureVariantOf(zombie.type))
+    const { zombie: actor, dt } = this.tickScratch;
+    if (actor.hitFlinchTime !== undefined) {
+      const nextFlinchTime = actor.hitFlinchTime + dt;
+      actor.hitFlinchTime =
+        nextFlinchTime > actorHitFlinchDuration(actorCrawls(actor) ? 'legless-humanoid' : figureVariantOf(actor.type))
           ? undefined
           : nextFlinchTime;
     }
-    zombie.attackWait = Math.max(0, zombie.attackWait - dt);
-    zombie.spitWait = Math.max(0, zombie.spitWait - dt);
-    zombie.staggerSimSeconds = Math.max(0, zombie.staggerSimSeconds - dt);
+    actor.attackWait = Math.max(0, actor.attackWait - dt);
+    actor.spitWait = Math.max(0, actor.spitWait - dt);
+    actor.staggerSimSeconds = Math.max(0, actor.staggerSimSeconds - dt);
   }
 
   private updatePerception(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, pos, player, dayState, blockSize, isOpaque, time, rng, perception } = scratch;
+    const { zombie: actor, type, pos, player, dayState, blockSize, isOpaque, time, rng, perception } = scratch;
     const soundBlocking = this.options.isSoundBlocking ?? scratch.isSolid;
     perception.def = type;
     perception.from = pos;
-    perception.facing = zombie.facing;
+    perception.facing = actor.facing;
     perception.player = player;
     perception.dayPhase = dayState.phase;
     perception.sightBlend = dayState.sightBlend;
@@ -2621,7 +2607,7 @@ export class ActorSystem {
     scratch.lightTarget = visibleLightTarget({
       def: type,
       from: pos,
-      facing: zombie.facing,
+      facing: actor.facing,
       player,
       dayPhase: dayState.phase,
       blockSize,
@@ -2631,13 +2617,13 @@ export class ActorSystem {
     });
     if (
       scratch.lightTarget &&
-      zombie.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
+      actor.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
     ) {
       scratch.lightTarget = undefined;
     }
-    if (scratch.sees && zombie.obstacleWanderRemaining > 0) {
-      zombie.obstacleWanderRemaining = 0;
-      zombie.obstacleWanderHeading = undefined;
+    if (scratch.sees && actor.obstacleWanderRemaining > 0) {
+      actor.obstacleWanderRemaining = 0;
+      actor.obstacleWanderHeading = undefined;
     }
     const hearing = scratch.hearingInput;
     hearing.def = type;
@@ -2648,8 +2634,8 @@ export class ActorSystem {
     hearing.rng = rng;
     hearing.tuning = this.options.tuning;
     scratch.vocal = undefined;
-    if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
-      zombie.lastVocalNoiseId = player.vocalNoise.id;
+    if (player.vocalNoise && actor.lastVocalNoiseId !== player.vocalNoise.id) {
+      actor.lastVocalNoiseId = player.vocalNoise.id;
       scratch.vocal = hearVocalNoise({
         def: type,
         from: pos,
@@ -2665,107 +2651,104 @@ export class ActorSystem {
   }
 
   private tickHesitation(): boolean {
-    const { zombie, time, sees, player, lightTarget, dt, vocal } = this.tickScratch;
-    const loud = vocal && player.vocalNoise!.radiusMetres >= zombie.type.hearingModel.loudNoiseRadiusMetres;
-    if (sees || loud || lightTarget || zombie.hordeId !== undefined) {
+    const { zombie: actor, time, sees, player, lightTarget, dt, vocal } = this.tickScratch;
+    const loud = vocal && player.vocalNoise!.radiusMetres >= actor.type.hearingModel.loudNoiseRadiusMetres;
+    if (sees || loud || lightTarget || actor.hordeId !== undefined) {
       return false;
     }
-    zombie.modeTimer = Math.max(0, zombie.modeTimer - dt);
-    if (zombie.modeTimer > 0) {
+    actor.modeTimer = Math.max(0, actor.modeTimer - dt);
+    if (actor.modeTimer > 0) {
       return true;
     }
-    if (zombie.hesitationFrom === 'stroll') {
-      zombie.mode = 'investigate';
-      zombie.stimulusAt = time;
+    if (actor.hesitationFrom === 'stroll') {
+      actor.mode = 'investigate';
+      actor.stimulusAt = time;
     } else {
-      zombie.leanTarget = copy(zombie.lastPerceived!);
-      zombie.refusedAt = time;
-      zombie.lastPerceived = undefined;
-      zombie.stimulusAt = undefined;
-      this.beginIdle(zombie);
+      actor.leanTarget = copy(actor.lastPerceived!);
+      actor.refusedAt = time;
+      actor.lastPerceived = undefined;
+      actor.stimulusAt = undefined;
+      this.beginIdle(actor);
     }
-    zombie.hesitationFrom = undefined;
+    actor.hesitationFrom = undefined;
     this.announcePursuit('hesitate');
     return true;
   }
 
   private updateAttention(): void {
-    const { zombie, time, sees, tier, player, lightTarget } = this.tickScratch;
-    const previous = zombie.mode;
+    const { zombie: actor, time, sees, tier, player, lightTarget } = this.tickScratch;
+    const previous = actor.mode;
     if (previous === 'hesitate' && this.tickHesitation()) {
       return;
     }
     this.resolveAttention();
     const suspicious =
-      zombie.refusedAt !== undefined && time - zombie.refusedAt < zombie.type.hearingModel.refusalSuspicionSimSeconds;
+      actor.refusedAt !== undefined && time - actor.refusedAt < actor.type.hearingModel.refusalSuspicionSimSeconds;
     if (
       (previous === 'idle' || previous === 'stroll') &&
-      zombie.mode === 'investigate' &&
+      actor.mode === 'investigate' &&
       tier &&
       this.tickScratch.vocal &&
       !sees &&
       !lightTarget &&
-      zombie.hordeId === undefined &&
+      actor.hordeId === undefined &&
       !suspicious &&
-      player.vocalNoise!.radiusMetres < zombie.type.hearingModel.loudNoiseRadiusMetres
+      player.vocalNoise!.radiusMetres < actor.type.hearingModel.loudNoiseRadiusMetres
     ) {
-      zombie.hesitationFrom = previous;
-      zombie.mode = 'hesitate';
-      zombie.modeTimer = inRange(zombie.behaviorRng, zombie.type.hearingModel.hesitationSimSeconds);
+      actor.hesitationFrom = previous;
+      actor.mode = 'hesitate';
+      actor.modeTimer = inRange(actor.behaviorRng, actor.type.hearingModel.hesitationSimSeconds);
     }
-    if (zombie.mode !== 'hesitate') {
-      zombie.hesitationFrom = undefined;
+    if (actor.mode !== 'hesitate') {
+      actor.hesitationFrom = undefined;
     }
     this.announcePursuit(previous);
   }
 
   private announcePursuit(previous: AgentMode): void {
-    const { zombie, time } = this.tickScratch;
+    const { zombie: actor, time } = this.tickScratch;
     if (
-      (zombie.mode === 'chase' || zombie.mode === 'investigate') &&
+      (actor.mode === 'chase' || actor.mode === 'investigate') &&
       previous !== 'chase' &&
       previous !== 'investigate'
     ) {
-      zombie.leanTarget = undefined;
-      this.cryAlert(zombie, time);
+      actor.leanTarget = undefined;
+      this.cryAlert(actor, time);
     }
   }
 
-  private cryAlert(zombie: Actor, time: number): void {
-    if (
-      zombie.lastAlertAt !== undefined &&
-      time - zombie.lastAlertAt < zombie.type.hearingModel.alertCooldownSimSeconds
-    ) {
+  private cryAlert(actor: Actor, time: number): void {
+    if (actor.lastAlertAt !== undefined && time - actor.lastAlertAt < actor.type.hearingModel.alertCooldownSimSeconds) {
       return;
     }
-    zombie.lastAlertAt = time;
-    this.options.onSound?.(zombie.type.sounds.alert, copy(zombie.body.pos), zombie);
-    this.chainStimuli.push({ caller: zombie, origin: copy(zombie.body.pos), target: copy(zombie.lastPerceived!) });
+    actor.lastAlertAt = time;
+    this.options.onSound?.(actor.type.sounds.alert, copy(actor.body.pos), actor);
+    this.chainStimuli.push({ caller: actor, origin: copy(actor.body.pos), target: copy(actor.lastPerceived!) });
   }
 
   private processChainStimuli(time: number): void {
     // Drain to closure before movement so entity iteration cannot delay a later caller's listeners.
     for (const stimulus of this.chainStimuli) {
       const { chainRadiusMetres, chainChance } = stimulus.caller.type.hearingModel;
-      for (const [, zombie] of this.store.entries()) {
+      for (const [, actor] of this.store.entries()) {
         if (
-          zombie.incapacitated ||
-          (zombie.mode !== 'idle' && zombie.mode !== 'stroll' && zombie.mode !== 'hesitate') ||
-          horizontalDistance(zombie.body.pos, stimulus.origin) * this.options.blockSize > chainRadiusMetres ||
-          zombie.soundRng.next() >= chainChance
+          actor.incapacitated ||
+          (actor.mode !== 'idle' && actor.mode !== 'stroll' && actor.mode !== 'hesitate') ||
+          horizontalDistance(actor.body.pos, stimulus.origin) * this.options.blockSize > chainRadiusMetres ||
+          actor.soundRng.next() >= chainChance
         ) {
           continue;
         }
-        zombie.mode = 'investigate';
-        zombie.hesitationFrom = undefined;
-        zombie.investigationTier = 'far';
-        zombie.searchAnchor = undefined;
-        zombie.searchTimer = 0;
-        zombie.searchStrolling = false;
-        zombie.leanTarget = undefined;
-        zombie.lastPerceived = copy(stimulus.target);
-        zombie.stimulusAt = time;
-        this.cryAlert(zombie, time);
+        actor.mode = 'investigate';
+        actor.hesitationFrom = undefined;
+        actor.investigationTier = 'far';
+        actor.searchAnchor = undefined;
+        actor.searchTimer = 0;
+        actor.searchStrolling = false;
+        actor.leanTarget = undefined;
+        actor.lastPerceived = copy(stimulus.target);
+        actor.stimulusAt = time;
+        this.cryAlert(actor, time);
       }
     }
     this.chainStimuli.length = 0;
@@ -2774,130 +2757,125 @@ export class ActorSystem {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve precedence between sight, near/far noise, prior chase, and horde attention.
   private resolveAttention(): void {
     const scratch = this.tickScratch;
-    const { zombie, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
+    const { zombie: actor, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
-      zombie.mode = 'chase';
-      zombie.investigationTier = undefined;
-      zombie.searchAnchor = undefined;
-      zombie.searchTimer = 0;
-      zombie.searchStrolling = false;
-      zombie.lastPerceived = copy(player.pos);
+      actor.mode = 'chase';
+      actor.investigationTier = undefined;
+      actor.searchAnchor = undefined;
+      actor.searchTimer = 0;
+      actor.searchStrolling = false;
+      actor.lastPerceived = copy(player.pos);
     } else if (tier === 'near') {
-      zombie.mode = 'investigate';
-      zombie.investigationTier = 'near';
-      zombie.searchAnchor = undefined;
-      zombie.searchTimer = 0;
-      zombie.searchStrolling = false;
-      zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
+      actor.mode = 'investigate';
+      actor.investigationTier = 'near';
+      actor.searchAnchor = undefined;
+      actor.searchTimer = 0;
+      actor.searchStrolling = false;
+      actor.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
     } else if (lightTarget) {
-      zombie.mode = 'investigate';
-      zombie.investigationTier = 'near';
-      zombie.searchAnchor = undefined;
-      zombie.searchTimer = 0;
-      zombie.searchStrolling = false;
-      zombie.lastPerceived = copy(lightTarget);
+      actor.mode = 'investigate';
+      actor.investigationTier = 'near';
+      actor.searchAnchor = undefined;
+      actor.searchTimer = 0;
+      actor.searchStrolling = false;
+      actor.lastPerceived = copy(lightTarget);
     } else if (
       tier === 'far' &&
-      (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search' || zombie.mode === 'hesitate')
+      (actor.mode === 'idle' || actor.mode === 'stroll' || actor.mode === 'search' || actor.mode === 'hesitate')
     ) {
-      zombie.mode = 'investigate';
-      zombie.investigationTier = 'far';
-      zombie.searchAnchor = undefined;
-      zombie.searchTimer = 0;
-      zombie.searchStrolling = false;
-      zombie.lastPerceived =
+      actor.mode = 'investigate';
+      actor.investigationTier = 'far';
+      actor.searchAnchor = undefined;
+      actor.searchTimer = 0;
+      actor.searchStrolling = false;
+      actor.lastPerceived =
         vocal?.tier === 'far'
           ? vocal.target
-          : farBearingTarget({ def: zombie.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
+          : farBearingTarget({ def: actor.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
       const { terrainFloor } = this.options;
       const footprint = {
-        halfWidth: zombie.body.halfWidth,
-        halfDepth: zombie.body.halfDepth ?? zombie.body.halfWidth,
+        halfWidth: actor.body.halfWidth,
+        halfDepth: actor.body.halfDepth ?? actor.body.halfWidth,
       };
       if (terrainFloor && onTerrainFloor(pos, terrainFloor, footprint)) {
-        zombie.lastPerceived[1] = terrainStance(
-          zombie.lastPerceived[0],
-          zombie.lastPerceived[2],
-          terrainFloor,
-          footprint,
-        );
+        actor.lastPerceived[1] = terrainStance(actor.lastPerceived[0], actor.lastPerceived[2], terrainFloor, footprint);
       }
-    } else if (zombie.mode === 'chase') {
-      zombie.mode = 'investigate';
-      zombie.investigationTier = 'near';
+    } else if (actor.mode === 'chase') {
+      actor.mode = 'investigate';
+      actor.investigationTier = 'near';
     }
     if (sees || tier || lightTarget) {
-      zombie.stimulusAt = scratch.time;
+      actor.stimulusAt = scratch.time;
     }
-    const groupTarget = sees || tier ? undefined : this.hordeTarget(zombie);
+    const groupTarget = sees || tier ? undefined : this.hordeTarget(actor);
     if (groupTarget) {
-      zombie.mode = 'investigate';
-      zombie.investigationTier = 'far';
-      zombie.searchAnchor = undefined;
-      zombie.searchTimer = 0;
-      zombie.searchStrolling = false;
-      zombie.lastPerceived = groupTarget;
+      actor.mode = 'investigate';
+      actor.investigationTier = 'far';
+      actor.searchAnchor = undefined;
+      actor.searchTimer = 0;
+      actor.searchStrolling = false;
+      actor.lastPerceived = groupTarget;
     }
   }
 
-  private forgetIndividualStimulus(zombie: Actor, time: number): void {
+  private forgetIndividualStimulus(actor: Actor, time: number): void {
     if (
-      zombie.hordeId !== undefined ||
-      zombie.mode !== 'investigate' ||
-      zombie.stimulusAt === undefined ||
-      time - zombie.stimulusAt < zombie.type.stimulusMemorySimSeconds
+      actor.hordeId !== undefined ||
+      actor.mode !== 'investigate' ||
+      actor.stimulusAt === undefined ||
+      time - actor.stimulusAt < actor.type.stimulusMemorySimSeconds
     ) {
       return;
     }
-    zombie.stimulusAt = undefined;
-    zombie.lastPerceived = undefined;
-    zombie.investigationTier = undefined;
-    zombie.searchAnchor = undefined;
-    zombie.searchTimer = 0;
-    zombie.searchStrolling = false;
-    zombie.mode = 'return';
+    actor.stimulusAt = undefined;
+    actor.lastPerceived = undefined;
+    actor.investigationTier = undefined;
+    actor.searchAnchor = undefined;
+    actor.searchTimer = 0;
+    actor.searchStrolling = false;
+    actor.mode = 'return';
   }
 
   private checkInvestigationArrival(): void {
     const scratch = this.tickScratch;
-    const { zombie, pos } = scratch;
-    if (zombie.mode !== 'investigate') {
+    const { zombie: actor, pos } = scratch;
+    if (actor.mode !== 'investigate') {
       return;
     }
-    const target = zombie.lastPerceived ?? zombie.home;
+    const target = actor.lastPerceived ?? actor.home;
     if (
       Math.hypot(...sub(target, pos)) * scratch.blockSize <= 1 &&
       sameInvestigationFloor(pos, target, this.options.terrainFloor, {
-        halfWidth: zombie.body.halfWidth,
-        halfDepth: zombie.body.halfDepth ?? zombie.body.halfWidth,
+        halfWidth: actor.body.halfWidth,
+        halfDepth: actor.body.halfDepth ?? actor.body.halfWidth,
       })
     ) {
-      this.beginSearch(zombie);
+      this.beginSearch(actor);
     }
   }
 
   private indexIdleSoundDensity(): void {
     let widestRadiusBlocks = 0;
-    for (const [, zombie] of this.store.entries()) {
-      if (!zombie.incapacitated) {
+    for (const [, actor] of this.store.entries()) {
+      if (!actor.incapacitated) {
         widestRadiusBlocks = Math.max(
           widestRadiusBlocks,
-          zombie.type.idleSound.density.radiusMetres / this.options.blockSize,
+          actor.type.idleSound.density.radiusMetres / this.options.blockSize,
         );
       }
     }
     this.idleSoundGridCellBlocks = Math.max(1, widestRadiusBlocks);
     this.idleSoundGrid = new Map();
-    for (const [, zombie] of this.store.entries()) {
-      if (zombie.incapacitated) {
+    for (const [, actor] of this.store.entries()) {
+      if (actor.incapacitated) {
         continue;
       }
-      const key = this.idleSoundGridKey(zombie.body.pos);
+      const key = this.idleSoundGridKey(actor.body.pos);
       const cell = this.idleSoundGrid.get(key);
       if (cell) {
-        cell.push(zombie);
+        cell.push(actor);
       } else {
-        this.idleSoundGrid.set(key, [zombie]);
+        this.idleSoundGrid.set(key, [actor]);
       }
     }
   }
@@ -2906,24 +2884,24 @@ export class ActorSystem {
     return `${Math.floor(position[0] / this.idleSoundGridCellBlocks)},${Math.floor(position[2] / this.idleSoundGridCellBlocks)}`;
   }
 
-  private nextIdleSoundInterval(zombie: Actor): number {
-    const { intervalSimSeconds, density } = zombie.type.idleSound;
+  private nextIdleSoundInterval(actor: Actor): number {
+    const { intervalSimSeconds, density } = actor.type.idleSound;
     return (
-      inRange(zombie.soundRng, intervalSimSeconds) *
-      (1 + (this.idleSoundDensity(zombie) - 1) * density.penaltyPerNeighbour)
+      inRange(actor.soundRng, intervalSimSeconds) *
+      (1 + (this.idleSoundDensity(actor) - 1) * density.penaltyPerNeighbour)
     );
   }
 
-  private idleSoundDensity(zombie: Actor): number {
-    const radiusBlocks = zombie.type.idleSound.density.radiusMetres / this.options.blockSize;
+  private idleSoundDensity(actor: Actor): number {
+    const radiusBlocks = actor.type.idleSound.density.radiusMetres / this.options.blockSize;
     const cellRadius = Math.ceil(radiusBlocks / this.idleSoundGridCellBlocks);
-    const cellX = Math.floor(zombie.body.pos[0] / this.idleSoundGridCellBlocks);
-    const cellZ = Math.floor(zombie.body.pos[2] / this.idleSoundGridCellBlocks);
+    const cellX = Math.floor(actor.body.pos[0] / this.idleSoundGridCellBlocks);
+    const cellZ = Math.floor(actor.body.pos[2] / this.idleSoundGridCellBlocks);
     let density = 0;
     for (let x = cellX - cellRadius; x <= cellX + cellRadius; x++) {
       for (let z = cellZ - cellRadius; z <= cellZ + cellRadius; z++) {
         for (const nearby of this.idleSoundGrid.get(`${x},${z}`) ?? []) {
-          if (horizontalDistance(zombie.body.pos, nearby.body.pos) <= radiusBlocks) {
+          if (horizontalDistance(actor.body.pos, nearby.body.pos) <= radiusBlocks) {
             density += 1;
           }
         }
@@ -2934,37 +2912,37 @@ export class ActorSystem {
 
   private updateIdleSound(): void {
     const scratch = this.tickScratch;
-    const { zombie, dt, pos } = scratch;
-    if (zombie.mode !== 'idle' && zombie.mode !== 'stroll') {
+    const { zombie: actor, dt, pos } = scratch;
+    if (actor.mode !== 'idle' && actor.mode !== 'stroll') {
       return;
     }
-    zombie.idleSoundTimer -= dt;
-    if (zombie.idleSoundTimer <= 0) {
-      this.options.onSound?.(zombie.type.sounds.idle, copy(pos), zombie);
-      zombie.idleSoundTimer = this.nextIdleSoundInterval(zombie);
+    actor.idleSoundTimer -= dt;
+    if (actor.idleSoundTimer <= 0) {
+      this.options.onSound?.(actor.type.sounds.idle, copy(pos), actor);
+      actor.idleSoundTimer = this.nextIdleSoundInterval(actor);
     }
   }
 
   private selectMovementIntent(): void {
     const scratch = this.tickScratch;
-    const { zombie } = scratch;
-    scratch.target = zombie.home;
+    const { zombie: actor } = scratch;
+    scratch.target = actor.home;
     scratch.direction = [0, 0, 0];
     scratch.aimDirection = undefined;
     scratch.desiredSpeed = 0;
     scratch.returnArrived = false;
-    scratch.obstacleDirection = zombie.obstacleWanderRemaining > 0 ? zombie.obstacleWanderHeading : undefined;
-    scratch.stroll = zombie.mode === 'stroll';
-    scratch.wanderingAtTickStart = zombie.obstacleWanderRemaining > 0;
+    scratch.obstacleDirection = actor.obstacleWanderRemaining > 0 ? actor.obstacleWanderHeading : undefined;
+    scratch.stroll = actor.mode === 'stroll';
+    scratch.wanderingAtTickStart = actor.obstacleWanderRemaining > 0;
     this.updateIdleSound();
-    switch (zombie.mode) {
+    switch (actor.mode) {
       case 'hesitate': {
-        const bearing = angleOf(sub(zombie.lastPerceived!, zombie.body.pos));
-        zombie.headYawTarget = bearing - angleOf(zombie.facing);
-        zombie.headYaw = approachAngle(
-          zombie.headYaw,
-          zombie.headYawTarget,
-          (zombie.type.wander.headTurnDegreesPerSimSecond * Math.PI * scratch.dt) / 180,
+        const bearing = angleOf(sub(actor.lastPerceived!, actor.body.pos));
+        actor.headYawTarget = bearing - angleOf(actor.facing);
+        actor.headYaw = approachAngle(
+          actor.headYaw,
+          actor.headYawTarget,
+          (actor.type.wander.headTurnDegreesPerSimSecond * Math.PI * scratch.dt) / 180,
         );
         return;
       }
@@ -2983,88 +2961,80 @@ export class ActorSystem {
   }
 
   private selectIdleIntent(): void {
-    const { zombie, dt } = this.tickScratch;
-    zombie.modeTimer -= dt;
-    this.tickLookAround(zombie, dt);
-    if (zombie.modeTimer <= 0) {
-      this.beginStroll(zombie);
+    const { zombie: actor, dt } = this.tickScratch;
+    actor.modeTimer -= dt;
+    this.tickLookAround(actor, dt);
+    if (actor.modeTimer <= 0) {
+      this.beginStroll(actor);
     }
   }
 
   private selectStrollIntent(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, dt, obstacleDirection } = scratch;
-    zombie.modeTimer -= dt;
-    scratch.direction = obstacleDirection ?? zombie.strollHeading;
+    const { zombie: actor, type, dt, obstacleDirection } = scratch;
+    actor.modeTimer -= dt;
+    scratch.direction = obstacleDirection ?? actor.strollHeading;
     scratch.aimDirection = scratch.direction;
-    scratch.desiredSpeed = obstacleDirection || zombie.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
-    scratch.direction = steer(
-      zombie,
-      scratch.direction,
-      (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-    );
-    zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    scratch.desiredSpeed = obstacleDirection || actor.modeTimer > 0 ? type.speed.wanderMetresPerSimSecond : 0;
+    scratch.direction = steer(actor, scratch.direction, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
 
   private selectSearchIntent(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, dt, obstacleDirection, pos } = scratch;
-    zombie.searchTimer -= dt;
-    if (zombie.searchTimer <= 0) {
-      zombie.mode = 'return';
-      zombie.searchAnchor = undefined;
-      zombie.searchStrolling = false;
-      scratch.target = zombie.home;
+    const { zombie: actor, type, dt, obstacleDirection, pos } = scratch;
+    actor.searchTimer -= dt;
+    if (actor.searchTimer <= 0) {
+      actor.mode = 'return';
+      actor.searchAnchor = undefined;
+      actor.searchStrolling = false;
+      scratch.target = actor.home;
       scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
       scratch.aimDirection = scratch.direction;
       scratch.direction = steer(
-        zombie,
+        actor,
         scratch.direction,
         (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
       );
       scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
-    } else if (zombie.searchStrolling) {
-      zombie.modeTimer -= dt;
-      if (zombie.modeTimer <= 0) {
-        zombie.searchStrolling = false;
-        zombie.modeTimer = inRange(scratch.rng, type.wander.idleSimSeconds);
-        this.tickLookAround(zombie, dt);
+    } else if (actor.searchStrolling) {
+      actor.modeTimer -= dt;
+      if (actor.modeTimer <= 0) {
+        actor.searchStrolling = false;
+        actor.modeTimer = inRange(scratch.rng, type.wander.idleSimSeconds);
+        this.tickLookAround(actor, dt);
       } else {
-        scratch.direction = obstacleDirection ?? zombie.searchHeading;
+        scratch.direction = obstacleDirection ?? actor.searchHeading;
         scratch.aimDirection = scratch.direction;
         scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
         scratch.direction = steer(
-          zombie,
+          actor,
           scratch.direction,
           (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
         );
-        zombie.headYaw = approachAngle(
-          zombie.headYaw,
-          0,
-          (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-        );
+        actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
       }
     } else {
-      zombie.modeTimer -= dt;
-      this.tickLookAround(zombie, dt);
-      if (zombie.modeTimer <= 0) {
-        this.beginSearchStroll(zombie);
+      actor.modeTimer -= dt;
+      this.tickLookAround(actor, dt);
+      if (actor.modeTimer <= 0) {
+        this.beginSearchStroll(actor);
       }
     }
   }
 
   private selectTravelIntent(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, player, blockSize, pos, obstacleDirection, dt } = scratch;
-    if (zombie.mode === 'chase') {
+    const { zombie: actor, type, player, blockSize, pos, obstacleDirection, dt } = scratch;
+    if (actor.mode === 'chase') {
       scratch.target = player.pos;
-    } else if (zombie.mode === 'investigate') {
-      scratch.target = zombie.lastPerceived ?? zombie.home;
+    } else if (actor.mode === 'investigate') {
+      scratch.target = actor.lastPerceived ?? actor.home;
     }
     scratch.metresToTarget = horizontalDistance(scratch.target, pos) * blockSize;
-    scratch.returnArrived = zombie.mode === 'return' && scratch.metresToTarget < 0.4;
-    scratch.seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
-    scratch.inReach = zombie.mode === 'chase' && this.reachableActorMoves(zombie, pos, scratch.target).length > 0;
+    scratch.returnArrived = actor.mode === 'return' && scratch.metresToTarget < 0.4;
+    scratch.seeking = actor.mode === 'chase' || actor.mode === 'investigate';
+    scratch.inReach = actor.mode === 'chase' && this.reachableActorMoves(actor, pos, scratch.target).length > 0;
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
@@ -3072,105 +3042,105 @@ export class ActorSystem {
     if (scratch.moving) {
       scratch.aimDirection = scratch.direction;
       if (scratch.seeking) {
-        const motion = this.stepChaseMotion(zombie, dt);
+        const motion = this.stepChaseMotion(actor, dt);
         scratch.direction = headingAt(angleOf(scratch.direction) + motion.sway);
         scratch.desiredSpeed = type.speed.chaseMetresPerSimSecond * motion.speedFactor;
       } else if (!scratch.returnArrived) {
         scratch.desiredSpeed = type.speed.wanderMetresPerSimSecond;
       }
       const turnRadians = (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180;
-      scratch.direction = steer(zombie, scratch.direction, turnRadians, toward);
+      scratch.direction = steer(actor, scratch.direction, turnRadians, toward);
     } else {
       scratch.direction = [0, 0, 0];
     }
-    zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+    actor.headYaw = approachAngle(actor.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
 
   private updateMovementSpeed(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, dt } = scratch;
-    if (actorCrawls(zombie)) {
+    const { zombie: actor, type, dt } = scratch;
+    if (actorCrawls(actor)) {
       scratch.desiredSpeed = Math.min(scratch.desiredSpeed, type.speed.crawlMetresPerSimSecond);
-      zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
+      actor.horizontalSpeed = Math.min(actor.horizontalSpeed, type.speed.crawlMetresPerSimSecond);
     }
     if (
-      (!actorCrawls(zombie) && zombie.regions.leftLeg! <= 0 && zombie.regions.rightLeg! <= 0) ||
-      zombie.staggerSimSeconds > 0 ||
+      (!actorCrawls(actor) && actor.regions.leftLeg! <= 0 && actor.regions.rightLeg! <= 0) ||
+      actor.staggerSimSeconds > 0 ||
       this.options.restrained?.(scratch.id) === true
     ) {
       scratch.desiredSpeed = 0;
       scratch.direction = [0, 0, 0];
       scratch.aimDirection = undefined;
-      zombie.horizontalSpeed = 0;
+      actor.horizontalSpeed = 0;
     }
     const acceleration =
-      zombie.stumbleFactor < 1 && zombie.horizontalSpeed > scratch.desiredSpeed
+      actor.stumbleFactor < 1 && actor.horizontalSpeed > scratch.desiredSpeed
         ? type.chaseMotion.stumbleDecelerationMetresPerSimSecondSquared
         : type.wander.movementAccelerationMetresPerSimSecondSquared;
-    zombie.horizontalSpeed = approach(zombie.horizontalSpeed, scratch.desiredSpeed, acceleration * dt);
-    if (zombie.mode !== 'search' || !zombie.searchStrolling || !zombie.searchAnchor) {
+    actor.horizontalSpeed = approach(actor.horizontalSpeed, scratch.desiredSpeed, acceleration * dt);
+    if (actor.mode !== 'search' || !actor.searchStrolling || !actor.searchAnchor) {
       return;
     }
-    const radius = horizontalDistance(scratch.pos, zombie.searchAnchor) * scratch.blockSize;
-    const away = unit([scratch.pos[0] - zombie.searchAnchor[0], 0, scratch.pos[2] - zombie.searchAnchor[2]]);
+    const radius = horizontalDistance(scratch.pos, actor.searchAnchor) * scratch.blockSize;
+    const away = unit([scratch.pos[0] - actor.searchAnchor[0], 0, scratch.pos[2] - actor.searchAnchor[2]]);
     const outward = scratch.direction[0] * away[0] + scratch.direction[2] * away[2];
     if (outward > 0) {
       const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
-      zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, remaining / (dt * outward));
+      actor.horizontalSpeed = Math.min(actor.horizontalSpeed, remaining / (dt * outward));
     }
   }
 
   private applyObstacleSlide(): void {
     const scratch = this.tickScratch;
-    const { zombie, aimDirection, wanderingAtTickStart } = scratch;
-    if (!wanderingAtTickStart && zombie.obstacleContact && zombie.obstacleSlideSide !== 0 && aimDirection) {
-      scratch.direction = headingAt(angleOf(aimDirection) + (zombie.obstacleSlideSide * Math.PI) / 2);
+    const { zombie: actor, aimDirection, wanderingAtTickStart } = scratch;
+    if (!wanderingAtTickStart && actor.obstacleContact && actor.obstacleSlideSide !== 0 && aimDirection) {
+      scratch.direction = headingAt(angleOf(aimDirection) + (actor.obstacleSlideSide * Math.PI) / 2);
     }
   }
 
   private stepActorBody(): void {
     const scratch = this.tickScratch;
-    const { zombie, direction, blockSize, dt, isSolid, player, aimDirection } = scratch;
-    zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
-    zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
+    const { zombie: actor, direction, blockSize, dt, isSolid, player, aimDirection } = scratch;
+    actor.body.vel[0] = (direction[0] * actor.horizontalSpeed) / blockSize;
+    actor.body.vel[2] = (direction[2] * actor.horizontalSpeed) / blockSize;
     scratch.jumpAttempted =
-      zombie.type.canJumpObstacles &&
-      !actorCrawls(zombie) &&
-      zombie.horizontalSpeed > 0.01 &&
-      zombie.body.onGround &&
+      actor.type.canJumpObstacles &&
+      !actorCrawls(actor) &&
+      actor.horizontalSpeed > 0.01 &&
+      actor.body.onGround &&
       canJumpObstacle({
-        body: zombie.body,
+        body: actor.body,
         direction,
         isSolid,
         physics: this.options.physics,
-        jumpSpeed: zombie.type.jumpMetresPerSimSecond,
+        jumpSpeed: actor.type.jumpMetresPerSimSecond,
         blockSize,
       });
     if (scratch.jumpAttempted) {
-      zombie.body.vel[1] = zombie.type.jumpMetresPerSimSecond / blockSize;
+      actor.body.vel[1] = actor.type.jumpMetresPerSimSecond / blockSize;
     }
     scratch.beforeStep = copy(scratch.pos);
-    this.settleTurn(zombie);
-    if (!this.restsStill(zombie)) {
+    this.settleTurn(actor);
+    if (!this.restsStill(actor)) {
       const obstacles = player.body ? [player.body] : [];
-      stepBody(zombie.body, dt, isSolid, {
+      stepBody(actor.body, dt, isSolid, {
         ...this.options.physics,
         stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
         obstacles,
         shapeOf: this.shapeOf,
       });
-      this.noteRest(zombie);
+      this.noteRest(actor);
     }
-    scratch.travelled = horizontalDistance(scratch.beforeStep, zombie.body.pos) * blockSize;
+    scratch.travelled = horizontalDistance(scratch.beforeStep, actor.body.pos) * blockSize;
     scratch.wallAhead = aimDirection !== undefined && this.wallAhead(aimDirection);
-    scratch.dx = zombie.body.pos[0] - scratch.beforeStep[0];
-    scratch.dz = zombie.body.pos[2] - scratch.beforeStep[2];
+    scratch.dx = actor.body.pos[0] - scratch.beforeStep[0];
+    scratch.dz = actor.body.pos[2] - scratch.beforeStep[2];
     scratch.forward = aimDirection ? (scratch.dx * aimDirection[0] + scratch.dz * aimDirection[2]) * blockSize : 0;
     scratch.obstacleContact =
       scratch.wallAhead &&
       !scratch.jumpAttempted &&
-      zombie.horizontalSpeed > 0.01 &&
-      scratch.forward < zombie.horizontalSpeed * dt * 0.1;
+      actor.horizontalSpeed > 0.01 &&
+      scratch.forward < actor.horizontalSpeed * dt * 0.1;
   }
 
   /**
@@ -3180,8 +3150,8 @@ export class ActorSystem {
    * its centre, so its shape is moved as far ahead instead.
    */
   private wallAhead(aim: Vec3): boolean {
-    const { zombie, isSolid } = this.tickScratch;
-    const shape = this.shapeOf(zombie.body);
+    const { zombie: actor, isSolid } = this.tickScratch;
+    const shape = this.shapeOf(actor.body);
     if (shape) {
       return this.fleshMeets(shape, aim);
     }
@@ -3190,15 +3160,15 @@ export class ActorSystem {
 
   /** The zombie's box at its tick start, moved the obstacle lookahead along `aim`. */
   private bodyAhead(aim: Vec3): Body {
-    const { zombie, beforeStep, blockSize } = this.tickScratch;
+    const { zombie: actor, beforeStep, blockSize } = this.tickScratch;
     const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
-    return { ...zombie.body, pos: [beforeStep[0] + aim[0] * reach, beforeStep[1], beforeStep[2] + aim[2] * reach] };
+    return { ...actor.body, pos: [beforeStep[0] + aim[0] * reach, beforeStep[1], beforeStep[2] + aim[2] * reach] };
   }
 
   /** Whether an amalgam's flesh, moved the obstacle lookahead along `heading` and lifted over a step, meets terrain. */
   private fleshMeets(shape: BodyShape, heading: Vec3): boolean {
-    const { zombie, blockSize } = this.tickScratch;
-    const { pos } = zombie.body;
+    const { zombie: actor, blockSize } = this.tickScratch;
+    const { pos } = actor.body;
     const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
     const lift = this.options.physics.stepHeight + CONTACT_SKIN * 2;
     return shape.overlapsTerrain([pos[0] + heading[0] * reach, pos[1] + lift, pos[2] + heading[2] * reach]);
@@ -3225,60 +3195,68 @@ export class ActorSystem {
 
   private startObstacleWander(): void {
     const scratch = this.tickScratch;
-    const { zombie, sees, wanderingAtTickStart, obstacleContact, wasObstacleContact, aimDirection, rng } = scratch;
+    const {
+      zombie: actor,
+      sees,
+      wanderingAtTickStart,
+      obstacleContact,
+      wasObstacleContact,
+      aimDirection,
+      rng,
+    } = scratch;
     if (
       !(sees || wanderingAtTickStart) &&
       obstacleContact &&
       !wasObstacleContact &&
       aimDirection &&
-      rng.chance(zombie.type.wander.obstacleWanderChance)
+      rng.chance(actor.type.wander.obstacleWanderChance)
     ) {
       const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
       const headings = openWanderHeadings({
-        body: zombie.body,
+        body: actor.body,
         intent: aimDirection,
         isSolid: scratch.isSolid,
         physics,
         blockSize: scratch.blockSize,
       });
       if (headings.length > 0) {
-        zombie.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
-        zombie.obstacleWanderRemaining = zombie.type.wander.obstacleWanderDistanceMetres;
+        actor.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
+        actor.obstacleWanderRemaining = actor.type.wander.obstacleWanderDistanceMetres;
       }
     }
   }
 
   private updateObstacleSlideSide(): void {
     const scratch = this.tickScratch;
-    const { zombie, obstacleContact, wasObstacleContact, aimDirection, jumpAttempted, travelled, rng } = scratch;
+    const { zombie: actor, obstacleContact, wasObstacleContact, aimDirection, jumpAttempted, travelled, rng } = scratch;
     if (!obstacleContact) {
-      zombie.obstacleSlideSide = 0;
+      actor.obstacleSlideSide = 0;
     } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
       const side = rng.int(0, 1) === 0 ? -1 : 1;
-      zombie.obstacleSlideSide = this.openSide(aimDirection) ?? side;
-    } else if (zombie.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
-      zombie.obstacleSlideSide = zombie.obstacleSlideSide === -1 ? 1 : -1;
+      actor.obstacleSlideSide = this.openSide(aimDirection) ?? side;
+    } else if (actor.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
+      actor.obstacleSlideSide = actor.obstacleSlideSide === -1 ? 1 : -1;
     }
   }
 
   private updateObstacleContact(): void {
     const scratch = this.tickScratch;
-    const { zombie, obstacleContact, travelled, wanderingAtTickStart } = scratch;
-    scratch.wasObstacleContact = zombie.obstacleContact;
+    const { zombie: actor, obstacleContact, travelled, wanderingAtTickStart } = scratch;
+    scratch.wasObstacleContact = actor.obstacleContact;
     if (wanderingAtTickStart) {
       if (obstacleContact) {
-        zombie.obstacleWanderRemaining = 0;
-        zombie.obstacleWanderHeading = undefined;
+        actor.obstacleWanderRemaining = 0;
+        actor.obstacleWanderHeading = undefined;
       } else {
-        zombie.obstacleWanderRemaining = Math.max(0, zombie.obstacleWanderRemaining - travelled);
-        if (zombie.obstacleWanderRemaining === 0) {
-          zombie.obstacleWanderHeading = undefined;
+        actor.obstacleWanderRemaining = Math.max(0, actor.obstacleWanderRemaining - travelled);
+        if (actor.obstacleWanderRemaining === 0) {
+          actor.obstacleWanderHeading = undefined;
         }
       }
     }
     this.updateObstacleSlideSide();
     this.startObstacleWander();
-    zombie.obstacleContact = obstacleContact;
+    actor.obstacleContact = obstacleContact;
     this.bashObstacle();
   }
 
@@ -3291,19 +3269,19 @@ export class ActorSystem {
    */
   private bashObstacle(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, obstacleContact, aimDirection } = scratch;
+    const { zombie: actor, type, obstacleContact, aimDirection } = scratch;
     const { bashObstacle } = this.options;
     if (
       !(bashObstacle && obstacleContact && aimDirection) ||
       type.strength <= 0 ||
-      (zombie.mode !== 'chase' && zombie.mode !== 'investigate') ||
-      zombie.attackWait > 0 ||
-      zombie.attackWindup > 0
+      (actor.mode !== 'chase' && actor.mode !== 'investigate') ||
+      actor.attackWait > 0 ||
+      actor.attackWindup > 0
     ) {
       return;
     }
     const around = {
-      body: zombie.body,
+      body: actor.body,
       intent: aimDirection,
       isSolid: scratch.isSolid,
       physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
@@ -3315,66 +3293,66 @@ export class ActorSystem {
     ) {
       return;
     }
-    zombie.attackWait = type.attack.cooldownSimSeconds;
-    zombie.obstacleSlideSide = 0;
-    zombie.obstacleWanderHeading = undefined;
-    zombie.obstacleWanderRemaining = 0;
+    actor.attackWait = type.attack.cooldownSimSeconds;
+    actor.obstacleSlideSide = 0;
+    actor.obstacleWanderHeading = undefined;
+    actor.obstacleWanderRemaining = 0;
   }
 
   private updateMovementAfterStep(): void {
     const scratch = this.tickScratch;
-    const { zombie, blockSize, dt, travelled, beforeStep, groundedAtTickStart, stroll } = scratch;
+    const { zombie: actor, blockSize, dt, travelled, beforeStep, groundedAtTickStart, stroll } = scratch;
     scratch.stepHeightMetres = this.options.physics.stepHeight * blockSize;
     const stepOffsetState = updateStepOffset(
       {
-        offset: zombie.stepOffset ?? 0,
+        offset: actor.stepOffset ?? 0,
         previous: {
           position: beforeStep.map((coordinate) => coordinate * blockSize) as Vec3,
-          grounded: groundedAtTickStart.get(zombie) ?? false,
+          grounded: groundedAtTickStart.get(actor) ?? false,
         },
       },
       {
-        position: zombie.body.pos.map((coordinate) => coordinate * blockSize) as Vec3,
-        grounded: zombie.body.onGround,
+        position: actor.body.pos.map((coordinate) => coordinate * blockSize) as Vec3,
+        grounded: actor.body.onGround,
         dt,
         stepHeightMetres: scratch.stepHeightMetres,
       },
     );
-    zombie.stepOffset = stepOffsetState.offset;
-    zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
-    if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
-      zombie.wanderClock += dt;
+    actor.stepOffset = stepOffsetState.offset;
+    actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
+    if (actor.mode === 'idle' || actor.mode === 'stroll') {
+      actor.wanderClock += dt;
     }
-    if (stroll && zombie.mode === 'stroll' && zombie.horizontalSpeed > 0.01) {
-      const requested = zombie.horizontalSpeed * dt;
+    if (stroll && actor.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
+      const requested = actor.horizontalSpeed * dt;
       if (travelled + 1e-4 < requested * 0.1) {
-        this.beginIdle(zombie);
+        this.beginIdle(actor);
       }
     }
-    if (stroll && zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
-      this.beginIdle(zombie);
+    if (stroll && actor.mode === 'stroll' && actor.modeTimer <= 0 && actor.horizontalSpeed <= 0.01) {
+      this.beginIdle(actor);
     }
-    if (zombie.mode === 'search' && zombie.searchStrolling && zombie.horizontalSpeed > 0.01) {
-      const requested = zombie.horizontalSpeed * dt;
+    if (actor.mode === 'search' && actor.searchStrolling && actor.horizontalSpeed > 0.01) {
+      const requested = actor.horizontalSpeed * dt;
       if (travelled + 1e-4 < requested * 0.1) {
-        zombie.searchStrolling = false;
-        zombie.modeTimer = inRange(scratch.rng, zombie.type.wander.idleSimSeconds);
+        actor.searchStrolling = false;
+        actor.modeTimer = inRange(scratch.rng, actor.type.wander.idleSimSeconds);
       }
     }
   }
 
-  private reachableActorMoves(zombie: Actor, zombiePos: Vec3, playerPos: Vec3): ActorMove[] {
-    return zombie.type.attack.moves.filter((move) =>
+  private reachableActorMoves(actor: Actor, actorPos: Vec3, playerPos: Vec3): ActorMove[] {
+    return actor.type.attack.moves.filter((move) =>
       withinAttackReach({
-        zombie,
-        zombiePos,
+        zombie: actor,
+        zombiePos: actorPos,
         playerPos,
         blockSize: this.options.blockSize,
         isSolid:
           this.options.meleeBlocker?.({
             kind: 'actor',
             motion: move.motion,
-            reachMetres: actorAttackReachMetres(zombie),
+            reachMetres: actorAttackReachMetres(actor),
           }) ?? this.options.isSolid,
       }),
     );
@@ -3382,27 +3360,27 @@ export class ActorSystem {
 
   private resolveActorAttack(): void {
     const scratch = this.tickScratch;
-    const { zombie, dt, player, type, pos } = scratch;
-    if (zombie.attackWindup > 0) {
-      zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
-      if (zombie.attackWindup <= 0) {
-        const moves = this.reachableActorMoves(zombie, pos, player.pos);
+    const { zombie: actor, dt, player, type, pos } = scratch;
+    if (actor.attackWindup > 0) {
+      actor.attackWindup = Math.max(0, actor.attackWindup - dt);
+      if (actor.attackWindup <= 0) {
+        const moves = this.reachableActorMoves(actor, pos, player.pos);
         if (moves.length > 0) {
           const move = pickActorMove(moves, scratch.rng.next());
           this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
         }
       }
     } else if (
-      zombie.mode === 'chase' &&
-      zombie.staggerSimSeconds <= 0 &&
-      zombie.attackWait <= 0 &&
-      zombie.spitWindup <= 0 &&
-      (type.model === 'fused-mass' ? activeFusedMassMembers(zombie).length > 0 : canStillAttack(zombie)) &&
-      this.reachableActorMoves(zombie, pos, player.pos).length > 0
+      actor.mode === 'chase' &&
+      actor.staggerSimSeconds <= 0 &&
+      actor.attackWait <= 0 &&
+      actor.spitWindup <= 0 &&
+      (type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor)) &&
+      this.reachableActorMoves(actor, pos, player.pos).length > 0
     ) {
-      this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
-      zombie.attackWindup = type.attack.windupSimSeconds;
-      zombie.attackWait = type.attack.cooldownSimSeconds;
+      this.options.onSound?.(type.sounds.attack, copy(pos), actor);
+      actor.attackWindup = type.attack.windupSimSeconds;
+      actor.attackWait = type.attack.cooldownSimSeconds;
     }
     this.resolveAcidSpit();
   }
@@ -3410,29 +3388,29 @@ export class ActorSystem {
   /** Doc: `docs/acid-zombie.md`, "The spit". Sight starts it, release re-checks the line, a hit cancels it. */
   private resolveAcidSpit(): void {
     const scratch = this.tickScratch;
-    const { zombie, dt, player, blockSize, type, pos, isSolid } = scratch;
+    const { zombie: actor, dt, player, blockSize, type, pos, isSolid } = scratch;
     const spit = type.acidSpit;
     if (!spit) {
       return;
     }
-    if (zombie.spitWindup > 0) {
-      zombie.spitWindup = Math.max(0, zombie.spitWindup - dt);
-      if (zombie.spitWindup > 0) {
+    if (actor.spitWindup > 0) {
+      actor.spitWindup = Math.max(0, actor.spitWindup - dt);
+      if (actor.spitWindup > 0) {
         return;
       }
       const chest = spitChest(player, this.options.tuning, blockSize);
-      const origin = spitOrigin(zombie, scratch.id, blockSize);
+      const origin = spitOrigin(actor, scratch.id, blockSize);
       if (!spitLineClear(origin, chest, isSolid)) {
         return;
       }
-      zombie.spitWait = spit.cooldownSimSeconds;
-      const spread = (zombie.spitRng.range(-1, 1) * spit.spreadDegrees * Math.PI) / 180;
+      actor.spitWait = spit.cooldownSimSeconds;
+      const spread = (actor.spitRng.range(-1, 1) * spit.spreadDegrees * Math.PI) / 180;
       const toPlayer = sub(chest, origin);
       const heading = headingAt(angleOf(toPlayer) + spread);
       const reach = Math.hypot(toPlayer[0], toPlayer[2]);
       const aim = unit([heading[0] * reach, toPlayer[1], heading[2] * reach]);
       const release = { source: scratch.id, origin, aim, moves: spit.moves };
-      const move = pickActorMove(spit.moves, zombie.spitRng.next());
+      const move = pickActorMove(spit.moves, actor.spitRng.next());
       const speed = spit.globMetresPerSimSecond / blockSize;
       const { gravity } = this.options.physics;
       const flightSeconds = Math.hypot(...toPlayer) / speed;
@@ -3444,9 +3422,9 @@ export class ActorSystem {
           move: move.id,
           pos: copy(origin),
           velocity: [aim[0] * speed, aim[1] * speed + 0.5 * gravity * flightSeconds, aim[2] * speed],
-          damage: modified('attack.damage', move.damage, zombie),
-          puddleDamagePerSimSecond: modified('attack.damage', spit.puddle.damagePerSimSecond, zombie),
-          regionRoll: zombie.spitRng.next(),
+          damage: modified('attack.damage', move.damage, actor),
+          puddleDamagePerSimSecond: modified('attack.damage', spit.puddle.damagePerSimSecond, actor),
+          regionRoll: actor.spitRng.next(),
         },
       });
       this.options.onAcidSpit?.(release);
@@ -3454,35 +3432,35 @@ export class ActorSystem {
     }
     const metres = horizontalDistance(player.pos, pos) * blockSize;
     if (
-      zombie.mode === 'chase' &&
+      actor.mode === 'chase' &&
       scratch.sees &&
-      zombie.staggerSimSeconds <= 0 &&
-      zombie.spitWait <= 0 &&
-      zombie.attackWindup <= 0 &&
+      actor.staggerSimSeconds <= 0 &&
+      actor.spitWait <= 0 &&
+      actor.attackWindup <= 0 &&
       metres >= spit.rangeBand.nearMetres &&
       metres <= spit.rangeBand.farMetres
     ) {
-      this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
-      zombie.spitWindup = spit.windupSimSeconds;
+      this.options.onSound?.(type.sounds.attack, copy(pos), actor);
+      actor.spitWindup = spit.windupSimSeconds;
     }
   }
 
   private finishActorTick(): void {
     const scratch = this.tickScratch;
-    const { zombie, returnArrived, blockSize, dt, id } = scratch;
-    if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
-      this.beginIdle(zombie);
+    const { zombie: actor, returnArrived, blockSize, dt, id } = scratch;
+    if (actor.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
+      this.beginIdle(actor);
     }
-    const poseInput = actorPoseInputFor(zombie, id, blockSize);
+    const poseInput = actorPoseInputFor(actor, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);
-    zombie.stanceWeight = advanceStanceWeight(zombie.stanceWeight ?? stanceTarget, stanceTarget, dt);
+    actor.stanceWeight = advanceStanceWeight(actor.stanceWeight ?? stanceTarget, stanceTarget, dt);
   }
 
   private separateActorBodies(entries: readonly (readonly [EntityId, Actor])[], dt: number, player: PlayerSense): void {
     const { blockSize, isSolid } = this.tickScratch;
     const { shapeOf } = this;
     separateBodies({
-      bodies: entries.filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body),
+      bodies: entries.filter(([, actor]) => !actor.incapacitated).map(([, actor]) => actor.body),
       dt,
       isSolid,
       blockSize,
@@ -3492,9 +3470,9 @@ export class ActorSystem {
     if (!player.body) {
       return;
     }
-    for (const [, zombie] of entries) {
-      if (!zombie.incapacitated) {
-        separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize, shapeOf });
+    for (const [, actor] of entries) {
+      if (!actor.incapacitated) {
+        separateBodyPair({ first: player.body, second: actor.body, dt, isSolid, blockSize, shapeOf });
       }
     }
   }
@@ -3505,19 +3483,19 @@ export class ActorSystem {
     player: PlayerSense,
     blockSize: number,
   ): void {
-    const footfallCandidates = entries.flatMap(([id, zombie]) => {
+    const footfallCandidates = entries.flatMap(([id, actor]) => {
       if (
-        zombie.type.footstepSound === undefined ||
-        !groundedAtTickStart.get(zombie) ||
-        !zombie.body.onGround ||
-        zombie.horizontalSpeed <= 0.01
+        actor.type.footstepSound === undefined ||
+        !groundedAtTickStart.get(actor) ||
+        !actor.body.onGround ||
+        actor.horizontalSpeed <= 0.01
       ) {
         return [];
       }
-      const travelledMetres = horizontalDistance(zombie.renderPrevious.pos, zombie.body.pos) * blockSize;
-      const advance = advanceActorFootsteps(zombie.footstepClock, travelledMetres, zombie.type.stepLength);
-      zombie.footstepClock = advance.clock;
-      return travelledMetres > 0 ? [{ id, zombie, steps: advance.steps }] : [];
+      const travelledMetres = horizontalDistance(actor.renderPrevious.pos, actor.body.pos) * blockSize;
+      const advance = advanceActorFootsteps(actor.footstepClock, travelledMetres, actor.type.stepLength);
+      actor.footstepClock = advance.clock;
+      return travelledMetres > 0 ? [{ id, zombie: actor, steps: advance.steps }] : [];
     });
     const footstepVoices = new Set(
       [...footfallCandidates]
@@ -3527,14 +3505,14 @@ export class ActorSystem {
             a.id - b.id,
         )
         .slice(0, ACTOR_FOOTSTEP_VOICE_CAP)
-        .map(({ zombie }) => zombie),
+        .map(({ zombie: actor }) => actor),
     );
-    for (const { id, zombie, steps } of footfallCandidates) {
-      if (!footstepVoices.has(zombie)) {
+    for (const { id, zombie: actor, steps } of footfallCandidates) {
+      if (!footstepVoices.has(actor)) {
         continue;
       }
       for (let step = 0; step < steps; step++) {
-        this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode, zombie);
+        this.options.onFootstep?.(copy(actor.body.pos), id, actor.mode, actor);
       }
     }
   }
@@ -3551,7 +3529,7 @@ export class ActorSystem {
     }
     const player = this.options.player();
     const classified = this.classifyTiers(player);
-    const entries = selection === 'active' ? classified.filter(([, zombie]) => zombie.tier === 'active') : classified;
+    const entries = selection === 'active' ? classified.filter(([, actor]) => actor.tier === 'active') : classified;
     if (this.frozen) {
       this.tickFrozen(dt, entries);
       return;
@@ -3571,34 +3549,34 @@ export class ActorSystem {
     scratch.isOpaque = this.options.isOpaque;
     scratch.groundedAtTickStart = groundedAtTickStart;
     this.indexIdleSoundDensity();
-    for (const [id, zombie] of entries) {
-      groundedAtTickStart.set(zombie, zombie.body.onGround);
-      this.captureRenderPrevious(zombie, time);
-      if (zombie.incapacitated) {
-        this.tickIncapacitated(zombie, dt);
+    for (const [id, actor] of entries) {
+      groundedAtTickStart.set(actor, actor.body.onGround);
+      this.captureRenderPrevious(actor, time);
+      if (actor.incapacitated) {
+        this.tickIncapacitated(actor, dt);
         continue;
       }
       scratch.id = id;
-      scratch.zombie = zombie;
-      scratch.pos = zombie.body.pos;
-      scratch.type = zombie.type;
-      scratch.rng = zombie.behaviorRng;
+      scratch.zombie = actor;
+      scratch.pos = actor.body.pos;
+      scratch.type = actor.type;
+      scratch.rng = actor.behaviorRng;
       this.updateActorTimers();
       this.updatePerception();
       this.updateAttention();
-      this.forgetIndividualStimulus(zombie, time);
+      this.forgetIndividualStimulus(actor, time);
     }
     this.processChainStimuli(time);
-    for (const [id, zombie] of entries) {
-      if (zombie.incapacitated) {
+    for (const [id, actor] of entries) {
+      if (actor.incapacitated) {
         continue;
       }
       scratch.id = id;
-      scratch.zombie = zombie;
-      scratch.pos = zombie.body.pos;
-      scratch.type = zombie.type;
-      scratch.rng = zombie.behaviorRng;
-      scratch.sees = zombie.mode === 'chase';
+      scratch.zombie = actor;
+      scratch.pos = actor.body.pos;
+      scratch.type = actor.type;
+      scratch.rng = actor.behaviorRng;
+      scratch.sees = actor.mode === 'chase';
       this.checkInvestigationArrival();
 
       this.selectMovementIntent();
@@ -3646,23 +3624,23 @@ export class ActorSystem {
   }
 
   private burnActorFeet(puddle: Readonly<AcidPuddleState>, radius: number, damage: number, kind: DamageKind): void {
-    for (const [id, zombie] of this.store.entries()) {
-      if (damage <= 0 || !feetInAcidPuddle(zombie.body, puddle, radius)) {
+    for (const [id, actor] of this.store.entries()) {
+      if (damage <= 0 || !feetInAcidPuddle(actor.body, puddle, radius)) {
         continue;
       }
-      const legs = (Object.keys(zombie.regions) as ActorHitRegion[]).filter((region) =>
+      const legs = (Object.keys(actor.regions) as ActorHitRegion[]).filter((region) =>
         ['leftLeg', 'rightLeg'].includes(actorRegionClass(region)),
       );
       for (const region of legs) {
-        if (zombie.regions[region]! <= 0) {
+        if (actor.regions[region]! <= 0) {
           continue;
         }
-        const burn = damageToActor(zombie.type, damage / legs.length, kind, actorRegionClass(region) as BodyRegion);
+        const burn = damageToActor(actor.type, damage / legs.length, kind, actorRegionClass(region) as BodyRegion);
         if (burn <= 0) {
           continue;
         }
-        const healthAfter = this.damageRegion(zombie, region, burn);
-        this.resolveRegionDamage(id, zombie, region, healthAfter);
+        const healthAfter = this.damageRegion(actor, region, burn);
+        this.resolveRegionDamage(id, actor, region, healthAfter);
       }
     }
   }
@@ -3700,13 +3678,13 @@ export class ActorSystem {
         regionRoll: state.regionRoll,
         cause: type.cause,
       });
-    } else if (contact.kind === 'zombie') {
-      const { id, zombie, region, cell } = contact.hit;
-      const damage = damageToActor(zombie.type, state.damage, move.damageKind, actorRegionClass(region) as BodyRegion);
+    } else if (contact.kind === 'actor') {
+      const { id, zombie: actor, region, cell } = contact.hit;
+      const damage = damageToActor(actor.type, state.damage, move.damageKind, actorRegionClass(region) as BodyRegion);
       if (damage > 0) {
         const strike = this.applyMeleeHit({
           id,
-          zombie,
+          zombie: actor,
           region,
           cell,
           origin: position,
@@ -3719,7 +3697,7 @@ export class ActorSystem {
           projectile: true,
         });
         if (strike) {
-          this.carve(id, zombie, [strike]);
+          this.carve(id, actor, [strike]);
         }
       }
     } else if (contact.normal[1] > 0) {
@@ -3764,15 +3742,15 @@ export class ActorSystem {
     if (solid) {
       contacts.push({ kind: 'solid', distance: solid.distance, normal: solid.normal });
     }
-    const zombie = this.firstRegionHit({
+    const actor = this.firstRegionHit({
       origin,
       direction,
       isBlocked: this.options.isSolid,
       exclude: source,
       poseCache,
     });
-    if (zombie) {
-      contacts.push({ kind: 'zombie', distance: zombie.distance, hit: zombie });
+    if (actor) {
+      contacts.push({ kind: 'actor', distance: actor.distance, hit: actor });
     }
     if (player.body) {
       const { body } = player;
@@ -3811,13 +3789,9 @@ export class ActorSystem {
     exclude?: EntityId;
   }): RegionHit | undefined {
     let nearest: RegionHit | undefined;
-    for (const [id, zombie] of this.store.entries()) {
-      if (
-        id !== exclude &&
-        !zombie.incapacitated &&
-        rayMayHitZombie(zombie, origin, direction, this.options.blockSize)
-      ) {
-        nearest = this.nearerRegionHit({ id, zombie, origin, direction, isBlocked, poseCache }, nearest);
+    for (const [id, actor] of this.store.entries()) {
+      if (id !== exclude && !actor.incapacitated && rayMayHitActor(actor, origin, direction, this.options.blockSize)) {
+        nearest = this.nearerRegionHit({ id, zombie: actor, origin, direction, isBlocked, poseCache }, nearest);
       }
     }
     return nearest;
@@ -3827,7 +3801,7 @@ export class ActorSystem {
   private nearerRegionHit(
     {
       id,
-      zombie,
+      zombie: actor,
       origin,
       direction,
       isBlocked,
@@ -3843,26 +3817,25 @@ export class ActorSystem {
     nearest: RegionHit | undefined,
   ): RegionHit | undefined {
     const { blockSize } = this.options;
-    const posed = posedRegionsForZombie({ id, zombie, blockSize, poseCache });
-    const figure =
-      zombie.type.model === 'fused-mass' ? fusedMassFigureForType(zombie.type, zombie.figureSeed) : undefined;
+    const posed = posedRegionsForActor({ id, zombie: actor, blockSize, poseCache });
+    const figure = actor.type.model === 'fused-mass' ? fusedMassFigureForType(actor.type, actor.figureSeed) : undefined;
     let found = nearest;
-    for (const regionId of Object.keys(zombie.regions)) {
+    for (const regionId of Object.keys(actor.regions)) {
       const region = regionId as ActorHitRegion;
-      if (!isActiveHitRegion(zombie, region)) {
+      if (!isActiveHitRegion(actor, region)) {
         continue;
       }
       const boxes = posed[region] ?? [];
       // An amalgam is struck only on its flesh: its boxes are loose around rounded lobes (#563).
       const hit: { readonly distance: number; readonly box: PosedBoneBox; readonly cell?: number } | undefined = figure
-        ? fleshHit({ figure, missing: this.missingFor(zombie), boxes, origin, direction, blockSize })
+        ? fleshHit({ figure, missing: this.missingFor(actor), boxes, origin, direction, blockSize })
         : posedRegionHit(boxes, origin, direction, blockSize);
       if (
         hit !== undefined &&
         hit.distance < (found?.distance ?? Number.POSITIVE_INFINITY) &&
         !raycast(origin, direction, hit.distance, isBlocked)
       ) {
-        found = { id, zombie, region, distance: hit.distance, boxes, box: hit.box, cell: hit.cell };
+        found = { id, zombie: actor, region, distance: hit.distance, boxes, box: hit.box, cell: hit.cell };
       }
     }
     return found;
@@ -3895,7 +3868,7 @@ export class ActorSystem {
     if (!found) {
       return undefined;
     }
-    const { id, zombie, region, distance, boxes, box, cell } = found;
+    const { id, zombie: actor, region, distance, boxes, box, cell } = found;
     const distanceMetres = distance * this.options.blockSize;
     const reachMetres = PLAYER_ARM_REACH_M + weapon.reach;
     return {
@@ -3904,8 +3877,8 @@ export class ActorSystem {
       distanceMetres,
       reachMetres,
       inReach: distanceMetres <= reachMetres,
-      health: zombie.regions[region]!,
-      maxHealth: maxActorRegionHealth(zombie.type, region) ?? zombie.regions[region]!,
+      health: actor.regions[region]!,
+      maxHealth: maxActorRegionHealth(actor.type, region) ?? actor.regions[region]!,
       boxes,
       hitBox: box,
       cell,
@@ -3933,15 +3906,15 @@ export class ActorSystem {
         isBlocked: this.options.isSolid,
         poseCache,
       });
-      const zombie = aim && aim.distanceMetres <= shot.rangeMetres ? this.store.get(aim.id) : undefined;
-      if (!(aim && zombie)) {
+      const actor = aim && aim.distanceMetres <= shot.rangeMetres ? this.store.get(aim.id) : undefined;
+      if (!(aim && actor)) {
         stops.push(undefined);
         continue;
       }
       stops.push(aim.distanceMetres / this.options.blockSize);
       const strike = this.applyMeleeHit({
         id: aim.id,
-        zombie,
+        zombie: actor,
         region: aim.region,
         cell: aim.cell,
         origin: shot.origin,
@@ -3953,7 +3926,7 @@ export class ActorSystem {
         projectile: true,
       });
       if (strike) {
-        const entry = strikes.get(aim.id) ?? { zombie, strikes: [] };
+        const entry = strikes.get(aim.id) ?? { zombie: actor, strikes: [] };
         entry.strikes.push(strike);
         strikes.set(aim.id, entry);
       }
@@ -3973,12 +3946,12 @@ export class ActorSystem {
   detonate({ blast, fragments }: Detonation): number {
     const { origin } = fragments;
     let reached = 0;
-    for (const [id, zombie] of [...this.store.entries()]) {
-      const centre = bodyCentre(zombie.body);
+    for (const [id, actor] of [...this.store.entries()]) {
+      const centre = bodyCentre(actor.body);
       const distance = Math.hypot(centre[0] - origin[0], centre[1] - origin[1], centre[2] - origin[2]);
       const distanceMetres = distance * this.options.blockSize;
       const share = blastShare(blast, distanceMetres);
-      if (zombie.incapacitated || share <= 0 || !inSight(origin, centre, this.options.isSolid)) {
+      if (actor.incapacitated || share <= 0 || !inSight(origin, centre, this.options.isSolid)) {
         continue;
       }
       reached += 1;
@@ -3990,14 +3963,14 @@ export class ActorSystem {
         blast.impulse * share,
         blast.damageKind,
       );
-      for (const region of blastOrder(zombie)) {
-        if (this.store.get(id) !== zombie) {
+      for (const region of blastOrder(actor)) {
+        if (this.store.get(id) !== actor) {
           break;
         }
-        if (isActiveHitRegion(zombie, region)) {
+        if (isActiveHitRegion(actor, region)) {
           this.applyMeleeHit({
             id,
-            zombie,
+            zombie: actor,
             region,
             cell: undefined,
             origin,
@@ -4032,13 +4005,13 @@ export class ActorSystem {
       this.options.onMeleeResult?.({ damage: 0, outcome: 'nothing' });
       return undefined;
     }
-    const zombie = this.store.get(aim.id);
-    if (!zombie) {
+    const actor = this.store.get(aim.id);
+    if (!actor) {
       return undefined;
     }
     const strike = this.applyMeleeHit({
       id: aim.id,
-      zombie,
+      zombie: actor,
       region: aim.region,
       cell: aim.cell,
       origin,
@@ -4049,7 +4022,7 @@ export class ActorSystem {
       isFist,
     });
     if (strike) {
-      this.carve(aim.id, zombie, [strike]);
+      this.carve(aim.id, actor, [strike]);
     }
     return aim.id;
   }
@@ -4063,7 +4036,7 @@ export class ActorSystem {
   /** Applies one hit's damage and effects; returns where it struck an amalgam's flesh, for the caller to carve. */
   private applyMeleeHit({
     id,
-    zombie,
+    zombie: actor,
     region,
     cell,
     origin,
@@ -4081,31 +4054,31 @@ export class ActorSystem {
       direction: ray,
       impulse: weapon.impulse,
     };
-    const damage = damageOverride ?? meleeDamageForContact(zombie, region, weapon, damageType);
+    const damage = damageOverride ?? meleeDamageForContact(actor, region, weapon, damageType);
     if (!projectile) {
       this.options.onMeleeContact?.(hit.impulse);
       for (const event of meleeHitSounds(weapon)) {
-        this.options.onSound?.(event, copy(zombie.body.pos), zombie, true);
+        this.options.onSound?.(event, copy(actor.body.pos), actor, true);
       }
     }
-    const healthBefore = zombie.regions[region]!;
-    const severedBefore = new Set(zombie.severed);
-    this.options.onSound?.(zombie.type.sounds.hurt, copy(zombie.body.pos), zombie);
-    const healthAfter = this.damageRegion(zombie, region, damage);
+    const healthBefore = actor.regions[region]!;
+    const severedBefore = new Set(actor.severed);
+    this.options.onSound?.(actor.type.sounds.hurt, copy(actor.body.pos), actor);
+    const healthAfter = this.damageRegion(actor, region, damage);
     if (healthAfter < healthBefore) {
-      zombie.hitFlinchTime = 0;
-      this.cancelAcidSpit(zombie);
+      actor.hitFlinchTime = 0;
+      this.cancelAcidSpit(actor);
     }
     if (!projectile) {
-      this.stagger(zombie, hit.impulse);
+      this.stagger(actor, hit.impulse);
     }
     if (damage > 0) {
-      this.options.onWound?.(id, zombie, hit, damage);
+      this.options.onWound?.(id, actor, hit, damage);
     }
-    const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
-    const incapacitated = this.applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit });
-    const newParts = zombie.severed.filter((candidate) => !severedBefore.has(candidate));
-    const headPart = zombie.type.model === 'fused-mass' ? undefined : regionCut(zombie, 'head');
+    const killed = healthAfter === 0 && lethalRegion(actor.type, region);
+    const incapacitated = this.applyMeleeEffects({ id, zombie: actor, region, healthAfter, killed, hit });
+    const newParts = actor.severed.filter((candidate) => !severedBefore.has(candidate));
+    const headPart = actor.type.model === 'fused-mass' ? undefined : regionCut(actor, 'head');
     const part = headPart !== undefined && newParts.includes(headPart) ? headPart : newParts[0];
     const outcome = meleeOutcome(killed, incapacitated, part, headPart);
     if (!projectile) {
@@ -4119,16 +4092,16 @@ export class ActorSystem {
         ...(part === undefined ? {} : { part }),
       });
     }
-    return strikeOf(zombie, cell, damage, hit);
+    return strikeOf(actor, cell, damage, hit);
   }
 
   /** Knocks out the flesh around one hole: the strikes' central cell, sized by their summed damage. */
-  private carve(id: EntityId, zombie: Actor, strikes: readonly FusedMassStrike[]): void {
-    const { carving } = zombie.type;
+  private carve(id: EntityId, actor: Actor, strikes: readonly FusedMassStrike[]): void {
+    const { carving } = actor.type;
     if (!carving || strikes.length === 0) {
       return;
     }
-    const figure = fusedMassFigureForType(zombie.type, zombie.figureSeed);
+    const figure = fusedMassFigureForType(actor.type, actor.figureSeed);
     const struck = centralCell(
       figure,
       strikes.map((strike) => strike.cell),
@@ -4136,98 +4109,98 @@ export class ActorSystem {
     const cells = carveAround({
       figure,
       carving,
-      missing: missingFlesh(figure, zombie),
+      missing: missingFlesh(figure, actor),
       struck,
       damage: strikes.reduce((total, strike) => total + strike.damage, 0),
     });
     if (cells.length === 0) {
       return;
     }
-    zombie.carved = [...zombie.carved, ...cells].sort((a, b) => a - b);
-    this.options.onCarve?.(id, zombie, cells, strikes.find((strike) => strike.cell === struck)!.hit);
+    actor.carved = [...actor.carved, ...cells].sort((a, b) => a - b);
+    this.options.onCarve?.(id, actor, cells, strikes.find((strike) => strike.cell === struck)!.hit);
   }
 
   /** Doc: `docs/stagger.md`. A heavy enough hit spoils the attack in progress; position is never touched. */
-  private stagger(zombie: Actor, impulse: number): void {
-    const { stagger } = zombie.type;
+  private stagger(actor: Actor, impulse: number): void {
+    const { stagger } = actor.type;
     if (!stagger || impulse < stagger.impulseThreshold) {
       return;
     }
-    zombie.staggerSimSeconds = Math.max(zombie.staggerSimSeconds, stagger.durationSimSeconds);
-    zombie.attackWindup = 0;
-    this.cancelAcidSpit(zombie);
+    actor.staggerSimSeconds = Math.max(actor.staggerSimSeconds, stagger.durationSimSeconds);
+    actor.attackWindup = 0;
+    this.cancelAcidSpit(actor);
   }
 
   /** A hit during the wind-up spoils the spit and spends the content fraction of the cooldown. */
-  private cancelAcidSpit(zombie: Actor): void {
-    const spit = zombie.type.acidSpit;
-    if (spit && zombie.spitWindup > 0) {
-      zombie.spitWindup = 0;
-      zombie.spitWait = spit.cancelPenaltyFraction * spit.cooldownSimSeconds;
+  private cancelAcidSpit(actor: Actor): void {
+    const spit = actor.type.acidSpit;
+    if (spit && actor.spitWindup > 0) {
+      actor.spitWindup = 0;
+      actor.spitWait = spit.cancelPenaltyFraction * spit.cooldownSimSeconds;
     }
   }
 
-  private applyMeleeEffects({ id, zombie, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
-    if (zombie.type.model === 'fused-mass') {
+  private applyMeleeEffects({ id, zombie: actor, region, healthAfter, killed, hit }: MeleeEffectsContext): boolean {
+    if (actor.type.model === 'fused-mass') {
       const member = FUSED_MASS_MEMBER_REGION.exec(region)?.[1];
       if (member && healthAfter === 0) {
-        this.sever(id, zombie, member, hit);
+        this.sever(id, actor, member, hit);
       }
     } else {
       const cut =
         healthAfter === 0 && region !== 'head' && region !== 'torso'
-          ? regionCut(zombie, region as HumanoidHitRegion)
+          ? regionCut(actor, region as HumanoidHitRegion)
           : undefined;
       if (cut !== undefined) {
-        this.sever(id, zombie, cut, hit);
+        this.sever(id, actor, cut, hit);
       }
-      this.rollDismember(id, zombie, killed, hit);
+      this.rollDismember(id, actor, killed, hit);
     }
-    const incapacitated = this.resolveRegionDamage(id, zombie, region, healthAfter);
-    if (!killed && zombie.type.model !== 'fused-mass' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
-      this.options.onSevered?.(zombie, region as HumanoidHitRegion);
+    const incapacitated = this.resolveRegionDamage(id, actor, region, healthAfter);
+    if (!killed && actor.type.model !== 'fused-mass' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
+      this.options.onSevered?.(actor, region as HumanoidHitRegion);
     }
     return incapacitated;
   }
 
   /** Takes health from a zombie's legs not yet destroyed, shared between them, as a hit there would. */
   injureLegs(id: EntityId, damage: number): void {
-    const zombie = this.store.get(id);
-    if (!zombie || damage <= 0) {
+    const actor = this.store.get(id);
+    if (!actor || damage <= 0) {
       return;
     }
-    const legs = (Object.keys(zombie.regions) as ActorHitRegion[]).filter(
-      (region) => ['leftLeg', 'rightLeg'].includes(actorRegionClass(region)) && zombie.regions[region]! > 0,
+    const legs = (Object.keys(actor.regions) as ActorHitRegion[]).filter(
+      (region) => ['leftLeg', 'rightLeg'].includes(actorRegionClass(region)) && actor.regions[region]! > 0,
     );
     for (const region of legs) {
-      if (this.store.get(id) === zombie) {
-        this.resolveRegionDamage(id, zombie, region, this.damageRegion(zombie, region, damage / legs.length));
+      if (this.store.get(id) === actor) {
+        this.resolveRegionDamage(id, actor, region, this.damageRegion(actor, region, damage / legs.length));
       }
     }
   }
 
-  private damageRegion(zombie: Actor, region: ActorHitRegion, damage: number): number {
-    const healthAfter = Math.max(0, zombie.regions[region]! - damage);
-    zombie.regions[region] = healthAfter;
+  private damageRegion(actor: Actor, region: ActorHitRegion, damage: number): number {
+    const healthAfter = Math.max(0, actor.regions[region]! - damage);
+    actor.regions[region] = healthAfter;
     return healthAfter;
   }
 
-  private resolveRegionDamage(id: EntityId, zombie: Actor, region: ActorHitRegion, healthAfter: number): boolean {
-    const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
+  private resolveRegionDamage(id: EntityId, actor: Actor, region: ActorHitRegion, healthAfter: number): boolean {
+    const killed = healthAfter === 0 && lethalRegion(actor.type, region);
     const incapacitated =
-      zombie.type.model !== 'fused-mass' && region === 'torso' && healthAfter === 0 && zombie.regions.head! > 0;
-    if (incapacitated && !zombie.incapacitated) {
-      zombie.incapacitated = true;
-      zombie.horizontalSpeed = 0;
-      zombie.attackWait = 0;
-      zombie.attackWindup = 0;
-      zombie.body.vel[0] = 0;
-      zombie.body.vel[2] = 0;
-      this.options.onIncapacitated?.(id, zombie);
+      actor.type.model !== 'fused-mass' && region === 'torso' && healthAfter === 0 && actor.regions.head! > 0;
+    if (incapacitated && !actor.incapacitated) {
+      actor.incapacitated = true;
+      actor.horizontalSpeed = 0;
+      actor.attackWait = 0;
+      actor.attackWindup = 0;
+      actor.body.vel[0] = 0;
+      actor.body.vel[2] = 0;
+      this.options.onIncapacitated?.(id, actor);
     }
     if (killed) {
       this.store.remove(id);
-      this.options.onDeath?.(id, zombie);
+      this.options.onDeath?.(id, actor);
     }
     return incapacitated;
   }
@@ -4238,56 +4211,56 @@ export class ActorSystem {
    * behind through onSevered. Returns why not for a zombie that isn't lying downed.
    */
   finishDowned(id: EntityId, dismember: boolean): string | undefined {
-    const zombie = this.store.get(id);
-    if (!zombie?.incapacitated) {
+    const actor = this.store.get(id);
+    if (!actor?.incapacitated) {
       return "It isn't lying there any more";
     }
     if (dismember) {
-      const hit: HitImpulse = { point: copy(zombie.body.pos), direction: [0, -1, 0], impulse: 0 };
+      const hit: HitImpulse = { point: copy(actor.body.pos), direction: [0, -1, 0], impulse: 0 };
       for (const region of ['leftArm', 'rightArm', 'head'] as const) {
-        const part = regionCut(zombie, region);
-        if (part !== undefined && !zombie.severed.includes(part)) {
-          this.sever(id, zombie, part, hit);
-          this.options.onSevered?.(zombie, region);
+        const part = regionCut(actor, region);
+        if (part !== undefined && !actor.severed.includes(part)) {
+          this.sever(id, actor, part, hit);
+          this.options.onSevered?.(actor, region);
         }
       }
     }
-    zombie.regions.head = 0;
+    actor.regions.head = 0;
     this.store.remove(id);
-    this.options.onDeath?.(id, zombie);
+    this.options.onDeath?.(id, actor);
     return undefined;
   }
 
   /** Records `part` as severed (cumulative, saved) and tells the renderer; a part already cut is a no-op. */
-  private sever(id: EntityId, zombie: Actor, part: string, hit: HitImpulse): void {
-    if (zombie.severed.includes(part)) {
+  private sever(id: EntityId, actor: Actor, part: string, hit: HitImpulse): void {
+    if (actor.severed.includes(part)) {
       return;
     }
-    zombie.severed.push(part);
-    this.options.onSever?.(id, zombie, part, { ...hit, impulse: hit.impulse * zombie.type.severedImpulseScale });
+    actor.severed.push(part);
+    this.options.onSever?.(id, actor, part, { ...hit, impulse: hit.impulse * actor.type.severedImpulseScale });
   }
 
   /** Independent rolls for this hit: type.dismember.chance for a random not-yet-severed arm part (skipping
    * one already implied by a containing part — see availableArmParts), and, only on a killing blow,
    * type.dismember.headOnKillChance for the head too. Uses zombie.dismemberRng, not behaviorRng — see
    * Actor.dismemberRng's own doc comment. */
-  private rollDismember(id: EntityId, zombie: Actor, killed: boolean, hit: HitImpulse): void {
-    const { dismember } = zombie.type;
-    if (zombie.dismemberRng.chance(dismember.chance)) {
-      const available = availableArmParts(zombie);
+  private rollDismember(id: EntityId, actor: Actor, killed: boolean, hit: HitImpulse): void {
+    const { dismember } = actor.type;
+    if (actor.dismemberRng.chance(dismember.chance)) {
+      const available = availableArmParts(actor);
       if (available.length > 0) {
-        const part = available[zombie.dismemberRng.int(0, available.length - 1)]!;
-        this.sever(id, zombie, part, hit);
+        const part = available[actor.dismemberRng.int(0, available.length - 1)]!;
+        this.sever(id, actor, part, hit);
       }
     }
-    const head = regionCut(zombie, 'head');
+    const head = regionCut(actor, 'head');
     if (
       killed &&
       head !== undefined &&
-      !zombie.severed.includes(head) &&
-      zombie.dismemberRng.chance(dismember.headOnKillChance)
+      !actor.severed.includes(head) &&
+      actor.dismemberRng.chance(dismember.headOnKillChance)
     ) {
-      this.sever(id, zombie, head, hit);
+      this.sever(id, actor, head, hit);
     }
   }
 }

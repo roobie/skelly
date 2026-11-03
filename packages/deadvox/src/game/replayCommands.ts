@@ -334,7 +334,7 @@ export interface ReplayCommandOwners {
   turn: () => string | undefined;
   /** Tips the carried piece onto its next face. */
   tip: () => string | undefined;
-  clearDownedBody: (zombieId: number, way: DownedBodyWay) => string | undefined;
+  clearDownedBody: (actorId: number, way: DownedBodyWay) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference, sources?: CraftSources) => string | undefined;
   craftRepairEntity: (
     recipeId: string,

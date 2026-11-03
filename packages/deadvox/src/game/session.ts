@@ -550,15 +550,15 @@ export interface SessionOptions {
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
-    onWound?: (id: EntityId, zombie: Actor, hit: HitImpulse, damage: number) => void;
+    onWound?: (id: EntityId, actor: Actor, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
-    onSever?: (id: EntityId, zombie: Actor, part: string, hit: HitImpulse) => void;
+    onSever?: (id: EntityId, actor: Actor, part: string, hit: HitImpulse) => void;
     /** A hit knocked flesh out of a fused-mass body (its `carved` already lists `cells`). */
-    onCarve?: (id: EntityId, zombie: Actor, cells: readonly number[], hit: HitImpulse) => void;
+    onCarve?: (id: EntityId, actor: Actor, cells: readonly number[], hit: HitImpulse) => void;
     /** A zombie became incapacitated but remains in the store and may be revived later. */
-    onIncapacitated?: (id: EntityId, zombie: Actor) => void;
+    onIncapacitated?: (id: EntityId, actor: Actor) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
-    onDeath?: (id: EntityId, zombie: Actor) => void;
+    onDeath?: (id: EntityId, actor: Actor) => void;
     /** The actual result of the player's last swing, for debug-only presentation. */
     onMeleeResult?: (result: MeleeResult) => void;
     /** Presentation-only first-person recoil for a confirmed hit. */
@@ -741,7 +741,7 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
   handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
 });
 
-const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
+const actorReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
 
 /** Physical bricks share the parked-vehicle occupancy projection with the cell collision path. */
 const solidBricksFor = (world: World, registry: Registry, inventory: Inventory, blockSize: number): SolidBricks =>
@@ -931,7 +931,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const quickbar = new Quickbar();
   const spawner = new ActorSpawner();
-  const zombieStore = new MapEntityStore<Actor>();
+  const actorStore = new MapEntityStore<Actor>();
 
   /** The air block at the player's feet, where drops land. */
   const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
@@ -1175,7 +1175,7 @@ export const createSession = (options: SessionOptions) => {
         const shotTraining = skillActivityPractice(registry, skillId, 'shot');
         character.awardPractice(skillId, shotTraining.practice, shotTraining.tier);
       }
-      const { hits, stops } = zombieSystem.firePellets(shot);
+      const { hits, stops } = actorSystem.firePellets(shot);
       bodyStops = stops;
       if (skillId !== undefined && hits > 0 && (skillId !== firearmsSkillId || firearmReadyWalking)) {
         const training = skillActivityPractice(registry, skillId, 'hit');
@@ -1549,8 +1549,8 @@ export const createSession = (options: SessionOptions) => {
     return hit ? strikeTerrainCell(hit.block, { strength: weapon.impulse, kind: weapon.type }) : false;
   };
   const traps = new BearTraps(inventory);
-  const zombieReady = zombieReadinessFor(options);
-  const placeZombieDrop = (item: Item, pos: Vec3): void => {
+  const actorReady = actorReadinessFor(options);
+  const placeActorDrop = (item: Item, pos: Vec3): void => {
     const landed = freshDropTarget(inventory, item, pos);
     if (!landed) {
       return;
@@ -1559,7 +1559,7 @@ export const createSession = (options: SessionOptions) => {
       inventory.add(item, landed);
       return;
     }
-    if (!zombieReady(pos[0], pos[2])) {
+    if (!actorReady(pos[0], pos[2])) {
       return;
     }
     const landings = dropSpots(pos).flatMap((spot) => {
@@ -1574,12 +1574,12 @@ export const createSession = (options: SessionOptions) => {
       }
     }
   };
-  const zombieSystem = new ActorSystem({
+  const actorSystem = new ActorSystem({
     activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
-    store: zombieStore,
+    store: actorStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,
-    isLoaded: zombieReady,
+    isLoaded: actorReady,
     terrainFloor: options.terrainFloor,
     isSolid: physicalSolid,
     solidBricks: solidBricksFor(world, registry, inventory, s),
@@ -1599,7 +1599,7 @@ export const createSession = (options: SessionOptions) => {
     dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
     isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
     hurtPlayer: (amount, hitRegions, attacker, kind) => {
-      const source = zombieStore.get(attacker);
+      const source = actorStore.get(attacker);
       const damage = blockedDamage(source ? modified('attack.damage', amount, source) : amount, attacker);
       if (damage <= 0) {
         return;
@@ -1621,12 +1621,12 @@ export const createSession = (options: SessionOptions) => {
     onPlayerLeaveExposure: (source) => sim.leaveExposure(source),
     onAcidImpact: (position, type) => options.onAcidImpact?.(position, type),
     onAcidGroundImpact: (impact) => options.onAcidGroundImpact?.(impact),
-    onSound: (event, position, zombie, playerMelee) => {
+    onSound: (event, position, actor, playerMelee) => {
       if (playerMelee) {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: actorFigure(zombie.type, zombie.figureSeed).realized.body } : {}),
+          ...(actor ? { body: actorFigure(actor.type, actor.figureSeed).realized.body } : {}),
         });
         return;
       }
@@ -1634,22 +1634,22 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie
+        actor
           ? {
-              body: actorFigure(zombie.type, zombie.figureSeed).realized.body,
-              ...(zombie.type.soundPitchMultiplier === undefined
+              body: actorFigure(actor.type, actor.figureSeed).realized.body,
+              ...(actor.type.soundPitchMultiplier === undefined
                 ? {}
-                : { soundPitchMultiplier: zombie.type.soundPitchMultiplier }),
+                : { soundPitchMultiplier: actor.type.soundPitchMultiplier }),
             }
           : {},
       );
     },
-    onFootstep: (position, id, mode, zombie) => {
-      const family = zombie.type.footstepSound;
+    onFootstep: (position, id, mode, actor) => {
+      const family = actor.type.footstepSound;
       if (family === undefined) {
         return;
       }
-      const event = footstepEventAt(position, zombie.body, (x, y, z) => world.getBlock(x, y, z), {
+      const event = footstepEventAt(position, actor.body, (x, y, z) => world.getBlock(x, y, z), {
         blocks: registry.blocks,
         family,
       });
@@ -1657,47 +1657,39 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       playWorldSound(event, position, sim.time, {
-        sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
-        body: actorFigure(zombie.type, zombie.figureSeed).realized.body,
+        sourceLabel: `${actor.type.name.toLowerCase()} #${id} · ${mode}`,
+        body: actorFigure(actor.type, actor.figureSeed).realized.body,
       });
     },
-    onSevered: (zombie, region) => {
-      const pos: Vec3 = [
-        Math.floor(zombie.body.pos[0]),
-        Math.floor(zombie.body.pos[1]),
-        Math.floor(zombie.body.pos[2]),
-      ];
-      const item = zombie.type.severedItems[region];
+    onSevered: (actor, region) => {
+      const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
+      const item = actor.type.severedItems[region];
       if (item !== null) {
-        placeZombieDrop(inventory.create(item!), pos);
+        placeActorDrop(inventory.create(item!), pos);
       }
     },
-    onWound: (id, zombie, hit, damage) => options.zombieEffects?.onWound?.(id, zombie, hit, damage),
-    onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
-    onCarve: (id, zombie, cells, hit) => options.zombieEffects?.onCarve?.(id, zombie, cells, hit),
-    onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),
+    onWound: (id, actor, hit, damage) => options.zombieEffects?.onWound?.(id, actor, hit, damage),
+    onSever: (id, actor, part, hit) => options.zombieEffects?.onSever?.(id, actor, part, hit),
+    onCarve: (id, actor, cells, hit) => options.zombieEffects?.onCarve?.(id, actor, cells, hit),
+    onIncapacitated: (id, actor) => options.zombieEffects?.onIncapacitated?.(id, actor),
     ...(options.zombieEffects?.onMeleeResult ? { onMeleeResult: options.zombieEffects.onMeleeResult } : {}),
     ...(options.zombieEffects?.onMeleeContact ? { onMeleeContact: options.zombieEffects.onMeleeContact } : {}),
-    onDeath: (id, zombie) => {
-      const table = zombie.type.loot;
+    onDeath: (id, actor) => {
+      const table = actor.type.loot;
       if (table) {
-        const pos: Vec3 = [
-          Math.floor(zombie.body.pos[0]),
-          Math.floor(zombie.body.pos[1]),
-          Math.floor(zombie.body.pos[2]),
-        ];
+        const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
         for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`zombie-loot:${id}`))) {
-          placeZombieDrop(inventory.createRolled(drop), pos);
+          placeActorDrop(inventory.createRolled(drop), pos);
         }
       }
-      options.zombieEffects?.onDeath?.(id, zombie);
+      options.zombieEffects?.onDeath?.(id, actor);
     },
   });
   const playerCombat = new PlayerCombat(
     {
-      playPlayerMeleeSwing: (origin, weapon) => zombieSystem.playPlayerMeleeSwing(origin, weapon),
+      playPlayerMeleeSwing: (origin, weapon) => actorSystem.playPlayerMeleeSwing(origin, weapon),
       resolvePlayerMelee: (origin, direction, weapon, isFist) =>
-        zombieSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
+        actorSystem.resolvePlayerMelee(origin, direction, weapon, isFist) || strikePiece(origin, direction, weapon),
     },
     character,
     {
@@ -1716,7 +1708,7 @@ export const createSession = (options: SessionOptions) => {
       },
     },
   );
-  let lastZombieStep = 0;
+  let lastActorStep = 0;
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;
   let lastPlayerStep = 0;
@@ -1789,7 +1781,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const directions = fragmentDirections(sim.rng(`fragments:${item.uid}`), spec.fragments.count);
     const { damage, impulse, rangeMetres } = spec.fragments;
-    zombieSystem.detonate({
+    actorSystem.detonate({
       blast: spec.blast,
       fragments: { origin: at, directions, damage, impulse, rangeMetres, damageKind: spec.fragments.damageKind },
     });
@@ -1825,7 +1817,7 @@ export const createSession = (options: SessionOptions) => {
       for (const item of fuses.advance(dt, (live) => inventory.locate(live)?.kind === 'hand', lit)) {
         detonate(item);
       }
-      spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
+      spawner.advance({ calendar: sim.calendar, registry, zombies: actorSystem });
       if (scenarioRun) {
         advanceEventRules({
           rules: options.scenario?.eventRules ?? [],
@@ -1834,19 +1826,19 @@ export const createSession = (options: SessionOptions) => {
           dayPhase: dayPhaseAt(dayCycle, sim.calendar).phase,
           player: body.pos,
           registry,
-          zombies: zombieSystem,
+          zombies: actorSystem,
         });
       }
-      zombieSystem.tickActive(dt, time, heldItemUids());
+      actorSystem.tickActive(dt, time, heldItemUids());
       traps.step(dt, {
         player: body.pos,
-        zombies: [...zombieStore.entries()].map(([id, zombie]) => [id, zombie.body.pos] as const),
+        zombies: [...actorStore.entries()].map(([id, actor]) => [id, actor.body.pos] as const),
         blockSize: s,
-        alive: (id) => zombieStore.get(id) !== undefined,
+        alive: (id) => actorStore.get(id) !== undefined,
         hurtPlayer: ({ region, damage, kind }) => sim.hit(damage, text.causes.bearTrap, region, { kind }),
-        injureZombie: (id, damage) => zombieSystem.injureLegs(id, damage),
+        injureZombie: (id, damage) => actorSystem.injureLegs(id, damage),
       });
-      lastZombieStep = time;
+      lastActorStep = time;
     },
   });
   sim.scheduler.register({
@@ -1855,7 +1847,7 @@ export const createSession = (options: SessionOptions) => {
     tick: (_dt, time) => {
       const sliceIndex = backgroundSliceIndex;
       backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ACTOR_SLICE_COUNT;
-      zombieSystem.tickBackground(1 / BACKGROUND_ACTOR_RATE, time, sliceIndex, BACKGROUND_ACTOR_SLICE_COUNT);
+      actorSystem.tickBackground(1 / BACKGROUND_ACTOR_RATE, time, sliceIndex, BACKGROUND_ACTOR_SLICE_COUNT);
       if (sliceIndex === 0) {
         lastBackgroundStep = time;
       }
@@ -1863,8 +1855,8 @@ export const createSession = (options: SessionOptions) => {
   });
 
   /** A downed body lies on the floor: the player walks over it and a door closes on it, as shamblers already do. */
-  const standingZombieBodies = (): Body[] =>
-    [...zombieStore.entries()].filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body);
+  const standingActorBodies = (): Body[] =>
+    [...actorStore.entries()].filter(([, actor]) => !actor.incapacitated).map(([, actor]) => actor.body);
 
   /** A world sound that shamblers hear when its content gives it a noise. */
   const playNoisyWorldSound = (event: SoundId, position: Vec3): void => {
@@ -1880,7 +1872,7 @@ export const createSession = (options: SessionOptions) => {
     terrainSolid: (x, y, z) => moveTerrain(x, y, z) || vehicleOccupancy.isSolid(x, y, z),
     blockSize: s,
     player: body,
-    others: standingZombieBodies(),
+    others: standingActorBodies(),
     stamina: sim.needs.stamina,
     beforeRelocate: (entity) => power?.beforeRemove(simTimestamp(sim.time), entity),
   });
@@ -2080,8 +2072,8 @@ export const createSession = (options: SessionOptions) => {
       ...physics,
       // Only a climb up steps up a ledge: one down would step back onto the roof edge it is leaving.
       ...(climbing ? { gravity: 0, braced: body.vel[1] >= 0 } : {}),
-      obstacles: standingZombieBodies(),
-      shapeOf: zombieSystem.shapeOf,
+      obstacles: standingActorBodies(),
+      shapeOf: actorSystem.shapeOf,
     });
     sim.land(landingSpeed * s);
     observeScenarioMovement(scenarioRun, {
@@ -2487,11 +2479,11 @@ export const createSession = (options: SessionOptions) => {
     queue,
     inventory,
     player: () => body,
-    others: standingZombieBodies,
+    others: standingActorBodies,
     playWorldSound: playNoisyWorldSound,
     closeBlockedMessages: claimed(registry.ui, 'interface')!.doorCloseBlockedMessages,
   });
-  registerDownedBodyAction({ queue, player: reachPlayer, zombies: zombieSystem });
+  registerDownedBodyAction({ queue, player: reachPlayer, zombies: actorSystem });
   registerTrapActions({
     queue,
     inventory,
@@ -2567,12 +2559,12 @@ export const createSession = (options: SessionOptions) => {
       return found;
     });
     world.blockDamage.restoreState(restored.world.blockDamage, registry, options.onRestoreIssue);
-    zombieSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
+    actorSystem.restoreState(restored.world.actors, (id) => registry.actors.get(id));
     playerCombat.restoreState(restored.character.playerCombat, registry);
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();
-    lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
+    lastActorStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
     const backgroundState = schedulerState.systems.find(({ id }) => id === 'zombie-background');
     lastBackgroundStep = backgroundState?.done ?? sim.time;
     backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ACTOR_SLICE_COUNT;
@@ -2738,16 +2730,16 @@ export const createSession = (options: SessionOptions) => {
           })
         : plan.reason;
     },
-    downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, zombieStore.get(id), way),
+    downedBodyPlan: (id: EntityId, way: DownedBodyWay) => downedBodyPlan(reachPlayer, actorStore.get(id), way),
     /** Queues finishing off or dismembering a downed body; returns why not. */
     clearDownedBody: (id: EntityId, way: DownedBodyWay) =>
-      queueDownedBody({ queue, player: reachPlayer, zombies: zombieSystem }, id, way),
+      queueDownedBody({ queue, player: reachPlayer, zombies: actorSystem }, id, way),
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,
-    actors: zombieSystem,
+    actors: actorSystem,
     playerCombat,
-    zombieStore,
+    zombieStore: actorStore,
     spawner,
     body,
     /** Set when the session was restored: the view direction to hand back to the input. */
@@ -2788,7 +2780,7 @@ export const createSession = (options: SessionOptions) => {
     playPlayerSound,
     /** Time of the last shambler step, for render interpolation. */
     get lastZombieStep() {
-      return lastZombieStep;
+      return lastActorStep;
     },
     get lastBackgroundStep() {
       return lastBackgroundStep;
@@ -2838,7 +2830,7 @@ export const createSession = (options: SessionOptions) => {
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, source: ColumnSource) => {
       columnSupply.arrive(cx, cz, source);
-      spawner.onColumn({ cx, cz, site: source, registry, zombies: zombieSystem });
+      spawner.onColumn({ cx, cz, site: source, registry, zombies: actorSystem });
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
     /** Queues a search of a container, unless one is queued or done. */
@@ -2962,7 +2954,7 @@ export const createSession = (options: SessionOptions) => {
         aim,
         survival,
         quickbar: quickbar.snapshotState(inventory),
-        actors: zombieSystem,
+        actors: actorSystem,
         playerCombat,
         spawner,
         rolledColumns,

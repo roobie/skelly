@@ -69,54 +69,54 @@ export class ActorMeshes {
     }
   }
 
-  private renderPose(id: EntityId, zombie: Actor, blend: number, realDt: number): RenderZombie {
-    const previous = zombie.renderPrevious;
+  private renderPose(id: EntityId, actor: Actor, blend: number, realDt: number): RenderZombie {
+    const previous = actor.renderPrevious;
     const position: Vec3 = [
-      previous.pos[0] + (zombie.body.pos[0] - previous.pos[0]) * blend,
-      previous.pos[1] + (zombie.body.pos[1] - previous.pos[1]) * blend,
-      previous.pos[2] + (zombie.body.pos[2] - previous.pos[2]) * blend,
+      previous.pos[0] + (actor.body.pos[0] - previous.pos[0]) * blend,
+      previous.pos[1] + (actor.body.pos[1] - previous.pos[1]) * blend,
+      previous.pos[2] + (actor.body.pos[2] - previous.pos[2]) * blend,
     ];
     const yawBefore = Math.atan2(-previous.facing[0], -previous.facing[2]);
-    const yawAfter = Math.atan2(-zombie.facing[0], -zombie.facing[2]);
+    const yawAfter = Math.atan2(-actor.facing[0], -actor.facing[2]);
     const yawDelta = Math.atan2(Math.sin(yawAfter - yawBefore), Math.cos(yawAfter - yawBefore));
     return {
       id,
-      zombie,
+      zombie: actor,
       position,
       yaw: yawBefore + yawDelta * blend,
-      headYaw: previous.headYaw + (zombie.headYaw - previous.headYaw) * blend,
-      gaitPhase: previous.gaitPhase + (zombie.gaitPhase - previous.gaitPhase) * blend,
-      verticalOffset: this.verticalOffset(id, position, zombie.body.onGround, realDt),
+      headYaw: previous.headYaw + (actor.headYaw - previous.headYaw) * blend,
+      gaitPhase: previous.gaitPhase + (actor.gaitPhase - previous.gaitPhase) * blend,
+      verticalOffset: this.verticalOffset(id, position, actor.body.onGround, realDt),
     };
   }
 
-  private syncPart(part: Part, zombies: RenderZombie[]): void {
+  private syncPart(part: Part, actors: RenderZombie[]): void {
     const mesh = this.meshes.get(part)!;
-    const visible = zombies.filter(({ zombie }) =>
-      zombie.type.model === 'fused-mass'
-        ? part === 'body' && zombie.regions['core.trunk']! > 0
-        : zombie.regions[REGION_FOR_PART[part]]! > 0,
+    const visible = actors.filter(({ zombie: actor }) =>
+      actor.type.model === 'fused-mass'
+        ? part === 'body' && actor.regions['core.trunk']! > 0
+        : actor.regions[REGION_FOR_PART[part]]! > 0,
     );
     mesh.count = Math.min(visible.length, mesh.instanceMatrix.count);
     const s = this.blockSize;
     for (let i = 0; i < mesh.count; i++) {
-      const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
+      const { zombie: actor, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
       const box =
-        zombie.type.model === 'fused-mass' && part === 'body'
+        actor.type.model === 'fused-mass' && part === 'body'
           ? {
               size: [
-                zombie.body.halfWidth * 2 * s,
-                zombie.body.height * s,
-                (zombie.body.halfDepth ?? zombie.body.halfWidth) * 2 * s,
+                actor.body.halfWidth * 2 * s,
+                actor.body.height * s,
+                (actor.body.halfDepth ?? actor.body.halfWidth) * 2 * s,
               ] as [number, number, number],
-              at: [0, zombie.body.height * s * 0.5, 0] as [number, number, number],
+              at: [0, actor.body.height * s * 0.5, 0] as [number, number, number],
             }
           : FIGURE_BOXES[part];
       const [x, y, z] = position;
       const partYaw = yaw + (part === 'head' ? headYaw : 0);
       const offsetX = box.at[0] * Math.cos(yaw) + box.at[2] * Math.sin(yaw);
       const offsetZ = -box.at[0] * Math.sin(yaw) + box.at[2] * Math.cos(yaw);
-      const moving = Math.hypot(zombie.body.vel[0], zombie.body.vel[2]) > 0.05;
+      const moving = Math.hypot(actor.body.vel[0], actor.body.vel[2]) > 0.05;
       const isLeg = part === 'leftLeg' || part === 'rightLeg';
       const stride = (part === 'leftLeg' ? 1 : -1) * Math.sin(gaitPhase) * 0.22;
       this.dummy.position.set(x * s + offsetX, y * s + verticalOffset + box.at[1], z * s + offsetZ);
@@ -147,21 +147,21 @@ export class ActorMeshes {
   ): void {
     const blend = Math.max(0, Math.min(1, alpha));
     const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
-    const zombies = [...store.entries()].map(([id, zombie]) => {
-      const previousTime = zombie.renderPrevious.time;
+    const actors = [...store.entries()].map(([id, actor]) => {
+      const previousTime = actor.renderPrevious.time;
       const actorBackgroundBlend =
         simulationTime !== undefined && previousTime !== undefined
           ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ACTOR_RATE))
           : backgroundBlend;
       return this.renderPose(
         id,
-        zombie,
-        zombie.tier === 'background' ? actorBackgroundBlend : blend,
+        actor,
+        actor.tier === 'background' ? actorBackgroundBlend : blend,
         freezeLiving ? 0 : realDt,
       );
     });
-    this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
-    const revealed = zombies.filter(({ position }) => this.reveal?.isRevealed(position[0], position[2]) ?? true);
+    this.discardMissingOffsets(new Set(actors.map(({ id }) => id)));
+    const revealed = actors.filter(({ position }) => this.reveal?.isRevealed(position[0], position[2]) ?? true);
     for (const part of PARTS) {
       this.syncPart(part, revealed);
     }

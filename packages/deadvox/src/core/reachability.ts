@@ -188,7 +188,7 @@ const authoredFixedLootItems = (layouts: readonly SiteLayoutDef[]): Set<string> 
   return items;
 };
 
-const worldZombieTypes = (
+const worldActorTypes = (
   registry: Registry,
   layouts: readonly SiteLayoutDef[],
   scenarios: Iterable<ScenarioDef>,
@@ -321,7 +321,7 @@ const worldSources = (registry: Registry, scope: ReachabilityScope = {}) => {
     placed,
     workstations,
     workstationQualities,
-    zombieTypes: worldZombieTypes(registry, authoredLayouts, scenarios),
+    zombieTypes: worldActorTypes(registry, authoredLayouts, scenarios),
   };
   const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   const scenarioContent = scenarioSources(registry, scenarios);

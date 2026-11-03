@@ -20,7 +20,15 @@ export interface EventRuleAdvance {
  * Fires each due rule once, in authored order. Only the calendar and the run's saved firing record decide
  * firing, never column loading or rendering (`docs/decisions/0008-deterministic-world.md`, "Decision").
  */
-export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, registry, zombies }: EventRuleAdvance) => {
+export const advanceEventRules = ({
+  rules,
+  run,
+  calendar,
+  dayPhase,
+  player,
+  registry,
+  zombies: actors,
+}: EventRuleAdvance) => {
   if (run.won) {
     return;
   }
@@ -38,7 +46,7 @@ export const advanceEventRules = ({ rules, run, calendar, dayPhase, player, regi
       if (!type) {
         throw new Error(`Event rule ${rule.id} names no zombie type "${effect.zombie}"`);
       }
-      zombies.releaseHorde(`event:${rule.id}:${index}`, type, {
+      actors.releaseHorde(`event:${rule.id}:${index}`, type, {
         center: [...effect.at],
         count: effect.count,
         target: [...player],

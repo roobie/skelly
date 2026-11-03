@@ -1547,46 +1547,46 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
   }
 };
 
-const checkSeveredItems = (registry: Registry, zombie: ActorDef, report: Report) => {
-  const regions = Object.keys(zombie.regions);
+const checkSeveredItems = (registry: Registry, actor: ActorDef, report: Report) => {
+  const regions = Object.keys(actor.regions);
   if (
-    regions.length !== Object.keys(zombie.severedItems).length ||
-    regions.some((region) => !Object.hasOwn(zombie.severedItems, region))
+    regions.length !== Object.keys(actor.severedItems).length ||
+    regions.some((region) => !Object.hasOwn(actor.severedItems, region))
   ) {
-    report('actors', zombie.id, '.severedItems', 'severed item keys must match region keys');
+    report('actors', actor.id, '.severedItems', 'severed item keys must match region keys');
   }
-  for (const [region, item] of Object.entries(zombie.severedItems)) {
+  for (const [region, item] of Object.entries(actor.severedItems)) {
     if (item !== null && !registry.items.has(item)) {
-      report('actors', zombie.id, `.severedItems.${region}`, `no item "${item}"`);
+      report('actors', actor.id, `.severedItems.${region}`, `no item "${item}"`);
     }
   }
 };
 
-const checkActorFigure = (zombie: ActorDef, report: Report): void => {
-  if (zombie.figure !== undefined && FIGURE_VARIANTS[zombie.figure].bodyPlan !== zombie.model) {
-    report('actors', zombie.id, '.figure', 'figure variant anatomy must match the body plan');
+const checkActorFigure = (actor: ActorDef, report: Report): void => {
+  if (actor.figure !== undefined && FIGURE_VARIANTS[actor.figure].bodyPlan !== actor.model) {
+    report('actors', actor.id, '.figure', 'figure variant anatomy must match the body plan');
   }
 };
 
-const checkZombies = (registry: Registry, report: Report) => {
+const checkActors = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
-  for (const zombie of registry.actors.values()) {
-    checkSeveredItems(registry, zombie, report);
-    checkActorFigure(zombie, report);
-    if (zombie.footstepSound !== undefined && !registry.soundFamilies.has(zombie.footstepSound)) {
-      report('actors', zombie.id, '.footstepSound', `no sound family "${zombie.footstepSound}"`);
+  for (const actor of registry.actors.values()) {
+    checkSeveredItems(registry, actor, report);
+    checkActorFigure(actor, report);
+    if (actor.footstepSound !== undefined && !registry.soundFamilies.has(actor.footstepSound)) {
+      report('actors', actor.id, '.footstepSound', `no sound family "${actor.footstepSound}"`);
     }
-    if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
-      report('actors', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+    if (actor.loot !== undefined && !registry.loot.has(actor.loot)) {
+      report('actors', actor.id, '.loot', `no loot table "${actor.loot}"`);
     }
-    const quality = zombie.downed?.dismember.quality;
+    const quality = actor.downed?.dismember.quality;
     if (quality !== undefined && !qualities.has(quality)) {
-      report('actors', zombie.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
+      report('actors', actor.id, '.downed.dismember.quality', `no tool quality "${quality}"`);
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
-      const event = zombie.sounds[key];
+      const event = actor.sounds[key];
       if (!registry.sounds.has(event)) {
-        report('actors', zombie.id, `.sounds.${key}`, `no sound event "${event}"`);
+        report('actors', actor.id, `.sounds.${key}`, `no sound event "${event}"`);
       }
     }
   }
@@ -2249,7 +2249,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     report(issue.section, issue.id, issue.path, issue.message);
   }
   checkKeys(registry, report);
-  checkZombies(registry, report);
+  checkActors(registry, report);
   checkDamageKinds(registry, report);
   checkRecipes(registry, report);
   checkSkillAndUiReferences(registry, report);

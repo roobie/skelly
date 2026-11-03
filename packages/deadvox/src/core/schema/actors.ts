@@ -351,11 +351,11 @@ export const ActorSchema = strictObject({
   loot: optional(Id),
 });
 
-export const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ActorSchema>): boolean =>
-  zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
+export const zombieAcidSpitMatchesAbility = (actor: InferOutput<typeof ActorSchema>): boolean =>
+  actor.abilities.includes('acidSpit') === (actor.acidSpit !== undefined);
 
-export const zombieRegionsMatchModel = (zombie: InferOutput<typeof ActorSchema>): boolean => {
-  const expected = zombie.model === 'fused-mass' ? FUSED_MASS_REGION_KEYS : HUMANOID_REGION_NAMES;
-  const keys = Object.keys(zombie.regions);
-  return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
+export const zombieRegionsMatchModel = (actor: InferOutput<typeof ActorSchema>): boolean => {
+  const expected = actor.model === 'fused-mass' ? FUSED_MASS_REGION_KEYS : HUMANOID_REGION_NAMES;
+  const keys = Object.keys(actor.regions);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(actor.regions, key));
 };

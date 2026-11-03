@@ -1077,20 +1077,20 @@ export const startPlay = (
     // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
     // them undefined.
     zombieEffects: {
-      onWound: (id, _zombie, hit, damage) => {
-        zombieMeshes.zombieWounded?.(id, hit);
+      onWound: (id, _actor, hit, damage) => {
+        actorMeshes.zombieWounded?.(id, hit);
         view.gore.spray(hit, damage);
       },
-      onSever: (id, zombie, part, hit) => {
-        const launchVelocity = zombieMeshes.zombieSevered?.(id, part, hit, zombie);
-        view.gore.severed(hit, launchVelocity, zombie.type.severedSpurt);
+      onSever: (id, actor, part, hit) => {
+        const launchVelocity = actorMeshes.zombieSevered?.(id, part, hit, actor);
+        view.gore.severed(hit, launchVelocity, actor.type.severedSpurt);
       },
-      onCarve: (id, zombie, cells, hit) => {
-        zombieMeshes.zombieCarved?.(id, zombie, cells, hit);
+      onCarve: (id, actor, cells, hit) => {
+        actorMeshes.zombieCarved?.(id, actor, cells, hit);
         view.gore.carved(hit, cells.length);
       },
-      onIncapacitated: (id, zombie) => zombieMeshes.zombieIncapacitated?.(id, zombie),
-      onDeath: (id, zombie) => zombieMeshes.zombieDied?.(id, zombie, [...body.pos]),
+      onIncapacitated: (id, actor) => actorMeshes.zombieIncapacitated?.(id, actor),
+      onDeath: (id, actor) => actorMeshes.zombieDied?.(id, actor, [...body.pos]),
       ...(config.debug ? { onMeleeResult: (result) => debugTools?.recordMeleeResult(result) } : {}),
       onMeleeContact: (impulse) => view.recoil(impulse),
     },
@@ -1216,7 +1216,7 @@ export const startPlay = (
   if (!(options.saveController || options.restore)) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
-  const { actors: zombieSystem, playerCombat, zombieStore } = session;
+  const { actors: actorSystem, playerCombat, zombieStore: actorStore } = session;
   if (!options.restore) {
     applyStartState(inventory, requireStart(config.content, config.startId, config.debug), {
       fresh: true,
@@ -1273,7 +1273,7 @@ export const startPlay = (
   input.setMouseLookOverride((movementX, movementY) =>
     thirdPersonOrbit.rotate(movementX, movementY, isPlayerThirdPersonView(thirdPersonViewEnabled, spectator.enabled)),
   );
-  const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
+  const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes: actorMeshes } = view;
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -1477,7 +1477,7 @@ export const startPlay = (
     dispatch: dispatchScreenCommand,
   });
 
-  let revealZombies = false;
+  let revealActors = false;
   const recording = createAttemptRecording(
     engine.attemptPolicy,
     config.seed,
@@ -1723,8 +1723,8 @@ export const startPlay = (
       },
     },
     roll: () => view.cameraRoll,
-    actors: () => zombieSystem,
-    zombieRenderer: zombieMeshes,
+    actors: () => actorSystem,
+    zombieRenderer: actorMeshes,
     spectatorCamera: {
       enabled: () => spectator.enabled,
       toggle: () => {
@@ -1761,7 +1761,7 @@ export const startPlay = (
       options.saveController?.rearmAutosaveAfterTimeSeek();
     },
     revealZombies: (enabled) => {
-      revealZombies = enabled;
+      revealActors = enabled;
     },
     measureSnapshot,
     exportMetrics,
@@ -2722,8 +2722,8 @@ export const startPlay = (
       throughLadders: session.ladderHold.on,
       hasModel: (id) => view.models.has(id),
       downedBodies: [...session.zombieStore.entries()]
-        .filter(([, zombie]) => zombie.incapacitated)
-        .map(([id, zombie]) => ({ id, body: zombie.body })),
+        .filter(([, actor]) => actor.incapacitated)
+        .map(([id, actor]) => ({ id, body: actor.body })),
     });
   const lookedAt = (): BlockEntity | undefined => {
     const target = interactionTargetAt();
@@ -3772,12 +3772,12 @@ export const startPlay = (
           chunks: meshes.count,
           pending: streamer.pending,
           holes: streamer.unmeshedColumns(body.pos[0], body.pos[2], config.radiusChunks),
-          zombies: zombieStore.size,
+          zombies: actorStore.size,
           sounds: audio.heardSounds,
           simulationMs,
           renderMs,
           meshingQueueMs,
-          entities: zombieStore.size + [...entities.all].length + inventory.piles.size,
+          entities: actorStore.size + [...entities.all].length + inventory.piles.size,
           compression: compression.c,
           snapshotLastMs: snapshotHistory.lastMs ?? 0,
           snapshotP95Ms: snapshotHistory.p95Ms,
@@ -3789,8 +3789,8 @@ export const startPlay = (
         calendar: displayCalendar(),
         chunks: engine.world.chunks.values(),
         drawn: engine.meshes.group.children,
-        revealedPositions: revealZombies
-          ? [...zombieStore.entries()].map(([, { body: zombieBody }]) => zombieBody.pos)
+        revealedPositions: revealActors
+          ? [...actorStore.entries()].map(([, { body: actorBody }]) => actorBody.pos)
           : [],
       }),
     );
@@ -3908,7 +3908,7 @@ export const startPlay = (
       eye: bore.origin,
       direction: bore.direction,
       surface,
-      zombies: zombieSystem,
+      zombies: actorSystem,
       blockSize: s,
       weapon: unarmedMeleeWeapon(registry.meleeClasses),
       rangeBlocks,
@@ -4087,8 +4087,8 @@ export const startPlay = (
       frame: nowMs,
       ...(interactionDistanceBlocks === undefined ? {} : { interactionDistanceBlocks }),
     });
-    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
-    debugTools.updateAim(zombieAim);
+    const actorAim = debugTools.aimEnabled ? actorSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
+    debugTools.updateAim(actorAim);
     debugTools.updateLookedAt(ray.origin, ray.direction, input.locked);
   };
 
@@ -4127,7 +4127,7 @@ export const startPlay = (
   // Blood holds still while the game is paused.
   const updateGore = (dt: RealSeconds): void => {
     view.gore.update(sim.paused ? 0 : dt, session.physicalSolid, {
-      zombies: zombieStore,
+      zombies: actorStore,
       listener: body.pos,
       player: {
         pos: body.pos,
@@ -4217,7 +4217,7 @@ export const startPlay = (
     furniture: view.furniture,
     piles: view.piles,
     definition: (entity: BlockEntity) => entities.defOf(entity),
-    body: (id: EntityId) => zombieStore.get(id)?.body,
+    body: (id: EntityId) => actorStore.get(id)?.body,
     vehiclePart: (vehicleId: number, fittingId: string) =>
       currentVehicleParts().find((part) => part.vehicleId === vehicleId && part.fittingId === fittingId)?.boxes,
     blockSize: s,
@@ -4309,13 +4309,13 @@ export const startPlay = (
       playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
       playerChest: [body.pos[0] * s, body.pos[1] * s + PLAYER_CHEST_METRES, body.pos[2] * s],
       lastZombieStep: session.lastZombieStep,
-      acidGlobs: zombieSystem.acidGlobs,
-      acidPuddles: zombieSystem.acidPuddles,
+      acidGlobs: actorSystem.acidGlobs,
+      acidPuddles: actorSystem.acidPuddles,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
-      zombies: zombieStore,
-      frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
+      zombies: actorStore,
+      frozen: debugTools !== undefined && (actorSystem.isFrozen || gameFrozen),
       perceptionLabels: perceptionLabelsEnabled,
     });
     updateVisualFeedback(dt);

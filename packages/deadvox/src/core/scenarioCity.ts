@@ -120,7 +120,7 @@ const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDe
 };
 
 export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
-  const zombies = new Map<string, ActorSpawn[]>();
+  const actors = new Map<string, ActorSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;
   const ordinary = ordinaryBuildings(site);
@@ -146,7 +146,7 @@ export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, populat
       roadsideOffset,
       extraWanderers: extraStragglers,
     })) {
-      append(zombies, spawn);
+      append(actors, spawn);
     }
     if (hordeStarts.has(start)) {
       append(
@@ -164,8 +164,8 @@ export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, populat
   const authored = authoredMarkers ? site.placements.filter((placement) => !ordinary.includes(placement)) : [];
   for (const marker of authored.flatMap(placedSpawns)) {
     if (Rng.stream(site.seed, `scenario:${scenarioId}:spawn:${marker.pos.join(',')}`).chance(marker.chance)) {
-      append(zombies, { type: marker.zombie, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
+      append(actors, { type: marker.zombie, pos: marker.pos, ...(marker.window ? { window: marker.window } : {}) });
     }
   }
-  return { zombies, hordes };
+  return { zombies: actors, hordes };
 };
