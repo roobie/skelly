@@ -1,8 +1,8 @@
-import { INPUT_BINDINGS, POINTER_ACTIONS } from '../game/inputBindings.ts';
 import type { Registry } from './content.ts';
+import { INPUT_ACTIONS, POINTER_ACTIONS } from './inputActions.ts';
 import type { GuidanceDef } from './schema/guidance.ts';
 
-const actionIds = new Set([...INPUT_BINDINGS, ...POINTER_ACTIONS].map(({ id }) => id));
+const actionIds = new Set([...INPUT_ACTIONS, ...POINTER_ACTIONS].map(({ id }) => id));
 type HintPart = GuidanceDef['steps'][number]['hints'][number]['parts'][number];
 
 const itemPartReference = (part: HintPart): [string, string] | undefined => {

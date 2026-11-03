@@ -9,6 +9,7 @@ import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { firearmSlotIds } from '../src/core/firearmFitting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { inventoryTabForAction } from '../src/core/inputActions.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { swapBattery } from '../src/core/lights.ts';
 import { countText, decimalText } from '../src/core/numberText.ts';
@@ -16,13 +17,7 @@ import { toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { fillText } from '../src/core/textTemplate.ts';
 import { attachmentWorkSkill, FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
-import {
-  BindingRegistry,
-  INPUT_BINDINGS,
-  inputBindings,
-  inventoryTabForAction,
-  KeyboardInput,
-} from '../src/game/inputBindings.ts';
+import { BindingRegistry, INPUT_BINDINGS, inputBindings, KeyboardInput } from '../src/game/inputBindings.ts';
 import { routeModalCommand } from '../src/game/modalCommand.ts';
 import { PlayerTickActions } from '../src/game/playerTickActions.ts';
 import { Quickbar } from '../src/game/quickbar.ts';

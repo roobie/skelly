@@ -1,13 +1,11 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
+import { bindingIsDebugOnly, DEBUG_ONLY_CONTEXTS, type InputContext } from '../src/core/inputActions.ts';
 import {
   BindingRegistry,
   bindingConflict,
-  bindingIsDebugOnly,
   chordIssue,
-  DEBUG_ONLY_CONTEXTS,
   INPUT_BINDINGS,
-  type InputContext,
   inputBindings,
   keyboardInput,
 } from '../src/game/inputBindings.ts';

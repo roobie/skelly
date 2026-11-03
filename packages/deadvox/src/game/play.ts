@@ -20,6 +20,7 @@ import type { EntityId } from '../core/entities.ts';
 import type { PinState } from '../core/explosive.ts';
 import { sightedFirearmModel } from '../core/firearmSight.ts';
 import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
+import { type InputContext, inventoryTabForAction } from '../core/inputActions.ts';
 import { interactionAffordance } from '../core/interactionAffordance.ts';
 import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Inventory, Pile } from '../core/inventory.ts';
@@ -138,8 +139,6 @@ import { adjustLookPitch, Input } from './input.ts';
 import {
   type InputCancellationReason,
   type InputCommand,
-  type InputContext,
-  inventoryTabForAction,
   keyboardInput,
   shouldCancelInputForViewerFocus,
 } from './inputBindings.ts';

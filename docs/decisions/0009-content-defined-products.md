@@ -123,6 +123,9 @@ Handling history belongs to an observed item instance so separate items cannot b
 combined into one completed lesson. See `packages/deadvox/src/game/guidedSteps.ts`,
 `GuidedSteps`; `packages/deadvox/src/game/handlingLessons.ts`, `HandlingLessons`;
 and `packages/deadvox/src/ui/guidedSteps.ts`, `mountGuidance`.
+Input references share the action catalogue rather than the browser resolver so
+admission cannot pull DOM timing into simulation. See
+`packages/deadvox/src/core/inputActions.ts`, `INPUT_ACTIONS`.
 
 Observation mechanisms do not stage or mutate the world; staging that needs another
 mechanism requires its own decision. See `packages/deadvox/src/core/stageMarks.ts`,

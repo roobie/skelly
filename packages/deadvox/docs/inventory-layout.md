@@ -5,6 +5,7 @@ read_if:
   - you diagnose an inventory item's DOM bounds or selection visibility
   - you change the inventory find field or the item keywords it matches
   - you change how selecting an inventory item advances a tutorial
+  - you change inventory tab actions or their catalogue ownership
 ---
 
 # Clickable inventory layout
@@ -19,4 +20,4 @@ The find field dims the items its words miss rather than hiding them, so grid po
 
 Inspecting equipment can advance a tutorial, so the inspection fact crosses the recorded command boundary while selection stays presentation-only. A passive repaint must not manufacture another inspection. See `src/ui/inventoryScreen.ts`, `InventoryScreen.detailsViewModel`, and `src/game/replayCommands.ts`, `applyReplayActionPayload`.
 
-Tab selection and split position are runtime UI state, not save or replay state. Keep inventory tabs one key away from movement so movement can continue; the keys are deliberately not mnemonics. See `src/game/inputBindings.ts`, `inventoryTabForAction`. When changing the layout, test actual pointer hit testing with an item and nearby container visible at a narrow viewport; DOM presence alone is not sufficient.
+Tab selection and split position must remain presentation-only so layout preferences cannot change save or replay semantics. Keep tab bindings reachable while moving rather than mnemonic: switching panels must not require releasing movement. See `src/core/inputActions.ts`, `inventoryTabForAction`. When changing the layout, test actual pointer hit testing with an item and nearby container visible at a narrow viewport; DOM presence alone is not sufficient.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { DEBUG_ONLY_CONTEXTS, INPUT_CONTEXTS } from '../src/core/inputActions.ts';
 import { controlsCardRows, filterControlsCardRows } from '../src/game/controls.ts';
-import { BindingRegistry, DEBUG_ONLY_CONTEXTS, INPUT_BINDINGS, INPUT_CONTEXTS } from '../src/game/inputBindings.ts';
+import { BindingRegistry, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
   METRICS_HISTORY_LIMIT,

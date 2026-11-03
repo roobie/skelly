@@ -192,7 +192,7 @@
       "simTime": 2,
       "startedAt": 3
     },
-    "game/inputBindings.ts": {
+    "core/inputActions.ts": {
       "holdMs": 2
     },
     "game/inputReplay.ts": {

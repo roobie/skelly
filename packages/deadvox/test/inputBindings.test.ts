@@ -1,18 +1,16 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest';
+import type { Binding, Chord, InputContext } from '../src/core/inputActions.ts';
 import { KeyTrace } from '../src/debug/keyTrace.ts';
 import {
-  type Binding,
   BindingRegistry,
   bindingConflict,
-  type Chord,
   capturedChord,
   chordIssue,
   controlRowIssue,
   defaultKeySetIssues,
   INPUT_BINDINGS,
   type InputCommand,
-  type InputContext,
   KeyboardInput,
   REFUSED_MODIFIERS,
 } from '../src/game/inputBindings.ts';
