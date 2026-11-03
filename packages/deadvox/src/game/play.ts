@@ -3,7 +3,8 @@
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
 import { type ActionText, actionText, fillText } from '../core/actionText.ts';
-import { type MeleeWeapon, PLAYER_CHEST_METRES } from '../core/actorSystem.ts';
+import { PLAYER_CHEST_METRES } from '../core/actorMotion.ts';
+import type { MeleeWeapon } from '../core/actorSystem.ts';
 import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import type { BodyRegion } from '../core/body.ts';

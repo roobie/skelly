@@ -2,10 +2,11 @@
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
+import { PLAYER_CHEST_METRES } from '../src/core/actorMotion.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
 import { activeFusedMassMembers, actorAttackReachMetres } from '../src/core/actorState.ts';
-import { PLAYER_CHEST_METRES, type PlayerSense } from '../src/core/actorSystem.ts';
+import type { PlayerSense } from '../src/core/actorSystem.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';

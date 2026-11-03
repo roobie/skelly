@@ -28,7 +28,7 @@ The spitter still has an ordinary `attack` for when the player reaches it. A spi
 
 **Sight, not hearing, starts a spit.** A zombie spits only at a player it sees, from inside its range band and sight cone. Heard or remembered stimuli move it, as they move any zombie, but they never aim a spit, so breaking sight always stops the next one. See `src/core/actorSystem.ts`, `seesPlayer`.
 
-**Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit and the cooldown is not spent. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `src/core/actorSystem.ts`, `withinAttackReach`, and `src/core/explosive.ts`, `inSight`.
+**Line of sight is checked at release.** The path from the mouth to the player's chest is tested against solids when the spit leaves. If something solid is in the way, there is no spit and the cooldown is not spent. Ducking behind a wall during the wind-up is the main counter, and it must work. The amalgam's tentacle and the grenade use the same rule. See `src/core/actorMotion.ts`, `withinAttackReach`, and `src/core/explosive.ts`, `inSight`.
 
 **The glob is simulated.** Flight gives the player a second chance after the wind-up: sidestepping matters because the spit is a thing in the world, not delayed unavoidable damage. See `src/core/acidGlob.ts`, `advanceAcidGlob`, and `src/core/actorSystem.ts`, `ActorSystem.acidGlobContact`. Flight and splash appearance remain presentation only; see `src/render/acidEffects.ts`, `AcidEffects`.
 

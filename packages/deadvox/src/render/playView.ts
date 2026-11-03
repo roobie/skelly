@@ -126,7 +126,7 @@ export interface PlayWorldFrame {
   readonly calendar: number;
   readonly time: number;
   readonly playerEye: Vec3;
-  /** Where zombie attacks aim, in metres (core/actorSystem.ts, `PLAYER_CHEST_METRES`). */
+  /** Where zombie attacks aim, in metres (core/actorMotion.ts, `PLAYER_CHEST_METRES`). */
   readonly playerChest: Vec3;
   readonly lastActorStep: number;
   readonly lastBackgroundStep: number;
