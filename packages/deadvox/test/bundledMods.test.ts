@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { perceivePlayer } from '../src/core/actorSystem.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
-import { perceivePlayer } from '../src/core/zombies.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { startupContent } from './baseRegistry.ts';

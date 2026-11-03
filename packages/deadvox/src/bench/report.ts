@@ -187,7 +187,7 @@ const showShamblerReport = (card: HTMLElement, record: BenchRecord): void => {
     element('h1', 'Shambler benchmark results'),
     element(
       'p',
-      'Frame times are wall-clock intervals; slow frames are over 18 ms. ZombieSystem tick and render-submit are CPU timings. Holes are nearby unmeshed columns.',
+      'Frame times are wall-clock intervals; slow frames are over 18 ms. ActorSystem tick and render-submit are CPU timings. Holes are nearby unmeshed columns.',
     ),
     table,
     element('h2', 'One-line summary'),

@@ -1,4 +1,5 @@
 import { BODY_PLANS } from './actorModels.ts';
+import type { ActorState, ActorSystemState, HordeState } from './actorSystem.ts';
 import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState, assertBreathHoldState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, TOUCHES } from './body.ts';
@@ -26,7 +27,6 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { assertVehicleState, type VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedChunk, SavedColumn } from './world.ts';
 import { regionIndex, WORLD_REGION_METRES } from './worldRegion.ts';
-import type { HordeState, ZombieState, ZombieSystemState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -108,7 +108,7 @@ interface EncodedChunk extends SavedChunk {
 interface Region {
   vehicles: { order: number; id: number; vehicle: VehicleInstancesState['instances'][number]['vehicle'] }[];
   chunks: EncodedChunk[];
-  zombies: { order: number; id: number; zombie: ZombieState }[];
+  zombies: { order: number; id: number; zombie: ActorState }[];
   entities: { order: number; entity: BlockEntityState }[];
   piles: { order: number; pile: InventoryState['piles'][number] }[];
 }
@@ -123,8 +123,8 @@ interface WirePayload {
       nextEntityId: number;
       nextPuddleId: number;
       hordes: HordeState[];
-      acidGlobs: ZombieSystemState['acidGlobs'];
-      acidPuddles: ZombieSystemState['acidPuddles'];
+      acidGlobs: ActorSystemState['acidGlobs'];
+      acidPuddles: ActorSystemState['acidPuddles'];
     };
     vehiclesNextId: number;
     blockEntitiesNextUid: number;
@@ -718,9 +718,9 @@ const zombie = obj({
   stepOffset: opt(finite),
   hitFlinchTime: opt(nonNegative),
   staggerSimSeconds: nonNegative,
-  /** Bone ids severed so far — cumulative, never shrinks; see Zombie.severed's own doc comment. */
+  /** Bone ids severed so far — cumulative, never shrinks; see Actor.severed's own doc comment. */
   severed: arr(str()),
-  /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Zombie.carved. */
+  /** Fused-mass voxel-grid cells knocked out by hits, ascending; see Actor.carved. */
   carved: arr(nonNegativeInt),
 });
 const playerState = obj({
@@ -1350,7 +1350,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
 
 function restoreWirePayload(wire: WirePayload): SaveSnapshot {
   const chunks: EncodedChunk[] = [];
-  const zombies: { order: number; id: number; zombie: ZombieState }[] = [];
+  const zombies: { order: number; id: number; zombie: ActorState }[] = [];
   const entities: BlockEntityState[] = [];
   const piles: InventoryState['piles'] = [];
   for (const region of Object.values(wire.world.regions)) {
@@ -1861,7 +1861,7 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
 }
 
-function assertAcidGlobSources(state: ZombieSystemState): void {
+function assertAcidGlobSources(state: ActorSystemState): void {
   for (const glob of state.acidGlobs) {
     if (glob.source >= state.nextEntityId) {
       throw new Error('Invalid acid glob source');

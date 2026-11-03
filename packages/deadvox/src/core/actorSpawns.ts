@@ -1,8 +1,8 @@
+import type { ActorSystem } from './actorSystem.ts';
 import { type SpawnTimeWindow, spawnWindowOpen } from './clock.ts';
 import { type Registry, requireDayCycle } from './content.ts';
 import type { ActorSpawn, Site } from './site.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { ZombieSystem } from './zombies.ts';
 
 /** Chunk-driven spawns with session-lifetime de-duplication: killed shamblers stay gone. */
 export interface ActorColumnLoad {
@@ -10,13 +10,13 @@ export interface ActorColumnLoad {
   cz: number;
   site: Pick<Site, 'actorsIn' | 'hordesIn'>;
   registry: Registry;
-  zombies: ZombieSystem;
+  zombies: ActorSystem;
 }
 
 export interface ActorSpawnAdvance {
   calendar: number;
   registry: Registry;
-  zombies: ZombieSystem;
+  zombies: ActorSystem;
 }
 
 interface PendingSpawn {
@@ -101,7 +101,7 @@ export class ActorSpawner {
     this.spawnOnce(key, spawn, registry, zombies);
   }
 
-  private spawnOnce(key: string, spawn: ActorSpawn, registry: Registry, zombies: ZombieSystem): void {
+  private spawnOnce(key: string, spawn: ActorSpawn, registry: Registry, zombies: ActorSystem): void {
     const type = registry.zombies.get(spawn.type);
     if (type) {
       this.spawned.add(key);

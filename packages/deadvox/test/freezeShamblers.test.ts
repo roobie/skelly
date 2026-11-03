@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor, MeleeResult } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { MeleeResult, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -30,7 +30,7 @@ const makeSystem = (
   hurtPlayer: (amount: number) => void = () => undefined,
   onMeleeResult?: (result: MeleeResult) => void,
 ) =>
-  new ZombieSystem({
+  new ActorSystem({
     player: () => player(target),
     isSolid: FLOOR,
     isOpaque: FLOOR,
@@ -42,12 +42,12 @@ const makeSystem = (
     ...(onMeleeResult ? { onMeleeResult } : {}),
     seed: 31,
   });
-const run = (system: ZombieSystem, seconds: number): void => {
+const run = (system: ActorSystem, seconds: number): void => {
   for (let frame = 0; frame < Math.ceil(seconds * 60); frame++) {
     system.tick(1 / 60);
   }
 };
-const posedBoxes = (zombie: Zombie) =>
+const posedBoxes = (zombie: Actor) =>
   posedHumanoidRegionBoxes({
     seed: zombie.figureSeed,
     position: zombie.body.pos,
@@ -61,7 +61,7 @@ const posedBoxes = (zombie: Zombie) =>
     severed: zombie.severed,
     blockSize: BLOCK_SIZE,
   });
-const regionRay = (zombie: Zombie, region: HumanoidHitRegion) => {
+const regionRay = (zombie: Actor, region: HumanoidHitRegion) => {
   const targetBone: Readonly<Record<HumanoidHitRegion, string>> = {
     head: 'head',
     torso: 'chest',
@@ -85,7 +85,7 @@ const regionRay = (zombie: Zombie, region: HumanoidHitRegion) => {
 describe('debug shambler freeze', () => {
   it('advances stance over 0.5 simulation seconds and pauses the fade while frozen', () => {
     let target: Vec3 = [100, 1, 100];
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       player: () => player(target),
       isSolid: FLOOR,
       isOpaque: FLOOR,

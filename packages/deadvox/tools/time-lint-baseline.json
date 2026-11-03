@@ -140,7 +140,7 @@
       "hitFlinchTime": 2,
       "idleTime": 2
     },
-    "core/zombies.ts": {
+    "core/actorSystem.ts": {
       "attackWindup": 3,
       "cooldown": 2,
       "expiresAt": 1,

@@ -1,10 +1,10 @@
+import type { MeleeWeapon } from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import type { MeleeClassDef } from '../core/content.ts';
 import type { Needs } from '../core/needs.ts';
 import { spendStamina } from '../core/needs.ts';
 import { type BeginMeleeSwing, copyMeleeWeapon, type PlayerCombat } from '../core/playerCombat.ts';
 import type { ItemDef } from '../core/schema.ts';
-import type { MeleeWeapon } from '../core/zombies.ts';
 
 export const meleeProfileForWeapon = (classes: ReadonlyMap<string, MeleeClassDef>, kind: string) => {
   const tuning = classes.get(kind);

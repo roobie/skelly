@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
+import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/actorSystem.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { actorAttackReachForDef, actorAttackReachMetres, actorBodyDimensions } from '../src/core/zombies.ts';
 import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
@@ -34,7 +34,7 @@ const testEngine = (isSolid: (x: number, y: number, z: number) => boolean, seed 
   }) as unknown as Engine;
 
 const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: number, z: number) => boolean) =>
-  new ZombieSystem({
+  new ActorSystem({
     isSolid,
     isOpaque: isSolid,
     blockSize: SCALE.blockSize,

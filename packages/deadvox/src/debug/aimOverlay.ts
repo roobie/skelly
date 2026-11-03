@@ -1,5 +1,5 @@
 import { BufferAttribute, BufferGeometry, LineBasicMaterial, LineSegments, type Scene } from 'three';
-import type { ZombieAim } from '../core/zombies.ts';
+import type { ActorAim } from '../core/actorSystem.ts';
 
 const GREEN = 0x00_ff_50;
 const AMBER = 0xff_b5_00;
@@ -18,10 +18,10 @@ const BOX_EDGES = [
   [6, 7],
 ] as const;
 
-/** Debug-only wireframe of exactly the posed voxel boxes returned by ZombieSystem.aimAt. */
+/** Debug-only wireframe of exactly the posed voxel boxes returned by ActorSystem.aimAt. */
 export class DebugAimOverlay {
   readonly line: LineSegments<BufferGeometry, LineBasicMaterial>;
-  private boxes: ZombieAim['boxes'] = [];
+  private boxes: ActorAim['boxes'] = [];
   private position = new BufferAttribute(new Float32Array(0), 3);
   private readonly blockSize: number;
 
@@ -37,11 +37,11 @@ export class DebugAimOverlay {
     scene.add(this.line);
   }
 
-  get aimedBoxes(): ZombieAim['boxes'] {
+  get aimedBoxes(): ActorAim['boxes'] {
     return this.boxes;
   }
 
-  update(aim: ZombieAim | undefined): void {
+  update(aim: ActorAim | undefined): void {
     this.boxes = aim?.boxes ?? [];
     this.line.visible = this.boxes.length > 0;
     this.line.material.color.setHex(aim?.inReach ? GREEN : AMBER);

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { hearVocalNoise } from '../src/core/actorSystem.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Rng } from '../src/core/random.ts';
@@ -10,7 +11,6 @@ import type { SoundId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotEmission, heartbeatForStamina, playerHeartbeat } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

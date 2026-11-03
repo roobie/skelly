@@ -2,6 +2,7 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
+import { type Actor, BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
 import { adsCameraEye, guardAdsCamera } from '../core/adsView.ts';
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
@@ -25,7 +26,6 @@ import type { BodyTuningDef, NightVision } from '../core/schema.ts';
 import type { PoweredLight } from '../core/sitePower.ts';
 import { skyAt, sunShadowStrength } from '../core/sky.ts';
 import { skyInWeather, type Weather } from '../core/weather.ts';
-import { BACKGROUND_ACTOR_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PainCue } from '../game/painCue.ts';
@@ -125,13 +125,13 @@ export interface PlayWorldFrame {
   readonly calendar: number;
   readonly time: number;
   readonly playerEye: Vec3;
-  /** Where zombie attacks aim, in metres (core/zombies.ts, `PLAYER_CHEST_METRES`). */
+  /** Where zombie attacks aim, in metres (core/actorSystem.ts, `PLAYER_CHEST_METRES`). */
   readonly playerChest: Vec3;
   readonly lastZombieStep: number;
   readonly lastBackgroundStep: number;
   readonly dt: number;
   readonly entities: BlockEntities;
-  readonly zombies: EntityStore<Zombie>;
+  readonly zombies: EntityStore<Actor>;
   readonly acidGlobs: readonly Readonly<AcidGlobState>[];
   readonly acidPuddles: readonly Readonly<AcidPuddleState>[];
   readonly frozen: boolean;

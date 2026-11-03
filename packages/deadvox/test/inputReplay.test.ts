@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/actorSystem.ts';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
@@ -9,7 +10,6 @@ import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
-import { BACKGROUND_ACTOR_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import {

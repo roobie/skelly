@@ -1,8 +1,8 @@
 import { bodyPlanModel, figureVariantOf } from '../core/actorModels.ts';
+import type { ActorSystem } from '../core/actorSystem.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId } from '../core/entities.ts';
-import type { ZombieSystem } from '../core/zombies.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';
 
@@ -16,7 +16,7 @@ export function stageRagdollSweep({
   restored,
   groundAt,
 }: {
-  system: ZombieSystem | undefined;
+  system: ActorSystem | undefined;
   renderer: ActorRenderer;
   registry: Registry;
   origin: Vec3;

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { Actor } from '../src/core/actorSystem.ts';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { SLING_SLOT } from '../src/core/firearmFitting.ts';
@@ -7,7 +8,6 @@ import { Inventory, workInProgressItem } from '../src/core/inventory.ts';
 import { options, pocketGroundItem, quickbarTake, quickMove, toHands, wieldOrPocket } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer, type ReachSnapshot } from '../src/core/reach.ts';
 import type { FurnitureDef } from '../src/core/schema.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { downedBodyPlan } from '../src/game/downedBody.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
@@ -203,7 +203,7 @@ const reachTargets = {
       incapacitated: true,
       type: [...registry.zombies.values()].find((definition) => definition.downed)!,
       body: { pos: [pos[0] + 0.5, pos[1], pos[2] + 0.5], halfWidth: 0.4, height: 0.5 },
-    } as Zombie;
+    } as Actor;
     return (player) => [downedBodyPlan(player, zombie, 'finish-off').ok];
   },
 } satisfies Record<

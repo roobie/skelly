@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import type { PlayerSense, VocalNoise } from '../src/core/actorSystem.ts';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { PlayerSense, VocalNoise } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -51,7 +51,7 @@ describe('stimulus memory', () => {
   ] as const)('forgets an unreachable horde sound during $expected mode', ({ hour, expected }) => {
     const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const system = new ZombieSystem({ ...senses(target, unreachableWall, hour), isLoaded: () => true });
+    const system = new ActorSystem({ ...senses(target, unreachableWall, hour), isLoaded: () => true });
     system.addHorde('memory-fixture', SHAMBLER, [200, 1, 0], 1);
     let time = 0.5;
     system.tickBackground(0.5, time);
@@ -71,7 +71,7 @@ describe('stimulus memory', () => {
   it('restarts a horde’s memory when it hears a newer sound before forgetting the first', () => {
     let noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
-    const system = new ZombieSystem({ ...senses(target, unreachableWall), isLoaded: () => true });
+    const system = new ActorSystem({ ...senses(target, unreachableWall), isLoaded: () => true });
     system.addHorde('memory-refresh-fixture', SHAMBLER, [200, 1, 0], 1);
     const firstTime = 0.5;
     system.tickBackground(0.5, firstTime);
@@ -96,7 +96,7 @@ describe('stimulus memory', () => {
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
     const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
-    const system = new ZombieSystem({ ...senses(target, wall), seed: 113 });
+    const system = new ActorSystem({ ...senses(target, wall), seed: 113 });
     const zombie = system.store.get(system.add(type, [20, 1, 0]))!;
     zombie.body.onGround = true;
     const dt = 1 / 20;
@@ -130,7 +130,7 @@ describe('stimulus memory', () => {
     const type = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
     const wall: SolidAt = (x, y) => y === 0 || (x === 10 && y > 0 && y < 5);
     const options = { ...senses(target, wall), seed: 113 };
-    const system = new ZombieSystem(options);
+    const system = new ActorSystem(options);
     const zombie = system.store.get(system.add(type, [20, 1, 0]))!;
     system.addHorde('forgotten-memory-fixture', type, [200, 1, 0], 1);
     zombie.body.onGround = true;
@@ -161,7 +161,7 @@ describe('stimulus memory', () => {
     system.add(type, [40, 1, 0]);
     const snapshot = system.snapshotState();
     const canonical = canonicalJsonBytes(snapshot);
-    const restored = new ZombieSystem(options);
+    const restored = new ActorSystem(options);
     restored.restoreState(snapshot, (id) => registry.zombies.get(id));
     expect(canonicalJsonBytes(restored.snapshotState())).toEqual(canonical);
   });

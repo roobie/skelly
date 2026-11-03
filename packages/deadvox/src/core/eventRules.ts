@@ -1,9 +1,9 @@
+import type { ActorSystem } from './actorSystem.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase } from './dayPhase.ts';
 import type { ScenarioRun } from './scenarioRun.ts';
 import type { EventRuleDef } from './schema.ts';
-import type { ZombieSystem } from './zombies.ts';
 
 export interface EventRuleAdvance {
   rules: readonly EventRuleDef[];
@@ -13,7 +13,7 @@ export interface EventRuleAdvance {
   /** Where the player stands; a released horde heads here. */
   player: Readonly<Vec3>;
   registry: Pick<Registry, 'zombies'>;
-  zombies: Pick<ZombieSystem, 'releaseHorde'>;
+  zombies: Pick<ActorSystem, 'releaseHorde'>;
 }
 
 /**

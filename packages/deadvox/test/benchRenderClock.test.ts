@@ -1,14 +1,14 @@
 import { type InstancedMesh, Matrix4 } from 'three';
 import { expect, it } from 'vitest';
 import { syncClock } from '../src/bench/renderClock.ts';
+import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT, type PlayerSense } from '../src/core/actorSystem.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT, type PlayerSense } from '../src/core/zombies.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
@@ -26,7 +26,7 @@ it('draws a background actor partway between its own slice updates when synced o
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,
@@ -37,7 +37,7 @@ it('draws a background actor partway between its own slice updates when synced o
     hurtPlayer: () => undefined,
     seed: 1,
     isLoaded: () => true,
-    activeZombieRadiusMetres: 10,
+    activeActorRadiusMetres: 10,
   });
   // Far enough that the system classifies both as background; the nearer one is drawn first.
   const shambler = registry.zombies.get('shambler')!;

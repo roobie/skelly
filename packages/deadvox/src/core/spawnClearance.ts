@@ -8,7 +8,7 @@ export interface SpawnBodyDimensions {
   readonly height: number;
 }
 
-/** Collision dimensions in voxel blocks, matching the bodies used by ZombieSystem. */
+/** Collision dimensions in voxel blocks, matching the bodies used by ActorSystem. */
 export const actorBodyDimensions = (type: ActorDef, blockSize: number): SpawnBodyDimensions =>
   type.model === 'fused-mass'
     ? fusedMassCollisionEnvelope(fusedMassFigureForType(type, FUSED_MASS_FIGURE_SEED), blockSize)

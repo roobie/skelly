@@ -1,5 +1,6 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
+import type { ActorAim, MeleeResult } from '../core/actorSystem.ts';
 import { getBuildRevision } from '../core/buildInfo.ts';
 import { formatClock } from '../core/clock.ts';
 import { type ActorDef, requireDayCycle } from '../core/content.ts';
@@ -18,7 +19,6 @@ import type { WeatheringDef } from '../core/schema.ts';
 import { firearmsCombatTuning } from '../core/skillTraining.ts';
 import { WEATHERING_RANGES } from '../core/weather.ts';
 import type { WeatheringUrlState } from '../core/weatheringUrl.ts';
-import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type {
   DebugHooks,
   DebugModule,
@@ -1850,7 +1850,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     get aimEnabled() {
       return aimEnabled;
     },
-    updateAim(aim: ZombieAim | undefined) {
+    updateAim(aim: ActorAim | undefined) {
       zombieAimShown = aimEnabled && aim !== undefined;
       aimOverlay.update(aimEnabled ? aim : undefined);
       if (aimReadout) {

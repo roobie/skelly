@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { type HordeState, perceivePlayer } from '../src/core/actorSystem.ts';
 import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -6,10 +7,9 @@ import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { SunExposureCache } from '../src/core/lights.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { skyAt, sunDirection } from '../src/core/sky.ts';
-import { type HordeState, perceivePlayer } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const cycle = requireDayCycle(registry);
@@ -39,7 +39,7 @@ const phaseSamples = () => {
 
 const hordeModeAt = (time: number): HordeState['mode'] => {
   const state = dayPhaseAt(cycle, time);
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: () => player,
     isSolid: floor,
     isOpaque: floor,

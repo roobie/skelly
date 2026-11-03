@@ -1,10 +1,10 @@
 import { actionText, fillText } from '../core/actionText.ts';
+import type { Actor, ActorSystem } from '../core/actorSystem.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { bodyInReach, type ReachPlayer } from '../core/reach.ts';
-import type { Zombie, ZombieSystem } from '../core/zombies.ts';
 
 const DOWNED_BODY_ACTION = 'zombie.downed';
 const DOWNED_BODY_WAYS = ['finish-off', 'dismember'] as const;
@@ -12,7 +12,7 @@ export type DownedBodyWay = (typeof DOWNED_BODY_WAYS)[number];
 
 type DownedBodyPlan = { ok: true; simSeconds: number; label: string } | { ok: false; reason: string };
 
-type DownedZombies = Pick<ZombieSystem, 'store' | 'finishDowned'>;
+type DownedZombies = Pick<ActorSystem, 'store' | 'finishDowned'>;
 
 export const isDownedBodyWay = (value: unknown): value is DownedBodyWay =>
   DOWNED_BODY_WAYS.includes(value as DownedBodyWay);
@@ -26,7 +26,7 @@ const carriedTool = (inventory: Inventory, quality: string, level: number): Item
     .sort((a, b) => inventory.name(a).localeCompare(inventory.name(b)))[0];
 
 /** Whether the player can clear this downed body that way now, how long it takes, and its label. */
-export const downedBodyPlan = (player: ReachPlayer, zombie: Zombie | undefined, way: DownedBodyWay): DownedBodyPlan => {
+export const downedBodyPlan = (player: ReachPlayer, zombie: Actor | undefined, way: DownedBodyWay): DownedBodyPlan => {
   const text = actionText(player.inventory.registry);
   const downed = zombie?.incapacitated ? zombie.type.downed : undefined;
   if (!(zombie && downed)) {

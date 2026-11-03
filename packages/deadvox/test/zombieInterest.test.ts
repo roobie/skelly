@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import type { Actor, PlayerSense } from '../src/core/actorSystem.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
-import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const base = registry.zombies.get('shambler')!;
@@ -35,9 +35,9 @@ const fixture = (radiusMetres = 4) => {
     eyeHeightMetres: 1.3,
     vocalNoise: { id: 1, pos: [6, 1, 0], radiusMetres, expiresAt: 0.1 },
   };
-  const cries: Zombie[] = [];
+  const cries: Actor[] = [];
   const options = {
-    onSound: (event: string, _pos: Vec3, zombie?: Zombie) => {
+    onSound: (event: string, _pos: Vec3, zombie?: Actor) => {
       if (zombie && event === zombie.type.sounds.alert) {
         cries.push(zombie);
       }
@@ -51,7 +51,7 @@ const fixture = (radiusMetres = 4) => {
     tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   };
-  const system = new ZombieSystem(options);
+  const system = new ActorSystem(options);
   let time = 0;
   const step = (dt = 0.05) => {
     time += dt;
@@ -329,7 +329,7 @@ describe('shambler interest', () => {
     }
     expect(listener.mode === 'idle' || listener.mode === 'stroll').toBe(true);
     const snapshot = f.system.snapshotState();
-    const restored = new ZombieSystem(f.options);
+    const restored = new ActorSystem(f.options);
     restored.restoreState(snapshot, () => def);
     expect(restored.snapshotState()).toEqual(snapshot);
     const [, savedListener] = [...restored.store.entries()][0]!;
@@ -345,7 +345,7 @@ describe('shambler interest', () => {
     expect(savedListener.lastAlertAt).toBe(firstCryAt);
     const invalid = structuredClone(snapshot);
     invalid.zombies[0]!.zombie.lastAlertAt = -1;
-    expect(() => new ZombieSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid zombie state');
+    expect(() => new ActorSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid zombie state');
   });
 
   it('round-trips a live hesitation and refusal lean through validated saves', () => {
@@ -354,7 +354,7 @@ describe('shambler interest', () => {
     f.step();
     const restore = () => {
       const snapshot = f.system.snapshotState();
-      const restored = new ZombieSystem(f.options);
+      const restored = new ActorSystem(f.options);
       restored.restoreState(snapshot, () => type);
       expect(restored.snapshotState()).toEqual(snapshot);
       return snapshot;
@@ -365,6 +365,6 @@ describe('shambler interest', () => {
     expect(zombie.leanTarget).toBeDefined();
     const snapshot = structuredClone(restore());
     snapshot.zombies[0]!.zombie.refusedAt = -1;
-    expect(() => new ZombieSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');
+    expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');
   });
 });

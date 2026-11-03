@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { perceivePlayer } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';
@@ -7,7 +8,6 @@ import { extractPadded, extractWide } from '../src/core/meshInput.ts';
 import { type Body, bodyOverlapsTerrain } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { isEnclosed, World } from '../src/core/world.ts';
-import { perceivePlayer } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';

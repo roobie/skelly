@@ -188,7 +188,7 @@
       "includes": [
         "**/deadvox/src/render/mobActors.ts",
         "**/deadvox/src/render/ragdoll.ts",
-        "**/deadvox/src/core/zombies.ts",
+        "**/deadvox/src/core/actorSystem.ts",
         "**/deadvox/src/core/actorRegions.ts",
         "**/deadvox/src/core/actorPose.ts",
         "**/deadvox/src/game/session.ts",

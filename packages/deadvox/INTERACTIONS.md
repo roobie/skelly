@@ -64,7 +64,7 @@ A set trap is an ordinary item lying in a ground pile, with its armed or holding
 
 Setting and disarming are handling jobs. Handling jobs are never saved, which makes the disarm non-resumable across a save as the rule requires. A hit, a critical need or movement withdraws a pending disarm instead of pausing it, so the next attempt starts its full duration. Its completion clears the armed state and fires nothing. See `src/game/bearTrapActions.ts`, `interruptDisarm`.
 
-Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `src/core/zombies.ts`, `ZombieSystemOptions`.
+Only traps inside the block of nine regions around the player spring, and the test is positions only, never whether a column is loaded or drawn. See `src/core/worldRegion.ts`, `inPlayerBlock`. Unloaded zombies wait for Slice 4b catch-up without moving, so inside the block an unloaded zombie cannot newly enter a trap's cell; one already standing in it is still caught. See `src/core/actorSystem.ts`, `ActorSystemOptions`.
 
 ## Appliances
 

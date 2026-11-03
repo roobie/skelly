@@ -16,9 +16,9 @@ import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import type { ActorFigure } from './actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
+import type { Actor } from './actorSystem.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassFigure, fusedMassSeveredBones } from './fusedMassFigure.ts';
-import type { Zombie } from './zombies.ts';
 
 export interface ActorPoseInput {
   readonly id?: number;
@@ -58,12 +58,12 @@ export interface PoseRootOverride {
 }
 
 /** Share of the wind-up elapsed, 0 when not winding up; presentation reads it for the sac glow and head pull. */
-export const acidSpitWindupProgress = (zombie: Zombie): number => {
+export const acidSpitWindupProgress = (zombie: Actor): number => {
   const spit = zombie.type.acidSpit;
   return spit && zombie.spitWindup > 0 ? 1 - zombie.spitWindup / spit.windupSimSeconds : 0;
 };
 
-export const actorCrawls = (zombie: Zombie): boolean => {
+export const actorCrawls = (zombie: Actor): boolean => {
   const template = templateByName(bodyPlanModel(figureVariantOf(zombie.type)));
   // Authored leg cuts already shape locomotion; they are not injuries requiring a speed cap.
   if (template.bodyPlan !== 'humanoid' || template.legCut !== undefined) {
@@ -80,7 +80,7 @@ export const actorCrawls = (zombie: Zombie): boolean => {
 };
 
 export const actorPoseInputFor = (
-  zombie: Zombie,
+  zombie: Actor,
   id: number,
   blockSize: number,
   root?: PoseRootOverride,

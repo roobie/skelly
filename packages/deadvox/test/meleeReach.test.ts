@@ -6,15 +6,15 @@ import {
   posedHumanoidRegionBoxes,
   posedRegionHitDistance,
 } from '../src/core/actorRegions.ts';
+import { PLAYER_ARM_REACH_M } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { PLAYER_ARM_REACH_M } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
@@ -38,7 +38,7 @@ const poses = [
 const playerEye: Vec3 = [0, (BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE, 0];
 
 const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: number) => {
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: () => ({
       pos: [0, playerEye[1] - PLAYER.eye / BLOCK_SIZE, 0],
       facing: [1, 0, 0],

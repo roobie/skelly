@@ -9,6 +9,21 @@ import { actionText, fillText } from '../core/actionText.ts';
 import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
 import { ActorSpawner } from '../core/actorSpawns.ts';
 import {
+  type AcidGroundImpact,
+  type Actor,
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+  type HitImpulse,
+  loweredStanceTuning,
+  type MeleeResult,
+  type MeleeWeapon,
+  PLAYER_ARM_REACH_M,
+  type PlayerMovement,
+  type VocalNoise,
+} from '../core/actorSystem.ts';
+import {
   AimController,
   type AimWobbleNoiseTuning,
   aimDirection,
@@ -129,21 +144,6 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
-import {
-  type AcidGroundImpact,
-  BACKGROUND_ACTOR_RATE,
-  BACKGROUND_ACTOR_SLICE_COUNT,
-  BACKGROUND_ACTOR_SLICE_RATE,
-  type HitImpulse,
-  loweredStanceTuning,
-  type MeleeResult,
-  type MeleeWeapon,
-  PLAYER_ARM_REACH_M,
-  type PlayerMovement,
-  type VocalNoise,
-  type Zombie,
-  ZombieSystem,
-} from '../core/zombies.ts';
 import { actorVoiceLaw } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
@@ -545,20 +545,20 @@ export interface SessionOptions {
   onFuseLit?: (item: Item) => void;
   /** Presentation-only: a melee block absorbed damage. */
   onBlock?: (jolt: BlockJolt, full: boolean) => void;
-  onAcidImpact?: (position: Vec3, type: Zombie['type']) => void;
+  onAcidImpact?: (position: Vec3, type: Actor['type']) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A hit drew blood: where it struck, along which line, and how hard. */
-    onWound?: (id: EntityId, zombie: Zombie, hit: HitImpulse, damage: number) => void;
+    onWound?: (id: EntityId, zombie: Actor, hit: HitImpulse, damage: number) => void;
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
-    onSever?: (id: EntityId, zombie: Zombie, part: string, hit: HitImpulse) => void;
+    onSever?: (id: EntityId, zombie: Actor, part: string, hit: HitImpulse) => void;
     /** A hit knocked flesh out of a fused-mass body (its `carved` already lists `cells`). */
-    onCarve?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
+    onCarve?: (id: EntityId, zombie: Actor, cells: readonly number[], hit: HitImpulse) => void;
     /** A zombie became incapacitated but remains in the store and may be revived later. */
-    onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
+    onIncapacitated?: (id: EntityId, zombie: Actor) => void;
     /** A zombie died: it is already out of the store, and its loot is already dropped. */
-    onDeath?: (id: EntityId, zombie: Zombie) => void;
+    onDeath?: (id: EntityId, zombie: Actor) => void;
     /** The actual result of the player's last swing, for debug-only presentation. */
     onMeleeResult?: (result: MeleeResult) => void;
     /** Presentation-only first-person recoil for a confirmed hit. */
@@ -931,7 +931,7 @@ export const createSession = (options: SessionOptions) => {
   };
   const quickbar = new Quickbar();
   const spawner = new ActorSpawner();
-  const zombieStore = new MapEntityStore<Zombie>();
+  const zombieStore = new MapEntityStore<Actor>();
 
   /** The air block at the player's feet, where drops land. */
   const feet = (): Vec3 => [Math.floor(body.pos[0]), Math.floor(body.pos[1] + 0.01), Math.floor(body.pos[2])];
@@ -1574,8 +1574,8 @@ export const createSession = (options: SessionOptions) => {
       }
     }
   };
-  const zombieSystem = new ZombieSystem({
-    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
+  const zombieSystem = new ActorSystem({
+    activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
     store: zombieStore,
     restrained: (id) => traps.holds(id),
     seed: sim.seed,

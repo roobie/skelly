@@ -318,7 +318,7 @@ export const ActorSchema = strictObject({
       interiorColor: Color,
     }),
   ),
-  /** Per-hit chance of severing a random not-yet-severed arm part (src/core/zombies.ts's swing); a
+  /** Per-hit chance of severing a random not-yet-severed arm part (src/core/actorSystem.ts's swing); a
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,
    * not a shared budget. */
   dismember: strictObject({ chance: Fraction, headOnKillChance: Fraction }),

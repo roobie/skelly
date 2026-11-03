@@ -3,6 +3,7 @@ import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
 import type { ActorRegions } from '../src/core/actorRegions.ts';
+import type { Detonation } from '../src/core/actorSystem.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
@@ -20,7 +21,6 @@ import {
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { itemLook } from '../src/render/itemLook.ts';

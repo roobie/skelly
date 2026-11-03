@@ -3,6 +3,12 @@
 // speed while streaming. Each phase records frame times; moving phases also record
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
+import {
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+} from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { type Registry, requireDayCycle } from '../core/content.ts';
@@ -18,12 +24,6 @@ import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
-import {
-  BACKGROUND_ACTOR_RATE,
-  BACKGROUND_ACTOR_SLICE_COUNT,
-  BACKGROUND_ACTOR_SLICE_RATE,
-  ZombieSystem,
-} from '../core/zombies.ts';
 import type { StartupContent } from '../game/bundledContent.ts';
 import { type GameConfig, makeConfig, type SiteName, siteFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
@@ -295,7 +295,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
   const dir = [HEADING[0] / heading, HEADING[1] / heading] as const;
   let [x, , z] = engine.spawn.pos;
   let playerBody: Body | undefined;
-  let zombies: ZombieSystem | undefined;
+  let zombies: ActorSystem | undefined;
   let zombieMeshes: MobActorMeshes | undefined;
   let movement: 'still' | 'jogging' | 'sprinting' = 'still';
   const place = (yaw: number, pitch: number) => {
@@ -331,8 +331,8 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
-      zombies = new ZombieSystem({
-        activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
+      zombies = new ActorSystem({
+        activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
         seed: config.seed,
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,

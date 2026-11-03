@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import type { Actor, PlayerSense } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import {
@@ -11,13 +12,12 @@ import {
 } from '../src/core/footsteps.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { buildFixtureRegistry as buildRegistry } from './economyFixtures.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const BASE = 'src/content/base';
 const FIXTURE_FAMILY = 'fixture_steps';
@@ -38,8 +38,8 @@ const sense = (pos: Vec3, facing: Vec3): PlayerSense => ({
 
 const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
   const played: Vec3[] = [];
-  const store = new MapEntityStore<Zombie>();
-  const system = new ZombieSystem({
+  const store = new MapEntityStore<Actor>();
+  const system = new ActorSystem({
     store,
     seed: 73,
     isSolid,
@@ -62,11 +62,11 @@ const addWalker = ({
   mode,
   type = SHAMBLER,
 }: {
-  system: ZombieSystem;
-  store: MapEntityStore<Zombie>;
+  system: ActorSystem;
+  store: MapEntityStore<Actor>;
   position: Vec3;
   mode: 'stroll' | 'chase';
-  type?: Zombie['type'];
+  type?: Actor['type'];
 }) => {
   const id = system.add(type, position, [1, 0, 0]);
   const zombie = store.get(id)!;
@@ -81,13 +81,13 @@ const addWalker = ({
   return zombie;
 };
 
-const run = (system: ZombieSystem, seconds: number): void => {
+const run = (system: ActorSystem, seconds: number): void => {
   for (let frame = 0; frame < seconds * 60; frame++) {
     system.tick(1 / 60);
   }
 };
 
-const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Zombie['type'] = SHAMBLER): number => {
+const movedSteps = (mode: 'stroll' | 'chase', seconds: number, type: Actor['type'] = SHAMBLER): number => {
   const player = mode === 'chase' ? sense([20, 1, 2], [-1, 0, 0]) : sense([100, 1, 100], [-1, 0, 0]);
   const { system, store, played } = makeWorld(player);
   addWalker({ system, store, position: [2, 1, 2], mode, type });

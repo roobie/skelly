@@ -88,7 +88,7 @@ describe('content-owned item and world policies', () => {
     expect(safeParse(ContentFileSchema, { actors: [zombie] }).success).toBe(false);
     const world = { ...[...baseRegistry.siteGeneration.values()][0]! } as Record<string, unknown>;
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(true);
-    world.activeZombieRadiusMetres = undefined;
+    world.activeActorRadiusMetres = undefined;
     expect(safeParse(ContentFileSchema, { siteGeneration: [world] }).success).toBe(false);
   });
 

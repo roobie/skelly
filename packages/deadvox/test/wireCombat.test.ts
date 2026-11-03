@@ -1,6 +1,7 @@
 import { expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { actorAttackReachMetres, type MeleeWeapon, PLAYER_CHEST_METRES } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -10,13 +11,12 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { actorAttackReachMetres, type MeleeWeapon, PLAYER_CHEST_METRES } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
   const registry = baseRegistry();
@@ -44,7 +44,7 @@ const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
   }
   wire(fence);
   const hits: number[] = [];
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     isSolid: solid,
     isOpaque: opaque,
     isSoundBlocking: soundBlocking,
@@ -180,7 +180,7 @@ it('admits the fused-mass tentacle thrust only when its reach clears the wire th
     const physical = (x: number, y: number, z: number) => y === 0 || movement(x, y, z);
     let playerPos: Vec3 = [0, 1, 8];
     const hits: number[] = [];
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       isSolid: physical,
       isOpaque: worldOpaque(world, registry, entities),
       meleeBlocker: worldMeleeBlocker(world, registry, { entities, physical }),

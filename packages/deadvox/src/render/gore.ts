@@ -15,12 +15,12 @@ import {
   Quaternion,
   Vector3,
 } from 'three';
+import type { Actor, HitImpulse } from '../core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityStore } from '../core/entities.ts';
 import { Rng } from '../core/random.ts';
 import type { GraphicsTuningDef } from '../core/schema.ts';
-import type { HitImpulse, Zombie } from '../core/zombies.ts';
 import { PLAYER_REGION_BOXES, type PlayerFigurePlacement, setPlayerFigurePosition } from './playerFigure.ts';
 
 export type GoreTuning = GraphicsTuningDef['gore'];
@@ -56,7 +56,7 @@ interface Droplet {
   sizeMetres: number;
 }
 
-type SeveredSpurt = Zombie['type']['severedSpurt'];
+type SeveredSpurt = Actor['type']['severedSpurt'];
 
 interface Splat {
   active: boolean;
@@ -65,7 +65,7 @@ interface Splat {
 
 /** One of the nearest wounded bodies, picked afresh each update. */
 interface Dripper {
-  zombie: Zombie | undefined;
+  zombie: Actor | undefined;
   distanceBlocks: number;
   severity: number;
 }
@@ -86,7 +86,7 @@ export interface GorePlayer {
 }
 
 export interface GoreBodies {
-  readonly zombies: Pick<EntityStore<Zombie>, 'entries'>;
+  readonly zombies: Pick<EntityStore<Actor>, 'entries'>;
   readonly listener: Vec3;
   readonly player?: GorePlayer;
 }
@@ -99,10 +99,10 @@ const setPlayerDripOrigin = (
   setPlayerFigurePosition(target, placement, PLAYER_REGION_BOXES[region].at);
 };
 
-const regionNameLists = new WeakMap<Zombie['type']['regions'], readonly string[]>();
+const regionNameLists = new WeakMap<Actor['type']['regions'], readonly string[]>();
 
 /** A type's region names, listed once per type rather than once per body per frame. */
-const regionNames = (maxima: Zombie['type']['regions']): readonly string[] => {
+const regionNames = (maxima: Actor['type']['regions']): readonly string[] => {
   let names = regionNameLists.get(maxima);
   if (!names) {
     names = Object.keys(maxima);
@@ -113,7 +113,7 @@ const regionNames = (maxima: Zombie['type']['regions']): readonly string[] => {
 
 /** How badly a body bleeds, 0 to 1, from its saved wounds: health lost across its regions, severed parts and
  * carved flesh. Derived, so drips and the bloodied tint survive a reload with no state of their own. */
-export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed' | 'carved'>): number => {
+export const woundSeverity = (zombie: Pick<Actor, 'type' | 'regions' | 'severed' | 'carved'>): number => {
   let full = 0;
   let left = 0;
   const maxima = zombie.type.regions;
@@ -151,7 +151,7 @@ export class Gore {
   private readonly droplets: Droplet[];
   private readonly splats: Splat[];
   private readonly drippers: Dripper[];
-  private readonly severities = new WeakMap<Zombie, SeverityMemo>();
+  private readonly severities = new WeakMap<Actor, SeverityMemo>();
   private readonly dropletMesh: InstancedMesh<BoxGeometry, MeshLambertMaterial>;
   private readonly splatMesh: InstancedMesh<CircleGeometry, MeshLambertMaterial>;
   private readonly splatOpacity: InstancedBufferAttribute;
@@ -235,7 +235,7 @@ export class Gore {
 
   /** A body's woundSeverity, worked out at most once per update: the drips and the stains on live bodies
    * (mobActors.ts) both read it every frame. */
-  severity(zombie: Zombie): number {
+  severity(zombie: Actor): number {
     const memo = this.severities.get(zombie);
     if (memo?.update === this.updates) {
       return memo.value;
@@ -391,7 +391,7 @@ export class Gore {
 
   /** Keeps the drippers sorted by distance: takes a free slot, or the farthest's when full, and moves it in
    * behind the last one nearer than it. */
-  private insertDripper(zombie: Zombie, distanceBlocks: number, severity: number): void {
+  private insertDripper(zombie: Actor, distanceBlocks: number, severity: number): void {
     let index = Math.min(this.dripperCount, this.tuning.dripSourceCap - 1);
     const slot = this.drippers[index]!;
     while (index > 0 && this.drippers[index - 1]!.distanceBlocks > distanceBlocks) {

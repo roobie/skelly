@@ -2,16 +2,16 @@ import { type LineBasicMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SCALE = makeScale(0.5);
@@ -19,7 +19,7 @@ const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
 
 const standing = (position: Vec3, facing: Vec3) => {
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: () => ({
       pos: [100, 1, 100],
       facing: [1, 0, 0],
@@ -40,9 +40,9 @@ const standing = (position: Vec3, facing: Vec3) => {
   return { system, id, zombie: system.store.get(id)! };
 };
 
-const posed = (zombie: Zombie, id: number) => posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
+const posed = (zombie: Actor, id: number) => posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
 
-const expectedVertices = (aim: NonNullable<ReturnType<ZombieSystem['aimAt']>>) => {
+const expectedVertices = (aim: NonNullable<ReturnType<ActorSystem['aimAt']>>) => {
   const edges = [
     [0, 1],
     [0, 2],

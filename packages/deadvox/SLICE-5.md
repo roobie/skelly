@@ -67,7 +67,7 @@ Bashing needs actor and obstacle strength, not an inference from movement or the
 brute silhouette. The authored brute shambler is not automatically the tier-2
 brute; the tier-2 brute's door breaking and player knockback arrive together under
 `DESIGN.md`, "Types are data". See `DESIGN.md`, "Base building and electricity", and
-`src/core/zombies.ts`, `ZombieSystem.updateObstacleContact`.
+`src/core/actorSystem.ts`, `ActorSystem.updateObstacleContact`.
 Boarding already has directional opening semantics; player-built boarding must
 not silently turn an inside-openable leaf into an immovable wall. See
 `docs/aftermath.md`, "Door variants", and `src/core/blockEntities.ts`, `doorRefusal`.

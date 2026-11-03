@@ -7,7 +7,7 @@ import { raycast } from './raycast.ts';
 import type { ActorDef } from './schema.ts';
 
 // A damaging hit on a fused-mass body knocks out the voxels around where it struck, leaving a hole. The hole is
-// simulation state (Zombie.carved), so it survives a save and a replay. It never changes region health,
+// simulation state (Actor.carved), so it survives a save and a replay. It never changes region health,
 // damage or severing, but later hits see it: a shot enters a hole and strikes the flesh behind, and passes
 // through a hole that goes all the way (`fleshHit`).
 

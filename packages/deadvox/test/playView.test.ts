@@ -13,6 +13,7 @@ import {
 } from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import graphicsFile from '../src/content/base/graphics.json' with { type: 'json' };
+import type { Actor } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -27,7 +28,6 @@ import { SkyFields } from '../src/core/skyField.ts';
 import type { SkyBounds } from '../src/core/skylight.ts';
 import type { SkySnapshot } from '../src/core/skySnapshot.ts';
 import { buildSkyResult, type SkyResult } from '../src/core/skyTransport.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { ThirdPersonOrbit } from '../src/game/thirdPersonOrbit.ts';
 import { flashlightDaylightScale } from '../src/render/flashlight.ts';
@@ -854,7 +854,7 @@ describe('play presentation ownership', () => {
       lastBackgroundStep: 0,
       dt: 0,
       entities: new BlockEntities(inventory.registry),
-      zombies: new MapEntityStore<Zombie>(),
+      zombies: new MapEntityStore<Actor>(),
       acidGlobs: [],
       acidPuddles: [],
       frozen: false,

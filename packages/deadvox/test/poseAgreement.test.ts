@@ -9,16 +9,16 @@ import {
   targetStanceWeight,
 } from '../src/core/actorPose.ts';
 import { type HumanoidHitRegion, humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -29,7 +29,7 @@ const FLOOR = (_x: number, y: number) => y === 0;
 const livePoseZombie = (type = SHAMBLER) => {
   let target: Vec3 = [100, 1, 100];
   let damage = 0;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     tuning: TEST_SENSE_TUNING,
     isOpaque: FLOOR,
     player: () => ({
@@ -69,7 +69,7 @@ const startTurnedAttack = () => {
   return live;
 };
 
-const rendererFor = (zombie: Zombie) =>
+const rendererFor = (zombie: Actor) =>
   new MobActorMeshes(BLOCK_SIZE, 4, {
     zombies: new Map([[zombie.type.id, { ...zombie.type, figureSeeds: [zombie.figureSeed] }]]),
   });
@@ -120,7 +120,7 @@ const offsetForBox = ({
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
-const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
+const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Actor) => {
   const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
   const { figure } = posedActor(input);
   const hit = posedHumanoidRegionBoxes(input);
@@ -220,7 +220,7 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it('targets aggravated stance while chasing, winding up, and during the attack clip', () => {
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({
@@ -256,7 +256,7 @@ describe('rendered and hit shambler poses', () => {
   });
 
   it('blends slack and aggravated idle poses and initializes a newly tracked chase as aggravated', () => {
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({
@@ -286,7 +286,7 @@ describe('rendered and hit shambler poses', () => {
     expect(midpoint.rotations.chest).not.toEqual(slack.rotations.chest);
     expect(midpoint.rotations.chest).not.toEqual(aggravated.rotations.chest);
 
-    const freshSystem = new ZombieSystem({
+    const freshSystem = new ActorSystem({
       tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({

@@ -4,6 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
 import { posedFusedMassRegionBoxes } from '../src/core/actorRegions.ts';
+import {
+  activeFusedMassMembers,
+  actorAttackReachMetres,
+  PLAYER_CHEST_METRES,
+  type PlayerSense,
+} from '../src/core/actorSystem.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -23,19 +29,13 @@ import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import {
-  activeFusedMassMembers,
-  actorAttackReachMetres,
-  PLAYER_CHEST_METRES,
-  type PlayerSense,
-} from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const BLOCK_SIZE = makeScale(0.5).blockSize;
@@ -52,8 +52,8 @@ const system = (
   sense: () => PlayerSense = player,
   hurtPlayer: (amount: number) => void = () => undefined,
   seed = 17,
-): ZombieSystem =>
-  new ZombieSystem({
+): ActorSystem =>
+  new ActorSystem({
     player: sense,
     isSolid: FLOOR,
     isOpaque: FLOOR,
@@ -81,7 +81,7 @@ const findRegionRay = ({
   boxes,
   distanceMetres = 3,
 }: {
-  simulation: ZombieSystem;
+  simulation: ActorSystem;
   id: number;
   regionId: string;
   boxes: readonly ReturnType<typeof posedFusedMassRegionBoxes>[string][number][];
@@ -104,7 +104,7 @@ const findRegionRay = ({
   return null;
 };
 
-const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3) => {
+const findMemberRay = (simulation: ActorSystem, id: number, distanceMetres = 3) => {
   const zombie = simulation.store.get(id)!;
   const regions = posedFusedMassRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
   for (const member of activeFusedMassMembers(zombie)) {
@@ -285,7 +285,7 @@ const runObstacleCase = (
     y === 0 || Boolean(registry.blocks[world.getBlock(x, y, z)]?.solid) || entities.isSolid(x, y, z);
   const barrierSolid = isSolid(centerX, 1, 0);
   const seenPlayer: PlayerSense = { ...player(), pos: [centerX, 1, 18] };
-  const simulation = new ZombieSystem({
+  const simulation = new ActorSystem({
     player: () => seenPlayer,
     isSolid,
     isOpaque: () => false,
@@ -499,7 +499,7 @@ describe('fused-mass body and combat seam', () => {
       vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: type.hearingModel.loudNoiseRadiusMetres, expiresAt: 10 },
     };
     let heardBody = false;
-    const hearingSystem = new ZombieSystem({
+    const hearingSystem = new ActorSystem({
       player: () => noisyPlayer,
       isSolid: FLOOR,
       isOpaque: FLOOR,
@@ -524,7 +524,7 @@ describe('fused-mass body and combat seam', () => {
   it('uses the shared flinch transform for rendered and hit-region fused-mass pose', () => {
     const type = registry.zombies.get('amalgam')!;
     let heardBody = false;
-    const combatSystem = new ZombieSystem({
+    const combatSystem = new ActorSystem({
       player,
       isSolid: FLOOR,
       isOpaque: FLOOR,
@@ -605,7 +605,7 @@ describe('fused-mass body and combat seam', () => {
 
     // In sight from the start, and far enough beyond the wall that the amalgam clears it before it stops to strike.
     const seenPlayer: PlayerSense = { ...player(), pos: [start[0], 1, -28] };
-    const simulation = new ZombieSystem({
+    const simulation = new ActorSystem({
       player: () => seenPlayer,
       isSolid: walled,
       isOpaque: () => false,
@@ -640,7 +640,7 @@ describe('fused-mass body and combat seam', () => {
     },
   ])('chases a player it sees $layout, and strikes', ({ wall, start, target }) => {
     const seenPlayer: PlayerSense = { ...player(), pos: target };
-    const simulation = new ZombieSystem({
+    const simulation = new ActorSystem({
       player: () => seenPlayer,
       isSolid: (x, y, z) => y === 0 || wall(x, z),
       isOpaque: () => false,
@@ -666,7 +666,7 @@ describe('fused-mass body and combat seam', () => {
     const pillar = (x: number, y: number, z: number): boolean => x >= 0 && x <= 1 && z >= -1 && z <= 0 && y > 0;
     let sense: PlayerSense = player();
     const pillarSystem = () =>
-      new ZombieSystem({
+      new ActorSystem({
         player: () => sense,
         isSolid: (x, y, z) => y === 0 || pillar(x, y, z),
         isOpaque: () => false,
@@ -953,7 +953,7 @@ const attackAlong = ({ typeId, elevation, reachShare, roof = false }: AttackLine
   let roofY = Number.NaN;
   let sense = player();
   const hits: number[] = [];
-  const simulation = new ZombieSystem({
+  const simulation = new ActorSystem({
     player: () => sense,
     isSolid: (_x, y) => y === 0 || y === roofY,
     isOpaque: FLOOR,

@@ -3,7 +3,7 @@
     {
       id: 'authored',
       capability: 'authoredSite',
-      activeZombieRadiusMetres: 40,
+      activeActorRadiusMetres: 40,
       topography: {
         amplitudeMetres: 0.65,
         wavelengthMetres: 28,

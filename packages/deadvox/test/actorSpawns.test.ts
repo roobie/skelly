@@ -1,13 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ActorSpawner } from '../src/core/actorSpawns.ts';
+import type { ActorSystem } from '../src/core/actorSystem.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
-import type { ZombieSystem } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { sweepGroup } from './sweeps.ts';
 
@@ -24,14 +24,14 @@ interface Spawned {
   type: string;
   pos: Vec3;
 }
-const zombieSystemFor = (spawned: Spawned[]): ZombieSystem =>
+const zombieSystemFor = (spawned: Spawned[]): ActorSystem =>
   ({
     add: (type: ActorDef, pos: Vec3) => {
       spawned.push({ type: type.id, pos });
       return spawned.length;
     },
     addHorde: () => undefined,
-  }) as unknown as ZombieSystem;
+  }) as unknown as ActorSystem;
 
 const campAmalgams = () => {
   const markers = camp.shamblers.filter(({ type }) => type === MARKER_TYPE);

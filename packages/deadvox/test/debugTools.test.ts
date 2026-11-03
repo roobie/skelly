@@ -19,7 +19,7 @@ import { fitFixtureOptic, grenadeStart, shortFirearmStart } from './fixtures/deb
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const content = startupContent();
 const { registry } = content;
@@ -148,7 +148,7 @@ describe('debug starting equipment', () => {
     const weapon = { ...weaponDef, cooldown: weaponDef.cooldownSimSeconds };
     expect(weapon).toMatchObject({ damage: 15, reach: 0.8, impulse: 10 });
     let launchImpulse: number | undefined;
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       player: () => ({
         pos: [0, playerEye[1] - PLAYER.eye / SCALE.blockSize, 0],
         facing: [1, 0, 0],

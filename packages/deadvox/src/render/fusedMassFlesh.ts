@@ -13,7 +13,7 @@ import { type Ragdoll, type RagdollWorld, ragdollContent } from './ragdoll.ts';
 import type { RigidBody, RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
-// The fused-mass body's carved flesh (core/fusedMassCarving.ts, Zombie.carved), drawn two ways: the body rebuilt
+// The fused-mass body's carved flesh (core/fusedMassCarving.ts, Actor.carved), drawn two ways: the body rebuilt
 // without its carved voxels, so each hole shows from every side with flesh-coloured walls, and the chunk a
 // hit knocks out, flying off as render-only debris. Neither touches the simulation.
 

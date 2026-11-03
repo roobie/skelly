@@ -1,3 +1,4 @@
+import type { MeleeWeapon } from './actorSystem.ts';
 import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -13,7 +14,6 @@ import {
 } from './meleePose.ts';
 import type { MeleeCharge } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { MeleeWeapon } from './zombies.ts';
 
 export interface MeleeActionState extends MeleeActionPose {
   elapsed: number;

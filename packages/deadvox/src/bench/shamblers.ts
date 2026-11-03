@@ -1,6 +1,12 @@
 // The shambler mode of the shared ?bench= harness. It loads the forest, runs the
-// real fixed-step ZombieSystem and player physics, and records frame/tick/render costs.
+// real fixed-step ActorSystem and player physics, and records frame/tick/render costs.
 
+import {
+  ActorSystem,
+  BACKGROUND_ACTOR_RATE,
+  BACKGROUND_ACTOR_SLICE_COUNT,
+  BACKGROUND_ACTOR_SLICE_RATE,
+} from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { requireDayCycle } from '../core/content.ts';
@@ -13,12 +19,6 @@ import { reachTuning } from '../core/reach.ts';
 import { Simulation } from '../core/sim.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { skyAt } from '../core/sky.ts';
-import {
-  BACKGROUND_ACTOR_RATE,
-  BACKGROUND_ACTOR_SLICE_COUNT,
-  BACKGROUND_ACTOR_SLICE_RATE,
-  ZombieSystem,
-} from '../core/zombies.ts';
 import { type ActorRenderMode, actorRendererFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
@@ -133,7 +133,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
   const backgroundCount = count - activeCount;
   let playerBody!: Body;
-  let zombies!: ZombieSystem;
+  let zombies!: ActorSystem;
   let zombieMeshes!: ActorRenderer;
   let simTime = 0;
   let lastZombieStepTime = 0;
@@ -148,8 +148,8 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       clock: { ratio: dayCycle.clockRatio, start: startTime },
     });
     simulation.godMode = true;
-    zombies = new ZombieSystem({
-      activeZombieRadiusMetres: siteGenerationOf(engine.registry).activeZombieRadiusMetres,
+    zombies = new ActorSystem({
+      activeActorRadiusMetres: siteGenerationOf(engine.registry).activeActorRadiusMetres,
       seed: run.seed,
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,

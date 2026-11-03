@@ -1,7 +1,7 @@
 {
   "siteGeneration": [
     {
-      "activeZombieRadiusMetres": 40,
+      "activeActorRadiusMetres": 40,
       "capability": "authoredSite",
       "id": "authored",
       "palette": {

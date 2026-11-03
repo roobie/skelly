@@ -1,22 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
-const posed = (zombie: Zombie) =>
+const posed = (zombie: Actor) =>
   posedHumanoidRegionBoxes({
     seed: zombie.figureSeed,
     position: zombie.body.pos,
@@ -30,7 +30,7 @@ const posed = (zombie: Zombie) =>
     severed: zombie.severed,
     blockSize: BLOCK_SIZE,
   });
-const regionRay = (zombie: Zombie) => {
+const regionRay = (zombie: Actor) => {
   const box = posed(zombie).rightArm.find((candidate) => candidate.bone === 'forearm.R')!;
   const front: Vec3 = [-zombie.facing[0], 0, -zombie.facing[2]];
   return {
@@ -55,7 +55,7 @@ describe('melee while debug-frozen', () => {
     try {
       renderer.setWorld(FLOOR, BLOCK_SIZE);
       const severedParts: string[] = [];
-      const system = new ZombieSystem({
+      const system = new ActorSystem({
         player: () => ({
           pos: [100, 1, 100],
           facing: [0, 0, -1],

@@ -121,7 +121,7 @@ values without preemptively redesigning the ability's shape or name. See
 **Damage kinds are content.** Naming a kind must not require a code edit. Admission
 checks declarations and class compatibility, while content owns response tuning and
 actor resistance; see `src/core/schema/damageKinds.ts`, `DamageKindSchema`,
-`src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/zombies.ts`,
+`src/core/damageContent.ts`, `checkDamageKinds`, and `src/core/actorSystem.ts`,
 `damageToActor`. A weapon's animation mechanism is a separate content selection, so
 adding a melee kind does not imply adding a pose; see `src/game/melee.ts`,
 `meleeProfileForWeapon`. Every declared kind works on both bodies and terrain:

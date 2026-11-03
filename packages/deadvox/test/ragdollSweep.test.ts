@@ -7,11 +7,11 @@ import { ragdollContent } from '../src/render/ragdoll.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 it('stages ragdoll mechanisms using actor figure variants, not anatomy keys', () => {
   const scale = makeScale(0.5);
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     isSolid: () => false,
     isOpaque: () => false,
     blockSize: scale.blockSize,

@@ -40,7 +40,7 @@ if (args.length > 0) {
     },
   });
 }
-const { ZombieSystem } = await import('../core/zombies.ts');
+const { ActorSystem } = await import('../core/actorSystem.ts');
 if (args.length > 0 && !substituted) {
   throw new Error('The baseline shape was not loaded');
 }
@@ -128,8 +128,8 @@ for (const { name, corridor } of scenarios) {
     eyeHeightMetres: PLAYER.eye,
   };
   const createSystem = () =>
-    new ZombieSystem({
-      activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
+    new ActorSystem({
+      activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
       player: () => sense,
       isSolid,
       solidBricks: terrain,

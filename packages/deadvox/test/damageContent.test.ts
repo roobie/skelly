@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
+import { damageToActor } from '../src/core/actorSystem.ts';
 import { bashBlock } from '../src/core/blockDamage.ts';
 import { BODY_REGIONS, Body, type BodyRegion } from '../src/core/body.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { damageToActor } from '../src/core/zombies.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 import { meleeProfileForWeapon } from '../src/game/melee.ts';
 import { baseRegistry } from './baseRegistry.ts';

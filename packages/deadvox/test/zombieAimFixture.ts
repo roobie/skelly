@@ -7,7 +7,7 @@ import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 /** Reaches past the far wall, so the fixture never depends on the shipped shot range. */
 export const FIXTURE_RANGE_BLOCKS = 120;
@@ -38,7 +38,7 @@ export const farWallTarget = (origin: Vec3, direction: Vec3, blockSize: number):
 
 export const zombieAimFixture = (registry: Registry, origin: Vec3, direction: Vec3, blockSize: number) => {
   const scale = makeScale(blockSize);
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     isSolid: () => false,
     isOpaque: () => false,
     blockSize,

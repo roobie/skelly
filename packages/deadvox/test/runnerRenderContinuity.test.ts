@@ -1,16 +1,16 @@
 import { PerspectiveCamera } from 'three';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import type { Actor, PlayerMovement, PlayerSense } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { PlayerMovement, PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { createPlayerBody, physicsFor, steer } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const RUNNER = registry.zombies.get('runner')!;
@@ -26,7 +26,7 @@ beforeAll(() => {
 afterAll(() => renderer.dispose());
 
 const resetRenderer = (): void => {
-  renderer.sync(new MapEntityStore<Zombie>(), 0, 1, false, 1, 0);
+  renderer.sync(new MapEntityStore<Actor>(), 0, 1, false, 1, 0);
 };
 
 interface MovementSample {
@@ -63,7 +63,7 @@ const runEngagement = (seed: number): EngagementResult => {
     stance: 'standing',
   });
   let hits = 0;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,
@@ -167,7 +167,7 @@ const runBackgroundSlice = ({
   runnerId,
   tier,
 }: {
-  system: ZombieSystem;
+  system: ActorSystem;
   frame: number;
   time: number;
   runnerId: number;
@@ -193,7 +193,7 @@ const runTierHandoff = (): TierResult => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,

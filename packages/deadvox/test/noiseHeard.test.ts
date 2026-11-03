@@ -1,5 +1,6 @@
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
+import { type Actor, hearVocalNoise } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait } from '../src/core/footsteps.ts';
@@ -12,7 +13,6 @@ import type { SoundId } from '../src/core/soundEvents.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { hearVocalNoise, type Zombie } from '../src/core/zombies.ts';
 import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { firearmShotEmission, firearmShotSoundEvents } from '../src/game/audioPresentation.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
@@ -107,7 +107,7 @@ interface PlayedSound {
 }
 interface ScenarioState {
   intent: MoveIntent;
-  actor?: Zombie;
+  actor?: Actor;
   swingOrigin?: Vec3;
   doorPosition?: Vec3;
   furniturePosition?: Vec3;

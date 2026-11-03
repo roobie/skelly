@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { figureSeedPool } from '../src/core/actorFigure.ts';
 import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
+import type { HitImpulse } from '../src/core/actorSystem.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { HitImpulse } from '../src/core/zombies.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { angularVelocity, type RigidBody } from '../src/render/rigidImpulse.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -12,7 +12,7 @@ import { LOOK_FIXTURE } from './lookFixture.ts';
 import { MobActorMeshes } from './mobActorsFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const BLOCK = 0.5;
 const registry = baseRegistry();
@@ -100,7 +100,7 @@ const targetForCut = (
 const createSeveredHit = (mode: CutMode) => {
   const isSolid = (_x: number, y: number, _z: number) => y === -1;
   let renderer: MobActorMeshes | undefined;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     ...senses(isSolid),
     seed: 5,
     onSever: (entityId, source, cut, hit) => renderer?.zombieSevered(entityId, cut, hit, source),

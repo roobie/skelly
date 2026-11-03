@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor } from '../src/core/actorSystem.ts';
 import { breathSteadying, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -23,7 +24,6 @@ import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../src/core/skillTraining.ts';
 import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { contentLookup } from '../src/ui/saveController.ts';
@@ -655,7 +655,7 @@ const FRAGILE: ActorDef = {
 };
 
 /** Adds a shambler facing -z and downs it with a blow to the chest, as the player would. */
-const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie: Zombie } => {
+const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie: Actor } => {
   const id = session.zombies.add(FRAGILE, position, [0, 0, -1]);
   const zombie = session.zombies.store.get(id)!;
   const { blockSize } = makeScale(0.5);
@@ -1249,7 +1249,7 @@ describe('clearing a downed shambler', () => {
       'walked out of reach',
       (runtime: Runtime) => runtime.setIntent({ ...IDLE, forward: -1 }),
       // Still running as it is about to end, with the body beyond reach.
-      (session: Session, zombie: Zombie) => {
+      (session: Session, zombie: Actor) => {
         expect(session.queue.busy).toBe(true);
         const player = {
           inventory: session.inventory,

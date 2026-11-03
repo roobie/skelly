@@ -1,3 +1,4 @@
+import type { ActorAim, ActorSystem, MeleeResult } from '../core/actorSystem.ts';
 import type { Character } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
@@ -6,7 +7,6 @@ import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
-import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
 import type { ActorRenderer } from '../render/mobActors.ts';
@@ -51,7 +51,7 @@ export interface DebugHooks {
   readonly debugModifierHeld: () => boolean;
   /** The camera's current roll in radians (damage feedback; 0 otherwise). */
   readonly roll: () => number;
-  readonly zombies: () => ZombieSystem | undefined;
+  readonly zombies: () => ActorSystem | undefined;
   readonly zombieRenderer: ActorRenderer;
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;
@@ -133,7 +133,7 @@ export interface DebugReadout {
 export interface DebugRuntime {
   readonly menuOpen: boolean;
   readonly aimEnabled: boolean;
-  updateAim: (aim: ZombieAim | undefined) => void;
+  updateAim: (aim: ActorAim | undefined) => void;
   setCrosshairVisible: (visible: boolean) => void;
   /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;

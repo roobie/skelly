@@ -258,7 +258,7 @@ Each actor saves its active instances (effect, source, age, intensity), pruned w
 Aging is closed-form, so compressed and ticked time agree, as `src/core/pain.ts`,
 `fadeAcute`, and `DamageExposures` already do. Effects are actor-generic from the start:
 spells put fire, slowness and stuns on creatures, and a creature with no effects costs
-nothing. Creature stagger can later move onto effects; see `src/core/zombies.ts`, `staggerSimSeconds`.
+nothing. Creature stagger can later move onto effects; see `src/core/actorSystem.ts`, `staggerSimSeconds`.
 
 Analgesics are the first consumer: the mechanism must express painkillers before magic
 relies on it.
@@ -454,8 +454,8 @@ Closed lists to open:
 - **Item use:** `src/game/primaryAction.ts`, `CAPABILITY_DISPATCH`. Casting needs a
   non-item action, or an item capability whose payload is an effect.
 - **Long jobs:** `src/core/longAction.ts`, `LongJob`. Cast time is one more job.
-- **Projectiles and puddles:** they belong to `ZombieSystem` and are typed to the spit
-  ability; see `src/core/zombies.ts`, `ZombieSystem.detonate`. A player-usable system
+- **Projectiles and puddles:** they belong to `ActorSystem` and are typed to the spit
+  ability; see `src/core/actorSystem.ts`, `ActorSystem.detonate`. A player-usable system
   needs an effect payload and a damage kind per blast.
 - **Book outcomes:** reading only teaches recipes; see `src/core/bookReading.ts`.
 - **Quickbar:** it binds items only; see `src/game/quickbar.ts`.
@@ -465,7 +465,7 @@ Closed lists to open:
 Elemental schools need new damage identities without new code enumerations.
 Declarations and class admission belong to `src/core/schema/damageKinds.ts`,
 `DamageKindSchema`, and `src/core/damageContent.ts`, `checkDamageKinds`. Actor
-resistance is keyed by kind and region; see `src/core/zombies.ts`, `damageToActor`.
+resistance is keyed by kind and region; see `src/core/actorSystem.ts`, `damageToActor`.
 Naming an elemental kind is not enough to make every target support it. #1532 must
 settle target applicability before extending body or terrain response domains; see
 `docs/pack-split.md`, "Hard cases".
@@ -486,7 +486,7 @@ a declared name cannot manufacture an unsupported world reaction.
 
 Creature stats are content, but abilities and body models are closed code lists, and the
 AI targets only the player character; see `src/core/schema/actors.ts`, `ACTOR_ABILITIES`;
-`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/zombies.ts`, `ZombieMode`.
+`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/actorSystem.ts`, `AgentMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.
 

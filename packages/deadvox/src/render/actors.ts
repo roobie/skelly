@@ -1,8 +1,8 @@
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../core/actorRegions.ts';
+import { type Actor, BACKGROUND_ACTOR_RATE } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { BACKGROUND_ACTOR_RATE, type Zombie } from '../core/zombies.ts';
 import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
@@ -11,7 +11,7 @@ import { StepOffset } from './stepOffset.ts';
 type Part = FigurePart;
 interface RenderZombie {
   id: EntityId;
-  zombie: Zombie;
+  zombie: Actor;
   position: Vec3;
   yaw: number;
   headYaw: number;
@@ -69,7 +69,7 @@ export class ActorMeshes {
     }
   }
 
-  private renderPose(id: EntityId, zombie: Zombie, blend: number, realDt: number): RenderZombie {
+  private renderPose(id: EntityId, zombie: Actor, blend: number, realDt: number): RenderZombie {
     const previous = zombie.renderPrevious;
     const position: Vec3 = [
       previous.pos[0] + (zombie.body.pos[0] - previous.pos[0]) * blend,
@@ -138,7 +138,7 @@ export class ActorMeshes {
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with existing direct callers.
   sync(
-    store: EntityStore<Zombie>,
+    store: EntityStore<Actor>,
     realDt = 0,
     alpha = 1,
     freezeLiving = false,

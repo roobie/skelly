@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { acidSpitWindupProgress } from '../src/core/actorPose.ts';
+import type { AcidSpitRelease, PlayerSense } from '../src/core/actorSystem.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { AcidSpitRelease, PlayerSense } from '../src/core/zombies.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const { registry } = startupContent();
 const ACID = registry.zombies.get('acid_zombie')!;
@@ -36,7 +36,7 @@ const sensed = (pos: Vec3, movement: PlayerSense['movement'] = 'still'): PlayerS
 });
 
 interface Harness {
-  system: ZombieSystem;
+  system: ActorSystem;
   releases: AcidSpitRelease[];
   sounds: string[];
   setSolid: (solid: SolidAt) => void;
@@ -46,7 +46,7 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
   const releases: AcidSpitRelease[] = [];
   const sounds: string[] = [];
   let isSolid = solid;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: playerPos,
     isSolid: (x, y, z) => isSolid(x, y, z),
     isOpaque: (x, y, z) => isSolid(x, y, z),
@@ -72,7 +72,7 @@ const harness = (playerPos: () => PlayerSense, solid: SolidAt = FLOOR): Harness 
   };
 };
 
-const frames = (system: ZombieSystem, count: number): void => {
+const frames = (system: ActorSystem, count: number): void => {
   for (let frame = 0; frame < count; frame++) {
     system.tick(1 / 60);
   }
@@ -279,7 +279,7 @@ describe('acid spit', () => {
     const { id, zombie } = spawn(h);
     frames(h.system, Math.floor(WIND_FRAMES / 2));
     expect(zombie.spitWindup).toBeGreaterThan(0);
-    const snapshot = structuredClone(h.system.snapshotState()) as ReturnType<ZombieSystem['snapshotState']>;
+    const snapshot = structuredClone(h.system.snapshotState()) as ReturnType<ActorSystem['snapshotState']>;
 
     const twin = harness(() => sensed(PLAYER_POS));
     twin.system.restoreState(snapshot, (typeId) => (typeId === ACID.id ? ACID : undefined));

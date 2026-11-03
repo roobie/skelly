@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import type { PlayerSense } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -9,13 +10,12 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import type { PlayerSense } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 const DURABILITY = 4 * MINIMUM;
@@ -111,7 +111,7 @@ const chasePastWardrobe = (strength: number, walled: boolean) => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: sense,
     isSolid: solid,
     isOpaque: solid,

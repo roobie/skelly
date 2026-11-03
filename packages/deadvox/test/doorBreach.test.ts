@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import type { PlayerSense } from '../src/core/actorSystem.ts';
 import { BlockEntities, type BlockEntity } from '../src/core/blockEntities.ts';
 import { buildRegistry, requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -10,14 +11,13 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
-import type { PlayerSense } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { buildFixtureRegistry, FIXTURE_BLOW_SOUND, fixtureSounds } from './economyFixtures.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const MINIMUM = 5;
 /** A whole number of minimum blows, so the last of them brings the damage exactly to it. */
@@ -91,7 +91,7 @@ const chaseThroughDoor = (strength: number, seconds: number) => {
     eyeHeightMetres: 1.3,
     stance: 'standing',
   });
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     player: sense,
     isSolid: solid,
     isOpaque: solid,

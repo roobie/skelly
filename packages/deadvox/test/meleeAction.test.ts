@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor, MeleeWeapon } from '../src/core/actorSystem.ts';
 import { Body } from '../src/core/body.ts';
 import type { ActorDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -13,7 +14,6 @@ import { stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
   resolvePlayerMeleeWeapon,
@@ -28,7 +28,7 @@ import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -84,8 +84,8 @@ const blockedPlayer = {
   lightSeenFrom: 40,
   eyeHeightMetres: 1.3,
 };
-const playerCombats = new WeakMap<ZombieSystem, PlayerCombat>();
-const combatFor = (system: ZombieSystem): PlayerCombat => playerCombats.get(system)!;
+const playerCombats = new WeakMap<ActorSystem, PlayerCombat>();
+const combatFor = (system: ActorSystem): PlayerCombat => playerCombats.get(system)!;
 const makeSystem = (
   isSolid: SolidAt = FLOOR,
   results: string[] = [],
@@ -93,7 +93,7 @@ const makeSystem = (
   options: { weaponHits?: number[]; seed?: number } = {},
 ) => {
   const { weaponHits = [], seed = 0 } = options;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     seed,
     player: () => blockedPlayer,
     isSolid,
@@ -110,7 +110,7 @@ const makeSystem = (
   return system;
 };
 
-const makeTarget = (system: ZombieSystem, type: ActorDef = SHAMBLER) => {
+const makeTarget = (system: ActorSystem, type: ActorDef = SHAMBLER) => {
   const id = system.add(type, [0, 1, 4], [0, 0, 1]);
   const zombie = system.store.get(id)!;
   zombie.body.onGround = true;
@@ -119,7 +119,7 @@ const makeTarget = (system: ZombieSystem, type: ActorDef = SHAMBLER) => {
 };
 
 const regionRay = (
-  zombie: Zombie,
+  zombie: Actor,
   id: number,
   region: 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg',
 ): { origin: Vec3; direction: Vec3 } => {
@@ -136,10 +136,10 @@ const regionRay = (
   const length = Math.hypot(...delta);
   return { origin, direction: delta.map((value) => value / length) as Vec3 };
 };
-const headRay = (zombie: Zombie, id: number) => regionRay(zombie, id, 'head');
+const headRay = (zombie: Actor, id: number) => regionRay(zombie, id, 'head');
 
 const start = (
-  system: ZombieSystem,
+  system: ActorSystem,
   ray: { origin: Vec3; direction: Vec3 },
   profile: MeleeProfile = 'blunt',
   weapon: MeleeWeapon = BASE_WEAPON,
@@ -154,7 +154,7 @@ const start = (
   });
 
 const advance = (
-  system: ZombieSystem,
+  system: ActorSystem,
   time: number,
   hands: { right: number | null; left: number | null } = { right: 11, left: null },
 ) => {

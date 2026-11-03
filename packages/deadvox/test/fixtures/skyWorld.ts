@@ -39,7 +39,7 @@ export function skyWorldFixture(boxes: SkyBounds[] = [fixtureBox]) {
           {
             id: fixtureIds.authoredSite,
             capability: 'authoredSite',
-            activeZombieRadiusMetres: baseSite.activeZombieRadiusMetres,
+            activeActorRadiusMetres: baseSite.activeActorRadiusMetres,
             topography: {
               amplitudeMetres: 0,
               wavelengthMetres: 1,

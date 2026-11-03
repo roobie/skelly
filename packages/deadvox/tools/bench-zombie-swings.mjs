@@ -12,7 +12,7 @@ const server = await createServer({
 });
 try {
   const { buildRegistry } = await server.ssrLoadModule('/src/core/content.ts');
-  const { ZombieSystem } = await server.ssrLoadModule('/src/core/zombies.ts');
+  const { ActorSystem } = await server.ssrLoadModule('/src/core/actorSystem.ts');
   const { playerTuning, physicsFor } = await server.ssrLoadModule('/src/game/player.ts');
   const { makeScale } = await server.ssrLoadModule('/src/core/scale.ts');
   const contentDirectory = resolve(projectRoot, 'src/content/base');
@@ -33,7 +33,7 @@ try {
     lightSeenFrom: 0,
     eyeHeightMetres: PLAYER.eye,
   };
-  const zombies = new ZombieSystem({
+  const zombies = new ActorSystem({
     seed: 41,
     isSolid: () => false,
     blockSize: 0.5,

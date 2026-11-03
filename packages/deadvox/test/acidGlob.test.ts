@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { AcidGroundImpact } from '../src/core/actorSystem.ts';
 import { BODY_REGIONS, type BodyRegion } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 // biome-ignore lint/performance/noNamespaceImport: The spy must observe the actual melee block boundary.
@@ -9,7 +10,6 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import type { AcidGroundImpact } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { startupContent } from './baseRegistry.ts';
 

@@ -4,6 +4,7 @@
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
 import type { ActorSpawner } from './actorSpawns.ts';
+import type { ActorSystem, ActorSystemState, VocalNoise } from './actorSystem.ts';
 import type { AimSnapshotState } from './aim.ts';
 import type { SavedBlockDamage } from './blockDamage.ts';
 import type { Character, CharacterState } from './character.ts';
@@ -21,7 +22,6 @@ import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
 import type { VehicleInstancesState } from './vehicleInstances.ts';
 import type { SavedColumn, World } from './world.ts';
-import type { VocalNoise, ZombieSystem, ZombieSystemState } from './zombies.ts';
 
 export interface SaveSnapshot {
   world: {
@@ -30,7 +30,7 @@ export interface SaveSnapshot {
     blockDamage: SavedBlockDamage;
     vehicles: VehicleInstancesState;
     power?: PowerState;
-    zombies: ZombieSystemState;
+    zombies: ActorSystemState;
     spawned: readonly string[];
     rolledColumns: readonly string[];
   };
@@ -75,7 +75,7 @@ export interface SnapshotSessionInput {
   aim: { snapshotState: () => Readonly<AimSnapshotState> };
   survival: Survival;
   quickbar: readonly (number | null)[];
-  zombies: ZombieSystem;
+  zombies: ActorSystem;
   playerCombat: PlayerCombat;
   spawner: ActorSpawner;
   rolledColumns: ReadonlySet<string>;
@@ -136,7 +136,7 @@ export const snapshotSession = ({
       columns: world.snapshotColumns(blockContentId) as SavedColumn[],
       blockDamage: world.blockDamage.snapshotState() as SavedBlockDamage,
       vehicles: inventory.vehicles.snapshotState(foodTimestamp) as VehicleInstancesState,
-      zombies: zombies.snapshotState() as ZombieSystemState,
+      zombies: zombies.snapshotState() as ActorSystemState,
       spawned: [...spawner.snapshotState()],
       rolledColumns: [...rolledColumns],
     },

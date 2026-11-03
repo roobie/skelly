@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import { perceivePlayer } from '../src/core/actorSystem.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';
@@ -16,12 +17,11 @@ import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
-import { perceivePlayer } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { physicsFor } from './playerFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const scale = makeScale(0.5);
@@ -175,7 +175,7 @@ describe('passable but opaque vegetation', () => {
       eyeHeightMetres: 1.3,
     };
     const hits: number[] = [];
-    const system = new ZombieSystem({
+    const system = new ActorSystem({
       isSolid: (x, y, z) => y === 0 || movement(x, y, z),
       isOpaque: opaque,
       blockSize: 0.5,

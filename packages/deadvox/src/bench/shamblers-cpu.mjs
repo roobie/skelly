@@ -2,12 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { ActorSystem, BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT } from '../core/actorSystem.ts';
 import { claimed } from '../core/capabilities.ts';
 import { parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry, requireDayCycle } from '../core/content.ts';
 import { dayPhaseAt } from '../core/dayPhase.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
-import { BACKGROUND_ACTOR_RATE, BACKGROUND_ACTOR_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
@@ -81,8 +81,8 @@ const startTime = parseTimeOfDay('23:30');
 for (const count of counts) {
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
   const backgroundCount = count - activeCount;
-  const system = new ZombieSystem({
-    activeZombieRadiusMetres: siteGenerationOf(registry).activeZombieRadiusMetres,
+  const system = new ActorSystem({
+    activeActorRadiusMetres: siteGenerationOf(registry).activeActorRadiusMetres,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,

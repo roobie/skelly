@@ -56,7 +56,7 @@ const smoothstep = (value: number): number => value * value * (3 - 2 * value);
 /**
  * Render-only reach: extend through the sim-owned windup, hold at contact, then retract over one windup. The
  * tentacle runs straight from `start` toward `target`, at most `reachMetres` long, as the simulation's
- * attack line does (core/zombies.ts, `withinAttackReach`).
+ * attack line does (core/actorSystem.ts, `withinAttackReach`).
  */
 export const fusedMassTentaclePose = ({
   start,

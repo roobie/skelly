@@ -25,6 +25,7 @@ import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
 import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Actor, ActorSystemOptions, AgentMode } from '../src/core/actorSystem.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { MapEntityStore } from '../src/core/entities.ts';
@@ -34,7 +35,6 @@ import { FUSED_MASS_FIGURE_SEED, fusedMassFigureForType } from '../src/core/fuse
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
 import { ACTIVE_ACTOR_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
@@ -62,7 +62,7 @@ import { TEST_SENSE_TUNING } from './senseFixture.ts';
 const hearingGazeTarget = (target: Vec3, id: number, time: number): Vec3 =>
   renderHearingGazeTarget(target, id, time, LOOK_FIXTURE.mobActors.hearingGazeJitter);
 
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 interface TestDebris {
   elapsed: number;
@@ -95,9 +95,9 @@ interface HitParityPose {
 interface HitParityEntry {
   readonly seed: number;
   readonly id: number;
-  readonly zombie: Zombie;
+  readonly zombie: Actor;
 }
-const setOneHitParityPose = (zombie: Zombie, pose: HitParityPose): void => {
+const setOneHitParityPose = (zombie: Actor, pose: HitParityPose): void => {
   zombie.mode = pose.chase ? 'chase' : 'idle';
   if (!pose.chase && pose.speed > 0) {
     zombie.mode = 'stroll';
@@ -259,14 +259,14 @@ const SHAMBLER_FIGURE_SEEDS = SHAMBLER.figureSeeds!;
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
 
-/** A minimal, valid Zombie — same shape ZombieSystem.add() builds (src/core/zombies.ts), constructed
- * directly so these tests don't need a full ZombieSystem (physics/senses/etc, irrelevant here). */
+/** A minimal, valid Actor — same shape ActorSystem.add() builds (src/core/actorSystem.ts), constructed
+ * directly so these tests don't need a full ActorSystem (physics/senses/etc, irrelevant here). */
 const makeZombie = (
   position: Vec3,
   facing: Vec3 = [0, 0, -1],
   severed: string[] = [],
   options: { readonly figureSeed?: number; readonly type?: typeof SHAMBLER } = {},
-): Zombie => {
+): Actor => {
   const figureSeed = options.figureSeed ?? 1;
   const type = options.type ?? SHAMBLER;
   return {
@@ -277,7 +277,7 @@ const makeZombie = (
     body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
     facing: [...facing],
     home: [...position],
-    mode: 'idle' as ZombieMode,
+    mode: 'idle' as AgentMode,
     investigationTier: undefined,
     behaviorRng: Rng.stream(0, 'test-zombie'),
     soundRng: Rng.stream(0, 'test-zombie-sound'),
@@ -311,7 +311,7 @@ const makeZombie = (
     stumbleElapsed: 0,
     stumbleDuration: 0,
     renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
-    regions: { ...type.regions } as Zombie['regions'],
+    regions: { ...type.regions } as Actor['regions'],
     attackWait: 0,
     attackWindup: 0,
     spitWindup: 0,
@@ -327,15 +327,15 @@ const makeZombie = (
 };
 
 const incapacitate = (
-  zombie: Zombie,
+  zombie: Actor,
   frozen = false,
   presentation: {
-    effects?: Pick<ZombieSystemOptions, 'onSever' | 'onDeath' | 'onIncapacitated' | 'onWound'>;
-    beforeDamage?: (system: ZombieSystem) => void;
+    effects?: Pick<ActorSystemOptions, 'onSever' | 'onDeath' | 'onIncapacitated' | 'onWound'>;
+    beforeDamage?: (system: ActorSystem) => void;
   } = {},
 ) => {
   const blockSize = 0.5;
-  const system = new ZombieSystem({
+  const system = new ActorSystem({
     isSolid: () => false,
     isOpaque: () => false,
     blockSize,
@@ -397,7 +397,7 @@ describe('facing convention', () => {
   it('renders a +X-facing zombie with its local forward along +X in world', () => {
     const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const id = store.add(makeZombie([0, 0, 0], [1, 0, 0]));
       renderer.sync(store, 0, 1);
       const pelvis = renderer.boneMatrix(id, 'pelvis')!;
@@ -486,7 +486,7 @@ describe('MobActorMeshes', () => {
       }
       expect(uploaded).toEqual(bits);
     };
-    const store = new MapEntityStore<Zombie>();
+    const store = new MapEntityStore<Actor>();
     const zombie = makeZombie([0, 0, -5]);
     const id = store.add(zombie);
     try {
@@ -543,7 +543,7 @@ describe('MobActorMeshes', () => {
       reveal: terrain,
     });
     const boxes = new ActorMeshes(0.5, 1, terrain);
-    const store = new MapEntityStore<Zombie>();
+    const store = new MapEntityStore<Actor>();
     const zombie = makeZombie([2 * CHUNK + 1, 0, 1]);
     const id = store.add(zombie);
     const snapshot = structuredClone(zombie);
@@ -581,7 +581,7 @@ describe('MobActorMeshes', () => {
       camera.lookAt(0, 0.85, -2.5);
       camera.updateMatrixWorld(true);
       renderer.setCamera(camera);
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const firstId = store.add(makeZombie([0, 0, -5], [0, 0, -1], [], { type: RUNNER, figureSeed: 1 }));
       renderer.sync(store, 1 / 60, 1);
       const internal = renderer as unknown as {
@@ -617,7 +617,7 @@ describe('MobActorMeshes', () => {
       camera.lookAt(0, 1, -2);
       camera.updateMatrixWorld(true);
       renderer.setCamera(camera);
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const entries = [SHAMBLER, RUNNER, CRAWLER].map((type) => {
         const zombie = makeZombie([0, 0, -4], [0, 0, 1], [], { type });
         zombie.mode = 'chase';
@@ -669,7 +669,7 @@ describe('MobActorMeshes', () => {
       },
     });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, -4], [0, 0, 1], [], { type: acid });
       const id = store.add(zombie);
       const before = structuredClone(zombie);
@@ -707,7 +707,7 @@ describe('MobActorMeshes', () => {
       renderer.setCamera(camera);
       const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
       zombie.mode = 'investigate';
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const id = store.add(zombie);
       renderer.sync(store, 1 / 30, 1);
       const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
@@ -744,7 +744,7 @@ describe('MobActorMeshes', () => {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'near';
       zombie.lastPerceived = [4, 0, -4];
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const id = store.add(zombie);
       const heardPoint: Vec3 = [2, 0, -2];
       let gazeKeepsVarying = false;
@@ -801,7 +801,7 @@ describe('MobActorMeshes', () => {
   it('keeps far investigations and horde targets from driving gaze', () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const entries = [undefined, 'horde-test'].map((hordeId, index) => {
         const zombie = makeZombie([index * 4, 0, 0]);
         zombie.mode = 'investigate';
@@ -853,7 +853,7 @@ describe('MobActorMeshes', () => {
       renderer.setPlayerEyePosition([2, 0, -2], PLAYER.sprint);
       const zombie = makeZombie([0, 0, -4]);
       zombie.mode = 'chase';
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const id = store.add(zombie);
       for (let frame = 0; frame < 20; frame++) {
         renderer.sync(store, 1 / 20, 1);
@@ -907,7 +907,7 @@ describe('MobActorMeshes', () => {
       camera.updateMatrixWorld(true);
       renderer.setCamera(camera);
       const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const id = store.add(zombie);
       renderer.sync(store, 1 / 30, 1);
       const damage = incapacitate(zombie);
@@ -930,7 +930,7 @@ describe('MobActorMeshes', () => {
   it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across covering poses', () => {
     const renderer = new MobActorMeshes(0.5, 8, { zombies: new Map([[SHAMBLER.id, SHAMBLER]]) });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const entries = SHAMBLER_FIGURE_SEEDS.map((seed, index) => {
         const zombie = makeZombie([index * 4, 0, 0], [0, 0, -1], [], { figureSeed: seed });
         return { seed, zombie, id: store.add(zombie) };
@@ -977,7 +977,7 @@ describe('MobActorMeshes', () => {
     const type = { ...SHAMBLER, figureSeeds: seeds };
     const renderer = new MobActorMeshes(0.5, 8, { zombies: new Map([[type.id, type]]) });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const ids = seeds.map((seed, index) =>
         store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], { figureSeed: seed })),
       );
@@ -998,7 +998,7 @@ describe('MobActorMeshes', () => {
   it('draws every registry zombie type, visibly, with the figure its content model realizes', () => {
     const renderer = new MobActorMeshes(0.5, registry.zombies.size, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const entries = [...registry.zombies.values()].map((type, index) => {
         const figureSeed = type.figureSeeds?.[0] ?? FUSED_MASS_FIGURE_SEED;
         return { type, figureSeed, id: store.add(makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type, figureSeed })) };
@@ -1041,7 +1041,7 @@ describe('MobActorMeshes', () => {
   it('poses every registry zombie type through its attack wind-up while chasing and flinching', () => {
     const renderer = new MobActorMeshes(0.5, registry.zombies.size, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const entries = [...registry.zombies.values()].map((type, index) => {
         const figureSeed = type.figureSeeds?.[0] ?? FUSED_MASS_FIGURE_SEED;
         const zombie = makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type, figureSeed });
@@ -1074,7 +1074,7 @@ describe('MobActorMeshes', () => {
     const amalgam = registry.zombies.get('amalgam')!;
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type: amalgam });
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
@@ -1140,7 +1140,7 @@ describe('MobActorMeshes', () => {
   it('generates its variant pool and syncs without throwing', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       store.add(makeZombie([0, 0, 0]));
       store.add(makeZombie([2, 0, 2]));
       expect(() => renderer.sync(store, 1 / 60, 1)).not.toThrow();
@@ -1153,7 +1153,7 @@ describe('MobActorMeshes', () => {
   it('recycles a slot once its zombie is removed from the store', () => {
     const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.zombies, poolSize: 1 }); // exactly one slot, total
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const firstId = store.add(makeZombie([0, 0, 0]));
       renderer.sync(store, 1 / 60, 1);
       expect(renderer.isTracked(firstId)).toBe(true);
@@ -1173,7 +1173,7 @@ describe('MobActorMeshes', () => {
   it("doesn't render a zombie beyond its variant's capacity (documented overflow behaviour)", () => {
     const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.zombies, poolSize: 1 }); // capacity 1, so a 2nd zombie always overflows
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const first = store.add(makeZombie([0, 0, 0]));
       const second = store.add(makeZombie([1, 0, 1]));
       renderer.sync(store, 1 / 60, 1);
@@ -1232,7 +1232,7 @@ describe('MobActorMeshes reactions', () => {
     });
     const gore = new Gore(0.5, WORLD_GRAVITY, row.gore);
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
@@ -1261,7 +1261,7 @@ describe('MobActorMeshes reactions', () => {
   it('keeps a corpse (its slot) until it has lain and sunk, then frees it — unlike a plain vanish', async () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
@@ -1289,7 +1289,7 @@ describe('MobActorMeshes reactions', () => {
   it.each([false, true])('builds a ragdoll for torso incapacitation with frozen=%s', async (frozen) => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
@@ -1369,7 +1369,7 @@ describe('MobActorMeshes reactions', () => {
       const type = [...registry.zombies.values()].find((candidate) => figureVariantOf(candidate) === model)!;
       const renderer = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
       const reference = new MobActorMeshes(0.5, 2, { zombies: new Map([[type.id, type]]), poolSize: 1 });
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const seed = type.figureSeeds![0]!;
       const id = store.add(makeZombie([0, 0, 0], [0, 0, -1], [], { type, figureSeed: seed }));
       try {
@@ -1408,7 +1408,7 @@ describe('MobActorMeshes reactions', () => {
 
   it('places a second cut on the drawn falling body', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
-    const store = new MapEntityStore<Zombie>();
+    const store = new MapEntityStore<Actor>();
     const zombie = makeZombie([0, 0, 0]);
     const id = store.add(zombie);
     try {
@@ -1451,7 +1451,7 @@ describe('MobActorMeshes reactions', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
@@ -1479,7 +1479,7 @@ describe('MobActorMeshes reactions', () => {
       poolSize: 1,
     });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombies = Array.from({ length: CORPSE_LIFECYCLE.maxCorpses + 2 }, (_, i) => makeZombie([i * 2, 0, 0]));
       const ids = zombies.map((zombie) => store.add(zombie));
       renderer.sync(store, 0, 1);
@@ -1519,7 +1519,7 @@ describe('MobActorMeshes reactions', () => {
   it('lets an incapacitated row lie and sink once its zombie dies, as any corpse does', async () => {
     const renderer = new MobActorMeshes(0.5, 2, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
@@ -1553,7 +1553,7 @@ describe('MobActorMeshes reactions', () => {
   it('evicts the oldest corpse when its shared dead-thing budget is exceeded', () => {
     const renderer = new MobActorMeshes(0.5, 64, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const ids: number[] = [];
       for (let i = 0; i < 64 && (ids.length === 0 || renderer.isTracked(ids[0]!)); i++) {
         const zombie = makeZombie([i, 0, 0]);
@@ -1578,7 +1578,7 @@ describe('MobActorMeshes dismemberment', () => {
   it("hides a severed bone's whole subtree (zero matrices), leaving the other arm alone", () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       zombie.severed.push('upperArm.L');
       const id = store.add(zombie);
@@ -1598,7 +1598,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('re-derives hidden bones from zombie.severed every sync (source of truth, e.g. after a save/load)', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
@@ -1615,7 +1615,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('continues corpse sinking while live zombie animation is frozen', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { figureSeed: 1 });
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
@@ -1661,7 +1661,7 @@ describe('MobActorMeshes dismemberment', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 2 });
     try {
       renderer.setWorld((_x, y, _z) => y === -1, 0.5);
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1); // establishes render state (lastPos) to spawn debris from
@@ -1701,7 +1701,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('rests debris on the feet-height fallback plane when no world is supplied', async () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
@@ -1731,7 +1731,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('preserves every carried bone world transform at the instant debris is created', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([2, 0, -3], [1, 0, 0]);
       const id = store.add(zombie);
       renderer.sync(store, 1 / 60, 1);
@@ -1764,7 +1764,7 @@ describe('MobActorMeshes dismemberment', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: new Map([[type.id, type]]), poolSize: 1 });
     const gore = new Gore(0.5, WORLD_GRAVITY, GORE_TUNING_FIXTURE);
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { type });
       const id = store.add(zombie);
       const figure = fusedMassFigureForType(type, zombie.figureSeed);
@@ -1823,7 +1823,7 @@ describe('MobActorMeshes dismemberment', () => {
     const { realized } = generateValid(template, 1)!;
     const handRenderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const handStore = new MapEntityStore<Zombie>();
+      const handStore = new MapEntityStore<Actor>();
       const handZombie = makeZombie([0, 0, 0]);
       const handId = handStore.add(handZombie);
       handRenderer.sync(handStore, 0, 1);
@@ -1851,7 +1851,7 @@ describe('MobActorMeshes dismemberment', () => {
 
     const headRenderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const headStore = new MapEntityStore<Zombie>();
+      const headStore = new MapEntityStore<Actor>();
       const headZombie = makeZombie([0, 0, 0]);
       const headId = headStore.add(headZombie);
       headRenderer.sync(headStore, 0, 1);
@@ -1887,8 +1887,8 @@ describe('MobActorMeshes dismemberment', () => {
       camera.updateProjectionMatrix();
       camera.updateMatrixWorld();
       skipped.setCamera(camera);
-      const skippedStore = new MapEntityStore<Zombie>();
-      const referenceStore = new MapEntityStore<Zombie>();
+      const skippedStore = new MapEntityStore<Actor>();
+      const referenceStore = new MapEntityStore<Actor>();
       const skippedZombie = makeZombie([0, 0, 0]);
       const referenceZombie = makeZombie([0, 0, 0]);
       const skippedId = skippedStore.add(skippedZombie);
@@ -1918,7 +1918,7 @@ describe('MobActorMeshes dismemberment', () => {
   it('does nothing for zombieSevered on an untracked id (over capacity)', () => {
     const renderer = new MobActorMeshes(0.5, 1, { zombies: registry.zombies, poolSize: 1 }); // capacity 1: a 2nd zombie always overflows
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       store.add(makeZombie([0, 0, 0]));
       const second = store.add(makeZombie([1, 0, 1]));
       renderer.sync(store, 1 / 60, 1);
@@ -1939,7 +1939,7 @@ describe('MobActorMeshes dismemberment', () => {
       poolSize: 1,
     });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const ids: number[] = [];
       for (let i = 0; i < population; i++) {
         const zombie = makeZombie([i, 0, 0]);
@@ -1964,7 +1964,7 @@ describe('MobActorMeshes stance', () => {
   it('never produces the bind pose (identity rotations) for a standing (speed 0) zombie — the whole point of this task', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]); // idle, never moves — speed stays exactly 0
       const id = store.add(zombie);
       for (let i = 0; i < 5; i++) {
@@ -1983,7 +1983,7 @@ describe('MobActorMeshes stance', () => {
   it('never produces the bind pose for a chasing (aggravated) zombie either, before or after its stance fully settles', () => {
     const renderer = new MobActorMeshes(0.5, 4, { zombies: registry.zombies, poolSize: 1 });
     try {
-      const store = new MapEntityStore<Zombie>();
+      const store = new MapEntityStore<Actor>();
       const zombie = makeZombie([0, 0, 0]);
       zombie.mode = 'chase';
       const id = store.add(zombie);

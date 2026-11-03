@@ -1,6 +1,6 @@
+import type { ActorSystem } from '../core/actorSystem.ts';
 import type { Registry } from '../core/content.ts';
 import type { Body } from '../core/physics.ts';
-import type { ZombieSystem } from '../core/zombies.ts';
 import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 import { placeShamblerRing } from './shamblerPlacement.ts';
@@ -20,7 +20,7 @@ export const spawnShamblerRing = ({
   player: Body;
   engine: ShamblerPlacementWorld;
   registry: Registry;
-  zombies: ZombieSystem;
+  zombies: ActorSystem;
   tier?: 'active' | 'background';
 }): void => {
   const type = registry.zombies.get('shambler');

@@ -20,7 +20,7 @@ import { BASE_DAY_CYCLE, dayStateAtHour } from './dayPhaseFixture.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
-import { ZombieSystem } from './zombieSystemFixture.ts';
+import { ActorSystem } from './zombieSystemFixture.ts';
 
 const registry = baseRegistry();
 const SHAMBLER = registry.zombies.get('shambler')!;
@@ -224,7 +224,7 @@ describe('made-light point pool', () => {
     expect(pool.lights[4]!.position.z).toBeCloseTo(source!.pos[2] * SCALE.blockSize);
 
     const floor = (_x: number, y: number) => y === 0;
-    const zombies = new ZombieSystem({
+    const zombies = new ActorSystem({
       player: () => ({
         pos: [50, 1, 50],
         facing: [-1, 0, 0],

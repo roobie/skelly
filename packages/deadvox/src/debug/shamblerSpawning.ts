@@ -1,15 +1,15 @@
 import { placeShamblerRing } from '../bench/shamblerPlacement.ts';
+import { type ActorSystem, actorAttackReachForDef, actorBodyDimensions } from '../core/actorSystem.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Body } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
-import { actorAttackReachForDef, actorBodyDimensions, type ZombieSystem } from '../core/zombies.ts';
 import type { Engine } from '../game/engine.ts';
 
 /** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
 export const spawnZombieType = (
   engine: Engine,
   player: Body,
-  zombies: ZombieSystem,
+  zombies: ActorSystem,
   options: { readonly typeId: string; readonly count: number },
 ): number => {
   const { typeId, count } = options;
@@ -33,11 +33,11 @@ export const spawnZombieType = (
   return positions.length;
 };
 
-export const spawnShamblers = (engine: Engine, player: Body, zombies: ZombieSystem, count: number): number =>
+export const spawnShamblers = (engine: Engine, player: Body, zombies: ActorSystem, count: number): number =>
   spawnZombieType(engine, player, zombies, { typeId: 'shambler', count });
 
 /** Debug-only fixture: place one close shambler behind solid geometry so it starts unaware. */
-export const spawnUnawareShambler = (engine: Engine, player: Body, zombies: ZombieSystem): boolean => {
+export const spawnUnawareShambler = (engine: Engine, player: Body, zombies: ActorSystem): boolean => {
   const type = engine.registry.zombies.get('shambler');
   if (!type) {
     return false;

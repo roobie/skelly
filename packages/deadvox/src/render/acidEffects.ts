@@ -1,10 +1,10 @@
 import { CircleGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
+import type { Actor } from '../core/actorSystem.ts';
 import type { ActorDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { Rng } from '../core/random.ts';
-import type { Zombie } from '../core/zombies.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 
 type Appearance = NonNullable<ActorDef['acidSpit']>['presentation'];
@@ -35,7 +35,7 @@ export class AcidEffects {
 
   private readonly droplets: Droplet[] = [];
   private readonly dropletMaterials = new Map<string, MeshBasicMaterial>();
-  private readonly dripDue = new WeakMap<Zombie, number>();
+  private readonly dripDue = new WeakMap<Actor, number>();
   private readonly rng: Rng;
 
   private readonly blockSize: number;
@@ -61,7 +61,7 @@ export class AcidEffects {
   }
 
   /** The sac bursting as an acid zombie dies: droplets thrown out from `position` (metres). Presentation only. */
-  deathSplash(position: Vec3, zombie: Zombie): void {
+  deathSplash(position: Vec3, zombie: Actor): void {
     const body = zombie.type.acidBody;
     if (!body) {
       return;
