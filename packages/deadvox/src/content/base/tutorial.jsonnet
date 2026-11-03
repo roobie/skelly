@@ -79,6 +79,7 @@ breach.breaking(shape.colliding({
   }],
   layouts: [{
     id: 'tutorial',
+    attemptPolicy: (import 'attempt-policy.libsonnet').practice,
     lootContext: lootContext,
     demo: true,
     bounds: { x0: -32, z0: -32, x1: 64, z1: 48 },

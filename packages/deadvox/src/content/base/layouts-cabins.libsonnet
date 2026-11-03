@@ -2,6 +2,7 @@
   "layouts": [
     {
       "id": "cabins_demo",
+      attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
       "demo": true,
       "bounds": { "x0": 32, "z0": 32, "x1": 96, "z1": 96 },
       "ground": 21,

@@ -1,7 +1,33 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { makeScale } from '../src/core/scale.ts';
-import { playerStartFromWorld } from '../src/game/worldSetup.ts';
+import { configFromUrl as readConfig } from '../src/game/config.ts';
+import { createWorldSetup, playerStartFromWorld } from '../src/game/worldSetup.ts';
+import { ChunkMeshes } from '../src/render/chunks.ts';
+import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
+
+afterEach(() => vi.unstubAllGlobals());
+
+it('selects the active authored layout policy and supplies none for a rowless diagnostic site', () => {
+  vi.stubGlobal(
+    'Worker',
+    class {
+      postMessage = vi.fn();
+    },
+  );
+  const original = configFromUrl(new URLSearchParams());
+  const layout = makeAttemptLayout();
+  const registry = { ...original.content.registry, layouts: new Map([[layout.id, layout]]) };
+  const content = { ...original.content, registry };
+  const setup = (params: string) => {
+    const config = readConfig(new URLSearchParams(params), content);
+    return createWorldSetup(config, new ChunkMeshes(config.scale.blockSize, registry));
+  };
+  expect(setup(`site=${layout.id}`).attemptPolicy).toEqual(layout.attemptPolicy);
+  registry.layouts.set(layout.id, { ...layout, attemptPolicy: undefined });
+  expect(setup(`site=${layout.id}`).attemptPolicy).toBeUndefined();
+  expect(setup('site=weatheringTest&debug=1').attemptPolicy).toBeUndefined();
+});
 
 describe('player start from world setup', () => {
   it('converts the generated metre-space spawn to a block-space body origin', () => {

@@ -13,6 +13,7 @@ import { blockLiquids, blockPatterns, blockWeatherability } from '../core/meshIn
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
+import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
 import { focusPose, ShowroomCatalogue } from '../core/showroom.ts';
@@ -40,6 +41,7 @@ export interface WorldSetup extends ColumnSource {
   registry: Registry;
   contentErrors: string;
   scenario: ScenarioDef | undefined;
+  readonly attemptPolicy?: AttemptPolicyDef | undefined;
   powerDevices: readonly PlacedPowerDevice[];
   world: World;
   canonicalTerrain: CanonicalTerrain;
@@ -226,7 +228,9 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const { registry, issues } = config.content;
   const contentErrors = issues.map((i) => `${i.source} ${i.path}: ${i.message}`).join('\n');
   const { seed, scale } = config;
-  const built: Site | undefined = buildDebugWeatheringTestSite(config, registry) ?? siteForReviewMap(config, registry);
+  const weathering = buildDebugWeatheringTestSite(config, registry);
+  const built: Site | undefined = weathering ?? siteForReviewMap(config, registry);
+  const row = weathering ? undefined : (registry.scenarios.get(config.site) ?? registry.layouts.get(config.site));
   const shape = terrainShapeOf(registry);
   const groundAt = (xm: number, zm: number): number =>
     worldGroundAt({ seed, shape, scale, surface: built?.surface, xm, zm });
@@ -267,6 +271,7 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
     registry,
     contentErrors,
     scenario: registry.scenarios.get(config.site),
+    attemptPolicy: row?.attemptPolicy,
     powerDevices: placedPowerDevices(registry, built?.authoredPlacements ?? []),
     world,
     canonicalTerrain: new CanonicalTerrain(world, terrain),

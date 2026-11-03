@@ -175,17 +175,8 @@ import { OpticZoom } from './opticZoom.ts';
 import { type MoveIntent, playerTuning } from './player.ts';
 import { applyToHeldItem, PlayerTickActions } from './playerTickActions.ts';
 import { bleedingStatusRows } from './playStatus.ts';
-import { PlaytestObserver } from './playtestObserver.ts';
-import {
-  createSnapshotHistory,
-  downloadFile,
-  type HandBackFile,
-  loadMetrics,
-  metricsFile,
-  persistMetrics,
-  replayFile,
-  SessionMetrics,
-} from './playtestTools.ts';
+import { createAttemptRecording, type PlaytestObserver } from './playtestObserver.ts';
+import { createSnapshotHistory, downloadFile, type HandBackFile, replayFile } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, primaryMeleeAction, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
@@ -216,6 +207,20 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
+const bindMetricsExport = (
+  file: (() => HandBackFile) | undefined,
+  handBack: (file: () => HandBackFile) => Promise<void>,
+): (() => void) => {
+  const button = $<HTMLButtonElement>('playtest-metrics-export');
+  button.disabled = !file;
+  button.onclick = file ? () => handBack(file) : null;
+  return () => {
+    if (file) {
+      downloadFile(file());
+    }
+  };
+};
+
 const caseLandingWorldPosition = ([x, y, z]: Vec3, blockSize: number, liftMetres: number): Vec3 => [
   (x + 0.5) * blockSize,
   y * blockSize + liftMetres,
@@ -232,7 +237,7 @@ interface PlayErrorReportPorts {
   readonly config: Engine['config'];
   readonly sim: ReturnType<typeof createSession>['sim'];
   readonly input: Input;
-  readonly metricsFile: () => HandBackFile;
+  readonly metricsFile: (() => HandBackFile) | undefined;
   readonly exportReplay: () => Promise<Uint8Array>;
   readonly halted: { value: boolean };
   readonly saveController: SaveController | undefined;
@@ -265,7 +270,7 @@ const bindPlayErrorReport = ({
     site: config.site,
     clockText: () => formatClock(sim.calendar),
     stop: () => stopPlayAfterError(sim, input, halted, saveController),
-    metricsFile: exportMetricsFile,
+    ...(exportMetricsFile ? { metricsFile: exportMetricsFile } : {}),
     replayFile: async () => replayFile(await exportReplay(), new Date()),
   };
   setErrorReportContext(context);
@@ -1479,29 +1484,16 @@ export const startPlay = (
   });
 
   let revealZombies = false;
-  const storedMetrics = (() => {
-    try {
-      return engine.scenario ? null : loadMetrics(config.seed, localStorage);
-    } catch {
-      // Storage can be disabled; metrics start fresh for this run.
-      return null;
-    }
-  })();
-  const metrics = new SessionMetrics(config.seed, storedMetrics);
-  playtestObserver = new PlaytestObserver(metrics, engine.site?.playtestMarks);
-  const saveMetrics = (): void => {
-    if (engine.scenario || options.tutorial) {
-      return;
-    }
-    try {
-      persistMetrics(metrics, localStorage);
-    } catch {
-      /* Storage can be disabled; gameplay remains available. */
-    }
-  };
-  const attemptMetricsFile = (): HandBackFile => {
+  const recording = createAttemptRecording(
+    engine.attemptPolicy,
+    config.seed,
+    () => localStorage,
+    engine.site?.playtestMarks,
+  );
+  playtestObserver = recording?.observer;
+  const scenarioAttemptFile = (): HandBackFile => {
     if (!session.scenarioRun) {
-      return metricsFile(metrics);
+      throw new Error('Attempt reports require scenario run state');
     }
     const snapshot = captureSnapshot();
     return {
@@ -1531,8 +1523,8 @@ export const startPlay = (
       ),
     };
   };
-  const exportMetrics = (): void => downloadFile(attemptMetricsFile());
-  const measureSnapshot = () => playtestObserver!.measureSnapshot(captureSnapshot, session);
+  const attemptMetricsFile = recording?.file.bind(null, scenarioAttemptFile);
+  const measureSnapshot = () => debugModule!.measureSnapshotForSession(captureSnapshot, session);
   const openInventoryScreen = (): void => {
     screen.open();
   };
@@ -1645,7 +1637,7 @@ export const startPlay = (
     }
   };
   // Assigned, not added: a later world on this page must not save each file twice.
-  $('playtest-metrics-export').onclick = () => handBack(attemptMetricsFile);
+  const exportMetrics = bindMetricsExport(attemptMetricsFile, handBack);
   $('playtest-replay-export').onclick = () =>
     handBack(async () => replayFile(await inputReplayHooks.export(), new Date()));
   $('playtest-export').hidden = false;
@@ -4255,7 +4247,7 @@ export const startPlay = (
         now,
       })
     ) {
-      saveMetrics();
+      recording?.save();
     }
   };
 
@@ -4477,8 +4469,8 @@ export const startPlay = (
   const die = ({ cause, time }: { cause: string; time: number }) => {
     options.saveController?.finishDeath();
     input.unlock();
-    metrics.recordDeath(cause, time * sim.clock.ratio);
-    saveMetrics();
+    recording?.metrics.recordDeath(cause, time * sim.clock.ratio);
+    recording?.save();
     mainMenuOpen = false;
     debugTools?.closeMenus();
     reading.close();

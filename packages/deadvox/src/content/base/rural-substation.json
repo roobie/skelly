@@ -1,6 +1,21 @@
 {
   "layouts": [
     {
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "metrics",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": true,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": true
+      },
       "bounds": {
         "x0": 32,
         "x1": 96,

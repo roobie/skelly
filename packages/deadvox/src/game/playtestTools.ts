@@ -1,3 +1,5 @@
+import type { MetricsLimits } from '../core/schema/attemptPolicy.ts';
+
 export interface ContainerLootMetric {
   readonly container: string;
   readonly handlingSeconds: number;
@@ -18,10 +20,6 @@ export interface MetricStamp {
 export type KeyItemEvent = 'looted' | 'read';
 export type KeyItemMetric = Readonly<Partial<Record<KeyItemEvent, MetricStamp>>>;
 
-export const METRICS_HISTORY_LIMIT = 512;
-const POCKET_KEY_LIMIT = 128;
-const MARK_KEY_LIMIT = 128;
-
 export interface SessionMetricsV1 {
   readonly schemaVersion: 1;
   readonly seed: number;
@@ -30,7 +28,7 @@ export interface SessionMetricsV1 {
   readonly compressedSeconds: number;
   readonly interruptions: number;
   readonly pocketUses: Readonly<Record<string, number>>;
-  /** Real seconds of unpaused, visible play. */
+  /** Real seconds counted by the selected attempt policy. */
   readonly playRealSeconds: number;
   /** Each beat's first arrival, in the order reached. */
   readonly beatsReached: Readonly<Record<string, MetricStamp>>;
@@ -38,15 +36,20 @@ export interface SessionMetricsV1 {
   readonly keyItems: Readonly<Record<string, KeyItemMetric>>;
 }
 
-const firstEntries = <T>(record: Readonly<Record<string, T>>, copy: (value: T) => T): Record<string, T> =>
+const firstEntries = <T>(
+  record: Readonly<Record<string, T>>,
+  limit: number,
+  copy: (value: T) => T,
+): Record<string, T> =>
   Object.fromEntries(
     Object.entries(record)
-      .slice(0, MARK_KEY_LIMIT)
+      .slice(0, limit)
       .map(([key, value]) => [key, copy(value)]),
   );
 
 export class SessionMetrics {
   private readonly seed: number;
+  private readonly limits: MetricsLimits;
   private readonly containersLooted: ContainerLootMetric[] = [];
   private readonly deaths: DeathMetric[] = [];
   private compressedSeconds = 0;
@@ -56,31 +59,30 @@ export class SessionMetrics {
   private readonly beatsReached: Record<string, MetricStamp> = {};
   private readonly keyItems: Record<string, KeyItemMetric> = {};
 
-  constructor(seed: number, initial?: SessionMetricsV1 | null) {
+  constructor(seed: number, limits: MetricsLimits, initial?: SessionMetricsV1 | null) {
     this.seed = seed;
+    this.limits = limits;
     if (initial?.schemaVersion === 1 && initial.seed === seed) {
-      this.containersLooted.push(
-        ...initial.containersLooted.slice(-METRICS_HISTORY_LIMIT).map((entry) => ({ ...entry })),
-      );
-      this.deaths.push(...initial.deaths.slice(-METRICS_HISTORY_LIMIT).map((entry) => ({ ...entry })));
+      this.containersLooted.push(...initial.containersLooted.slice(-limits.history).map((entry) => ({ ...entry })));
+      this.deaths.push(...initial.deaths.slice(-limits.history).map((entry) => ({ ...entry })));
       this.compressedSeconds = Math.max(0, initial.compressedSeconds);
       this.interruptions = Math.max(0, Math.floor(initial.interruptions));
-      Object.assign(this.pocketUses, Object.fromEntries(Object.entries(initial.pocketUses).slice(-POCKET_KEY_LIMIT)));
+      Object.assign(this.pocketUses, Object.fromEntries(Object.entries(initial.pocketUses).slice(-limits.pockets)));
       this.playRealSeconds = Math.max(0, initial.playRealSeconds);
       Object.assign(
         this.beatsReached,
-        firstEntries(initial.beatsReached, (stamp) => ({ ...stamp })),
+        firstEntries(initial.beatsReached, limits.marks, (stamp) => ({ ...stamp })),
       );
       Object.assign(
         this.keyItems,
-        firstEntries(initial.keyItems, (metric) => ({ ...metric })),
+        firstEntries(initial.keyItems, limits.marks, (metric) => ({ ...metric })),
       );
     }
   }
 
   /** Keeps a beat's first arrival; later arrivals change nothing. */
   reachBeat(beat: string, gameClock: string): void {
-    if (beat && !Object.hasOwn(this.beatsReached, beat) && Object.keys(this.beatsReached).length < MARK_KEY_LIMIT) {
+    if (beat && !Object.hasOwn(this.beatsReached, beat) && Object.keys(this.beatsReached).length < this.limits.marks) {
       this.beatsReached[beat] = this.stamp(gameClock);
     }
   }
@@ -88,7 +90,7 @@ export class SessionMetrics {
   /** Keeps a key item's first loot and first read; repeats change nothing. */
   recordKeyItem(item: string, event: KeyItemEvent, gameClock: string): void {
     const metric = Object.hasOwn(this.keyItems, item) ? this.keyItems[item] : undefined;
-    if (!item || metric?.[event] || (!metric && Object.keys(this.keyItems).length >= MARK_KEY_LIMIT)) {
+    if (!item || metric?.[event] || (!metric && Object.keys(this.keyItems).length >= this.limits.marks)) {
       return;
     }
     this.keyItems[item] = { ...metric, [event]: this.stamp(gameClock) };
@@ -106,8 +108,8 @@ export class SessionMetrics {
       return;
     }
     this.containersLooted.push({ container, handlingSeconds, uiSeconds });
-    if (this.containersLooted.length > METRICS_HISTORY_LIMIT) {
-      this.containersLooted.splice(0, this.containersLooted.length - METRICS_HISTORY_LIMIT);
+    if (this.containersLooted.length > this.limits.history) {
+      this.containersLooted.splice(0, this.containersLooted.length - this.limits.history);
     }
   }
 
@@ -116,8 +118,8 @@ export class SessionMetrics {
       return;
     }
     this.deaths.push({ cause, survivedSeconds });
-    if (this.deaths.length > METRICS_HISTORY_LIMIT) {
-      this.deaths.splice(0, this.deaths.length - METRICS_HISTORY_LIMIT);
+    if (this.deaths.length > this.limits.history) {
+      this.deaths.splice(0, this.deaths.length - this.limits.history);
     }
   }
 
@@ -135,7 +137,7 @@ export class SessionMetrics {
 
   recordPocketUse(name: string): void {
     if (name) {
-      if (!(name in this.pocketUses) && Object.keys(this.pocketUses).length >= POCKET_KEY_LIMIT) {
+      if (!(name in this.pocketUses) && Object.keys(this.pocketUses).length >= this.limits.pockets) {
         return;
       }
       this.pocketUses[name] = (this.pocketUses[name] ?? 0) + 1;
@@ -152,8 +154,8 @@ export class SessionMetrics {
       interruptions: this.interruptions,
       pocketUses: { ...this.pocketUses },
       playRealSeconds: this.playRealSeconds,
-      beatsReached: firstEntries(this.beatsReached, (stamp) => ({ ...stamp })),
-      keyItems: firstEntries(this.keyItems, (metric) => ({ ...metric })),
+      beatsReached: firstEntries(this.beatsReached, this.limits.marks, (stamp) => ({ ...stamp })),
+      keyItems: firstEntries(this.keyItems, this.limits.marks, (metric) => ({ ...metric })),
     };
   }
 }
@@ -164,7 +166,11 @@ export const persistMetrics = (metrics: SessionMetrics, storage: Pick<Storage, '
   storage.setItem(metricsStorageKey(metrics.toJSON().seed), JSON.stringify(metrics.toJSON()));
 };
 
-export const loadMetrics = (seed: number, storage: Pick<Storage, 'getItem'>): SessionMetricsV1 | undefined => {
+export const loadMetrics = (
+  seed: number,
+  storage: Pick<Storage, 'getItem'>,
+  limits: MetricsLimits,
+): SessionMetricsV1 | undefined => {
   const raw = storage.getItem(metricsStorageKey(seed));
   if (raw === null) {
     return undefined;
@@ -172,7 +178,7 @@ export const loadMetrics = (seed: number, storage: Pick<Storage, 'getItem'>): Se
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed === 'object' && parsed !== null && isMetricsV1(parsed, seed)) {
-      return normalizeMetrics(parsed);
+      return normalizeMetrics(parsed, limits);
     }
   } catch {
     // A corrupt local metrics file should never prevent play.
@@ -244,13 +250,13 @@ const isMetricsV1 = (input: unknown, seed: number): input is SessionMetricsV1 =>
   );
 };
 
-const normalizeMetrics = (value: SessionMetricsV1): SessionMetricsV1 => ({
+const normalizeMetrics = (value: SessionMetricsV1, limits: MetricsLimits): SessionMetricsV1 => ({
   ...value,
-  containersLooted: value.containersLooted.slice(-METRICS_HISTORY_LIMIT),
-  deaths: value.deaths.slice(-METRICS_HISTORY_LIMIT),
-  pocketUses: Object.fromEntries(Object.entries(value.pocketUses).slice(-POCKET_KEY_LIMIT)),
-  beatsReached: firstEntries(value.beatsReached, (stamp) => stamp),
-  keyItems: firstEntries(value.keyItems, (metric) => metric),
+  containersLooted: value.containersLooted.slice(-limits.history),
+  deaths: value.deaths.slice(-limits.history),
+  pocketUses: Object.fromEntries(Object.entries(value.pocketUses).slice(-limits.pockets)),
+  beatsReached: firstEntries(value.beatsReached, limits.marks, (stamp) => stamp),
+  keyItems: firstEntries(value.keyItems, limits.marks, (metric) => metric),
 });
 
 export const metricsExportJson = (metrics: SessionMetrics): string => `${JSON.stringify(metrics.toJSON(), null, 2)}\n`;
@@ -272,15 +278,6 @@ export const replayFile = (bytes: Uint8Array, exportedAt: Date): HandBackFile =>
 });
 
 /** A download link needs no clipboard, so saving works on a plain-http preview too. */
-export const downloadFile = ({ blob, name }: HandBackFile): void => {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = name;
-  link.click();
-  URL.revokeObjectURL(url);
-};
-
 export interface SnapshotTimerQuantum {
   readonly browser: 'Firefox' | 'Chromium';
   readonly quantumMs: number;
@@ -291,20 +288,6 @@ export interface SnapshotMeasurementOptions {
   readonly now?: () => number;
   readonly timerQuantum?: SnapshotTimerQuantum | null;
 }
-
-const FIREFOX_USER_AGENT = /Firefox\//;
-const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;
-
-/** Default browser-profile quanta (Firefox privacy reduction 1 ms; Chromium TimeClamper 0.1 ms); observed tick is a cross-check. */
-export const snapshotTimerQuantumForUserAgent = (userAgent: string): SnapshotTimerQuantum | null => {
-  if (FIREFOX_USER_AGENT.test(userAgent)) {
-    return { browser: 'Firefox', quantumMs: 1 };
-  }
-  if (CHROMIUM_USER_AGENT.test(userAgent)) {
-    return { browser: 'Chromium', quantumMs: 0.1 };
-  }
-  return null;
-};
 
 export interface SnapshotMeasurement {
   /** Number of timed batches; each batch contains `batchSize` snapshot captures. */
@@ -332,11 +315,6 @@ export interface SnapshotMeasurement {
   readonly netStateUnchanged: boolean;
 }
 
-interface SnapshotHistoryEntry {
-  readonly at: number;
-  readonly durationMs: number;
-}
-
 const percentile = (values: readonly number[], p: number): number => {
   if (values.length === 0) {
     return 0;
@@ -345,185 +323,10 @@ const percentile = (values: readonly number[], p: number): number => {
   return sorted[Math.min(sorted.length - 1, Math.ceil(p * sorted.length) - 1)]!;
 };
 
-const equalArray = (
-  left: readonly unknown[],
-  right: readonly unknown[],
-  seen: WeakMap<object, WeakSet<object>>,
-): boolean => left.length === right.length && left.every((value, index) => exactStateEqual(value, right[index], seen));
-
-const equalMap = (
-  left: Map<unknown, unknown>,
-  right: Map<unknown, unknown>,
-  seen: WeakMap<object, WeakSet<object>>,
-): boolean => {
-  if (left.size !== right.size) {
-    return false;
-  }
-  const rightEntries = [...right.entries()];
-  return [...left.entries()].every(
-    ([key, value], index) =>
-      exactStateEqual(key, rightEntries[index]?.[0], seen) && exactStateEqual(value, rightEntries[index]?.[1], seen),
-  );
-};
-
-const equalSet = (left: Set<unknown>, right: Set<unknown>, seen: WeakMap<object, WeakSet<object>>): boolean =>
-  left.size === right.size && equalArray([...left], [...right], seen);
-
-const equalProperties = (left: object, right: object, seen: WeakMap<object, WeakSet<object>>): boolean => {
-  const leftKeys = Reflect.ownKeys(left);
-  const rightKeys = Reflect.ownKeys(right);
-  return (
-    leftKeys.length === rightKeys.length &&
-    leftKeys.every(
-      (key, index) =>
-        key === rightKeys[index] &&
-        exactStateEqual(
-          (left as Record<PropertyKey, unknown>)[key],
-          (right as Record<PropertyKey, unknown>)[key],
-          seen,
-        ),
-    )
-  );
-};
-
-const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean => {
-  if (Object.is(a, b)) {
-    return true;
-  }
-  if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) {
-    return false;
-  }
-  const paired = seen.get(a) ?? new WeakSet<object>();
-  if (paired.has(b)) {
-    return true;
-  }
-  paired.add(b);
-  seen.set(a, paired);
-  if (Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) {
-    return false;
-  }
-  if (Array.isArray(a)) {
-    return Array.isArray(b) && equalArray(a, b, seen);
-  }
-  if (a instanceof Map) {
-    return b instanceof Map && equalMap(a, b, seen);
-  }
-  if (a instanceof Set) {
-    return b instanceof Set && equalSet(a, b, seen);
-  }
-  return equalProperties(a, b, seen);
-};
-
-/** Each sample must span many clock ticks so coarse browser timers still resolve per-capture cost. */
-export const SNAPSHOT_BATCH_TARGET_MS = 20;
-const MAX_SNAPSHOT_BATCH_SIZE = 65_536;
-const MAX_INDIVIDUAL_CAPTURE_SAMPLES = 8192;
-const MAX_TIMER_PROBE_READS = 100_000;
-const MIN_TIMER_PROBE_TICKS = 8;
-const NANOSECONDS_PER_MILLISECOND = 1_000_000;
-
-// Differences of performance.now() readings can exceed an ulp-scaled tolerance; whole nanoseconds remain far below browser quanta.
-const observedTickFitsQuantum = (observedTickMs: number | null, quantumMs: number): boolean =>
-  observedTickMs !== null &&
-  Number.isFinite(quantumMs) &&
-  quantumMs > 0 &&
-  Math.round(observedTickMs * NANOSECONDS_PER_MILLISECOND) <= quantumMs * NANOSECONDS_PER_MILLISECOND;
-
-const detectMinimumTimerTickMs = (now: () => number): number | null => {
-  let previous = now();
-  let minimum = Number.POSITIVE_INFINITY;
-  let ticks = 0;
-  for (let reads = 0; reads < MAX_TIMER_PROBE_READS && ticks < MIN_TIMER_PROBE_TICKS; reads++) {
-    const current = now();
-    const delta = current - previous;
-    if (delta > 0) {
-      minimum = Math.min(minimum, delta);
-      previous = current;
-      ticks += 1;
-    }
-  }
-  return Number.isFinite(minimum) ? minimum : null;
-};
-
-/**
- * Batch timings estimate capture throughput with low clock overhead. A separate pass times individual captures for
- * tail observations; it is not folded into the batch means. The purity check compares live-state endpoints only.
- */
-export const measureSnapshots = (
-  snapshot: () => unknown,
-  liveState: () => unknown,
-  options: SnapshotMeasurementOptions = {},
-): SnapshotMeasurement => {
-  const { repeats = 50, now = () => performance.now(), timerQuantum = null } = options;
-  if (!Number.isSafeInteger(repeats) || repeats < 1) {
-    throw new Error(`Invalid snapshot repetitions: ${repeats}`);
-  }
-  const before = liveState();
-  const observedTimerTickMs = detectMinimumTimerTickMs(now);
-  const crossCheckedTimerQuantumMs =
-    timerQuantum !== null && observedTickFitsQuantum(observedTimerTickMs, timerQuantum.quantumMs)
-      ? timerQuantum.quantumMs
-      : null;
-  const timerQuantumCrossCheckPassed = crossCheckedTimerQuantumMs !== null;
-  const targetBatchMs = Math.max(SNAPSHOT_BATCH_TARGET_MS, (observedTimerTickMs ?? 1) * 20);
-  const timeBatch = (captureCount: number): number => {
-    const start = now();
-    for (let i = 0; i < captureCount; i++) {
-      snapshot();
-    }
-    return Math.max(0, now() - start);
-  };
-
-  let batchSize = 1;
-  let calibrationBatchMs = timeBatch(batchSize);
-  while (calibrationBatchMs < targetBatchMs && batchSize < MAX_SNAPSHOT_BATCH_SIZE) {
-    batchSize = Math.min(batchSize * 2, MAX_SNAPSHOT_BATCH_SIZE);
-    calibrationBatchMs = timeBatch(batchSize);
-  }
-  if (calibrationBatchMs < targetBatchMs) {
-    throw new Error(`Snapshot clock did not span ${targetBatchMs} ms within ${MAX_SNAPSHOT_BATCH_SIZE} captures`);
-  }
-
-  const batchMeanDurationsMs: number[] = [];
-  for (let i = 0; i < repeats; i++) {
-    batchMeanDurationsMs.push(timeBatch(batchSize) / batchSize);
-  }
-
-  const individualCaptureCount = Math.min(repeats * batchSize, MAX_INDIVIDUAL_CAPTURE_SAMPLES);
-  const individualCaptureDurationsMs: number[] = [];
-  for (let i = 0; i < individualCaptureCount; i++) {
-    const start = now();
-    snapshot();
-    individualCaptureDurationsMs.push(Math.max(0, now() - start));
-  }
-  const individualCaptureP95Ms = percentile(individualCaptureDurationsMs, 0.95);
-  const individualCaptureMaxMs = Math.max(...individualCaptureDurationsMs);
-  const after = liveState();
-  // Each timestamp is within r of true time, so a duration's strict upper bound is observed + 2r.
-  const individualCaptureP95UpperBoundMs =
-    crossCheckedTimerQuantumMs === null ? null : individualCaptureP95Ms + 2 * crossCheckedTimerQuantumMs;
-  const individualCaptureMaxUpperBoundMs =
-    crossCheckedTimerQuantumMs === null ? null : individualCaptureMaxMs + 2 * crossCheckedTimerQuantumMs;
-
-  return {
-    batchCount: repeats,
-    batchSize,
-    observedTimerTickMs,
-    timerQuantum,
-    timerQuantumCrossCheckPassed,
-    targetBatchMs,
-    calibrationBatchMs,
-    batchMeanP50Ms: percentile(batchMeanDurationsMs, 0.5),
-    batchMeanP95Ms: percentile(batchMeanDurationsMs, 0.95),
-    batchMeanDurationsMs,
-    individualCaptureCount,
-    individualCaptureP95Ms,
-    individualCaptureMaxMs,
-    individualCaptureP95UpperBoundMs,
-    individualCaptureMaxUpperBoundMs,
-    netStateUnchanged: exactStateEqual(before, after),
-  };
-};
+interface SnapshotHistoryEntry {
+  readonly at: number;
+  readonly durationMs: number;
+}
 
 /** Stores the latest autosave/on-demand snapshot costs for the session readout. */
 export interface SnapshotHistory {
@@ -559,4 +362,13 @@ export const createSnapshotHistory = (limit = 512): SnapshotHistory => {
       return entries.length;
     },
   };
+};
+
+export const downloadFile = ({ blob, name }: HandBackFile): void => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = name;
+  link.click();
+  URL.revokeObjectURL(url);
 };

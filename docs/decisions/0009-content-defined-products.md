@@ -5,6 +5,7 @@ read_if:
   - you change remote mod intake, product save separation or the framework refactor gate
   - you name reusable mechanisms, actor body plans or content-selected providers
   - you change scenario guidance, observations or staging
+  - you change attempt recording or snapshot diagnostics
 ---
 
 # 9. Content-defined products on one composable framework
@@ -126,6 +127,15 @@ and `packages/deadvox/src/ui/guidedSteps.ts`, `mountGuidance`.
 Input references share the action catalogue rather than the browser resolver so
 admission cannot pull DOM timing into simulation. See
 `packages/deadvox/src/core/inputActions.ts`, `INPUT_ACTIONS`.
+
+Attempt recording is scenario content carried by scenario or layout rows. Without
+an authored row there is nothing to record against, so no code default stands in.
+See `packages/deadvox/src/core/schema/attemptPolicy.ts`, `AttemptPolicySchema`, and
+`packages/deadvox/src/game/playtestObserver.ts`, `createAttemptRecording`.
+
+Snapshot measurement is a debugging aid, not scenario attempt policy: its result
+never reaches the attempt file, so scenarios must not tune it. See
+`packages/deadvox/src/debug/snapshotMeasurement.ts`, `measureSessionSnapshot`.
 
 Observation mechanisms do not stage or mutate the world; staging that needs another
 mechanism requires its own decision. See `packages/deadvox/src/core/stageMarks.ts`,

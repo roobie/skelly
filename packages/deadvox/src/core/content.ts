@@ -1845,6 +1845,9 @@ const checkLayoutGuidance = (layout: SiteLayoutDef, registry: Registry, report: 
 };
 
 const checkLayoutReferences = (layout: SiteLayoutDef, registry: Registry, report: Report): void => {
+  if (layout.attemptPolicy?.exportFormat === 'attempt') {
+    report('layouts', layout.id, '.attemptPolicy.exportFormat', 'attempt reports require scenario run state');
+  }
   if (layout.weatheringProfile && !registry.weathering.has(layout.weatheringProfile)) {
     report('layouts', layout.id, '.weatheringProfile', `no weathering profile "${layout.weatheringProfile}"`);
   }

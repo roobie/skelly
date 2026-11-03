@@ -166,5 +166,6 @@ export interface DebugRuntime {
 }
 
 export interface DebugModule {
+  measureSnapshotForSession: (snapshot: () => unknown, session: Session) => SnapshotMeasurement;
   attachDebugTools: (hooks: DebugHooks) => DebugRuntime;
 }

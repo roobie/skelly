@@ -17,6 +17,7 @@ local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
 {
   scenarios: [{
     id: 'gauntlet', kind: 'gauntlet',
+    attemptPolicy: (import 'attempt-policy.libsonnet').run,
     outbreakAgeGameHours: 24 * 120,
     decalLimit: 48,
     body: 'player', compression: 'player',

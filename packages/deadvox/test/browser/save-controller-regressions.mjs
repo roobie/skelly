@@ -20,6 +20,7 @@ import { installWorldMeshControl } from './world-mesh-fixture.mjs';
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { createServer } = await import('vite');
 const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
+const { metricsStorageKey } = await import(pathToFileURL(`${root}/src/game/playtestTools.ts`));
 const observation = {
   name: 'save-controller-game-ready',
   enforce: 'pre',
@@ -67,7 +68,7 @@ const observation = {
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(
       marker,
-      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, input, eye, lookedAt, manual: false, rollReplay: () => { if (inputRecorder?.full) rollInputRecorderWindow(); } } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
+      '  Object.assign(globalThis, { saveControllerPlayStarted: true, worldLoadWitness: { engine, session, worldLoading, frame }, tutorialSession: options.tutorial ? session : undefined, gauntletWitness: { engine, session, recording, measureSnapshot, input, eye, lookedAt, manual: false, rollReplay: () => { if (inputRecorder?.full) rollInputRecorderWindow(); } } });\n  startRealFrames((now) => globalThis.gauntletWitness.manual ? true : frame(now));',
     );
   },
 };
@@ -1029,7 +1030,12 @@ try {
         const seed = Number(new URLSearchParams(location.search).get('seed'));
         const metricsText = new TextDecoder().decode(bytes(metrics));
         return {
-          metrics: loadMetrics(seed, { getItem: () => metricsText }) !== undefined,
+          metrics:
+            loadMetrics(
+              seed,
+              { getItem: () => metricsText },
+              globalThis.worldLoadWitness.engine.attemptPolicy.limits,
+            ) !== undefined,
           replay: await decodeInputReplay(bytes(replay), { contentLookup: () => true }).then(
             () => true,
             (error) => String(error),
@@ -1039,6 +1045,51 @@ try {
       { ...files, modules: pageModules },
     );
     assert.deepEqual(kinds, { metrics: true, replay: true }, 'each export reads back as its own kind of file');
+
+    const rowless = await context.newPage();
+    rowless.on('pageerror', (error) => pageErrors.push(error.message));
+    const rowlessUrl = new URL(url);
+    rowlessUrl.searchParams.set('site', 'weatheringTest');
+    rowlessUrl.searchParams.set('debug', '1');
+    await rowless.addInitScript(
+      (key) => {
+        globalThis.metricsStorageCalls = [];
+        for (const method of ['getItem', 'setItem']) {
+          const original = Storage.prototype[method];
+          Storage.prototype[method] = function (...args) {
+            if (args[0] === key) {
+              globalThis.metricsStorageCalls.push(method);
+              throw new Error('rowless run accessed attempt metrics storage');
+            }
+            return original.apply(this, args);
+          };
+        }
+      },
+      metricsStorageKey(Number(rowlessUrl.searchParams.get('seed'))),
+    );
+    await rowless.goto(rowlessUrl.href);
+    await rowless.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await rowless.click('#go');
+    await rowless.waitForFunction(() => globalThis.worldLoadWitness?.worldLoading.ready);
+    const unrecorded = await rowless.evaluate(() => {
+      const witness = globalThis.gauntletWitness;
+      witness.manual = true;
+      globalThis.worldLoadWitness.frame(performance.now() + 10_000);
+      const measurement = witness.measureSnapshot();
+      return {
+        policy: witness.engine.attemptPolicy,
+        recorderAbsent: witness.recording === undefined,
+        storageCalls: globalThis.metricsStorageCalls,
+        diagnosticWorked: measurement.batchCount > 0 && measurement.netStateUnchanged,
+      };
+    });
+    assert.equal(unrecorded.policy, undefined);
+    assert.equal(unrecorded.recorderAbsent, true, 'a rowless run allocates no attempt recorder');
+    assert.deepEqual(unrecorded.storageCalls, [], 'neither startup nor periodic frames access metrics storage');
+    assert.equal(unrecorded.diagnosticWorked, true, 'snapshot diagnostics remain available without a recorder');
+    assert.equal(await rowless.locator('#playtest-metrics-export').isDisabled(), true);
+    assert.equal(await rowless.locator('#playtest-replay-export').isEnabled(), true);
+    await rowless.close();
 
     await page.evaluate(() => {
       deadvoxSaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });

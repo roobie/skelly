@@ -50,6 +50,7 @@ local content = {
   templates: [lockedShed],
   layouts: [{
     id: 'lock_test',
+    attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
     demo: true,
     bounds: { x0: -16, z0: -16, x1: 16, z1: 16 },
     ground: 0,

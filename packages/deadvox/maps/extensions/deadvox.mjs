@@ -361,6 +361,10 @@ export function exportLayout(map) {
     woodlands: [],
     tracks: [],
   };
+  const attemptPolicy = optionalString(map, 'attempt_policy');
+  if (attemptPolicy !== undefined) {
+    layout.attemptPolicy = JSON.parse(attemptPolicy);
+  }
   const startTimeGameTimeOfDay = scalar(map, 'startTime', '');
   if (startTimeGameTimeOfDay) {
     layout.startTimeGameTimeOfDay = startTimeGameTimeOfDay;

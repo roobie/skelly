@@ -39,6 +39,13 @@ export const TEMPORAL_FIELDS = [
     dimension: 'duration',
   },
   { path: 'scenarios.outbreakAgeGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
+  {
+    path: 'scenarios[].attemptPolicy.persistIntervalRealMs',
+    clock: 'Real',
+    unit: 'Milliseconds',
+    dimension: 'duration',
+  },
+  { path: 'layouts[].attemptPolicy.persistIntervalRealMs', clock: 'Real', unit: 'Milliseconds', dimension: 'duration' },
   { path: 'scenarios.eventRules[].trigger.afterGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'templates.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'mapPieces.decals[].variants[].ageingGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },

@@ -14,7 +14,10 @@ Keep the essentials short so entry remains cheap. Optional modules must not leng
 everyone's first session or make declining further practice a failure. Linear weapons
 practice avoids making module navigation another lesson. Empty weapons and packaged
 ammunition make acquiring and carrying supplies part of learning rather than granting
-a working gun. See `src/content/base/guidance.libsonnet`, `gunStep`.
+a working gun. Case picking is not partial loading because the lesson requires
+insertion followed by usable closure below capacity. Ready and sighted discharges
+establish that sights are not a firing prerequisite. See
+`src/content/base/guidance.libsonnet`, `gunStep`.
 
 Static targets provide an aiming reference without requiring injury, a kill or target
 scoring. Completion should demonstrate handling rather than accuracy. Empty-hand

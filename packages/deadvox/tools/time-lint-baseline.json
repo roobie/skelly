@@ -175,6 +175,21 @@
       "gameTime": 2,
       "timestamp": 1
     },
+    "debug/snapshotMeasurement.ts": {
+      "batchMeanDurationsMs": 1,
+      "batchMeanP50Ms": 2,
+      "batchMeanP95Ms": 2,
+      "calibrationBatchMs": 1,
+      "individualCaptureMaxMs": 1,
+      "individualCaptureMaxUpperBoundMs": 1,
+      "individualCaptureP95Ms": 1,
+      "individualCaptureP95UpperBoundMs": 1,
+      "observedTimerTickMs": 1,
+      "quantumMs": 2,
+      "targetBatchMs": 1,
+      "timerQuantum": 2,
+      "timerQuantumCrossCheckPassed": 1
+    },
     "debug/vehicleSpike.ts": {
       "ms": 1
     },
@@ -211,25 +226,13 @@
       "time": 2
     },
     "game/playtestObserver.ts": {
-      "batchMeanDurationsMs": 1,
-      "batchMeanP50Ms": 1,
-      "batchMeanP95Ms": 1,
-      "calibrationBatchMs": 1,
       "handlingSeconds": 3,
-      "individualCaptureMaxMs": 1,
-      "individualCaptureMaxUpperBoundMs": 1,
-      "individualCaptureP95Ms": 1,
-      "individualCaptureP95UpperBoundMs": 1,
-      "observedTimerTickMs": 1,
-      "targetBatchMs": 1,
-      "timerQuantum": 2,
-      "timerQuantumCrossCheckPassed": 1,
       "uiSeconds": 3
     },
     "game/playtestTools.ts": {
       "batchMeanDurationsMs": 1,
-      "batchMeanP50Ms": 2,
-      "batchMeanP95Ms": 2,
+      "batchMeanP50Ms": 1,
+      "batchMeanP95Ms": 1,
       "calibrationBatchMs": 1,
       "compressedSeconds": 3,
       "durationMs": 1,
@@ -241,7 +244,7 @@
       "lastMs": 1,
       "observedTimerTickMs": 1,
       "p95Ms": 1,
-      "quantumMs": 3,
+      "quantumMs": 1,
       "survivedSeconds": 1,
       "targetBatchMs": 1,
       "timerQuantum": 2,

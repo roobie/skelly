@@ -5,6 +5,7 @@
   layouts: [
     {
       id: 'lake_demo',
+      attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
       demo: true,
       bounds: { x0: 0, z0: 0, x1: 512, z1: 448 },
       ground: 21,

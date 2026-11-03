@@ -347,6 +347,7 @@ breach.breaking(shape.colliding({
   }] + yard.templates,
   layouts: [{
     id: 'rural_police_spike', demo: true, lootContext: police,
+    attemptPolicy: (import 'attempt-policy.libsonnet').persistent,
     bounds: { x0: 32, z0: 32, x1: 96, z1: 96 },
     ground: 21, terrain: [],
     buildings: [{ template: 'rural_police_station', position: [52, 21, 52], rotation: 180 }] + yard.buildings,

@@ -107,6 +107,21 @@
   ],
   "scenarios": [
     {
+      "attemptPolicy": {
+        "compressionThreshold": 1,
+        "countHidden": false,
+        "countPaused": false,
+        "exportFormat": "attempt",
+        "limits": {
+          "history": 512,
+          "marks": 128,
+          "pockets": 128
+        },
+        "persist": false,
+        "persistIntervalRealMs": 5000,
+        "persistOnInterruption": true,
+        "resumeStored": false
+      },
       "body": "player",
       "city": {
         "blend": 24,

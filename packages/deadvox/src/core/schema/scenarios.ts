@@ -19,6 +19,7 @@ import {
 } from 'valibot';
 import { DAY_PHASES } from '../dayPhase.ts';
 import { SCENARIO_KINDS } from '../scenarioKinds.ts';
+import { AttemptPolicySchema } from './attemptPolicy.ts';
 import {
   CityBlockGeometry,
   CityLotSchema,
@@ -58,6 +59,7 @@ const EventRuleSchema = strictObject({
 export type EventRuleDef = InferOutput<typeof EventRuleSchema>;
 
 export const ScenarioSchema = strictObject({
+  attemptPolicy: optional(AttemptPolicySchema),
   id: Id,
   kind: picklist(SCENARIO_KINDS),
   outbreakAgeGameHours: PositiveGameHours,

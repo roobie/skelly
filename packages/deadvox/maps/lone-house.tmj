@@ -12,6 +12,7 @@
   "nextlayerid": 5,
   "nextobjectid": 7,
   "properties": [
+    {"name": "attempt_policy", "type": "string", "value": "{\"countPaused\":false,\"countHidden\":false,\"compressionThreshold\":1,\"persistIntervalRealMs\":5000,\"persistOnInterruption\":true,\"limits\":{\"history\":512,\"pockets\":128,\"marks\":128},\"resumeStored\":true,\"persist\":true,\"exportFormat\":\"metrics\"}"},
     {"name": "loot_context", "type": "string", "value": "{\"usage\":[\"Residential\"],\"tier\":\"Tier1\"}"},
     {"name": "id", "type": "string", "value": "lone_house"},
     {"name": "ground", "type": "float", "value": 21}

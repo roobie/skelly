@@ -68,6 +68,12 @@ import {
   spawnUnawareShambler as spawnUnawareShamblerBehindWall,
   spawnZombieType,
 } from './shamblerSpawning.ts';
+
+import { measureSessionSnapshot } from './snapshotMeasurement.ts';
+
+export const measureSnapshotForSession: DebugModule['measureSnapshotForSession'] = (snapshot, session) =>
+  measureSessionSnapshot(snapshot, session);
+
 import { spawnDebugItem } from './spawnItem.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 import { TransientDebugDraw } from './transientDraw.ts';

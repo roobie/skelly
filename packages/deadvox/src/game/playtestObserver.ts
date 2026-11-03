@@ -2,14 +2,16 @@ import type { BlockEntity } from '../core/blockEntities.ts';
 import { formatClock } from '../core/clock.ts';
 import type { CompletedMove, HandlingQueue, MoveJob, TickResult } from '../core/handling.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
+import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { PlaytestMarks } from '../core/site.ts';
 import { stageMarksAt } from '../core/stageMarks.ts';
 import {
-  measureSnapshots,
-  type SessionMetrics,
-  SNAPSHOT_BATCH_TARGET_MS,
-  type SnapshotMeasurement,
-  snapshotTimerQuantumForUserAgent,
+  type HandBackFile,
+  loadMetrics,
+  metricsFile,
+  persistMetrics,
+  SessionMetrics,
+  type SessionMetricsV1,
 } from './playtestTools.ts';
 import type { Session } from './session.ts';
 
@@ -50,26 +52,6 @@ const samePlace = (a: Location | undefined, b: Location | undefined): boolean =>
   }
 };
 
-const inspectLiveSession = (session: Session): unknown => ({
-  simulation: {
-    state: session.sim.snapshotState(),
-    paused: session.sim.paused,
-    godMode: session.sim.godMode,
-  },
-  body: structuredClone(session.body),
-  worldColumns: session.worldColumns(),
-  inventory: session.inventory.snapshotState(),
-  quickbar: session.quickbar.snapshotState(session.inventory),
-  searching: [...session.entities.all].map((entity) => [entity.uid, entity.searched, session.searching(entity)]),
-  jobs: session.queue.jobs.map((job) => structuredClone(job)),
-  zombies: session.zombies.snapshotState(),
-  spawner: session.spawner.snapshotState(),
-  longAction: session.sim.actions.snapshotState(),
-  survival: session.survival.snapshotState(),
-  playerAudio: structuredClone(session.playerAudio),
-  audio: session.audioState(),
-});
-
 /** Excluded, observational bookkeeping for playtest metrics; the game supplies live state. */
 export class PlaytestObserver {
   private readonly lootWindows = new Map<number, LootWindow>();
@@ -79,14 +61,16 @@ export class PlaytestObserver {
   private lastPersistAt = 0;
   private lastInterruption: string | undefined;
   private readonly metrics: SessionMetrics;
+  private readonly policy: AttemptPolicyDef;
   private readonly marks: PlaytestMarks | undefined;
   private readonly keyItems: ReadonlySet<string>;
   private readonly reachedBeats = new Set<string>();
   /** Item types of this frame's queued moves: a stack that merges on arrival loses its UID. */
   private readonly moveTypes = new Map<number, string>();
 
-  constructor(metrics: SessionMetrics, marks?: PlaytestMarks) {
+  constructor(metrics: SessionMetrics, policy: AttemptPolicyDef, marks?: PlaytestMarks) {
     this.metrics = metrics;
+    this.policy = policy;
     this.marks = marks;
     this.keyItems = new Set([...(marks?.keyLoot.values() ?? [])].flatMap((items) => [...items]));
   }
@@ -134,8 +118,8 @@ export class PlaytestObserver {
     session: Session,
   ): void {
     this.guard(() => {
-      const runningSeconds = !session.sim.paused && frame.visible ? Math.max(0, frame.realSeconds) : 0;
-      const handlingActive = runningSeconds > 0 && session.sim.compression.c <= 1;
+      const runningSeconds = this.countedSeconds({ ...frame, paused: session.sim.paused });
+      const handlingActive = runningSeconds > 0 && session.sim.compression.c <= this.policy.compressionThreshold;
       this.recordFrameTime(runningSeconds, frame.screenOpen, handlingActive ? this.frameActiveUid : undefined);
       this.commitOutcomes(session.inventory, () => formatClock(session.sim.calendar));
     });
@@ -272,14 +256,26 @@ export class PlaytestObserver {
     );
   }
 
-  /** Owns pause, visibility, compression, and interruption accounting policy. */
+  private countedSeconds(frame: Pick<MetricsFrame, 'paused' | 'visible' | 'realSeconds'>): number {
+    return (this.policy.countPaused || !frame.paused) && (this.policy.countHidden || frame.visible)
+      ? Math.max(0, frame.realSeconds)
+      : 0;
+  }
+
   frame(frame: MetricsFrame): boolean {
     try {
-      const runningSeconds = !frame.paused && frame.visible ? frame.realSeconds : 0;
+      const runningSeconds = this.countedSeconds(frame);
       const interrupted = frame.interruption !== undefined && frame.interruption !== this.lastInterruption;
       this.lastInterruption = frame.interruption;
-      this.metrics.frame(runningSeconds, !frame.paused && frame.compression > 1, interrupted);
-      if (interrupted || frame.now - this.lastPersistAt >= 5000) {
+      this.metrics.frame(
+        runningSeconds,
+        (!frame.paused || this.policy.countPaused) && frame.compression > this.policy.compressionThreshold,
+        interrupted,
+      );
+      if (
+        (interrupted && this.policy.persistOnInterruption) ||
+        frame.now - this.lastPersistAt >= this.policy.persistIntervalRealMs
+      ) {
         this.lastPersistAt = frame.now;
         return true;
       }
@@ -287,37 +283,6 @@ export class PlaytestObserver {
     } catch {
       // Like `guard`, a metrics fault must not fail the frame; the missed persist is retried next frame.
       return false;
-    }
-  }
-
-  measureSnapshot(snapshot: () => unknown, session: Session, repeats = 50): SnapshotMeasurement {
-    try {
-      const userAgent = typeof navigator === 'undefined' ? '' : navigator.userAgent;
-      return measureSnapshots(snapshot, () => inspectLiveSession(session), {
-        repeats,
-        now: () => performance.now(),
-        timerQuantum: snapshotTimerQuantumForUserAgent(userAgent),
-      });
-    } catch {
-      // A failed measurement reports as a zeroed one with the checks false, so the playtest report shows it.
-      return {
-        batchCount: 0,
-        batchSize: 0,
-        observedTimerTickMs: null,
-        timerQuantum: null,
-        timerQuantumCrossCheckPassed: false,
-        targetBatchMs: SNAPSHOT_BATCH_TARGET_MS,
-        calibrationBatchMs: 0,
-        batchMeanP50Ms: 0,
-        batchMeanP95Ms: 0,
-        batchMeanDurationsMs: [],
-        individualCaptureCount: 0,
-        individualCaptureP95Ms: 0,
-        individualCaptureMaxMs: 0,
-        individualCaptureP95UpperBoundMs: null,
-        individualCaptureMaxUpperBoundMs: null,
-        netStateUnchanged: false,
-      };
     }
   }
 
@@ -333,3 +298,39 @@ export class PlaytestObserver {
     }
   }
 }
+
+export const createAttemptRecording = (
+  policy: AttemptPolicyDef | undefined,
+  seed: number,
+  storage: () => Pick<Storage, 'getItem' | 'setItem'>,
+  marks?: PlaytestMarks,
+) => {
+  if (!policy) {
+    return;
+  }
+  let stored: SessionMetricsV1 | undefined;
+  if (policy.resumeStored) {
+    try {
+      stored = loadMetrics(seed, storage(), policy.limits);
+    } catch {
+      // Storage can be disabled; a selected recording can still start fresh.
+    }
+  }
+  const metrics = new SessionMetrics(seed, policy.limits, stored);
+  return {
+    metrics,
+    observer: new PlaytestObserver(metrics, policy, marks),
+    save: () => {
+      if (!policy.persist) {
+        return;
+      }
+      try {
+        persistMetrics(metrics, storage());
+      } catch {
+        // A storage failure must not interrupt play.
+      }
+    },
+    file: (attempt: () => HandBackFile): HandBackFile =>
+      policy.exportFormat === 'attempt' ? attempt() : metricsFile(metrics),
+  };
+};
