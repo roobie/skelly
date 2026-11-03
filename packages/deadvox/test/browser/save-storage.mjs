@@ -126,7 +126,7 @@ try {
       // biome-ignore lint/suspicious/noConsole: browser test captures the required product diagnostics.
       const originalWarn = console.warn.bind(console);
       console.warn = (...args) => {
-        if (String(args[0]).startsWith('Deadvox save')) {
+        if (String(args[0]).startsWith('Skelly save')) {
           globalThis.__lifecycleLockWarnings.push(args);
         }
         originalWarn(...args);

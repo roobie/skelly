@@ -107,7 +107,7 @@ console.log(
       runs,
       clock: 'hrtime.bigint',
       collision:
-        'stepZombieBody plus openSide (turn, physics, ground, wall and slide probes); separate pass from whole tick',
+        'stepActorBody plus openSide (turn, physics, ground, wall and slide probes); separate pass from whole tick',
       shapeRef: args[1] ?? 'working tree',
       budget: 'collision p95',
       corridorWidth: 'realized facing -z body width plus one block, rounded up to whole blocks',
@@ -162,9 +162,18 @@ for (const { name, corridor } of scenarios) {
   }
   sense.pos = corridor ? [right / 2, 1, 10] : [zombie.body.pos[0] + 3, 1, zombie.body.pos[2] + 10];
   const initial = system.snapshotState();
-  const originalStep = system.stepZombieBody;
+  const originalStep = system.stepActorBody;
   const originalSide = system.openSide;
   const originalPush = shape.pushOut;
+  for (const [methodName, method] of Object.entries({
+    stepActorBody: originalStep,
+    openSide: originalSide,
+    pushOut: originalPush,
+  })) {
+    if (typeof method !== 'function') {
+      throw new Error(`Collision benchmark method ${methodName} is missing`);
+    }
+  }
   // Instrument the collision boundary in its own pass; whole-tick timings have no nested clocks.
   let collisionTime = 0;
   let pushes = 0;
@@ -176,7 +185,7 @@ for (const { name, corridor } of scenarios) {
     for (let run = -warmups; run < runs; run++) {
       const trial = createSystem();
       trial.restoreState(initial, (typeId) => (typeId === type.id ? actorType : registry.zombies.get(typeId)));
-      trial.stepZombieBody = function () {
+      trial.stepActorBody = function () {
         if (!collectCollision) {
           return originalStep.call(this);
         }

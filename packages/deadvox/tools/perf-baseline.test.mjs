@@ -178,19 +178,21 @@ test('CPU attribution counts descendants once and keeps GC and native gaps separ
   const node = (id, functionName, children = []) => ({ id, callFrame: { functionName }, children });
   const ranking = rankProfile({
     nodes: [
-      node(1, '(root)', [2, 5, 6, 7]),
+      node(1, '(root)', [2, 5, 6, 7, 8, 9]),
       node(2, 'tickActive', [3, 4]),
       node(3, 'overlapsTerrain'),
       node(4, '(garbage collector)'),
       node(5, 'prepareStreaming'),
       node(6, '(program)'),
       node(7, '(idle)'),
+      node(8, 'stepActorBody'),
+      node(9, 'finishActorTick'),
     ],
-    samples: [3, 4, 5, 6, 7],
-    timeDeltas: [1000, 2000, 3000, 4000, 5000],
+    samples: [3, 4, 5, 6, 7, 8, 9],
+    timeDeltas: [1000, 2000, 3000, 4000, 5000, 1000, 1000],
   });
-  assert.equal(ranking.sampledMs, 15);
-  assert.equal(ranking.categories.find((row) => row.name === 'ai').ms, 1);
+  assert.equal(ranking.sampledMs, 17);
+  assert.equal(ranking.categories.find((row) => row.name === 'ai').ms, 3);
   assert.equal(ranking.categories.find((row) => row.name === 'gc').ms, 2);
   assert.equal(ranking.categories.find((row) => row.name === 'streamingMeshing').ms, 3);
   assert.equal(ranking.categories.find((row) => row.name === 'unattributed').ms, 4);
