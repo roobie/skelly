@@ -119,13 +119,13 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import { type ActorFigureType, actorFigure, amalgamTypeOf } from '../core/actorFigure.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
-import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import { acidSpitWindupProgress, posedShambler, zombieCrawls, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
@@ -468,7 +468,7 @@ const anchorWorld = (
   return [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
 };
 
-type DrawnZombieType = ZombieFigureType & {
+type DrawnZombieType = ActorFigureType & {
   readonly model: ActorModel;
   readonly carving?: { readonly interiorColor: string } | undefined;
 };
@@ -483,14 +483,14 @@ interface BuiltActorVariant {
   headPart: string | undefined;
 }
 
-const requireAmalgamType = (type: ZombieFigureType | undefined): ZombieFigureType => {
+const requireAmalgamType = (type: ActorFigureType | undefined): ActorFigureType => {
   if (type?.model !== 'fused-mass') {
     throw new Error('MobActorMeshes requires the amalgam content type when amalgam actors are enabled');
   }
   return type;
 };
 
-const severedRootsFor = (figure: ReturnType<typeof zombieFigure>): ReadonlyMap<string, string> => {
+const severedRootsFor = (figure: ReturnType<typeof actorFigure>): ReadonlyMap<string, string> => {
   if (!('manifest' in figure)) {
     return new Map();
   }
@@ -521,12 +521,12 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
   }
 };
 
-const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ZombieFigureType): BuiltActorVariant => {
+const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ActorFigureType): BuiltActorVariant => {
   const type =
     model === 'fused-mass'
       ? requireAmalgamType(amalgamType)
       : { model: FIGURE_VARIANTS[model].bodyPlan, figure: model };
-  const figure = zombieFigure(type, seed);
+  const figure = actorFigure(type, seed);
   const { genome, realized } = figure;
   const bodyScale = model === 'fused-mass' ? type.bodyScale : undefined;
   return {
@@ -572,7 +572,7 @@ const figureSeedsByModel = (
 
 const buildActorVariants = (
   seedsByModel: ReadonlyMap<ActorModel, readonly number[]>,
-  amalgamType?: ZombieFigureType,
+  amalgamType?: ActorFigureType,
 ): BuiltActorVariant[] =>
   [...seedsByModel].flatMap(([model, seeds]) => seeds.map((seed) => buildActorVariant(model, seed, amalgamType)));
 
@@ -1156,7 +1156,7 @@ export class MobActorMeshes implements ActorRenderer {
       meshes.tip.visible = false;
       return;
     }
-    const figure = zombieFigure(zombie.type, zombie.figureSeed);
+    const figure = actorFigure(zombie.type, zombie.figureSeed);
     if (zombie.type.model !== 'fused-mass') {
       throw new Error('Amalgam tentacle requires the amalgam figure');
     }

@@ -17,7 +17,7 @@ import type { SiteLayoutDef } from './schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import { ShowroomCatalogue, slotPlacement, slotProps } from './showroom.ts';
 import { grow, type Rect, rectDistance, rectsOverlap } from './site.ts';
-import { spawnOverlappingSolidBlock, zombieBodyDimensions } from './spawnClearance.ts';
+import { actorBodyDimensions, spawnOverlappingSolidBlock } from './spawnClearance.ts';
 import {
   cellsOf,
   type Placement,
@@ -242,7 +242,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (hordeType) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(position),
-        zombieBodyDimensions(hordeType, TEMPLATE_BLOCK_SIZE),
+        actorBodyDimensions(hordeType, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {
@@ -260,7 +260,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     if (type) {
       const blocked = spawnOverlappingSolidBlock(
         blocks(spawn.position),
-        zombieBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
+        actorBodyDimensions(type, TEMPLATE_BLOCK_SIZE),
         solidAt,
       );
       if (blocked) {

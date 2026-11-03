@@ -28,7 +28,7 @@ import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { HORDE_MEMBERS } from '../src/core/settlementSpawns.ts';
 import { rectsOverlap } from '../src/core/site.ts';
 import { terrainShapeOf } from '../src/core/sitePalette.ts';
-import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
+import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
 import { templateSpawnClearanceIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -373,7 +373,7 @@ describe('authored layout acceptance', () => {
     expect(amalgams.length).toBeGreaterThan(0);
     const { blockSize } = makeScale(0.5);
     for (const marker of amalgams) {
-      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
+      const body = actorBodyDimensions(registry.zombies.get(marker.type)!, blockSize);
       const bodyRadius = Math.hypot(body.halfWidth, body.halfDepth ?? body.halfWidth) * blockSize;
       const nearestTrackEdge = Math.min(
         ...camp.tracks.map(

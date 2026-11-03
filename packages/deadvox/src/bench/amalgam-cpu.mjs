@@ -4,6 +4,7 @@ import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { amalgamTypeOf } from '../core/actorFigure.ts';
 import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from '../core/amalgamFigure.ts';
 import { BlockEntities } from '../core/blockEntities.ts';
 import { claimed } from '../core/capabilities.ts';
@@ -14,7 +15,6 @@ import { makeScale } from '../core/scale.ts';
 import { siteGenerationOf } from '../core/sitePalette.ts';
 import { worldBricks } from '../core/solidBricks.ts';
 import { World } from '../core/world.ts';
-import { amalgamTypeOf } from '../core/zombieFigure.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 
 const args = process.argv.slice(2);

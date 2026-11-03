@@ -6,6 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
+import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
 import { ActorSpawner } from '../core/actorSpawns.ts';
 import {
   AimController,
@@ -128,7 +129,6 @@ import { completeVehicleRemoval } from '../core/vehicleRemoval.ts';
 import { vehicleWorkHooks } from '../core/vehicleWork.ts';
 import { playerWearHooks, wearMeleeWeaponOnHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
-import { figureSeedPool, zombieFigure } from '../core/zombieFigure.ts';
 import {
   type AcidGroundImpact,
   BACKGROUND_ZOMBIE_RATE,
@@ -1626,7 +1626,7 @@ export const createSession = (options: SessionOptions) => {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: zombieFigure(zombie.type, zombie.figureSeed).realized.body } : {}),
+          ...(zombie ? { body: actorFigure(zombie.type, zombie.figureSeed).realized.body } : {}),
         });
         return;
       }
@@ -1636,7 +1636,7 @@ export const createSession = (options: SessionOptions) => {
         sim.time,
         zombie
           ? {
-              body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
+              body: actorFigure(zombie.type, zombie.figureSeed).realized.body,
               ...(zombie.type.soundPitchMultiplier === undefined
                 ? {}
                 : { soundPitchMultiplier: zombie.type.soundPitchMultiplier }),
@@ -1658,7 +1658,7 @@ export const createSession = (options: SessionOptions) => {
       }
       playWorldSound(event, position, sim.time, {
         sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
-        body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
+        body: actorFigure(zombie.type, zombie.figureSeed).realized.body,
       });
     },
     onSevered: (zombie, region) => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { stepBodyHorizontal } from '../src/core/physics.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { zombieBodyDimensions } from '../src/core/spawnClearance.ts';
+import { actorBodyDimensions } from '../src/core/spawnClearance.ts';
 import {
   type CompiledTemplate,
   cellsOf,
@@ -497,7 +497,7 @@ describe('camp gate templates', () => {
     };
 
     for (const type of zombies) {
-      const dimensions = zombieBodyDimensions(type, BLOCK_SIZE);
+      const dimensions = actorBodyDimensions(type, BLOCK_SIZE);
       const halfDepth = dimensions.halfDepth ?? dimensions.halfWidth;
       const fits = dimensions.height <= opening.height && halfDepth * 2 <= laneWidth;
       expect(crossesOpening({ ...dimensions, halfDepth }), type.id).toBe(fits);
@@ -537,7 +537,7 @@ describe('camp gate templates', () => {
     const eyeHeight = (camp.ground + BLOCK_SIZE + PLAYER.eye) / BLOCK_SIZE;
     const from = (point: [number, number]): Point3 => [point[0], eyeHeight, point[1]];
     for (const marker of markers) {
-      const body = zombieBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
+      const body = actorBodyDimensions(registry.zombies.get(marker.type)!, BLOCK_SIZE);
       const footY = marker.position[1] / BLOCK_SIZE;
       const bodyTargets: Point3[] = [0, 0.25, 0.5, 0.75, 1].map((fraction) => [
         marker.position[0] / BLOCK_SIZE,

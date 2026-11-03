@@ -9,7 +9,7 @@ export interface SpawnBodyDimensions {
 }
 
 /** Collision dimensions in voxel blocks, matching the bodies used by ZombieSystem. */
-export const zombieBodyDimensions = (type: ActorDef, blockSize: number): SpawnBodyDimensions =>
+export const actorBodyDimensions = (type: ActorDef, blockSize: number): SpawnBodyDimensions =>
   type.model === 'fused-mass'
     ? amalgamCollisionEnvelope(amalgamFigureForType(type, AMALGAM_FIGURE_SEED), blockSize)
     : { halfWidth: 0.28 / blockSize, height: 1.7 / blockSize };

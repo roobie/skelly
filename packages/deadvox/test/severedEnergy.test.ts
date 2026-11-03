@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { figureSeedPool } from '../src/core/actorFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { figureSeedPool } from '../src/core/zombieFigure.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import type { HitImpulse } from '../src/core/zombies.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';

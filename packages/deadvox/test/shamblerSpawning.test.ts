@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombieAttackReachForType, zombieAttackReachMetres, zombieBodyDimensions } from '../src/core/zombies.ts';
+import { actorBodyDimensions, zombieAttackReachForType, zombieAttackReachMetres } from '../src/core/zombies.ts';
 import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -16,7 +16,7 @@ const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
 
 const footprint = (type: typeof registry.zombies extends ReadonlyMap<string, infer T> ? T : never): number => {
-  const body = zombieBodyDimensions(type, SCALE.blockSize);
+  const body = actorBodyDimensions(type, SCALE.blockSize);
   return Math.max(body.halfWidth, body.halfDepth ?? body.halfWidth);
 };
 const largestType = [...registry.zombies.values()].reduce((best, type) =>
@@ -136,7 +136,7 @@ describe('debug shambler spawning', () => {
       height: 1.7 / SCALE.blockSize,
       onGround: true,
     };
-    const largeBody: Body = { ...smallBody, ...zombieBodyDimensions(type, SCALE.blockSize) };
+    const largeBody: Body = { ...smallBody, ...actorBodyDimensions(type, SCALE.blockSize) };
     const blocks: [number, number, number][] = [];
     for (
       let x = Math.floor(position![0] - largeBody.halfWidth);

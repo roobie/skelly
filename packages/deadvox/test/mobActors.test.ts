@@ -21,6 +21,7 @@ import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it, vi } from 'vitest';
+import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
@@ -31,7 +32,6 @@ import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { flinchSideForId, HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
@@ -1019,7 +1019,7 @@ describe('MobActorMeshes', () => {
           continue;
         }
         const { mesh, realized } = internals.variants[state.variantIndex]!;
-        expect(realized, type.id).toBe(zombieFigure(type, figureSeed).realized);
+        expect(realized, type.id).toBe(actorFigure(type, figureSeed).realized);
         expect(mesh.visible).toBe(true);
         expect(mesh.count).toBeGreaterThan(0);
         expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
@@ -1053,7 +1053,7 @@ describe('MobActorMeshes', () => {
           windup: type.attack.windupSimSeconds / 2,
           hitFlinchTime: HIT_FLINCH_DURATION / 4,
         });
-        return { type, realized: zombieFigure(type, figureSeed).realized, id: store.add(zombie) };
+        return { type, realized: actorFigure(type, figureSeed).realized, id: store.add(zombie) };
       });
       expect(entries.some(({ type }) => type.figure === 'crawler')).toBe(true);
       renderer.sync(store, 1 / 60, 1);
@@ -1336,7 +1336,7 @@ describe('MobActorMeshes reactions', () => {
       renderer.sync(system.store, 0, 1);
       expect(renderer.isBoneHidden(id, 'head')).toBe(true);
       expect(renderer.debrisCountFor(id)).toBeGreaterThan(0);
-      const head = zombieFigure({ model: 'humanoid' }, 1).realized.body.bones.findIndex((bone) => bone.id === 'head');
+      const head = actorFigure({ model: 'humanoid' }, 1).realized.body.bones.findIndex((bone) => bone.id === 'head');
       const finished = (
         renderer as unknown as { corpses: ReadonlyMap<number, { ragdoll: import('../src/render/ragdoll.ts').Ragdoll }> }
       ).corpses.get(id)!;
@@ -1419,7 +1419,7 @@ describe('MobActorMeshes reactions', () => {
       await renderer.whenCorpsesReady();
       renderer.sync(store, ragdollContent.timestep);
       renderer.sync(store, ragdollContent.timestep);
-      const figure = zombieFigure(crawling.type, crawling.figureSeed).realized;
+      const figure = actorFigure(crawling.type, crawling.figureSeed).realized;
       const before = renderer.boneMatrix(id, 'hand.L')!;
       renderer.zombieSevered(id, 'hand.L', undefined, crawling);
       const debris = [

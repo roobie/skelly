@@ -3,7 +3,7 @@ import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import { amalgamFigure } from './amalgamFigure.ts';
 
-export interface ZombieFigureType {
+export interface ActorFigureType {
   readonly model: string;
   readonly figure?: string | undefined;
   readonly bodyScale?: number | undefined;
@@ -11,16 +11,16 @@ export interface ZombieFigureType {
 }
 
 /** Every figure seed some ordinary type draws, in authored order, without repeats. */
-export const figureSeedPool = (zombies: ReadonlyMap<string, ZombieFigureType>): readonly number[] => [
+export const figureSeedPool = (zombies: ReadonlyMap<string, ActorFigureType>): readonly number[] => [
   ...new Set([...zombies.values()].flatMap((type) => type.figureSeeds ?? [])),
 ];
 
 /** The content type realized as the amalgam model, chosen by its model rather than its id. */
-export const amalgamTypeOf = <T extends ZombieFigureType>(zombies: ReadonlyMap<string, T>): T | undefined =>
+export const amalgamTypeOf = <T extends ActorFigureType>(zombies: ReadonlyMap<string, T>): T | undefined =>
   [...zombies.values()].find((type) => type.model === 'fused-mass');
 
 /** One realization boundary for every content-selected Deadvox zombie model. */
-export const zombieFigure = (type: ZombieFigureType, seed: number) => {
+export const actorFigure = (type: ActorFigureType, seed: number) => {
   if (type.model !== 'fused-mass') {
     return humanoidFigure(bodyPlanModel(figureVariantOf(type)), seed);
   }
@@ -30,4 +30,4 @@ export const zombieFigure = (type: ZombieFigureType, seed: number) => {
   return amalgamFigure(seed, type.bodyScale);
 };
 
-export type ZombieFigure = ReturnType<typeof zombieFigure>;
+export type ActorFigure = ReturnType<typeof actorFigure>;

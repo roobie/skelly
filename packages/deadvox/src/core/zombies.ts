@@ -49,7 +49,7 @@ import { freezeSnapshot } from './snapshotData.ts';
 import { type SolidBricks, testedBricks } from './solidBricks.ts';
 import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
-import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
+import { actorBodyDimensions as measureActorBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
 import {
   advanceStanceWeight,
@@ -89,7 +89,7 @@ export const BACKGROUND_ZOMBIE_RATE = 2;
 export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
 export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
 export type ZombieMode = 'idle' | 'stroll' | 'hesitate' | 'search' | 'chase' | 'investigate' | 'return';
-export const zombieBodyDimensions = measureZombieBody;
+export const actorBodyDimensions = measureActorBody;
 
 const requiredFigureSeeds = (type: ActorDef): readonly number[] => {
   if (type.figureSeeds === undefined) {
@@ -2223,7 +2223,7 @@ export class ZombieSystem {
               requiredFigureSeeds(type).length - 1,
             )
           ]!;
-    const dimensions = zombieBodyDimensions(type, this.options.blockSize);
+    const dimensions = actorBodyDimensions(type, this.options.blockSize);
     const zombie: Zombie = {
       type,
       modifiers: [],

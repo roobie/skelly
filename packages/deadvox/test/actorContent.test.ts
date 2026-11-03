@@ -1,8 +1,8 @@
 import { expect, it } from 'vitest';
+import { actorFigure } from '../src/core/actorFigure.ts';
 import { claimed } from '../src/core/capabilities.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { settlementActorSpawns, settlementHordeSpawn } from '../src/core/settlementSpawns.ts';
-import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { baseSources } from '../src/game/bundledContent.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
@@ -19,7 +19,7 @@ it('admits an independent actor id selecting an existing body plan', () => {
   expect(issues).toEqual([]);
   const admitted = registry.zombies.get(actor.id)!;
   expect(admitted).toBeDefined();
-  expect(zombieFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
+  expect(actorFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
 });
 
 it.each(['runner', 'crawler', 'brute'] as const)('admits a %s figure as a property of humanoid anatomy', (figure) => {
@@ -39,7 +39,7 @@ it.each(['runner', 'crawler', 'brute'] as const)('admits a %s figure as a proper
   expect(issues).toEqual([]);
   const admitted = registry.zombies.get(actor.id)!;
   expect(admitted.model).toBe('humanoid');
-  expect(zombieFigure(admitted, 1).genome.template).toBe(figure);
+  expect(actorFigure(admitted, 1).genome.template).toBe(figure);
   const invalid = validateContent({
     source: 'fixture-invalid-plan',
     data: { actors: [{ ...actor, model: figure }] },

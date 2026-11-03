@@ -3,6 +3,7 @@ import { mulMV, quatToMat3 } from '@mobgen/core/math.ts';
 import { crawlerGaitPose } from '@mobgen/mob/crawler.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { actorFigure, figureSeedPool } from '../src/core/actorFigure.ts';
 import { ActorSpawner } from '../src/core/actorSpawns.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
@@ -21,7 +22,6 @@ import { Simulation } from '../src/core/sim.ts';
 import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
-import { figureSeedPool, zombieFigure } from '../src/core/zombieFigure.ts';
 import { HIT_FLINCH_DURATION, posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
@@ -1824,7 +1824,7 @@ describe('shambler scenarios', () => {
       }
       expect(severed).toEqual([region]);
       // The cut follows the body's bone dispositions: the region's top severable part, or none.
-      const figure = zombieFigure(type, zombie.figureSeed);
+      const figure = actorFigure(type, zombie.figureSeed);
       const parts = 'severableParts' in figure ? figure.severableParts[region] : [];
       expect(zombie.severed).toEqual(parts.slice(0, 1));
       // A severed acid part drops what a shambler's would.
@@ -2022,7 +2022,7 @@ describe('shambler scenarios', () => {
   it('realizes a figure for every authored seed of every type', () => {
     for (const type of registry.zombies.values()) {
       for (const seed of type.figureSeeds ?? []) {
-        expect(() => zombieFigure(type, seed)).not.toThrow();
+        expect(() => actorFigure(type, seed)).not.toThrow();
       }
     }
   });
@@ -2042,7 +2042,7 @@ describe('shambler scenarios', () => {
       const crawl = crawlerGaitPose(posed.figure.realized, input.gaitPhase, input.speed);
       expect(posed.pose.rotations.pelvis).toEqual(crawl.rotations.pelvis);
       expect(zombie.type.id).toBe(type.id);
-      expect(posed.figure).toBe(zombieFigure(zombie.type, zombie.figureSeed));
+      expect(posed.figure).toBe(actorFigure(zombie.type, zombie.figureSeed));
       const boxes = posedShamblerRegionBoxes(input);
       expect(boxes.leftLeg).toEqual([]);
       expect(boxes.rightLeg.length).toBeGreaterThan(0);

@@ -1,6 +1,7 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
+import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/amalgamCarving.ts';
 import {
@@ -20,7 +21,6 @@ import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
@@ -510,7 +510,7 @@ describe('amalgam body and combat seam', () => {
       hurtPlayer: () => undefined,
       onSound: (event, _position, zombie) => {
         if (event === type.sounds.alert && zombie?.type.id === type.id) {
-          heardBody = zombieFigure(zombie.type, zombie.figureSeed).realized.body.bones.length > 0;
+          heardBody = actorFigure(zombie.type, zombie.figureSeed).realized.body.bones.length > 0;
         }
       },
     });
@@ -535,7 +535,7 @@ describe('amalgam body and combat seam', () => {
       hurtPlayer: () => undefined,
       onSound: (event, _position, targetZombie) => {
         if (event === FISTS_MELEE.hitSound && targetZombie?.type.id === type.id) {
-          heardBody = zombieFigure(targetZombie.type, targetZombie.figureSeed).realized.body.bones.length > 0;
+          heardBody = actorFigure(targetZombie.type, targetZombie.figureSeed).realized.body.bones.length > 0;
         }
       },
     });
