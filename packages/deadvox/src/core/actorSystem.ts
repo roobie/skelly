@@ -1361,16 +1361,7 @@ export class ActorSystem {
         ? type.chaseMotion.stumbleDecelerationMetresPerSimSecondSquared
         : type.wander.movementAccelerationMetresPerSimSecondSquared;
     actor.horizontalSpeed = approach(actor.horizontalSpeed, scratch.desiredSpeed, acceleration * dt);
-    if (actor.mode !== 'search' || !actor.searchStrolling || !actor.searchAnchor) {
-      return;
-    }
-    const radius = horizontalDistance(scratch.pos, actor.searchAnchor) * scratch.blockSize;
-    const away = unit([scratch.pos[0] - actor.searchAnchor[0], 0, scratch.pos[2] - actor.searchAnchor[2]]);
-    const outward = scratch.direction[0] * away[0] + scratch.direction[2] * away[2];
-    if (outward > 0) {
-      const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
-      actor.horizontalSpeed = Math.min(actor.horizontalSpeed, remaining / (dt * outward));
-    }
+    this.agent.limitSearchStroll(scratch, actor, type, dt);
   }
 
   private applyObstacleSlide(): void {
