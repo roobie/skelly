@@ -1,5 +1,9 @@
+import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
+import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import type { Actor } from './actorState.ts';
 import { actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
+import type { MeleeBlocker } from './collision.ts';
 import type { Vec3 } from './coords.ts';
 import { fusedMassFigureForType, fusedMassStrikeOrigin } from './fusedMassFigure.ts';
 import type { FusedMassShape } from './fusedMassShape.ts';
@@ -217,3 +221,44 @@ export function turnActorHeadLook(actor: Actor, type: Actor['type'], dt: number)
     (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
   );
 }
+export function reachableActorMoves(
+  actor: Actor,
+  actorPos: Vec3,
+  playerPos: Vec3,
+  options: { blockSize: number; isSolid: SolidAt; meleeBlocker?: MeleeBlocker },
+): Actor['type']['attack']['moves'] {
+  return actor.type.attack.moves.filter((move) =>
+    withinAttackReach({
+      actor,
+      actorPos,
+      playerPos,
+      blockSize: options.blockSize,
+      isSolid:
+        options.meleeBlocker?.({
+          kind: 'actor',
+          motion: move.motion,
+          reachMetres: actorAttackReachMetres(actor),
+        }) ?? options.isSolid,
+    }),
+  );
+}
+// ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
+// The body's bone dispositions say what each hit region may lose, so no skeleton's bone names are listed
+// here; see packages/mobgen/src/mob/humanoidFigure.ts, `HumanoidFigure`. The random roll picks among arm
+// parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
+export const cutsFor = (actor: Actor) => {
+  const figure = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
+  return { parts: figure.severableParts, bones: figure.realized.body.bones };
+};
+/** True once an arm's cut reaches above its last part: a lost hand alone still lets it grab with the stump. */
+export const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
+  arm.length > 0 && hidden.has(arm[Math.max(0, arm.length - 2)]!);
+/** Both disabled arms leave nothing to grab or claw with; an already-started windup is not cancelled. */
+export const canStillAttack = (actor: Actor): boolean => {
+  if (actor.severed.length === 0) {
+    return true;
+  }
+  const { parts, bones } = cutsFor(actor);
+  const hidden = severedBoneSet(bones, actor.severed);
+  return !(armDisabled(parts.leftArm, hidden) && armDisabled(parts.rightArm, hidden));
+};

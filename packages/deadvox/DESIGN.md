@@ -14,7 +14,7 @@ read_if:
   - you change the test-house normal or debug-only boundary, range grading, stock or catalogue
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
-  - you change zombie hesitation, refusal, interest chaining, attention phase ordering or decision-code ownership
+  - you change zombie hesitation, refusal, interest chaining, attention phase ordering, body queries or decision-code ownership
   - you change the player figure's look, authored parts, clothes, own-camera mask, anatomical eye, bounded ADS camera, iron eye ranges, stock limits or common placement
   - you change free look, its gun direction or its action refusals
   - you add a dead human, change figure outfits or the corpse pose, or remove the temporary corpse role tint
@@ -291,8 +291,8 @@ fight of its own without mistaking piercing damage for a thrust. Zombie thrusts
 also need enough effective reach; both conditions must hold at windup start and
 contact. Blocks select permitted motions and the minimum zombie reach in content,
 so the rule is symmetric rather than a creature or weapon identity exception.
-See `src/core/collision.ts`, `worldMeleeBlocker`; and `src/core/actorSystem.ts`,
-`ActorSystem.reachableActorMoves` and `ActorSystem.resolvePlayerMelee`.
+See `src/core/collision.ts`, `worldMeleeBlocker`; `src/core/actorMotion.ts`,
+`reachableActorMoves`; and `src/core/actorSystem.ts`, `ActorSystem.resolvePlayerMelee`.
 
 Sound passes open wire because chain-link barely dampens it. Sound blocking has
 its own content property: sight is the wrong key because foliage hides without
@@ -2528,8 +2528,8 @@ application rather than weapon-class special cases. See `src/core/schema/actors.
   Every humanoid zombie crawls after losing even one leg: whatever its type, a
   zombie that loses a leg must not keep walking or stand upright on none. Only rig
   and movement change, preserving its type, identity and accumulated wounds.
-  Crawling attacks still need an arm because the body must grab or claw. See `src/core/actorSystem.ts`,
-  `canStillAttack` and `ActorSystem.applyMeleeEffects`; `src/core/actorPose.ts`,
+  Crawling attacks still need an arm because the body must grab or claw. See `src/core/actorMotion.ts`,
+  `canStillAttack`; `src/core/actorSystem.ts`, `ActorSystem.applyMeleeEffects`; `src/core/actorPose.ts`,
   `actorCrawls` and `posedActor`; and `src/core/actorRegions.ts`,
   `posedHumanoidRegionBoxes`. Crawling derives from saved limb state rather than
   a separate flag so the two cannot disagree.
@@ -3044,11 +3044,14 @@ must not pull decision imports into those primitives. Neutral player-sense contr
 have their own leaf for the same reason. See `src/core/actorTickScratch.ts`,
 `ActorTickScratch`; `src/core/actorSense.ts`, `PlayerSense`; and `src/core/actorMotion.ts`, `steer`.
 
-Intent needs body reach queries and the spit-ground hold without importing the
-orchestrator at runtime. Constructor wiring keeps those body operations single-owned
-and avoids a cycle while the acid split is held for #313. See `src/core/agent.ts`,
-`AgentController`; and `src/core/actorSystem.ts`, `ActorSystem.reachableActorMoves` and
-`holdSpitGround`.
+Intent and attack decisions need body queries without importing the orchestrator
+at runtime. Shared body queries let another driver use the same physical limits;
+contact reactions receive body sensors without owning them. See `src/core/actorMotion.ts`,
+`reachableActorMoves` and `canStillAttack`; and `src/core/agent.ts`,
+`AgentController.updateObstacleContact` and `AgentController.startActorAttack`.
+The spit-ground hold remains constructor-wired to avoid a cycle while the acid
+split is held for #313. See `src/core/agent.ts`, `AgentController`; and
+`src/core/actorSystem.ts`, `holdSpitGround`.
 
 Choosing when to stop or where to look must not make decision code own the body's
 halt and turn operations. Keeping those primitives body-side allows another driver
@@ -3072,7 +3075,7 @@ crouch rules. See `src/core/agentPerception.ts`, `hearingTier`, `hearVocalNoise`
   See `src/content/base/dayCycle.json`, `dayCycle`; `docs/content.md`, "Day cycle";
   `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/agentPerception.ts`, `seesPlayer`;
   `src/core/agentHorde.ts`, `AgentHorde.updateHordes`; and `src/core/clock.ts`, `resolveSpawnTime`.
-- Shamblers must keep approaching without route planning: ordinary collision, jumping and seeded obstacle reactions provide local movement rather than knowledge of a route. See `src/core/actorSystem.ts`, `ActorSystem.tick` and `openWanderHeadings`; tuning belongs to `src/content/base/zombies.jsonnet`.
+- Shamblers must keep approaching without route planning: ordinary collision, jumping and seeded obstacle reactions provide local movement rather than knowledge of a route. See `src/core/actorSystem.ts`, `ActorSystem.tick`; and `src/core/agent.ts`, `openWanderHeadings`; tuning belongs to `src/content/base/zombies.jsonnet`.
 - Shamblers do not gain stair knowledge from an attention target on another floor.
 - For #281, visible prey suppresses obstacle wandering so local avoidance does not distract a shambler from an exposed target. See `src/core/agentPerception.ts`, `seesPlayer`; and `src/core/actorSystem.ts`, `ActorSystem.tick`.
 - Keep the established per-tick order because later phases consume state produced by earlier simulation steps. Named phases make that dependency reviewable; see `src/core/actorSystem.ts`, `ActorSystem.tick`.

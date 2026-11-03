@@ -1,11 +1,13 @@
 import {
   angleOf,
   approachAngle,
+  canStillAttack,
   haltActor,
   headingAt,
   horizontalDistance,
   inRange,
   onTerrainFloor,
+  reachableActorMoves,
   steer,
   stepChaseMotion,
   sub,
@@ -14,7 +16,8 @@ import {
   turnActorHeadLook,
   unit,
 } from './actorMotion.ts';
-import { type Actor, type AgentMode, copy } from './actorState.ts';
+import type { PlayerSense } from './actorSense.ts';
+import { type Actor, type AgentMode, activeFusedMassMembers, copy } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
 import type { ActorTickScratch } from './actorTickScratch.ts';
 import type { AgentHorde } from './agentHorde.ts';
@@ -42,37 +45,31 @@ export class AgentController {
     | 'terrainFloor'
     | 'physics'
     | 'bashObstacle'
+    | 'isSolid'
+    | 'meleeBlocker'
   >;
   private readonly tickScratch: ActorTickScratch;
   private readonly store: EntityStore<Actor>;
   private readonly agentHorde: AgentHorde;
   private readonly holdSpitGround: (scratch: ActorTickScratch, toward: Vec3) => void;
-  private readonly reachableActorMoves: (
-    actor: Actor,
-    actorPos: Vec3,
-    playerPos: Vec3,
-  ) => Actor['type']['attack']['moves'];
   constructor({
     options,
     tickScratch,
     store,
     agentHorde,
     holdSpitGround,
-    reachableActorMoves,
   }: {
     options: AgentController['options'];
     tickScratch: ActorTickScratch;
     store: EntityStore<Actor>;
     agentHorde: AgentHorde;
     holdSpitGround: AgentController['holdSpitGround'];
-    reachableActorMoves: AgentController['reachableActorMoves'];
   }) {
     this.options = options;
     this.tickScratch = tickScratch;
     this.store = store;
     this.agentHorde = agentHorde;
     this.holdSpitGround = holdSpitGround;
-    this.reachableActorMoves = reachableActorMoves;
   }
 
   private readonly chainStimuli: { caller: Actor; origin: Vec3; target: Vec3 }[] = [];
@@ -630,7 +627,8 @@ export class AgentController {
     scratch.metresToTarget = horizontalDistance(scratch.target, pos) * blockSize;
     scratch.returnArrived = actor.mode === 'return' && scratch.metresToTarget < 0.4;
     scratch.seeking = actor.mode === 'chase' || actor.mode === 'investigate';
-    scratch.inReach = actor.mode === 'chase' && this.reachableActorMoves(actor, pos, scratch.target).length > 0;
+    scratch.inReach =
+      actor.mode === 'chase' && reachableActorMoves(actor, pos, scratch.target, this.options).length > 0;
     const toward = unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
     scratch.direction = obstacleDirection ?? toward;
     scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
@@ -771,13 +769,9 @@ export class AgentController {
     actor.obstacleWanderRemaining = 0;
   }
 
-  updateMovementDecisionAfterStep(
-    stroll: boolean,
-    actor: Actor,
-    dt: number,
-    travelled: number,
-    scratch: ActorTickScratch,
-  ) {
+  updateMovementDecisionAfterStep(scratch: ActorTickScratch) {
+    const { stroll, actor, dt, travelled } = scratch;
+
     if (stroll && actor.mode === 'stroll' && actor.horizontalSpeed > 0.01) {
       const requested = actor.horizontalSpeed * dt;
       if (travelled + 1e-4 < requested * 0.1) {
@@ -793,6 +787,21 @@ export class AgentController {
         actor.searchStrolling = false;
         actor.modeTimer = inRange(scratch.rng, actor.type.wander.idleSimSeconds);
       }
+    }
+  }
+
+  startActorAttack(actor: Actor, type: Actor['type'], pos: Vec3, player: PlayerSense): void {
+    if (
+      actor.mode === 'chase' &&
+      actor.staggerSimSeconds <= 0 &&
+      actor.attackWait <= 0 &&
+      actor.spitWindup <= 0 &&
+      (type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor)) &&
+      reachableActorMoves(actor, pos, player.pos, this.options).length > 0
+    ) {
+      this.options.onSound?.(type.sounds.attack, copy(pos), actor);
+      actor.attackWindup = type.attack.windupSimSeconds;
+      actor.attackWait = type.attack.cooldownSimSeconds;
     }
   }
 }

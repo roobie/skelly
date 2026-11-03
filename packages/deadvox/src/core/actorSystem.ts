@@ -1,22 +1,22 @@
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import { templateFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
-import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
+import { figureVariantOf } from './actorModels.ts';
 import {
   angleOf,
   approach,
   clearLine,
+  cutsFor,
   headingAt,
   horizontalDistance,
   inRange,
   pickByWeight,
   pushTurn,
+  reachableActorMoves,
   steer,
   sub,
   type TerrainFloorAt,
   unit,
-  withinAttackReach,
   wrapAngle,
 } from './actorMotion.ts';
 import {
@@ -42,8 +42,6 @@ import {
   type ActorState,
   type ActorTier,
   type AgentMode,
-  activeFusedMassMembers,
-  actorAttackReachMetres,
   actorBodyDimensions,
   copy,
   PLAYER_ARM_REACH_M,
@@ -481,16 +479,6 @@ const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
   }
 };
 
-// ---- dismemberment: which part a hit can sever, and the gameplay effect of already-severed parts ----
-// The body's bone dispositions say what each hit region may lose, so no skeleton's bone names are listed
-// here; see packages/mobgen/src/mob/humanoidFigure.ts, `HumanoidFigure`. The random roll picks among arm
-// parts; a destroyed region cuts at its top part; the head has its own headOnKillChance roll.
-
-const cutsFor = (actor: Actor) => {
-  const figure = templateFigure(bodyPlanModel(figureVariantOf(actor.type)), actor.figureSeed);
-  return { parts: figure.severableParts, bones: figure.realized.body.bones };
-};
-
 /** The part a destroyed region cuts at, parents first, so the whole region goes; undefined where it can't be cut. */
 const regionCut = (actor: Actor, region: HumanoidHitRegion): string | undefined => cutsFor(actor).parts[region][0];
 
@@ -509,22 +497,6 @@ const availableArmParts = (actor: Actor): string[] => {
     }
   }
   return ordered;
-};
-
-/** True once an arm's cut reaches above its last part: a lost hand alone still lets it grab with the stump. */
-const armDisabled = (arm: readonly string[], hidden: ReadonlySet<string>): boolean =>
-  arm.length > 0 && hidden.has(arm[Math.max(0, arm.length - 2)]!);
-
-/** Gameplay effect, first slice: with both arms disabled there's nothing left to grab or claw with — the
- * zombie can still chase, but never starts a new attack (see the windup start check in tick()).
- * Already-started windups aren't cancelled retroactively; this only gates a *new* one. */
-const canStillAttack = (actor: Actor): boolean => {
-  if (actor.severed.length === 0) {
-    return true;
-  }
-  const { parts, bones } = cutsFor(actor);
-  const hidden = severedBoneSet(bones, actor.severed);
-  return !(armDisabled(parts.leftArm, hidden) && armDisabled(parts.rightArm, hidden));
 };
 
 const meleeOutcome = (
@@ -640,7 +612,6 @@ export class ActorSystem {
       store: this.store,
       agentHorde: this.agentHorde,
       holdSpitGround,
-      reachableActorMoves: (actor, actorPos, playerPos) => this.reachableActorMoves(actor, actorPos, playerPos),
     });
   }
 
@@ -1404,7 +1375,7 @@ export class ActorSystem {
 
   private updateMovementAfterStep(): void {
     const scratch = this.tickScratch;
-    const { actor, blockSize, dt, travelled, beforeStep, groundedAtTickStart, stroll } = scratch;
+    const { actor, blockSize, dt, travelled, beforeStep, groundedAtTickStart } = scratch;
     scratch.stepHeightMetres = this.options.physics.stepHeight * blockSize;
     const stepOffsetState = updateStepOffset(
       {
@@ -1426,24 +1397,7 @@ export class ActorSystem {
     if (actor.mode === 'idle' || actor.mode === 'stroll') {
       actor.wanderClock += dt;
     }
-    this.agent.updateMovementDecisionAfterStep(stroll, actor, dt, travelled, scratch);
-  }
-
-  private reachableActorMoves(actor: Actor, actorPos: Vec3, playerPos: Vec3): ActorMove[] {
-    return actor.type.attack.moves.filter((move) =>
-      withinAttackReach({
-        actor,
-        actorPos,
-        playerPos,
-        blockSize: this.options.blockSize,
-        isSolid:
-          this.options.meleeBlocker?.({
-            kind: 'actor',
-            motion: move.motion,
-            reachMetres: actorAttackReachMetres(actor),
-          }) ?? this.options.isSolid,
-      }),
-    );
+    this.agent.updateMovementDecisionAfterStep(scratch);
   }
 
   private resolveActorAttack(): void {
@@ -1452,23 +1406,14 @@ export class ActorSystem {
     if (actor.attackWindup > 0) {
       actor.attackWindup = Math.max(0, actor.attackWindup - dt);
       if (actor.attackWindup <= 0) {
-        const moves = this.reachableActorMoves(actor, pos, player.pos);
+        const moves = reachableActorMoves(actor, pos, player.pos, this.options);
         if (moves.length > 0) {
           const move = pickActorMove(moves, scratch.rng.next());
           this.options.hurtPlayer(move.damage, move.hitRegions, scratch.id, move.damageKind);
         }
       }
-    } else if (
-      actor.mode === 'chase' &&
-      actor.staggerSimSeconds <= 0 &&
-      actor.attackWait <= 0 &&
-      actor.spitWindup <= 0 &&
-      (type.model === 'fused-mass' ? activeFusedMassMembers(actor).length > 0 : canStillAttack(actor)) &&
-      this.reachableActorMoves(actor, pos, player.pos).length > 0
-    ) {
-      this.options.onSound?.(type.sounds.attack, copy(pos), actor);
-      actor.attackWindup = type.attack.windupSimSeconds;
-      actor.attackWait = type.attack.cooldownSimSeconds;
+    } else {
+      this.agent.startActorAttack(actor, type, pos, player);
     }
     this.resolveAcidSpit();
   }
