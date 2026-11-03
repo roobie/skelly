@@ -7,6 +7,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { placedPoint } from '../src/core/templates.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';
 import { withReusedBuilds } from './bundledContentReuse.ts';
+import { makeConfig } from './fixtures/startupContent.ts';
 
 const selected = withReusedBuilds(() =>
   selectBundledMods(bundledModIdsFromUrl(new URLSearchParams({ mods: debugMod.id }))),
@@ -27,6 +28,30 @@ describe('authored debug scenario mod', () => {
     expect(selected.admitted.some(({ id }) => id === debugMod.id)).toBe(true);
   });
 
+  it('keeps authored fixed stock inside the startup ring independently of landscape bounds', () => {
+    expect(selected.issues).toEqual([]);
+    const { registry } = selected.content;
+    const config = makeConfig(13, 64);
+    let checked = false;
+    for (const declared of debugMod.layouts) {
+      const layout = registry.layouts.get(declared.id)!;
+      const site = new AuthoredSite(config.seed, registry, config.scale, {
+        ...layout,
+        bounds: { ...layout.bounds, x1: layout.bounds.x1 + 100 },
+      });
+      const [sx, , sz] = site.spawn.pos.map((value) => value / config.scale.blockSize);
+      for (const [index, building] of layout.buildings.entries()) {
+        for (const fixed of building.fixedLoot ?? []) {
+          checked = true;
+          const [x, , z] = placedPoint(site.placements[index]!, fixed.at);
+          const distance = Math.max(Math.abs(toChunk(x) - toChunk(sx!)), Math.abs(toChunk(z) - toChunk(sz!)));
+          expect(distance).toBeLessThanOrEqual(config.readyRadiusChunks);
+        }
+      }
+    }
+    expect(checked).toBe(true);
+  });
+
   it('delivers its fixed stock through ordinary authored spawns without a debug flag', () => {
     expect(selected.issues).toEqual([]);
     const { registry } = selected.content;
@@ -43,6 +68,10 @@ describe('authored debug scenario mod', () => {
             .furnitureIn(toChunk(position[0]), toChunk(position[2]))
             .find(({ spec }) => spec.pos.every((value, axis) => value === position[axis]));
           expect(spawn).toBeDefined();
+          const point = site
+            .lootPointsIn(toChunk(position[0]), toChunk(position[2]))
+            .find(({ destination }) => destination.every((value, axis) => value === position[axis]));
+          expect(point?.fixture).toBe(true);
           const entity = inventory.furnishSpawn(spawn!)!;
           const actual = [...inventory.items()].flatMap(({ item, location }) =>
             location.kind === 'furniture' && location.entity === entity

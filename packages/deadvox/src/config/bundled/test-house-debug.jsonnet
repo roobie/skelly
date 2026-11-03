@@ -6,6 +6,7 @@ local layout = (import '../../content/base/layouts-test-house.jsonnet').layouts[
   product: false,
   dependencies: ['base'],
   overrides: [{ pack: 'base', entry: 'layouts:' + layout.id }],
+  templates: [import 'test-house-range.libsonnet'],
   layouts: [layout + {
     showroom: layout.showroom + {
       catalogue: {
@@ -18,6 +19,10 @@ local layout = (import '../../content/base/layouts-test-house.jsonnet').layouts[
                   then { fixedLoot: import 'test-house-garage.libsonnet' }
                   else {})
       for building in layout.buildings
-    ],
+    ] + [{
+      template: 'test_house_range', position: [54, 21, -1.5], rotation: 0,
+      lootContext: { usage: ['Residential', 'Hunting', 'Police', 'Military'], tier: 'Tier4', lowerTiers: true },
+      fixedLoot: [{ at: [0, 1, 0], items: import 'test-house-rack.libsonnet' }],
+    }],
   }],
 }

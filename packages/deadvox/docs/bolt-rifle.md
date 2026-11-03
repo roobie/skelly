@@ -19,7 +19,7 @@ The save copy cancels manual motion, not committed ammunition transfers. An open
 
 The civilian cartridge is separate from military ammunition, and fitting the scope is the player's choice. The rifle and its ammunition are admitted to loot by usages and tiers like any other item; see `DESIGN.md`, "Loot".
 
-Until the range grading ruling and conversion in PR #1539, debug rack stock is capability-driven rather than a loot placement; see `src/game/testHouseRange.ts`, `testHouseRangeSupply`. The authored-stock rule accepts a hand edit for each new rifle or ammunition type, and silent absence until listed, to keep evaluation supplies in content rather than runtime synthesis. See `DESIGN.md`, "Debug scenes".
+Debug rack stock requires the explicitly selected scenario mod. Accept a hand edit for each new rifle or ammunition type, and silent absence until listed, to keep evaluation supplies in content rather than runtime synthesis. See `src/config/bundled/test-house-rack.libsonnet` and `DESIGN.md`, "Debug scenes".
 
 Content owns handling and combat estimates so a mod can tune a rifle without changing mechanisms. The pump's insertion time uses the same content boundary rather than a shell-specific code constant. See `src/content/base/models-firearms.libsonnet`, `items`, and `src/core/schema/items.ts`, `FirearmSchema`.
 

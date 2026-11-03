@@ -514,6 +514,133 @@
           "position": [0, 20.5, -11.5],
           "rotation": 0,
           "template": "test_house_reading_booth"
+        },
+        {
+          "fixedLoot": [
+            {
+              "at": [0, 1, 0],
+              "items": [
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "rifle_hunting"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "pump_shotgun"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "rifle_ak"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "rifle_assault"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "pistol_service"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "revolver_357"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_357_h_magnum"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_9x19"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "shotshell_box"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_308_h_winchester"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_5_d_56x45"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_box_7_d_62x39"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_akm_30"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_pistol_9"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_stanag_20"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "magazine_stanag_30"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_308_h_winchester"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_357_h_magnum"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_5_d_56x45"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_7_d_62x39"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "cartridge_9x19"
+                },
+                {
+                  "condition": 1,
+                  "count": 1,
+                  "item": "shell_12_gauge_00_buck"
+                }
+              ]
+            }
+          ],
+          "lootContext": {
+            "lowerTiers": true,
+            "tier": "Tier4",
+            "usage": ["Residential", "Hunting", "Police", "Military"]
+          },
+          "position": [54, 21, -1.5],
+          "rotation": 0,
+          "template": "test_house_range"
         }
       ],
       "demo": true,
@@ -1077,6 +1204,24 @@
     }
   ],
   "product": false,
+  "templates": [
+    {
+      "id": "test_house_range",
+      "layers": [["GG"], ["RR"], ["RR"], ["RR"], ["RR"]],
+      "lootContext": {
+        "tier": "Tier1",
+        "usage": ["Residential"]
+      },
+      "palette": {
+        "G": "concrete",
+        "R": {
+          "facing": "s",
+          "furniture": "range_rack"
+        }
+      },
+      "size": [2, 5, 1]
+    }
+  ],
   "tier": "scenario",
   "version": "1"
 }

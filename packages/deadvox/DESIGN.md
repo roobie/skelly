@@ -1193,11 +1193,10 @@ lists for rack stock and catalogue furniture. Accept an edit per new gun, tool o
 piece, and silent absence until listed, rather than adding runtime synthesis or a
 completeness checker. Authored evaluation saves must require their admitted mod.
 
-Garage stock and the furniture catalogue use that mod boundary. Until the range grading
-conversion in PR #1539, the range remains a debug-only runtime overlay, the rack derives
-stock from content, and range visits and saves do not require the staging mod.
-See `src/game/worldSetup.ts`, `DebugTestHouseSite`, and `src/game/testHouseRange.ts`,
-`testHouseRangeSupply`. The boundary and maintenance reasons belong in
+Garage stock, rack stock and the furniture catalogue use that mod boundary. Until the
+range grading conversion in PR #1539, range geometry remains a debug-only runtime
+overlay; see `src/game/worldSetup.ts`, `DebugTestHouseSite`. Rack stock belongs to
+`src/config/bundled/test-house-rack.libsonnet`. The boundary and maintenance reasons belong in
 `docs/test-house.md`, "Normal and debug additions", and `docs/test-house.md`, "Garage".
 
 ### Loot

@@ -7,7 +7,6 @@ import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
-import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
 import { blockLiquids, blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
@@ -16,14 +15,7 @@ import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
-import {
-  type ColumnSource,
-  type FurnitureSpawn,
-  fillFurnitureLoot,
-  type Rect,
-  type Site,
-  SupplyFootprints,
-} from '../core/site.ts';
+import { type ColumnSource, type FurnitureSpawn, type Rect, type Site, SupplyFootprints } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
@@ -32,7 +24,6 @@ import { type Surface, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
-import { testHouseRangeSupply } from './testHouseRange.ts';
 import { buildDebugWeatheringTestSite } from './weatheringTestSite.ts';
 
 export interface WorldSetup extends ColumnSource {
@@ -57,16 +48,12 @@ export interface WorldSetup extends ColumnSource {
 }
 
 /** The authored site owns the house; this wrapper adds the debug range. */
-export class DebugTestHouseSite implements Site {
+class DebugTestHouseSite implements Site {
   readonly range: HandlingRange;
   readonly surface: Surface;
   readonly spawn: Site['spawn'];
   readonly house: AuthoredSite;
-  private readonly rack: EntitySpec;
-  private readonly registry: Registry;
-  private readonly seed: number;
   private readonly target: EntitySpec;
-  private readonly lootPoints: ReadonlyMap<string, readonly LootSpawnPoint[]>;
 
   constructor(config: GameConfig, registry: Registry, house: AuthoredSite) {
     this.house = house;
@@ -88,33 +75,6 @@ export class DebugTestHouseSite implements Site {
       height: (x, z, natural) => this.range.approachHeight(x, z, house.surface.height(x, z, natural)),
       top: (x, z) => this.range.top(x, z) ?? house.surface.top?.(x, z),
     };
-    const rackType = 'range_rack';
-    const rackSize = registry.furniture.get(rackType)?.size;
-    if (!rackSize) {
-      throw new Error(`content does not define furniture "${rackType}"`);
-    }
-    const centreZ = Math.floor((this.range.rect.z0 + this.range.rect.z1) / 2);
-    this.rack = {
-      type: rackType,
-      pos: [this.range.rect.x0 + 3, this.range.floor + 1, centreZ + 4],
-      size: [...rackSize],
-      facing: 's',
-    };
-    this.registry = registry;
-    this.seed = config.seed;
-    const source: LootPointSource = {
-      site: layout.id,
-      building: 'range-rack',
-      anchor: [0, 0, 0],
-      channel: 'container',
-      position: this.rack.pos,
-      destination: this.rack.pos,
-      context: layout.lootContext,
-      supply: { kind: 'fixed', items: testHouseRangeSupply(registry) },
-      required: false,
-      fixture: true,
-    };
-    this.lootPoints = lootPointsByColumn([source]);
     const targetType = 'range_target';
     const targetSize = registry.furniture.get(targetType)?.size;
     if (!targetSize) {
@@ -142,24 +102,19 @@ export class DebugTestHouseSite implements Site {
   }
 
   lootPointsIn(cx: number, cz: number) {
-    return [...this.house.lootPointsIn(cx, cz), ...(this.lootPoints.get(`${cx},${cz}`) ?? [])];
+    return this.house.lootPointsIn(cx, cz);
   }
 
   supplySourcesIn(area: Rect) {
     return [
       ...this.house.supplySourcesIn(area),
       ...this.range.supplySourcesIn(area),
-      ...new SupplyFootprints([this.rack, this.target], [...this.lootPoints.values()].flat()).in(area),
+      ...new SupplyFootprints([this.target], []).in(area),
     ];
   }
 
   furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
     const spawns = [...this.house.furnitureIn(cx, cz), ...this.range.furnitureIn(cx, cz)];
-    if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {
-      spawns.push(
-        ...fillFurnitureLoot(this.registry, this.seed, [{ spec: this.rack, loot: [] }], this.lootPointsIn(cx, cz)),
-      );
-    }
     if (toChunk(this.target.pos[0]) === cx && toChunk(this.target.pos[2]) === cz) {
       spawns.push({ spec: this.target, loot: [] });
     }
@@ -171,7 +126,7 @@ export class DebugTestHouseSite implements Site {
   }
 }
 
-export const buildDebugTestHouseSite = (
+const buildDebugTestHouseSite = (
   config: GameConfig,
   registry: Registry,
   house: Site | undefined,
