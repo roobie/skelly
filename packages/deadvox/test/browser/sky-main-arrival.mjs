@@ -101,6 +101,8 @@ const SHARED_SEED_POOL = `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : fig
 // See `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
 export function adaptMainSeedPool(source) {
   return source
+    .replaceAll('ZombieModel', 'ActorModel')
+    .replaceAll('core/zombieModels.ts', 'core/actorModels.ts')
     .replace(
       SHARED_SEED_POOL,
       `    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).flatMap((seed) => {
