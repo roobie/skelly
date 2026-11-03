@@ -177,7 +177,6 @@ export const SiteLayoutSchema = strictObject({
   bays: optional(array(strictObject({ position: MetrePosition, facing: picklist(['n', 'e', 's', 'w']) }))),
   showroom: optional(ShowroomSchema),
   /** Debug lane placement is independent of landscape bounds, so enlarging a view does not move test supplies. */
-  handlingRange: optional(strictObject({ beside: LayoutRect, floor: HalfMetres })),
   player: strictObject({
     position: MetrePosition,
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */

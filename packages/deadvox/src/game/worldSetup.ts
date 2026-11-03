@@ -1,26 +1,25 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
-import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
+import { BlockEntities } from '../core/blockEntities.ts';
 import { CanonicalTerrain } from '../core/canonicalTerrain.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.ts';
 import { blockColors, type Registry } from '../core/content.ts';
-import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { blockLiquids, blockPatterns, blockWeatherability } from '../core/meshInput.ts';
-import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
 import { ScenarioCitySite } from '../core/scenarioCity.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { ScenarioDef } from '../core/schema.ts';
 import { TEMPLATE_BLOCK_SIZE } from '../core/settlementSpawns.ts';
-import { type ColumnSource, type FurnitureSpawn, type Rect, type Site, SupplyFootprints } from '../core/site.ts';
+import type { ColumnSource, Site } from '../core/site.ts';
 import { sitePalette, terrainShapeOf } from '../core/sitePalette.ts';
 import { type PlacedPowerDevice, placedPowerDevices } from '../core/sitePower.ts';
 import { authoredSkyBoxes, SkyFields } from '../core/skyField.ts';
 import { World } from '../core/world.ts';
-import { type Surface, worldGroundAt } from '../core/worldgen.ts';
+import { worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
@@ -47,94 +46,6 @@ export interface WorldSetup extends ColumnSource {
   spawn: { pos: Vec3; yaw: number };
 }
 
-/** The authored site owns the house; this wrapper adds the debug range. */
-class DebugTestHouseSite implements Site {
-  readonly range: HandlingRange;
-  readonly surface: Surface;
-  readonly spawn: Site['spawn'];
-  readonly house: AuthoredSite;
-  private readonly target: EntitySpec;
-
-  constructor(config: GameConfig, registry: Registry, house: AuthoredSite) {
-    this.house = house;
-    this.spawn = house.spawn;
-    const layout = registry.layouts.get(config.site)!;
-    const range = layout.handlingRange;
-    if (!range) {
-      throw new Error(`content does not define a debug handling range for "${layout.id}"`);
-    }
-    const { beside } = range;
-    const s = config.scale.blockSize;
-    this.range = new HandlingRange(config.seed, registry, config.scale, {
-      beside: { x0: beside.x0 / s, x1: beside.x1 / s, z0: beside.z0 / s, z1: beside.z1 / s },
-      floor: range.floor / s,
-    });
-    house.reserveVegetation([this.range.rect]);
-    this.surface = {
-      ...house.surface,
-      height: (x, z, natural) => this.range.approachHeight(x, z, house.surface.height(x, z, natural)),
-      top: (x, z) => this.range.top(x, z) ?? house.surface.top?.(x, z),
-    };
-    const targetType = 'range_target';
-    const targetSize = registry.furniture.get(targetType)?.size;
-    if (!targetSize) {
-      throw new Error(`content does not define furniture "${targetType}"`);
-    }
-    this.target = {
-      type: targetType,
-      pos: [this.range.targets[0]!.x, this.range.floor + 1, this.range.targets[0]!.z - Math.floor(targetSize[2] / 2)],
-      size: [...targetSize],
-      facing: 'w',
-    };
-  }
-
-  get authoredPlacements() {
-    return this.house.placements;
-  }
-
-  focus(furniture: string): Site['spawn'] | undefined {
-    return this.house.focus(furniture);
-  }
-
-  stamp(chunk: Parameters<Site['stamp']>[0]): void {
-    this.house.stamp(chunk);
-    this.range.stamp(chunk);
-  }
-
-  lootPointsIn(cx: number, cz: number) {
-    return this.house.lootPointsIn(cx, cz);
-  }
-
-  supplySourcesIn(area: Rect) {
-    return [
-      ...this.house.supplySourcesIn(area),
-      ...this.range.supplySourcesIn(area),
-      ...new SupplyFootprints([this.target], []).in(area),
-    ];
-  }
-
-  furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
-    const spawns = [...this.house.furnitureIn(cx, cz), ...this.range.furnitureIn(cx, cz)];
-    if (toChunk(this.target.pos[0]) === cx && toChunk(this.target.pos[2]) === cz) {
-      spawns.push({ spec: this.target, loot: [] });
-    }
-    return spawns;
-  }
-
-  actorsIn(): ReturnType<Site['actorsIn']> {
-    return [];
-  }
-}
-
-const buildDebugTestHouseSite = (
-  config: GameConfig,
-  registry: Registry,
-  house: Site | undefined,
-): DebugTestHouseSite | undefined =>
-  config.site === 'testHouse' && config.debug && house instanceof AuthoredSite
-    ? new DebugTestHouseSite(config, registry, house)
-    : undefined;
-
 const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof ScenarioCitySite>[0]) => Site> = {
   assembledCity: (options) => new ScenarioCitySite(options),
 };
@@ -160,10 +71,8 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
   return new StressCity(config.seed, registry, config.scale, config.storeys);
 };
 
-export const siteForReviewMap = (config: GameConfig, registry = config.content.registry): Site | undefined => {
-  const site = buildSite(config, registry);
-  return buildDebugTestHouseSite(config, registry, site) ?? site;
-};
+export const siteForReviewMap = (config: GameConfig, registry = config.content.registry): Site | undefined =>
+  buildSite(config, registry);
 
 export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?: StreamerStats): WorldSetup {
   const { registry, issues } = config.content;

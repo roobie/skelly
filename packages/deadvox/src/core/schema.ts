@@ -29,7 +29,6 @@ export type {
   FurnitureDef,
   GraphicsTuningDef,
   GunModelDef,
-  HandlingRangeDef,
   InventoryTuningDef,
   ItemDef,
   KitAnchor,

@@ -3,7 +3,6 @@ import graphics from '../../src/content/base/graphics.json' with { type: 'json' 
 import melee from '../../src/content/base/items-tools.json' with { type: 'json' };
 import look from '../../src/content/base/look.json' with { type: 'json' };
 import power from '../../src/content/base/power.json' with { type: 'json' };
-import range from '../../src/content/base/range.json' with { type: 'json' };
 import recipes from '../../src/content/base/recipes.json' with { type: 'json' };
 import saves from '../../src/content/base/saves.json' with { type: 'json' };
 import sites from '../../src/content/base/site-generation.json' with { type: 'json' };
@@ -22,7 +21,6 @@ export const fixtureIds = {
   player: id(body.body, 'player'),
   autosave: id(saves.saves, 'autosave'),
   authoredSite: id(sites.siteGeneration, 'authoredSite'),
-  testRange: id(range.handlingRange, 'testRange'),
   firearmsCombat: id(recipes.skills, 'firearmsCombat'),
   meleeCombat: id(recipes.skills, 'meleeCombat'),
   unarmed: id(melee.meleeClasses, 'unarmed'),

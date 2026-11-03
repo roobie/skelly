@@ -31,7 +31,6 @@ import { type MaterialOperation, materialCycle } from './materialCycles.ts';
 import { modelBodyMassKg } from './modelMass.ts';
 import { pieceItemIssues } from './placementLoot.ts';
 import { POWER_UNITS } from './powerContent.ts';
-import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
   type ActorDef,
@@ -1552,14 +1551,6 @@ const checkSiteGeneration = (registry: Registry, report: Report) => {
   }
 };
 
-const checkHandlingRanges = (registry: Registry, report: Report) => {
-  for (const layout of registry.handlingRange.values()) {
-    for (const [path, message] of handlingRangeIssues(layout)) {
-      report('handlingRange', layout.id, path, message);
-    }
-  }
-};
-
 const checkSeveredItems = (registry: Registry, zombie: ActorDef, report: Report) => {
   const regions = Object.keys(zombie.regions);
   if (
@@ -2258,7 +2249,6 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   checkTemplates(registry, report);
   checkSpawnWindows(registry, report);
   checkSiteGeneration(registry, report);
-  checkHandlingRanges(registry, report);
   for (const issue of mapKitIssues(registry)) {
     report(issue.section, issue.id, issue.path, issue.message);
   }

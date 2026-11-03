@@ -8,7 +8,7 @@ local content = [
   'items-wearables', 'ladders', 'layouts-cabins', 'layouts-playtest', 'layouts-stairs',
   'layouts-test-house', 'layouts-voice-size', 'layouts-water', 'layouts', 'locks', 'look',
   'loot-workshop', 'loot', 'map-kits', 'models-attachments', 'models-firearms',
-  'models-gun-parts', 'models-items', 'models-melee', 'player', 'power', 'range', 'readables',
+  'models-gun-parts', 'models-items', 'models-melee', 'player', 'power', 'readables',
   'ranged-tuning', 'recipes', 'rural-medical-fixtures', 'rural-medical', 'rural-police-fixtures', 'rural-police',
   'rural-substation-fixtures', 'rural-substation', 'saves', 'scenarios', 'senses',
   'site-generation', 'starts', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',

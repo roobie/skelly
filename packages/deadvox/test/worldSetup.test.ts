@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { configFromUrl as readConfig } from '../src/game/config.ts';
-import { createWorldSetup, playerStartFromWorld } from '../src/game/worldSetup.ts';
+import { createWorldSetup, playerStartFromWorld, siteForReviewMap } from '../src/game/worldSetup.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { makeAttemptLayout } from './fixtures/attemptPolicy.ts';
 import { configFromUrl } from './fixtures/startupContent.ts';
@@ -37,6 +38,17 @@ it('selects the active authored layout policy and supplies none for a rowless di
   registry.layouts.set(layout.id, { ...layout, attemptPolicy: undefined });
   expect(setup(`site=${layout.id}`).attemptPolicy).toBeUndefined();
   expect(setup('site=weatheringTest&debug=1').attemptPolicy).toBeUndefined();
+});
+
+it('builds authored rows unchanged by a debug profile, including a fixture named testHouse', () => {
+  const original = configFromUrl(new URLSearchParams());
+  const layout = { ...makeAttemptLayout(), id: 'testHouse' };
+  const registry = { ...original.content.registry, layouts: new Map([[layout.id, layout]]) };
+  for (const debug of [false, true]) {
+    const site = siteForReviewMap({ ...original, site: layout.id, debug }, registry);
+    expect(site).toBeInstanceOf(AuthoredSite);
+    expect(site!.spawn).toEqual({ pos: layout.player.position, yaw: 0 });
+  }
 });
 
 describe('player start from world setup', () => {

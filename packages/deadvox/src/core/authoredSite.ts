@@ -40,7 +40,6 @@ import {
   lootSourcesOf,
   type PlaytestMarks,
   type Rect,
-  rectsOverlap,
   type Site,
   SupplyFootprints,
 } from './site.ts';
@@ -161,7 +160,7 @@ export class AuthoredSite implements Site {
   }
   private readonly spawns: readonly ActorSpawn[];
   private readonly hordes: readonly HordeSpawn[];
-  private treeIndex: TreeIndex;
+  private readonly treeIndex: TreeIndex;
   private readonly lootColumns: ReadonlyMap<string, readonly LootSpawnPoint[]>;
   private readonly supplyFootprints: SupplyFootprints;
   readonly playtestMarks: PlaytestMarks;
@@ -494,11 +493,6 @@ export class AuthoredSite implements Site {
       pos: blocks(position),
       members: Rng.stream(seed, `authored-horde:${layout.id}:${id}`).int(...HORDE_MEMBERS),
     }));
-  }
-
-  /** Wrappers reserve their derived floors before streaming so neither trees nor litter survive there. */
-  reserveVegetation(areas: readonly Rect[]): void {
-    this.treeIndex = new TreeIndex(this.trees.filter((tree) => !areas.some((area) => rectsOverlap(tree.bounds, area))));
   }
 
   focus(furniture: string): Site['spawn'] | undefined {

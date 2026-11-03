@@ -6,7 +6,6 @@ export const CONTENT_CAPABILITIES = {
   body: { player: 'required' },
   compression: { player: 'required' },
   figures: { player: 'required' },
-  handlingRange: { testRange: 'required' },
   inventory: { player: 'required' },
   meleeClasses: { unarmed: 'required' },
   saves: { autosave: 'required' },

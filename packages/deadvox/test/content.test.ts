@@ -1508,49 +1508,6 @@ describe('content', () => {
     });
   });
 
-  it('reports a missing test range as a load error', () => {
-    const withoutRange = { ...baseRegistry, handlingRange: new Map() };
-    expect(requiredContentIssues(withoutRange)).toContainEqual({
-      source: 'core content',
-      path: 'handlingRange',
-      message: 'missing required capability "testRange"',
-    });
-  });
-
-  describe('handling range layout', () => {
-    interface RangeData {
-      handlingRange: { width: number; firingLine?: unknown; targets: { lateral: number }[] }[];
-    }
-    const rangePack = () => {
-      const pack = base.find(({ source }) => source === 'range.json')!;
-      return { source: pack.source, data: structuredClone(pack.data) as RangeData };
-    };
-
-    it('requires every layout field, since the code holds no defaults', () => {
-      const pack = rangePack();
-      pack.data.handlingRange[0]!.firingLine = undefined;
-      expect(validateContent(pack).length).toBeGreaterThan(0);
-    });
-
-    it('rejects targets level with each other, since the nearer one hides the farther', () => {
-      const pack = rangePack();
-      const [first, second] = pack.data.handlingRange[0]!.targets;
-      second!.lateral = first!.lateral;
-      expect(buildRegistry([pack]).issues.map(({ message }) => message)).toContainEqual(
-        expect.stringContaining('hidden from the firing line'),
-      );
-    });
-
-    it('rejects a target outside the lane rather than clamping it', () => {
-      const pack = rangePack();
-      const layout = pack.data.handlingRange[0]!;
-      layout.targets[0]!.lateral = layout.width;
-      expect(buildRegistry([pack]).issues.map(({ message }) => message)).toContainEqual(
-        expect.stringContaining('inside the lane width'),
-      );
-    });
-  });
-
   // Keep this registry minimal; building the full base pack here made the suite hit its timeout.
   it('lets a later file override a block without changing its runtime id', () => {
     const original = {

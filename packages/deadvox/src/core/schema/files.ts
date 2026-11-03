@@ -11,7 +11,6 @@ import { DayCycleSchema } from './dayCycle.ts';
 import { FigureSchema } from './figures.ts';
 import { FurnitureMaterialSchema, FurnitureSchema } from './furniture.ts';
 import { GraphicsTuningSchema } from './graphics.ts';
-import { HandlingRangeSchema } from './handlingRange.ts';
 import { InventoryTuningSchema } from './inventory.ts';
 import { ItemSchema, LiquidSchema, MeleeClassSchema, type TreatmentSchema, VehicleBlueprintSchema } from './items.ts';
 import { CityBenchmarkSchema, type FixedLootOverride, MapPoolSchema, SiteLayoutSchema } from './layouts.ts';
@@ -115,7 +114,6 @@ const SECTION_DESCRIPTOR = {
   player: { schema: optional(array(PlayerSchema)), label: 'player tuning', order: 13.5 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
   siteGeneration: { schema: optional(array(SiteGenerationSchema)), label: 'site generation', order: 15 },
-  handlingRange: { schema: optional(array(HandlingRangeSchema)), label: 'handling range', order: 29 },
   weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
   inventory: { schema: optional(array(InventoryTuningSchema)), label: 'inventory tuning', order: 17 },
   saves: { schema: optional(array(SaveTuningSchema)), label: 'save tuning', order: 18 },
@@ -216,8 +214,6 @@ export type InventoryTuningDef = InferOutput<typeof InventoryTuningSchema>;
 export type TreatmentDef = InferOutput<typeof TreatmentSchema>;
 
 export type CompressionCaps = InferOutput<typeof CompressionTuningSchema>['caps'];
-
-export type HandlingRangeDef = InferOutput<typeof HandlingRangeSchema>;
 
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 

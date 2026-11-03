@@ -241,10 +241,6 @@
       "output": "packages/deadvox/src/content/base/presentation/fuel-parts.json"
     },
     {
-      "source": "packages/deadvox/src/content/base/range.jsonnet",
-      "output": "packages/deadvox/src/content/base/range.json"
-    },
-    {
       "source": "packages/deadvox/src/content/base/ranged-tuning.jsonnet",
       "output": "packages/deadvox/src/content/base/ranged-tuning.json"
     },

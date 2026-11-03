@@ -185,12 +185,11 @@ they report broken data to a developer, and play only offers fits that already p
 
 ## Handling range
 
-The layout of the test range is content, so a mod can lay out its own range. The schema
-requires every field, with no code default. Each target carries its own lateral placement
-because fire runs down the lane: targets in line hide the farther ones, so validation
-rejects a layout where any target is hidden from the firing line, or sits outside the lane,
-rather than clamping it silently. See `src/core/schema/handlingRange.ts`, `HandlingRangeSchema`, and
-`src/core/rangeLayout.ts`, `handlingRangeIssues`.
+The range uses ordinary authored templates and building rows rather than a separate
+geometry mechanism, so its grading, vegetation clearing and admission share the same
+owner as other evaluation fixtures. Stagger targets laterally so nearer boards do not
+hide farther ones from the firing line. See `src/config/bundled/test-house-range.libsonnet`
+and `docs/test-house.md`, "Normal and debug additions".
 
 ## Weathering profiles
 
@@ -487,7 +486,7 @@ An item too large to turn up in ordinary loot, such as the engine hoist, is list
 
 Keep empty source descriptions so a dynamic event can address any source without regenerating geometry; world loot itself rolls once per chunk column (`packages/deadvox/DESIGN.md`, "Loot"). Source identity must include the building, local vertical anchor and destination channel, never traversal order or a generated template name; independent random streams then remain stable when another source is visited first. See `src/core/loot.ts`, `lootSpawnPoint`, `lootPointsByColumn`, and `lootPointStream`.
 
-Fixture descriptions keep showcase stock from defining production eligibility. They may include demonstration items without changing their economy metadata; ordinary pools must still reject those types. See `src/core/authoredSite.ts`, `AuthoredSite`, `src/game/worldSetup.ts`, `DebugTestHouseSite`, and `src/core/loot.ts`, `selectLootType`.
+Fixture descriptions keep showcase stock from defining production eligibility. They may include demonstration items without changing their economy metadata; ordinary pools must still reject those types. See `src/core/authoredSite.ts`, `AuthoredSite`, and `src/core/loot.ts`, `selectLootType`.
 
 ## Furniture visual shapes
 

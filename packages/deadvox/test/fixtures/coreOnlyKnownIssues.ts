@@ -20,7 +20,6 @@ export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
   known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.leftLeg.model', 'no model "player_leg"'),
   known('core extraction', 'core-only/figures-player.json', 'figures[0].limbs.rightLeg.model', 'no model "player_leg"'),
   missing('core extraction', 'figures', 'player'),
-  missing('scenario starts', 'handlingRange', 'testRange'),
   missing('core extraction', 'meleeClasses', 'unarmed'),
   missing('scenario starts', 'siteGeneration', 'authoredSite'),
   missing('theme extraction', 'powerTuning', 'power'),
