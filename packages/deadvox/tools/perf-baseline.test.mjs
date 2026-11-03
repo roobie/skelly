@@ -11,12 +11,19 @@ import { distribution, rankProfile, summarize } from './perf-baseline-stats.mjs'
 import { startTrace } from './perf-baseline-trace.mjs';
 
 const playStartupLiteral = /'[^'\n]*globalThis\.perfBaseline\.attach[^'\n]*'/;
+const playAnchorLiteral = /'[^'\n]*startRealFrames\(frame\);'/;
+const playActorStoreBinding = /const\s*\{[^}]*\bactorStore\s*(?:,[^}]*)?\}\s*=\s*session\s*;/;
 
 test('injected play startup attaches the live actor store before starting frames', async () => {
   const source = await readFile(new URL('./perf-baseline.mjs', import.meta.url), 'utf8');
   const literal = source.match(playStartupLiteral)?.[0];
   assert.ok(literal, 'play startup instrumentation exists');
   const injection = runInNewContext(literal);
+  const anchorLiteral = source.match(playAnchorLiteral)?.[0];
+  assert.ok(anchorLiteral, 'play startup replacement anchor exists');
+  const play = await readFile(new URL('../src/game/play.ts', import.meta.url), 'utf8');
+  assert.ok(play.includes(runInNewContext(anchorLiteral)), 'play source retains the injection anchor');
+  assert.match(play, playActorStoreBinding);
   const actorStore = { size: 1 };
   let attached;
   let started = false;
