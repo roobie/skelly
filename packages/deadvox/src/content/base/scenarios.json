@@ -1213,7 +1213,7 @@
       "compression": "player",
       "decalLimit": 48,
       "id": "gauntlet",
-      "kind": "gauntlet",
+      "kind": "assembledCity",
       "outbreakAgeGameHours": 2880,
       "population": {
         "authoredMarkers": true,

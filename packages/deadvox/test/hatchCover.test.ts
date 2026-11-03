@@ -6,10 +6,10 @@ import { buildRegistry, validateContent } from '../src/core/content.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { type FurnitureMover, movableRefusal, placement } from '../src/core/furnitureMove.ts';
 import { pickFurniture } from '../src/core/furniturePick.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { cellsOf, footprint, pieceSize } from '../src/core/templates.ts';
 import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from './economyFixtures.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -57,10 +57,10 @@ const carry = (inventory: Inventory, type: string): BlockEntity => {
   return piece;
 };
 
-type Spec = ReturnType<GauntletSite['furnitureIn']>[number]['spec'];
+type Spec = ReturnType<ScenarioCitySite['furnitureIn']>[number]['spec'];
 
 /** Every piece the generator furnishes inside the placements' footprints, once each. */
-const specsOf = (city: GauntletSite, placements: GauntletSite['plan']['placements']): Spec[] => {
+const specsOf = (city: ScenarioCitySite, placements: ScenarioCitySite['plan']['placements']): Spec[] => {
   const specs = new Map<string, Spec>();
   for (const area of placements) {
     const [x0, , z0] = area.origin;
@@ -225,7 +225,7 @@ describe('a cover over a hatch', () => {
 sweepGroup('the secret house', () => {
   it('has one cover lying over every cell of its hatch, which can be lifted', () => {
     const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({ seed: 73, registry, scale: makeScale(0.5), scenario });
     const [house] = city.plan.placements.filter(({ template }) => template.id === 'gauntlet_city_cellar_secret');
     const all = specsOf(city, [house!]);
     const hatches = all.filter((spec) => registry.furniture.get(spec.type)?.door?.hatch);
@@ -328,7 +328,7 @@ sweepGroup('tarps', () => {
     expect(built.issues).toEqual([]);
     const tarpYards = built.registry;
     const scenario = [...tarpYards.scenarios.values()].find((candidate) => candidate.composition)!;
-    const city = new GauntletSite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
+    const city = new ScenarioCitySite({ seed: 73, registry: tarpYards, scale: makeScale(0.5), scenario });
     const all = specsOf(city, city.plan.placements);
     const tarps = all.filter((spec) => spec.type === 'tarp');
     expect(tarps.length).toBeGreaterThan(0);

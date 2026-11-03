@@ -1,18 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { placedGroundLoot, placedSpawns } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'gauntlet');
+const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
 
 describe('gauntlet crisis HQ threat and supplies', () => {
   it('is guarded mostly by soldiers and has loot piles lying in its rooms', () => {
     expect(gauntlets.length, 'the registry has a gauntlet scenario').toBeGreaterThan(0);
     for (const scenario of gauntlets) {
-      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+      const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
       const hq = site.placements.filter((placement) => placement.template.id.includes('crisis_hq'));
       expect(hq.length, `${scenario.id} places the HQ`).toBeGreaterThan(0);
       const markers = hq.flatMap(placedSpawns);
@@ -26,7 +26,7 @@ describe('gauntlet crisis HQ threat and supplies', () => {
 describe('gauntlet lab acid zombies', () => {
   it('holds as many acid zombies on each numbered lab storey as its depth, and none in the sewer or elsewhere', () => {
     for (const scenario of gauntlets) {
-      const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+      const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
       // The scenario's storey anchors number the lab from the entry down, independently of any marker, so a
       // storey that lost all its acid zombies still appears with its expected count.
       const storeys = site.plan.composition?.storeys ?? [];

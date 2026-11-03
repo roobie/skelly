@@ -11,7 +11,7 @@ import { terrainShapeOf } from './sitePalette.ts';
 import { footprint, type Placement, placedSpawns } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
-export class GauntletSite extends CitySite {
+export class ScenarioCitySite extends CitySite {
   readonly scenario: ScenarioDef;
   private readonly population = new Map<string, ZombieSpawn[]>();
   private readonly hordes = new Map<string, HordeSpawn[]>();
@@ -40,7 +40,7 @@ export class GauntletSite extends CitySite {
       }),
     );
     this.scenario = scenario;
-    const population = gauntletPopulation(this, scenario);
+    const population = scenarioCityPopulation(this, scenario);
     this.population = population.zombies;
     this.hordes = population.hordes;
   }
@@ -119,7 +119,7 @@ const hordeGroupStarts = (seed: number, starts: number[], population: ScenarioDe
   );
 };
 
-export const gauntletPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
+export const scenarioCityPopulation = (site: CitySite, { id: scenarioId, population }: ScenarioDef) => {
   const zombies = new Map<string, ZombieSpawn[]>();
   const hordes = new Map<string, HordeSpawn[]>();
   const { grid, floor } = site.plan;

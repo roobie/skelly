@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import { lootPointStream, lootPointsByColumn, rollLootParts } from '../src/core/loot.ts';
 import { magazineFits, magazineSpec } from '../src/core/magazine.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { firearmModelForType } from '../src/game/firearmHandling.ts';
 import { startupContent } from './baseRegistry.ts';
 
 const { registry } = startupContent();
 const scale = makeScale(BLOCK_SIZE);
-const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'gauntlet');
+const gauntlets = [...registry.scenarios.values()].filter((scenario) => scenario.kind === 'assembledCity');
 const SEED = 1;
 
 /** Everything a run's loot points deliver, fixed or rolled, as item types with their stack counts. */
 const placedStacks = (seed: number, scenario: (typeof gauntlets)[number]): { type: string; count: number }[] => {
-  const site = new GauntletSite({ seed, registry, scale, scenario });
+  const site = new ScenarioCitySite({ seed, registry, scale, scenario });
   const sources = site.placements.flatMap((placement) =>
     lootSourcesOf(
       registry,

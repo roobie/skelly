@@ -8,13 +8,13 @@ import { CitySite } from '../src/core/citySite.ts';
 import { climbCertificate } from '../src/core/climbCertificate.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
 import {
   type CertificatePhase,
   scenarioCertificate,
   scenarioLotResourceCertificate,
 } from '../src/core/scenarioCertificate.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { undergroundPortIssues } from '../src/core/scenarioPortal.ts';
 import { ScenarioRouteSpace } from '../src/core/scenarioRoute.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
@@ -170,7 +170,7 @@ describe('final composed body-route certificate', () => {
       obstruct(chunk, this.plan.portal!.lower);
     });
     try {
-      const { issues } = scenarioCertificate(new GauntletSite({ seed: 9, registry, scale, scenario: profile }));
+      const { issues } = scenarioCertificate(new ScenarioCitySite({ seed: 9, registry, scale, scenario: profile }));
       expect(issues.map(([path, message]) => `${path}: ${message}`).join('\n')).toMatch(COMPOSED_LADDER);
     } finally {
       stamp.mockRestore();

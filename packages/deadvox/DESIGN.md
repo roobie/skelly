@@ -897,8 +897,8 @@ area, while authored markers stay separate. The policy is the scenario's
 The gauntlet places one horde rather than one per building group, and stragglers
 carry more of the street pressure. This reuses population and spawn
 admission instead of inventing an enemy-density runtime. See `src/core/schema/scenarios.ts`,
-`ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/gauntlet.ts`,
-`gauntletPopulation`; `src/core/settlementSpawns.ts`, `settlementZombieSpawns`; and
+`ScenarioSchema`; `src/content/base/scenarios.jsonnet`; `src/core/scenarioCity.ts`,
+`scenarioCityPopulation`; `src/core/settlementSpawns.ts`, `settlementZombieSpawns`; and
 `src/core/zombieSpawns.ts`, `ZombieSpawner`.
 
 The route/save browser flow proves connectivity and persistence, not balance or
@@ -907,8 +907,8 @@ markers before world construction, including on reload, so neither can turn that
 proof into an encounter trial: a scripted walker would only stall on a chasing
 zombie. The body and rules stay ordinary: damage, collision and the dead-survivor
 barrier apply, and default play keeps both populations; lab encounters are judged
-in play. See `src/core/gauntlet.ts`,
-`GauntletSite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
+in play. See `src/core/scenarioCity.ts`,
+`ScenarioCitySite`; `test/browser/save-controller-regressions.mjs`, `observation`; and
 `test/browser/gauntlet-flow.mjs`, `gauntletFlow`.
 
 Admission fails closed because dangling references, ambiguous selectors, overlapping

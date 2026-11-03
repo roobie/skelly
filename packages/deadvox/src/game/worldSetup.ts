@@ -6,12 +6,12 @@ import { worldOpaque, worldSolid, worldSoundBlocking } from '../core/collision.t
 import { blockColors, type Registry } from '../core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { Forest } from '../core/forest.ts';
-import { GauntletSite } from '../core/gauntlet.ts';
 import { graphicsTuningOf } from '../core/graphicsTuning.ts';
 import { type LootPointSource, type LootSpawnPoint, lootPointsByColumn } from '../core/loot.ts';
 import { blockLiquids, blockPatterns, blockWeatherability } from '../core/meshInput.ts';
 import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
+import { ScenarioCitySite } from '../core/scenarioCity.ts';
 import type { ScenarioKind } from '../core/scenarioKinds.ts';
 import type { AttemptPolicyDef } from '../core/schema/attemptPolicy.ts';
 import type { ScenarioDef } from '../core/schema.ts';
@@ -194,8 +194,8 @@ export const buildDebugTestHouseSite = (
     ? new DebugTestHouseSite(config, registry, house)
     : undefined;
 
-const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof GauntletSite>[0]) => Site> = {
-  gauntlet: (options) => new GauntletSite(options),
+const SCENARIO_SITES: Record<ScenarioKind, (options: ConstructorParameters<typeof ScenarioCitySite>[0]) => Site> = {
+  assembledCity: (options) => new ScenarioCitySite(options),
 };
 
 const buildSite = (config: GameConfig, registry: Registry): Site | undefined => {

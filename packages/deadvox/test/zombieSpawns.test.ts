@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
@@ -88,7 +88,7 @@ describe('authored zombie spawn persistence', () => {
   sweepGroup('in a gauntlet site', () => {
     it('keeps the secret house’s sealed brute shambler through generation and a save round-trip', () => {
       const scenario = [...registry.scenarios.values()].find((candidate) => candidate.composition)!;
-      const city = new GauntletSite({ seed: 73, registry, scale: makeScale(0.5), scenario });
+      const city = new ScenarioCitySite({ seed: 73, registry, scale: makeScale(0.5), scenario });
       const [house, ...others] = city.plan.placements.filter(
         ({ template }) => template.id === 'gauntlet_city_cellar_secret',
       );

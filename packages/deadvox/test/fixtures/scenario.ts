@@ -19,7 +19,7 @@ import { playerInventorySource } from './playerInventory.ts';
 
 export const fixtureScenario = (): ScenarioDef => ({
   id: 'fixture_scenario',
-  kind: 'gauntlet',
+  kind: 'assembledCity',
   outbreakAgeGameHours: gameHours(24),
   decalLimit: 16,
   body: 'fixture_body',

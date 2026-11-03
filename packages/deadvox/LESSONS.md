@@ -28,7 +28,7 @@ Request pointer capture before constructing a new world: synchronous setup can o
 
 Persistence probes must wait for controller entry before touching the bound session: accepting a launch gesture does not mean construction or checkpoint binding has finished. See `src/ui/saveController.ts`, `isEntered`, and `test/browser/save-storage.mjs`, `testTitleAndAutosave`.
 
-Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `src/core/content.ts`, `checkScenarios`, `src/core/gauntlet.ts`, `GauntletSite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
+Scenario plans depend on immutable admitted definitions, so proving the same plan again during world construction adds delay without strengthening admission. Invalid plans must be refused while the whole content source can still be rejected. See `src/core/content.ts`, `checkScenarios`, `src/core/scenarioCity.ts`, `ScenarioCitySite`, and `test/scenarioAdmission.test.ts`, "rejects bounds that cannot preserve the reserved apron under every service turn".
 
 Construction-route probes share an immutable site, so a loaded chunk's predecessor furniture columns need no preparation on later body-cell queries. Repeating their admission checks for every sampled cell adds work without changing the route proof. See `src/core/scenarioRoute.ts`, `ScenarioRouteSpace`, and `test/scenarioCertificate.test.ts`, "prepares furniture columns only on the first route probe into a chunk".
 

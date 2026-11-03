@@ -171,10 +171,11 @@ is not decided by those words.
 
 Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army
-would need its own mechanism, not a vaguer name for the horde. Rename setting and
-scenario names in framework mechanisms, such as `packages/deadvox/src/core/gauntlet.ts`,
-`GauntletSite`, to descriptive names: a scenario name in framework code ties every
-product to one scenario. Generic words must not blur distinct mechanisms.
+would need its own mechanism, not a vaguer name for the horde. Use descriptive names
+for framework mechanisms, including scenario assembly: a scenario name in framework
+code ties every product to one scenario. See
+`packages/deadvox/src/core/scenarioCity.ts`, `ScenarioCitySite` and
+`scenarioCityPopulation`. Generic words must not blur distinct mechanisms.
 Content selectors and taxonomies move out of code regardless of the mechanism's name;
 see `packages/deadvox/src/core/settlementSpawns.ts`, `settlementHordeSpawn`, and
 `packages/deadvox/src/core/loot.ts`, `LOOT_TIERS`.

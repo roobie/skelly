@@ -10,8 +10,8 @@ import {
 import { CitySite } from '../src/core/citySite.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite, gauntletPopulation } from '../src/core/gauntlet.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite, scenarioCityPopulation } from '../src/core/scenarioCity.ts';
 import type { ScenarioDef } from '../src/core/schema.ts';
 import { siteGenerationOf, sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import {
@@ -225,7 +225,7 @@ describe('one finished city plan', () => {
         scenario,
       });
       const site = new CitySite(73, cityRegistry, scale, plan);
-      const { zombies, hordes } = gauntletPopulation(site, scenario);
+      const { zombies, hordes } = scenarioCityPopulation(site, scenario);
       return { spawns: [...zombies.values()].flat(), hordes: [...hordes.values()].flat() };
     };
 
@@ -332,7 +332,7 @@ describe('one finished city plan', () => {
       const site = new CitySite(73, testRegistry, scale, plan);
       const markers = placedSpawns(plan.composition!.events[0]!);
       expect(markers.length).toBeGreaterThan(0);
-      const { zombies } = gauntletPopulation(site, scenario);
+      const { zombies } = scenarioCityPopulation(site, scenario);
       for (const marker of markers) {
         const spawns = zombies.get(`${toChunk(marker.pos[0])},${toChunk(marker.pos[2])}`) ?? [];
         expect(spawns.filter((spawn) => spawn.pos.join(',') === marker.pos.join(','))).toHaveLength(1);
@@ -584,7 +584,7 @@ describe('one finished city plan', () => {
     it('keeps every gauntlet spawn inside the walled area and clear of the wall', () => {
       const native = BUNDLED_CONTENT.registry;
       const scenario = [...native.scenarios.values()].find((candidate) => candidate.composition)!;
-      const site = new GauntletSite({ seed: 73, registry: native, scale, scenario });
+      const site = new ScenarioCitySite({ seed: 73, registry: native, scale, scenario });
       const spawns: { pos: Vec3 }[] = [];
       for (let cz = toChunk(site.bounds.z0) - 2; cz <= toChunk(site.bounds.z1) + 2; cz++) {
         for (let cx = toChunk(site.bounds.x0) - 2; cx <= toChunk(site.bounds.x1) + 2; cx++) {

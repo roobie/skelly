@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { GauntletSite } from '../src/core/gauntlet.ts';
 import {
   economyEligible,
   LOOT_TIERS,
@@ -11,6 +10,7 @@ import {
   withLootDepth,
 } from '../src/core/loot.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import { lootSourcesOf } from '../src/core/site.ts';
 import { compileAssembly, placedGroundLoot, placedPieces } from '../src/core/templates.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -110,8 +110,8 @@ describe('nested tier ranges reach the loot sources', () => {
 
 sweepGroup('gauntlet lab loot tiers by depth', () => {
   it('lets a deeper level roll the lowest tier and a higher one besides, while level one rolls the lowest alone', () => {
-    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
-    const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
+    const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
     const sources = site.placements
       .flatMap((placement) =>
         [...placedPieces(placement), ...placedGroundLoot(placement)]
@@ -136,8 +136,8 @@ sweepGroup('gauntlet lab loot tiers by depth', () => {
   });
 
   it('rolls rifle supplies only from containers that carry a Military usage on a level below the first', () => {
-    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'gauntlet')!;
-    const site = new GauntletSite({ seed: 1, registry, scale, scenario });
+    const scenario = [...registry.scenarios.values()].find((candidate) => candidate.kind === 'assembledCity')!;
+    const site = new ScenarioCitySite({ seed: 1, registry, scale, scenario });
     const sources = site.placements.flatMap((placement) =>
       lootSourcesOf(
         registry,

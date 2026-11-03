@@ -16,7 +16,7 @@ local intake = lab.anchors.storeys[0].standing[1];
 local threshold = [lab.port.x + lab.port.width / 2, intake, lab.depth - 1];
 {
   scenarios: [{
-    id: 'gauntlet', kind: 'gauntlet',
+    id: 'gauntlet', kind: 'assembledCity',
     attemptPolicy: (import 'attempt-policy.libsonnet').run,
     outbreakAgeGameHours: 24 * 120,
     decalLimit: 48,

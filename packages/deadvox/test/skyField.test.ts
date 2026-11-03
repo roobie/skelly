@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { CHUNK, toChunk, type Vec3 } from '../src/core/coords.ts';
-import { GauntletSite } from '../src/core/gauntlet.ts';
+import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
 import type { Site } from '../src/core/site.ts';
 import { sitePalette, terrainShapeOf } from '../src/core/sitePalette.ts';
 import { authoredSkyBoxes, SkyFields } from '../src/core/skyField.ts';
@@ -98,7 +98,7 @@ const benchRange = { bottom: scale.minCy * CHUNK, top: (scale.maxCy + 1) * CHUNK
 const largestAuthoredField = (): { site: Site; box: SkyBounds } => {
   const sites: Site[] = [
     ...[...registry.layouts.values()].map((layout) => new AuthoredSite(seed, registry, scale, layout)),
-    ...[...registry.scenarios.values()].map((scenario) => new GauntletSite({ seed, registry, scale, scenario })),
+    ...[...registry.scenarios.values()].map((scenario) => new ScenarioCitySite({ seed, registry, scale, scenario })),
   ];
   const cells = ({ min, max }: SkyBounds) => max.reduce((product, value, axis) => product * (value - min[axis]!), 1);
   const candidates = sites.flatMap((owner) =>
