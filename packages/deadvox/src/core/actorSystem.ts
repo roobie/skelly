@@ -2228,7 +2228,7 @@ export class ActorSystem {
       type.model === 'fused-mass'
         ? FUSED_MASS_FIGURE_SEED
         : requiredFigureSeeds(type)[
-            Rng.stream(this.options.seed ?? 0, `zombie-figure:${this.store.nextId}`).int(
+            Rng.stream(this.options.seed ?? 0, `actor-figure:${this.store.nextId}`).int(
               0,
               requiredFigureSeeds(type).length - 1,
             )
@@ -2250,10 +2250,10 @@ export class ActorSystem {
       home: copy(position),
       mode: 'idle',
       investigationTier: undefined,
-      behaviorRng: Rng.stream(this.options.seed ?? 0, `zombie:${this.store.size + 1}`),
-      soundRng: Rng.stream(this.options.seed ?? 0, `zombie-sound:${this.store.size + 1}`),
-      dismemberRng: Rng.stream(this.options.seed ?? 0, `zombie-dismember:${this.store.size + 1}`),
-      spitRng: Rng.stream(this.options.seed ?? 0, `zombie-spit:${this.store.size + 1}`),
+      behaviorRng: Rng.stream(this.options.seed ?? 0, `actor:${this.store.size + 1}`),
+      soundRng: Rng.stream(this.options.seed ?? 0, `actor-sound:${this.store.size + 1}`),
+      dismemberRng: Rng.stream(this.options.seed ?? 0, `actor-dismember:${this.store.size + 1}`),
+      spitRng: Rng.stream(this.options.seed ?? 0, `actor-spit:${this.store.size + 1}`),
       idleSoundTimer: 8,
       modeTimer: 0,
       searchAnchor: undefined,
@@ -2300,10 +2300,10 @@ export class ActorSystem {
     };
     const id = this.store.add(zombie);
     // EntityStore ids are stable within the world's entity lifetime.
-    zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `zombie:${id}`);
-    zombie.soundRng = Rng.stream(this.options.seed ?? 0, `zombie-sound:${id}`);
-    zombie.dismemberRng = Rng.stream(this.options.seed ?? 0, `zombie-dismember:${id}`);
-    zombie.spitRng = Rng.stream(this.options.seed ?? 0, `zombie-spit:${id}`);
+    zombie.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
+    zombie.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
+    zombie.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
+    zombie.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
     zombie.idleSoundTimer = inRange(zombie.soundRng, zombie.type.idleSound.intervalSimSeconds);
     this.beginIdle(zombie);
     return id;

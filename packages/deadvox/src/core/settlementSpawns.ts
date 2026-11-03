@@ -44,7 +44,7 @@ export const settlementActorSpawns = (
   },
 ): ActorSpawn[] => {
   const { roadHeightAt, markers } = options;
-  const rng = Rng.stream(seed, 'settlement-zombies');
+  const rng = Rng.stream(seed, 'settlement-actors');
   const wanderer = claimedId(registry.actors, 'settlementWanderer');
   const spawnWeights = options.spawnWeights ?? new Map([[wanderer, 1]]);
   const selected = markers.filter((spawn) => rng.chance(spawn.chance * (spawnWeights.get(spawn.zombie) ?? 1)));
