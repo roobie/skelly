@@ -1326,6 +1326,8 @@ export class ActorSystem {
   }
 
   /** The zombie's box at its tick start, moved the obstacle lookahead along `aim`. */
+  private readonly boundBodyAhead = this.bodyAhead.bind(this);
+
   private bodyAhead(aim: Vec3): Body {
     const { actor, beforeStep, blockSize } = this.tickScratch;
     const reach = OBSTACLE_LOOKAHEAD_METRES / blockSize;
@@ -1347,6 +1349,8 @@ export class ActorSystem {
    * there could back it out of the gap it was sliding into or pin it. When both sides are open, or neither
    * side is free, it draws, as a shambler always does.
    */
+  private readonly boundOpenSide = this.openSide.bind(this);
+
   private openSide(aim: Vec3): -1 | 1 | undefined {
     const shape = this.shapeOf(this.tickScratch.actor.body);
     if (!shape) {
@@ -1604,10 +1608,7 @@ export class ActorSystem {
       this.updateMovementSpeed();
       this.agent.applyObstacleSlide();
       this.stepActorBody();
-      this.agent.updateObstacleContact(
-        (aim) => this.openSide(aim),
-        (aim) => this.bodyAhead(aim),
-      );
+      this.agent.updateObstacleContact(this.boundOpenSide, this.boundBodyAhead);
       this.updateMovementAfterStep();
       this.resolveActorAttack();
       this.finishActorTick();
