@@ -20,9 +20,9 @@ local layout = (import '../../content/base/layouts-test-house.jsonnet').layouts[
                   else {})
       for building in layout.buildings
     ] + [{
-      template: 'test_house_range', position: [54, 21, -1.5], rotation: 0,
+      template: 'test_house_range', position: [52.5, 21, -13.5], rotation: 0,
       lootContext: { usage: ['Residential', 'Hunting', 'Police', 'Military'], tier: 'Tier4', lowerTiers: true },
-      fixedLoot: [{ at: [0, 1, 0], items: import 'test-house-rack.libsonnet' }],
+      fixedLoot: [{ at: [3, 1, 24], items: import 'test-house-rack.libsonnet' }],
     }],
   }],
 }
