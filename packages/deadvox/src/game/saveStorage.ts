@@ -254,7 +254,7 @@ export class SaveStorage {
             waiter?.clientId === undefined || comparableHolders.length === 0
               ? null
               : comparableHolders.some((lock) => lock.clientId !== waiter.clientId);
-          warnSaveLockTimeout('Deadvox save lock request timed out', {
+          warnSaveLockTimeout('Skelly save lock request timed out', {
             cause: 'lock acquisition exceeded its deadline',
             requestedMode: mode,
             held: relevantHeld.map(({ mode: heldMode, clientId }) => ({ mode: heldMode, clientId })),
@@ -268,7 +268,7 @@ export class SaveStorage {
           if (acquired) {
             return;
           }
-          warnSaveLockTimeout('Deadvox save lock request timed out', {
+          warnSaveLockTimeout('Skelly save lock request timed out', {
             cause: 'lock acquisition exceeded its deadline',
             requestedMode: mode,
             held: [],

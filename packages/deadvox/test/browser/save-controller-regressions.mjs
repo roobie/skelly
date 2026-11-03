@@ -106,13 +106,13 @@ try {
     try {
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
-      await page.waitForFunction(() => !(deadvoxSaveTest.controller.writing || deadvoxSaveTest.controller.queued));
+      await page.waitForFunction(() => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued));
       const saved = await page.evaluate(async () => {
-        const { controller, storage, namespace } = deadvoxSaveTest;
+        const { controller, storage, namespace } = skellySaveTest;
         controller.halt();
         await storage.save(namespace, (generation) =>
           storage.encodeSnapshot(controller.snapshot(), generation, {
@@ -125,7 +125,7 @@ try {
         return { namespace, generation: record.generation, payload: Array.from(record.payload) };
       });
       await page.reload();
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       await page.click('#tutorial-start');
       await page.waitForFunction(() => globalThis.tutorialSession !== undefined);
       assert.equal(
@@ -645,7 +645,7 @@ try {
       });
       const page = await context.newPage();
       await page.goto(url);
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
       const button = page.locator('#save-persist');
       assert.equal(await button.isVisible(), true, 'request remains reachable when state is unknown and API exists');
       assert.match(await page.locator('#save-status').textContent(), BEST_EFFORT);
@@ -673,9 +673,9 @@ try {
         false,
         'the hidden persistence action cannot retain keyboard focus',
       );
-      assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
+      assert.equal(await page.evaluate(() => globalThis.skellySaveTest.controller.storageStatus.persistent), true);
       assert.equal(
-        await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
+        await page.evaluate(async () => (await globalThis.skellySaveTest.storage.status()).persistent),
         true,
       );
     } finally {
@@ -724,8 +724,8 @@ try {
         const status = document.querySelector('#startup-screen #save-status');
         return Boolean(
           status?.textContent.trim() &&
-            globalThis.deadvoxSaveTest?.controller &&
-            !globalThis.deadvoxSaveTest.controller.ready,
+            globalThis.skellySaveTest?.controller &&
+            !globalThis.skellySaveTest.controller.ready,
         );
       });
       assert.equal(await page.locator('#startup-screen').isVisible(), true, 'startup remains visible during discovery');
@@ -762,7 +762,7 @@ try {
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 0);
       await page.evaluate(() => globalThis.releasePersistenceIdentity());
       await page.waitForFunction(
-        () => globalThis.deadvoxSaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
+        () => globalThis.skellySaveTest?.controller.ready && document.querySelector('#startup-screen').hidden,
         undefined,
         { timeout: 30_000 },
       );
@@ -776,9 +776,9 @@ try {
       assert.equal(await page.evaluate(() => globalThis.persistenceRequests), 1);
       assert.match(await page.locator('#save-status').textContent(), PERSISTENCE_GRANTED);
       assert.equal(await button.isVisible(), false, 'explicit grant removes the request action');
-      assert.equal(await page.evaluate(() => globalThis.deadvoxSaveTest.controller.storageStatus.persistent), true);
+      assert.equal(await page.evaluate(() => globalThis.skellySaveTest.controller.storageStatus.persistent), true);
       assert.equal(
-        await page.evaluate(async () => (await globalThis.deadvoxSaveTest.storage.status()).persistent),
+        await page.evaluate(async () => (await globalThis.skellySaveTest.storage.status()).persistent),
         true,
       );
     } finally {
@@ -795,7 +795,7 @@ try {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     const radiusLinks = await page.locator('[data-view-distance]').evaluateAll((links) =>
       links.map((link) => {
@@ -849,16 +849,16 @@ try {
     });
     await page.setViewportSize({ width: 800, height: 600 });
     const before = await page.evaluate(() => ({
-      hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
-      entered: deadvoxSaveTest.controller.isEntered,
+      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      entered: skellySaveTest.controller.isEntered,
     }));
     assert.deepEqual(before, { hasSnapshot: false, entered: false });
     await pressAction(page, 'ui.inventory-toggle');
     await pressAction(page, 'movement.forward');
     await page.keyboard.press('F10');
     const after = await page.evaluate(() => ({
-      hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
-      entered: deadvoxSaveTest.controller.isEntered,
+      hasSnapshot: typeof skellySaveTest.controller.snapshot === 'function',
+      entered: skellySaveTest.controller.isEntered,
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(after.entered, false);
@@ -931,7 +931,7 @@ try {
     });
     assert.equal(canAdvance, true, 'the same frame driver advances simulation after the mask clears');
     const schedule = await page.evaluate(async () => {
-      const { controller } = deadvoxSaveTest;
+      const { controller } = skellySaveTest;
       // The interval play bound from content; the schedule below is expressed in it.
       const interval = controller.checkpoints?.intervalSimSeconds;
       if (!(interval > 0)) {
@@ -981,7 +981,7 @@ try {
     assert.ok(schedule.measuredDurations.every((duration) => Number.isFinite(duration) && duration >= 0));
 
     await page.evaluate(() => {
-      const { controller } = deadvoxSaveTest;
+      const { controller } = skellySaveTest;
       controller.storage.save = () => Promise.reject(new DOMException('quota regression', 'QuotaExceededError'));
       controller.beforeSleep();
     });
@@ -1092,17 +1092,17 @@ try {
     await rowless.close();
 
     await page.evaluate(() => {
-      deadvoxSaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });
+      skellySaveTest.controller.storage.save = async () => ({ generation: 99, slot: 'a', backend: 'indexeddb' });
     });
     await page.click('#save-retry');
     await page.waitForFunction(
-      () => !deadvoxSaveTest.controller.failure && deadvoxSaveTest.controller.savedGeneration === 99,
+      () => !skellySaveTest.controller.failure && skellySaveTest.controller.savedGeneration === 99,
     );
     assert.deepEqual(pageErrors, []);
 
     const faultPage = await context.newPage();
     await faultPage.goto(url);
-    await faultPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await faultPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await faultPage.evaluate(() => {
       globalThis.holdWorldMeshes = true;
     });
@@ -1121,13 +1121,13 @@ try {
     const pageErrors = [];
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
     await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
 
     const race = await page.evaluate(async () => {
-      const { controller, storage } = deadvoxSaveTest;
+      const { controller, storage } = skellySaveTest;
       const realSave = Object.getPrototypeOf(storage).save.bind(storage);
       const sourceSnapshot = controller.snapshot;
       let health = 90;
@@ -1177,7 +1177,7 @@ try {
       time = 2;
       controller.beforeSleep();
       const queuedBeforeRetry = controller.queued.snapshot.character.simulation.body.health;
-      globalThis.deadvoxRetryRace = { releaseSecond };
+      globalThis.skellyRetryRace = { releaseSecond };
       return { queuedBeforeRetry };
     });
 
@@ -1186,22 +1186,22 @@ try {
     await page.waitForFunction(() => !document.pointerLockElement);
     await page.click('#save-retry');
     const retryState = await page.evaluate(() => ({
-      failure: deadvoxSaveTest.controller.failure,
-      queuedHealth: deadvoxSaveTest.controller.queued.snapshot.character.simulation.body.health,
+      failure: skellySaveTest.controller.failure,
+      queuedHealth: skellySaveTest.controller.queued.snapshot.character.simulation.body.health,
     }));
     assert.equal(retryState.failure, '');
     assert.equal(retryState.queuedHealth, 30);
     await page.evaluate(() => {
-      globalThis.deadvoxRetryRace.releaseSecond();
-      globalThis.deadvoxRetryRace = undefined;
+      globalThis.skellyRetryRace.releaseSecond();
+      globalThis.skellyRetryRace = undefined;
     });
     await page.waitForFunction(
-      () => !(deadvoxSaveTest.controller.writing || deadvoxSaveTest.controller.queued),
+      () => !(skellySaveTest.controller.writing || skellySaveTest.controller.queued),
       undefined,
       { timeout: 30_000 },
     );
     const saved = await page.evaluate(async () => {
-      const { controller, storage, namespace } = deadvoxSaveTest;
+      const { controller, storage, namespace } = skellySaveTest;
       const loaded = await storage.load(namespace);
       return {
         payload: Array.from(loaded.payload),
@@ -1227,12 +1227,12 @@ try {
       return target.href;
     };
     const enterAndCheckpoint = async (page) => {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
+      await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, { timeout: 30_000 });
       await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
       await page.click('#go');
       await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
       return page.evaluate(async () => {
-        const { controller, storage } = deadvoxSaveTest;
+        const { controller, storage } = skellySaveTest;
         controller.beforeSleep();
         for (let attempt = 0; (controller.writing || controller.queued) && attempt < 400; attempt += 1) {
           await new Promise((resolve) => setTimeout(resolve, 5));
@@ -1257,7 +1257,7 @@ try {
       const debugPage = await context.newPage();
       debugPage.on('pageerror', (error) => pageErrors.push(error.message));
       await debugPage.goto(withParams({ debug: '1' }));
-      await debugPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await debugPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
       // With no save, the new character choice and its start button still lead the card, above the controls list.
@@ -1291,7 +1291,7 @@ try {
         sessionStorage.setItem(`skelly.restore-refusal:${namespace}`, 'Refused save fixture');
       }, saved.namespaces[0]);
       await refusedPage.goto(withParams({ debug: '1', save: '1' }));
-      await refusedPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await refusedPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
       const refusalHint = refusedPage.locator('#save-refusal-hint');
@@ -1321,13 +1321,13 @@ try {
       const reloaded = await context.newPage();
       reloaded.on('pageerror', (error) => pageErrors.push(error.message));
       await reloaded.goto(withParams({ debug: '1' }));
-      await reloaded.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      await reloaded.waitForFunction(() => globalThis.skellySaveTest?.controller.ready, undefined, {
         timeout: 30_000,
       });
-      assert.equal(await reloaded.evaluate(() => deadvoxSaveTest.controller.restored === undefined), true);
+      assert.equal(await reloaded.evaluate(() => skellySaveTest.controller.restored === undefined), true);
       assert.equal(await reloaded.locator('#continue').isHidden(), true);
       const disabled = await reloaded.evaluate(async () => {
-        const { controller, storage } = deadvoxSaveTest;
+        const { controller, storage } = skellySaveTest;
         const status = document.querySelector('#save-status');
         const before = status.textContent;
         let storageTouched = false;

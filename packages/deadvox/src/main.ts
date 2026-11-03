@@ -228,7 +228,7 @@ if (bench === 'report') {
     startupScreen.append(saveStatus);
     if (params.get('save-test') === '1') {
       Object.assign(globalThis, {
-        deadvoxSaveTest: {
+        skellySaveTest: {
           storage: saveController.storage,
           get namespace() {
             return saveController.namespace;

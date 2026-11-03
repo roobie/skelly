@@ -1120,15 +1120,15 @@ try {
     assert.equal(await page.locator('.reading-text').textContent(), signFixture.readable.text);
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
     // An earlier periodic checkpoint may already have committed, so only a newer generation proves this one did.
-    const generationBeforeTrigger = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration);
-    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    const generationBeforeTrigger = await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration);
+    await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction((triggerGeneration) => {
-      const { controller } = globalThis.deadvoxSaveTest;
+      const { controller } = globalThis.skellySaveTest;
       const { savedGeneration, failure, writing, queued } = controller;
       // A refused snapshot sets `failure` and never advances the generation, so end the wait with its reason.
       return Boolean(failure) || (savedGeneration > triggerGeneration && !writing && !queued);
     }, generationBeforeTrigger);
-    const checkpoint = await page.evaluate(() => globalThis.deadvoxSaveTest.saveState());
+    const checkpoint = await page.evaluate(() => globalThis.skellySaveTest.saveState());
     assert.equal(checkpoint.failure, '', 'the checkpoint before the error test saved');
     assert.ok(checkpoint.savedGeneration > generationBeforeTrigger, 'the error test begins with a new committed save');
     const beforeError = await page.evaluate(() => ({
@@ -1214,11 +1214,11 @@ try {
       document.dispatchEvent(new Event('visibilitychange'));
     });
     await page.waitForFunction(() => {
-      const { controller } = globalThis.deadvoxSaveTest;
+      const { controller } = globalThis.skellySaveTest;
       return !(controller.writing || controller.queued);
     });
     assert.equal(
-      await page.evaluate(() => globalThis.deadvoxSaveTest.saveState().savedGeneration),
+      await page.evaluate(() => globalThis.skellySaveTest.saveState().savedGeneration),
       checkpoint.savedGeneration,
       'hiding the tab after the error leaves the last committed save unchanged',
     );

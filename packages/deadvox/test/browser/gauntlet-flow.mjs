@@ -85,7 +85,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     url.searchParams.set('save', '1');
     url.searchParams.delete('actors');
     await page.goto(url.href);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#go');
     await page.waitForFunction(
       () =>
@@ -291,13 +291,13 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.ok((await page.locator('.reading-text').innerText()).trim().length > 0);
     const before = await page.evaluate(() => globalThis.gauntletWitness.session.scenarioRun);
     assert.notEqual(before.discovery.clueRead, null);
-    await page.evaluate(() => globalThis.deadvoxSaveTest.triggerPeriodicCheckpoint());
+    await page.evaluate(() => globalThis.skellySaveTest.triggerPeriodicCheckpoint());
     await page.waitForFunction(() => {
-      const c = globalThis.deadvoxSaveTest.controller;
+      const c = globalThis.skellySaveTest.controller;
       return c.savedGeneration > 0 && !c.writing && !c.queued;
     });
     await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#continue');
     await page.waitForFunction(() => globalThis.gauntletWitness?.session.scenarioRun);
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), false);
@@ -602,12 +602,12 @@ export const gauntletFlow = async (browser, baseUrl) => {
     assert.notEqual(journey.run.discovery.entranceTravel, null);
     await page.locator('#death').waitFor({ state: 'visible' });
     try {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest.controller.winCheckpointStatus === 'saved');
+      await page.waitForFunction(() => globalThis.skellySaveTest.controller.winCheckpointStatus === 'saved');
     } catch (error) {
       // #749: a bare timeout hides whether the win capture is queued behind a stalled write.
       const state = await page
         .evaluate(() => {
-          const c = globalThis.deadvoxSaveTest.controller;
+          const c = globalThis.skellySaveTest.controller;
           return {
             status: c.winCheckpointStatus,
             writing: c.writing,
@@ -625,7 +625,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
       );
     }
     await page.reload();
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+    await page.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
     await page.click('#continue');
     await page.locator('#death').waitFor({ state: 'visible' });
     assert.equal(await page.evaluate(() => globalThis.gauntletWitness.session.won), true);
@@ -635,7 +635,7 @@ export const gauntletFlow = async (browser, baseUrl) => {
     try {
       const deadPage = await deadContext.newPage();
       await deadPage.goto(url.href);
-      await deadPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       await deadPage.click('#go');
       await deadPage.waitForFunction(
         () =>
@@ -648,10 +648,10 @@ export const gauntletFlow = async (browser, baseUrl) => {
       );
       await deadPage.locator('#death').waitFor({ state: 'visible' });
       await deadPage.waitForFunction(
-        () => !(globalThis.deadvoxSaveTest.controller.writing || globalThis.deadvoxSaveTest.controller.queued),
+        () => !(globalThis.skellySaveTest.controller.writing || globalThis.skellySaveTest.controller.queued),
       );
       await deadPage.reload();
-      await deadPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready);
+      await deadPage.waitForFunction(() => globalThis.skellySaveTest?.controller.ready);
       assert.equal(await deadPage.locator('#continue').isEnabled(), false);
     } finally {
       await deadContext.close();
