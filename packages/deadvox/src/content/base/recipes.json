@@ -842,12 +842,16 @@
       }
     },
     {
+      "capability": "mechanics",
       "curve": {
         "saturationFloor": 0.41999999999999998,
         "saturationHalfLifeLevels": 4
       },
       "id": "mechanics",
-      "name": "Mechanics"
+      "name": "Mechanics",
+      "training": {
+        "craftingTierOffset": 1
+      }
     },
     {
       "capability": "inventoryManagement",
@@ -879,7 +883,7 @@
             "steadyingSkillHalfLifeLevels": 5,
             "steadyingSkillRange": 0.40000000000000002
           },
-          "longGunSteadinessSkill": "sniping",
+          "longGunSteadinessRole": "longGunSteadiness",
           "rackFactorFloor": 0.16,
           "rackFactorHalfLifeLevels": 3,
           "raiseHalfLifeLevels": 5,
@@ -924,6 +928,7 @@
       }
     },
     {
+      "capability": "longGunSteadiness",
       "curve": {
         "saturationFloor": 0.41999999999999998,
         "saturationHalfLifeLevels": 4

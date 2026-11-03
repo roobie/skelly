@@ -23,7 +23,7 @@ const fixture = (side: HandSide = 'right') => {
     activation: 'sharpen' as const,
     kind: 'repair' as const,
     result: { item: bladeDef.id, count: 1 },
-    repair: { skill: 'crafting', amount: 0.2, perSkill: 0.05 },
+    repair: { skill: 'crafting' as const, amount: 0.2, perSkill: 0.05 },
     timeGameMinutes: gameMinutes(1),
     skills: { crafting: 0 },
     components: [],

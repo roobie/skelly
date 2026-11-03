@@ -144,7 +144,9 @@ const closure = ({ registry, found, tools, knowledge, skills, workstationQualiti
       if (
         recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
-        Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
+        Object.entries(recipe.skills).every(
+          ([role, level]) => !claimed(registry.skills, role) || level === 0 || skills.has(role),
+        ) &&
         inputsReady(registry, recipe, items) &&
         (!tools ||
           Object.entries(recipe.qualities).every(([quality, level]) =>
@@ -387,10 +389,10 @@ const componentIssues = (registry: Registry, recipe: RecipeDef, components: Read
     }),
   );
 
-const skillIssues = (recipe: RecipeDef, skills: ReadonlySet<string>): RecipeDiagnostic[] => {
+const skillIssues = (registry: Registry, recipe: RecipeDef, skills: ReadonlySet<string>): RecipeDiagnostic[] => {
   const issues: RecipeDiagnostic[] = [];
   for (const [skill, level] of Object.entries(recipe.skills)) {
-    if (level > 0 && !skills.has(skill)) {
+    if (claimed(registry.skills, skill) && level > 0 && !skills.has(skill)) {
       issues.push({
         recipe: recipe.id,
         path: `.skills.${skill}`,
@@ -437,7 +439,7 @@ const recipeDiagnostics = (context: RecipeDiagnosticContext): { issues: RecipeDi
     issues.push(
       ...knowledgeIssues(recipe, context.knowledge),
       ...componentIssues(context.registry, recipe, context.components),
-      ...skillIssues(recipe, context.skills),
+      ...skillIssues(context.registry, recipe, context.skills),
       ...qualityIssues(recipe, context),
       ...workstationIssues(recipe, context.workstations),
     );
@@ -465,7 +467,9 @@ const canPracticeRecipe = (
 ): boolean =>
   knowledge.has(recipe.id) &&
   inputsReady(registry, recipe, tools) &&
-  Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
+  Object.entries(recipe.skills).every(
+    ([role, level]) => !claimed(registry.skills, role) || level === 0 || skills.has(role),
+  ) &&
   Object.entries(recipe.qualities).every(([quality, level]) =>
     qualityReady({ registry, items: tools, workstationQualities }, quality, level),
   ) &&
@@ -474,7 +478,7 @@ const canPracticeRecipe = (
 const knownRecipes = (registry: Registry, found: ReadonlySet<string>, known: ReadonlySet<string>) => {
   const knowledge = new Set(known);
   for (const recipe of registry.recipes.values()) {
-    if (recipe.skillUnlock?.level === 0) {
+    if (recipe.skillUnlock && (!claimed(registry.skills, recipe.skillUnlock.skill) || recipe.skillUnlock.level === 0)) {
       knowledge.add(recipe.id);
     }
   }
@@ -511,8 +515,8 @@ const reachableKnowledgeAndSkills = ({
       if (!canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations, workstationQualities })) {
         continue;
       }
-      for (const skill of Object.keys(recipe.skills)) {
-        skills.add(skill);
+      for (const role of Object.keys(recipe.skills).filter((candidate) => claimed(registry.skills, candidate))) {
+        skills.add(role);
       }
     }
     for (const recipe of registry.recipes.values()) {

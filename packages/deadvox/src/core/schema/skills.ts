@@ -69,7 +69,8 @@ export const SkillSchema = pipe(
     const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
-      (capability !== 'crafting' || training?.craftingTierOffset !== undefined) &&
+      (!['crafting', 'mechanics'].includes(capability ?? '') || training?.craftingTierOffset !== undefined) &&
+      (capability !== 'longGunSteadiness' || steadiness !== undefined) &&
       (capability !== 'firearmsCombat' ||
         (combat?.firearms !== undefined &&
           curve !== undefined &&

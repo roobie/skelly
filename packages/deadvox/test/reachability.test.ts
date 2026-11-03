@@ -242,8 +242,8 @@ describe('static reachability', () => {
 
   it('learns every unlock level once its skill has a reachable level-zero practice source', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_practice', skills: { fixtureSkill: 0 } },
-      { id: 'fixture_unlock', skills: {}, skillUnlock: { skill: 'fixtureSkill', level: 11 } },
+      { id: 'fixture_practice', skills: { crafting: 0 } },
+      { id: 'fixture_unlock', skills: {}, skillUnlock: { skill: 'crafting', level: 11 } },
     ]);
     const result = checkReachability(registry, new Set(['fixture_practice']), noWorldSources);
     expect(result.issues).toEqual([]);
@@ -253,13 +253,13 @@ describe('static reachability', () => {
 
   it('rejects an unlock that is its own skill practice source and identifies that skill', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_self_unlock', skills: { fixtureSkill: 0 }, skillUnlock: { skill: 'fixtureSkill', level: 1 } },
+      { id: 'fixture_self_unlock', skills: { crafting: 0 }, skillUnlock: { skill: 'crafting', level: 1 } },
     ]);
     const result = checkReachability(registry, new Set(), noWorldSources);
     expect(result.issues).toContainEqual({
       recipe: 'fixture_self_unlock',
       path: '.skillUnlock',
-      message: expect.stringContaining('fixtureSkill'),
+      message: expect.stringContaining('crafting'),
     });
     expect(result.components.has('fixture_self_unlock_result')).toBe(false);
     expect(result.toolReachable.has('fixture_self_unlock_result')).toBe(false);
@@ -267,7 +267,7 @@ describe('static reachability', () => {
 
   it('seeds level-zero unlock knowledge without any practice source', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_zero_unlock', skills: {}, skillUnlock: { skill: 'fixture_untrained', level: 0 } },
+      { id: 'fixture_zero_unlock', skills: {}, skillUnlock: { skill: 'crafting', level: 0 } },
     ]);
     const result = checkReachability(registry, new Set(), noWorldSources);
     expect(result.issues).toEqual([]);
@@ -276,13 +276,13 @@ describe('static reachability', () => {
 
   it('propagates knowledge through an unlocked recipe that alone grounds the next skill', () => {
     const registry = knowledgeFixture([
-      { id: 'fixture_second_unlock', skills: {}, skillUnlock: { skill: 'fixtureSecondSkill', level: 1 } },
+      { id: 'fixture_second_unlock', skills: {}, skillUnlock: { skill: 'mechanics', level: 1 } },
       {
         id: 'fixture_first_unlock',
-        skills: { fixtureSecondSkill: 0 },
-        skillUnlock: { skill: 'fixtureFirstSkill', level: 1 },
+        skills: { mechanics: 0 },
+        skillUnlock: { skill: 'crafting', level: 1 },
       },
-      { id: 'fixture_practice', skills: { fixtureFirstSkill: 0 } },
+      { id: 'fixture_practice', skills: { crafting: 0 } },
     ]);
     const result = checkReachability(registry, new Set(['fixture_practice']), noWorldSources);
     expect(result.issues).toEqual([]);
@@ -297,7 +297,7 @@ describe('static reachability', () => {
     registry.recipes.clear();
     registry.recipes.set('learned_from_book', {
       id: 'learned_from_book',
-      skillUnlock: { skill: 'fixture_untrained', level: 1 },
+      skillUnlock: { skill: 'crafting', level: 1 },
       category: 'fixture_category',
       tags: [],
       searchTerms: [],

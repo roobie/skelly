@@ -1000,14 +1000,14 @@ describe('content', () => {
               id: 'fixture_recipe',
               result: { item: 'rag', count: 1 },
               timeGameMinutes: 1,
-              skills: Object.fromEntries([['fixture_skill', level]]),
+              skills: Object.fromEntries([['crafting', level]]),
               qualities: {},
               components: [],
             },
           ],
         },
       });
-      expect(issues.map(({ path }) => path)).toContain('recipes[0].skills.fixture_skill');
+      expect(issues.map(({ path }) => path)).toContain('recipes[0].skills.crafting');
     },
   );
 
@@ -1407,16 +1407,12 @@ describe('content', () => {
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('reports a missing inventory-management skill as required core content', () => {
+  it('accepts an omitted inventory-management skill provider', () => {
     const withoutSkill = {
       ...baseRegistry,
       skills: new Map([...baseRegistry.skills].filter(([id]) => id !== fixtureIds.inventoryManagement)),
     };
-    expect(requiredContentIssues(withoutSkill)).toContainEqual({
-      source: 'core content',
-      path: 'skills',
-      message: 'missing required capability "inventoryManagement"',
-    });
+    expect(requiredContentIssues(withoutSkill)).toEqual([]);
   });
 
   it('reports a missing fists melee class as a load error', () => {
@@ -1961,7 +1957,7 @@ describe('content references', () => {
         searchTerms: [],
         result: { item: 'fixture_tool', count: 1 },
         timeGameMinutes: 2,
-        skills: Object.fromEntries([['fixture_skill', 0]]),
+        skills: Object.fromEntries([['crafting', 0]]),
         qualities: Object.fromEntries([
           ['custom_shaping', 1],
           ['fixture_sawing', 1],
@@ -2041,18 +2037,18 @@ describe('content references', () => {
   it('validates long-gun steadiness by effect reference rather than a skill ID whitelist', () => {
     const combat = baseRegistry.skills.get(fixtureIds.firearmsCombat)!;
     const tuning = combat.combat!.firearms!;
-    const precision = { ...baseRegistry.skills.get(tuning.longGunSteadinessSkill)!, id: 'fixture_precision' };
-    const firearms = {
-      ...combat,
-      combat: { ...combat.combat, firearms: { ...tuning, longGunSteadinessSkill: precision.id } },
+    const precision = {
+      ...[...baseRegistry.skills.values()].find((skill) => skill.capability === tuning.longGunSteadinessRole)!,
+      id: 'fixture_precision',
     };
+    const firearms = combat;
     const source = (skills: unknown[]) => [{ source: 'fixture-steadiness', data: { skills } }];
     expect(buildRegistry(source([firearms, precision])).issues).toEqual([]);
     const { steadiness: _steadiness, ...unconfigured } = precision;
     expect(buildRegistry(source([firearms, unconfigured])).issues).toEqual([
       expect.objectContaining({
         source: 'fixture-steadiness',
-        path: expect.stringContaining('longGunSteadinessSkill'),
+        path: expect.stringContaining('skills'),
       }),
     ]);
     const { activities: _activities, ...training } = precision.training!;
@@ -2114,7 +2110,7 @@ describe('content references', () => {
             searchTerms: [],
             result: { item: 'fixture_strip', count: 2 },
             timeGameMinutes: 1,
-            skills: Object.fromEntries([['fixture_crafting', 0]]),
+            skills: Object.fromEntries([['crafting', 0]]),
             qualities: {},
             components: [
               [
@@ -2237,17 +2233,14 @@ describe('content references', () => {
     ]);
   });
 
-  it('checks result, skill, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
+  it('checks result, tool-quality and declared workstation references, not ordinary furniture IDs', () => {
     const data = {
       ...recipePack,
       recipes: [
         {
           ...recipePack.recipes[0]!,
           result: { item: 'missing_result', count: 1 },
-          skills: Object.fromEntries([
-            ['fixture_skill', 0],
-            ['missing_skill', 1],
-          ]),
+          skills: { crafting: 0 },
           qualities: Object.fromEntries([
             ['custom_shaping', 1],
             ['missing_quality', 1],
@@ -2259,7 +2252,6 @@ describe('content references', () => {
     const { registry, issues } = buildRegistry([recipeDependencies, { source: 'bad-recipe-mod.json', data }]);
     expect(issues.map(({ path, message }) => [path, message])).toEqual([
       ['recipes[0].result.item', 'no item "missing_result"'],
-      ['recipes[0].skills.missing_skill', 'no skill "missing_skill"'],
       ['recipes[0].qualities.missing_quality', 'no tool quality "missing_quality"'],
       ['recipes[0].workstation', 'no workstation "fixture_plain_bench"'],
     ]);

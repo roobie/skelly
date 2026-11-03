@@ -1,5 +1,5 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
-import { type CraftCharacter, dominantSide, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
+import { type CraftCharacter, dominantSide } from './character.ts';
 import { coreLabel, coreMessage } from './coreText.ts';
 import { type CraftPreference, type CraftResult, type CraftSources, planCraft, requirementStatus } from './crafting.ts';
 import { entityRepairRefusal } from './craftWork.ts';
@@ -9,6 +9,7 @@ import type { Inventory, Plan } from './inventory.ts';
 import { damageWord, type Item } from './items.ts';
 import type { LiquidAmount, LiquidRecoveryChoices } from './liquids.ts';
 import type { ReachSnapshot } from './reach.ts';
+import { recipeSkillLevel } from './recipeSkills.ts';
 import type { Simulation } from './sim.ts';
 
 export type RecoveryChoices = LiquidRecoveryChoices & { recoveryOperation?: RecoveryOperation };
@@ -124,7 +125,7 @@ export class CraftCommands {
       return coreMessage(this.inventory.registry, 'noRepairTarget');
     }
     const repair = recipe.repair!;
-    const skill = skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN);
+    const skill = recipeSkillLevel(this.inventory.registry, this.character, repair.skill);
     const amount = Math.min(1, repair.amount + repair.perSkill * skill);
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'item', uid: target.uid }, amount });
   }
@@ -140,7 +141,7 @@ export class CraftCommands {
     const repair = recipe?.kind === 'repair' ? recipe.repair : undefined;
     const snapshot = this.reach();
     const result = repair?.entity ? planCraft(recipe!, snapshot, this.character, { prefer, sources }) : undefined;
-    const skill = repair ? skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN) : 0;
+    const skill = repair ? recipeSkillLevel(registry, this.character, repair.skill) : 0;
     const targetRefusal = repair?.entity
       ? entityRepairRefusal(this.inventory, entityUid, repair.entity, repair.amount + repair.perSkill * skill)
       : coreMessage(registry, 'noRepairTarget');
@@ -174,7 +175,7 @@ export class CraftCommands {
         ? result.missing.reason
         : coreMessage(this.inventory.registry, 'noRepairTarget');
     }
-    const skill = skillEffectLevel(this.character.skills[recipe.repair.skill] ?? SKILL_LEVEL_MIN);
+    const skill = recipeSkillLevel(this.inventory.registry, this.character, recipe.repair.skill);
     const amount = recipe.repair.amount + recipe.repair.perSkill * skill;
     return this.sim.actions.beginCraft(result.plan, { target: { kind: 'entity', uid: entityUid }, amount });
   }

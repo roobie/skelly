@@ -12,7 +12,7 @@ import {
 } from './primitives.ts';
 
 export const FirearmsEffectsSchema = strictObject({
-  longGunSteadinessSkill: Id,
+  longGunSteadinessRole: capabilityField('skills'),
   raiseMinimumSimSeconds: PositiveSimSeconds,
   raiseHalfLifeLevels: Positive,
   readyMovementRange: Fraction,

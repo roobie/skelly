@@ -33,7 +33,12 @@ export const firearmsSkillSource = (): ContentSource => {
     data: {
       ...baseJson('combat-policy.json'),
       ...baseJson('ranged-tuning.json'),
-      skills: [combat, baseSkill(combat.combat!.firearms!.longGunSteadinessSkill)],
+      skills: [
+        combat,
+        baseJson('recipes.json').skills!.find(
+          (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
+        )!,
+      ],
     },
   };
 };

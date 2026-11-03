@@ -1,6 +1,6 @@
 import type { ContentIssue } from '../../src/core/content.ts';
 
-type Owner = 'sound selection' | 'skill providers' | 'scenario starts' | 'core extraction' | 'theme extraction';
+type Owner = 'sound selection' | 'scenario starts' | 'core extraction' | 'theme extraction';
 interface KnownIssue {
   owner: Owner;
   issue: ContentIssue;
@@ -23,10 +23,6 @@ export const CORE_ONLY_KNOWN_ISSUES: readonly KnownIssue[] = [
   missing('scenario starts', 'handlingRange', 'testRange'),
   missing('core extraction', 'meleeClasses', 'unarmed'),
   missing('scenario starts', 'siteGeneration', 'authoredSite'),
-  missing('skill providers', 'skillProgression', 'progression'),
-  missing('skill providers', 'skills', 'firearmsCombat'),
-  missing('skill providers', 'skills', 'meleeCombat'),
-  missing('skill providers', 'skills', 'inventoryManagement'),
   missing('theme extraction', 'powerTuning', 'power'),
   known('core extraction', 'core content', 'items', 'expected exactly one work-in-progress item definition'),
 ];

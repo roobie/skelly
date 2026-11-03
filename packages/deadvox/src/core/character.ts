@@ -92,8 +92,11 @@ export class Character implements HandedCharacter {
     this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MIN]));
     this.practice = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
     this.knownRecipes = new Set(startingKnownRecipes(registry));
-    for (const skill of registry.skills.keys()) {
-      this.learnSkillRecipes(skill, SKILL_LEVEL_MIN);
+    for (const recipe of registry.recipes.values()) {
+      const unlock = recipe.skillUnlock;
+      if (unlock && (!claimed(registry.skills, unlock.skill) || unlock.level === SKILL_LEVEL_MIN)) {
+        this.learnRecipes([recipe.id]);
+      }
     }
   }
 
@@ -135,7 +138,11 @@ export class Character implements HandedCharacter {
 
   private learnSkillRecipes(skill: string, level: number): void {
     for (const recipe of this.registry.recipes.values()) {
-      if (recipe.skillUnlock?.skill === skill && recipe.skillUnlock.level <= level) {
+      if (
+        recipe.skillUnlock &&
+        claimed(this.registry.skills, recipe.skillUnlock.skill)?.id === skill &&
+        recipe.skillUnlock.level <= level
+      ) {
         this.learnRecipes([recipe.id]);
       }
     }

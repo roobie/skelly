@@ -151,13 +151,17 @@ describe('long-gun skill ownership', () => {
               ...combat.combat,
               firearms: {
                 ...combat.combat!.firearms!,
-                longGunSteadinessSkill: snipingId,
                 raiseMinimumSimSeconds: 0.3,
                 raiseHalfLifeLevels: 5,
               },
             },
           },
-          { ...registry.skills.get(combat.combat!.firearms!.longGunSteadinessSkill)!, id: snipingId },
+          {
+            ...[...registry.skills.values()].find(
+              (skill) => skill.capability === combat.combat!.firearms!.longGunSteadinessRole,
+            )!,
+            id: snipingId,
+          },
         ],
         items: [true, false].map((twoHanded) => ({
           ...registry.items.get('rifle_assault')!,
@@ -171,6 +175,7 @@ describe('long-gun skill ownership', () => {
       },
     },
   ]);
+  content.skills.delete([...registry.skills.values()].find((skill) => skill.capability === 'longGunSteadiness')!.id);
   /** The fixture's own firearms timing; assertions read it, so production retuning cannot break them. */
   const tuning = skilledFirearmsTuning(content);
   const equip = (runtime: ReturnType<typeof makeRuntime>, type = gunId) => {

@@ -65,13 +65,15 @@ references. Reclassifying the referenced content requires its own consumer justi
 not a side effect of moving its referrer. A scenario's exclusive entries stay in its
 scenario mods; reuse by two or more scenarios moves them down to product topic mods.
 
-**Skill entries are never core content.** Skill support must work with zero skills.
-A product declares its skills; interactions with them use mechanism roles rather than
-promised built-in skill ids. Referencing a role does not provide its skill: an item pack
-that a conjuring skill produces from declares the interaction against the role owner
-without taking over its provider. Entries dependent on skills stay outside core too,
-so a core validation stack needs neither hidden skill requirements nor duplicate
-skill-free variants.
+**Skill entries are never core content.** Skills belong in theme topics. A product
+chooses available skills through its dependencies, as for any content: the registry
+is the plain sum of loaded mods, with no separate skill list. Core rows cannot name
+a skill id because skills are never core content; mechanism roles keep those rows
+valid with zero skills. A role with no provider adds no requirement. Theme rows may
+name skill ids through declared dependencies, so admission checks those references
+at load. Referencing a role does not provide its skill or take over its provider.
+See `src/core/recipeSkills.ts`, `recipeSkillRequirements`, and
+`src/core/capabilities.ts`, `CONTENT_CAPABILITIES`.
 
 **Tunables follow their mechanism's content owner.** Shared body, senses and needs
 tuning belongs in shared topics. Product policy belongs in product content. A mod can
@@ -85,8 +87,8 @@ way to change tuning (`PILLARS.md`, "Content forward compatibility").
 engine mechanisms. Their reusable tuning belongs in shared topics. Firearms, ammunition,
 attachments and explosives are reusable theme definitions, not automatically Deadvox
 content; a medieval product can instead select bows using the supported ranged
-mechanisms. Product distribution determines their availability. The firearms skill and
-combat policy belong to the product, separately from the mechanisms they modify. See
+mechanisms. Product distribution determines their availability. The firearms skill belongs in its theme topic; combat policy belongs to the product,
+separately from the mechanisms they modify. See
 `docs/decisions/0006-firearm-handling.md` and "Skill providers".
 
 **Creature framework.** Senses, attention, modes and attacks are reusable mechanisms;
@@ -255,8 +257,8 @@ These workstreams preserve #637's proof obligations within that one refactor:
 - **Ranged content and policy:** shared content validates without firearms. Preserve
   full-product firing and grenade behavior in an existing browser flow while product
   skills read through roles and debug kits become content.
-- **Skill providers:** shared mechanisms must not depend on product skill progression;
-  products supply their training policies.
+- **Skill providers:** shared mechanisms must work without skills; products choose
+  their skill topics through dependencies rather than a second availability list.
 - **Core extraction:** shared content must validate independently of product entries,
   so lower-layer reuse cannot silently depend on a particular product.
 - **Theme extraction:** product flavour stays product-owned rather than becoming a

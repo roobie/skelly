@@ -52,7 +52,11 @@ export const meleeCombatTuning = (registry: Registry): MeleeCombatTuning | undef
 
 export const firearmSteadinessSkill = (registry: Registry, firearm: ItemDef | undefined): string | undefined => {
   const skill = claimed(registry.skills, 'firearmsCombat');
-  return isLongGun(firearm) ? skill?.combat?.firearms?.longGunSteadinessSkill : skill?.id;
+  const role = skill?.combat?.firearms?.longGunSteadinessRole;
+  if (isLongGun(firearm)) {
+    return role ? claimed(registry.skills, role)?.id : undefined;
+  }
+  return skill?.id;
 };
 
 export const firearmShotPracticeSkill = (registry: Registry, firearm: ItemDef, sighted: boolean): string | undefined =>

@@ -1,6 +1,5 @@
 // Native craft effects and live admission. Item progress/inputs stay Inventory-owned.
 
-import { claimed } from './capabilities.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import { coreMessage } from './coreText.ts';
@@ -10,6 +9,7 @@ import { type Inventory, validateWorkItem } from './inventory.ts';
 import type { Item } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
 import type { ReachSnapshot } from './reach.ts';
+import { recipeSkillRequirements } from './recipeSkills.ts';
 import { craftingActivityTier } from './skillTraining.ts';
 import { gameSecondsToMinutes } from './time.ts';
 
@@ -130,9 +130,9 @@ export const craftActionHooks = (
       return refusal;
     }
     const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
-    const offset = claimed(inventory.registry.skills, 'crafting')?.training?.craftingTierOffset;
     const practice = recipe
-      ? Object.entries(recipe.skills).map(([skill, level]) => {
+      ? recipeSkillRequirements(inventory.registry, recipe).map(({ skill, level, provider }) => {
+          const offset = provider.training?.craftingTierOffset;
           if (offset === undefined) {
             throw new Error('Missing crafting practice tier offset');
           }

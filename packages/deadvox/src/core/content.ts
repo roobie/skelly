@@ -1626,9 +1626,6 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
       return;
     }
     checkRepairDestination(registry, recipe, report);
-    if (!registry.skills.has(recipe.repair.skill)) {
-      report('recipes', recipe.id, '.repair.skill', `no skill "${recipe.repair.skill}"`);
-    }
     if (recipe.result.count !== 1) {
       report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
     }
@@ -1664,9 +1661,6 @@ const checkRecipe = ({
     }
   });
   checkItem(recipe.result.item, '.result.item');
-  if (recipe.skillUnlock && !registry.skills.has(recipe.skillUnlock.skill)) {
-    report('recipes', recipe.id, '.skillUnlock.skill', `no skill "${recipe.skillUnlock.skill}"`);
-  }
   checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
@@ -1685,17 +1679,11 @@ const checkRecipe = ({
       }
     });
   });
-  for (const id of Object.keys(recipe.skills)) {
-    const skill = registry.skills.get(id);
-    if (!skill) {
-      report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
+  for (const role of Object.keys(recipe.skills)) {
+    const provider = claimed(registry.skills, role);
+    if (provider && provider.training?.craftingTierOffset === undefined) {
+      report('recipes', recipe.id, `.skills.${role}`, `skill role "${role}" provider has no crafting tier offset`);
     }
-  }
-  if (
-    Object.keys(recipe.skills).length > 0 &&
-    claimed(registry.skills, 'crafting')?.training?.craftingTierOffset === undefined
-  ) {
-    report('recipes', recipe.id, '.skills', 'crafting skill has no crafting tier offset');
   }
   for (const id of Object.keys(recipe.qualities)) {
     if (!qualities.has(id)) {
@@ -2010,13 +1998,14 @@ const checkCombatSkillRanges = (registry: Registry, report: Report): void => {
 const checkSkillAndUiReferences = (registry: Registry, report: Report): void => {
   checkCombatSkillRanges(registry, report);
   for (const skill of registry.skills.values()) {
-    const steadinessSkill = skill.combat?.firearms?.longGunSteadinessSkill;
-    if (steadinessSkill !== undefined && !registry.skills.get(steadinessSkill)?.steadiness) {
+    const role = skill.combat?.firearms?.longGunSteadinessRole;
+    const provider = role && claimed(registry.skills, role);
+    if (provider && !provider.steadiness) {
       report(
         'skills',
         skill.id,
-        '.combat.firearms.longGunSteadinessSkill',
-        `no steadiness tuning on skill "${steadinessSkill}"`,
+        '.combat.firearms.longGunSteadinessRole',
+        `no steadiness tuning on role "${role}" provider`,
       );
     }
     skill.startingRecipes?.forEach((id, index) => {

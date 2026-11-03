@@ -34,7 +34,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       "startingRecipes": ["torch", "candle", "repair_kit", "repair_crowbar", "sawn_plank", "door_bar", "make_rope"] + [recipe.id for recipe in sharpenRecipes],
       "training": { "craftingTierOffset": 1 },
     },
-    { "id": "mechanics", "name": "Mechanics" },
+    { "id": "mechanics", "capability": "mechanics", "name": "Mechanics", "training": { "craftingTierOffset": 1 } },
     {
       "id": "inventory_management", "capability": "inventoryManagement",
       "name": "Inventory Management (IM)",
@@ -59,7 +59,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       },
       "combat": {
         "firearms": {
-          "longGunSteadinessSkill": "sniping",
+          "longGunSteadinessRole": "longGunSteadiness",
           "raiseMinimumSimSeconds": 0.28,
           "raiseHalfLifeLevels": 5,
           "readyMovementRange": 0.35,
@@ -79,7 +79,7 @@ local skillCurve = { saturationFloor: 0.42, saturationHalfLifeLevels: 4 };
       }
     },
     {
-      "id": "sniping",
+      "id": "sniping", "capability": "longGunSteadiness",
       "name": "Sniping",
       "detail": "Reduces long-gun sway and look lag. Improves breath steadying with long guns.",
       "steadiness": {

@@ -260,7 +260,9 @@ describe('snapshot state components', () => {
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
     const combatId = fixtureIds.firearmsCombat;
-    const steadinessId = registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessSkill;
+    const steadinessId = [...registry.skills.values()].find(
+      (skill) => skill.capability === registry.skills.get(combatId)!.combat!.firearms!.longGunSteadinessRole,
+    )!.id;
     actor.awardPractice(combatId, firstThreshold / 3);
     actor.awardPractice(steadinessId, firstThreshold + firstThreshold / 2);
     const snapshot = capture(runtime);

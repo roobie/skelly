@@ -34,7 +34,7 @@ export const worldRepairSources = () =>
             id: RECIPE,
             kind: 'repair',
             result: { item: STOCK, count: 1 },
-            repair: { entity: PIECE, skill: 'world_repair_skill', amount: AMOUNT, perSkill: 0 },
+            repair: { entity: PIECE, skill: 'crafting', amount: AMOUNT, perSkill: 0 },
             timeGameMinutes: 1,
             skills: {},
             qualities: {},

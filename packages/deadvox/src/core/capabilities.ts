@@ -13,14 +13,16 @@ export const CONTENT_CAPABILITIES = {
   senses: { player: 'required' },
   player: { player: 'required' },
   siteGeneration: { authoredSite: 'required' },
-  skillProgression: { progression: 'required' },
+  skillProgression: { progression: 'optional' },
   rangedTuning: { ranged: 'optional' },
   combatPolicy: { player: 'optional' },
   skills: {
-    firearmsCombat: 'required',
-    meleeCombat: 'required',
-    inventoryManagement: 'required',
+    firearmsCombat: 'optional',
+    meleeCombat: 'optional',
+    inventoryManagement: 'optional',
     crafting: 'optional',
+    mechanics: 'optional',
+    longGunSteadiness: 'optional',
   },
   ui: { interface: 'required' },
   graphics: { graphics: 'required' },
@@ -55,6 +57,9 @@ export const claimedId = <T extends Claimant>(entries: ReadonlyMap<string, T>, c
   return provider.id;
 };
 
+const requiredForStack = (registry: Registry, section: string, requirement: string): boolean =>
+  requirement === 'required' || (section === 'skillProgression' && registry.skills.size > 0);
+
 export const capabilityIssues = (registry: Registry, requireAll = true): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   for (const [section, capabilities] of Object.entries(CONTENT_CAPABILITIES)) {
@@ -64,7 +69,7 @@ export const capabilityIssues = (registry: Registry, requireAll = true): Content
     >;
     for (const [capability, requirement] of Object.entries(capabilities)) {
       const providers = claimants(entries, capability);
-      if (providers.length === 0 && (!requireAll || requirement === 'optional')) {
+      if (providers.length === 0 && !(requireAll && requiredForStack(registry, section, requirement))) {
         continue;
       }
       if (providers.length !== 1) {

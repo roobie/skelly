@@ -22,7 +22,7 @@ const fixtureRecipe = (): RecipeDef => {
   const component = items.find((item) => item.id !== target.id)!;
   const provider = items.find((item) => item.tool && Object.keys(item.tool.qualities).length > 0)!;
   const [quality, level] = Object.entries(provider.tool!.qualities)[0]!;
-  const skill = baseRegistry.skills.keys().next().value ?? 'fixture_skill';
+  const skill = 'crafting';
   return {
     id: 'fixture_repair_corner',
     category: 'fixture_category',

@@ -40,7 +40,7 @@ export const sameFirearmsSkillZeroHandling = (
 ): boolean => canonicalJson(left) === canonicalJson(right);
 
 export interface FirearmsCombatTuning {
-  readonly longGunSteadinessSkill?: string | undefined;
+  readonly longGunSteadinessRole?: string | undefined;
   readonly raiseSimSeconds: number;
   readonly raiseMinimumSimSeconds?: number | undefined;
   readonly raiseHalfLifeLevels?: number | undefined;
