@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PlayerSense, VocalNoise } from '../src/core/actorSystem.ts';
+import type { PlayerSense, VocalNoise } from '../src/core/actorSense.ts';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import type { SolidAt } from '../src/core/raycast.ts';

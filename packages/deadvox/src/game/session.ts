@@ -7,6 +7,7 @@
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { actionText, fillText } from '../core/actionText.ts';
 import { actorFigure, figureSeedPool } from '../core/actorFigure.ts';
+import type { PlayerMovement, VocalNoise } from '../core/actorSense.ts';
 import { ActorSpawner } from '../core/actorSpawns.ts';
 import { type Actor, PLAYER_ARM_REACH_M } from '../core/actorState.ts';
 import {
@@ -18,8 +19,6 @@ import {
   type HitImpulse,
   type MeleeResult,
   type MeleeWeapon,
-  type PlayerMovement,
-  type VocalNoise,
 } from '../core/actorSystem.ts';
 import { loweredStanceTuning } from '../core/agentPerception.ts';
 import {

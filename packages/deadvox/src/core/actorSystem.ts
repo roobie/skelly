@@ -4,20 +4,21 @@ import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import {
-  type ActorTickScratch,
   angleOf,
   approach,
   approachAngle,
   clearLine,
-  createActorTickScratch,
   headingAt,
   horizontalDistance,
   inRange,
+  onTerrainFloor,
   pickByWeight,
   pushTurn,
   steer,
   stepChaseMotion,
   sub,
+  type TerrainFloorAt,
+  terrainStance,
   turnToward,
   unit,
   withinAttackReach,
@@ -66,7 +67,15 @@ import {
   validStepOffset,
   validVec3State,
 } from './actorState.ts';
-import { farBearingTarget, hearingTier, hearVocalNoise, seesPlayer, visibleLightTarget } from './agentPerception.ts';
+import { type ActorTickScratch, createActorTickScratch } from './actorTickScratch.ts';
+import {
+  farBearingTarget,
+  hearingTier,
+  hearVocalNoise,
+  sameInvestigationFloor,
+  seesPlayer,
+  visibleLightTarget,
+} from './agentPerception.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
 import type { ActorDef } from './content.ts';
@@ -93,7 +102,6 @@ import {
   stepBody,
   stepBodyHorizontal,
 } from './physics.ts';
-import type { PlayerStance } from './playerStance.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { MeleeCharge, SenseDef } from './schema.ts';
@@ -102,12 +110,11 @@ import { type SolidBricks, testedBricks } from './solidBricks.ts';
 import type { SoundId } from './soundEvents.ts';
 import { updateStepOffset } from './stepOffset.ts';
 
-export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
-
 export const BACKGROUND_ACTOR_RATE = 2;
 export const BACKGROUND_ACTOR_SLICE_COUNT = 30;
 export const BACKGROUND_ACTOR_SLICE_RATE = BACKGROUND_ACTOR_RATE * BACKGROUND_ACTOR_SLICE_COUNT;
 
+import type { PlayerSense } from './actorSense.ts';
 import { blastShare, bodyCentre, type ExplosiveSpec, inSight } from './explosive.ts';
 import type { PelletShot } from './pellets.ts';
 
@@ -337,41 +344,6 @@ export interface ActorSystemState {
   acidPuddles: AcidPuddleState[];
 }
 
-export interface VocalNoise {
-  id: number;
-  pos: Vec3;
-  radiusMetres: number;
-  expiresAt: number;
-}
-
-export interface PlayerSense {
-  pos: Vec3;
-  /** When present, the solid player box used for hard movement collisions. */
-  body?: Body | undefined;
-  /** Direction the player faces, in the x/z plane. */
-  facing: Vec3;
-  movement: PlayerMovement;
-  stance?: PlayerStance | undefined;
-  lit: boolean;
-  lightSeenFrom: number;
-  /** Also the height of the light the player carries. */
-  eyeHeightMetres: number;
-  /** Direct sunlight at the player's position; omitted by isolated perception fixtures. */
-  sunlit?: boolean | undefined;
-  lightSources?: readonly SensedLightSource[] | undefined;
-  vocalNoise?: VocalNoise | undefined;
-}
-
-export interface SensedLightSource {
-  pos: Vec3;
-  seenFrom: number;
-  heightMetres: number;
-  /** Direct sunlight at the source; omitted by isolated perception fixtures. */
-  sunlit?: boolean | undefined;
-  /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
-  carried: boolean;
-}
-
 export interface ActorSystemOptions {
   activeActorRadiusMetres: number;
   store?: EntityStore<Actor>;
@@ -446,23 +418,6 @@ export interface ActorSystemOptions {
 
 const FUSED_MASS_MEMBER_REGION = /^(member\.\d+)\./;
 
-type TerrainFloorAt = (x: number, z: number) => number;
-interface HorizontalFootprint {
-  halfWidth: number;
-  halfDepth: number;
-}
-
-const terrainStance = (x: number, z: number, terrainFloor: TerrainFloorAt, footprint: HorizontalFootprint): number => {
-  let level = Number.NEGATIVE_INFINITY;
-  for (let bz = Math.floor(z - footprint.halfDepth); bz < Math.ceil(z + footprint.halfDepth); bz++) {
-    for (let bx = Math.floor(x - footprint.halfWidth); bx < Math.ceil(x + footprint.halfWidth); bx++) {
-      level = Math.max(level, Math.round(terrainFloor(bx, bz)));
-    }
-  }
-  return level;
-};
-const onTerrainFloor = (pos: Vec3, terrainFloor: TerrainFloorAt, footprint: HorizontalFootprint): boolean =>
-  Math.round(pos[1]) === terrainStance(pos[0], pos[2], terrainFloor, footprint);
 const posedRegionsForActor = ({
   id,
   actor,
@@ -515,16 +470,6 @@ const blastOrder = (actor: Actor): ActorHitRegion[] => {
     ...regions.filter((region) => lethalRegion(actor.type, region)),
   ];
 };
-const sameInvestigationFloor = (
-  a: Vec3,
-  b: Vec3,
-  terrainFloor: TerrainFloorAt | undefined,
-  footprint: HorizontalFootprint,
-): boolean =>
-  Math.round(a[1]) === Math.round(b[1]) ||
-  (terrainFloor !== undefined &&
-    onTerrainFloor(a, terrainFloor, footprint) &&
-    onTerrainFloor(b, terrainFloor, footprint));
 const OBSTACLE_LOOKAHEAD_METRES = 0.7;
 const OBSTACLE_PROBE_DISTANCE_METRES = 0.75;
 const OBSTACLE_PROBE_SPEED = 4;
@@ -733,34 +678,6 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
   }
   return true;
 };
-
-export interface PerceptionInput {
-  def: ActorDef;
-  from: Vec3;
-  facing: Vec3;
-  player: PlayerSense;
-  dayPhase: DayPhase;
-  sightBlend: number;
-  blockSize: number;
-  isSolid: SolidAt;
-  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
-  tuning: SenseDef;
-}
-
-export type HearingTier = 'near' | 'far';
-export interface HearingInput {
-  def: ActorDef;
-  from: Vec3;
-  player: PlayerSense;
-  blockSize: number;
-  isSolid: SolidAt;
-  rng: Rng;
-  tuning: SenseDef;
-}
-export interface HeardNoise {
-  tier: HearingTier;
-  target: Vec3;
-}
 
 const hordeSnapshotFields = [
   'id',

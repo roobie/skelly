@@ -133,7 +133,10 @@
       "lastPlayedAt": 5,
       "time": 1
     },
-    "core/actorMotion.ts": {
+    "core/actorSense.ts": {
+      "expiresAt": 1
+    },
+    "core/actorTickScratch.ts": {
       "time": 2
     },
     "core/actorPose.ts": {
@@ -162,7 +165,6 @@
     "core/actorSystem.ts": {
       "attackWindup": 1,
       "cooldown": 2,
-      "expiresAt": 1,
       "idleSoundTimer": 1,
       "lookTimer": 1,
       "lurchDuration": 1,

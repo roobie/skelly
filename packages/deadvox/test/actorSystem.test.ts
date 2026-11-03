@@ -15,15 +15,10 @@ import {
   posedRegionHit,
   posedRegionHitDistance,
 } from '../src/core/actorRegions.ts';
+import type { PlayerSense } from '../src/core/actorSense.ts';
 import { ActorSpawner } from '../src/core/actorSpawns.ts';
 import type { Actor } from '../src/core/actorState.ts';
-import {
-  type HitImpulse,
-  lethalRegion,
-  type PlayerSense,
-  pickActorHitRegion,
-  pickActorMove,
-} from '../src/core/actorSystem.ts';
+import { type HitImpulse, lethalRegion, pickActorHitRegion, pickActorMove } from '../src/core/actorSystem.ts';
 import { hearPlayer, hearVocalNoise, perceivePlayer } from '../src/core/agentPerception.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';

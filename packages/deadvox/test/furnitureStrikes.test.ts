@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import type { PlayerSense } from '../src/core/actorSystem.ts';
+import type { PlayerSense } from '../src/core/actorSense.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';

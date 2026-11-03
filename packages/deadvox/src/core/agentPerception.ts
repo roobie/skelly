@@ -1,15 +1,6 @@
-import { headingAt, sub, unit } from './actorMotion.ts';
+import { type HorizontalFootprint, headingAt, onTerrainFloor, sub, type TerrainFloorAt, unit } from './actorMotion.ts';
+import type { PlayerMovement, PlayerSense, VocalNoise } from './actorSense.ts';
 import { copy } from './actorState.ts';
-import type {
-  HeardNoise,
-  HearingInput,
-  HearingTier,
-  PerceptionInput,
-  PlayerMovement,
-  PlayerSense,
-  SensedLightSource,
-  VocalNoise,
-} from './actorSystem.ts';
 import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhase } from './dayPhase.ts';
@@ -288,3 +279,48 @@ export const visibleLightTarget = ({
 /** Returns true for sight or either audible tier, using metres for distances and angles. */
 export const perceivePlayer = (input: PerceptionInput): boolean =>
   seesPlayer(input) || hearingTier(input) !== undefined;
+export interface PerceptionInput {
+  def: ActorDef;
+  from: Vec3;
+  facing: Vec3;
+  player: PlayerSense;
+  dayPhase: DayPhase;
+  sightBlend: number;
+  blockSize: number;
+  isSolid: SolidAt;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
+  tuning: SenseDef;
+}
+export interface HearingInput {
+  def: ActorDef;
+  from: Vec3;
+  player: PlayerSense;
+  blockSize: number;
+  isSolid: SolidAt;
+  rng: Rng;
+  tuning: SenseDef;
+}
+export type HearingTier = 'near' | 'far';
+export interface HeardNoise {
+  tier: HearingTier;
+  target: Vec3;
+}
+export interface SensedLightSource {
+  pos: Vec3;
+  seenFrom: number;
+  heightMetres: number;
+  /** Direct sunlight at the source; omitted by isolated perception fixtures. */
+  sunlit?: boolean | undefined;
+  /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
+  carried: boolean;
+}
+export const sameInvestigationFloor = (
+  a: Vec3,
+  b: Vec3,
+  terrainFloor: TerrainFloorAt | undefined,
+  footprint: HorizontalFootprint,
+): boolean =>
+  Math.round(a[1]) === Math.round(b[1]) ||
+  (terrainFloor !== undefined &&
+    onTerrainFloor(a, terrainFloor, footprint) &&
+    onTerrainFloor(b, terrainFloor, footprint));

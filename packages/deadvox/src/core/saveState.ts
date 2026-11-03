@@ -3,8 +3,9 @@
 
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
+import type { VocalNoise } from './actorSense.ts';
 import type { ActorSpawner } from './actorSpawns.ts';
-import type { ActorSystem, ActorSystemState, VocalNoise } from './actorSystem.ts';
+import type { ActorSystem, ActorSystemState } from './actorSystem.ts';
 import type { AimSnapshotState } from './aim.ts';
 import type { SavedBlockDamage } from './blockDamage.ts';
 import type { Character, CharacterState } from './character.ts';

@@ -1,10 +1,6 @@
 import type { Actor } from './actorState.ts';
 import { actorAttackReachMetres, requiredGrabBand } from './actorState.ts';
-import type { HeardNoise, HearingInput, HearingTier, PerceptionInput, PlayerSense } from './actorSystem.ts';
-import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { DayPhaseState } from './dayPhase.ts';
-import type { EntityId } from './entities.ts';
 import { fusedMassFigureForType, fusedMassStrikeOrigin } from './fusedMassFigure.ts';
 import type { FusedMassShape } from './fusedMassShape.ts';
 import type { Body } from './physics.ts';
@@ -116,95 +112,6 @@ export const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
   return lineDistance > 0 && raycast(from, unit(toward), lineDistance, isSolid) === undefined;
 };
 
-// Phases share this scratch to avoid per-zombie allocation, so write each per-zombie field before its first read.
-// `test/actorSystem.test.ts`, `vocalNoiseDoesNotLeakBetweenActorPasses`, guards the cross-pass case.
-export interface ActorTickScratch {
-  dt: number;
-  time: number;
-  player: PlayerSense;
-  dayState: DayPhaseState;
-  blockSize: number;
-  isSolid: SolidAt;
-  isOpaque: SolidAt;
-  groundedAtTickStart: Map<Actor, boolean>;
-  id: EntityId;
-  actor: Actor;
-  type: ActorDef;
-  rng: Rng;
-  pos: Vec3;
-  perception: PerceptionInput;
-  hearingInput: HearingInput;
-  sees: boolean;
-  lightTarget?: Vec3 | undefined;
-  vocal?: HeardNoise | undefined;
-  tier?: HearingTier | undefined;
-  target: Vec3;
-  direction: Vec3;
-  aimDirection?: Vec3 | undefined;
-  desiredSpeed: number;
-  returnArrived: boolean;
-  obstacleDirection?: Vec3 | undefined;
-  stroll: boolean;
-  wanderingAtTickStart: boolean;
-  metresToTarget: number;
-  seeking: boolean;
-  inReach: boolean;
-  moving: boolean;
-  jumpAttempted: boolean;
-  beforeStep: Vec3;
-  travelled: number;
-  wallAhead: boolean;
-  dx: number;
-  dz: number;
-  forward: number;
-  obstacleContact: boolean;
-  wasObstacleContact: boolean;
-  stepHeightMetres: number;
-}
-export const createActorTickScratch = (): ActorTickScratch => ({
-  dt: 0,
-  time: 0,
-  player: undefined as unknown as PlayerSense,
-  dayState: undefined as unknown as DayPhaseState,
-  blockSize: 0,
-  isSolid: undefined as unknown as SolidAt,
-  isOpaque: undefined as unknown as SolidAt,
-  groundedAtTickStart: undefined as unknown as Map<Actor, boolean>,
-  id: 0,
-  actor: undefined as unknown as Actor,
-  type: undefined as unknown as ActorDef,
-  rng: undefined as unknown as Rng,
-  pos: [0, 0, 0],
-  perception: {} as PerceptionInput,
-  hearingInput: {} as HearingInput,
-  sees: false,
-  lightTarget: undefined,
-  vocal: undefined,
-  tier: undefined,
-  target: [0, 0, 0],
-  direction: [0, 0, 0],
-  aimDirection: undefined,
-  desiredSpeed: 0,
-  returnArrived: false,
-  obstacleDirection: undefined,
-  stroll: false,
-  wanderingAtTickStart: false,
-  metresToTarget: 0,
-  seeking: false,
-  inReach: false,
-  moving: false,
-  jumpAttempted: false,
-  beforeStep: [0, 0, 0],
-  travelled: 0,
-  wallAhead: false,
-  dx: 0,
-  dz: 0,
-  forward: 0,
-  obstacleContact: false,
-  wasObstacleContact: false,
-  stepHeightMetres: 0,
-});
-
 /**
  * Shoves a body off the terrain its shape's turn of `turn` radians swung into, if a push can, and drops its
  * velocity back toward what it was pushed off; see ActorSystem.settleTurn.
@@ -270,3 +177,24 @@ export const stepChaseMotion = (actor: Actor, dt: number): { sway: number; speed
     speedFactor: actor.lurchValue * actor.stumbleFactor,
   };
 };
+export type TerrainFloorAt = (x: number, z: number) => number;
+export interface HorizontalFootprint {
+  halfWidth: number;
+  halfDepth: number;
+}
+export const terrainStance = (
+  x: number,
+  z: number,
+  terrainFloor: TerrainFloorAt,
+  footprint: HorizontalFootprint,
+): number => {
+  let level = Number.NEGATIVE_INFINITY;
+  for (let bz = Math.floor(z - footprint.halfDepth); bz < Math.ceil(z + footprint.halfDepth); bz++) {
+    for (let bx = Math.floor(x - footprint.halfWidth); bx < Math.ceil(x + footprint.halfWidth); bx++) {
+      level = Math.max(level, Math.round(terrainFloor(bx, bz)));
+    }
+  }
+  return level;
+};
+export const onTerrainFloor = (pos: Vec3, terrainFloor: TerrainFloorAt, footprint: HorizontalFootprint): boolean =>
+  Math.round(pos[1]) === terrainStance(pos[0], pos[2], terrainFloor, footprint);

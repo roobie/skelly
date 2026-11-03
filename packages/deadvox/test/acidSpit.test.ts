@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { acidSpitWindupProgress } from '../src/core/actorPose.ts';
-import type { AcidSpitRelease, PlayerSense } from '../src/core/actorSystem.ts';
+import type { PlayerSense } from '../src/core/actorSense.ts';
+import type { AcidSpitRelease } from '../src/core/actorSystem.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
