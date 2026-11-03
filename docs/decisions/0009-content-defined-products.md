@@ -3,7 +3,7 @@ read_if:
   - you change SkellyEngine's boundary, product entry packs or shared content ownership
   - you classify mods, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or the framework refactor gate
-  - you name reusable mechanisms, actor body plans or content-selected providers
+  - you name reusable mechanisms, descriptive actor body plans or content-selected providers
   - you change scenario guidance, observations, staging or authored start admission
   - you change attempt recording or snapshot diagnostics
 ---
@@ -170,6 +170,11 @@ Use Actor for a body and its state, and Agent only for the part that decides. A
 setting's name in engine code ties the engine to one product; these roles keep the
 body and decision mechanisms independent of that setting. See `GLOSSARY.md`, "Actor roles".
 Whether a ship is an actor is not decided by those words.
+
+Body-plan mechanisms use descriptive anatomy names: humanoid rather than shambler,
+fused-mass rather than amalgam, and shape names for other forms. Product content ids
+may retain their setting vocabulary. This keeps reusable anatomy independent of the
+product that first supplies it; see `packages/deadvox/docs/pack-split.md`, "Creature framework".
 
 Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army
