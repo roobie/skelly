@@ -75,6 +75,21 @@ it('admits authored starts without requiring starts in a lower-layer stack', () 
   expect(lower.registry.starts.size).toBe(0);
 });
 
+it.each(['city', 'forest', 'weatheringTest'])('admits a start for the existing %s generator', (site) => {
+  expect(buildRegistry(sources(makeStart({ site }))).issues).toEqual([]);
+});
+
+it.each(['pocket', 'slot'] as const)('rejects a nonexistent parent %s at admission', (kind) => {
+  const start = makeStart();
+  start.kit[1]!.destination =
+    kind === 'pocket'
+      ? { kind: 'pocket', parent: 'bag', pocket: 1 }
+      : { kind: 'slot', parent: 'bag', slot: 'fixture_missing_slot' };
+  expect(buildRegistry(sources(start)).issues).toEqual([
+    expect.objectContaining({ source: 'fixture-start.json', path: `starts[0].kit[1].destination.${kind}` }),
+  ]);
+});
+
 it.each([
   ['site', { site: 'fixture_missing_site' }, '.site'],
   ['skill', { skills: { [MISSING_SKILL]: 1 } }, '.skills.fixture_missing_skill'],

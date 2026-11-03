@@ -1,6 +1,7 @@
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
-import { magazineContentsReason } from './magazine.ts';
+import { GENERATED_SITES } from './generatedSites.ts';
+import { knownItemSlot, magazineContentsReason } from './magazine.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 
 interface StartIssue {
@@ -10,9 +11,9 @@ interface StartIssue {
 }
 
 const destinationIssues = (
+  registry: Registry,
   entry: StartKitEntry,
-  parents: ReadonlyMap<string, StartKitEntry>,
-  hands: Set<string>,
+  { parents, hands }: { parents: ReadonlyMap<string, StartKitEntry>; hands: Set<string> },
   fail: (path: string, message: string) => void,
 ): void => {
   const { destination } = entry;
@@ -21,8 +22,19 @@ const destinationIssues = (
       fail('.destination.role', `hand "${destination.role}" is already assigned`);
     }
     hands.add(destination.role);
-  } else if ((destination.kind === 'pocket' || destination.kind === 'slot') && !parents.has(destination.parent)) {
-    fail('.destination.parent', `parent "${destination.parent}" must appear earlier in the kit`);
+  } else if (destination.kind === 'pocket' || destination.kind === 'slot') {
+    const parent = parents.get(destination.parent);
+    if (!parent) {
+      fail('.destination.parent', `parent "${destination.parent}" must appear earlier in the kit`);
+      return;
+    }
+    const def = registry.items.get(parent.item);
+    if (destination.kind === 'pocket' && !def?.container?.pockets[destination.pocket]) {
+      fail('.destination.pocket', `parent "${destination.parent}" has no such pocket`);
+    }
+    if (destination.kind === 'slot' && !knownItemSlot(registry, parent.item, destination.slot)) {
+      fail('.destination.slot', `parent "${destination.parent}" has no such certified slot`);
+    }
   }
 };
 
@@ -43,7 +55,7 @@ const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, mes
         fail(`${path}.cartridges`, reason);
       }
     }
-    destinationIssues(entry, parents, hands, (suffix, message) => fail(`${path}${suffix}`, message));
+    destinationIssues(registry, entry, { parents, hands }, (suffix, message) => fail(`${path}${suffix}`, message));
     parents.set(entry.id, entry);
   });
 };
@@ -55,7 +67,7 @@ export const startIssues = (registry: Registry): StartIssue[] => {
       issues.push({ id: start.id, path, message });
     };
     const scenario = registry.scenarios.get(start.site);
-    if (!(scenario || registry.layouts.has(start.site))) {
+    if (!(scenario || registry.layouts.has(start.site) || GENERATED_SITES.has(start.site))) {
       fail('.site', `no scenario or layout "${start.site}"`);
     }
     kitIssues(registry, start, fail);

@@ -25,7 +25,7 @@ import {
   sameDisassemblyOutputs,
   validDisassemblyToolLevels,
 } from './disassembly.ts';
-import { firearmSlotIds, isLongGun, slingFitted } from './firearmFitting.ts';
+import { isLongGun, slingFitted } from './firearmFitting.ts';
 import {
   equalFoodExposure,
   FOOD_EXPOSURE_DENOMINATOR,
@@ -73,7 +73,7 @@ import {
   validLiquidRecoveryChoices,
 } from './liquids.ts';
 import type { Rolled } from './loot.ts';
-import { magazineWellCalibre, slotsReason } from './magazine.ts';
+import { knownItemSlot, slotsReason } from './magazine.ts';
 import { countText, volumeText } from './numberText.ts';
 import type { WearSlot } from './schema.ts';
 import type { FurnitureSpawn } from './site.ts';
@@ -802,12 +802,7 @@ export class Inventory {
   /** Fills or empties an owner's slot with a loose, certified item; returns the item displaced. */
   fitSlot(owner: Item, slot: string, item: Item | undefined): Item | undefined {
     const { slots } = owner;
-    const ownerDef = defOf(this.registry, owner.type);
-    const knownSlot =
-      (slot === 'magazine' && magazineWellCalibre(this.registry, owner.type) !== undefined) ||
-      (slot === 'battery' && ownerDef.light?.power !== undefined) ||
-      (slot === 'canister' && ownerDef.tool?.fuel !== undefined) ||
-      firearmSlotIds(this.registry, ownerDef).includes(slot);
+    const knownSlot = knownItemSlot(this.registry, owner.type, slot);
     if (!(slots && knownSlot) || (item && this.locate(item))) {
       throw new Error('Only a loose item fits a known slot');
     }
