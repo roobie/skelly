@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { parseArgs } from 'node:util';
 import { buildRegistry } from '../src/core/content.ts';
-import { checkReachability } from '../src/core/reachability.ts';
+import { checkStartReachability } from '../src/core/reachability.ts';
 
 const projectRoot = resolve(import.meta.dirname, '..');
 const contentDirectory = resolve(projectRoot, 'src/content/base');
@@ -33,7 +33,7 @@ const section = (lines, title, ids, registry) => {
   lines.push('');
 };
 
-const report = (siteId) => {
+const report = (siteId, startId) => {
   const registry = registryFromBaseContent();
   const layout = registry.layouts.get(siteId);
   if (layout?.demo) {
@@ -42,15 +42,22 @@ const report = (siteId) => {
   if (!(layout || registry.scenarios.has(siteId))) {
     throw new Error(`Unknown playable site "${siteId}"`);
   }
-  const siteReachability = checkReachability(registry, undefined, { sites: new Set([siteId]) });
-  const wholeGame = checkReachability(registry);
+  const start =
+    startId === undefined
+      ? [...registry.starts.values()].find((row) => row.site === siteId && row.defaultForSite)
+      : registry.starts.get(startId);
+  if (!start || start.site !== siteId) {
+    throw new Error(`Select an admitted start for site "${siteId}" with --start`);
+  }
+  const siteReachability = checkStartReachability(registry, start, { sites: new Set([siteId]) });
+  const wholeGame = checkStartReachability(registry, start);
   const globallyUnreachable = new Set(wholeGame.unreachable);
   const siteSpecific = siteReachability.unreachable.filter((id) => !globallyUnreachable.has(id));
   const neverPlaced = siteSpecific.filter((id) => wholeGame.placed.has(id));
   const neverRolled = siteSpecific.filter((id) => !wholeGame.placed.has(id) && wholeGame.rolled.has(id));
   const notCraftable = siteSpecific.filter((id) => !(wholeGame.placed.has(id) || wholeGame.rolled.has(id)));
   const lines = [
-    `# ${siteId} never-spawn report`,
+    `# ${siteId} never-spawn report (start ${start.id})`,
     '',
     'Static content analysis: a pool member counts as possible. This is not a seeded-run result.',
     `The site-specific gap is ${siteSpecific.length} of ${siteReachability.defined} loot-eligible items.`,
@@ -61,7 +68,7 @@ const report = (siteId) => {
   section(lines, 'Not craftable or disassemblable from what this site yields', notCraftable, registry);
   section(
     lines,
-    'Unreachable in every site; see npm run validate',
+    'Unreachable across all sites with this start; see npm run validate',
     siteReachability.unreachable.filter((id) => globallyUnreachable.has(id)),
     registry,
   );
@@ -70,16 +77,16 @@ const report = (siteId) => {
 
 const { values, positionals } = parseArgs({
   args: process.argv.slice(2),
-  options: { site: { type: 'string' } },
+  options: { site: { type: 'string' }, start: { type: 'string' } },
   allowPositionals: true,
 });
 const requestedSite = values.site ?? positionals[0];
 if (requestedSite === undefined || positionals.length > (values.site === undefined ? 1 : 0)) {
-  process.stderr.write('Usage: npm run report:never-spawn -- <site-id>\n');
+  process.stderr.write('Usage: npm run report:never-spawn -- <site-id> [--start <start-id>]\n');
   process.exitCode = 1;
 } else {
   try {
-    report(requestedSite);
+    report(requestedSite, values.start);
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

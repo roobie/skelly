@@ -1,6 +1,7 @@
 import { claimed } from './capabilities.ts';
 import type { Registry } from './content.ts';
 import { GENERATED_SITES } from './generatedSites.ts';
+import { ItemFactory, setInitialCylinder } from './items.ts';
 import { knownItemSlot, magazineContentsReason } from './magazine.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 
@@ -53,6 +54,14 @@ const kitIssues = (registry: Registry, start: StartDef, fail: (path: string, mes
       const reason = magazineContentsReason(registry, entry.item, entry.cartridges);
       if (reason) {
         fail(`${path}.cartridges`, reason);
+      }
+    }
+    if (entry.cylinder !== undefined) {
+      try {
+        const item = new ItemFactory().create(registry, entry.item, entry.count);
+        setInitialCylinder(registry, item, entry.cylinder);
+      } catch (error) {
+        fail(`${path}.cylinder`, String(error));
       }
     }
     destinationIssues(registry, entry, { parents, hands }, (suffix, message) => fail(`${path}${suffix}`, message));

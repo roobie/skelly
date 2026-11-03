@@ -1,7 +1,7 @@
 import type { Body } from './body.ts';
 import { type Character, dominantSide, offSide } from './character.ts';
 import type { Inventory, Target } from './inventory.ts';
-import type { Item } from './items.ts';
+import { type Item, setInitialCylinder } from './items.ts';
 import type { StartDef, StartKitEntry } from './schema/starts.ts';
 
 const placeEntry = (
@@ -51,6 +51,9 @@ export const applyStartKit = (inventory: Inventory, start: StartDef): void => {
       const item = inventory.create(entry.item, entry.count, entry.condition);
       if (entry.cartridges !== undefined) {
         item.cartridges = [...entry.cartridges];
+      }
+      if (entry.cylinder !== undefined) {
+        setInitialCylinder(inventory.registry, item, entry.cylinder);
       }
       placeEntry(inventory, entry, item, parents);
       parents.set(entry.id, item);

@@ -112,7 +112,7 @@ interface ClosureInput {
   found: ReadonlySet<string>;
   tools: boolean;
   knowledge: ReadonlySet<string>;
-  skills: ReadonlySet<string>;
+  skills: ReadonlyMap<string, number>;
   workstationQualities: ReadonlyMap<string, number>;
 }
 
@@ -145,7 +145,7 @@ const closure = ({ registry, found, tools, knowledge, skills, workstationQualiti
         recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
         Object.entries(recipe.skills).every(
-          ([role, level]) => !claimed(registry.skills, role) || level === 0 || skills.has(role),
+          ([role, level]) => !claimed(registry.skills, role) || (skills.get(role) ?? 0) >= level,
         ) &&
         inputsReady(registry, recipe, items) &&
         (!tools ||
@@ -215,7 +215,7 @@ export interface ReachabilityScope {
   /** Site ids whose authored sources are included; absent means every playable site. */
   readonly sites?: ReadonlySet<string>;
   readonly items?: ReadonlySet<string>;
-  readonly skills?: ReadonlySet<string>;
+  readonly skills?: ReadonlyMap<string, number>;
 }
 
 const compiledSource = (registry: Registry, id: string): CompiledTemplate | undefined => {
@@ -354,7 +354,7 @@ interface RecipeDiagnosticContext {
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
   knowledge: ReadonlySet<string>;
-  skills: ReadonlySet<string>;
+  skills: ReadonlyMap<string, number>;
 }
 
 const knowledgeIssues = (recipe: RecipeDef, knowledge: ReadonlySet<string>): RecipeDiagnostic[] =>
@@ -391,10 +391,14 @@ const componentIssues = (registry: Registry, recipe: RecipeDef, components: Read
     }),
   );
 
-const skillIssues = (registry: Registry, recipe: RecipeDef, skills: ReadonlySet<string>): RecipeDiagnostic[] => {
+const skillIssues = (
+  registry: Registry,
+  recipe: RecipeDef,
+  skills: ReadonlyMap<string, number>,
+): RecipeDiagnostic[] => {
   const issues: RecipeDiagnostic[] = [];
   for (const [skill, level] of Object.entries(recipe.skills)) {
-    if (claimed(registry.skills, skill) && level > 0 && !skills.has(skill)) {
+    if (claimed(registry.skills, skill) && (skills.get(skill) ?? 0) < level) {
       issues.push({
         recipe: recipe.id,
         path: `.skills.${skill}`,
@@ -461,7 +465,7 @@ const canPracticeRecipe = (
   }: {
     registry: Registry;
     tools: ReadonlySet<string>;
-    skills: ReadonlySet<string>;
+    skills: ReadonlyMap<string, number>;
     knowledge: ReadonlySet<string>;
     workstations: ReadonlySet<string>;
     workstationQualities: ReadonlyMap<string, number>;
@@ -470,7 +474,7 @@ const canPracticeRecipe = (
   knowledge.has(recipe.id) &&
   inputsReady(registry, recipe, tools) &&
   Object.entries(recipe.skills).every(
-    ([role, level]) => !claimed(registry.skills, role) || level === 0 || skills.has(role),
+    ([role, level]) => !claimed(registry.skills, role) || (skills.get(role) ?? 0) >= level,
   ) &&
   Object.entries(recipe.qualities).every(([quality, level]) =>
     qualityReady({ registry, items: tools, workstationQualities }, quality, level),
@@ -498,8 +502,19 @@ interface ReachableKnowledgeAndSkillsContext {
   workstations: ReadonlySet<string>;
   workstationQualities: ReadonlyMap<string, number>;
   known: ReadonlySet<string>;
-  startingSkills: ReadonlySet<string>;
+  startingSkills: ReadonlyMap<string, number>;
 }
+
+const addPracticeSkills = (registry: Registry, recipe: RecipeDef, skills: Map<string, number>): boolean => {
+  let changed = false;
+  for (const role of Object.keys(recipe.skills)) {
+    if (claimed(registry.skills, role) && skills.get(role) !== Number.POSITIVE_INFINITY) {
+      skills.set(role, Number.POSITIVE_INFINITY);
+      changed = true;
+    }
+  }
+  return changed;
+};
 
 const reachableKnowledgeAndSkills = ({
   registry,
@@ -510,25 +525,25 @@ const reachableKnowledgeAndSkills = ({
   startingSkills,
 }: ReachableKnowledgeAndSkillsContext) => {
   const knowledge = knownRecipes(registry, found, known);
-  const skills = new Set(startingSkills);
-  let previous: number;
+  const skills = new Map(startingSkills);
+  let changed: boolean;
   do {
-    previous = knowledge.size + skills.size;
+    changed = false;
+    const previousKnowledge = knowledge.size;
     const tools = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
     for (const recipe of registry.recipes.values()) {
       if (!canPracticeRecipe(recipe, { registry, tools, skills, knowledge, workstations, workstationQualities })) {
         continue;
       }
-      for (const role of Object.keys(recipe.skills).filter((candidate) => claimed(registry.skills, candidate))) {
-        skills.add(role);
-      }
+      changed = addPracticeSkills(registry, recipe, skills) || changed;
     }
     for (const recipe of registry.recipes.values()) {
-      if (recipe.skillUnlock && skills.has(recipe.skillUnlock.skill)) {
+      if (recipe.skillUnlock && (skills.get(recipe.skillUnlock.skill) ?? 0) >= recipe.skillUnlock.level) {
         knowledge.add(recipe.id);
       }
     }
-  } while (knowledge.size + skills.size !== previous);
+    changed ||= knowledge.size !== previousKnowledge;
+  } while (changed);
   return { knowledge, skills };
 };
 
@@ -544,7 +559,7 @@ export const checkReachability = (
     workstations,
     workstationQualities,
     known,
-    startingSkills: scope?.skills ?? new Set(),
+    startingSkills: scope?.skills ?? new Map(),
   });
   const components = closure({ registry, found, tools: false, knowledge, skills, workstationQualities });
   const toolReachable = closure({ registry, found, tools: true, knowledge, skills, workstationQualities });
@@ -575,11 +590,18 @@ export const checkReachability = (
 export const checkStartReachability = (registry: Registry, start: StartDef, scope: ReachabilityScope = {}) =>
   checkReachability(registry, new Set(start.recipes), {
     ...scope,
-    items: new Set(start.kit.flatMap((entry) => [entry.item, ...(entry.cartridges ?? [])])),
-    skills: new Set(
+    items: new Set(
+      start.kit.flatMap((entry) => [
+        entry.item,
+        ...(entry.cartridges ?? []),
+        ...(entry.cylinder?.chambers.flatMap((chamber) => (chamber.state === 'round' ? [chamber.roundType] : [])) ??
+          []),
+      ]),
+    ),
+    skills: new Map(
       Object.entries(start.skills).flatMap(([id, level]) => {
         const role = registry.skills.get(id)?.capability;
-        return level > 0 && role ? [role] : [];
+        return role ? [[role, level] as const] : [];
       }),
     ),
   });

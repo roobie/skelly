@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { magazineSpec } from '../src/core/magazine.ts';
 import { type StartDef, StartSchema } from '../src/core/schema/starts.ts';
+import { startIssues } from '../src/core/startIssues.ts';
 import { applyStartState } from '../src/core/startState.ts';
 import { baseRegistryWith } from './baseRegistry.ts';
 import { fixtureSources } from './economyFixtures.ts';
@@ -203,6 +204,63 @@ describe('new-game application', () => {
     expect(context.inventory.hands.right?.cartridges).toEqual(start.kit[0]!.cartridges);
     expect(context.inventory.hands.right?.cartridges).not.toBe(start.kit[0]!.cartridges);
   });
+
+  const cylinderFixture = () => {
+    const start = makeStart({ kit: [] });
+    const context = setup(start);
+    const gun = [...context.registry.items.values()].find(({ firearm }) => firearm?.revolver)!;
+    const model = context.registry.models.get(gun.model!)!;
+    const round = [...context.registry.items.values()].find(({ ammo }) => ammo?.calibre === model.gun!.calibre)!;
+    context.registry.items.set('fixture_revolver', { ...gun, id: 'fixture_revolver' });
+    context.registry.items.set('fixture_round', { ...round, id: 'fixture_round' });
+    const cylinder = {
+      chambers: Array.from({ length: model.gun!.revolver!.chambers }, (_, index) =>
+        index === 0 ? { state: 'round' as const, roundType: 'fixture_round' } : { state: 'empty' as const },
+      ),
+      aligned: 0,
+      open: true,
+      cocked: false,
+    };
+    start.kit = [{ id: 'gun', item: 'fixture_revolver', cylinder, destination: { kind: 'hand', role: 'dominant' } }];
+    context.registry.starts.set(start.id, start);
+    return { start, context, cylinder };
+  };
+
+  it('applies an admitted cylinder through its item owner without aliasing authored state', () => {
+    const { start, context, cylinder } = cylinderFixture();
+    expect(startIssues(context.registry).filter(({ id }) => id === start.id)).toEqual([]);
+    applyStartState(context.inventory, start, context);
+    const applied = context.inventory.hands.right!.firearm!.cylinder!;
+    expect(applied).toEqual(cylinder);
+    applied.chambers[0] = { state: 'case' };
+    expect(cylinder.chambers[0]!.state).toBe('round');
+  });
+
+  it.each(['count', 'calibre', 'alignment', 'cocked', 'not-revolver'] as const)(
+    'attributes invalid authored cylinder %s at admission and application',
+    (kind) => {
+      const { start, context, cylinder } = cylinderFixture();
+      if (kind === 'count') {
+        cylinder.chambers.pop();
+      }
+      if (kind === 'calibre') {
+        cylinder.chambers[0] = { state: 'round', roundType: 'fixture_start_stock' };
+      }
+      if (kind === 'alignment') {
+        cylinder.aligned = cylinder.chambers.length;
+      }
+      if (kind === 'cocked') {
+        cylinder.cocked = true;
+      }
+      if (kind === 'not-revolver') {
+        start.kit[0]!.item = 'fixture_start_stock';
+      }
+      expect(startIssues(context.registry)).toContainEqual(
+        expect.objectContaining({ id: start.id, path: '.kit[0].cylinder' }),
+      );
+      expect(() => applyStartState(context.inventory, start, context)).toThrow('kit entry "gun"');
+    },
+  );
 
   it('fits a named child through ordinary slot certification', () => {
     const start = makeStart({ kit: [] });

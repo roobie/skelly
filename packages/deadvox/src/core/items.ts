@@ -708,6 +708,20 @@ const assertAmmunition = (registry: Registry, type: string, state: FirearmState)
   assertIntegralAmmunition(registry, revolverModel, state);
 };
 
+export const setInitialCylinder = (
+  registry: Registry,
+  item: Item,
+  cylinder: NonNullable<FirearmState['cylinder']>,
+): void => {
+  if (!item.firearm?.cylinder || item.count !== 1) {
+    throw new Error('Initial cylinder needs one revolver');
+  }
+  const state = { ...item.firearm, cylinder: structuredClone(cylinder) };
+  assertFirearmState(state);
+  assertAmmunition(registry, item.type, state);
+  item.firearm = state;
+};
+
 /** Width and height in cells, as placed. */
 export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
   rotated ? [def.size[1], def.size[0]] : [def.size[0], def.size[1]];

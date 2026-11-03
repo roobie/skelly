@@ -108,6 +108,36 @@ describe('static reachability', () => {
     );
   });
 
+  it('does not treat an authored skill level as an unbounded practice source', () => {
+    const registry = knowledgeFixture([
+      { id: 'fixture_high_unlock', skills: {}, skillUnlock: { skill: 'crafting', level: 2 } },
+      { id: 'fixture_high_practice', skills: { crafting: 2 } },
+    ]);
+    registry.skills = new Map([
+      ['fixtureProvider', { id: 'fixtureProvider', name: 'Fixture skill', capability: 'crafting' }],
+    ]);
+    const start: StartDef = {
+      id: 'fixture_start',
+      site: 'city',
+      kit: [],
+      wounds: [],
+      recipes: ['fixture_high_practice'],
+      skills: { fixtureProvider: 1 },
+    };
+    const result = checkStartReachability(registry, start, noWorldSources);
+    expect(result.toolReachable.has('fixture_high_unlock_result')).toBe(false);
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ recipe: 'fixture_high_unlock', path: '.skillUnlock' }),
+    );
+    expect(result.issues).toContainEqual(
+      expect.objectContaining({ recipe: 'fixture_high_practice', path: '.skills.crafting' }),
+    );
+    registry.recipes.get('fixture_high_practice')!.skills.crafting = 1;
+    expect(
+      checkStartReachability(registry, start, noWorldSources).toolReachable.has('fixture_high_unlock_result'),
+    ).toBe(true);
+  });
+
   it('keeps whole-game reachability when its scope names every site', () => {
     const sites = new Set([...baseline.layouts.keys(), ...baseline.scenarios.keys()]);
     expect(checkReachability(baseline, undefined, { sites })).toEqual(checkReachability(baseline));

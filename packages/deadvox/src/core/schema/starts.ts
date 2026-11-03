@@ -1,5 +1,6 @@
 import {
   array,
+  boolean,
   type InferOutput,
   integer,
   literal,
@@ -41,6 +42,19 @@ export const StartSchema = strictObject({
       count: optional(pipe(Count, minValue(1))),
       condition: optional(Fraction),
       cartridges: optional(array(Id)),
+      cylinder: optional(
+        strictObject({
+          chambers: array(
+            union([
+              strictObject({ state: picklist(['empty', 'case']) }),
+              strictObject({ state: literal('round'), roundType: Id }),
+            ]),
+          ),
+          aligned: Count,
+          open: boolean(),
+          cocked: boolean(),
+        }),
+      ),
       destination: KitDestinationSchema,
     }),
   ),
