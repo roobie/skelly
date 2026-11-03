@@ -410,6 +410,31 @@ try {
           ignoreDefaultArgs: ['--hide-scrollbars'],
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
+  const resizeViewport = async (viewport) => {
+    const current = page.viewportSize();
+    if (current.width === viewport.width && current.height === viewport.height) {
+      return;
+    }
+    // Layout can change before the native resize event refits facts. Observe it after the product's
+    // synchronous placement listener, registered when the fixture first renders a fact.
+    const resize = await page.evaluateHandle(({ width, height }) => {
+      const state = { observed: false };
+      window.addEventListener(
+        'resize',
+        () => {
+          state.observed = innerWidth === width && innerHeight === height;
+        },
+        { once: true },
+      );
+      return state;
+    }, viewport);
+    try {
+      await page.setViewportSize(viewport);
+      await page.waitForFunction((state) => state.observed, resize);
+    } finally {
+      await resize.dispose();
+    }
+  };
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   logPhase('server and browser startup');
@@ -502,14 +527,14 @@ try {
   assert.equal(await cardCopy.isVisible(), true, 'card-host keyboard focus exposes the copy');
   await assertCopyInScrollport('card-host keyboard focus keeps the copy in the scrollport');
   // Resizing keeps focus on the fact, so the copy it shows is refitted to the new viewport.
-  await page.setViewportSize({ width: 320, height: 480 });
+  await resizeViewport({ width: 320, height: 480 });
   assert.equal(await cardFact.evaluate((owner) => owner === document.activeElement), true, 'resize keeps focus');
   assert.equal(await cardCopy.isVisible(), true, 'resize keeps the focused copy shown');
   await assertCopyInScrollport('resize with focus retained keeps the copy in the scrollport');
   await page.evaluate(() => {
     document.querySelector('#overlay').hidden = true;
   });
-  await page.setViewportSize({ width: 800, height: 400 });
+  await resizeViewport({ width: 800, height: 400 });
   await page.locator('#inventory [data-pane="you"] .inv-item').first().click();
   // Edges on one grid line can differ by float rounding (Firefox: 1.5e-5 px), so adjacency allows half a pixel.
   const EDGE = 0.5;
@@ -869,7 +894,7 @@ try {
   assert.deepEqual(nameFit.failures, [], 'every grid name fills its lines to the border and stays inside it');
   assert.ok(nameFit.filledLines > 0 && nameFit.clippedNames > 0, `names wrap and clip: ${JSON.stringify(nameFit)}`);
   // At 1280px the two clamps and the midpoint are far apart, so a cap on either side shows.
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await resizeViewport({ width: 1280, height: 400 });
   await dragSplitter(0);
   const splitAtLeftClamp = await splitState();
   assert.ok(
@@ -886,7 +911,7 @@ try {
     `right drag stops at the vicinity's floor: ${JSON.stringify(splitAtRightClamp)}`,
   );
   // The chosen split is a preference: a narrower window clamps only what it applies, and widening restores it.
-  await page.setViewportSize({ width: 800, height: 400 });
+  await resizeViewport({ width: 800, height: 400 });
   await nextFrames();
   const narrowedSplit = await splitState();
   assert.ok(
@@ -895,7 +920,7 @@ try {
         1,
     `a narrower window applies its own clamp: ${JSON.stringify({ splitAtRightClamp, narrowedSplit })}`,
   );
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await resizeViewport({ width: 1280, height: 400 });
   await nextFrames();
   const restoredSplit = await splitState();
   assert.ok(
@@ -905,7 +930,7 @@ try {
   // A clamp can land a sub-pixel past a floor, depending on how the details width rounds. Five consecutive widths
   // cover every rounding residue of a 20% details column; past either clamp, the split must hold and fill the body.
   for (let width = 1280; width < 1285; width++) {
-    await page.setViewportSize({ width, height: 400 });
+    await resizeViewport({ width, height: 400 });
     for (const pastClamp of [-0.2, 1.2]) {
       await dragSplitter(pastClamp);
       await nextFrames();
@@ -917,7 +942,7 @@ try {
       );
     }
   }
-  await page.setViewportSize({ width: 1280, height: 400 });
+  await resizeViewport({ width: 1280, height: 400 });
   await dragSplitter(0.5);
   const middleSplit = await splitState();
   assert.ok(Math.abs(middleSplit.ratio - 50) <= 1, `divider returns to half: ${JSON.stringify(middleSplit)}`);
@@ -1006,7 +1031,7 @@ try {
     balancedLayout.pileState,
     'responsive floor packing leaves saved pile positions unchanged',
   );
-  await page.setViewportSize({ width: 800, height: 540 });
+  await resizeViewport({ width: 800, height: 540 });
   await nextFrames();
   await dragSplitter(1);
   await page.evaluate(() => globalThis.scrollFixture.populateFloorWrapPiles());
@@ -1055,13 +1080,13 @@ try {
     await page.locator(`#inventory [data-target="${floorWrapLayout.targets[0]}"]`).scrollIntoViewIfNeeded();
     await page.locator('#inventory [data-pane="around"]').screenshot({ path: process.argv[3] });
   }
-  await page.setViewportSize({ width: 960, height: 540 });
+  await resizeViewport({ width: 960, height: 540 });
   const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
   assert.ok(
     fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
     `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
   );
-  await page.setViewportSize({ width: 480, height: 400 });
+  await resizeViewport({ width: 480, height: 400 });
   const narrowLayout = await page.evaluate(() => {
     const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
     const you = body?.querySelector('[data-pane="you"]');
@@ -1101,7 +1126,7 @@ try {
     true,
     `narrow detail actions stay inside their panel: ${JSON.stringify(narrowLayout)}`,
   );
-  await page.setViewportSize({ width: 1280, height: 480 });
+  await resizeViewport({ width: 1280, height: 480 });
   await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const failures = [];
   let activeTab;
@@ -1225,7 +1250,7 @@ try {
   // A HUD scale other than 1 changes the root size the UI is measured in, so a drag and the drawn cursor are right
   // only if their maths use rendered sizes. The target cell is far enough from the origin that a base-size cell
   // would round to a neighbour.
-  await page.setViewportSize({ width: 1280, height: 900 });
+  await resizeViewport({ width: 1280, height: 900 });
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
   const baseRootSize = await page.evaluate(() =>
     Number.parseFloat(getComputedStyle(document.documentElement).fontSize),
@@ -1312,7 +1337,7 @@ try {
   );
   logPhase('render-free scroll contracts');
   if (engine === 'chromium') {
-    await page.setViewportSize({ width: 1280, height: 720 });
+    await resizeViewport({ width: 1280, height: 720 });
     await page.addInitScript(() => {
       let locked = null;
       Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
