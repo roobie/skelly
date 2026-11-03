@@ -1678,7 +1678,7 @@ export const createSession = (options: SessionOptions) => {
       const table = actor.type.loot;
       if (table) {
         const pos: Vec3 = [Math.floor(actor.body.pos[0]), Math.floor(actor.body.pos[1]), Math.floor(actor.body.pos[2])];
-        for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`zombie-loot:${id}`))) {
+        for (const drop of rollLoot(registry, corpseLootPoint(table, id, pos), sim.rng(`actor-loot:${id}`))) {
           placeActorDrop(inventory.createRolled(drop), pos);
         }
       }
