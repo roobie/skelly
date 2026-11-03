@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { hearVocalNoise } from '../src/core/actorSystem.ts';
+import { hearVocalNoise } from '../src/core/agentPerception.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Rng } from '../src/core/random.ts';

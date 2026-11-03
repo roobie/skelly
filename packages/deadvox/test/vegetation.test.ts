@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { actorPoseInputFor } from '../src/core/actorPose.ts';
 import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
-import { perceivePlayer } from '../src/core/actorSystem.ts';
+import { perceivePlayer } from '../src/core/agentPerception.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';

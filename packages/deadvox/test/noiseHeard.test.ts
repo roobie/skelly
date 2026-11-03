@@ -1,7 +1,7 @@
 import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
 import type { Actor } from '../src/core/actorState.ts';
-import { hearVocalNoise } from '../src/core/actorSystem.ts';
+import { hearVocalNoise } from '../src/core/agentPerception.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAttachmentResponse } from '../src/core/firearmAttachments.ts';
 import { footstepEventForBlock, type PlayerGait } from '../src/core/footsteps.ts';

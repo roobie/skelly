@@ -16,12 +16,12 @@ import {
   BACKGROUND_ACTOR_SLICE_COUNT,
   BACKGROUND_ACTOR_SLICE_RATE,
   type HitImpulse,
-  loweredStanceTuning,
   type MeleeResult,
   type MeleeWeapon,
   type PlayerMovement,
   type VocalNoise,
 } from '../core/actorSystem.ts';
+import { loweredStanceTuning } from '../core/agentPerception.ts';
 import {
   AimController,
   type AimWobbleNoiseTuning,

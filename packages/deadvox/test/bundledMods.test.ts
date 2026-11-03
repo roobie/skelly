@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { perceivePlayer } from '../src/core/actorSystem.ts';
+import { perceivePlayer } from '../src/core/agentPerception.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import { buildBundledContent } from '../src/game/bundledContent.ts';
 import { bundledModIdsFromUrl, selectBundledMods } from '../src/game/bundledMods.ts';

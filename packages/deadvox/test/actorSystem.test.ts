@@ -19,14 +19,12 @@ import { ActorSpawner } from '../src/core/actorSpawns.ts';
 import type { Actor } from '../src/core/actorState.ts';
 import {
   type HitImpulse,
-  hearPlayer,
-  hearVocalNoise,
   lethalRegion,
   type PlayerSense,
-  perceivePlayer,
   pickActorHitRegion,
   pickActorMove,
 } from '../src/core/actorSystem.ts';
+import { hearPlayer, hearVocalNoise, perceivePlayer } from '../src/core/agentPerception.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import type { BodyRegion } from '../src/core/body.ts';
 import { resolveSpawnTime, SECONDS_PER_DAY } from '../src/core/clock.ts';
