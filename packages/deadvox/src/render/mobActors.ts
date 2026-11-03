@@ -1491,7 +1491,7 @@ export class MobActorMeshes implements ZombieRenderer {
       this.ragdolls ??= new RagdollWorld(this.options.gravityMetresPerSimSecondSquared);
       corpse.ragdoll = this.ragdolls.spawn({
         realized: variant.realized,
-        model: variant.model,
+        model: bodyPlanModel(variant.model),
         pose: corpse.basePose,
         position: corpse.worldPos,
         yaw: corpse.yaw,
@@ -2095,7 +2095,7 @@ export class MobActorMeshes implements ZombieRenderer {
         released: false,
         physics: this.ragdolls.spawn({
           realized: variant.realized,
-          model: variant.model,
+          model: bodyPlanModel(variant.model),
           pose: state.lastPose,
           position: [placement.x, placement.y, placement.z],
           yaw: placement.yawRad,

@@ -15,7 +15,6 @@ import {
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import content from '@mobgen/mob/ragdoll.json' with { type: 'json' };
 import { hash3 } from '../core/random.ts';
-import { bodyPlanModel } from '../core/zombieModels.ts';
 import RAPIER from './ragdollRapier.ts';
 import { angularVelocity, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 
@@ -219,7 +218,7 @@ export class RagdollWorld {
     corpse: Ragdoll,
     {
       realized,
-      model = 'humanoid',
+      model = 'shambler',
       position,
       yaw,
       direction,
@@ -236,11 +235,11 @@ export class RagdollWorld {
     const groups = ragdollGroups(
       realized.body.bones,
       corpse.excluded,
-      (content.modelGroups as Record<string, typeof content.groups>)[bodyPlanModel(model)] ?? content.groups,
+      (content.modelGroups as Record<string, typeof content.groups>)[model] ?? content.groups,
     );
     const motion = ragdollMotion(
       content.motion,
-      (content.kindMotion as Record<string, Partial<Motion>>)[bodyPlanModel(model)] ?? {},
+      (content.kindMotion as Record<string, Partial<Motion>>)[model] ?? {},
       override ?? {},
       motionScale ?? {},
     );
