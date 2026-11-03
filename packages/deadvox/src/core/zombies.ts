@@ -4,6 +4,24 @@ import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
 import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import {
+  actorHitFlinchDuration,
+  actorPoseInputFor,
+  advanceStanceWeight,
+  posedMouth,
+  targetStanceWeight,
+  zombieCrawls,
+} from './actorPose.ts';
+import {
+  type ActorHitRegion,
+  type ActorRegions,
+  type HumanoidHitRegion,
+  type PosedBoneBox,
+  posedAmalgamRegionBoxes,
+  posedHumanoidRegionBoxes,
+  posedRegionHit,
+  rayBoxEntry,
+} from './actorRegions.ts';
+import {
   carveAround,
   centralCell,
   fleshHit,
@@ -26,6 +44,7 @@ import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { type ActorFootstepClock, advanceActorFootsteps, initialActorFootstepClock } from './footsteps.ts';
+import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
 import { lightSenseRangeScale } from './lights.ts';
 import type { MeleeMotion } from './meleeMotion.ts';
 import { type Modifier, modified } from './modifiers.ts';
@@ -51,25 +70,6 @@ import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { actorBodyDimensions as measureActorBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
-import {
-  advanceStanceWeight,
-  posedMouth,
-  targetStanceWeight,
-  zombieCrawls,
-  zombieHitFlinchDuration,
-  zombiePoseInputFor,
-} from './zombiePose.ts';
-import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
-import {
-  type PosedBoneBox,
-  posedAmalgamRegionBoxes,
-  posedRegionHit,
-  posedShamblerRegionBoxes,
-  rayBoxEntry,
-  type ZombieHitRegion,
-  type ZombieRegion,
-  type ZombieRegions,
-} from './zombieRegions.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 
@@ -126,33 +126,33 @@ const projectileWeapon = (damage: number, reach: number, impulse: number, type: 
   impulse,
 });
 
-const zombieRegionClass = (region: ZombieHitRegion): string =>
+const zombieRegionClass = (region: ActorHitRegion): string =>
   region === 'core.trunk' ? 'torso' : (region.split('.').at(-1) ?? region);
 
-export const lethalRegion = (type: ActorDef, region: ZombieHitRegion): boolean =>
+export const lethalRegion = (type: ActorDef, region: ActorHitRegion): boolean =>
   region === 'core.trunk' || (type.model !== 'fused-mass' && zombieRegionClass(region) === 'head');
 
-const maxZombieRegionHealth = (type: ActorDef, region: ZombieHitRegion): number | undefined => {
+const maxZombieRegionHealth = (type: ActorDef, region: ActorHitRegion): number | undefined => {
   if (type.model === 'fused-mass') {
     return type.regions[region === 'core.trunk' ? region : `member.${zombieRegionClass(region)}`];
   }
   return type.regions[region];
 };
 
-const zombieRegionsFor = (type: ActorDef, seed: number): ZombieRegions => {
+const zombieRegionsFor = (type: ActorDef, seed: number): ActorRegions => {
   if (type.model !== 'fused-mass') {
-    return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ZombieRegions;
+    return Object.fromEntries(HUMANOID_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ActorRegions;
   }
   const figure = amalgamFigureForType(type, seed);
   return Object.fromEntries(
     figure.manifest.regions.map((region) => {
-      const health = maxZombieRegionHealth(type, region.id as ZombieHitRegion);
+      const health = maxZombieRegionHealth(type, region.id as ActorHitRegion);
       if (health === undefined) {
         throw new Error(`Zombie type ${type.id} has no health for amalgam region ${region.id}`);
       }
       return [region.id, health];
     }),
-  ) as ZombieRegions;
+  ) as ActorRegions;
 };
 
 const validHitFlinchTime = (time: number | undefined): boolean =>
@@ -210,7 +210,7 @@ interface HitWeapon {
 
 export interface ZombieAim {
   readonly id: EntityId;
-  readonly region: ZombieHitRegion;
+  readonly region: ActorHitRegion;
   readonly distanceMetres: number;
   readonly reachMetres: number;
   readonly inReach: boolean;
@@ -241,7 +241,7 @@ const strikeOf = (
 interface MeleeHitContext {
   readonly id: EntityId;
   readonly zombie: Zombie;
-  readonly region: ZombieHitRegion;
+  readonly region: ActorHitRegion;
   /** The amalgam flesh cell the hit struck, which a type that carves knocks out around. */
   readonly cell: number | undefined;
   readonly origin: Vec3;
@@ -255,7 +255,7 @@ interface MeleeHitContext {
 interface MeleeEffectsContext {
   readonly id: EntityId;
   readonly zombie: Zombie;
-  readonly region: ZombieHitRegion;
+  readonly region: ActorHitRegion;
   readonly healthAfter: number;
   readonly killed: boolean;
   readonly hit: HitImpulse;
@@ -263,7 +263,7 @@ interface MeleeEffectsContext {
 
 const meleeDamageForContact = (
   zombie: Zombie,
-  region: ZombieHitRegion,
+  region: ActorHitRegion,
   weapon: HitWeapon,
   damageType: MeleeDamageType,
 ): number => {
@@ -289,7 +289,7 @@ export const damageToActor = (
 
 export interface MeleeResult {
   readonly id?: EntityId | undefined;
-  readonly region?: ZombieHitRegion | undefined;
+  readonly region?: ActorHitRegion | undefined;
   readonly damage: number;
   readonly healthBefore?: number | undefined;
   readonly healthAfter?: number | undefined;
@@ -376,7 +376,7 @@ export interface Zombie {
   stumbleDuration: number;
   /** Previous fixed-step pose used only by rendering interpolation. */
   renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number; time?: number };
-  regions: ZombieRegions;
+  regions: ActorRegions;
   /** Exact mobgen shambler seed shared with the renderer and persisted as simulation state. */
   figureSeed: number;
   /** A destroyed torso leaves an inert, gravity-bound entity that may be revived by a later system. */
@@ -643,7 +643,7 @@ export interface ZombieSystemOptions {
   onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
   /** A whole region came off, and the game leaves it behind as an item: a limb whose health ran out, or
    * each arm and the head of a dismembered downed body (see finishDowned). */
-  onSevered?: (zombie: Zombie, region: ZombieRegion) => void;
+  onSevered?: (zombie: Zombie, region: HumanoidHitRegion) => void;
   /** Sound-source position is in block coordinates; body is present when the shambler made the sound or was hit.
    * The player's own swing and hit set `playerMelee`, since content picks their events. */
   onSound?: (event: SoundId, position: Vec3, body?: Zombie, playerMelee?: boolean) => void;
@@ -712,9 +712,9 @@ const posedRegionsForZombie = ({
   if (cached) {
     return cached;
   }
-  const poseInput = zombiePoseInputFor(zombie, id, blockSize);
+  const poseInput = actorPoseInputFor(zombie, id, blockSize);
   const posed =
-    zombie.type.model === 'fused-mass' ? posedAmalgamRegionBoxes(poseInput) : posedShamblerRegionBoxes(poseInput);
+    zombie.type.model === 'fused-mass' ? posedAmalgamRegionBoxes(poseInput) : posedHumanoidRegionBoxes(poseInput);
   poseCache?.set(id, posed);
   return posed;
 };
@@ -737,13 +737,13 @@ const rayMayHitZombie = (zombie: Zombie, origin: Vec3, direction: Vec3, blockSiz
     Math.max(1, Math.hypot(zombie.body.halfWidth, zombie.body.halfDepth ?? zombie.body.halfWidth) * blockSize)
   );
 };
-const isActiveHitRegion = (zombie: Zombie, region: ZombieHitRegion): boolean => {
+const isActiveHitRegion = (zombie: Zombie, region: ActorHitRegion): boolean => {
   const memberPart = zombie.type.model === 'fused-mass' ? AMALGAM_MEMBER_REGION.exec(region)?.[1] : undefined;
   return zombie.regions[region]! > 0 && !(memberPart !== undefined && zombie.severed.includes(memberPart));
 };
 /** A body's regions with the one whose loss kills last, so a blast severs limbs before it kills. */
-const blastOrder = (zombie: Zombie): ZombieHitRegion[] => {
-  const regions = Object.keys(zombie.regions) as ZombieHitRegion[];
+const blastOrder = (zombie: Zombie): ActorHitRegion[] => {
+  const regions = Object.keys(zombie.regions) as ActorHitRegion[];
   return [
     ...regions.filter((region) => !lethalRegion(zombie.type, region)),
     ...regions.filter((region) => lethalRegion(zombie.type, region)),
@@ -914,7 +914,7 @@ const clearLine = (from: Vec3, to: Vec3, isSolid: SolidAt): boolean => {
 /** Where a spit leaves a zombie: its posed mouth, held at the end of the wind-up, so the line follows the
  * drawn-back head and its gaze. */
 const spitOrigin = (zombie: Zombie, id: EntityId, blockSize: number): Vec3 =>
-  posedMouth({ ...zombiePoseInputFor(zombie, id, blockSize), spitProgress: 1 });
+  posedMouth({ ...actorPoseInputFor(zombie, id, blockSize), spitProgress: 1 });
 
 /** The chest follows the stance through the eye height, so crouching behind low cover lowers the spit's target. */
 const spitChest = (player: PlayerSense, tuning: SenseDef, blockSize: number): Vec3 => {
@@ -981,7 +981,7 @@ const cutsFor = (zombie: Zombie) => {
 };
 
 /** The part a destroyed region cuts at, parents first, so the whole region goes; undefined where it can't be cut. */
-const regionCut = (zombie: Zombie, region: ZombieRegion): string | undefined => cutsFor(zombie).parts[region][0];
+const regionCut = (zombie: Zombie, region: HumanoidHitRegion): string | undefined => cutsFor(zombie).parts[region][0];
 
 /** Arm parts still worth severing: neither severed nor below a severed part. Deepest first and left before
  * right, so the dismember roll draws the same parts in the same order on every humanoid-like arm. */
@@ -1632,7 +1632,7 @@ const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot 
 interface RegionHit {
   readonly id: EntityId;
   readonly zombie: Zombie;
-  readonly region: ZombieHitRegion;
+  readonly region: ActorHitRegion;
   /** In blocks along the ray. */
   readonly distance: number;
   readonly boxes: readonly PosedBoneBox[];
@@ -2584,7 +2584,7 @@ export class ZombieSystem {
     if (zombie.hitFlinchTime !== undefined) {
       const nextFlinchTime = zombie.hitFlinchTime + dt;
       zombie.hitFlinchTime =
-        nextFlinchTime > zombieHitFlinchDuration(zombieCrawls(zombie) ? 'crawler' : figureVariantOf(zombie.type))
+        nextFlinchTime > actorHitFlinchDuration(zombieCrawls(zombie) ? 'crawler' : figureVariantOf(zombie.type))
           ? undefined
           : nextFlinchTime;
     }
@@ -3463,7 +3463,7 @@ export class ZombieSystem {
     if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
       this.beginIdle(zombie);
     }
-    const poseInput = zombiePoseInputFor(zombie, id, blockSize);
+    const poseInput = actorPoseInputFor(zombie, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);
     zombie.stanceWeight = advanceStanceWeight(zombie.stanceWeight ?? stanceTarget, stanceTarget, dt);
   }
@@ -3644,7 +3644,7 @@ export class ZombieSystem {
       if (damage <= 0 || !feetInAcidPuddle(zombie.body, puddle, radius)) {
         continue;
       }
-      const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter((region) =>
+      const legs = (Object.keys(zombie.regions) as ActorHitRegion[]).filter((region) =>
         ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)),
       );
       for (const region of legs) {
@@ -3842,7 +3842,7 @@ export class ZombieSystem {
       zombie.type.model === 'fused-mass' ? amalgamFigureForType(zombie.type, zombie.figureSeed) : undefined;
     let found = nearest;
     for (const regionId of Object.keys(zombie.regions)) {
-      const region = regionId as ZombieHitRegion;
+      const region = regionId as ActorHitRegion;
       if (!isActiveHitRegion(zombie, region)) {
         continue;
       }
@@ -4170,7 +4170,7 @@ export class ZombieSystem {
     } else {
       const cut =
         healthAfter === 0 && region !== 'head' && region !== 'torso'
-          ? regionCut(zombie, region as ZombieRegion)
+          ? regionCut(zombie, region as HumanoidHitRegion)
           : undefined;
       if (cut !== undefined) {
         this.sever(id, zombie, cut, hit);
@@ -4179,7 +4179,7 @@ export class ZombieSystem {
     }
     const incapacitated = this.resolveRegionDamage(id, zombie, region, healthAfter);
     if (!killed && zombie.type.model !== 'fused-mass' && region !== 'head' && region !== 'torso' && healthAfter === 0) {
-      this.options.onSevered?.(zombie, region as ZombieRegion);
+      this.options.onSevered?.(zombie, region as HumanoidHitRegion);
     }
     return incapacitated;
   }
@@ -4190,7 +4190,7 @@ export class ZombieSystem {
     if (!zombie || damage <= 0) {
       return;
     }
-    const legs = (Object.keys(zombie.regions) as ZombieHitRegion[]).filter(
+    const legs = (Object.keys(zombie.regions) as ActorHitRegion[]).filter(
       (region) => ['leftLeg', 'rightLeg'].includes(zombieRegionClass(region)) && zombie.regions[region]! > 0,
     );
     for (const region of legs) {
@@ -4200,13 +4200,13 @@ export class ZombieSystem {
     }
   }
 
-  private damageRegion(zombie: Zombie, region: ZombieHitRegion, damage: number): number {
+  private damageRegion(zombie: Zombie, region: ActorHitRegion, damage: number): number {
     const healthAfter = Math.max(0, zombie.regions[region]! - damage);
     zombie.regions[region] = healthAfter;
     return healthAfter;
   }
 
-  private resolveRegionDamage(id: EntityId, zombie: Zombie, region: ZombieHitRegion, healthAfter: number): boolean {
+  private resolveRegionDamage(id: EntityId, zombie: Zombie, region: ActorHitRegion, healthAfter: number): boolean {
     const killed = healthAfter === 0 && lethalRegion(zombie.type, region);
     const incapacitated =
       zombie.type.model !== 'fused-mass' && region === 'torso' && healthAfter === 0 && zombie.regions.head! > 0;

@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { acidSpitWindupProgress } from '../src/core/actorPose.ts';
 import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { acidSpitWindupProgress } from '../src/core/zombiePose.ts';
 import type { AcidSpitRelease, PlayerSense } from '../src/core/zombies.ts';
 import { startupContent } from './baseRegistry.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';

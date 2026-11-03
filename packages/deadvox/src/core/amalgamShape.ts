@@ -314,7 +314,7 @@ export class AmalgamShape implements BodyShape {
     this.gone = new Uint8Array(this.tree.owner.length);
   }
 
-  /** Turns the shape to `facing`, as the posed figure turns (core/zombiePose.ts, `yaw`). */
+  /** Turns the shape to `facing`, as the posed figure turns (core/actorPose.ts, `yaw`). */
   face(facing: Vec3): void {
     if (facing[0] === this.facingX && facing[2] === this.facingZ) {
       return;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { figureSeedPool } from '../src/core/actorFigure.ts';
+import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import type { HitImpulse } from '../src/core/zombies.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { angularVelocity, type RigidBody } from '../src/render/rigidImpulse.ts';
@@ -82,7 +82,9 @@ const zombieTypeForCut = (mode: CutMode) => {
     dismember: { chance: mode === 'rolled' ? 1 : 0, headOnKillChance: mode === 'head' ? 1 : 0 },
   };
 };
-const targetForCut = (mode: CutMode): { region: ZombieRegion; bone: string; direction: Vec3; distanceM: number } => {
+const targetForCut = (
+  mode: CutMode,
+): { region: HumanoidHitRegion; bone: string; direction: Vec3; distanceM: number } => {
   switch (mode) {
     case 'rolled':
     case 'offRay':
@@ -123,7 +125,7 @@ const createSeveredHit = (mode: CutMode) => {
     return point;
   };
   actorMeshes.sync(system.store, 0, 1);
-  const boxes = posedShamblerRegionBoxes({
+  const boxes = posedHumanoidRegionBoxes({
     seed: zombie.figureSeed,
     position: zombie.body.pos,
     facing: zombie.facing,

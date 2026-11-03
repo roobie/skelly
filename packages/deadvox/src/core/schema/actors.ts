@@ -21,9 +21,9 @@ import {
 } from 'valibot';
 import { type ActorModel, BODY_PLANS, type BodyPlan, FIGURE_VARIANTS } from '../actorModels.ts';
 import { BODY_REGIONS } from '../body.ts';
+import { HUMANOID_REGION_NAMES } from '../humanoidRegionNames.ts';
 import { MELEE_MOTIONS } from '../meleeMotion.ts';
 import { simRate } from '../time.ts';
-import { ZOMBIE_REGION_NAMES } from '../zombieRegionNames.ts';
 import { capabilityClaimsField } from './capability.ts';
 import {
   Color,
@@ -43,15 +43,13 @@ import {
 
 // ---- zombies ----
 
-export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+export type HumanoidHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
 
-export type ZombieRegion = ShamblerHitRegion;
+export type ActorHitRegion = HumanoidHitRegion | 'core.trunk' | `member.${number}.${HumanoidHitRegion}`;
 
-export type ZombieHitRegion = ZombieRegion | 'core.trunk' | `member.${number}.${ShamblerHitRegion}`;
+export type ActorRegions = Record<string, number>;
 
-export type ZombieRegions = Record<string, number>;
-
-const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
+const AMALGAM_REGION_KEYS = ['core.trunk', ...HUMANOID_REGION_NAMES.map((region) => `member.${region}`)];
 
 const BODY_PLAN = picklist(Object.keys(BODY_PLANS) as BodyPlan[]);
 
@@ -357,7 +355,7 @@ export const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ActorSch
   zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
 
 export const zombieRegionsMatchModel = (zombie: InferOutput<typeof ActorSchema>): boolean => {
-  const expected = zombie.model === 'fused-mass' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
+  const expected = zombie.model === 'fused-mass' ? AMALGAM_REGION_KEYS : HUMANOID_REGION_NAMES;
   const keys = Object.keys(zombie.regions);
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
 };

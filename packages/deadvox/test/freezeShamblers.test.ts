@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import type { MeleeResult, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -48,7 +48,7 @@ const run = (system: ZombieSystem, seconds: number): void => {
   }
 };
 const posedBoxes = (zombie: Zombie) =>
-  posedShamblerRegionBoxes({
+  posedHumanoidRegionBoxes({
     seed: zombie.figureSeed,
     position: zombie.body.pos,
     facing: zombie.facing,
@@ -61,8 +61,8 @@ const posedBoxes = (zombie: Zombie) =>
     severed: zombie.severed,
     blockSize: BLOCK_SIZE,
   });
-const regionRay = (zombie: Zombie, region: ZombieRegion) => {
-  const targetBone: Readonly<Record<ZombieRegion, string>> = {
+const regionRay = (zombie: Zombie, region: HumanoidHitRegion) => {
+  const targetBone: Readonly<Record<HumanoidHitRegion, string>> = {
     head: 'head',
     torso: 'chest',
     leftArm: 'forearm.L',

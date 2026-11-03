@@ -1,7 +1,7 @@
 import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMaterial, Object3D } from 'three';
+import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type HumanoidHitRegion } from '../core/actorRegions.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
-import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type ZombieRegion } from '../core/zombieRegions.ts';
 import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import type { ColumnReveal } from './columnReveal.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -19,7 +19,7 @@ interface RenderZombie {
   verticalOffset: number;
 }
 const PARTS: readonly Part[] = FIGURE_PARTS;
-const REGION_FOR_PART: Readonly<Record<Part, ZombieRegion>> = {
+const REGION_FOR_PART: Readonly<Record<Part, HumanoidHitRegion>> = {
   body: 'torso',
   head: 'head',
   leftArm: 'leftArm',

@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { worldOpaque, worldSolid } from '../src/core/collision.ts';
@@ -14,8 +16,6 @@ import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { forestDensityAt, leafLitterAt, placeTree, stampTrees, TreeIndex } from '../src/core/vegetation.ts';
 import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { perceivePlayer } from '../src/core/zombies.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -192,7 +192,7 @@ describe('passable but opaque vegetation', () => {
     const zombie = system.store.get(id)!;
     expect(zombie.mode).not.toBe('chase');
     system.setFrozen(true);
-    const { center } = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5)).head.find(
+    const { center } = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, 0.5)).head.find(
       (box) => box.bone === 'head',
     )!;
     const origin: [number, number, number] = [center[0], center[1], 0.5];

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
-import { posedShambler } from '../src/core/zombiePose.ts';
+import { posedActor } from '../src/core/actorPose.ts';
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
 const { actors: zombies } = readJson<{
@@ -18,7 +18,7 @@ const soundDefs = readJson<{ sounds: { id: string }[] }>('src/content/base/sound
 const soundById = new Map(soundDefs.map((sound) => [sound.id, sound]));
 
 const figureForModel = (model: string, bodyScale?: number) =>
-  posedShambler({
+  posedActor({
     seed: 1,
     model,
     ...(bodyScale === undefined ? {} : { bodyScale }),

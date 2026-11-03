@@ -1,9 +1,9 @@
 import { type LineBasicMaterial, Scene } from 'three';
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -40,7 +40,7 @@ const standing = (position: Vec3, facing: Vec3) => {
   return { system, id, zombie: system.store.get(id)! };
 };
 
-const posed = (zombie: Zombie, id: number) => posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+const posed = (zombie: Zombie, id: number) => posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
 
 const expectedVertices = (aim: NonNullable<ReturnType<ZombieSystem['aimAt']>>) => {
   const edges = [

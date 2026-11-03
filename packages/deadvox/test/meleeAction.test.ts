@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { Body } from '../src/core/body.ts';
 import type { ActorDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -11,8 +13,6 @@ import { stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon, Zombie } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
@@ -123,7 +123,7 @@ const regionRay = (
   id: number,
   region: 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg',
 ): { origin: Vec3; direction: Vec3 } => {
-  const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+  const posed = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
   const box = region === 'head' ? posed.head.find((candidate) => candidate.bone === 'head')! : posed[region][0]!;
   const { center } = box;
   const front = [-zombie.facing[0], 0, -zombie.facing[2]] as Vec3;

@@ -20,7 +20,7 @@ import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { Zombie } from './zombies.ts';
 
-export interface ShamblerPoseInput {
+export interface ActorPoseInput {
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
@@ -77,12 +77,12 @@ export const zombieCrawls = (zombie: Zombie): boolean => {
   return [...severableParts.leftLeg, ...severableParts.rightLeg].some((part) => zombie.severed.includes(part));
 };
 
-export const zombiePoseInputFor = (
+export const actorPoseInputFor = (
   zombie: Zombie,
   id: number,
   blockSize: number,
   root?: PoseRootOverride,
-): ShamblerPoseInput => {
+): ActorPoseInput => {
   const position = root?.position ?? zombie.body.pos;
   return {
     id,
@@ -109,7 +109,7 @@ export const zombiePoseInputFor = (
   };
 };
 
-export interface PosedShambler {
+export interface PosedActor {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
@@ -164,7 +164,7 @@ const actorForSeed = (model: string, seed: number): SeededActor => {
 };
 
 /** A legged body's walk over its stance-blended idle. */
-const humanoidWalkPose = (seeded: SeededActor, input: ShamblerPoseInput, stanceWeight: number): Pose => {
+const humanoidWalkPose = (seeded: SeededActor, input: ActorPoseInput, stanceWeight: number): Pose => {
   const idleBases = idleBasesOf(seeded);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
@@ -204,7 +204,7 @@ const amalgamHitFlinchPose = (pose: Pose, time: number, id: number): Pose => {
 };
 
 const attackTimeFor = (
-  { attackWait, attackCooldown, attackWindup, attackWindupSeconds }: ShamblerPoseInput,
+  { attackWait, attackCooldown, attackWindup, attackWindupSeconds }: ActorPoseInput,
   clip: AttackClip,
 ): number | undefined => {
   if (attackWait !== undefined && attackCooldown !== undefined) {
@@ -246,7 +246,7 @@ const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side
 
 const STANCE_CROSSFADE_SECONDS = 0.5;
 
-export const targetStanceWeight = (input: ShamblerPoseInput): number => {
+export const targetStanceWeight = (input: ActorPoseInput): number => {
   if (input.chasing || input.attackWindup > 0) {
     return 1;
   }
@@ -271,7 +271,7 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
   return Math.abs(delta) <= maxDelta + 1e-12 ? target : current + Math.sign(delta) * maxDelta;
 };
 
-const posedAmalgam = (input: ShamblerPoseInput): PosedShambler => {
+const posedAmalgam = (input: ActorPoseInput): PosedActor => {
   if (input.bodyScale === undefined) {
     throw new Error('Amalgam pose is missing its authored bodyScale');
   }
@@ -298,7 +298,7 @@ const posedAmalgam = (input: ShamblerPoseInput): PosedShambler => {
 };
 
 /** Melee clip time: the wind-up covers the clip up to its peak, then the clip runs out in real time. */
-const acidAttackTimeFor = (input: ShamblerPoseInput): number | undefined => {
+const acidAttackTimeFor = (input: ActorPoseInput): number | undefined => {
   const { attackPeak, attackDuration } = acidTemplate.animation;
   const timed = input.attackWait !== undefined && input.attackCooldown !== undefined;
   const running = timed ? input.attackWait! > 0 : input.attackWindup > 0;
@@ -318,7 +318,7 @@ const acidAttackTimeFor = (input: ShamblerPoseInput): number | undefined => {
 const clampedJointRotation = (bone: Bone, rotation: Mat3): Mat3 =>
   bone.frame && bone.limits ? jointRotation(bone, clampJointAngles(bone, jointAngles(bone, rotation))) : rotation;
 
-const posedAcid = (input: ShamblerPoseInput, figure: HumanoidFigure): PosedShambler => {
+const posedAcid = (input: ActorPoseInput, figure: HumanoidFigure): PosedActor => {
   const { realized } = figure;
   const { bones } = realized.body;
   const distance = (input.gaitPhase / (2 * Math.PI)) * acidStrideLength(realized);
@@ -362,8 +362,8 @@ const posedAcid = (input: ShamblerPoseInput, figure: HumanoidFigure): PosedShamb
  * The posed mouth anchor in block units: where a spit leaves. A body without one spits from the top of its
  * highest bone, so any body given the ability still has a mouth line.
  */
-export const posedMouth = (input: ShamblerPoseInput): Vec3 => {
-  const posed = posedShambler(input);
+export const posedMouth = (input: ActorPoseInput): Vec3 => {
+  const posed = posedActor(input);
   const highest = posed.bones.reduce((top, bone) => (bone.tail[1] > top.tail[1] ? bone : top));
   const anchor = posed.figure.realized.body.anchors?.mouth ?? { bone: highest.id, position: highest.tail };
   const scale = 'scale' in posed.figure && typeof posed.figure.scale === 'number' ? posed.figure.scale : 1;
@@ -376,8 +376,8 @@ export const posedMouth = (input: ShamblerPoseInput): Vec3 => {
   ];
 };
 
-/** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
-export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
+/** The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
+export const posedActor = (input: ActorPoseInput): PosedActor => {
   const model = bodyPlanModel(input.model ?? 'humanoid');
   if (model === 'amalgam') {
     return posedAmalgam(input);
@@ -423,7 +423,7 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
 
 export const HIT_FLINCH_DURATION = HIT_FLINCH.duration;
 
-export const zombieHitFlinchDuration = (model: string): number => {
+export const actorHitFlinchDuration = (model: string): number => {
   if (model === 'fused-mass') {
     return HIT_FLINCH_DURATION;
   }

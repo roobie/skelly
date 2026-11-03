@@ -7,14 +7,14 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import { idlePose } from '@mobgen/mob/idle.ts';
 import { describe, expect, it } from 'vitest';
-import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
-import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
+import { type HumanoidHitRegion, posedHumanoidRegionBoxes, posedRegionHitDistance } from '../src/core/actorRegions.ts';
+import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 
 type Vec3 = [number, number, number];
 const BLOCK = 0.5;
 // Fixture seeds: these cases test geometry, not which seeds the content authors.
 const SHAMBLER_FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8];
-const REGION_BONES: Record<ZombieRegion, readonly string[]> = {
+const REGION_BONES: Record<HumanoidHitRegion, readonly string[]> = {
   head: ['head', 'jaw'],
   torso: ['pelvis', 'spine', 'chest', 'neck'],
   leftArm: ['upperArm.L', 'forearm.L', 'hand.L'],
@@ -65,7 +65,7 @@ const posed = (seed: number, testPose: PoseCase) => {
     testPose.attackWindup > 0 ? Math.max(0, LUNGE_GRAB.hitTime - 0.8) + 0.8 - testPose.attackWindup : undefined;
   const pose: Pose = time === undefined ? walk : attackPose(actor, LUNGE_GRAB, time, walk);
   const transforms = boneTransforms(bones, pose);
-  const boxes = posedShamblerRegionBoxes({
+  const boxes = posedHumanoidRegionBoxes({
     seed,
     position: [0, 0, 0],
     facing: [0, 0, -1],
@@ -114,8 +114,8 @@ const nearestRegion = (
   boxes: ReturnType<typeof posed>['boxes'],
   origin: Vec3,
   direction: Vec3,
-): ZombieRegion | undefined => {
-  const hits = ZOMBIE_REGION_NAMES.flatMap((region) => {
+): HumanoidHitRegion | undefined => {
+  const hits = HUMANOID_REGION_NAMES.flatMap((region) => {
     const distance = posedRegionHitDistance(boxes[region], origin, direction, BLOCK);
     return distance === undefined ? [] : [{ region, distance }];
   }).sort((a, b) => a.distance - b.distance);
@@ -150,7 +150,7 @@ const voxelPoints = (posedFigure: ReturnType<typeof posed>, boneId: string) => {
   return points;
 };
 
-const posedBoxErrors = (figure: ReturnType<typeof posed>, box: (typeof figure.boxes)[ZombieRegion][number]) => {
+const posedBoxErrors = (figure: ReturnType<typeof posed>, box: (typeof figure.boxes)[HumanoidHitRegion][number]) => {
   const errors: string[] = [];
   const inverse = transpose(box.rotation);
   const allowance = 1e-6;
@@ -188,13 +188,13 @@ describe('posed shambler hit regions', () => {
         highest[2] - 1.5 / BLOCK,
       ];
       expect(
-        ZOMBIE_REGION_NAMES.every(
+        HUMANOID_REGION_NAMES.every(
           (region) => posedRegionHitDistance(figure.boxes[region], above, [0, 0, 1], BLOCK) === undefined,
         ),
         `${seed} ${testPose.name} 5 cm above head`,
       ).toBe(true);
 
-      const targets: readonly [ZombieRegion, string][] = [
+      const targets: readonly [HumanoidHitRegion, string][] = [
         ['torso', 'chest'],
         ['leftArm', 'forearm.L'],
         ['rightArm', 'forearm.R'],
@@ -211,7 +211,7 @@ describe('posed shambler hit regions', () => {
 
   it('stands an acid zombie about as tall as a shambler beside it', () => {
     const headTop = (model: string, seed: number) => {
-      const boxes = posedShamblerRegionBoxes({
+      const boxes = posedHumanoidRegionBoxes({
         model,
         seed,
         position: [0, 0, 0],
@@ -234,7 +234,7 @@ describe('posed shambler hit regions', () => {
   });
 
   it('removes severed bones from their hit region without hiding the rest of the arm', () => {
-    const present = posedShamblerRegionBoxes({
+    const present = posedHumanoidRegionBoxes({
       seed: 1,
       position: [0, 0, 0],
       facing: [0, 0, -1],
@@ -247,7 +247,7 @@ describe('posed shambler hit regions', () => {
       severed: [],
       blockSize: BLOCK,
     });
-    const severed = posedShamblerRegionBoxes({
+    const severed = posedHumanoidRegionBoxes({
       seed: 1,
       position: [0, 0, 0],
       facing: [0, 0, -1],

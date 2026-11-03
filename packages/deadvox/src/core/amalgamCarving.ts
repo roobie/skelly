@@ -1,10 +1,10 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { cellIndex } from '@mobgen/core/voxelize.ts';
+import { type PosedBoneBox, posedBoxEntry } from './actorRegions.ts';
 import { type AmalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import { raycast } from './raycast.ts';
 import type { ActorDef } from './schema.ts';
-import { type PosedBoneBox, posedBoxEntry } from './zombieRegions.ts';
 
 // A damaging hit on an amalgam knocks out the voxels around where it struck, leaving a hole. The hole is
 // simulation state (Zombie.carved), so it survives a save and a replay. It never changes region health,

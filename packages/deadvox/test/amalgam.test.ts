@@ -2,6 +2,8 @@
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
+import { actorPoseInputFor, posedActor } from '../src/core/actorPose.ts';
+import { posedAmalgamRegionBoxes } from '../src/core/actorRegions.ts';
 import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { carveAround, missingFlesh, protectedCoreCell } from '../src/core/amalgamCarving.ts';
 import {
@@ -21,8 +23,6 @@ import { testedBricks } from '../src/core/solidBricks.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
   PLAYER_CHEST_METRES,
@@ -106,7 +106,7 @@ const findRegionRay = ({
 
 const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3) => {
   const zombie = simulation.store.get(id)!;
-  const regions = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+  const regions = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
   for (const member of activeAmalgamMembers(zombie)) {
     for (const regionId of member.regionIds) {
       const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
@@ -549,7 +549,7 @@ describe('amalgam body and combat seam', () => {
       combatSystem.tick(1 / 60);
     }
     const zombie = combatSystem.store.get(id)!;
-    const poseInput = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const poseInput = actorPoseInputFor(zombie, id, BLOCK_SIZE);
     const { hitFlinchTime, ...withoutFlinch } = poseInput;
     expect(hitFlinchTime).toBeGreaterThan(0);
 
@@ -751,7 +751,7 @@ describe('amalgam body and combat seam', () => {
     const firearm = registry.items.get('pump_shotgun')!.firearm!;
     const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
       simulation.firePellets(pelletShotFromBasis({ ammo, firearm, origin, basis, seed: 73, key })).hits;
-    const coreBoxes = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+    const coreBoxes = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
     const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
     expect(coreCenter).toBeDefined();
     const rangeMetres = 6;
@@ -922,7 +922,7 @@ describe('amalgam body and combat seam', () => {
       membersBefore.filter(({ partId }) => partId !== target.partId).map(({ partId }) => partId),
     );
 
-    const boxesAfter = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+    const boxesAfter = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE));
     for (const region of target.regionIds) {
       expect(boxesAfter[region]).toHaveLength(0);
     }
@@ -1035,7 +1035,7 @@ describe('amalgam flesh carving', () => {
   const coreTarget = (simulation = system(), type: typeof amalgam = amalgam) => {
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
-    const core = posedAmalgamRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
+    const core = posedAmalgamRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE))['core.trunk']![0]!.voxelCentroid;
     const origin: Vec3 = [core[0], core[1], core[2] + 6 / BLOCK_SIZE];
     const direction: Vec3 = [0, 0, -1];
     const pellets = (count: number, damage: number) =>
@@ -1121,8 +1121,8 @@ describe('amalgam flesh carving', () => {
     const restored = system();
     restored.restoreState(state, (type) => registry.zombies.get(type));
     const zombie = restored.store.get(id)!;
-    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
-    const { hidden } = posedShambler(input);
+    const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+    const { hidden } = posedActor(input);
     const { owner } = figure.realized.voxels;
     const lost = (cell: number): boolean =>
       owner[cell]! > 0 && hidden.has(figure.realized.body.bones[owner[cell]! - 1]!.id);

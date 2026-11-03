@@ -21,7 +21,7 @@
 // set. Picking the nearest actors would require per-frame distance sorting within every overflowing variant.
 //
 // Living base pose (gait, idle clock, attack cooldown phase, and hit flinch) is simulation-owned and comes
-// from core/zombiePose.ts, the same pure function used by hit-region FK. This renderer adds the
+// from core/actorPose.ts, the same pure function used by hit-region FK. This renderer adds the
 // interpolated root transform and neck/head gaze toward the camera while Zombie.mode is 'chase', or toward
 // a recent near stimulus while investigating. Hearing gaze has deterministic render-only jitter; stale gaze
 // eases back to the simulation pose at the same bounded rate, and never feeds hit-region FK.
@@ -121,12 +121,12 @@ import {
 } from 'three';
 import { type ActorFigureType, actorFigure, amalgamTypeOf } from '../core/actorFigure.ts';
 import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
+import { acidSpitWindupProgress, actorPoseInputFor, posedActor, zombieCrawls } from '../core/actorPose.ts';
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
-import { acidSpitWindupProgress, posedShambler, zombieCrawls, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { buildCarvedGeometry, FleshChunks, mergeBoneMeshes } from './amalgamFlesh.ts';
@@ -1993,8 +1993,8 @@ export class MobActorMeshes implements ActorRenderer {
     const { dt: gazeFrameDelta = 0, presentationSimSeconds = 0 } = gazeFrame;
     const { position, worldPos, yaw, headYaw } = placement;
     const variant = this.variants[state.variantIndex]!;
-    const posed = posedShambler(
-      zombiePoseInputFor(zombie, state.id, this.blockSize, {
+    const posed = posedActor(
+      actorPoseInputFor(zombie, state.id, this.blockSize, {
         position,
         facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
         headYaw,

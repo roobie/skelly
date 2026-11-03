@@ -6,12 +6,12 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { flinchPoseWithClip, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { humanoid } from '@mobgen/mob/templates.ts';
 import { afterAll, describe, expect, it } from 'vitest';
-import { flinchSideForId, posedShambler, type ShamblerPoseInput } from '../src/core/zombiePose.ts';
+import { type ActorPoseInput, flinchSideForId, posedActor } from '../src/core/actorPose.ts';
 
 const template = { ...humanoid, attackClip: 'swipe', flinchClip: 'runner-hit-flinch' };
 registerTemplate(template);
 afterAll(() => registerTemplate(humanoid));
-const input: ShamblerPoseInput = {
+const input: ActorPoseInput = {
   model: 'humanoid',
   seed: 1,
   position: [0, 0, 0],
@@ -27,7 +27,7 @@ const input: ShamblerPoseInput = {
   blockSize: 0.5,
 };
 const base = () => {
-  const posed = posedShambler(input);
+  const posed = posedActor(input);
   const { bones } = posed;
   return {
     posed,
@@ -57,13 +57,13 @@ describe('template-selected zombie clips', () => {
     const remaining = windup / 2;
     const { posed, actor } = base();
     const expectedTime = clip.hitTime - remaining;
-    const attacked = posedShambler({ ...input, attackWindupSeconds: windup, attackWindup: remaining });
+    const attacked = posedActor({ ...input, attackWindupSeconds: windup, attackWindup: remaining });
     const expected = attackPose(actor, clip, expectedTime, posed.pose);
     expect(expected).not.toEqual(posed.pose);
     expect(attacked.pose).toEqual(expected);
     const cooldown = clip.duration + windup;
     expect(
-      posedShambler({
+      posedActor({
         ...input,
         attackWindupSeconds: windup,
         attackWait: cooldown - (windup - remaining),
@@ -77,6 +77,6 @@ describe('template-selected zombie clips', () => {
     const time = RUNNER_HIT_FLINCH.keys[1]!.t;
     const expected = flinchPoseWithClip(actor, time, posed.pose, { clip: RUNNER_HIT_FLINCH, side: flinchSideForId(0) });
     expect(expected).not.toEqual(posed.pose);
-    expect(posedShambler({ ...input, hitFlinchTime: time }).pose).toEqual(expected);
+    expect(posedActor({ ...input, hitFlinchTime: time }).pose).toEqual(expected);
   });
 });

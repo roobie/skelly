@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -17,7 +17,7 @@ const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
 const posed = (zombie: Zombie) =>
-  posedShamblerRegionBoxes({
+  posedHumanoidRegionBoxes({
     seed: zombie.figureSeed,
     position: zombie.body.pos,
     facing: zombie.facing,

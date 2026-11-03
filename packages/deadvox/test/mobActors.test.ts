@@ -23,6 +23,8 @@ import { Color, type DataTexture, type InstancedBufferAttribute, type InstancedM
 import { describe, expect, it, vi } from 'vitest';
 import { actorFigure, amalgamTypeOf } from '../src/core/actorFigure.ts';
 import { figureVariantOf } from '../src/core/actorModels.ts';
+import { actorPoseInputFor, flinchSideForId, HIT_FLINCH_DURATION } from '../src/core/actorPose.ts';
+import { humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { carveAround, missingFlesh } from '../src/core/amalgamCarving.ts';
 import { AMALGAM_FIGURE_SEED, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
 import { buildRegistry, validateContent } from '../src/core/content.ts';
@@ -32,8 +34,6 @@ import { initialActorFootstepClock } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
 import { reachTuning } from '../src/core/reach.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { flinchSideForId, HIT_FLINCH_DURATION, zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
@@ -146,7 +146,7 @@ const hitParityErrorsForBox = ({
   box: { bone: string; center: Vec3; rotation: readonly number[] };
 }): string[] => {
   const matrix = renderer.boneMatrix(id, box.bone)!;
-  const local = shamblerRegionBoxes(seed)[regionName as keyof ReturnType<typeof shamblerRegionBoxes>].find(
+  const local = humanoidRegionBoxes(seed)[regionName as keyof ReturnType<typeof humanoidRegionBoxes>].find(
     (rest) => rest.bone === box.bone,
   )!.center;
   const rendered: Vec3 = [
@@ -177,7 +177,7 @@ const hitParityErrorsForBox = ({
 
 const hitParityErrors = (renderer: MobActorMeshes, entries: readonly HitParityEntry[], pose: HitParityPose): string[] =>
   entries.flatMap(({ seed, id, zombie }) => {
-    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5));
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, 0.5));
     return Object.entries(boxes).flatMap(([regionName, region]) =>
       region.flatMap((box) =>
         hitParityErrorsForBox({ renderer, seed, id, phase: pose.phase, windup: pose.windup, regionName, box }),
@@ -356,7 +356,7 @@ const incapacitate = (
   const id = system.store.add(zombie);
   presentation.beforeDamage?.(system);
   system.setFrozen(frozen);
-  const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize));
+  const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, blockSize));
   const { center } = boxes.torso.find((box) => box.bone === 'chest')!;
   const origin: Vec3 = [center[0] - zombie.facing[0] * 2, center[1], center[2] - zombie.facing[2] * 2];
   const direction: Vec3 = [center[0] - origin[0], center[1] - origin[1], center[2] - origin[2]];

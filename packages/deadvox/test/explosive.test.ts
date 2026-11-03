@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs';
 import { Mesh } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it, vi } from 'vitest';
+import type { ActorRegions } from '../src/core/actorRegions.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { fragmentDirections } from '../src/core/explosive.ts';
+import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
@@ -18,8 +20,6 @@ import {
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
-import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
-import type { ZombieRegions } from '../src/core/zombieRegions.ts';
 import type { Detonation } from '../src/core/zombies.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -121,8 +121,8 @@ const liveInHand = (session: Runtime): Item => {
   return grenade;
 };
 
-const healthLost = (before: ZombieRegions, after: ZombieRegions): number =>
-  ZOMBIE_REGION_NAMES.reduce((sum, region) => sum + before[region]! - after[region]!, 0);
+const healthLost = (before: ActorRegions, after: ActorRegions): number =>
+  HUMANOID_REGION_NAMES.reduce((sum, region) => sum + before[region]! - after[region]!, 0);
 
 /** A detonation in blocks at `origin`; without `fragmentCount`, it throws no fragments. */
 const detonation = (origin: Vec3, blast: Detonation['blast'], fragmentCount = 0): Detonation => ({

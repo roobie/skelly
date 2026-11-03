@@ -133,7 +133,7 @@
       "lastPlayedAt": 5,
       "time": 1
     },
-    "core/zombiePose.ts": {
+    "core/actorPose.ts": {
       "attackCooldown": 2,
       "attackWindup": 2,
       "attackWindupSeconds": 2,

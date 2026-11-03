@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { type ActorRegions, type HumanoidHitRegion, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import type { Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { HUMANOID_REGION_NAMES } from '../src/core/humanoidRegionNames.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { type PelletShot, projectileShot } from '../src/core/pellets.ts';
@@ -9,9 +12,6 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { projectVehicleParts, VehicleOccupancy } from '../src/core/vehicleProjection.ts';
 import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
-import { posedShamblerRegionBoxes, type ZombieRegion, type ZombieRegions } from '../src/core/zombieRegions.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { createSession, IDLE, type ResolvedFirearmTrajectory } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -69,15 +69,15 @@ const runtime = (
 type AmmoData = NonNullable<ItemDef['ammo']>;
 
 /** Region health a projectile should take: the cartridge's damage, scaled on the head, less the region's resistance. */
-const expectedLoss = (ammo: AmmoData, region: ZombieRegion, before: ZombieRegions): number => {
+const expectedLoss = (ammo: AmmoData, region: HumanoidHitRegion, before: ActorRegions): number => {
   const shambler = registry.zombies.get('shambler')!;
   const scale = region === 'head' ? (ammo.headDamageMultiplier ?? 1) : 1;
   const resistance = shambler.damageResistance?.[ammo.damageKind]?.[region] ?? 0;
   return Math.min(before[region]!, ammo.damage * scale * (1 - resistance));
 };
 
-const changedRegions = (before: ZombieRegions, after: ZombieRegions): ZombieRegion[] =>
-  ZOMBIE_REGION_NAMES.filter((region) => after[region] !== before[region]);
+const changedRegions = (before: ActorRegions, after: ActorRegions): HumanoidHitRegion[] =>
+  HUMANOID_REGION_NAMES.filter((region) => after[region] !== before[region]);
 
 describe('rifle hits', () => {
   it('fires one projectile with its chambered cartridge’s ammo data, for each rifle calibre', () => {
@@ -128,10 +128,10 @@ describe('rifle hits', () => {
      * A fresh shambler at `x`, shot from in front of and above `target`'s bulkiest posed box, through its drawn
      * voxels, so the ray is sized from the spawned body; returns the region the ray crosses first, if any.
      */
-    const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, target: ZombieRegion) => {
+    const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, target: HumanoidHitRegion) => {
       const id = session.zombies.add(shambler, [x, 0, -8]);
       const zombie = session.zombieStore.get(id)!;
-      const [box] = [...posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK))[target]].sort(
+      const [box] = [...posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK))[target]].sort(
         (a, b) => b.voxelCount - a.voxelCount,
       );
       const aim = box!.voxelCentroid;
@@ -145,7 +145,7 @@ describe('rifle hits', () => {
         reach: ammo.rangeMetres,
         cooldown: 0,
         impulse: 0,
-      })?.region as ZombieRegion | undefined;
+      })?.region as HumanoidHitRegion | undefined;
       const before = { ...zombie.regions };
       expect(session.zombies.firePellets(projectileShot(ammo, origin, [direction])).hits).toBe(region ? 1 : 0);
       expect(changedRegions(before, zombie.regions)).toEqual(region ? [region] : []);
@@ -159,7 +159,7 @@ describe('rifle hits', () => {
       const session = runtime();
       // One shambler per region, far enough apart that no ray passes another.
       const struck = new Set(
-        ZOMBIE_REGION_NAMES.map((target, row) => strike(session, ammo, row * 6, target)).filter(
+        HUMANOID_REGION_NAMES.map((target, row) => strike(session, ammo, row * 6, target)).filter(
           (region) => region !== undefined,
         ),
       );
@@ -186,7 +186,7 @@ describe('rifle hits', () => {
   });
 
   it('a presentation hook that rewrites the shot trajectory leaves the damage unchanged', () => {
-    const damageWith = (onTrajectory?: (trajectory: FirearmTrajectory) => void): ZombieRegions => {
+    const damageWith = (onTrajectory?: (trajectory: FirearmTrajectory) => void): ActorRegions => {
       const session = runtime(onTrajectory);
       const { rifle } = chargedRifle(session.inventory, session.queue, session.firearms, {
         rounds: 1,

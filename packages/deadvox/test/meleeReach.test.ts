@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import {
+  type HumanoidHitRegion,
+  posedActorBoneVoxelCenters,
+  posedHumanoidRegionBoxes,
+  posedRegionHitDistance,
+} from '../src/core/actorRegions.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import {
-  posedRegionHitDistance,
-  posedShamblerBoneVoxelCenters,
-  posedShamblerRegionBoxes,
-  type ZombieRegion,
-} from '../src/core/zombieRegions.ts';
 import { PLAYER_ARM_REACH_M } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -69,10 +69,10 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
   return { system, id, zombie };
 };
 
-const poseInput = (zombie: ReturnType<typeof makeSystem>['zombie']) => zombiePoseInputFor(zombie, 1, BLOCK_SIZE);
+const poseInput = (zombie: ReturnType<typeof makeSystem>['zombie']) => actorPoseInputFor(zombie, 1, BLOCK_SIZE);
 
-const regionCentroid = (zombie: ReturnType<typeof makeSystem>['zombie'], region: ZombieRegion): Vec3 => {
-  const boxes = posedShamblerRegionBoxes(poseInput(zombie))[region].filter((box) => {
+const regionCentroid = (zombie: ReturnType<typeof makeSystem>['zombie'], region: HumanoidHitRegion): Vec3 => {
+  const boxes = posedHumanoidRegionBoxes(poseInput(zombie))[region].filter((box) => {
     if (region === 'head') {
       return true;
     }
@@ -99,11 +99,11 @@ const normalized = (direction: Vec3): Vec3 => {
 const visibleVoxel = (
   zombie: ReturnType<typeof makeSystem>['zombie'],
   bones: readonly string[],
-  expectedRegion: ZombieRegion,
+  expectedRegion: HumanoidHitRegion,
 ): Vec3 | undefined => {
   const input = poseInput(zombie);
-  const boxes = posedShamblerRegionBoxes(input);
-  return posedShamblerBoneVoxelCenters(input, bones)
+  const boxes = posedHumanoidRegionBoxes(input);
+  return posedActorBoneVoxelCenters(input, bones)
     .map(({ center }) => ({
       center,
       distance: Math.hypot(...center.map((coordinate, axis) => coordinate - playerEye[axis]!)),
@@ -111,9 +111,9 @@ const visibleVoxel = (
     .sort((a, b) => a.distance - b.distance)
     .find(({ center }) => {
       const direction = normalized(center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
-      let nearestRegion: ZombieRegion | undefined;
+      let nearestRegion: HumanoidHitRegion | undefined;
       let nearestDistance = Number.POSITIVE_INFINITY;
-      for (const region of Object.keys(boxes) as ZombieRegion[]) {
+      for (const region of Object.keys(boxes) as HumanoidHitRegion[]) {
         const distance = posedRegionHitDistance(boxes[region], playerEye, direction, BLOCK_SIZE);
         if (distance !== undefined && distance < nearestDistance) {
           nearestDistance = distance;
@@ -138,7 +138,7 @@ const swingAt = ({
   seed: number;
   pose: (typeof poses)[number];
   distance: number;
-  region: ZombieRegion;
+  region: HumanoidHitRegion;
   target: Vec3;
   weapon: (typeof weapons)[number];
 }): boolean => {
@@ -149,7 +149,7 @@ const swingAt = ({
   if (hit !== id || zombie.regions[region]! >= before[region]!) {
     return false;
   }
-  return (Object.keys(before) as ZombieRegion[]).every(
+  return (Object.keys(before) as HumanoidHitRegion[]).every(
     (other) => other === region || zombie.regions[other] === before[other],
   );
 };
@@ -203,7 +203,7 @@ describe('player melee reach at shambler attack distance', () => {
           const { system: swingSystem, id: swingId, zombie: swingZombie } = makeSystem(seed, pose, 1.08);
           const beforeHealth = { ...swingZombie.regions };
           const swingResult = swingSystem.swing(playerEye, direction, weapon);
-          const changed = (Object.keys(beforeHealth) as ZombieRegion[]).find(
+          const changed = (Object.keys(beforeHealth) as HumanoidHitRegion[]).find(
             (region) => swingZombie.regions[region]! < beforeHealth[region]!,
           );
           expect(aim?.inReach ? [aim.id, aim.region] : undefined, `${ray.name} seed ${seed} ${pose.name}`).toEqual(
@@ -278,7 +278,7 @@ describe('player melee reach at shambler attack distance', () => {
   it('keeps the first-intersected arm in front of the torso on an occluded ray', () => {
     const { system, id, zombie } = makeSystem(1, poses[0]!, 1.08);
     const input = poseInput(zombie);
-    const torsoCandidates = posedShamblerBoneVoxelCenters(input, ['chest', 'spine', 'pelvis']);
+    const torsoCandidates = posedActorBoneVoxelCenters(input, ['chest', 'spine', 'pelvis']);
     const target = torsoCandidates.find(({ center }) => {
       const direction = normalized(center.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
       return ['leftArm', 'rightArm'].includes(system.aimAt(playerEye, direction, FISTS_MELEE)?.region ?? '');

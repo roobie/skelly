@@ -1,6 +1,8 @@
 import process from 'node:process';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
@@ -13,8 +15,6 @@ import { decodeSave, encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { chunksFor } from '../src/core/scale.ts';
 import { simSeconds } from '../src/core/time.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { meleeWeaponFromContent, startPlayerMelee } from '../src/game/melee.ts';
 import { contentLookup as registryContentLookup } from '../src/ui/saveController.ts';
@@ -480,7 +480,7 @@ describe('canonical save format', () => {
     );
     const zombie = source.zombies.store.get(id)!;
     source.zombies.setFrozen(true);
-    const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, scale.blockSize));
+    const posed = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, scale.blockSize));
     const { center } = posed.head.find((box) => box.bone === 'head')!;
     const origin: import('../src/core/coords.ts').Vec3 = [
       source.player.body.pos[0],

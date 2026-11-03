@@ -1,16 +1,16 @@
 import { clampJointAngles, jointAngles } from '@mobgen/core/joints.ts';
 import { IDENTITY_M } from '@mobgen/core/math.ts';
 import { describe, expect, it } from 'vitest';
-import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import {
+  actorPoseInputFor,
   advanceStanceWeight,
   HIT_FLINCH_DURATION,
-  posedShambler,
+  posedActor,
   targetStanceWeight,
-  zombiePoseInputFor,
-} from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
+} from '../src/core/actorPose.ts';
+import { type HumanoidHitRegion, humanoidRegionBoxes, posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import { makeScale } from '../src/core/scale.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -83,9 +83,9 @@ const offsetForBox = ({
 }: {
   renderer: MobActorMeshes;
   id: number;
-  region: ZombieRegion;
+  region: HumanoidHitRegion;
   box: { bone: string; center: Vec3; rotation: readonly number[] };
-  figure: ReturnType<typeof posedShambler>['figure'];
+  figure: ReturnType<typeof posedActor>['figure'];
 }) => {
   const matrix = renderer.boneMatrix(id, box.bone)!;
   const local = figure.boxes[region].find((candidate) => candidate.bone === box.bone)!.center;
@@ -121,9 +121,9 @@ const offsetForBox = ({
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: independently aggregates position and orientation maxima.
 const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
-  const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
-  const { figure } = posedShambler(input);
-  const hit = posedShamblerRegionBoxes(input);
+  const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
+  const { figure } = posedActor(input);
+  const hit = posedHumanoidRegionBoxes(input);
   let worst = {
     bone: '',
     centreCm: 0,
@@ -135,7 +135,7 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
   let worstRotation = { ...worst };
   let worstHeadRotation = { ...worst };
   for (const [regionName, boxes] of Object.entries(hit)) {
-    const region = regionName as ZombieRegion;
+    const region = regionName as HumanoidHitRegion;
     for (const box of boxes) {
       const current = offsetForBox({ renderer, id, region, box, figure });
       if (current.centreCm > worst.centreCm) {
@@ -189,7 +189,7 @@ describe('rendered and hit shambler poses', () => {
       system.tick(1 / 60);
     }
     expect(zombie.mode).toBe('chase');
-    const head = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
+    const head = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
       (box) => box.bone === 'head',
     )!.center;
     expect(system.swing([head[0], head[1] + 1, head[2] - 1.5], [0, -1, 1.5], { ...FISTS_MELEE, damage: 1 })).toBe(id);
@@ -198,11 +198,11 @@ describe('rendered and hit shambler poses', () => {
     expect(zombie.gaitPhase).toBeGreaterThan(0);
     expect(zombie.hitFlinchTime).toBeGreaterThan(0);
     system.setFrozen(true);
-    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
     const { hitFlinchTime: _flinch, ...baseInput } = input;
-    const flinched = posedShambler(input);
-    const basePose = posedShambler(baseInput);
-    const recovered = posedShambler({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
+    const flinched = posedActor(input);
+    const basePose = posedActor(baseInput);
+    const recovered = posedActor({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
     expect(flinched.pose.rotations.head).not.toEqual(basePose.pose.rotations.head);
     expect(recovered.transforms).toEqual(basePose.transforms);
 
@@ -238,7 +238,7 @@ describe('rendered and hit shambler poses', () => {
       hurtPlayer: () => undefined,
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
-    const input = zombiePoseInputFor(system.store.get(id)!, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(system.store.get(id)!, id, BLOCK_SIZE);
     expect(targetStanceWeight({ ...input, chasing: true })).toBe(1);
     expect(targetStanceWeight({ ...input, chasing: false, attackWindup: 0.2 })).toBe(1);
     expect(targetStanceWeight({ ...input, chasing: false, attackWait: 0.8 })).toBe(1);
@@ -275,14 +275,14 @@ describe('rendered and hit shambler poses', () => {
     });
     const id = system.add(SHAMBLER, [2, 1, 3], [0, 0, -1]);
     const zombie = system.store.get(id)!;
-    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const input = actorPoseInputFor(zombie, id, BLOCK_SIZE);
     const { stanceWeight: _savedStanceWeight, ...legacyInput } = input;
-    const untrackedChase = posedShambler({ ...legacyInput, chasing: true });
-    const trackedChase = posedShambler({ ...input, chasing: true, stanceWeight: 1 });
+    const untrackedChase = posedActor({ ...legacyInput, chasing: true });
+    const trackedChase = posedActor({ ...input, chasing: true, stanceWeight: 1 });
     expect(untrackedChase.pose).toEqual(trackedChase.pose);
-    const slack = posedShambler({ ...input, stanceWeight: 0 }).pose;
-    const midpoint = posedShambler({ ...input, stanceWeight: 0.5 }).pose;
-    const aggravated = posedShambler({ ...input, stanceWeight: 1 }).pose;
+    const slack = posedActor({ ...input, stanceWeight: 0 }).pose;
+    const midpoint = posedActor({ ...input, stanceWeight: 0.5 }).pose;
+    const aggravated = posedActor({ ...input, stanceWeight: 1 }).pose;
     expect(midpoint.rotations.chest).not.toEqual(slack.rotations.chest);
     expect(midpoint.rotations.chest).not.toEqual(aggravated.rotations.chest);
 
@@ -321,10 +321,10 @@ describe('rendered and hit shambler poses', () => {
     const renderer = rendererFor(zombie);
     try {
       renderer.sync(system.store, 0, 1, true);
-      const headBox = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
+      const headBox = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, BLOCK_SIZE)).head.find(
         (box) => box.bone === 'head',
       )!;
-      const local = shamblerRegionBoxes(zombie.figureSeed).head.find((box) => box.bone === 'head')!.center;
+      const local = humanoidRegionBoxes(zombie.figureSeed).head.find((box) => box.bone === 'head')!.center;
       const matrix = renderer.boneMatrix(id, 'head')!;
       const center = [0, 1, 2].map(
         (axis) =>
@@ -361,7 +361,7 @@ describe('shared acid pose', () => {
     // Just inside the half-arc a wandering acid zombie can pick for its head.
     const reachable = ((acid.wander.headLookArcDegrees / 2 - 1) * Math.PI) / 180;
     for (const headYaw of [reachable, -reachable]) {
-      const posed = posedShambler({
+      const posed = posedActor({
         seed: 1,
         model: 'acid',
         position: [0, 0, 0],

@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { actionText } from '../src/core/actionText.ts';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { breathSteadying, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -21,8 +23,6 @@ import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../src/core/skillTraining.ts';
 import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie } from '../src/core/zombies.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -659,7 +659,7 @@ const downShambler = (session: Session, position: Vec3): { id: EntityId; zombie:
   const id = session.zombies.add(FRAGILE, position, [0, 0, -1]);
   const zombie = session.zombies.store.get(id)!;
   const { blockSize } = makeScale(0.5);
-  const chest = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, blockSize)).torso.find(
+  const chest = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, blockSize)).torso.find(
     (box) => box.bone === 'chest',
   )!.center;
   const origin: Vec3 = [chest[0], chest[1], chest[2] + 0.45 / blockSize];

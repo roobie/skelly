@@ -154,7 +154,7 @@ forcing the acid body's distinct bones through humanoid names. See
 `packages/deadvox/src/core/schema/actors.ts`, `BODY_PLAN`;
 `packages/deadvox/src/core/actorModels.ts`, `bodyPlanModel`;
 `src/mob/humanoidFigure.ts`, `templateFigure`; and
-`packages/deadvox/src/core/zombieRegions.ts`.
+`packages/deadvox/src/core/actorRegions.ts`.
 
 - **Hit regions.** Each plan says which of its bones form head, torso and limbs, because
   renaming acid bones to humanoid names would hide that it is its own skeleton. The sac's
@@ -184,12 +184,12 @@ forcing the acid body's distinct bones through humanoid names. See
   for the simulation's head turn as well as the presentation gaze, because hit boxes and the
   spit anchor read the simulation pose. See `src/mob/lookAt.ts`, `lookAtPose`,
   `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and
-  `packages/deadvox/src/core/zombiePose.ts`, `clampedJointRotation`.
+  `packages/deadvox/src/core/actorPose.ts`, `clampedJointRotation`.
   The mouth anchor belongs to the skull's face opening rather than the hanging jaw or its
   drool, so spit line of sight follows the head through wind-up and gaze. See
   `src/core/body.ts`, `BodyAnchor`, and `src/mob/acid.ts`, `buildAcid`. The spit leaves from
   that anchor posed at the end of the wind-up, so the release is a function of simulation
-  state alone; see `packages/deadvox/src/core/zombiePose.ts`, `posedMouth`.
+  state alone; see `packages/deadvox/src/core/actorPose.ts`, `posedMouth`.
 - **Materials and glow.** Deadvox reads colour and glow from the body's material table. That
   keeps the glow a content value instead of a Deadvox list of glowing material names. How
   it renders is in "Glow render path" below. The wind-up brightening is per-actor state

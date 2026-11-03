@@ -1,4 +1,6 @@
 import { expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { amalgamFigureForType, amalgamStrikeOrigin } from '../src/core/amalgamFigure.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
@@ -8,8 +10,6 @@ import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { type MeleeWeapon, PLAYER_CHEST_METRES, zombieAttackReachMetres } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
@@ -76,7 +76,7 @@ const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
   };
   const id = system.add(type, [3.5, 1, 0.5], [-1, 0, 0]);
   const zombie = system.store.get(id)!;
-  const head = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, 0.5)).head[0]!.voxelCentroid;
+  const head = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, 0.5)).head[0]!.voxelCentroid;
   const origin: Vec3 = [0.5, head[1], 0.5];
   const delta = head.map((coordinate, axis) => coordinate - origin[axis]!) as Vec3;
   const direction = delta.map((coordinate) => coordinate / Math.hypot(...delta)) as Vec3;

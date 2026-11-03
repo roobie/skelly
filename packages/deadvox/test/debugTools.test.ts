@@ -1,5 +1,7 @@
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it } from 'vitest';
+import { actorPoseInputFor } from '../src/core/actorPose.ts';
+import { posedHumanoidRegionBoxes } from '../src/core/actorRegions.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { dominantSide } from '../src/core/character.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -9,8 +11,6 @@ import { mountedOptic, opticViewSettings } from '../src/core/opticView.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { applyStartKit } from '../src/core/startState.ts';
-import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startupContent } from './baseRegistry.ts';
@@ -176,7 +176,7 @@ describe('debug starting equipment', () => {
     const zombie = system.store.get(id)!;
     zombie.figureSeed = 1;
     zombie.regions.head = weapon.damage;
-    const boxes = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, SCALE.blockSize)).head;
+    const boxes = posedHumanoidRegionBoxes(actorPoseInputFor(zombie, id, SCALE.blockSize)).head;
     const target = boxes
       .map((box) => box.voxelCentroid)
       .find((candidate) => {

@@ -1,3 +1,4 @@
+import { rayBoxEntry } from './actorRegions.ts';
 import type { BodyRegion } from './body.ts';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -6,7 +7,6 @@ import type { Body } from './physics.ts';
 import type { Rng } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { BodyTuningDef, ItemDef } from './schema.ts';
-import { rayBoxEntry } from './zombieRegions.ts';
 
 /** A thrown charge's content (`DESIGN.md`, "Hand grenade"). */
 export type ExplosiveSpec = NonNullable<ItemDef['explosive']>;

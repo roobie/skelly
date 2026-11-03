@@ -6,13 +6,13 @@ import { mulMM, transpose } from '@mobgen/core/math.ts';
 import type { boneTransforms } from '@mobgen/core/pose.ts';
 import { type BoneVoxelBox, humanoidFigure } from '@mobgen/mob/humanoidFigure.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
-import type { ZombieHitRegion, ZombieRegion } from './schema.ts';
-import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
+import { HUMANOID_REGION_NAMES } from './humanoidRegionNames.ts';
+import type { ActorHitRegion, HumanoidHitRegion } from './schema.ts';
 
-export type { ZombieHitRegion, ZombieRegion, ZombieRegions } from './schema.ts';
+export type { ActorHitRegion, ActorRegions, HumanoidHitRegion } from './schema.ts';
 
+import { type ActorPoseInput, posedActor } from './actorPose.ts';
 import type { Vec3 } from './coords.ts';
-import { posedShambler, type ShamblerPoseInput } from './zombiePose.ts';
 
 export type FigurePart = 'body' | 'head' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
 export interface FigureBox {
@@ -112,7 +112,7 @@ interface PoseBoxContext {
 }
 
 const makePosedBoneBox = (
-  region: ZombieHitRegion,
+  region: ActorHitRegion,
   box: BoneVoxelBox,
   context: PoseBoxContext,
 ): PosedBoneBox | undefined => {
@@ -185,8 +185,8 @@ const makePosedBoneBox = (
   };
 };
 
-const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
-  const posed = posedShambler(input);
+const poseContextFor = (input: ActorPoseInput): PoseBoxContext => {
+  const posed = posedActor(input);
   return {
     transforms: posed.transforms,
     figure: posed.figure,
@@ -205,7 +205,7 @@ const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string,
     Object.entries(boxesByRegion).map(([region, boxes]) => [
       region,
       boxes.flatMap((box) => {
-        const posed = makePosedBoneBox(region as ZombieHitRegion, box, context);
+        const posed = makePosedBoneBox(region as ActorHitRegion, box, context);
         return posed ? [posed] : [];
       }),
     ]),
@@ -213,23 +213,21 @@ const regionBoxesForContext = (context: PoseBoxContext): Readonly<Record<string,
 };
 
 /** All manifest-region boxes for one actor pose, including amalgam member IDs. */
-const posedAllRegionBoxes = (input: ShamblerPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
+const posedAllRegionBoxes = (input: ActorPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> =>
   regionBoxesForContext(poseContextFor(input));
 
-/** Bone boxes for one shambler-compatible pose. The caller builds them once per nearby zombie. */
-export const posedShamblerRegionBoxes = (
-  input: ShamblerPoseInput,
-): Readonly<Record<ZombieRegion, readonly PosedBoneBox[]>> => {
+/** Bone boxes for the six humanoid regions. The caller builds them once per nearby actor. */
+export const posedHumanoidRegionBoxes = (
+  input: ActorPoseInput,
+): Readonly<Record<HumanoidHitRegion, readonly PosedBoneBox[]>> => {
   const all = posedAllRegionBoxes(input);
-  return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, all[region] ?? []])) as Readonly<
-    Record<ZombieRegion, readonly PosedBoneBox[]>
+  return Object.fromEntries(HUMANOID_REGION_NAMES.map((region) => [region, all[region] ?? []])) as Readonly<
+    Record<HumanoidHitRegion, readonly PosedBoneBox[]>
   >;
 };
 
 /** Manifest-region boxes from the same posed transforms used by the living actor renderer. */
-export const posedAmalgamRegionBoxes = (
-  input: ShamblerPoseInput,
-): Readonly<Record<string, readonly PosedBoneBox[]>> => {
+export const posedAmalgamRegionBoxes = (input: ActorPoseInput): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const context = poseContextFor(input);
   if (input.model !== 'fused-mass' || !('manifest' in context.figure)) {
     throw new Error('Amalgam region boxes require an amalgam pose input');
@@ -238,8 +236,8 @@ export const posedAmalgamRegionBoxes = (
 };
 
 /** Actual posed voxel centres owned by the requested bones (for visible-hit-point proofs/tools). */
-export const posedShamblerBoneVoxelCenters = (
-  input: ShamblerPoseInput,
+export const posedActorBoneVoxelCenters = (
+  input: ActorPoseInput,
   bones: readonly string[],
 ): readonly { readonly bone: string; readonly center: Vec3 }[] => {
   const context = poseContextFor(input);
@@ -324,5 +322,5 @@ export const posedRegionHitDistance = (
 ): number | undefined => posedRegionHit(boxes, origin, direction, blockSize)?.distance;
 
 /** Return each unposed box in the chosen figure (exposed for proof and renderer parity tests). */
-export const shamblerRegionBoxes = (seed: number): Readonly<Record<ZombieRegion, readonly BoneVoxelBox[]>> =>
+export const humanoidRegionBoxes = (seed: number): Readonly<Record<HumanoidHitRegion, readonly BoneVoxelBox[]>> =>
   humanoidFigure(seed).boxes;
