@@ -117,8 +117,8 @@ describe('render ragdoll', () => {
 
   it.each([
     { model: 'humanoid', cuts: [] },
-    { model: 'runner', cuts: ['head'] },
-    { model: 'brute', cuts: ['upperArm.L'] },
+    { model: 'slim-humanoid', cuts: ['head'] },
+    { model: 'broad-humanoid', cuts: ['upperArm.L'] },
     { model: 'legless-humanoid', cuts: ['thigh.L', 'thigh.R'] },
   ])('$model settles above ground with $cuts absent', assertRest);
 
@@ -138,7 +138,7 @@ describe('render ragdoll', () => {
     try {
       const reach = reachTuning(baseRegistry()).reachMetres;
       const corpse = world.spawn({
-        realized: actorFigure({ model: 'brute' }, 17).realized,
+        realized: actorFigure({ model: 'broad-humanoid' }, 17).realized,
         pose,
         position: [0, 0, 0],
         yaw: 0,
@@ -201,7 +201,7 @@ describe('render ragdoll', () => {
       const spawn = (seed: number) =>
         world.spawn({
           realized: fixtureFigure,
-          model: 'runner',
+          model: 'slim-humanoid',
           pose,
           position: [0, 0, 0],
           yaw: 0,

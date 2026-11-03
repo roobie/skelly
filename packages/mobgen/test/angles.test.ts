@@ -145,8 +145,8 @@ const attackFixtureProblems = (fixture: Fixture): string[] => {
 describe('Pose.angles recompose to the walk matrices', () => {
   it.each([
     ['humanoid', 1, 0.8],
-    ['runner', 2, 1.4],
-    ['brute', 3, 2.8],
+    ['slim-humanoid', 2, 1.4],
+    ['broad-humanoid', 3, 2.8],
   ])('%s: every angle-carrying bone recomposes at a representative walk phase', (templateName, seed, speed) => {
     const fixture = actorFor(templateName, seed);
     const clock = clocksFor(fixture, speed).at(-1)!;
@@ -192,11 +192,11 @@ describe('Pose.angles recompose to the walk matrices', () => {
 describe('attackPose clipAngles recompose to the attacked matrices', () => {
   const focusedCases = [
     ['humanoid', 1, 0.8, 0],
-    ['runner', 2, 1.4, 0.1],
-    ['brute', 3, 2.8, 0.2],
+    ['slim-humanoid', 2, 1.4, 0.1],
+    ['broad-humanoid', 3, 2.8, 0.2],
     ['humanoid', 1, 1.4, 0.7],
-    ['runner', 2, 0.8, 0.85],
-    ['brute', 3, 1.4, LUNGE_GRAB.duration],
+    ['slim-humanoid', 2, 0.8, 0.85],
+    ['broad-humanoid', 3, 1.4, LUNGE_GRAB.duration],
   ] as const;
   for (const [templateName, seed, speed, time] of focusedCases) {
     it(`${templateName}: walk and clip layers recompose through arm fade at t=${time}`, () => {

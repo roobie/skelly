@@ -67,11 +67,11 @@ const MAX_YAW_DEG = 6; // pelvis yaw amplitude at the longest (cap-saturating) s
 const JAW_LAG = 0.08; // fraction of a cycle the jaw bounce lags each heel-strike, as if from inertia
 
 // Sideways sway (width-wise waddle): no new sampled params — the body's own width content plus
-// pelvisSway/limp (already sampled) drive how wide and how much a given actor sways, so a brute (heavy
+// pelvisSway/limp (already sampled) drive how wide and how much a given actor sways, so a broad figure (heavy
 // girth) lands widest and a jittery/limping actor sways more. Width is a *target total*, not a fixed
 // add-on — the rig's own sampled hipWidth already varies a lot on its own, and an add-on stacked on top
 // of that overshot badly (how far was not recorded; the outcome, per 596311a, is feet landing 0.27-0.44 m
-// apart, brute widest).
+// apart, broad build widest).
 /** This actor's target total stance width (ankle to ankle, m): the body's own width base plus a little
  * more for a jittery or limping actor. The base is whichever width param the body's template samples —
  * `stepWidth` itself (the skeleton's explicit width, since it has no bulk param) or the bulk width a

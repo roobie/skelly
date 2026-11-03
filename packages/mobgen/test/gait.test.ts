@@ -286,8 +286,8 @@ describe('walkPose', () => {
 
   it.each([
     ['humanoid', 1, 0.8],
-    ['runner', 2, 1.4],
-    ['brute', 3, 2.8],
+    ['slim-humanoid', 2, 1.4],
+    ['broad-humanoid', 3, 2.8],
   ] as const)('%s seed %i: the swing ankle stays clear at %f m/s', (name, seed, speed) => {
     const found = setup(name, seed);
     expect(ankleGap(name, seed, [speed], 8)).toBeGreaterThan(found.voxels.size);
@@ -316,7 +316,7 @@ describe('drunk shamble steps', () => {
   });
 
   it('same seed always gives the same style sequence (across separate calls/order)', () => {
-    const { params, seed } = setup('runner', 2);
+    const { params, seed } = setup('slim-humanoid', 2);
     const forward = Array.from({ length: 20 }, (_, k) => stepPlanFor(seed, k, params).style);
     const backward = Array.from({ length: 20 }, (_, k) => stepPlanFor(seed, 19 - k, params).style).reverse();
     expect(forward).toEqual(backward);

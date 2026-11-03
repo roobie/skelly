@@ -118,7 +118,7 @@ const budgetsForGenome = (template: Template, genome: Genome): Budgets =>
   planOf(template.bodyPlan).budgets(genome, template);
 
 export const FAR_LOD_HALF_BLOCK_VOXEL_SIZE = 0.5 / 2;
-/** Per-actor far-LOD draw budget. Worst measured: 336 (brute, seed 89, 2026-09-30).
+/** Per-actor far-LOD draw budget.
  * Raising it is deliberate and must cite fresh measurements; larger templates may need more. BR may revisit it. */
 export const FAR_LOD_HALF_BLOCK_TRIANGLE_CAP = 400;
 

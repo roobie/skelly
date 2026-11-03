@@ -79,9 +79,9 @@ export const humanoid: Template = {
   },
 };
 
-const runner: Template = {
-  name: 'runner',
-  flinchClip: 'runner-hit-flinch',
+const slimHumanoid: Template = {
+  name: 'slim-humanoid',
+  flinchClip: 'slim-hit-flinch',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
   description: 'Lean, taller, upright, faster stride.',
@@ -139,8 +139,8 @@ const leglessHumanoid: Template = {
   },
 };
 
-const brute: Template = {
-  name: 'brute',
+const broadHumanoid: Template = {
+  name: 'broad-humanoid',
   flinchClip: 'hit-flinch',
   materials: humanoidMaterials,
   materialHsl: humanoidMaterialHsl,
@@ -169,7 +169,7 @@ const brute: Template = {
   },
 };
 
-export const TEMPLATES: readonly Template[] = [humanoid, runner, leglessHumanoid, brute];
+export const TEMPLATES: readonly Template[] = [humanoid, slimHumanoid, leglessHumanoid, broadHumanoid];
 export const HUMANOID_TEMPLATES = TEMPLATES.filter(
   (template) => template.bodyPlan === 'humanoid' && template.legCut === undefined,
 );

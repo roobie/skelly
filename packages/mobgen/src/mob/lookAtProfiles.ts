@@ -17,7 +17,7 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 35, pitchDeg: 25 },
     turnRateDegPerSecond: 120,
   },
-  runner: {
+  'slim-humanoid': {
     neck: { yawDeg: 22, pitchDeg: 18 },
     head: { yawDeg: 34, pitchDeg: 24 },
     turnRateDegPerSecond: 140,
@@ -32,7 +32,7 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 34, pitchDeg: 34 },
     turnRateDegPerSecond: 130,
   },
-  brute: {
+  'broad-humanoid': {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,

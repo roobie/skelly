@@ -22,32 +22,35 @@ it('admits an independent actor id selecting an existing body plan', () => {
   expect(actorFigure(admitted, admitted.figureSeeds![0]!).realized.body.bones.length).toBeGreaterThan(0);
 });
 
-it.each(['runner', 'legless-humanoid', 'brute'] as const)('admits a %s figure as a property of humanoid anatomy', (figure) => {
-  const source = claimed(baseRegistry().zombies, 'settlementHorde')!;
-  const actor = {
-    ...source,
-    id: 'fixture_humanoid_variant',
-    capability: undefined,
-    model: 'humanoid',
-    figure,
-    figureSeeds: [1],
-  };
-  const { registry, issues } = buildRegistry([
-    ...baseSources,
-    { source: 'fixture-variant', data: { actors: [actor] } },
-  ]);
-  expect(issues).toEqual([]);
-  const admitted = registry.zombies.get(actor.id)!;
-  expect(admitted.model).toBe('humanoid');
-  expect(actorFigure(admitted, 1).genome.template).toBe(figure);
-  const invalid = validateContent({
-    source: 'fixture-invalid-plan',
-    data: { actors: [{ ...actor, model: figure }] },
-  });
-  expect(
-    invalid.some(({ source: origin, path }) => origin === 'fixture-invalid-plan' && path === 'actors[0].model'),
-  ).toBe(true);
-});
+it.each(['slim-humanoid', 'legless-humanoid', 'broad-humanoid'] as const)(
+  'admits a %s figure as a property of humanoid anatomy',
+  (figure) => {
+    const source = claimed(baseRegistry().zombies, 'settlementHorde')!;
+    const actor = {
+      ...source,
+      id: 'fixture_humanoid_variant',
+      capability: undefined,
+      model: 'humanoid',
+      figure,
+      figureSeeds: [1],
+    };
+    const { registry, issues } = buildRegistry([
+      ...baseSources,
+      { source: 'fixture-variant', data: { actors: [actor] } },
+    ]);
+    expect(issues).toEqual([]);
+    const admitted = registry.zombies.get(actor.id)!;
+    expect(admitted.model).toBe('humanoid');
+    expect(actorFigure(admitted, 1).genome.template).toBe(figure);
+    const invalid = validateContent({
+      source: 'fixture-invalid-plan',
+      data: { actors: [{ ...actor, model: figure }] },
+    });
+    expect(
+      invalid.some(({ source: origin, path }) => origin === 'fixture-invalid-plan' && path === 'actors[0].model'),
+    ).toBe(true);
+  },
+);
 
 it('rejects a figure property whose anatomy differs from the selected body plan', () => {
   const source = claimed(baseRegistry().zombies, 'settlementHorde')!;

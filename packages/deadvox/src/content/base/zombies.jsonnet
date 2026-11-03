@@ -297,7 +297,7 @@ local content = {
       "name": "Brute",
       "cause": "a brute",
       "model": "humanoid",
-      "figure": "brute",
+      "figure": "broad-humanoid",
       "authoredOnly": true,
       // How the brute answers heavy hits belongs to the tier-2 brute (`docs/stagger.md`, "Which types stagger").
       "stagger":: null,
@@ -355,7 +355,7 @@ local content = {
       "name": "Runner",
       "cause": "a runner",
       "model": "humanoid",
-      "figure": "runner",
+      "figure": "slim-humanoid",
       "figureSeeds": figureSeeds,
       "canJumpObstacles": true,
       "spawnWeight": 0.12,

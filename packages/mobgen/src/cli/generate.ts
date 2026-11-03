@@ -1,7 +1,7 @@
 // Generate a genome from a template:
 //   npm run generate -- --template humanoid --seed 7
 //   npm run generate -- --template humanoid --seed 7 --valid      retry until valid
-//   npm run generate -- --template brute --seed 3 --voxel 0.04 --out brute-3.json
+//   npm run generate -- --template broad-humanoid --seed 3 --voxel 0.04 --out broad-3.json
 // Prints the genome JSON (or writes it with --out) and a summary + issues on stderr.
 
 import { writeFileSync } from 'node:fs';

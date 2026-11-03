@@ -39,9 +39,9 @@ export const HIT_FLINCH: AttackClip = {
   ],
 };
 
-export const RUNNER_HIT_FLINCH: AttackClip = {
+export const SLIM_HIT_FLINCH: AttackClip = {
   ...HIT_FLINCH,
-  name: 'runner-hit-flinch',
+  name: 'slim-hit-flinch',
   keys: [
     zeroKey(0, FLINCH_BONES),
     {
@@ -64,7 +64,7 @@ export const RUNNER_HIT_FLINCH: AttackClip = {
 
 const FLINCH_CLIPS: Readonly<Record<string, AttackClip>> = {
   [HIT_FLINCH.name]: HIT_FLINCH,
-  [RUNNER_HIT_FLINCH.name]: RUNNER_HIT_FLINCH,
+  [SLIM_HIT_FLINCH.name]: SLIM_HIT_FLINCH,
 };
 
 export const flinchClipFor = (template: Pick<Template, 'name' | 'flinchClip'>): AttackClip => {

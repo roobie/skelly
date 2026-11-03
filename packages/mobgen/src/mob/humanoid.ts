@@ -335,7 +335,7 @@ export const snapRow = (y: number, voxel: number): number => (Math.round(y / vox
 export const snapCol = (x: number, voxel: number): number => Math.round(x / voxel) * voxel;
 
 // Median default-voxel-size / median-template-height ratio: humanoid 1/41.4,
-// runner 1/45 and brute 1/43. This calibrates the new metric face constants to
+// slim build 1/45 and broad build 1/43. This calibrates the metric face constants to
 // a typical actor's previous default-voxel head size without using LOD voxel size.
 const FACE_HEIGHT_RATIO = 1 / 43;
 

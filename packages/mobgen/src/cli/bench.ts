@@ -70,7 +70,7 @@ interface PoolEntry {
 }
 
 console.log(
-  `generating ${poolSize} pool actor${poolSize === 1 ? '' : 's'} (templates cycling humanoid/runner/brute)\n`,
+  `generating ${poolSize} pool actor${poolSize === 1 ? '' : 's'} (templates cycling humanoid/slim-humanoid/broad-humanoid)\n`,
 );
 
 const pool: PoolEntry[] = [];

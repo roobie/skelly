@@ -182,7 +182,7 @@ describe('rendered and hit shambler poses', () => {
     }
   });
 
-  it.each(['runner', 'legless-humanoid'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
+  it.each(['runner', 'crawler'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
     const { system, id, zombie, approach } = livePoseZombie(registry.zombies.get(model)!);
     approach(10);
     for (let tick = 0; tick < 60 && zombie.gaitPhase === 0; tick++) {

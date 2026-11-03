@@ -1361,8 +1361,8 @@ describe('MobActorMeshes reactions', () => {
 
   it.each([
     { model: 'humanoid', cuts: ['thigh.L'] },
-    { model: 'runner', cuts: ['thigh.L', 'thigh.R'] },
-    { model: 'brute', cuts: ['thigh.R'] },
+    { model: 'slim-humanoid', cuts: ['thigh.L', 'thigh.R'] },
+    { model: 'broad-humanoid', cuts: ['thigh.R'] },
   ])(
     'hands $model leg loss back to crawling and releases its physics without mutating simulation',
     async ({ model, cuts }) => {

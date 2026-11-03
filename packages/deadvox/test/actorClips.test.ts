@@ -3,12 +3,12 @@ import { registerTemplate } from '@mobgen/core/template.ts';
 import { attackClipFor, attackPose } from '@mobgen/mob/attack.ts';
 import { footRestExtents } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
-import { flinchPoseWithClip, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import { flinchPoseWithClip, SLIM_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { humanoid } from '@mobgen/mob/templates.ts';
 import { afterAll, describe, expect, it } from 'vitest';
 import { type ActorPoseInput, flinchSideForId, posedActor } from '../src/core/actorPose.ts';
 
-const template = { ...humanoid, attackClip: 'swipe', flinchClip: 'runner-hit-flinch' };
+const template = { ...humanoid, attackClip: 'swipe', flinchClip: 'slim-hit-flinch' };
 registerTemplate(template);
 afterAll(() => registerTemplate(humanoid));
 const input: ActorPoseInput = {
@@ -74,8 +74,8 @@ describe('template-selected zombie clips', () => {
 
   it('uses the selected flinch without selecting by model name', () => {
     const { posed, actor } = base();
-    const time = RUNNER_HIT_FLINCH.keys[1]!.t;
-    const expected = flinchPoseWithClip(actor, time, posed.pose, { clip: RUNNER_HIT_FLINCH, side: flinchSideForId(0) });
+    const time = SLIM_HIT_FLINCH.keys[1]!.t;
+    const expected = flinchPoseWithClip(actor, time, posed.pose, { clip: SLIM_HIT_FLINCH, side: flinchSideForId(0) });
     expect(expected).not.toEqual(posed.pose);
     expect(posedActor({ ...input, hitFlinchTime: time }).pose).toEqual(expected);
   });
