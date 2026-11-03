@@ -437,7 +437,7 @@ try {
     const expected = nextTimeOfDay(sim.calendar, parseTimeOfDay('08:00'));
     document.querySelector('#debug-time').value = '08:00';
     document.querySelector('#set-debug-time').click();
-    document.querySelector('#reveal-zombies').click();
+    document.querySelector('#reveal-actors').click();
     return expected;
   })()`);
   await waitFor(
@@ -450,7 +450,7 @@ try {
       document.querySelector('#debug-readout').textContent.includes(formatClock(window.uiContractRuntime.sim.calendar)))`),
     'debug readout follows the owner clock',
   );
-  assert.equal(await evaluate("document.querySelector('#reveal-zombies').getAttribute('aria-pressed')"), 'true');
+  assert.equal(await evaluate("document.querySelector('#reveal-actors').getAttribute('aria-pressed')"), 'true');
   const snapshotBefore = await evaluate("document.querySelector('#snapshot-measurement-result').textContent");
   await evaluate(`(() => {
     const hooks = window.uiContractDebug.hooks;

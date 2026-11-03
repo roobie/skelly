@@ -449,15 +449,15 @@ try {
   assert.deepEqual(await drawnAvatar(), avatarBeforeLook, 'look input while detached must not turn the drawn avatar');
   await pressAction(page, 'debug.perception-labels-toggle');
   await page.waitForFunction(
-    () => [...document.querySelectorAll('.zombie-perception-label')].some((label) => label.style.display !== 'none'),
+    () => [...document.querySelectorAll('.actor-perception-label')].some((label) => label.style.display !== 'none'),
     null,
     { timeout: 5000 },
   );
-  assert.ok(await page.locator('.zombie-perception-label[data-perception-label]').count());
+  assert.ok(await page.locator('.actor-perception-label[data-perception-label]').count());
   await pressAction(page, 'debug.spectator-camera-toggle');
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), false);
   await pressAction(page, 'debug.perception-labels-toggle');
-  await page.waitForFunction(() => document.querySelectorAll('.zombie-perception-label').length === 0, null, {
+  await page.waitForFunction(() => document.querySelectorAll('.actor-perception-label').length === 0, null, {
     timeout: 5000,
   });
 

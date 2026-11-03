@@ -2322,7 +2322,7 @@ body.inventory-open:is(.inventory-tab-crafting, .inventory-tab-repair) #crafting
   display: none;
 }
 
-#f3-debug-overlay .debug-revealed-zombies {
+#f3-debug-overlay .debug-revealed-actors {
   color: #ffcf7a;
 }
 

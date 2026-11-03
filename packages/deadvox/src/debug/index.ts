@@ -152,7 +152,7 @@ const readoutTemplate = (readout: DebugReadout, shadowText = ''): TemplateResult
   <span>memory ≈ ${(readout.memoryBytes / (1024 * 1024)).toFixed(1)} MiB · ${readout.clock} · compression ×${readout.compression.toFixed(1)}</span>
   <span>snapshot ${readout.snapshotLastMs.toFixed(3)} ms last · ${readout.snapshotP95Ms.toFixed(3)} ms p95 / ${readout.snapshotCount}</span>
   <span>shamblers ${readout.actors}</span>
-  ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-zombies">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
+  ${readout.revealedActors.length > 0 ? html`<span class="debug-revealed-actors">REVEALED: ${readout.revealedActors.join(' · ')}</span>` : nothing}
 `;
 
 const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number, pitch: number): TemplateResult => html`
@@ -474,7 +474,7 @@ const panelTemplate = ({
         <button type="button" aria-label="Increase shambler count" ?disabled=${shamblerCount >= 100} @click=${() => setShamblerCount(shamblerCount + 1)}>+</button>
       </div>
       <p id="shambler-spawn-status" aria-live="polite" ?hidden=${spawnStatus === ''}>${spawnStatus}</p>
-      <div class="debug-actions"><button id="reveal-zombies" type="button" aria-pressed=${revealActors} @click=${toggleReveal}>Reveal zombies · ${revealActors ? 'ON' : 'OFF'}</button></div>
+      <div class="debug-actions"><button id="reveal-actors" type="button" aria-pressed=${revealActors} @click=${toggleReveal}>Reveal zombies · ${revealActors ? 'ON' : 'OFF'}</button></div>
     `,
     time: html`
       <label>Set time <input id="debug-time" type="time" value=${clockInputValue} /> <button id="set-debug-time" type="button" @click=${(

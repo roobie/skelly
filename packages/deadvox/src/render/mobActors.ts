@@ -872,8 +872,8 @@ export class MobActorMeshes implements ActorRenderer {
     let label: HTMLSpanElement | undefined = this.perceptionLabels.get(id);
     if (!label) {
       label = document.createElement('span');
-      label.className = 'zombie-perception-label';
-      label.dataset.zombieId = String(id);
+      label.className = 'actor-perception-label';
+      label.dataset.actorId = String(id);
       Object.assign(label.style, {
         position: 'fixed',
         transform: 'translate(-50%, -100%)',

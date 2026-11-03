@@ -42,7 +42,7 @@ export class ActorMeshes {
     this.reveal = reveal;
     for (const part of FIGURE_PARTS) {
       const flesh = part === 'body' || part === 'head';
-      const material = withHeightFog(new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e }), 'zombie');
+      const material = withHeightFog(new MeshLambertMaterial({ color: flesh ? 0x87_96_78 : 0x68_6f_5e }), 'actor');
       const mesh = new InstancedMesh(new BoxGeometry(1, 1, 1), material, capacity);
       mesh.count = 0;
       mesh.instanceMatrix.setUsage(DynamicDrawUsage);
