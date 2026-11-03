@@ -53,7 +53,7 @@ const repairRegistry = baseRegistryWith(
           result: { item: RESULT, count: 1 },
           repair: {
             ...(id === ENTITY_REPAIR ? { entity: FURNITURE } : {}),
-            skill: 'fixture_repair_skill',
+            skill: 'crafting',
             amount: 0.2,
             perSkill: 0,
           },

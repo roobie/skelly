@@ -97,8 +97,11 @@ evidence governs classification, not perfect adherence to the table.
 | Magic | Opt-in | ✓ | · | · | Theme; #1528 is a reference consumer |
 | Mounts, armies and factions | · | ~ | ✓ | · | Theme direction, not delivered mechanisms |
 | Ships and space | · | · | · | ✓ | Deferred theme direction |
-| Zombie types, skills, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
+| Zombie types, loot tables, site generation, camp and rural sites | ✓ | · | · | · | Product |
 | Gauntlet, tutorial, playtest and test house | ✓ | · | · | · | Scenario |
+
+Skills belong in theme topics; products select their available skills through ordinary
+mod dependencies, rather than a separate skill configuration or registry filter.
 
 The roster classifies content and tuning, not engine code. The open measurement on
 #1532 is when a topic mod becomes too large for products that use little of it.

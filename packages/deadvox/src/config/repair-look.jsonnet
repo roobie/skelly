@@ -25,7 +25,7 @@ local mod = 'debug-repair-look';
         searchTerms: [],
         kind: 'repair',
         result: { item: stock, count: 1 },
-        repair: { entity: target, skill: 'debug_repair', amount: furniture.breach.durability * damageFraction, perSkill: 0 },
+        repair: { entity: target, skill: 'crafting', amount: furniture.breach.durability * damageFraction, perSkill: 0 },
         timeGameMinutes: 1,
         skills: {},
         qualities: {},

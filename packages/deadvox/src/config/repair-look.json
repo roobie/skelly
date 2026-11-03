@@ -25,7 +25,7 @@
             "amount": 30,
             "entity": "crate",
             "perSkill": 0,
-            "skill": "debug_repair"
+            "skill": "crafting"
           },
           "result": {
             "count": 1,
