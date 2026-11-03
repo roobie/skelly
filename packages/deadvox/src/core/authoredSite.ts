@@ -25,6 +25,7 @@ import { HORDE_MEMBERS, TEMPLATE_BLOCK_SIZE } from './settlementSpawns.ts';
 import {
   focusPose,
   propCentre,
+  ShowroomCatalogue,
   type ShowroomDef,
   type ShowroomProp,
   slotPlacement,
@@ -138,6 +139,15 @@ const siteWater = (
   };
 };
 
+const showroomOf = (registry: Registry, layout: SiteLayoutDef) => {
+  const { showroom } = layout;
+  return {
+    showroom,
+    props: showroom ? slotProps(registry, showroom) : [],
+    catalogue: showroom?.catalogue ? new ShowroomCatalogue(registry, showroom.catalogue) : undefined,
+  };
+};
+
 export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
@@ -160,6 +170,7 @@ export class AuthoredSite implements Site {
   readonly seed: number;
   readonly registry: Registry;
   readonly showroom: ShowroomDef | undefined;
+  readonly catalogue: ShowroomCatalogue | undefined;
   /** The showroom's authored props, oldest first. */
   readonly slots: readonly ShowroomProp[];
 
@@ -209,8 +220,10 @@ export class AuthoredSite implements Site {
     if (layout.practice) {
       this.practiceExitMark = layout.practice.exitMark;
     }
-    this.showroom = layout.showroom;
-    this.slots = layout.showroom ? slotProps(registry, layout.showroom) : [];
+    const { showroom, props, catalogue } = showroomOf(registry, layout);
+    this.showroom = showroom;
+    this.catalogue = catalogue;
+    this.slots = props;
     const newest = this.slots.at(-1);
     this.spawn = {
       pos: [...layout.player.position],
@@ -361,13 +374,15 @@ export class AuthoredSite implements Site {
         xm / tuning.topography.wavelengthMetres,
         zm / tuning.topography.wavelengthMetres,
       );
-      return Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
+      const ground = Math.round((profile + noise * tuning.topography.amplitudeMetres * noiseWeight(x, z, xm, zm)) / s);
+      return catalogue ? catalogue.height(x, z, ground) : ground;
     };
     const trackAt = (x: number, z: number) =>
       layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
     const { water, sandy } = siteWater(layout, s, height);
     const player = blocks(layout.player.position);
     const reserved = [
+      ...(catalogue ? [catalogue.rect] : []),
       ...lots.map((lot) => lot.apron),
       { x0: player[0] - 3 / s, x1: player[0] + 3 / s, z0: player[2] - 3 / s, z1: player[2] + 3 / s },
     ];
@@ -440,6 +455,10 @@ export class AuthoredSite implements Site {
       height,
       ...(water && { water }),
       top: (x, z) => {
+        const floor = catalogue?.top(x, z);
+        if (floor !== undefined) {
+          return floor;
+        }
         if (sandy(x, z)) {
           return terrain.sand;
         }
@@ -483,7 +502,10 @@ export class AuthoredSite implements Site {
   }
 
   focus(furniture: string): Site['spawn'] | undefined {
-    const pose = this.showroom && focusPose(this.slots, furniture, this.showroom.focusDistance);
+    const pose =
+      this.showroom &&
+      (focusPose(this.slots, furniture, this.showroom.focusDistance) ??
+        (this.catalogue && focusPose(this.catalogue.props, furniture, this.showroom.focusDistance)));
     return pose && { pos: [...pose.pos], yaw: pose.yaw };
   }
 
@@ -495,7 +517,7 @@ export class AuthoredSite implements Site {
   }
 
   supplySourcesIn(area: Rect) {
-    return this.supplyFootprints.in(area);
+    return [...this.supplyFootprints.in(area), ...(this.catalogue?.supplySourcesIn(area) ?? [])];
   }
 
   lootPointsIn(cx: number, cz: number): readonly LootSpawnPoint[] {
@@ -503,7 +525,10 @@ export class AuthoredSite implements Site {
   }
 
   furnitureIn(cx: number, cz: number) {
-    return this.placements.flatMap((placement) => furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz)));
+    return [
+      ...this.placements.flatMap((placement) => furnitureOf(this, placement, [cx, cz], this.lootPointsIn(cx, cz))),
+      ...(this.catalogue?.furnitureIn(cx, cz) ?? []),
+    ];
   }
   actorsIn(cx: number, cz: number): ActorSpawn[] {
     return this.spawns.filter((spawn) => toChunk(spawn.pos[0]) === cx && toChunk(spawn.pos[2]) === cz);

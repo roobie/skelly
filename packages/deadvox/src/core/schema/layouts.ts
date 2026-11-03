@@ -106,7 +106,7 @@ const HalfMetrePosition = tuple([HalfMetres, HalfMetres, HalfMetres]);
 
 const PositiveHalfMetres = pipe(HalfMetres, minValue(0.5));
 
-/** Where new features are shown: authored slots and a derived catalogue of every furniture piece. */
+/** Authored feature slots and an optional furniture catalogue. */
 const ShowroomSchema = strictObject({
   /** The west end of the packed row's front line, feet on the deck; row slots run east from here. */
   row: HalfMetrePosition,
@@ -129,19 +129,21 @@ const ShowroomSchema = strictObject({
   ),
   /** How far in front of a prop a focus spawn stands. */
   focusDistance: PositiveHalfMetres,
-  /** Every content furniture piece in rows facing south, on a flat floor; row packing remains game logic. */
-  catalogue: strictObject({
-    /** The floor's north-west corner, feet height; rows run east and each next row lies further south. */
-    position: HalfMetrePosition,
-    /** How far east a row may run. */
-    width: PositiveHalfMetres,
-    /** Gap between neighbouring pieces, and the aisle in front of each row. */
-    spacing: PositiveHalfMetres,
-    /** The block the floor is made of. */
-    floor: Id,
-    /** How far the natural ground takes to blend into the floor. */
-    blend: PositiveHalfMetres,
-  }),
+  catalogue: optional(
+    strictObject({
+      furniture: pipe(array(Id), nonEmpty()),
+      /** The floor's north-west corner, feet height; rows run east and each next row lies further south. */
+      position: HalfMetrePosition,
+      /** How far east a row may run. */
+      width: PositiveHalfMetres,
+      /** Gap between neighbouring pieces, and the aisle in front of each row. */
+      spacing: PositiveHalfMetres,
+      /** The block the floor is made of. */
+      floor: Id,
+      /** How far the natural ground takes to blend into the floor. */
+      blend: PositiveHalfMetres,
+    }),
+  ),
 });
 
 export const SiteLayoutSchema = strictObject({

@@ -117,13 +117,6 @@
       "shamblers": [],
       "showroom": {
         "capacity": 3,
-        "catalogue": {
-          "blend": 4,
-          "floor": "concrete",
-          "position": [-160, 21, -60],
-          "spacing": 2,
-          "width": 50
-        },
         "facing": "s",
         "focusDistance": 1,
         "row": [-12, 21.5, -1],

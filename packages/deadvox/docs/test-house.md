@@ -25,7 +25,7 @@ explicitly selected debug scenario mod rather than a runtime overlay: no scenari
 or debug check may select it in game logic. Range geometry must be authored templates
 and building rows; catalogue furniture, rack items and garage stock must be hand-kept
 content rather than runtime synthesis. See `src/config/bundled/test-house-debug.jsonnet`,
-`layouts`, for the garage stock owner. The pending range and catalogue boundary is in
+`layouts`, for garage stock and the hand-kept catalogue. The pending range boundary is in
 `docs/test-house.md`, "Normal and debug additions".
 
 The charging corner belongs to the same template and layout sources, rather than a
@@ -93,11 +93,10 @@ Garage evaluation stock requires explicit mod selection, and its saves require t
 admitted mod. A URL selects it through `?mods=` rather than inferring it from the scene or
 debug profile. See `src/config/bundled/test-house-debug.jsonnet`, `layouts`.
 
-Until the range grading ruling and conversion in PR #1539, range and catalogue floors
-remain debug-only runtime overlays, catalogue furniture comes from the registry, and rack
-stock is synthesized from firearm compatibility. Those visits and saves need no staging
-mod. See `src/game/worldSetup.ts`, `DebugTestHouseSite`, `src/core/showroom.ts`,
-`ShowroomCatalogue`, and `src/game/testHouseRange.ts`, `testHouseRangeSupply`.
+Until the range grading conversion in PR #1539, the range remains a debug-only runtime
+overlay and rack stock is synthesized from firearm compatibility. Range visits and saves
+need no staging mod. See `src/game/worldSetup.ts`, `DebugTestHouseSite`, and
+`src/game/testHouseRange.ts`, `testHouseRangeSupply`.
 
 For the authored rack, accept a list edit per new gun, magazine, ammunition package or mod
 item, and silent absence until listed. That maintenance cost is preferable to retaining
@@ -126,10 +125,9 @@ in the profile BR plays without debug keys, and a slot holds ordinary furniture 
 player meets in the world anyway; the demo rule keeps its fixture stock out of world
 supply. The authored catalogue must join the debug scenario mod so evaluation equipment
 cannot turn the ordinary haven into a warehouse. Accept a hand edit per new furniture
-piece and silent absence until listed. Its conversion shares the range grading trigger
-on PR #1539; until then, catalogue focus follows the debug-only overlay. Authored focus
-must follow admitted props in either profile because it only chooses a fresh session's
-start; scenario identity must not choose its reach.
+piece and silent absence until listed. Focus follows admitted props in either profile
+because it only chooses a fresh session's start; scenario identity must not choose its
+reach. See `src/core/authoredSite.ts`, `AuthoredSite`.
 
 The destruction slot stays in normal mode because its tool, stock and breakable deck
 exercise ordinary combat and furniture floor loss without privileged setup. See
@@ -164,13 +162,13 @@ staging overlay. Content owns the placement; see
 `ShowroomSchema`; and `src/core/showroom.ts`, `slotProps` and `slotPlacement`.
 
 The catalogue needs no per-feature slot because it exposes evaluation pieces rather than
-staging a feature's supplies. Until the range grading ruling and conversion in PR #1539,
-`src/core/showroom.ts`, `ShowroomCatalogue`, derives its props from the registry; the
-hand-kept list remains part of that pending conversion. Keep it beyond the startup ring
-to avoid delaying every fixture visit, and separate it from the haven to preserve the
-home's view.
-Empty catalogue pieces must stay off the house grid so evaluation cannot change house
-supply. Item and vehicle looks still belong to a slot or their owning zone.
+staging a feature's supplies. Its hand-kept list belongs to the debug scenario mod, so
+unlisted furniture stays absent instead of being discovered from the registry. See
+`src/config/bundled/test-house-catalogue.libsonnet` and `src/core/showroom.ts`,
+`ShowroomCatalogue`. Keep it beyond the startup ring to avoid delaying every fixture
+visit, and separate it from the haven to preserve the home's view. Empty catalogue pieces
+must stay off the house grid so evaluation cannot change house supply. Item and vehicle
+looks still belong to a slot or their owning zone.
 
 ## Focus
 

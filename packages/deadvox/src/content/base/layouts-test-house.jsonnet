@@ -89,8 +89,6 @@ local liquidRecoveryStock = [
         { furniture: 'workbench', items: liquidRecoveryStock },
       ],
       focusDistance: 1,
-      // West of the haven, clear of the lake and beyond the startup ring; debug only (`docs/test-house.md`, "Showroom").
-      catalogue: { position: [-160, 21, -60], width: 50, spacing: 2, floor: 'concrete', blend: 4 },
     },
     bays: bays,
     vehicles: [{ blueprint: 'hatchback', placementKey: 'testHouse.parked-hatchback' } + bays[0]],

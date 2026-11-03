@@ -52,11 +52,19 @@ const showroomIssues = (
 ): [string, string][] => {
   const showroom = layout.showroom!;
   const issues: [string, string][] = [];
-  if (!registry.blockIds.has(showroom.catalogue.floor)) {
-    issues.push(['.showroom.catalogue.floor', `no block "${showroom.catalogue.floor}"`]);
-  }
-  if (showroom.focusDistance >= showroom.catalogue.spacing) {
-    issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
+  const { catalogue } = showroom;
+  if (catalogue) {
+    if (!registry.blockIds.has(catalogue.floor)) {
+      issues.push(['.showroom.catalogue.floor', `no block "${catalogue.floor}"`]);
+    }
+    catalogue.furniture.forEach((furniture, i) => {
+      if (!registry.furniture.has(furniture)) {
+        issues.push([`.showroom.catalogue.furniture[${i}]`, `no furniture "${furniture}"`]);
+      }
+    });
+    if (showroom.focusDistance >= catalogue.spacing) {
+      issues.push(['.showroom.focusDistance', 'must be less than the catalogue spacing, so focus stands in an aisle']);
+    }
   }
   if (showroom.slots.length > showroom.capacity) {
     issues.push(['.showroom.slots', `holds ${showroom.slots.length} slots; capacity is ${showroom.capacity}`]);
@@ -69,13 +77,15 @@ const showroomIssues = (
   if (issues.length > 0) {
     return issues;
   }
-  // Streaming whole columns, the startup ring can reach one column past its radius.
-  const ready = claimed(registry.graphics, 'graphics')?.readyRadiusM;
-  const { rect } = new ShowroomCatalogue(registry, showroom.catalogue);
-  const [px, , pz] = layout.player.position;
-  const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));
-  if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
-    issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
+  if (catalogue) {
+    // Streaming whole columns, the startup ring can reach one column past its radius.
+    const ready = claimed(registry.graphics, 'graphics')?.readyRadiusM;
+    const { rect } = new ShowroomCatalogue(registry, catalogue);
+    const [px, , pz] = layout.player.position;
+    const distance = rectDistance(rect, Math.floor(px / TEMPLATE_BLOCK_SIZE), Math.floor(pz / TEMPLATE_BLOCK_SIZE));
+    if (ready !== undefined && distance * TEMPLATE_BLOCK_SIZE <= ready + CHUNK * TEMPLATE_BLOCK_SIZE) {
+      issues.push(['.showroom.catalogue.position', 'must lie beyond the startup ring, so it cannot delay the start']);
+    }
   }
   const placement = slotPlacement(registry, layout);
   if (placement) {

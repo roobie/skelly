@@ -1,6 +1,3 @@
-// The test house showroom (`docs/test-house.md`, "Showroom"): authored slots and a catalogue derived from
-// content furniture. Content owns where they stand and how far apart; this module owns the packing.
-
 import { smoothstep } from './authoredTerrain.mjs';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
@@ -10,6 +7,7 @@ import { type FurnitureSpawn, type Rect, rectDistance, SupplyFootprints } from '
 import type { CompiledTemplate, Placement } from './templates.ts';
 
 export type ShowroomDef = NonNullable<SiteLayoutDef['showroom']>;
+type CatalogueDef = NonNullable<ShowroomDef['catalogue']>;
 type SlotDef = ShowroomDef['slots'][number];
 
 const S = TEMPLATE_BLOCK_SIZE;
@@ -113,15 +111,15 @@ export const slotPlacement = (registry: Registry, layout: SiteLayoutDef): Placem
 };
 
 /**
- * Every content furniture piece, deepest first so each row holds pieces of like depth, then by id. Rows run east
+ * Listed furniture, deepest first so each row holds pieces of like depth, then by id. Rows run east
  * up to the content width; each faces south onto its own aisle.
  */
-const catalogueProps = (registry: Registry, catalogue: ShowroomDef['catalogue']): ShowroomProp[] => {
+const catalogueProps = (registry: Registry, catalogue: CatalogueDef): ShowroomProp[] => {
   const [x0, y, z0] = catalogue.position.map(toBlocks) as Vec3;
   const width = toBlocks(catalogue.width);
   const gap = toBlocks(catalogue.spacing);
-  const pieces = [...registry.furniture.values()]
-    .map(({ id }) => ({ furniture: id, size: sizeOf(registry, id) }))
+  const pieces = catalogue.furniture
+    .map((id) => ({ furniture: id, size: sizeOf(registry, id) }))
     .sort((a, b) => b.size[2] - a.size[2] || a.furniture.localeCompare(b.furniture));
   const rows: { furniture: string; size: Vec3 }[][] = [];
   let used = Number.POSITIVE_INFINITY;
@@ -157,7 +155,7 @@ export class ShowroomCatalogue {
   private readonly blend: number;
   private readonly floorBlock: number;
 
-  constructor(registry: Registry, catalogue: ShowroomDef['catalogue']) {
+  constructor(registry: Registry, catalogue: CatalogueDef) {
     const block = registry.blockIds.get(catalogue.floor);
     if (block === undefined) {
       throw new Error(`content does not define block "${catalogue.floor}"`);

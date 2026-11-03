@@ -241,16 +241,16 @@ describe('the debug test-house range', () => {
       BUNDLED_CONTENT.registry,
       testHouseScene(config, BUNDLED_CONTENT.registry),
     );
-    if (!site?.catalogue) {
-      throw new Error('debug vegetation fixture needs the range and catalogue');
+    if (!site) {
+      throw new Error('debug vegetation fixture needs the range');
     }
-    return { config, site, catalogue: site.catalogue };
+    return { config, site };
   };
 
-  it.each([1, 9])('keeps authored trees clear of debug range and catalogue footprints (seed %i)', (seed) => {
-    const { site, catalogue } = vegetationSite(seed);
+  it.each([1, 9])('keeps authored trees clear of the debug range footprint (seed %i)', (seed) => {
+    const { site } = vegetationSite(seed);
     expect(site.house.trees.length).toBeGreaterThan(0);
-    for (const area of [site.range.rect, catalogue.rect]) {
+    for (const area of [site.range.rect]) {
       expect(site.house.trees.filter((tree) => rectsOverlap(tree.bounds, area)).map((tree) => tree.origin)).toEqual([]);
     }
   });

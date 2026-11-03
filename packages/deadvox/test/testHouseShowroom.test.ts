@@ -1,21 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { actionText, fillText } from '../src/core/actionText.ts';
+import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
+import { AuthoredSite } from '../src/core/authoredSite.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { propCentre, type ShowroomProp, slotProps } from '../src/core/showroom.ts';
+import { rectsOverlap } from '../src/core/site.ts';
 import { cellsOf } from '../src/core/templates.ts';
-import { DebugTestHouseSite, playerStartFromWorld } from '../src/game/worldSetup.ts';
-import { configFromUrl } from './fixtures/startupContent.ts';
+import { selectBundledMods } from '../src/game/bundledMods.ts';
+import { configFromUrl } from '../src/game/config.ts';
+import { playerStartFromWorld } from '../src/game/worldSetup.ts';
+import { withReusedBuilds } from './bundledContentReuse.ts';
+import { content as baseContent } from './fixtures/startupContent.ts';
 import { testHouseSite } from './testHouseSite.ts';
 
-const config = configFromUrl(new URLSearchParams('site=testHouse&debug=1'));
+const selected = withReusedBuilds(() => selectBundledMods(['test-house-debug']));
+const config = configFromUrl(new URLSearchParams('site=testHouse'), selected.content);
 const { registry } = config.content;
-const wrapped = (authored: ConstructorParameters<typeof DebugTestHouseSite>[2]) =>
-  new DebugTestHouseSite(config, registry, authored);
-// The catalogue floor lies outside the lot, so gather furniture over both.
-const area = (debug: DebugTestHouseSite) => {
+const area = (authored: AuthoredSite) => {
   const { bounds } = registry.layouts.get('testHouse')!;
-  const { rect } = debug.catalogue!;
+  const { rect } = authored.catalogue!;
   const metres = config.scale.blockSize;
   return {
     x0: Math.min(bounds.x0, rect.x0 * metres),
@@ -24,7 +28,7 @@ const area = (debug: DebugTestHouseSite) => {
     z1: Math.max(bounds.z1, rect.z1 * metres),
   };
 };
-const { s, site, house, solid, furniture, walkable } = testHouseSite(registry, wrapped, area);
+const { s, site, house, solid, furniture, walkable } = testHouseSite(registry, undefined, area);
 const catalogue = site.catalogue!;
 const { slots } = house;
 
@@ -40,8 +44,40 @@ const aim = (from: readonly number[], yaw: number, target: readonly number[]): n
 };
 
 describe('test house showroom', () => {
-  it('shows every content furniture piece in the catalogue', () => {
-    expect(new Set(catalogue.props.map(({ furniture: type }) => type))).toEqual(new Set(registry.furniture.keys()));
+  it('shows only the hand-listed furniture, not unlisted additions to content', () => {
+    const layout = registry.layouts.get(config.site)!;
+    const fixture = 'unlisted_showroom_fixture';
+    const source = registry.furniture.values().next().value!;
+    const extended = { ...registry, furniture: new Map(registry.furniture).set(fixture, { ...source, id: fixture }) };
+    const authored = new AuthoredSite(7, extended, config.scale, layout);
+    expect(authored.catalogue!.props.length).toBeGreaterThan(0);
+    expect(new Set(authored.catalogue!.props.map(({ furniture: type }) => type))).toEqual(
+      new Set(layout.showroom!.catalogue!.furniture),
+    );
+    expect(authored.catalogue!.props.some(({ furniture: type }) => type === fixture)).toBe(false);
+  });
+
+  it('rejects a hand-listed furniture reference missing from content', () => {
+    const layout = registry.layouts.get(config.site)!;
+    const showroom = layout.showroom!;
+    const unknown = 'missing_catalogue_fixture';
+    const issues = authoredLayoutIssues(
+      {
+        ...layout,
+        showroom: { ...showroom, catalogue: { ...showroom.catalogue!, furniture: [unknown] } },
+      },
+      registry,
+    );
+    expect(issues).toContainEqual(['.showroom.catalogue.furniture[0]', `no furniture "${unknown}"`]);
+  });
+
+  it('keeps vegetation grounded and out of the admitted catalogue floor', () => {
+    expect(house.trees.length).toBeGreaterThan(0);
+    for (const tree of house.trees) {
+      expect(rectsOverlap(tree.bounds, catalogue.rect)).toBe(false);
+      const [x, y, z] = tree.origin;
+      expect(y).toBe(site.surface.height(x, z, 0) + 1);
+    }
   });
 
   it('stands every slot and catalogue prop on its deck or floor, clear of structure and of each other', () => {
@@ -107,11 +143,16 @@ describe('test house showroom', () => {
   });
 
   it('falls back to the default spawn with a message for a focus the site does not show', () => {
-    // Normal mode has no catalogue, so a piece only the catalogue shows is not a focus there.
+    const normal = new AuthoredSite(
+      7,
+      baseContent.registry,
+      config.scale,
+      baseContent.registry.layouts.get(config.site)!,
+    );
     const catalogueOnly = catalogue.props.find(
       ({ furniture: type }) => !slots.some((slot) => slot.furniture === type),
     )!;
-    const setup = { spawn: house.spawn, groundAt: () => 0, site: house };
+    const setup = { spawn: normal.spawn, groundAt: () => 0, site: normal };
     const start = playerStartFromWorld(setup, config.scale, undefined, { focus: catalogueOnly.furniture });
     expect(start).toEqual({ ...playerStartFromWorld(setup, config.scale), unknownFocus: catalogueOnly.furniture });
     expect(fillText(actionText(registry).play.focusUnknown, { focus: start.unknownFocus! })).toContain(
