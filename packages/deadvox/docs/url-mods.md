@@ -3,6 +3,7 @@ read_if:
   - you add, move or remove a Deadvox game-entry URL parameter or hash key
   - you author a demo mod or change how a URL selects mods
   - you change scenario-owned starts, product defaults or the starting kit
+  - you change admission or ordinary inventory placement of authored starts
   - you change how the camera or other view state is written back to the URL
   - you write a browser test or CI script that opens the game with a prepared URL
   - you change how the bench reads its run parameters or sets up its world
@@ -19,7 +20,9 @@ This is the design plan for `docs/decisions/0006-url-mods-and-hash-state.md`, wh
 
 Start rows belong to scenario content because location and kit depend on the map and run. A scenario may provide several starts, and a mod may add one. The product entry pack names its default scenario and start; a player picker is later UI work. See `docs/decisions/0009-content-defined-products.md`, "Starts and mixing".
 
-The planned start section joins `src/core/schema/files.ts`, `SECTION_DESCRIPTOR`, so new-game setup uses ordinary admission rather than a private preset path. Move the initial kit from `src/game/loadout.ts`, `startingLoadout`, and the layout's start time into that content. The row supplies layout, storeys, density, start time, seed, kit, wounds and skill levels without putting scenario references in shared topics.
+Start definitions use ordinary admission rather than a private preset path; see `src/core/schema/starts.ts`, `StartSchema`, and `src/core/schema/files.ts`, `CONTENT_SECTIONS`. Shared topics need no scenario or start row because definitions are inert until a playable stack supplies its run.
+
+Until PR #1539 connects entry defaults and migrates new-game callers, product starts still use `src/game/loadout.ts`, `startingLoadout`, skill-owned initial recipes in `src/core/character.ts`, `startingKnownRecipes`, and the debug setup helpers in `src/debug/index.ts`, `attachDebugTools`. Admission and the row application mechanism alone do not cut those callers over.
 
 The seed in the start row is optional. A mod pins it when its demo must reproduce one world; otherwise a new game draws one. A hash `seed` overrides it, so exploring other worlds under the same demo stays a hash edit rather than a new mod.
 
@@ -27,14 +30,14 @@ The start row is an ordinary definition. Changing a single field of it from anot
 
 When browser loading of Jsonnet mods is built (issue #801), it must let a browser mod import bundled pack sources, so a browser mod can build on the same sources a demo mod does at build time.
 
-The kit is a list of entries. Each names an item and optionally a count and condition, and says where it goes: worn, in the dominant or off hand, in a pocket of another named entry, or fitted into a slot of another entry. A magazine entry can be filled. Hands are named by role, never by side, so a kit follows the player's handedness option and a left-handed player never has to swap. This is enough to express every kit `src/debug/debugLoadout.ts`, `equipDebugLoadout` builds.
+Name kit parents before their children so placement order is deterministic rather than a second dependency scheduler. Hands use roles rather than sides so handedness does not require a different kit or a player swap. Initial magazine contents remain item state, not a second ammunition inventory. See `src/core/schema/starts.ts`, `StartSchema`, and `src/core/startState.ts`, `applyStartState`. Debug firearm-state presets and their selection remain part of the caller migration on PR #1539.
 
 Validation runs at two boundaries:
 
-- **Pack admission** checks references: item, layout, skill and wound ids resolve, named parents exist and come earlier in the list, and no hand is named twice. These join `src/core/content.ts`, `referenceIssues`, so `validate` and the panel report them like any other content issue.
-- **New game** places the kit through ordinary inventory adds. A placement the inventory refuses, such as an item too big for its pocket, stops startup with a diagnostic naming the mod and the entry. It never silently drops an item.
+- **Pack admission** attributes unresolved references and invalid kit ownership to their start row, using the same diagnostics as other content. See `src/core/startIssues.ts`, `startIssues`, and `src/core/content.ts`, `referenceIssues`.
+- **New game** must use ordinary inventory placement and fitting so content cannot bypass pocket size or slot certification. A refusal stops startup with source and entry attribution instead of silently dropping the item. See `src/core/startState.ts`, `applyStartState`; progression remains character-owned through `src/core/character.ts`, `initializeProgression`.
 
-Start state applies only to a new game. Continue and replay restore the saved world and ignore it, as they ignore the starting kit.
+Callers must identify a fresh game explicitly. Continue and replay restore the saved world and must not reapply kit, wounds or progression, including advancing the item allocator. See `src/core/startState.ts`, `applyStartState`.
 
 ## Demo mods and URL loading
 

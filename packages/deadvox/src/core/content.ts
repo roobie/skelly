@@ -57,6 +57,7 @@ import {
   type TemplateDef,
   type ZombieDef,
 } from './schema.ts';
+import { startIssues } from './startIssues.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
 import {
   templateDoorIssues,
@@ -2223,6 +2224,12 @@ const checkBlockMaterials = (registry: Registry, report: Report): void => {
   }
 };
 
+const checkStarts = (registry: Registry, report: Report): void => {
+  for (const { id, path, message } of startIssues(registry)) {
+    report('starts', id, path, message);
+  }
+};
+
 const referenceIssues = (registry: Registry, origins: Map<string, Origin>): ContentIssue[] => {
   const issues: ContentIssue[] = [];
   const report: Report = (section, id, path, message) => {
@@ -2271,6 +2278,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
     checkLayoutReferences(layout, registry, report);
   }
   checkScenarios(registry, report);
+  checkStarts(registry, report);
   for (const { section, id, path, message } of settlementCollectionIssues(registry)) {
     report(section, id, path, message);
   }

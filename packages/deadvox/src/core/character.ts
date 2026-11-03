@@ -100,6 +100,29 @@ export class Character implements HandedCharacter {
     }
   }
 
+  initializeProgression(skills: Readonly<Record<string, number>>, recipes: readonly string[]): void {
+    for (const [id, level] of Object.entries(skills)) {
+      if (
+        !(this.registry.skills.has(id) && Number.isSafeInteger(level)) ||
+        level < SKILL_LEVEL_MIN ||
+        level > SKILL_LEVEL_LEGENDARY
+      ) {
+        throw new Error(`Invalid starting skill ${id}`);
+      }
+    }
+    for (const id of recipes) {
+      if (!this.registry.recipes.has(id)) {
+        throw new Error(`Invalid starting recipe ${id}`);
+      }
+    }
+    for (const [id, level] of Object.entries(skills)) {
+      this.skills[id] = level;
+      this.practice[id] = 0;
+      this.learnSkillRecipes(id, level);
+    }
+    this.learnRecipes(recipes);
+  }
+
   snapshotState(): Readonly<CharacterState> {
     return freezeSnapshot({
       handedness: this.handedness,

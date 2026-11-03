@@ -4,7 +4,7 @@ read_if:
   - you classify mods, choose their ids or combine a theme with a product
   - you change remote mod intake, product save separation or the framework refactor gate
   - you name reusable mechanisms, actor body plans or content-selected providers
-  - you change scenario guidance, observations or staging
+  - you change scenario guidance, observations, staging or authored start admission
   - you change attempt recording or snapshot diagnostics
 ---
 
@@ -114,8 +114,16 @@ Measure that cost before splitting further; no size threshold is adopted here.
 Start rows live in scenario content because location and carried kit depend on the
 map and run. A scenario can provide several starts, and a mod can add another. The
 entry pack selects the default scenario and start. A player start picker is separate
-UI work, not a prerequisite for recording the content relationship. The start-state
-contract belongs to `packages/deadvox/docs/url-mods.md`, "Start state in mods".
+UI work, not a prerequisite for recording the content relationship. Start admission
+must not require lower-layer definitions to supply a playable scenario, and placement
+must use ordinary item and character owners rather than privileged preset state.
+See `packages/deadvox/src/core/startIssues.ts`, `startIssues`, and
+`packages/deadvox/src/core/startState.ts`, `applyStartState`.
+
+Until PR #1539 connects entry defaults and migrates new-game callers, admitted start
+rows do not replace the product's existing kit, initial-recipe or debug setup paths.
+The start-state contract and that cutover's owners belong to
+`packages/deadvox/docs/url-mods.md`, "Start state in mods".
 
 Scenario rows own guided steps, stage marks and attempt recording because a different
 run must not require runtime identity branches. Guidance observes completed actions

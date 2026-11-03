@@ -52,6 +52,8 @@ export const SIMULATION_ENTRIES = [
   'src/core/worldgen.ts',
   'src/core/saveState.ts',
   'src/core/saveFormat.ts',
+  // Fingerprint new-game initialization independently of startup caller wiring.
+  'src/core/startState.ts',
   'src/core/vehicleWork.ts',
   'src/core/storage.ts',
   'src/core/soundPicker.ts',

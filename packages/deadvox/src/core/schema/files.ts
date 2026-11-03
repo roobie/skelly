@@ -25,6 +25,7 @@ import { ScenarioSchema } from './scenarios.ts';
 import { SenseSchema } from './senses.ts';
 import { SiteGenerationSchema, type TreeCrownSchema } from './siteGeneration.ts';
 import { SkillProgressionSchema, SkillSchema } from './skills.ts';
+import { StartSchema } from './starts.ts';
 import {
   type DoorLockSchema,
   type FixedLootItem,
@@ -121,6 +122,7 @@ const SECTION_DESCRIPTOR = {
   compression: { schema: optional(array(CompressionTuningSchema)), label: 'compression tuning', order: 19 },
   ui: { schema: optional(array(UiTuningSchema)), label: 'UI tuning', order: 20 },
   scenarios: { schema: optional(array(ScenarioSchema)), label: 'scenarios', order: 21 },
+  starts: { schema: optional(array(StartSchema)), label: 'starts', order: 21.1 },
   cityBenchmarks: { schema: optional(array(CityBenchmarkSchema)), label: 'city benchmarks', order: 30 },
   controls: { schema: optional(array(ControlSchema)), label: 'default keys', order: 31 },
   graphics: { schema: optional(array(GraphicsTuningSchema)), label: 'graphics tuning', order: 22 },
