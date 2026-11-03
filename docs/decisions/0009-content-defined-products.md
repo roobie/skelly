@@ -166,8 +166,10 @@ and restricted CEL rules remain governed by `docs/decisions/0004-content-languag
 
 ## Vocabulary
 
-Use the role definitions in `GLOSSARY.md`, "Actor roles". Whether a ship is an actor
-is not decided by those words.
+Use Actor for a body and its state, and Agent only for the part that decides. A
+setting's name in engine code ties the engine to one product; these roles keep the
+body and decision mechanisms independent of that setting. See `GLOSSARY.md`, "Actor roles".
+Whether a ship is an actor is not decided by those words.
 
 Name a mechanism for what it does. Keep a domain word when it describes behavior
 precisely: a horde is a crowd moving together toward stimuli. A formation-based army

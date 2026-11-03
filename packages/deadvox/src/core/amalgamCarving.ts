@@ -3,7 +3,7 @@ import { cellIndex } from '@mobgen/core/voxelize.ts';
 import { type AmalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import { raycast } from './raycast.ts';
-import type { ZombieDef } from './schema.ts';
+import type { ActorDef } from './schema.ts';
 import { type PosedBoneBox, posedBoxEntry } from './zombieRegions.ts';
 
 // A damaging hit on an amalgam knocks out the voxels around where it struck, leaving a hole. The hole is
@@ -11,7 +11,7 @@ import { type PosedBoneBox, posedBoxEntry } from './zombieRegions.ts';
 // damage or severing, but later hits see it: a shot enters a hole and strikes the flesh behind, and passes
 // through a hole that goes all the way (`fleshHit`).
 
-export type AmalgamCarving = NonNullable<ZombieDef['carving']>;
+export type AmalgamCarving = NonNullable<ActorDef['carving']>;
 
 /** A ray in the figure's rest voxel grid, where floor() of a point is its cell (i, j, k). */
 interface GridRay {

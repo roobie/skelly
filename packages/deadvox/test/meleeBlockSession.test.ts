@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef } from '../src/core/schema.ts';
 import { simRate } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -12,7 +12,7 @@ import { withoutCombatSkills } from './fixtures/withoutCombatSkills.ts';
 const registry = baseRegistry();
 const FLAT: SolidAt = (_x, y) => y === 0;
 const shambler = registry.zombies.get('shambler')!;
-const move: ZombieDef['attack']['moves'][number] = {
+const move: ActorDef['attack']['moves'][number] = {
   id: 'fixture-hit',
   motion: 'swing',
   weight: 1,
@@ -20,7 +20,7 @@ const move: ZombieDef['attack']['moves'][number] = {
   damageKind: 'blunt',
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
-const attacker: ZombieDef = { ...shambler, attack: { ...shambler.attack, moves: [move] } };
+const attacker: ActorDef = { ...shambler, attack: { ...shambler.attack, moves: [move] } };
 const playerBody = registry.body.get('player')!;
 
 /** Pins the full-block roll's outcome by making the full-block chance 0 or 1 at every skill level. */

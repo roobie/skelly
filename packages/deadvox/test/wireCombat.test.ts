@@ -4,7 +4,7 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldMeleeBlocker, worldOpaque, worldSolid, worldSoundBlocking } from '../src/core/collision.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef } from '../src/core/schema.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
@@ -18,7 +18,7 @@ import { physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { ZombieSystem } from './zombieSystemFixture.ts';
 
-const fixture = (reachMetres = 2.1, moves?: ZombieDef['attack']['moves']) => {
+const fixture = (reachMetres = 2.1, moves?: ActorDef['attack']['moves']) => {
   const registry = baseRegistry();
   const fence = registry.blockIds.get('chain_link')!;
   registry.blocks[fence] = {

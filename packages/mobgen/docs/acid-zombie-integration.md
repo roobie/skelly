@@ -151,7 +151,7 @@ Tuning stays in content rather than test literals. Its release-freeze triggers b
 Actor identity must not determine its skeleton. Deadvox resolves a selected body plan
 at the mobgen boundary, keeping each plan's region ownership authoritative rather than
 forcing the acid body's distinct bones through humanoid names. See
-`packages/deadvox/src/core/schema/zombies.ts`, `BODY_PLAN`;
+`packages/deadvox/src/core/schema/actors.ts`, `BODY_PLAN`;
 `packages/deadvox/src/core/zombieModels.ts`, `bodyPlanModel`;
 `src/mob/shamblerFigure.ts`, `zombieFigure`; and
 `packages/deadvox/src/core/zombieRegions.ts`.
@@ -165,8 +165,8 @@ forcing the acid body's distinct bones through humanoid names. See
   gore mask sizes itself from the widest body (`packages/deadvox/src/render/mobActors.ts`
   passes the bone count to `crowdTextureLayout`), so the acid bone count needs no encoding
   change. A severed acid part follows its creature kind's authored drop policy,
-  independently of bone names. See `packages/deadvox/src/core/schema/zombies.ts`,
-  `ZombieSchema.severedItems`, and `packages/deadvox/src/game/session.ts`, `createSession`.
+  independently of bone names. See `packages/deadvox/src/core/schema/actors.ts`,
+  `ActorSchema.severedItems`, and `packages/deadvox/src/game/session.ts`, `createSession`.
 - **Death burst.** On death the sac's voxels are removed without leaving a severed item and
   without any simulation consequence, so presentation reads death and the sac stays out of
   saves and fingerprints. Keeping it a disposition rather than a Deadvox special case lets a

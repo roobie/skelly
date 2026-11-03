@@ -34,6 +34,7 @@ import { POWER_UNITS } from './powerContent.ts';
 import { handlingRangeIssues } from './rangeLayout.ts';
 import { scenarioSources } from './scenarioComposition.ts';
 import {
+  type ActorDef,
   ARM_SEGMENTS,
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -55,7 +56,6 @@ import {
   type ScenarioDef,
   type SiteLayoutDef,
   type TemplateDef,
-  type ZombieDef,
 } from './schema.ts';
 import { startIssues } from './startIssues.ts';
 import { ownershipShapeIssues } from './templateOwnership.ts';
@@ -69,6 +69,7 @@ import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolv
 import { vehicleContentIssues } from './vehicleBlueprint.ts';
 
 export type {
+  ActorDef,
   FigureDef,
   FurnitureDef,
   ItemDef,
@@ -78,7 +79,6 @@ export type {
   RecipeDef,
   SoundDef,
   TemplateDef,
-  ZombieDef,
 } from './schema.ts';
 /** A parsed JSON file and where it came from (for error messages). */
 export interface ContentSource {
@@ -1560,7 +1560,7 @@ const checkHandlingRanges = (registry: Registry, report: Report) => {
   }
 };
 
-const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report) => {
+const checkSeveredItems = (registry: Registry, zombie: ActorDef, report: Report) => {
   const regions = Object.keys(zombie.regions);
   if (
     regions.length !== Object.keys(zombie.severedItems).length ||
@@ -1575,7 +1575,7 @@ const checkSeveredItems = (registry: Registry, zombie: ZombieDef, report: Report
   }
 };
 
-const checkActorFigure = (zombie: ZombieDef, report: Report): void => {
+const checkActorFigure = (zombie: ActorDef, report: Report): void => {
   if (zombie.figure !== undefined && FIGURE_VARIANTS[zombie.figure].bodyPlan !== zombie.model) {
     report('actors', zombie.id, '.figure', 'figure variant anatomy must match the body plan');
   }

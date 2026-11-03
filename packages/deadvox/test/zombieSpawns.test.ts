@@ -4,7 +4,7 @@ import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { toChunk, type Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ScenarioCitySite } from '../src/core/scenarioCity.ts';
-import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { footprint } from '../src/core/templates.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import type { ZombieSystem } from '../src/core/zombies.ts';
@@ -26,7 +26,7 @@ interface Spawned {
 }
 const zombieSystemFor = (spawned: Spawned[]): ZombieSystem =>
   ({
-    add: (type: ZombieDef, pos: Vec3) => {
+    add: (type: ActorDef, pos: Vec3) => {
       spawned.push({ type: type.id, pos });
       return spawned.length;
     },

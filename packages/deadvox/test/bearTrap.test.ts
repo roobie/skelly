@@ -6,7 +6,7 @@ import type { Item } from '../src/core/items.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ItemDef, ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef, ItemDef } from '../src/core/schema.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { WORLD_REGION_METRES } from '../src/core/worldRegion.ts';
@@ -31,7 +31,7 @@ const trapDef: ItemDef = {
     zombieLegDamage: 4,
   },
 };
-const walker: ZombieDef = { ...base.zombies.get('shambler')!, id: 'fixture_walker' };
+const walker: ActorDef = { ...base.zombies.get('shambler')!, id: 'fixture_walker' };
 const content = {
   ...base,
   items: new Map(base.items).set(trapDef.id, trapDef),

@@ -1,5 +1,6 @@
 import { array, check, type InferOutput, optional, pipe, strictObject } from 'valibot';
 import { PowerDeviceSchema, PowerTuningSchema } from '../powerContent.ts';
+import { ActorSchema, zombieAcidSpitMatchesAbility, zombieRegionsMatchModel } from './actors.ts';
 import { BlockMaterialSchema, BlockSchema } from './blocks.ts';
 import { BodyTuningSchema } from './body.ts';
 import { CombatPolicySchema, RangedTuningSchema } from './combat.ts';
@@ -42,7 +43,6 @@ import {
 } from './templates.ts';
 import { UiTuningSchema } from './ui.ts';
 import { WeatheringSchema } from './weathering.ts';
-import { ZombieSchema, zombieAcidSpitMatchesAbility, zombieRegionsMatchModel } from './zombies.ts';
 
 // ---- files ----
 
@@ -60,7 +60,7 @@ const SECTION_DESCRIPTOR = {
   actors: {
     schema: optional(
       pipe(
-        array(ZombieSchema),
+        array(ActorSchema),
         check(
           (types) => types.every((zombie) => zombie.model !== 'fused-mass' || zombie.bodyScale !== undefined),
           'amalgam must define bodyScale',
@@ -189,7 +189,7 @@ export type FixedLootOverrideDef = InferOutput<typeof FixedLootOverride>;
 
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 
-export type ZombieDef = InferOutput<typeof ZombieSchema>;
+export type ActorDef = InferOutput<typeof ActorSchema>;
 
 export type FigureDef = InferOutput<typeof FigureSchema>;
 

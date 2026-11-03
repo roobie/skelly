@@ -2,7 +2,7 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { live } from 'lit-html/directives/live.js';
 import { getBuildRevision } from '../core/buildInfo.ts';
 import { formatClock } from '../core/clock.ts';
-import { requireDayCycle, type ZombieDef } from '../core/content.ts';
+import { type ActorDef, requireDayCycle } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import {
@@ -597,7 +597,7 @@ interface ActionContext {
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
   spawnZombie: (typeId: string, count: number) => void;
-  zombieTypes: Iterable<Pick<ZombieDef, 'id' | 'name'>>;
+  zombieTypes: Iterable<Pick<ActorDef, 'id' | 'name'>>;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
   isFrozen: () => boolean;

@@ -15,7 +15,7 @@ import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { DoorLockDef, ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef, DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
@@ -1775,7 +1775,7 @@ describe('shambler scenarios', () => {
     expect(listened.snapshotState()).toEqual(silent.snapshotState());
   });
 
-  const destroyRegion = (type: ZombieDef, region: ZombieRegion, target = () => player([100, 2, 0])) => {
+  const destroyRegion = (type: ActorDef, region: ZombieRegion, target = () => player([100, 2, 0])) => {
     const severed: ZombieRegion[] = [];
     const sounds: string[] = [];
     let deaths = 0;
@@ -3668,7 +3668,7 @@ describe('attack windup', () => {
 
 describe('stagger', () => {
   const stagger = { impulseThreshold: 6, durationSimSeconds: simSeconds(0.5) };
-  const staggering: ZombieDef = { ...SHAMBLER, stagger };
+  const staggering: ActorDef = { ...SHAMBLER, stagger };
   const heavy = { ...FISTS_MELEE, impulse: stagger.impulseThreshold };
   const light = { ...FISTS_MELEE, impulse: stagger.impulseThreshold - 0.1 };
 
@@ -3765,7 +3765,7 @@ describe('dismemberment', () => {
   const survives = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
 
   it('uses the same lethal region for an individual hit and a blast', () => {
-    const type: ZombieDef = {
+    const type: ActorDef = {
       ...stationary,
       regions: { ...survives, head: FISTS_MELEE.damage },
       dismember: { chance: 0, headOnKillChance: 0 },
@@ -4142,7 +4142,7 @@ describe('dismemberment', () => {
         idleSimSeconds: { min: simSeconds(duration + 1), max: simSeconds(duration + 1) },
       },
     };
-    const cueCounts = (positions: readonly Vec3[], candidate: ZombieDef): number[] => {
+    const cueCounts = (positions: readonly Vec3[], candidate: ActorDef): number[] => {
       const cues = new Map<Zombie, number>();
       const system = new ZombieSystem({
         ...senses(() => player([100, 2, 0])),

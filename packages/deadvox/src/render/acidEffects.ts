@@ -1,13 +1,13 @@
 import { CircleGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial, SphereGeometry } from 'three';
 import type { AcidGlobState } from '../core/acidGlob.ts';
 import type { AcidPuddleState } from '../core/acidPuddle.ts';
-import type { ZombieDef } from '../core/content.ts';
+import type { ActorDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { Rng } from '../core/random.ts';
 import type { Zombie } from '../core/zombies.ts';
 import type { DrawnAnchors } from './mobActors.ts';
 
-type Appearance = NonNullable<ZombieDef['acidSpit']>['presentation'];
+type Appearance = NonNullable<ActorDef['acidSpit']>['presentation'];
 
 /** A falling acid droplet; it vanishes once it drops below the floor its body stood on. Metres. */
 interface Droplet {
@@ -144,7 +144,7 @@ export class AcidEffects {
   sync(
     states: readonly Readonly<AcidGlobState>[],
     puddles: readonly Readonly<AcidPuddleState>[],
-    types: ReadonlyMap<string, ZombieDef>,
+    types: ReadonlyMap<string, ActorDef>,
     dt: number,
   ): void {
     while (this.puddles.length > puddles.length) {

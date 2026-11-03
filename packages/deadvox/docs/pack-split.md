@@ -98,7 +98,7 @@ those distinct realizations without turning actor properties into body plans or 
 another product to inherit zombie vocabulary. Actor identity does not select its
 implementation: see `src/core/zombieModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`,
 `figureVariantOf` and `bodyPlanModel`,
-and `src/core/schema/zombies.ts`, `ZombieSchema` and `zombieRegionsMatchModel`.
+and `src/core/schema/actors.ts`, `ActorSchema` and `zombieRegionsMatchModel`.
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
 `src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementZombieSpawns`,

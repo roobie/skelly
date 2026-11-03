@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
-import type { ZombieDef } from '../src/core/content.ts';
+import type { ActorDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { firearmAimOffHand } from '../src/core/firearmAimOffHand.ts';
 import { readyFirearmPose } from '../src/core/heldPose.ts';
@@ -110,7 +110,7 @@ const makeSystem = (
   return system;
 };
 
-const makeTarget = (system: ZombieSystem, type: ZombieDef = SHAMBLER) => {
+const makeTarget = (system: ZombieSystem, type: ActorDef = SHAMBLER) => {
   const id = system.add(type, [0, 1, 4], [0, 0, 1]);
   const zombie = system.store.get(id)!;
   zombie.body.onGround = true;
@@ -656,7 +656,7 @@ describe('player melee action', () => {
   });
 
   it('blunt contact takes fewer head hits on average', () => {
-    const withoutDismemberment: ZombieDef = {
+    const withoutDismemberment: ActorDef = {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };
@@ -684,7 +684,7 @@ describe('player melee action', () => {
   });
 
   it('cut contact severs a limb where equal blunt damage does not', () => {
-    const withoutDismemberment: ZombieDef = {
+    const withoutDismemberment: ActorDef = {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };
@@ -709,7 +709,7 @@ describe('player melee action', () => {
   });
 
   it('keeps the dismemberment stream aligned when damage spread is zero', () => {
-    const withoutDismemberment: ZombieDef = {
+    const withoutDismemberment: ActorDef = {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };
@@ -729,7 +729,7 @@ describe('player melee action', () => {
   });
 
   it('pierce contact has the widest seeded damage spread', () => {
-    const withoutDismemberment: ZombieDef = {
+    const withoutDismemberment: ActorDef = {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };

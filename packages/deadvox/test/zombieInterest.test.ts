@@ -3,7 +3,7 @@ import { requireDayCycle } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { dayPhaseAt } from '../src/core/dayPhase.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -14,7 +14,7 @@ import { ZombieSystem } from './zombieSystemFixture.ts';
 const registry = baseRegistry();
 const base = registry.zombies.get('shambler')!;
 const scale = makeScale(0.5);
-const type: ZombieDef = {
+const type: ActorDef = {
   ...base,
   sight: 0,
   nightSight: 0,
@@ -163,7 +163,7 @@ describe('shambler interest', () => {
   it.each(['search', 'return'] as const)('does not re-recruit a body already in %s', (mode) => {
     const f = fixture(2);
     f.player.vocalNoise!.pos = [0, 1, 4];
-    const def: ZombieDef = {
+    const def: ActorDef = {
       ...type,
       stimulusMemorySimSeconds: simSeconds(30),
       speed: { ...type.speed, chaseMetresPerSimSecond: simRate(1), wanderMetresPerSimSecond: simRate(1) },
@@ -258,7 +258,7 @@ describe('shambler interest', () => {
   it('settles mutual-earshot alerts, suppresses repeat cries, and cries again after the cooldown', () => {
     const f = fixture(0.5);
     f.player.vocalNoise!.pos = [0.5, 1, 0];
-    const def: ZombieDef = {
+    const def: ActorDef = {
       ...type,
       stimulusMemorySimSeconds: simSeconds(0.5),
       hearingModel: {
@@ -308,7 +308,7 @@ describe('shambler interest', () => {
   it('preserves a recruited listener cooldown through saves without blocking recruitment', () => {
     const f = fixture(0.5);
     f.player.vocalNoise!.pos = [0.5, 1, 0];
-    const def: ZombieDef = {
+    const def: ActorDef = {
       ...type,
       stimulusMemorySimSeconds: simSeconds(0.5),
       hearingModel: {

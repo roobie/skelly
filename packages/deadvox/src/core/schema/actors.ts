@@ -133,7 +133,7 @@ const AcidBodySchema = pipe(
   check(({ charge }) => charge.idle <= charge.charged, 'the sac must not dim during the wind-up'),
 );
 
-export const ZombieSchema = strictObject({
+export const ActorSchema = strictObject({
   id: Id,
   capability: capabilityClaimsField('actors'),
   name: Name,
@@ -353,10 +353,10 @@ export const ZombieSchema = strictObject({
   loot: optional(Id),
 });
 
-export const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ZombieSchema>): boolean =>
+export const zombieAcidSpitMatchesAbility = (zombie: InferOutput<typeof ActorSchema>): boolean =>
   zombie.abilities.includes('acidSpit') === (zombie.acidSpit !== undefined);
 
-export const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
+export const zombieRegionsMatchModel = (zombie: InferOutput<typeof ActorSchema>): boolean => {
   const expected = zombie.model === 'fused-mass' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
   const keys = Object.keys(zombie.regions);
   return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));

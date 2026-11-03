@@ -19,7 +19,7 @@ import {
 import { AmalgamShape } from './amalgamShape.ts';
 import type { BodyRegion, DamageKind } from './body.ts';
 import type { MeleeBlocker } from './collision.ts';
-import type { ZombieDef } from './content.ts';
+import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { ExposureContact } from './damageExposure.ts';
 import type { DayPhase, DayPhaseState } from './dayPhase.ts';
@@ -91,21 +91,21 @@ export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_
 export type ZombieMode = 'idle' | 'stroll' | 'hesitate' | 'search' | 'chase' | 'investigate' | 'return';
 export const zombieBodyDimensions = measureZombieBody;
 
-const requiredFigureSeeds = (type: ZombieDef): readonly number[] => {
+const requiredFigureSeeds = (type: ActorDef): readonly number[] => {
   if (type.figureSeeds === undefined) {
     throw new Error(`Zombie type ${type.id} is missing its authored figureSeeds`);
   }
   return type.figureSeeds;
 };
 
-const requiredGrabBand = (type: ZombieDef): number => {
+const requiredGrabBand = (type: ActorDef): number => {
   if (type.attack.grabBandMetres === undefined) {
     throw new Error(`Zombie type ${type.id} is missing its authored attack.grabBandMetres`);
   }
   return type.attack.grabBandMetres;
 };
 
-export const zombieAttackReachForType = (type: ZombieDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
+export const zombieAttackReachForType = (type: ActorDef, figureSeed = AMALGAM_FIGURE_SEED): number =>
   type.model === 'fused-mass' ? type.attack.reach * amalgamFigureForType(type, figureSeed).scale : type.attack.reach;
 
 /**
@@ -129,17 +129,17 @@ const projectileWeapon = (damage: number, reach: number, impulse: number, type: 
 const zombieRegionClass = (region: ZombieHitRegion): string =>
   region === 'core.trunk' ? 'torso' : (region.split('.').at(-1) ?? region);
 
-export const lethalRegion = (type: ZombieDef, region: ZombieHitRegion): boolean =>
+export const lethalRegion = (type: ActorDef, region: ZombieHitRegion): boolean =>
   region === 'core.trunk' || (type.model !== 'fused-mass' && zombieRegionClass(region) === 'head');
 
-const maxZombieRegionHealth = (type: ZombieDef, region: ZombieHitRegion): number | undefined => {
+const maxZombieRegionHealth = (type: ActorDef, region: ZombieHitRegion): number | undefined => {
   if (type.model === 'fused-mass') {
     return type.regions[region === 'core.trunk' ? region : `member.${zombieRegionClass(region)}`];
   }
   return type.regions[region];
 };
 
-const zombieRegionsFor = (type: ZombieDef, seed: number): ZombieRegions => {
+const zombieRegionsFor = (type: ActorDef, seed: number): ZombieRegions => {
   if (type.model !== 'fused-mass') {
     return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ZombieRegions;
   }
@@ -163,7 +163,7 @@ const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
 type MeleeDamageType = DamageKind;
-type ZombieMove = ZombieDef['attack']['moves'][number];
+type ZombieMove = ActorDef['attack']['moves'][number];
 type ZombieHitRegionChoice = ZombieMove['hitRegions'][number];
 
 const pickByWeight = <T extends { weight: number }>(choices: readonly T[], roll: number): T => {
@@ -281,7 +281,7 @@ const meleeDamageForContact = (
 };
 
 export const damageToZombie = (
-  type: Pick<ZombieDef, 'damageResistance'>,
+  type: Pick<ActorDef, 'damageResistance'>,
   amount: number,
   kind: DamageKind,
   region: BodyRegion,
@@ -322,7 +322,7 @@ export interface HitImpulse {
 const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
-  type: ZombieDef;
+  type: ActorDef;
   modifiers: Modifier[];
   /** Derived tier; a single entity moves between update schedules without duplicating ownership. */
   tier?: ZombieTier | undefined;
@@ -511,7 +511,7 @@ const validZombieEventState = (zombie: ZombieState): boolean =>
   ) &&
   validShamblerFootstepClock(zombie.footstepClock);
 /** Holes play could make: only a type that carves has any, each on flesh in its grid, never the core cell. */
-const validCarvedCells = (type: ZombieDef, figureSeed: number, carved: readonly number[]): boolean => {
+const validCarvedCells = (type: ActorDef, figureSeed: number, carved: readonly number[]): boolean => {
   if (!type.carving) {
     return carved.length === 0;
   }
@@ -546,7 +546,7 @@ const validVec3State = (value: unknown): boolean =>
 const validHordeSnapshotState = (
   horde: HordeState,
   hasHorde: boolean,
-  resolveType: (id: string) => ZombieDef | undefined,
+  resolveType: (id: string) => ActorDef | undefined,
 ): boolean =>
   horde.id.length > 0 &&
   !hasHorde &&
@@ -652,7 +652,7 @@ export interface ZombieSystemOptions {
   onAcidPlayerHit?: (hit: ZombiePlayerHit) => void;
   onPlayerExposure?: (contact: ExposureContact) => void;
   onPlayerLeaveExposure?: (source: string) => void;
-  onAcidImpact?: (position: Vec3, type: ZombieDef) => void;
+  onAcidImpact?: (position: Vec3, type: ActorDef) => void;
   onAcidGroundImpact?: (impact: AcidGroundImpact) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
   onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode, body: Zombie) => void;
@@ -931,7 +931,7 @@ export interface AcidSpitRelease {
   origin: Vec3;
   /** Unit direction from the mouth, spread already applied. */
   aim: Vec3;
-  moves: NonNullable<ZombieDef['acidSpit']>['moves'];
+  moves: NonNullable<ActorDef['acidSpit']>['moves'];
 }
 
 export interface ZombiePlayerHit {
@@ -946,7 +946,7 @@ export interface AcidGroundImpact {
   position: Vec3;
   source: EntityId;
   type: string;
-  puddle: NonNullable<ZombieDef['acidSpit']>['puddle'];
+  puddle: NonNullable<ActorDef['acidSpit']>['puddle'];
 }
 
 type GlobContact =
@@ -1069,7 +1069,7 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
 };
 
 export interface PerceptionInput {
-  zombie: ZombieDef;
+  zombie: ActorDef;
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
@@ -1083,7 +1083,7 @@ export interface PerceptionInput {
 
 export type HearingTier = 'near' | 'far';
 export interface HearingInput {
-  zombie: ZombieDef;
+  zombie: ActorDef;
   from: Vec3;
   player: PlayerSense;
   blockSize: number;
@@ -1104,7 +1104,7 @@ interface ZombieTickScratch {
   groundedAtTickStart: Map<Zombie, boolean>;
   id: EntityId;
   zombie: Zombie;
-  type: ZombieDef;
+  type: ActorDef;
   rng: Rng;
   pos: Vec3;
   perception: PerceptionInput;
@@ -1147,7 +1147,7 @@ const createZombieTickScratch = (): ZombieTickScratch => ({
   groundedAtTickStart: undefined as unknown as Map<Zombie, boolean>,
   id: 0,
   zombie: undefined as unknown as Zombie,
-  type: undefined as unknown as ZombieDef,
+  type: undefined as unknown as ActorDef,
   rng: undefined as unknown as Rng,
   pos: [0, 0, 0],
   perception: {} as PerceptionInput,
@@ -1184,7 +1184,7 @@ export interface HeardNoise {
   target: Vec3;
 }
 
-const hearingRange = (zombie: ZombieDef, movement: PlayerMovement): number => {
+const hearingRange = (zombie: ActorDef, movement: PlayerMovement): number => {
   if (movement === 'sprinting') {
     return zombie.hearingRange.sprint * zombie.hearing;
   }
@@ -1237,7 +1237,7 @@ const farBearingTarget = ({
   blockSize,
   rng,
 }: {
-  zombie: ZombieDef;
+  zombie: ActorDef;
   from: Vec3;
   source: Vec3;
   blockSize: number;
@@ -1263,7 +1263,7 @@ export const hearPlayer = (input: HearingInput): HeardNoise | undefined => {
 };
 
 export interface VocalNoiseInput {
-  zombie: ZombieDef;
+  zombie: ActorDef;
   from: Vec3;
   noise: VocalNoise;
   time: number;
@@ -1362,7 +1362,7 @@ const canSeeLight = ({
   isSunExposedAt,
   tuning,
 }: {
-  zombie: ZombieDef;
+  zombie: ActorDef;
   from: Vec3;
   look: Vec3;
   source: ZombieLightSource;
@@ -1404,7 +1404,7 @@ const visibleLightTarget = ({
   isSunExposedAt,
   tuning,
 }: {
-  zombie: ZombieDef;
+  zombie: ActorDef;
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
@@ -1671,8 +1671,8 @@ interface AmalgamCollider {
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
-  private globs: { state: AcidGlobState; type: ZombieDef }[] = [];
-  private puddles: { state: AcidPuddleState; type: ZombieDef }[] = [];
+  private globs: { state: AcidGlobState; type: ActorDef }[] = [];
+  private puddles: { state: AcidPuddleState; type: ActorDef }[] = [];
   private nextPuddleId = 0;
 
   get acidPuddles(): readonly Readonly<AcidPuddleState>[] {
@@ -1845,7 +1845,7 @@ export class ZombieSystem {
     });
   }
 
-  private restorePuddles(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined) {
+  private restorePuddles(state: ZombieSystemState, resolveType: (id: string) => ActorDef | undefined) {
     if (!Number.isSafeInteger(state.nextPuddleId) || state.nextPuddleId < 0) {
       throw new Error('Invalid acid puddle sequence');
     }
@@ -1873,7 +1873,7 @@ export class ZombieSystem {
     });
   }
 
-  restoreState(state: ZombieSystemState, resolveType: (id: string) => ZombieDef | undefined): void {
+  restoreState(state: ZombieSystemState, resolveType: (id: string) => ActorDef | undefined): void {
     if (this.store.size > 0) {
       throw new Error('Zombie state restores only into an empty entity store');
     }
@@ -2212,7 +2212,7 @@ export class ZombieSystem {
     };
   }
 
-  add(type: ZombieDef, position: Vec3, facing: Vec3 = [0, 0, -1]): EntityId {
+  add(type: ActorDef, position: Vec3, facing: Vec3 = [0, 0, -1]): EntityId {
     const direction = unit(facing);
     const figureSeed =
       type.model === 'fused-mass'
@@ -2299,7 +2299,7 @@ export class ZombieSystem {
     return id;
   }
 
-  addHorde(id: string, type: ZombieDef, center: Vec3, count: number): void {
+  addHorde(id: string, type: ActorDef, center: Vec3, count: number): void {
     if (!id || this.hordes.has(id) || !Number.isSafeInteger(count) || count < 1 || !center.every(Number.isFinite)) {
       throw new Error(`Invalid or duplicate horde ${id}`);
     }
@@ -2333,7 +2333,7 @@ export class ZombieSystem {
   }
 
   /** A horde sent from `center` to `target`, which also becomes its home once it arrives. */
-  releaseHorde(id: string, type: ZombieDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
+  releaseHorde(id: string, type: ActorDef, { center, count, target }: { center: Vec3; count: number; target: Vec3 }) {
     this.addHorde(id, type, center, count);
     const horde = this.hordes.get(id)!.state;
     horde.home = copy(target);
@@ -3681,7 +3681,7 @@ export class ZombieSystem {
 
   private resolveAcidGlobImpact(
     state: AcidGlobState,
-    type: ZombieDef,
+    type: ActorDef,
     { contact, position }: { contact: GlobContact; position: Vec3 },
   ): void {
     const spit = type.acidSpit!;

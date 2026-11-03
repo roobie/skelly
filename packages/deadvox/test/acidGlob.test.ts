@@ -6,7 +6,7 @@ import * as meleeCombat from '../src/core/meleeCombat.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef } from '../src/core/schema.ts';
 import { simRate, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import type { AcidGroundImpact } from '../src/core/zombies.ts';
@@ -15,7 +15,7 @@ import { startupContent } from './baseRegistry.ts';
 
 const base = startupContent().registry;
 const template = base.zombies.get('acid_zombie')!;
-const spitter: ZombieDef = {
+const spitter: ActorDef = {
   ...template,
   id: 'fixture_spitter',
   acidSpit: {
@@ -39,7 +39,7 @@ const spitter: ZombieDef = {
     ],
   },
 };
-const shambler: ZombieDef = {
+const shambler: ActorDef = {
   ...base.zombies.get('shambler')!,
   id: 'fixture_shambler',
   speed: {
@@ -49,7 +49,7 @@ const shambler: ZombieDef = {
     backgroundStepMetres: 1,
   },
 };
-const resistant: ZombieDef = {
+const resistant: ActorDef = {
   ...shambler,
   id: 'fixture_resistant',
   damageResistance: {
@@ -59,7 +59,7 @@ const resistant: ZombieDef = {
     >,
   },
 };
-const spreadSpitter: ZombieDef = {
+const spreadSpitter: ActorDef = {
   ...spitter,
   id: 'fixture_spread',
   acidSpit: { ...spitter.acidSpit!, spreadDegrees: 12 },

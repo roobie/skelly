@@ -1,6 +1,6 @@
 import type { Registry } from './content.ts';
 import type { ContentSection } from './schema/files.ts';
-import type { BodyTuningDef, ItemDef, ZombieDef } from './schema.ts';
+import type { ActorDef, BodyTuningDef, ItemDef } from './schema.ts';
 
 type Report = (section: ContentSection, id: string, path: string, message: string) => void;
 
@@ -71,7 +71,7 @@ const checkItem = (item: ItemDef, checker: Checker, registry: Registry): void =>
   }
 };
 
-const checkActor = (actor: ZombieDef, checker: Checker): void => {
+const checkActor = (actor: ActorDef, checker: Checker): void => {
   checker.keys('.damageResistance', actor.damageResistance);
   actor.attack.moves.forEach((move, i) => {
     checker.selected(`.attack.moves[${i}].damageKind`, move.damageKind);

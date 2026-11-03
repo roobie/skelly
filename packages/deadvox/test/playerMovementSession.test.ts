@@ -17,7 +17,7 @@ import { bodyDistance, reachTuning } from '../src/core/reach.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef, ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef, SiteLayoutDef } from '../src/core/schema.ts';
 import { firearmShotPracticeSkill, firearmSteadinessSkill, skillActivityPractice } from '../src/core/skillTraining.ts';
 import { compileTemplate, footprint, type Placement, placedBlockAt } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -648,7 +648,7 @@ const shambler = registry.zombies.get('shambler')!;
 const { loot: _loot, ...lootless } = shambler;
 // One blow downs it at the torso; its head stays on, so it lies there instead of dying. No limb comes off,
 // and its pockets are empty, so anything on the ground came from clearing it.
-const FRAGILE: ZombieDef = {
+const FRAGILE: ActorDef = {
   ...lootless,
   regions: { ...shambler.regions, torso: FISTS_MELEE.damage },
   dismember: { chance: 0, headOnKillChance: 0 },
@@ -694,7 +694,7 @@ describe('attacker modifiers', () => {
         ],
       ]),
     };
-    const move: ZombieDef['attack']['moves'][number] = {
+    const move: ActorDef['attack']['moves'][number] = {
       id: 'fixture-hit',
       motion: 'swing',
       weight: 1,
@@ -702,7 +702,7 @@ describe('attacker modifiers', () => {
       damageKind: 'cut',
       hitRegions: [{ region: 'leftArm', weight: 1 }],
     };
-    const type: ZombieDef = {
+    const type: ActorDef = {
       ...shambler,
       attack: { ...shambler.attack, moves: [move] },
     };

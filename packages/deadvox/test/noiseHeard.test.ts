@@ -6,7 +6,7 @@ import { footstepEventForBlock, type PlayerGait } from '../src/core/footsteps.ts
 import type { Item } from '../src/core/items.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { ZombieDef } from '../src/core/schema.ts';
+import type { ActorDef } from '../src/core/schema.ts';
 import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundId } from '../src/core/soundEvents.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
@@ -38,7 +38,7 @@ const shamblerFootstepEvents = new Set<SoundId | undefined>(
   ),
 );
 
-const blockBlow: ZombieDef['attack']['moves'][number] = {
+const blockBlow: ActorDef['attack']['moves'][number] = {
   id: 'fixture-blow',
   motion: 'swing',
   weight: 1,
@@ -47,7 +47,7 @@ const blockBlow: ZombieDef['attack']['moves'][number] = {
   hitRegions: [{ region: 'leftArm', weight: 1 }],
 };
 const shamblerDef = registry.zombies.get('shambler')!;
-const blockAttacker: ZombieDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
+const blockAttacker: ActorDef = { ...shamblerDef, attack: { ...shamblerDef.attack, moves: [blockBlow] } };
 const meleeSkill = registry.skills.get(fixtureIds.meleeCombat)!;
 const playerBody = registry.body.get('player')!;
 /**
