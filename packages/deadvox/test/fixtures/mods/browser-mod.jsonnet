@@ -1,4 +1,4 @@
-local zombies = import '../../../src/content/base/zombies.jsonnet';
+local zombies = import '../../../src/content/base/enemies.jsonnet';
 {
   id: 'browser-test-mod',
   version: '1',

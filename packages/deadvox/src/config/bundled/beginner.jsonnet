@@ -1,4 +1,4 @@
-local actors = (import '../../content/base/zombies.jsonnet').actors;
+local actors = (import '../../content/base/enemies.jsonnet').actors;
 local factors = { damage: 0.5, speed: 0.5, detection: 0.5, health: 0.5 };
 
 {

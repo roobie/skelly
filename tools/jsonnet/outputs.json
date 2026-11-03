@@ -73,6 +73,10 @@
       "output": "packages/deadvox/src/content/base/damage-kinds.json"
     },
     {
+      "source": "packages/deadvox/src/content/base/enemies.jsonnet",
+      "output": "packages/deadvox/src/content/base/enemies.json"
+    },
+    {
       "source": "packages/deadvox/src/content/base/figures-player.jsonnet",
       "output": "packages/deadvox/src/content/base/figures-player.json"
     },
@@ -371,10 +375,6 @@
     {
       "source": "packages/deadvox/src/content/base/weathering.jsonnet",
       "output": "packages/deadvox/src/content/base/weathering.json"
-    },
-    {
-      "source": "packages/deadvox/src/content/base/zombies.jsonnet",
-      "output": "packages/deadvox/src/content/base/zombies.json"
     },
     {
       "source": "packages/deadvox/test/fixtures/content/reachability-unfound.jsonnet",

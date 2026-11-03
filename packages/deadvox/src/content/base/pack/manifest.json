@@ -360,7 +360,7 @@
     },
     {
       "kind": "content",
-      "path": "zombies.json"
+      "path": "enemies.json"
     },
     {
       "kind": "json",

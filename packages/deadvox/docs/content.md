@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you author or change Deadvox content sources or their build pipeline
+  - you author or change Deadvox content sources, pack file names or their build pipeline
   - you change the test-house layout or its authored structures
   - you change content schemas, validation, registry merging, browser-mod identity or content-loading test fixtures
   - you integrate mod selection into the ordinary start flow
@@ -29,6 +29,10 @@ read_if:
 ## Authoring source
 
 Use the repository-wide authoring and conversion rule in `../../../docs/jsonnet.md`. The shared compiler produces the JSON consumed by `buildRegistry` in `src/core/content.ts`; validation and runtime references therefore meet at one boundary.
+
+The enemy pack source is named for its role rather than a creature family, so adding
+non-zombie enemies does not require renaming their content home. See
+`src/content/base/enemies.jsonnet` and `src/content/base/pack/manifest.jsonnet`, `content`.
 
 ## Browser mod identity
 

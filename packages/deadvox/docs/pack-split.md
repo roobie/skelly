@@ -137,7 +137,7 @@ These values do not change play until an attack selects the added pair. Explicit
 neutral actor maps preserve the existing absence-of-resistance behavior, while the
 acid actor keeps its authored immunity. See `src/content/base/body.jsonnet`, `responses`,
 `src/content/base/block-materials.jsonnet`, `materials`, and
-`src/content/base/zombies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
+`src/content/base/enemies.jsonnet`, `neutralDamageResistance`. Missing tuning is not
 permission to invent resistance or injury responses.
 
 **Sounds.** A sound follows the entry selecting it: shared body/block sounds belong

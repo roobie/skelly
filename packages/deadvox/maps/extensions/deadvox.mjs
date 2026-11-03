@@ -54,7 +54,7 @@ function content() {
       templates.push(entry);
     }
   }
-  return { templates, actors: readJson(`${base}/zombies.json`).actors };
+  return { templates, actors: readJson(`${base}/enemies.json`).actors };
 }
 function scalar(object, name, fallback) {
   const property = object.property(name);

@@ -116,7 +116,7 @@ export const fixtureScenarioSources = (
   const {
     body: [body],
   } = JSON.parse(readFileSync('src/content/base/body.json', 'utf8'));
-  const { actors } = JSON.parse(readFileSync('src/content/base/zombies.json', 'utf8'));
+  const { actors } = JSON.parse(readFileSync('src/content/base/enemies.json', 'utf8'));
   const {
     footstepSound: _footstepSound,
     loot: _loot,

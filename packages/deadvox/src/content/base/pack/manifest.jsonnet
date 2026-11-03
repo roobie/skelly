@@ -14,7 +14,7 @@ local content = [
   'site-generation', 'starts', 'sounds-block', 'sounds-furniture', 'sounds-pump', 'sounds-revolver',
   'sounds-synth', 'sounds-weapons', 'sounds', 'templates-cabins', 'templates-medical',
   'templates-playtest', 'templates-stairs', 'templates-test-house', 'templates-workshop',
-  'templates', 'tutorial', 'ui', 'vegetation', 'vehicles', 'weathering', 'zombies',
+  'templates', 'tutorial', 'ui', 'vegetation', 'vehicles', 'weathering', 'enemies',
 ];
 local guns = [
   'ak_slant_compensator', 'barrel_ak_medium', 'barrel_ar_large_long', 'barrel_ar_large_medium',

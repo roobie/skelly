@@ -179,7 +179,7 @@ const reachableLootItems = (root: string | undefined): { table: string; item: st
   return found;
 };
 const invalidActorRegionIssues = (actorId: string, regionId: string, change: 'remove' | 'add') => {
-  const actorFile = base.find((file) => file.source === 'zombies.json')!;
+  const actorFile = base.find((file) => file.source === 'enemies.json')!;
   const data = structuredClone(actorFile.data) as {
     actors: { id: string; regions: Record<string, number> }[];
   };
@@ -497,7 +497,7 @@ describe('content', () => {
   });
 
   it('requires unique ids within zombie attack move lists', () => {
-    const actorFile = base.find(({ source }) => source === 'zombies.json')!;
+    const actorFile = base.find(({ source }) => source === 'enemies.json')!;
     const data = structuredClone(actorFile.data) as {
       actors: { id: string; attack: { moves: { id: string }[] } }[];
     };
@@ -514,7 +514,7 @@ describe('content', () => {
   });
 
   it('rejects an acidSpit ability without tunables and tunables without the ability', () => {
-    const actorFile = base.find(({ source }) => source === 'zombies.json')!;
+    const actorFile = base.find(({ source }) => source === 'enemies.json')!;
     const issuesFor = (edit: (acid: { abilities: string[]; acidSpit?: unknown }) => void) => {
       const data = structuredClone(actorFile.data) as {
         actors: { id: string; abilities: string[]; acidSpit?: unknown }[];
@@ -1398,7 +1398,7 @@ describe('content', () => {
   });
 
   it('validates the shambler search-duration range', () => {
-    const actorPack = base.find(({ source }) => source === 'zombies.json')!;
+    const actorPack = base.find(({ source }) => source === 'enemies.json')!;
     const data = structuredClone(actorPack.data) as {
       actors: Array<{ hearingModel: { searchSimSeconds: { min: number; max: number } } }>;
     };
@@ -1627,7 +1627,7 @@ describe('content', () => {
   });
 
   it('requires figureSeeds on every zombie type but the amalgam, which must not define them', () => {
-    const actorFile = base.find((file) => file.source === 'zombies.json')!;
+    const actorFile = base.find((file) => file.source === 'enemies.json')!;
     interface Authored {
       model: string;
       figureSeeds?: number[] | undefined;
@@ -2866,7 +2866,7 @@ describe('content references', () => {
   });
 });
 
-const templateActorFile = base.find(({ source }) => source === 'zombies.json')!;
+const templateActorFile = base.find(({ source }) => source === 'enemies.json')!;
 const templateShambler = {
   severedItems: Object.fromEntries(
     Object.keys(baseRegistry.actors.get('shambler')!.regions).map((region) => [region, null]),
@@ -2921,14 +2921,14 @@ const templateBase = [
   ...(templateSoundDefinitions.length > 0
     ? [{ source: 'template-sounds.json', data: { sounds: templateSoundDefinitions } }]
     : []),
-  { source: 'template-zombies.json', data: { actors: [templateShambler] } },
+  { source: 'template-enemies.json', data: { actors: [templateShambler] } },
 ];
 
 describe('zombie voice references', () => {
   const voiceSound = { ...templateSoundDefinitions[0]!, id: 'fixture_voice' };
   const voiced = (sounds: Record<string, string>) =>
     buildRegistry([
-      ...templateBase.filter(({ source }) => source !== 'template-zombies.json'),
+      ...templateBase.filter(({ source }) => source !== 'template-enemies.json'),
       { source: 'voice-sound.json', data: { sounds: [voiceSound] } },
       { source: 'voice-zombie.json', data: { actors: [{ ...templateShambler, id: 'fixture_voiced', sounds }] } },
     ]).issues.map(({ path, message }) => `${path}: ${message}`);
