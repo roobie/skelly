@@ -29,7 +29,7 @@ import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from
 import { createSession, IDLE } from '../src/game/session.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
-import { debugStartWith } from './fixtures/debugStarts.ts';
+import { pumpStart } from './fixtures/debugStarts.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from './playerFixture.ts';
 
 const registry = baseRegistry();
@@ -482,10 +482,7 @@ describe('real pump ammunition', () => {
 
   it('loads loose ammunition from an authored pump start', () => {
     const inventory = new Inventory(registry);
-    applyStartKit(
-      inventory,
-      debugStartWith(registry, (item) => Boolean(item.firearm?.pump)),
-    );
+    applyStartKit(inventory, pumpStart());
     const gun = inventory.hands[dominantSide(inventory.character)]!;
     const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
     const [stack] = looseShells();

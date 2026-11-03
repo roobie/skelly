@@ -1,10 +1,14 @@
 // biome-ignore-all lint/correctness/noNodejsModules: the Vite transform asserts the browser-test observation contract
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import graphicsFile from '../../src/content/base/graphics.json' with { type: 'json' };
 import { CHUNK } from '../../src/core/coords.ts';
 import { BLOCK_SIZE, chunksFor, makeScale } from '../../src/core/scale.ts';
 
+const magazineModel = JSON.parse(
+  readFileSync(new URL('../../src/content/base/gungen/magazine_pistol_9.model.json', import.meta.url), 'utf8'),
+);
 export const cleanReplayRadiusM = 32;
 const columnMetres = CHUNK * BLOCK_SIZE;
 const streamEdgeColumn =
@@ -50,6 +54,29 @@ export const observationPlugin = {
     }
     if (id.endsWith('/src/content/base/starts.json')) {
       const data = JSON.parse(code);
+      const { defaultForSite: _default, ...houseStart } = data.starts.find((row) => row.site === 'testHouse');
+      data.starts.push({
+        ...houseStart,
+        id: 'primary_action_fixture_start',
+        debugOnly: true,
+        kit: [
+          ...houseStart.kit,
+          { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+          { id: 'firearm', item: 'pistol_service', destination: { kind: 'hand', role: 'dominant' } },
+          {
+            id: 'fitted_magazine',
+            item: 'magazine_pistol_9',
+            cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_9x19'),
+            destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
+          },
+          {
+            id: 'rounds',
+            item: 'cartridge_9x19',
+            count: 50,
+            destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+          },
+        ],
+      });
       // Quickbar replay needs owned stock without borrowing the product's kit or an implicit debug bag.
       data.items = [
         {

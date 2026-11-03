@@ -96,7 +96,7 @@ local shellInsert = numbered('shotgun-insert', [1, 2]);
       'grenade_blast', 'A thrown hand grenade goes off when its fuse runs out.',
       numbered('grenade-blast', [1, 2]), 1, [0.95, 1.05], [1, 1], 0, noise=heard(300),
     ) + {
-      debugHint: '?debug=1&start=gauntlet_debug_grenade: pull the pin, take the throwing stance, hold then release to throw, and step back.',
+      debugHint: '?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.',
     },
     sound(
       'player_hurt_light', 'Take light damage.',

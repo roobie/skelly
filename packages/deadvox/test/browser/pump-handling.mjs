@@ -21,6 +21,28 @@ const observation = {
   name: 'pump-handling-readonly-observation',
   enforce: 'pre',
   transform(code, id) {
+    if (id.endsWith('/src/content/base/starts.json')) {
+      const data = JSON.parse(code);
+      const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
+      data.starts.push({
+        ...start,
+        id: 'pump_handling_fixture_start',
+        debugOnly: true,
+        kit: [
+          ...start.kit,
+          { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+          { id: 'firearm', item: 'pump_shotgun', destination: { kind: 'hand', role: 'dominant' } },
+          { id: 'box', item: 'shotshell_box', destination: { kind: 'pocket', parent: 'backpack', pocket: 0 } },
+          {
+            id: 'rounds',
+            item: 'shell_12_gauge_00_buck',
+            count: 20,
+            destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+          },
+        ],
+      });
+      return JSON.stringify(data);
+    }
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
@@ -169,7 +191,7 @@ try {
   await page.goto(
     browserStageUrl(
       'pump-handling',
-      `http://127.0.0.1:${address.port}/?debug=1&start=testhouse_debug_pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
+      `http://127.0.0.1:${address.port}/?debug=1&start=pump_handling_fixture_start&site=testHouse&time=12%3A00&seed=7&radius=64`,
     ),
     { waitUntil: 'domcontentloaded' },
   );

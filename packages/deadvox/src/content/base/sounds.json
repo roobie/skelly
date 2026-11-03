@@ -126,7 +126,7 @@
     },
     {
       "category": "world",
-      "debugHint": "?debug=1&start=gauntlet_debug_grenade: pull the pin, take the throwing stance, hold then release to throw, and step back.",
+      "debugHint": "?debug=1: use the spawn menu for a Hand grenade. Pull the pin, take the throwing stance, hold then release to throw, and step back.",
       "description": "A thrown hand grenade goes off when its fuse runs out.",
       "gain": 1,
       "gainJitter": [1, 1],

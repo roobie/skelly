@@ -220,7 +220,7 @@ profiles to their shared and product topics; capability selection does not move
 content.
 
 Setting-name schema picklists and body/render branches remain part of #1532's
-extraction. Debug presets use authored starts; see `docs/url-mods.md`, "Start state in mods". Mechanism names describe behavior rather than setting or
+extraction. Debug kits use the spawn menu or mod-owned start rows; see `docs/url-mods.md`, "Start state in mods". Mechanism names describe behavior rather than setting or
 scenario identity; see `docs/decisions/0009-content-defined-products.md`,
 "Vocabulary". #393 owns the bounded tunables inventory, not a parallel list here.
 
@@ -261,7 +261,8 @@ These workstreams preserve #637's proof obligations within that one refactor:
   follows implemented body plans; see `src/core/saveFormat.ts`, `defaultVersion`.
 - **Ranged content and policy:** shared content validates without firearms. Preserve
   full-product firing and grenade behavior in an existing browser flow while product
-  skills read through roles and debug kits become content.
+  skills read through roles. Prepared debug kits belong in mod-owned start rows,
+  not per-kit base content.
 - **Skill providers:** shared mechanisms must work without skills; products choose
   their skill topics through dependencies rather than a second availability list.
 - **Core extraction:** shared content must validate independently of product entries,

@@ -1,7 +1,7 @@
 ---
 read_if:
   - you change the held compass's look, readability, lighting or placement
-  - you change the authored compass start or its hand preferences
+  - you prepare a compass preview or change its hand preferences
 ---
 
 # Held compass
@@ -16,6 +16,6 @@ A live handheld uses its exported model plus live parts on the model's display a
 
 The compass is dark at night: it has no glow and no light of its own. It is a plain physical object with no self-lit parts, so it is lit like the rest of the held model and darkens with the world's light.
 
-The compass remains a prototype: its casing and grip art and its final size are unresolved. Its debug start must not replace restored hands; restoration owns the saved inventory. See `src/core/startState.ts`, `applyStartState`.
+The compass remains a prototype: its casing and grip art and its final size are unresolved. A preview uses the spawn menu or a mod-owned start row and must not replace restored hands; restoration owns the saved inventory. See `src/core/startState.ts`, `applyStartState`.
 
 A wristwatch may reuse held-display ownership, but it must show read-only calendar time and must not advance the simulation clock.

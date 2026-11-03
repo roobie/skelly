@@ -15,7 +15,7 @@ import { copyTextOrSelect, formatMeleeResult } from '../src/debug/index.ts';
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startupContent } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
-import { debugStartWith, fitFixtureOptic, shortFirearmStart } from './fixtures/debugStarts.ts';
+import { fitFixtureOptic, grenadeStart, shortFirearmStart } from './fixtures/debugStarts.ts';
 import { FISTS_MELEE } from './fixtures/unarmed.ts';
 import { createPlayerBody, PLAYER, physicsFor } from './playerFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -194,27 +194,15 @@ describe('debug starting equipment', () => {
     expect(launchImpulse).toBeCloseTo(10 * shambler.severedImpulseScale);
   });
 
-  it('places every admitted debug kit through ordinary inventory owners', () => {
-    const starts = [...registry.starts.values()].filter((start) => start.debugOnly);
-    expect(starts.length).toBeGreaterThan(0);
-    for (const start of starts) {
-      const inventory = new Inventory(registry);
-      expect(() => applyStartKit(inventory, start), start.id).not.toThrow();
-    }
-  });
-
-  it('an authored grenade start holds a throwable with compatible packed spares', () => {
+  it('a fixture grenade kit holds a throwable with compatible packed spares', () => {
     const inventory = new Inventory(registry);
-    applyStartKit(
-      inventory,
-      debugStartWith(registry, (item) => Boolean(item.explosive)),
-    );
+    applyStartKit(inventory, grenadeStart());
     const held = inventory.hands[dominantSide(inventory.character)]!;
     expect(registry.items.get(held.type)?.explosive).toBeDefined();
     expect([...inventory.items()].some(({ item }) => item.uid !== held.uid && item.type === held.type)).toBe(true);
   });
 
-  it('an authored short-firearm start fits a filled compatible magazine and spare ammunition', () => {
+  it('a fixture short-firearm kit fits a filled compatible magazine and spare ammunition', () => {
     const inventory = new Inventory(registry);
     applyStartKit(inventory, shortFirearmStart(registry));
     const gun = inventory.hands[dominantSide(inventory.character)]!;

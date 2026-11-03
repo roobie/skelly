@@ -12,6 +12,9 @@ import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const magazineModel = JSON.parse(
+  readFileSync(resolve(root, 'src/content/base/gungen/magazine_stanag_30.model.json'), 'utf8'),
+);
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
   [
@@ -40,6 +43,38 @@ const vite = await createServer({
       name: 'full-auto-observation',
       enforce: 'pre',
       transform(code, id) {
+        if (id.endsWith('/src/content/base/starts.json')) {
+          const data = JSON.parse(code);
+          const { defaultForSite: _default, ...start } = data.starts.find((row) => row.site === 'testHouse');
+          data.starts.push({
+            ...start,
+            id: 'full_auto_fixture_start',
+            debugOnly: true,
+            kit: [
+              ...start.kit,
+              { id: 'backpack', item: 'hiking_backpack', destination: { kind: 'worn' } },
+              { id: 'firearm', item: 'rifle_assault', destination: { kind: 'hand', role: 'dominant' } },
+              {
+                id: 'fitted_magazine',
+                item: 'magazine_stanag_30',
+                cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
+                destination: { kind: 'slot', parent: 'firearm', slot: 'magazine' },
+              },
+              {
+                id: 'spare_magazine',
+                item: 'magazine_stanag_30',
+                cartridges: new Array(magazineModel.gun.capacity).fill('cartridge_5_d_56x45'),
+                destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+              },
+              {
+                id: 'box',
+                item: 'cartridge_box_5_d_56x45',
+                destination: { kind: 'pocket', parent: 'backpack', pocket: 0 },
+              },
+            ],
+          });
+          return JSON.stringify(data);
+        }
         if (id.endsWith('/src/game/play.ts')) {
           const marker = anchors.get('src/game/play.ts');
           requireAnchor(code, 'src/game/play.ts', marker);
@@ -162,7 +197,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=regional_map-right-lowered&mannequinWear=jacket,jeans,rubber_boots,utility_vest,school_backpack&start=testhouse_debug_ar&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?site=testHouse&seed=73&debug=1&mannequin=regional_map-right-lowered&mannequinWear=jacket,jeans,rubber_boots,utility_vest,school_backpack&start=full_auto_fixture_start&radius=64&time=12:00&at=43.50,0.00,-90.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');

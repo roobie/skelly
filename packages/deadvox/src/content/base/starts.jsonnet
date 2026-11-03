@@ -48,5 +48,5 @@ local normalStarts = [common + {
   common + { id: 'weatheringtest', site: 'weatheringTest', debugOnly: true, startTimeGameTimeOfDay: day.noonGameTimeOfDay },
 ];
 {
-  starts: normalStarts + (import 'debug-starts.libsonnet')(normalStarts),
+  starts: normalStarts,
 }

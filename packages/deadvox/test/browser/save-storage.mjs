@@ -1063,11 +1063,11 @@ try {
         globalThis.__lifecycleHoldNextSave = true;
       });
     }
-    const pumpUrl = new URL(appUrl);
-    pumpUrl.searchParams.set('start', 'gauntlet_debug_pump');
+    const freshStartUrl = new URL(appUrl);
+    freshStartUrl.searchParams.set('start', 'gauntlet');
     await navigationPhase('destination save discovery', async () => {
-      await navigatePage('navigation-only goto pump loadout', () =>
-        page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
+      await navigatePage('navigation-only goto normal start', () =>
+        page.goto(freshStartUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
       );
       await page.waitForFunction(() => sessionStorage.getItem('lifecycle-lock-snapshot') !== null, undefined, {
         timeout: STAGE_TIMEOUT_MS,
@@ -1187,7 +1187,7 @@ try {
       assert.equal(restored.pageIsLeaving, false, 'pageshow clears the leaving state');
       assert.equal(postBackSave.pageIsLeaving, false, 'the restored page remains eligible for lifecycle saves');
       assert.equal(postBackSave.captures.length, 1, 'Back produces only the intended lifecycle capture');
-      assert.equal(postBackSave.captures[0].reason, 'visibilitychange');
+      assert.equal(postBackSave.captures[0].visibilityState, 'hidden');
       assert.equal(postBackSave.captures[0].pageIsLeaving, false);
       assert.equal(postBackSave.generation > restored.generation, true);
     } else {

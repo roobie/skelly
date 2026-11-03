@@ -41,7 +41,7 @@ import { OPTIC_BODY_LAYER, PLAYER_FIGURE_LAYER, PLAYER_SELF_MASK_LAYER } from '.
 import { baseRegistry } from './baseRegistry.ts';
 import { loadFigureModels } from './figureModels.ts';
 import { skilledFirearmsTuning } from './fixtures/combatTuning.ts';
-import { debugStartWith, fitFixtureOptic } from './fixtures/debugStarts.ts';
+import { fitFixtureOptic, fixtureStart } from './fixtures/debugStarts.ts';
 import { heldState } from './heldState.ts';
 import { createPlayerBody } from './playerFixture.ts';
 
@@ -89,12 +89,7 @@ const fixture = async (
   if (optic) {
     applyStartKit(
       inventory,
-      debugStartWith(registry, (definition) => {
-        const model = registry.models.get(definition.model ?? '');
-        return Boolean(
-          definition.firearm && model?.hands?.butt && model.gun?.sight?.kind === 'optic' && !definition.firearm.bolt,
-        );
-      }),
+      fixtureStart([{ id: 'firearm', item: gun.id, destination: { kind: 'hand', role: 'dominant' } }]),
     );
     fitFixtureOptic(inventory, inventory.hands.right!, optic);
   }

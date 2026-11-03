@@ -24,10 +24,7 @@ const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new
 const authoredStarts = JSON.parse(await readFile(resolve(projectRoot, 'src/content/base/starts.json'), 'utf8')).starts;
 const houseStart = authoredStarts.find((row) => row.defaultForSite && row.site === 'testHouse');
 assert(houseStart, 'the product supplies an authored start for the existing house flow');
-const debugHouseStart = authoredStarts.find(
-  (row) => row.debugOnly && row.site === houseStart.site && row.kit.some((entry) => entry.cartridges?.length > 0),
-);
-assert(debugHouseStart, 'the product supplies a loaded-firearm debug start for the existing flow');
+const debugHouseStart = { id: 'primary_action_fixture_start' };
 const startStateModule = '/src/core/startState.ts';
 const debugStartsModule = '/test/fixtures/debugStarts.ts';
 const firearmActionModule = '/src/core/firearmAction.ts';

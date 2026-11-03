@@ -4,7 +4,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { applyStartKit } from '../src/core/startState.ts';
 import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { debugStartWith } from './fixtures/debugStarts.ts';
+import { pumpStart } from './fixtures/debugStarts.ts';
 import { withFixtureBody } from './simulationFixture.ts';
 import { registry } from './snapshotTestSupport.ts';
 
@@ -41,10 +41,7 @@ const handlingTimes = (painful: boolean) => {
   if (painful) {
     sim.body.impact(10, 'torso', { kind: 'cut' });
   }
-  applyStartKit(
-    inventory,
-    debugStartWith(inventory.registry, (item) => Boolean(item.firearm?.pump)),
-  );
+  applyStartKit(inventory, pumpStart());
   const gun = inventory.hands[dominantSide(inventory.character)]!;
   const loading = firearms.loadNext(gun.uid, sim.time);
   const rag = inventory.create('rag');

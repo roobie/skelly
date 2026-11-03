@@ -8,7 +8,7 @@ read_if:
 
 # Rifle cycle playback
 
-A debug start initializes only a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. See `src/core/startState.ts`, `applyStartState`, and `docs/url-mods.md`, "Start state in mods".
+A firearm preview uses the spawn menu or a mod-owned start row. Start initialization applies only to a fresh world; a restored game keeps its saved hands, so preview setup cannot overwrite player-owned inventory. See `src/core/startState.ts`, `applyStartState`, and `docs/url-mods.md`, "Start state in mods".
 
 Racking, changing and removing a magazine are ordinary handling actions. Their durations and cycle geometry come from the Gungen export; handling blocks firing, reduces movement and prevents sprinting. Automatic action motion is presentation on a mechanical cycle, not a cancellable manual queue job. See `src/game/firearmHandling.ts`, `FirearmMechanics`.
 

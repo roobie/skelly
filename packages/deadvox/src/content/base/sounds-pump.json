@@ -2,7 +2,7 @@
   "sounds": [
     {
       "category": "world",
-      "debugHint": "?debug=1&start=gauntlet_debug_pump: unpack the sealed box, then load loose shells into the pump and rack it.",
+      "debugHint": "?debug=1: use the spawn menu for a Pump shotgun and a Sealed shotshell box (20). Unpack the box, load the shells into the pump, then rack it.",
       "description": "Fire a chambered pump shotgun; it needs racking before the next shot.",
       "gain": 0.80000000000000004,
       "gainJitter": [1, 1],
