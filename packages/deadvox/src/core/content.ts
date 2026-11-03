@@ -1956,7 +1956,7 @@ const checkScenarios = (registry: Registry, report: Report): void => {
       report('scenarios', scenario.id, '.compression', `no compression tuning "${scenario.compression}"`);
     }
     checkEventRules(registry, scenario, report);
-    if (registry.layouts.has(scenario.id) || ['city', 'forest', 'testHouse', 'weatheringTest'].includes(scenario.id)) {
+    if (registry.layouts.has(scenario.id) || ['city', 'forest', 'weatheringTest'].includes(scenario.id)) {
       report('scenarios', scenario.id, '.id', 'scenario id collides with another site selector');
     }
   }

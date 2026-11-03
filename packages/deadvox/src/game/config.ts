@@ -200,10 +200,7 @@ const MAX_STOREYS = 20;
 export const savingEnabledFromUrl = (params: URLSearchParams): boolean =>
   params.get('debug') !== '1' || params.get('save') === '1';
 
-/**
- * `?site=city` and `?storeys=N` build the stress-test city; `?site=testHouse` selects the test house;
- * `?site=weatheringTest` selects the debug-only comparison; `fallback` is the site otherwise.
- */
+/** Authored scene names require admitted rows; only generated-site selectors bypass that lookup. */
 export const siteFromUrl = (
   params: URLSearchParams,
   fallback: SiteName,
@@ -217,7 +214,6 @@ export const siteFromUrl = (
   return {
     site:
       requested === 'city' ||
-      requested === 'testHouse' ||
       requested === 'forest' ||
       (debug && requested === 'weatheringTest') ||
       (requested !== null && (registry.layouts.has(requested) || registry.scenarios.has(requested)))
