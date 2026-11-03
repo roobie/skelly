@@ -25,7 +25,7 @@ export const actorFigure = (type: ActorFigureType, seed: number) => {
     return templateFigure(bodyPlanModel(figureVariantOf(type)), seed);
   }
   if (type.bodyScale === undefined) {
-    throw new Error('Amalgam figure is missing its authored bodyScale');
+    throw new Error('Fused-mass figure is missing its authored bodyScale');
   }
   return fusedMassFigure(seed, type.bodyScale);
 };

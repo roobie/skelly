@@ -4,16 +4,15 @@ import { mulMV, rotY } from '@mobgen/core/math.ts';
 import { boneTransforms } from '@mobgen/core/pose.ts';
 import { consumableTemplate } from '@mobgen/core/template.ts';
 import { worldPosition } from '@mobgen/core/voxelize.ts';
-import { amalgamManifest } from '@mobgen/mob/amalgam.ts';
-// Side effect: registers 'amalgam' so `consumableTemplate` can resolve it and refuse it if it is ever
-// marked comparison-only.
-import '@mobgen/mob/amalgamTemplate.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { type FusedMassManifest, fusedMassManifest } from '@mobgen/mob/fusedMass.ts';
+// Side effect: registers 'fused-mass' so `consumableTemplate` can resolve it and refuse it if it is ever
+// marked comparison-only.
+import '@mobgen/mob/fusedMassTemplate.ts';
 import type { BoneVoxelBox } from '@mobgen/mob/humanoidFigure.ts';
 import type { Vec3 } from './coords.ts';
 
 type FusedMassRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
-type FusedMassManifest = ReturnType<typeof amalgamManifest>;
 
 export interface FusedMassFigure {
   readonly seed: number;
@@ -189,12 +188,12 @@ export const fusedMassFigure = (seed: number, scale: number): FusedMassFigure =>
     throw new Error(`Invalid fused-mass body scale ${scale}`);
   }
   // Like `templateFigure`, a seed must be valid itself rather than fall through to another seed's body.
-  const generated = generateValid(consumableTemplate('amalgam'), seed, { maxAttempts: 1 });
+  const generated = generateValid(consumableTemplate('fused-mass'), seed, { maxAttempts: 1 });
   if (!generated) {
     throw new Error(`No valid fused-mass realization from seed ${seed}`);
   }
   const { realized } = generated;
-  const manifest = amalgamManifest(realized.body, realized.voxels);
+  const manifest = fusedMassManifest(realized.body, realized.voxels);
   const { byBone, voxelCentersByBone, totalBounds } = collectVoxelBounds(realized);
   const margin = realized.voxels.size / 2;
   const boxes = Object.fromEntries(

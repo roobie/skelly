@@ -1,6 +1,6 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
+import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
 import { actorFigure, fusedMassTypeOf } from '../src/core/actorFigure.ts';
@@ -16,7 +16,7 @@ const FIXTURE_SEED = 1;
 describe('actor models', () => {
   it('lets content select every ready mobgen zombie template the renderer draws', () => {
     const [row] = registry.zombies.values();
-    const refused = [...TEMPLATES, acidTemplate, amalgamTemplate]
+    const refused = [...TEMPLATES, acidTemplate, fusedMassTemplate]
       .filter((template) => (template.status ?? 'ready') === 'ready')
       .filter((template) =>
         validateContent({

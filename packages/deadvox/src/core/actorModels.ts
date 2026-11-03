@@ -10,7 +10,7 @@ export const FIGURE_VARIANTS = {
   crawler: { bodyPlan: 'humanoid', model: 'crawler' },
   brute: { bodyPlan: 'humanoid', model: 'brute' },
   acid: { bodyPlan: 'acid', model: 'acid' },
-  'fused-mass': { bodyPlan: 'fused-mass', model: 'amalgam' },
+  'fused-mass': { bodyPlan: 'fused-mass', model: 'fused-mass' },
 } as const;
 
 export type BodyPlan = keyof typeof BODY_PLANS;

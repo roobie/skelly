@@ -159,7 +159,7 @@
       }
     ]
   },
-  "models": ["humanoid", "runner", "brute", "crawler", "amalgam"],
+  "models": ["humanoid", "runner", "brute", "crawler", "fused-mass"],
   "motion": {
     "hitDirectionWeight": 1,
     "launchSpeed": 1.2,

@@ -254,7 +254,7 @@ export const targetStanceWeight = (input: ActorPoseInput): number => {
   if (model === 'acid') {
     return acidAttackTimeFor(input) === undefined ? 0 : 1;
   }
-  if (model === 'amalgam') {
+  if (model === 'fused-mass') {
     return 0;
   }
   const clip = attackClipFor(templateByName(model));
@@ -273,7 +273,7 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 
 const posedFusedMass = (input: ActorPoseInput): PosedActor => {
   if (input.bodyScale === undefined) {
-    throw new Error('Amalgam pose is missing its authored bodyScale');
+    throw new Error('Fused-mass pose is missing its authored bodyScale');
   }
   const figure = fusedMassFigure(input.seed, input.bodyScale);
   const { bones } = figure.realized.body;
@@ -379,7 +379,7 @@ export const posedMouth = (input: ActorPoseInput): Vec3 => {
 /** The shared living-actor pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedActor = (input: ActorPoseInput): PosedActor => {
   const model = bodyPlanModel(input.model ?? 'humanoid');
-  if (model === 'amalgam') {
+  if (model === 'fused-mass') {
     return posedFusedMass(input);
   }
   const figure = templateFigure(model, input.seed);

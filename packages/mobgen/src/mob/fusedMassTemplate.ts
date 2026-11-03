@@ -1,24 +1,24 @@
 import { registerTemplate, type Template } from '../core/template.ts';
-import { AMALGAM_MEMBER_IDS, MAX_AMALGAM_MEMBERS, MIN_AMALGAM_MEMBERS } from './amalgam.ts';
+import { FUSED_MASS_MEMBER_IDS, MAX_FUSED_MASS_MEMBERS, MIN_FUSED_MASS_MEMBERS } from './fusedMass.ts';
 import { humanoid, TEMPLATES } from './templates.ts';
 
 const memberParam = (member: number, name: string): string => `member.${member}.${name}`;
-const amalgamParams: Template['params'] = {
+const fusedMassParams: Template['params'] = {
   memberCount: {
     choices: Array.from(
-      { length: MAX_AMALGAM_MEMBERS - MIN_AMALGAM_MEMBERS + 1 },
-      (_, index) => MIN_AMALGAM_MEMBERS + index,
+      { length: MAX_FUSED_MASS_MEMBERS - MIN_FUSED_MASS_MEMBERS + 1 },
+      (_, index) => MIN_FUSED_MASS_MEMBERS + index,
     ),
   },
   height: humanoid.params.height!,
   headScale: humanoid.params.headScale!,
   ...Object.fromEntries(
-    AMALGAM_MEMBER_IDS.flatMap((member) =>
+    FUSED_MASS_MEMBER_IDS.flatMap((member) =>
       Object.entries(humanoid.params).map(([name, spec]) => [memberParam(member, name), spec]),
     ),
   ),
   ...Object.fromEntries(
-    AMALGAM_MEMBER_IDS.flatMap((member) => [
+    FUSED_MASS_MEMBER_IDS.flatMap((member) => [
       [memberParam(member, 'anchorX'), { min: -0.25, max: 0.25 }],
       [memberParam(member, 'anchorZ'), { min: -0.25, max: 0.25 }],
       [memberParam(member, 'groundGap'), { choices: [0, 0, 0, 0.12, 0.25, 0.4] }],
@@ -30,22 +30,22 @@ const amalgamParams: Template['params'] = {
   ),
 };
 
-export const amalgamTemplate: Template = {
-  name: 'amalgam',
+export const fusedMassTemplate: Template = {
+  name: 'fused-mass',
   materials: humanoid.materials,
   ...(humanoid.materialHsl ? { materialHsl: humanoid.materialHsl } : {}),
   description: 'Procedurally fused humanoids in random orientations around a shared core.',
-  bodyPlan: 'amalgam',
+  bodyPlan: 'fused-mass',
   voxelSize: humanoid.voxelSize,
-  bodyMassKg: humanoid.bodyMassKg * MAX_AMALGAM_MEMBERS,
-  params: amalgamParams,
+  bodyMassKg: humanoid.bodyMassKg * MAX_FUSED_MASS_MEMBERS,
+  params: fusedMassParams,
   supportBones: 'ground-contacts',
   budgets: {
-    totalVoxels: { min: 1, max: humanoid.budgets.totalVoxels.max * MAX_AMALGAM_MEMBERS * 2 },
-    totalTriangles: { min: 1, max: humanoid.budgets.totalTriangles.max * MAX_AMALGAM_MEMBERS * 3 },
+    totalVoxels: { min: 1, max: humanoid.budgets.totalVoxels.max * MAX_FUSED_MASS_MEMBERS * 2 },
+    totalTriangles: { min: 1, max: humanoid.budgets.totalTriangles.max * MAX_FUSED_MASS_MEMBERS * 3 },
     groups: {},
   },
 };
-registerTemplate(amalgamTemplate);
+registerTemplate(fusedMassTemplate);
 
-export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, amalgamTemplate];
+export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, fusedMassTemplate];

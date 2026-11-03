@@ -1,7 +1,7 @@
 local hinge(bones, limits) = { bones: bones, limits: [limits, [0, 0], [0, 0]] };
 local ball(bones, flex, swing, twist) = { bones: bones, limits: [flex, twist, swing] };
 {
-  models: ['humanoid', 'runner', 'brute', 'crawler', 'amalgam'],
+  models: ['humanoid', 'runner', 'brute', 'crawler', 'fused-mass'],
   shortenedLegs: { absent: ['shin.L', 'shin.R'], omit: ['shin.L', 'shin.R', 'foot.L', 'foot.R'] },
   compound: { root: 'core', memberRoot: 'pelvis', limits: [[-0.5, 0.5], [-0.5, 0.5], [-0.5, 0.5]] },
   sweep: {

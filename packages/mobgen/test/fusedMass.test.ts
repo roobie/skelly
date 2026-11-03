@@ -6,12 +6,12 @@ import { aabbOf } from '../src/core/sdf.ts';
 import { validate } from '../src/core/validate.ts';
 import { voxelize } from '../src/core/voxelize.ts';
 import {
-  amalgamManifest,
-  bodyWithoutAmalgamPart,
-  MAX_AMALGAM_MEMBERS,
-  MIN_AMALGAM_MEMBERS,
-} from '../src/mob/amalgam.ts';
-import { amalgamTemplate } from '../src/mob/amalgamTemplate.ts';
+  bodyWithoutFusedMassPart,
+  fusedMassManifest,
+  MAX_FUSED_MASS_MEMBERS,
+  MIN_FUSED_MASS_MEMBERS,
+} from '../src/mob/fusedMass.ts';
+import { fusedMassTemplate } from '../src/mob/fusedMassTemplate.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SAMPLE_SEEDS = [1, 17, 42];
@@ -21,7 +21,7 @@ const sampleRealizations = new Map<number, ReturnType<typeof realize>>();
 const realizeSample = (seed: number) => {
   let realized = sampleRealizations.get(seed);
   if (!realized) {
-    realized = realize(generate(amalgamTemplate, seed));
+    realized = realize(generate(fusedMassTemplate, seed));
     sampleRealizations.set(seed, realized);
   }
   return realized;
@@ -30,14 +30,14 @@ const FOOT_BONE_PATTERN = /\.foot\.[LR]$/;
 const HEAD_BONE_PATTERN = /\.head$/;
 
 const bodyIssues = (body: ReturnType<typeof realize>['body'], seed: number) => {
-  const voxels = voxelize(body, amalgamTemplate.voxelSize, seed);
+  const voxels = voxelize(body, fusedMassTemplate.voxelSize, seed);
   const meshes = meshBones(voxels, body.bones.length);
   return validate({
     body,
     voxels,
     meshes,
-    supportBones: resolveSupportBones(amalgamTemplate, body, voxels),
-    budgets: amalgamTemplate.budgets,
+    supportBones: resolveSupportBones(fusedMassTemplate, body, voxels),
+    budgets: fusedMassTemplate.budgets,
   });
 };
 
@@ -121,7 +121,7 @@ const coreBaseSurfaceProfile = (realized: ReturnType<typeof realize>, seed: numb
   return coreSurfaceProfile(voxelize(baseBody, realized.voxels.size, seed), 1);
 };
 
-const inspectManifest = (manifest: ReturnType<typeof amalgamManifest>, boneIds: ReadonlySet<string>) => {
+const inspectManifest = (manifest: ReturnType<typeof fusedMassManifest>, boneIds: ReadonlySet<string>) => {
   const partById = new Map(manifest.parts.map((part) => [part.id, part]));
   const ownedBones = manifest.parts.flatMap((part) => part.boneIds);
   const regionsResolve = manifest.regions.every((region) => {
@@ -163,9 +163,9 @@ const memberPoses = (genome: ReturnType<typeof generate>, memberIds: readonly st
   });
 
 const coverageSample = (seed: number): { memberCount: number; cases: string[] } => {
-  const genome = generate(amalgamTemplate, seed);
+  const genome = generate(fusedMassTemplate, seed);
   const realized = realize(genome);
-  const manifest = amalgamManifest(realized.body, realized.voxels);
+  const manifest = fusedMassManifest(realized.body, realized.voxels);
   const contacts = actualGroundOwners(realized);
   const members = manifest.parts.filter((part) => part.severable);
   const cases = [
@@ -186,16 +186,16 @@ const coverageSample = (seed: number): { memberCount: number; cases: string[] } 
   return { memberCount: members.length, cases };
 };
 
-describe('amalgam body plan', () => {
+describe('fused-mass body plan', () => {
   it('generates valid connected bodies and a resolved part/region manifest across sample seeds', () => {
     for (const seed of SAMPLE_SEEDS) {
-      const realized = realize(generate(amalgamTemplate, seed));
+      const realized = realize(generate(fusedMassTemplate, seed));
       expect(realized.report.ok, JSON.stringify(realized.report.issues)).toBe(true);
-      const manifest = amalgamManifest(realized.body, realized.voxels);
+      const manifest = fusedMassManifest(realized.body, realized.voxels);
       const boneIds = new Set(realized.body.bones.map((bone) => bone.id));
       const summary = inspectManifest(manifest, boneIds);
-      expect(summary.memberCount).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
-      expect(summary.memberCount).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
+      expect(summary.memberCount).toBeGreaterThanOrEqual(MIN_FUSED_MASS_MEMBERS);
+      expect(summary.memberCount).toBeLessThanOrEqual(MAX_FUSED_MASS_MEMBERS);
       expect(summary.headCount).toBe(summary.memberCount);
       expect(summary.rootsResolve).toBe(true);
       expect(summary.partsOwnKnownBones).toBe(true);
@@ -234,39 +234,39 @@ describe('amalgam body plan', () => {
   });
 
   it('rejects a member root detached from the shared core when building the manifest', () => {
-    const realized = realize(generate(amalgamTemplate, SAMPLE_SEEDS[0]!));
+    const realized = realize(generate(fusedMassTemplate, SAMPLE_SEEDS[0]!));
     const brokenBody = {
       ...realized.body,
       bones: realized.body.bones.map((bone) => (bone.parent === 'core' ? { ...bone, parent: null } : bone)),
     };
-    expect(() => amalgamManifest(brokenBody, realized.voxels)).toThrow('core as its only root');
+    expect(() => fusedMassManifest(brokenBody, realized.voxels)).toThrow('core as its only root');
   });
 
   it('severing every member in one body leaves a valid core-supported body', () => {
     const seed = SAMPLE_SEEDS[0]!;
-    const realized = realize(generate(amalgamTemplate, seed));
-    const manifest = amalgamManifest(realized.body, realized.voxels);
+    const realized = realize(generate(fusedMassTemplate, seed));
+    const manifest = fusedMassManifest(realized.body, realized.voxels);
     for (const part of manifest.parts.filter((candidate) => candidate.severable)) {
-      const remaining = bodyWithoutAmalgamPart(realized.body, part.id);
+      const remaining = bodyWithoutFusedMassPart(realized.body, part.id);
       const report = bodyIssues(remaining, seed);
       expect(report.ok, `${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
     }
   });
 
-  sweepGroup('amalgam validity sweep', () => {
+  sweepGroup('fused-mass validity sweep', () => {
     it(`keeps every body valid, supported and severable (${VALIDITY_SEEDS} seeds)`, () => {
       for (let seed = 0; seed < VALIDITY_SEEDS; seed++) {
-        const realized = realize(generate(amalgamTemplate, seed));
+        const realized = realize(generate(fusedMassTemplate, seed));
         expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
-        const manifest = amalgamManifest(realized.body, realized.voxels);
+        const manifest = fusedMassManifest(realized.body, realized.voxels);
         expect([...realized.supportBones].sort(), `seed ${seed}: support owners`).toEqual(
           [...actualGroundOwners(realized)].sort(),
         );
         const members = manifest.parts.filter((part) => part.severable);
-        expect(members.length, `seed ${seed}: severable member count`).toBeGreaterThanOrEqual(MIN_AMALGAM_MEMBERS);
-        expect(members.length, `seed ${seed}: severable member count`).toBeLessThanOrEqual(MAX_AMALGAM_MEMBERS);
+        expect(members.length, `seed ${seed}: severable member count`).toBeGreaterThanOrEqual(MIN_FUSED_MASS_MEMBERS);
+        expect(members.length, `seed ${seed}: severable member count`).toBeLessThanOrEqual(MAX_FUSED_MASS_MEMBERS);
         for (const part of members) {
-          const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
+          const report = bodyIssues(bodyWithoutFusedMassPart(realized.body, part.id), seed);
           expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
         }
       }

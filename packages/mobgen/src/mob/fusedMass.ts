@@ -8,23 +8,23 @@ import { heightHeadBudgets } from './budgets.ts';
 import { severedBoneSet } from './dismember.ts';
 import { buildHumanoid, HUMANOID_LIMB_BONES, HUMANOID_PARAM_ORDER, sampleWounds, WOUNDABLE_BONES } from './humanoid.ts';
 
-export const MIN_AMALGAM_MEMBERS = 3;
-export const AMALGAM_MEMBER_IDS = [0, 1, 2, 3, 4] as const;
-export const MAX_AMALGAM_MEMBERS = AMALGAM_MEMBER_IDS.length;
+export const MIN_FUSED_MASS_MEMBERS = 3;
+export const FUSED_MASS_MEMBER_IDS = [0, 1, 2, 3, 4] as const;
+export const MAX_FUSED_MASS_MEMBERS = FUSED_MASS_MEMBER_IDS.length;
 const MEMBER_BONE_PREFIX = (member: number): string => `member.${member}.`;
 const MEMBER_ID_PATTERN = /^member\.(\d+)\./;
 const memberBone = (member: number, bone: string): string => `${MEMBER_BONE_PREFIX(member)}${bone}`;
 
 const memberParam = (member: number, param: string): string => `member.${member}.${param}`;
 const PLACEMENT_PARAMS = ['anchorX', 'anchorZ', 'groundGap', 'scale', 'rotateX', 'rotateY', 'rotateZ'] as const;
-const MEMBER_PARAM_ORDER = AMALGAM_MEMBER_IDS.flatMap((member) => [
+const MEMBER_PARAM_ORDER = FUSED_MASS_MEMBER_IDS.flatMap((member) => [
   ...HUMANOID_PARAM_ORDER.map((param) => memberParam(member, param)),
   ...PLACEMENT_PARAMS.map((param) => memberParam(member, param)),
 ]);
-const AMALGAM_SAMPLE_ORDER = ['memberCount', ...MEMBER_PARAM_ORDER];
-const AMALGAM_PARAM_ORDER = [...AMALGAM_SAMPLE_ORDER, 'height', 'headScale'];
+const FUSED_MASS_SAMPLE_ORDER = ['memberCount', ...MEMBER_PARAM_ORDER];
+const FUSED_MASS_PARAM_ORDER = [...FUSED_MASS_SAMPLE_ORDER, 'height', 'headScale'];
 
-const WOUND_BONES = AMALGAM_MEMBER_IDS.flatMap((member) => WOUNDABLE_BONES.map((bone) => memberBone(member, bone)));
+const WOUND_BONES = FUSED_MASS_MEMBER_IDS.flatMap((member) => WOUNDABLE_BONES.map((bone) => memberBone(member, bone)));
 
 interface ModulePlacement {
   readonly member: number;
@@ -71,13 +71,15 @@ const rotateShape = (shape: Feature['shape'], placement: ModulePlacement): Featu
 const namespacedWounds = (member: number, wounds: readonly Wound[]): Wound[] =>
   wounds.map((wound) => ({ ...wound, bone: memberBone(member, wound.bone) }));
 
-const sampleAmalgam: BodyPlanDef['sample'] = (rng, template) => {
-  const params = sampleParams(rng, template.params, AMALGAM_SAMPLE_ORDER);
+const sampleFusedMass: BodyPlanDef['sample'] = (rng, template) => {
+  const params = sampleParams(rng, template.params, FUSED_MASS_SAMPLE_ORDER);
   const memberCount = params.memberCount!;
-  if (!Number.isInteger(memberCount) || memberCount < MIN_AMALGAM_MEMBERS || memberCount > MAX_AMALGAM_MEMBERS) {
-    throw new Error(`amalgam member count must be an integer in [${MIN_AMALGAM_MEMBERS}, ${MAX_AMALGAM_MEMBERS}]`);
+  if (!Number.isInteger(memberCount) || memberCount < MIN_FUSED_MASS_MEMBERS || memberCount > MAX_FUSED_MASS_MEMBERS) {
+    throw new Error(
+      `fused-mass member count must be an integer in [${MIN_FUSED_MASS_MEMBERS}, ${MAX_FUSED_MASS_MEMBERS}]`,
+    );
   }
-  const members = AMALGAM_MEMBER_IDS.slice(0, memberCount);
+  const members = FUSED_MASS_MEMBER_IDS.slice(0, memberCount);
   for (const derived of ['height', 'headScale'] as const) {
     params[derived] =
       members.reduce<number>((sum, member) => sum + params[memberParam(member, derived)]!, 0) / members.length;
@@ -99,11 +101,13 @@ const humanoidGenome = (genome: Genome, member: number): Genome => {
   return { ...genome, params, wounds };
 };
 
-const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
+const buildFusedMass: BodyPlanDef['build'] = (genome, _template) => {
   const height = genome.params.height!;
   const memberCount = genome.params.memberCount!;
-  if (!Number.isInteger(memberCount) || memberCount < MIN_AMALGAM_MEMBERS || memberCount > MAX_AMALGAM_MEMBERS) {
-    throw new Error(`amalgam member count must be an integer in [${MIN_AMALGAM_MEMBERS}, ${MAX_AMALGAM_MEMBERS}]`);
+  if (!Number.isInteger(memberCount) || memberCount < MIN_FUSED_MASS_MEMBERS || memberCount > MAX_FUSED_MASS_MEMBERS) {
+    throw new Error(
+      `fused-mass member count must be an integer in [${MIN_FUSED_MASS_MEMBERS}, ${MAX_FUSED_MASS_MEMBERS}]`,
+    );
   }
   const coreBone = {
     id: 'core',
@@ -169,12 +173,12 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
   ];
   let materials: Body['materials'] | undefined;
 
-  for (const member of AMALGAM_MEMBER_IDS.slice(0, memberCount)) {
+  for (const member of FUSED_MASS_MEMBER_IDS.slice(0, memberCount)) {
     const memberBody = buildHumanoid(humanoidGenome(genome, member));
     materials ??= memberBody.materials;
     const root = memberBody.bones.find((bone) => bone.id === 'pelvis')?.head;
     if (!root) {
-      throw new Error(`amalgam member ${member} has no pelvis root`);
+      throw new Error(`fused-mass member ${member} has no pelvis root`);
     }
     const ids = new Map(memberBody.bones.map((bone) => [bone.id, memberBone(member, bone.id)]));
     const memberScale = genome.params[memberParam(member, 'scale')]!;
@@ -231,7 +235,7 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
       }
       const parent = memberBody.bones.find((candidate) => candidate.id === bone.parent);
       if (!parent) {
-        throw new Error(`amalgam member ${member} bone ${bone.id} has a missing parent`);
+        throw new Error(`fused-mass member ${member} bone ${bone.id} has a missing parent`);
       }
       return [
         {
@@ -264,27 +268,27 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
   }
 
   if (!materials) {
-    throw new Error('amalgam has no member modules');
+    throw new Error('fused mass has no member modules');
   }
   return { bones, features, jointAdjacencyPolicy: 'reserve-overlaps', materials };
 };
 
-registerBodyPlan('amalgam', {
-  sample: sampleAmalgam,
-  build: buildAmalgam,
-  paramOrder: AMALGAM_PARAM_ORDER,
+registerBodyPlan('fused-mass', {
+  sample: sampleFusedMass,
+  build: buildFusedMass,
+  paramOrder: FUSED_MASS_PARAM_ORDER,
   woundBones: WOUND_BONES,
   budgets: heightHeadBudgets,
-  limbBones: AMALGAM_MEMBER_IDS.flatMap((member) => HUMANOID_LIMB_BONES.map((id) => memberBone(member, id))),
+  limbBones: FUSED_MASS_MEMBER_IDS.flatMap((member) => HUMANOID_LIMB_BONES.map((id) => memberBone(member, id))),
 });
 
-interface AmalgamRegion {
+interface FusedMassRegion {
   readonly id: string;
   readonly partId: string;
   readonly boneIds: readonly string[];
 }
 
-interface AmalgamPart {
+interface FusedMassPart {
   readonly id: string;
   readonly rootBone: string;
   readonly boneIds: readonly string[];
@@ -294,9 +298,9 @@ interface AmalgamPart {
   readonly capabilityIds: readonly string[];
 }
 
-interface AmalgamManifest {
-  readonly parts: readonly AmalgamPart[];
-  readonly regions: readonly AmalgamRegion[];
+export interface FusedMassManifest {
+  readonly parts: readonly FusedMassPart[];
+  readonly regions: readonly FusedMassRegion[];
   readonly headBoneIds: readonly string[];
 }
 
@@ -312,11 +316,11 @@ const memberIdsInBody = (body: Body): number[] =>
 
 const assertMemberSequence = (members: readonly number[]): void => {
   if (
-    members.length < MIN_AMALGAM_MEMBERS ||
-    members.length > MAX_AMALGAM_MEMBERS ||
+    members.length < MIN_FUSED_MASS_MEMBERS ||
+    members.length > MAX_FUSED_MASS_MEMBERS ||
     members.some((member, index) => member !== index)
   ) {
-    throw new Error('amalgam body has an invalid member count or member id sequence');
+    throw new Error('fused-mass body has an invalid member count or member id sequence');
   }
 };
 
@@ -330,55 +334,55 @@ const REGION_BONES: Readonly<Record<string, readonly string[]>> = {
 };
 
 const assertPartHierarchy = (
-  part: AmalgamPart,
+  part: FusedMassPart,
   bonesById: ReadonlyMap<string, Body['bones'][number]>,
   owned: Set<string>,
 ): void => {
   const root = bonesById.get(part.rootBone);
   if (!(root && part.boneIds.includes(part.rootBone))) {
-    throw new Error(`amalgam part "${part.id}" has an unresolved root bone`);
+    throw new Error(`fused-mass part "${part.id}" has an unresolved root bone`);
   }
   if (part.severable && root.parent !== 'core') {
-    throw new Error(`severable amalgam part "${part.id}" must root under core`);
+    throw new Error(`severable fused-mass part "${part.id}" must root under core`);
   }
   for (const boneId of part.boneIds) {
     const bone = bonesById.get(boneId);
     if (!bone) {
-      throw new Error(`amalgam part "${part.id}" references missing bone "${boneId}"`);
+      throw new Error(`fused-mass part "${part.id}" references missing bone "${boneId}"`);
     }
     if (owned.has(boneId)) {
-      throw new Error(`amalgam bone "${boneId}" belongs to multiple parts`);
+      throw new Error(`fused-mass bone "${boneId}" belongs to multiple parts`);
     }
     owned.add(boneId);
     if (boneId !== part.rootBone && !part.boneIds.includes(bone.parent ?? '')) {
-      throw new Error(`amalgam bone "${boneId}" has a parent outside part "${part.id}"`);
+      throw new Error(`fused-mass bone "${boneId}" has a parent outside part "${part.id}"`);
     }
   }
 };
 
-const assertTreeRoot = (body: Body, manifest: AmalgamManifest): ReadonlyMap<string, Body['bones'][number]> => {
+const assertTreeRoot = (body: Body, manifest: FusedMassManifest): ReadonlyMap<string, Body['bones'][number]> => {
   const bonesById = new Map(body.bones.map((bone) => [bone.id, bone]));
   if (bonesById.size !== body.bones.length) {
-    throw new Error('amalgam manifest has duplicate bone ids');
+    throw new Error('fused-mass manifest has duplicate bone ids');
   }
   const roots = body.bones.filter((bone) => bone.parent === null);
   if (roots.length !== 1 || roots[0]?.id !== 'core') {
-    throw new Error('amalgam body must have core as its only root');
+    throw new Error('fused-mass body must have core as its only root');
   }
   const partsById = new Map(manifest.parts.map((part) => [part.id, part]));
   if (partsById.size !== manifest.parts.length) {
-    throw new Error('amalgam manifest has duplicate part ids');
+    throw new Error('fused-mass manifest has duplicate part ids');
   }
   const core = partsById.get('core');
   if (!(core && !core.severable && core.rootBone === 'core' && core.boneIds.includes('core'))) {
-    throw new Error('amalgam core part must own the non-severable root');
+    throw new Error('fused-mass core part must own the non-severable root');
   }
   return bonesById;
 };
 
 const assertPartOwnership = (
   body: Body,
-  manifest: AmalgamManifest,
+  manifest: FusedMassManifest,
   bonesById: ReadonlyMap<string, Body['bones'][number]>,
 ): void => {
   const owned = new Set<string>();
@@ -386,32 +390,32 @@ const assertPartOwnership = (
     assertPartHierarchy(part, bonesById, owned);
   }
   if (owned.size !== body.bones.length || body.bones.some((bone) => !owned.has(bone.id))) {
-    throw new Error('amalgam parts must own every body bone exactly once');
+    throw new Error('fused-mass parts must own every body bone exactly once');
   }
 };
 
 const assertRegionReferences = (
-  region: AmalgamRegion,
-  partsById: ReadonlyMap<string, AmalgamPart>,
+  region: FusedMassRegion,
+  partsById: ReadonlyMap<string, FusedMassPart>,
   bonesById: ReadonlyMap<string, Body['bones'][number]>,
 ): void => {
   const part = partsById.get(region.partId);
   if (!part?.regionIds.includes(region.id)) {
-    throw new Error(`amalgam region "${region.id}" has an unresolved part`);
+    throw new Error(`fused-mass region "${region.id}" has an unresolved part`);
   }
   for (const boneId of region.boneIds) {
     if (!(bonesById.has(boneId) && part.boneIds.includes(boneId))) {
-      throw new Error(`amalgam region "${region.id}" references an unresolved bone`);
+      throw new Error(`fused-mass region "${region.id}" references an unresolved bone`);
     }
   }
 };
 
-const assertManifestReferences = (body: Body, manifest: AmalgamManifest): void => {
+const assertManifestReferences = (body: Body, manifest: FusedMassManifest): void => {
   const bonesById = new Map(body.bones.map((bone) => [bone.id, bone]));
   const partsById = new Map(manifest.parts.map((part) => [part.id, part]));
   const regionsById = new Map(manifest.regions.map((region) => [region.id, region]));
   if (regionsById.size !== manifest.regions.length) {
-    throw new Error('amalgam manifest has duplicate region ids');
+    throw new Error('fused-mass manifest has duplicate region ids');
   }
   for (const region of manifest.regions) {
     assertRegionReferences(region, partsById, bonesById);
@@ -419,27 +423,27 @@ const assertManifestReferences = (body: Body, manifest: AmalgamManifest): void =
   for (const part of manifest.parts) {
     for (const regionId of part.regionIds) {
       if (regionsById.get(regionId)?.partId !== part.id) {
-        throw new Error(`amalgam part "${part.id}" has an unresolved region`);
+        throw new Error(`fused-mass part "${part.id}" has an unresolved region`);
       }
     }
   }
   for (const headBoneId of manifest.headBoneIds) {
     if (!bonesById.has(headBoneId)) {
-      throw new Error('amalgam manifest has an unresolved head bone');
+      throw new Error('fused-mass manifest has an unresolved head bone');
     }
   }
 };
 
-const assertManifestResolves = (body: Body, manifest: AmalgamManifest): void => {
+const assertManifestResolves = (body: Body, manifest: FusedMassManifest): void => {
   const bonesById = assertTreeRoot(body, manifest);
   assertPartOwnership(body, manifest, bonesById);
   assertManifestReferences(body, manifest);
 };
 
-/** Builds the resolved part/region metadata from a realized amalgam, without gameplay tuning. */
-export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => {
-  const regions: AmalgamRegion[] = [{ id: 'core.trunk', partId: 'core', boneIds: ['core'] }];
-  const parts: AmalgamPart[] = [];
+/** Builds the resolved part/region metadata from a realized fused mass, without gameplay tuning. */
+export const fusedMassManifest = (body: Body, voxels: Voxels): FusedMassManifest => {
+  const regions: FusedMassRegion[] = [{ id: 'core.trunk', partId: 'core', boneIds: ['core'] }];
+  const parts: FusedMassPart[] = [];
   const headBoneIds: string[] = [];
   const ownerCounts = new Map<string, number>();
   const members = memberIdsInBody(body);
@@ -450,7 +454,7 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
     }
     const bone = body.bones[owner - 1];
     if (!bone) {
-      throw new Error(`amalgam voxel references missing bone index ${owner}`);
+      throw new Error(`fused-mass voxel references missing bone index ${owner}`);
     }
     const { id } = bone;
     const partId = id === 'core' ? 'core' : id.split('.').slice(0, 2).join('.');
@@ -458,7 +462,7 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
   }
   const totalOwned = [...ownerCounts.values()].reduce((sum, count) => sum + count, 0);
   if (totalOwned === 0) {
-    throw new Error('amalgam manifest cannot resolve a body without owned voxels');
+    throw new Error('fused-mass manifest cannot resolve a body without owned voxels');
   }
   const coreBones = body.bones.filter((bone) => bone.id === 'core').map((bone) => bone.id);
   parts.push({
@@ -476,7 +480,7 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
     const prefix = MEMBER_BONE_PREFIX(member);
     const boneIds = body.bones.filter((bone) => bone.id.startsWith(prefix)).map((bone) => bone.id);
     const memberRegions = Object.entries(REGION_BONES).map(([name, suffixes]) => {
-      const region: AmalgamRegion = {
+      const region: FusedMassRegion = {
         id: `${partId}.${name}`,
         partId,
         boneIds: suffixes.map((suffix) => memberBone(member, suffix)).filter((id) => boneIds.includes(id)),
@@ -504,10 +508,10 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
 };
 
 /** Removes one member subtree, retaining the shared core and the other members. */
-export const bodyWithoutAmalgamPart = (body: Body, partId: string): Body => {
+export const bodyWithoutFusedMassPart = (body: Body, partId: string): Body => {
   const root = body.bones.find((bone) => bone.id === `${partId}.pelvis`);
   if (!(root && partId.startsWith('member.'))) {
-    throw new Error(`unknown severable amalgam part "${partId}"`);
+    throw new Error(`unknown severable fused-mass part "${partId}"`);
   }
   const hidden = severedBoneSet(body.bones, [root.id]);
   return {

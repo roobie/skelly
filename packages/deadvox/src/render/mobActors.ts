@@ -74,7 +74,6 @@ import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
 import { acidDeathPose } from '@mobgen/mob/acidPoses.ts';
 import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
-import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -92,6 +91,7 @@ import {
   packSeveredMask,
 } from '@mobgen/mob/crowd.ts';
 import { burstBones, severableParts, severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { fusedMassTemplate } from '@mobgen/mob/fusedMassTemplate.ts';
 import { createGaitCache, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '@mobgen/mob/lookAt.ts';
@@ -643,7 +643,7 @@ export class MobActorMeshes implements ActorRenderer {
       ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
       : undefined;
     const templatesByModel = new Map(
-      [...TEMPLATES, acidTemplate, amalgamTemplate].map((template) => [template.name, template]),
+      [...TEMPLATES, acidTemplate, fusedMassTemplate].map((template) => [template.name, template]),
     );
 
     const t0 = performance.now();

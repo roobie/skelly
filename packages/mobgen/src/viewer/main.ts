@@ -30,13 +30,13 @@ import {
   acidWindupPose,
 } from '../mob/acidPoses.ts';
 import { acidTemplate } from '../mob/acidTemplate.ts';
-import { amalgamManifest } from '../mob/amalgam.ts';
-import { VIEWER_TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, type AttackClip, attackClipById, attackClipFor, attackPose } from '../mob/attack.ts';
 import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { severableParts, severedBoneSet } from '../mob/dismember.ts';
 import { DOG_SEVERABLE_PARTS, dogGaitPose, dogHitPose, dogPose } from '../mob/dog.ts';
 import { dogTemplate } from '../mob/dogTemplate.ts';
+import { fusedMassManifest } from '../mob/fusedMass.ts';
+import { VIEWER_TEMPLATES } from '../mob/fusedMassTemplate.ts';
 import {
   advanceClock,
   createGaitCache,
@@ -439,7 +439,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  const staticOnly = template.bodyPlan === 'amalgam';
+  const staticOnly = template.bodyPlan === 'fused-mass';
   let loaded: Loaded = {
     genome,
     template,
@@ -450,7 +450,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   if (staticOnly) {
     actor.applyPose({ root: [0, 0, 0], rotations: {} });
-    const parts = amalgamManifest(realized.body, realized.voxels)
+    const parts = fusedMassManifest(realized.body, realized.voxels)
       .parts.filter((part) => part.severable)
       .map((part) => part.rootBone);
     severPart.replaceChildren(...parts.map((id) => new Option(id, id)));
@@ -826,7 +826,7 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
     applyAcidFrame(loaded, dt);
     return;
   }
-  if (loaded.template.bodyPlan === 'amalgam') {
+  if (loaded.template.bodyPlan === 'fused-mass') {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {

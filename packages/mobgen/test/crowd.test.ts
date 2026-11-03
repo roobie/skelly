@@ -7,8 +7,6 @@ import { describe, expect, it } from 'vitest';
 import { generateValid, realize } from '../src/core/generate.ts';
 import { applyPoint, compose, rotation, rotY, type Transform, translation, type Vec3 } from '../src/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent, type Pose } from '../src/core/pose.ts';
-import { amalgamManifest } from '../src/mob/amalgam.ts';
-import { amalgamTemplate } from '../src/mob/amalgamTemplate.ts';
 import {
   CROWD_MASK_BITS_PER_TEXEL,
   crowdMaskTexelIndex,
@@ -20,9 +18,11 @@ import {
   packCrowdBoneMatrix,
   packSeveredMask,
 } from '../src/mob/crowd.ts';
+import { fusedMassManifest } from '../src/mob/fusedMass.ts';
+import { fusedMassTemplate } from '../src/mob/fusedMassTemplate.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
-const AMALGAM_SEARCH_SEEDS = 64;
+const FUSED_MASS_SEARCH_SEEDS = 64;
 const humanoid = TEMPLATES.find((t) => t.name === 'humanoid')!;
 const found = generateValid(humanoid, 1)!;
 const { body } = realize(found.genome);
@@ -149,33 +149,36 @@ describe('packCrowdBoneMatrix (the pure part of crowd mode)', () => {
     }
   });
 
-  it('keeps stump-gore bits for high-index severable members in a generated amalgam', () => {
-    let amalgam: ReturnType<typeof generateValid> | undefined;
-    for (let seed = 1; seed <= AMALGAM_SEARCH_SEEDS && !amalgam; seed++) {
-      const candidate = generateValid(amalgamTemplate, seed);
+  it('keeps stump-gore bits for high-index severable members in a generated fused mass', () => {
+    let fusedMass: ReturnType<typeof generateValid> | undefined;
+    for (let seed = 1; seed <= FUSED_MASS_SEARCH_SEEDS && !fusedMass; seed++) {
+      const candidate = generateValid(fusedMassTemplate, seed);
       if (!candidate) {
         continue;
       }
       const { body: candidateBody, voxels } = candidate.realized;
       const { bones: candidateBones } = candidateBody;
       if (
-        amalgamManifest(candidateBody, voxels).parts.some(
+        fusedMassManifest(candidateBody, voxels).parts.some(
           ({ rootBone, severable }) =>
             severable && candidateBones.findIndex(({ id }) => id === rootBone) >= CROWD_MASK_BITS_PER_TEXEL,
         )
       ) {
-        amalgam = candidate;
+        fusedMass = candidate;
       }
     }
-    expect(amalgam, `no amalgam in seeds 1..${AMALGAM_SEARCH_SEEDS} has a high-index severable member`).toBeDefined();
-    const { body: amalgamBody, voxels } = amalgam!.realized;
-    const { bones: amalgamBones } = amalgamBody;
-    const parts = amalgamManifest(amalgamBody, voxels).parts.filter(({ severable }) => severable);
-    const rootIndices = parts.map(({ rootBone }) => amalgamBones.findIndex(({ id }) => id === rootBone));
+    expect(
+      fusedMass,
+      `no fused mass in seeds 1..${FUSED_MASS_SEARCH_SEEDS} has a high-index severable member`,
+    ).toBeDefined();
+    const { body: fusedMassBody, voxels } = fusedMass!.realized;
+    const { bones: fusedMassBones } = fusedMassBody;
+    const parts = fusedMassManifest(fusedMassBody, voxels).parts.filter(({ severable }) => severable);
+    const rootIndices = parts.map(({ rootBone }) => fusedMassBones.findIndex(({ id }) => id === rootBone));
     const highRootIndices = rootIndices.filter((index) => index >= CROWD_MASK_BITS_PER_TEXEL);
     expect(highRootIndices.length).toBeGreaterThan(0);
 
-    const layout = crowdTextureLayout(amalgamBones.length, 1);
+    const layout = crowdTextureLayout(fusedMassBones.length, 1);
     const data = new Float32Array(layout.width * layout.height * 4);
     for (const index of rootIndices) {
       packSeveredMask(data, layout, 0, [index]);

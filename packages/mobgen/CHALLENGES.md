@@ -11,7 +11,7 @@ This page keeps unresolved reasons to revisit Mobgen; implementation and test co
 
 ## Amalgam appearance (#378)
 
-The first-look body is approved, but the scope of the requested visual improvement remains open. Treat the composition as a visual proposal rather than a permanent gameplay or encounter constraint. See `src/mob/amalgam.ts`, `buildAmalgam`, `src/viewer/main.ts`, and `test/amalgam.test.ts`.
+The first-look body is approved, but the scope of the requested visual improvement remains open. Treat the composition as a visual proposal rather than a permanent gameplay or encounter constraint. See `src/mob/fusedMass.ts`, `buildFusedMass`, `src/viewer/main.ts`, and `test/fusedMass.test.ts`.
 
 ## Animated-pose limits
 

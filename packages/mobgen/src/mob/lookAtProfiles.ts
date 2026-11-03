@@ -37,7 +37,7 @@ export const LOOK_AT_PROFILES: Readonly<Record<string, LookAtProfile>> = {
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,
   },
-  amalgam: {
+  'fused-mass': {
     neck: { yawDeg: 20, pitchDeg: 16 },
     head: { yawDeg: 30, pitchDeg: 22 },
     turnRateDegPerSecond: 90,
