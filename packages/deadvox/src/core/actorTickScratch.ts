@@ -1,7 +1,5 @@
-import type { PlayerSense } from './actorSense.ts';
+import type { HeardNoise, HearingInput, HearingTier, PerceptionInput, PlayerSense } from './actorSense.ts';
 import type { Actor } from './actorState.ts';
-
-import type { HeardNoise, HearingInput, HearingTier, PerceptionInput } from './agentPerception.ts';
 import type { Vec3 } from './coords.ts';
 import type { DayPhaseState } from './dayPhase.ts';
 import type { EntityId } from './entities.ts';

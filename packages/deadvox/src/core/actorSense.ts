@@ -1,6 +1,10 @@
 import type { Vec3 } from './coords.ts';
+import type { DayPhase } from './dayPhase.ts';
 import type { Body } from './physics.ts';
 import type { PlayerStance } from './playerStance.ts';
+import type { Rng } from './random.ts';
+import type { SolidAt } from './raycast.ts';
+import type { ActorDef, SenseDef } from './schema.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export interface VocalNoise {
@@ -34,4 +38,30 @@ export interface SensedLightSource {
   sunlit?: boolean | undefined;
   /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
   carried: boolean;
+}
+export interface PerceptionInput {
+  def: ActorDef;
+  from: Vec3;
+  facing: Vec3;
+  player: PlayerSense;
+  dayPhase: DayPhase;
+  sightBlend: number;
+  blockSize: number;
+  isSolid: SolidAt;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
+  tuning: SenseDef;
+}
+export interface HearingInput {
+  def: ActorDef;
+  from: Vec3;
+  player: PlayerSense;
+  blockSize: number;
+  isSolid: SolidAt;
+  rng: Rng;
+  tuning: SenseDef;
+}
+export type HearingTier = 'near' | 'far';
+export interface HeardNoise {
+  tier: HearingTier;
+  target: Vec3;
 }

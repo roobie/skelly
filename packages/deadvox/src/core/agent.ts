@@ -10,7 +10,8 @@ import {
   stepChaseMotion,
   sub,
   terrainStance,
-  turnToward,
+  turnActorBodyLook,
+  turnActorHeadLook,
   unit,
 } from './actorMotion.ts';
 import { type Actor, type AgentMode, copy } from './actorState.ts';
@@ -347,16 +348,8 @@ export class AgentController {
         rng.range(-type.wander.headLookArcDegrees, type.wander.headLookArcDegrees) * 0.5 * (Math.PI / 180);
       actor.lookTimer = inRange(rng, type.wander.lookIntervalSimSeconds);
     }
-    actor.facing = turnToward(
-      actor.facing,
-      headingAt(actor.bodyLookTarget),
-      (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-    );
-    actor.headYaw = approachAngle(
-      actor.headYaw,
-      actor.headYawTarget,
-      (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
-    );
+    turnActorBodyLook(actor, type, dt);
+    turnActorHeadLook(actor, type, dt);
   }
 
   beginIdle(actor: Actor): void {

@@ -3050,6 +3050,13 @@ and avoids a cycle while the acid split is held for #313. See `src/core/agent.ts
 `AgentController`; and `src/core/actorSystem.ts`, `ActorSystem.reachableActorMoves` and
 `holdSpitGround`.
 
+Choosing when to stop or where to look must not make decision code own the body's
+halt and turn operations. Keeping those primitives body-side allows another driver
+to reuse them without taking the look-target draws or mode transitions with it.
+See `src/core/actorMotion.ts`, `haltActor`, `turnActorBodyLook` and `turnActorHeadLook`;
+and `src/core/agent.ts`, `AgentController.beginIdle`, `AgentController.beginSearch`
+and `AgentController.tickLookAround`.
+
 Occlusion cannot make a target beyond the maximum detection range detectable.
 Reject those targets before querying terrain, rather than reducing AI cadence or
 changing attention rules to handle dense crowds. The bound must include far

@@ -33,7 +33,7 @@ const smooth01 = (value: number): number => value * value * (3 - 2 * value);
 const lerp = (from: number, to: number, amount: number): number => from + (to - from) * amount;
 export const approachAngle = (current: number, target: number, amount: number): number =>
   current + Math.sign(wrapAngle(target - current)) * Math.min(Math.abs(wrapAngle(target - current)), amount);
-export const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
+const turnToward = (current: Vec3, target: Vec3, radians: number): Vec3 =>
   headingAt(approachAngle(angleOf(current), angleOf(target), radians));
 /**
  * Turns a zombie by up to `radians` and gives the heading it moves along. A forward walker turns toward `move`
@@ -202,4 +202,18 @@ export function haltActor(actor: Actor) {
   actor.horizontalSpeed = 0;
   actor.body.vel[0] = 0;
   actor.body.vel[2] = 0;
+}
+export function turnActorBodyLook(actor: Actor, type: Actor['type'], dt: number) {
+  actor.facing = turnToward(
+    actor.facing,
+    headingAt(actor.bodyLookTarget),
+    (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
+  );
+}
+export function turnActorHeadLook(actor: Actor, type: Actor['type'], dt: number) {
+  actor.headYaw = approachAngle(
+    actor.headYaw,
+    actor.headYawTarget,
+    (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
+  );
 }
