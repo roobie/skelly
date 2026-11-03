@@ -151,7 +151,7 @@ interface WirePayload {
 }
 
 interface Envelope {
-  magic: 'DEADVOX_SAVE';
+  magic: 'SKELLY_SAVE';
   schemaVersion: number;
   versionIdentity: SaveVersionIdentity;
   generation: number;
@@ -160,7 +160,7 @@ interface Envelope {
   payload: WirePayload;
 }
 
-const MAGIC = 'DEADVOX_SAVE';
+const MAGIC = 'SKELLY_SAVE';
 export const SAVE_SCHEMA_VERSION = 65;
 export const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -168,13 +168,13 @@ const HASH = /^[0-9a-f]{64}$/;
 const REGION_KEY = /^(0|-?[1-9]\d*),(0|-?[1-9]\d*)$/;
 
 // `vite.config.ts` supplies source, Git diagnostic, and canonical per-pack identities.
-declare const __DEADVOX_SIMULATION_HASH__: string;
-declare const __DEADVOX_CONTENT_PACKS__: SaveVersionComponents['contentPacks'];
+declare const __SKELLY_SIMULATION_HASH__: string;
+declare const __SKELLY_CONTENT_PACKS__: SaveVersionComponents['contentPacks'];
 
 function defaultVersion(): SaveVersionComponents {
   try {
     return {
-      simulationHash: __DEADVOX_SIMULATION_HASH__,
+      simulationHash: __SKELLY_SIMULATION_HASH__,
       schemaVersion: SAVE_SCHEMA_VERSION,
       generators: {
         worldgen: 'worldgen-v2',
@@ -182,7 +182,7 @@ function defaultVersion(): SaveVersionComponents {
           Object.entries(BODY_PLANS).map(([plan, capability]) => [`bodyPlan.${plan}`, capability.generator]),
         ),
       },
-      contentPacks: __DEADVOX_CONTENT_PACKS__,
+      contentPacks: __SKELLY_CONTENT_PACKS__,
     };
   } catch (error) {
     throw new Error('Explicit save version components are required outside a Vite build', { cause: error });

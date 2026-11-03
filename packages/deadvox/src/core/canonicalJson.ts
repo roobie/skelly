@@ -1,4 +1,4 @@
-export const NEGATIVE_ZERO_TAG = '\u0000deadvox-number';
+export const NEGATIVE_ZERO_TAG = '\u0000skelly-number';
 
 export interface CanonicalJsonOptions {
   /** Only enable while canonicalizing parsed wire data; encoders must reject user objects with this key. */

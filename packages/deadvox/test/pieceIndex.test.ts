@@ -108,7 +108,7 @@ it('lists the pieces of each column as a full scan does through adds, moves, rem
 });
 
 // biome-ignore lint/style/noProcessEnv: this benchmark is explicitly opt-in.
-describe.runIf(process.env.DEADVOX_BENCH === '1')('piece edit cost benchmark', () => {
+describe.runIf(process.env.SKELLY_BENCH === '1')('piece edit cost benchmark', () => {
   it('prints the cost of one piece edit and its lookups against resident pieces', () => {
     const rows = [2000, 10_000, 50_000].map((resident) => {
       const entities = new BlockEntities(registry);

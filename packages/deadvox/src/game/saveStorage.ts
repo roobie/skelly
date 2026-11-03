@@ -13,7 +13,7 @@ import {
 type SaveBackend = 'opfs' | 'indexeddb';
 export type SaveBackendPreference = 'auto' | SaveBackend;
 type SlotName = 'a' | 'b';
-const SAVE_WRITE_LOCK = 'deadvox-save-storage';
+const SAVE_WRITE_LOCK = 'skelly-save-storage';
 const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
   // biome-ignore lint/suspicious/noConsole: a lock timeout must name its holder in the browser console.
   console.warn(message, details);

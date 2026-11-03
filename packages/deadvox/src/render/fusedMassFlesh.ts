@@ -203,7 +203,7 @@ export class FleshChunks {
     this.owner = owner;
     this.group = group;
     this.onLanded = onLanded;
-    this.material.customProgramCacheKey = () => 'deadvox-flesh-chunk';
+    this.material.customProgramCacheKey = () => 'skelly-flesh-chunk';
     this.material.onBeforeCompile = (shader) => patchHeightFog(shader, 'mob');
   }
 

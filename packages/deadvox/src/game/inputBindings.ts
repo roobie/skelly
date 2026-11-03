@@ -215,7 +215,7 @@ export const defaultKeySetIssues = (defaults: BindingMap): string[] => {
   const conflict = bindingConflict(withDefaults(defaults), new Map());
   return conflict ? [...issues, conflict] : issues;
 };
-const STORAGE_KEY = 'deadvox.input-bindings';
+const STORAGE_KEY = 'skelly.input-bindings';
 interface PreferenceStorage {
   getItem: (key: string) => string | null;
   setItem: (key: string, value: string) => void;

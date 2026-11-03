@@ -131,7 +131,7 @@ export const woundSeverity = (zombie: Pick<Zombie, 'type' | 'regions' | 'severed
 
 /** Fades each splat by its own opacity, which three's built-in materials have no per-instance slot for. */
 const patchSplatOpacity = (material: MeshLambertMaterial): void => {
-  material.customProgramCacheKey = () => 'deadvox-gore-splat';
+  material.customProgramCacheKey = () => 'skelly-gore-splat';
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nattribute float splatOpacity;\nvarying float vSplatOpacity;')

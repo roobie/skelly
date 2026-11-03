@@ -409,9 +409,9 @@ const installReviewMapMessageListener = (
       return;
     }
     const message = event.data;
-    if (message.type === 'deadvox-review-map-key') {
+    if (message.type === 'skelly-review-map-key') {
       onKey(message as Record<string, unknown>);
-    } else if (message.type === 'deadvox-review-map-close') {
+    } else if (message.type === 'skelly-review-map-close') {
       onClose();
     }
   });
@@ -1491,7 +1491,7 @@ export const startPlay = (
     }
     const snapshot = captureSnapshot();
     return {
-      name: `deadvox-attempt-${snapshot.character.id}.json`,
+      name: `skelly-attempt-${snapshot.character.id}.json`,
       blob: new Blob(
         [
           JSON.stringify(

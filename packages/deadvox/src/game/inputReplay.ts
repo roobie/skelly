@@ -31,8 +31,8 @@ const INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS =
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
-const MAGIC = 'DEADVOX_REPLAY';
-const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
+const MAGIC = 'SKELLY_REPLAY';
+const PENDING_REPLAY_KEY = 'skelly.pending-replay';
 const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'liquid.pour',
   'power.set',

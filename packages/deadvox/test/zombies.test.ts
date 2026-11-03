@@ -2403,7 +2403,7 @@ describe('shambler scenarios', () => {
   });
 
   // biome-ignore lint/style/noProcessEnv: this benchmark is explicitly opt-in.
-  describe.runIf(process.env.DEADVOX_BENCH === '1')('shambler CPU benchmark', () => {
+  describe.runIf(process.env.SKELLY_BENCH === '1')('shambler CPU benchmark', () => {
     it('stays within its per-tick budget', () => {
       const system = new ZombieSystem(senses(() => player([0, 2, 0])));
       for (let i = 0; i < 10; i++) {

@@ -46,10 +46,10 @@ try {
 
 // Base-pack identity is snapshotted at config load. Simulation source identity is refreshed on source HMR.
 const saveFormatPath = resolve(packageRoot, 'src/core/saveFormat.ts');
-const buildRevisionDefine = '__DEADVOX_BUILD_REVISION__';
+const buildRevisionDefine = '__SKELLY_BUILD_REVISION__';
 const moduleQueryPattern = /[?#].*$/;
-const simulationHashPlaceholder = '__DEADVOX_SIMULATION_HASH__';
-const simulationHashPattern = /__DEADVOX_SIMULATION_HASH__(?=,)/g;
+const simulationHashPlaceholder = '__SKELLY_SIMULATION_HASH__';
+const simulationHashPattern = /__SKELLY_SIMULATION_HASH__(?=,)/g;
 const simulationHashValuePattern = /^[0-9a-f]{64}$/;
 
 function simulationFingerprintPlugin() {
@@ -74,7 +74,7 @@ function simulationFingerprintPlugin() {
   };
 
   return {
-    name: 'deadvox:simulation-source-fingerprint',
+    name: 'skelly:simulation-source-fingerprint',
     enforce: 'pre' as const,
     async configResolved(config: import('vite').ResolvedConfig) {
       // Use Vite's own resolver so aliases, extension rules, and package conditions match the build graph.
@@ -95,7 +95,7 @@ function simulationFingerprintPlugin() {
     transformIndexHtml(html: string) {
       return html.replace(
         '</head>',
-        `  <meta name="deadvox-simulation-source-hash" content="${simulationHash}">\n</head>`,
+        `  <meta name="skelly-simulation-source-hash" content="${simulationHash}">\n</head>`,
       );
     },
     closeBundle() {
@@ -156,7 +156,7 @@ function bundledModListPlugin() {
   const source = readFileSync(resolve(packageRoot, 'src/config/bundled-mods.json'), 'utf8');
   bundledModCatalogue(JSON.parse(source));
   return {
-    name: 'deadvox:bundled-mod-list',
+    name: 'skelly:bundled-mod-list',
     generateBundle(this: { emitFile: (file: { type: 'asset'; fileName: string; source: string }) => string }) {
       this.emitFile({ type: 'asset', fileName: 'bundled-mods.json', source });
     },
@@ -168,7 +168,7 @@ function bundledModListPlugin() {
 // and the DOM) must never be reachable through this alias; see test/mobgenBoundary.test.ts.
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
-// Tests that build whole worlds, city plans or scenario walks run only under DEADVOX_SWEEPS, in the manual
+// Tests that build whole worlds, city plans or scenario walks run only under SKELLY_SWEEPS, in the manual
 // slow-test workflow; `AGENTS.md`, "Tests" says why. These files are slow throughout. A file that also holds fast
 // tests keeps them in the default run and gates its slow cases with test/sweeps.ts, `sweepGroup`.
 const SLOW_TEST_FILES = [
@@ -180,7 +180,7 @@ const SLOW_TEST_FILES = [
   'test/scenarioStart.test.ts',
 ];
 // biome-ignore lint/style/noProcessEnv: the slow-test gate is env-driven; see test/sweeps.ts.
-const runSweeps = process.env.DEADVOX_SWEEPS === '1';
+const runSweeps = process.env.SKELLY_SWEEPS === '1';
 const sweepCaseFiles = (): string[] =>
   readdirSync(resolve(packageRoot, 'test'))
     .filter((name) => name.endsWith('.test.ts'))
@@ -199,7 +199,7 @@ export default defineConfig({
     bundleStampPlugin(packageRoot),
     bundledModListPlugin(),
     // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
-    ...(process.env.DEADVOX_HTTPS === '1' ? [basicSsl()] : []),
+    ...(process.env.SKELLY_HTTPS === '1' ? [basicSsl()] : []),
   ],
   define: {
     [buildRevisionDefine]: JSON.stringify(buildRevision),

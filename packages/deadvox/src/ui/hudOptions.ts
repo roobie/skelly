@@ -39,7 +39,7 @@ export const hudVisibility = (state: HudSettings, debug = false, modalOpen = fal
   return modalOpen ? { ...visible, interaction: false } : visible;
 };
 
-const STORAGE_KEY = 'deadvox.hud-options';
+const STORAGE_KEY = 'skelly.hud-options';
 
 export const readHudOptions = (): HudSettings => {
   try {

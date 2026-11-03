@@ -1819,7 +1819,7 @@ try {
   await timePhase('vite-listen', () => vite.listen());
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  const renderOverride = process.env.DEADVOX_TEST_RENDER_MODE;
+  const renderOverride = process.env.SKELLY_TEST_RENDER_MODE;
   const renderMode = browserStageMode('primary-action', renderOverride);
   browser = await timePhase('browser-launch', () =>
     launchChromium('primary-action', {
@@ -4136,7 +4136,7 @@ try {
     });
     await timePhase('ground-pickup-case', () => verifyGroundPickup(browser, address.port, renderOverride));
     const replayArtifact = JSON.parse(replayText);
-    assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
+    assert.equal(replayArtifact.magic, 'SKELLY_REPLAY');
     assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
     assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
     assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
@@ -4200,7 +4200,7 @@ try {
       return fetch(link.href).then((response) => response.text());
     });
     const shortReplayArtifact = JSON.parse(shortReplayText);
-    assert.equal(shortReplayArtifact.magic, 'DEADVOX_REPLAY');
+    assert.equal(shortReplayArtifact.magic, 'SKELLY_REPLAY');
     assert(shortReplayArtifact.frames.length > 0, 'fixture-write replay includes captured player ticks');
     assert.match(shortReplayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
     assert.equal(

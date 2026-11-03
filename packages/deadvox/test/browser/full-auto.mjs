@@ -320,7 +320,7 @@ try {
     );
     await page.waitForFunction(
       ({ optionKey, optionSelector, nextVisibility }) =>
-        JSON.parse(localStorage.getItem('deadvox.hud-options'))[optionKey] === nextVisibility &&
+        JSON.parse(localStorage.getItem('skelly.hud-options'))[optionKey] === nextVisibility &&
         document.querySelector(optionSelector).hidden === !nextVisibility,
       { optionKey: key, optionSelector: selector, nextVisibility: visible },
     );

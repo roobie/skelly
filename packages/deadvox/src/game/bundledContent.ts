@@ -3,9 +3,9 @@ import { buildRegistry, type ContentSource } from '../core/content.ts';
 import { admitPacks, type PackInput, packStartIssues } from '../core/packAdmission.ts';
 import { bundledPacks } from './bundledPacks.ts';
 
-declare const __DEADVOX_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
-declare const __DEADVOX_ADMISSION_FINGERPRINT__: string | undefined;
-declare const __DEADVOX_FILE_HASHES__: Record<string, string>;
+declare const __SKELLY_BUNDLE_STAMP__: Record<string, BundleStamp> | undefined;
+declare const __SKELLY_ADMISSION_FINGERPRINT__: string | undefined;
+declare const __SKELLY_FILE_HASHES__: Record<string, string>;
 
 const files = import.meta.glob<unknown>('../content/base/*.json', { eager: true, import: 'default' });
 const packs: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
@@ -13,7 +13,7 @@ const packs: PackInput[] = bundledPacks.map(({ root, manifest }) => ({
   manifest,
   files: manifest.files.map(({ path, kind }) => ({
     source: path,
-    data: kind === 'content' ? files[`${root}/${path}`] : __DEADVOX_FILE_HASHES__[`${root}/${path}`],
+    data: kind === 'content' ? files[`${root}/${path}`] : __SKELLY_FILE_HASHES__[`${root}/${path}`],
   })),
 }));
 export const bundledPackInputs: readonly PackInput[] = packs;
@@ -26,8 +26,8 @@ const admissions = await Promise.all(
     pack,
     admission: await BundleAdmission.preparePack(
       pack,
-      __DEADVOX_BUNDLE_STAMP__?.[pack.manifest.id],
-      __DEADVOX_ADMISSION_FINGERPRINT__,
+      __SKELLY_BUNDLE_STAMP__?.[pack.manifest.id],
+      __SKELLY_ADMISSION_FINGERPRINT__,
     ),
   })),
 );

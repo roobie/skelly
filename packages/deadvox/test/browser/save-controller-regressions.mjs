@@ -90,7 +90,7 @@ const url = browserStageUrl(
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
-const CURRENT_EXPORT = /^deadvox-current-.*\.bin$/;
+const CURRENT_EXPORT = /^skelly-current-.*\.bin$/;
 const REPLAY_REJECTED = /^Replay rejected:/;
 const LOADING_WORKER_FAILURE = /Controlled loading worker failure/;
 const REFUSED_SAVE_FIXTURE = /refused save fixture/i;
@@ -583,7 +583,7 @@ try {
       }, saved.namespace);
       assert.deepEqual(after, saved, 'no checkpoint or death marker replaces the normal generation');
       assert.equal(
-        await page.evaluate((namespace) => sessionStorage.getItem(`deadvox.dead-world:${namespace}`), saved.namespace),
+        await page.evaluate((namespace) => sessionStorage.getItem(`skelly.dead-world:${namespace}`), saved.namespace),
         null,
       );
       // Native pointer activation of the practice exits is quarantined in #705; its root cause is unresolved.
@@ -614,7 +614,7 @@ try {
     const context = await browser.newContext({ viewport: { width: 800, height: 600 } });
     try {
       await context.addInitScript(() => {
-        sessionStorage.setItem('deadvox.pending-replay', btoa('not a replay'));
+        sessionStorage.setItem('skelly.pending-replay', btoa('not a replay'));
       });
       const page = await context.newPage();
       await page.goto(url);
@@ -1288,7 +1288,7 @@ try {
 
       const refusedPage = await context.newPage();
       await refusedPage.addInitScript((namespace) => {
-        sessionStorage.setItem(`deadvox.restore-refusal:${namespace}`, 'Refused save fixture');
+        sessionStorage.setItem(`skelly.restore-refusal:${namespace}`, 'Refused save fixture');
       }, saved.namespaces[0]);
       await refusedPage.goto(withParams({ debug: '1', save: '1' }));
       await refusedPage.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {

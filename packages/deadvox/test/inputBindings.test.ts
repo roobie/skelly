@@ -487,7 +487,7 @@ describe('keyboard registry', () => {
     const chosen = { code: 'Digit9' };
     expect(fromContent).not.toContainEqual(chosen);
     const stored = storage();
-    stored.setItem('deadvox.input-bindings', JSON.stringify({ 'world.interact': [chosen] }));
+    stored.setItem('skelly.input-bindings', JSON.stringify({ 'world.interact': [chosen] }));
     const rebound = new BindingRegistry(INPUT_BINDINGS, stored);
     expect(rebound.chords('world.interact')).toEqual([chosen]);
     expect(rebound.chords('movement.forward')).toEqual(
@@ -707,7 +707,7 @@ describe('keyboard registry', () => {
     expect(restored.rebind('fixture.quick', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
     expect(restored.label('fixture.quick')).toBe('T');
     prefs.setItem(
-      'deadvox.input-bindings',
+      'skelly.input-bindings',
       JSON.stringify({
         unknown: [{ code: 'KeyJ' }],
         'fixture.interact': [{ code: 'Unidentified' }],

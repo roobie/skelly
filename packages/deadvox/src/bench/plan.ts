@@ -173,7 +173,7 @@ export interface BenchRecord {
   shamblers?: ShamblerRunResult[];
 }
 
-const KEY = 'deadvox.bench.v3';
+const KEY = 'skelly.bench.v3';
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 

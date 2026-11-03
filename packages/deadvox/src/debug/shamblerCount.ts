@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'deadvox.shambler-spawn-count';
+const STORAGE_KEY = 'skelly.shambler-spawn-count';
 
 export type CountStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

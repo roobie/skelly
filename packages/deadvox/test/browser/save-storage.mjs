@@ -168,7 +168,7 @@ try {
       const request = navigator.locks.request.bind(navigator.locks);
       navigator.locks.request = (name, options, callback) => {
         if (
-          name === 'deadvox-save-storage' &&
+          name === 'skelly-save-storage' &&
           options?.mode === 'exclusive' &&
           globalThis.__lifecycleHoldNextSave === true
         ) {
@@ -209,8 +209,8 @@ try {
         };
         const captureLocks = async () => {
           const locks = await navigator.locks.query();
-          const held = locks.held.filter((lock) => lock.name === 'deadvox-save-storage');
-          const pending = locks.pending.filter((lock) => lock.name === 'deadvox-save-storage');
+          const held = locks.held.filter((lock) => lock.name === 'skelly-save-storage');
+          const pending = locks.pending.filter((lock) => lock.name === 'skelly-save-storage');
           const ready = globalThis.deadvoxSaveTest?.controller.ready === true;
           const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
           if (writerWaiting || ready || frames >= 120) {
@@ -328,7 +328,7 @@ try {
     pollNavigation(async () => {
       const { controller } = globalThis.deadvoxSaveTest;
       const locks = await navigator.locks.query();
-      const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
+      const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'skelly-save-storage');
       const idle = !controller.writing && controller.queued === undefined && !activeSaveLock;
       if (idle) {
         globalThis.__saveNavigationTiming({
@@ -1027,7 +1027,7 @@ try {
     process.stdout.write(`${browserName}: pre-navigation save state ${JSON.stringify(beforeNavigation)}\n`);
     assert.equal(beforeNavigation.writing, false);
     assert.equal(
-      beforeNavigation.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
+      beforeNavigation.locks.held.some((lock) => lock.name === 'skelly-save-storage'),
       false,
       'the page enters navigation without already holding a lock that would disqualify bfcache',
     );
@@ -1087,8 +1087,8 @@ try {
           hasSavedWorld: controller ? controller.restored !== undefined : null,
           storageUnavailable: controller?.storageUnavailable ?? null,
           continueDisabled: document.querySelector('#continue')?.disabled,
-          held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
-          pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
+          held: locks.held.filter((lock) => lock.name === 'skelly-save-storage'),
+          pending: locks.pending.filter((lock) => lock.name === 'skelly-save-storage'),
           warnings: globalThis.__lifecycleLockWarnings ?? [],
           namespace: controller?.namespace,
           generation: controller?.currentRecord?.generation,
@@ -1154,7 +1154,7 @@ try {
       assert.equal(restored?.pageshowPersisted, true, 'Back restores the original world from bfcache');
       assert.equal(restored?.controllerEntered, true, 'Back restores the running world');
       assert.equal(
-        restored?.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
+        restored?.locks.held.some((lock) => lock.name === 'skelly-save-storage'),
         false,
         'restoring a cached page does not leave a save lock held',
       );
@@ -1261,7 +1261,7 @@ try {
       const ready = new Promise((resolve) => {
         acquired = resolve;
       });
-      globalThis.deadvoxHeldSaveLock = navigator.locks.request('deadvox-save-storage', { mode: 'exclusive' }, () => {
+      globalThis.deadvoxHeldSaveLock = navigator.locks.request('skelly-save-storage', { mode: 'exclusive' }, () => {
         acquired();
         return new Promise((resolve) => {
           globalThis.deadvoxReleaseSaveLock = resolve;

@@ -32,8 +32,8 @@ it('injects exporter JSON digests without model payloads while preserving runtim
     writeFileSync(join(directory, 'model.glb'), new Uint8Array([1, 2, 3]));
     const [input] = readBundledPacks(root);
     const defines = await bundledPackDefines([input!]);
-    const hashesDefine = '__DEADVOX_FILE_HASHES__';
-    const identitiesDefine = '__DEADVOX_CONTENT_PACKS__';
+    const hashesDefine = '__SKELLY_FILE_HASHES__';
+    const identitiesDefine = '__SKELLY_CONTENT_PACKS__';
     const hashes: Record<string, string> = JSON.parse(defines[hashesDefine]!);
     const identities = JSON.parse(defines[identitiesDefine]!);
     expect(JSON.stringify(hashes)).not.toContain('fixtureGeometry');

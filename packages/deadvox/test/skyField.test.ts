@@ -16,7 +16,7 @@ import { fixtureBox, skyWorldFixture } from './fixtures/skyWorld.ts';
 import { blockId, capture, createRuntime, fixtureZombieColumn, registry, scale, seed } from './snapshotTestSupport.ts';
 
 // biome-ignore lint/style/noProcessEnv: the build is timed only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
+const benchmarking = process.env.SKELLY_BENCH === '1';
 const BENCH_RUNS = 5;
 // A hang guard, about fifteen times the bench's measured run; the bench reports timings and asserts none.
 const BENCH_TIMEOUT_MS = 60_000;

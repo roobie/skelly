@@ -1599,7 +1599,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           exportKeyTrace: () => {
             download = {
               url: URL.createObjectURL(new Blob([keyTrace.export()], { type: 'application/json' })),
-              name: 'deadvox-key-trace.json',
+              name: 'skelly-key-trace.json',
             };
             shellKey = '';
             drawShell();

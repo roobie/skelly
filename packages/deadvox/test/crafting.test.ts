@@ -20,7 +20,7 @@ import { FIXTURE_MATERIAL, fixtureBreach, fixtureMaterials, fixtureSounds } from
 
 const registry = baseRegistry();
 // biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
+const benchmarking = process.env.SKELLY_BENCH === '1';
 
 interface BenchmarkEntry {
   type: string;

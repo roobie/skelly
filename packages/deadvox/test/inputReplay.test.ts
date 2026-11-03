@@ -88,7 +88,7 @@ const replaySample = {
 
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
-    magic: 'DEADVOX_REPLAY',
+    magic: 'SKELLY_REPLAY',
     schemaVersion: INPUT_REPLAY_SCHEMA_VERSION,
     startState: inputs.startState ?? DEFAULT_REPLAY_START_STATE,
     endStateFingerprint: '0'.repeat(64),

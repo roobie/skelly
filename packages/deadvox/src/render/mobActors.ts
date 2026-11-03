@@ -673,7 +673,7 @@ export class MobActorMeshes implements ActorRenderer {
     this.textureUpdates = new PoseTextureUpdates(this.texture, options.canvas);
 
     this.material = new MeshLambertMaterial({ vertexColors: true, flatShading: true });
-    this.material.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-texture';
+    this.material.customProgramCacheKey = () => 'skelly-mob-actor-crowd-texture';
     const { texture, layout } = this;
     this.material.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
@@ -709,7 +709,7 @@ export class MobActorMeshes implements ActorRenderer {
       options.onFleshLanded,
     );
     this.bloodiness = options.bloodiness ?? woundSeverity;
-    depthMaterial.customProgramCacheKey = () => 'deadvox-mob-actor-crowd-depth';
+    depthMaterial.customProgramCacheKey = () => 'skelly-mob-actor-crowd-depth';
     depthMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.crowdBoneTexture = { value: texture };
       shader.uniforms.crowdBonesPerSlot = { value: layout.bonesPerSlot };

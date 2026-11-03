@@ -30,7 +30,7 @@ const BENCH_TIMEOUT_MS = 60_000;
 const TARGET_SIDE = Math.ceil(Math.sqrt(TARGET_EXPLORED_COLUMNS));
 
 // biome-ignore lint/style/noProcessEnv: timings are asserted only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
+const benchmarking = process.env.SKELLY_BENCH === '1';
 
 afterEach(() => vi.unstubAllGlobals());
 

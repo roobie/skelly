@@ -1,6 +1,6 @@
 import { type GraphicsOptions, type GraphicsSettings, validGraphicsSettings } from '../core/graphics.ts';
 
-const STORAGE_KEY = 'deadvox.graphics-settings';
+const STORAGE_KEY = 'skelly.graphics-settings';
 type SettingsStorage = Pick<Storage, 'getItem' | 'setItem'>;
 
 export const readGraphicsSettings = (tuning: GraphicsOptions, storage?: SettingsStorage): GraphicsSettings => {

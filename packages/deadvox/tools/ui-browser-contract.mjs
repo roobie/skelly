@@ -515,7 +515,7 @@ try {
   assert.ok(exportedMetrics.worldId.length > 0 && exportedMetrics.characterId.length > 0);
   assert.equal(
     await evaluate('window.__metricsFilename'),
-    `deadvox-attempt-${exportedMetrics.characterId}.json`,
+    `skelly-attempt-${exportedMetrics.characterId}.json`,
     'attempt download is named for its character',
   );
   await action('debug.panel-toggle');
@@ -632,7 +632,7 @@ try {
   const savedWorldVolume = Number(await evaluate("document.querySelector('#audio-volume-world').value"));
   assert.notEqual(savedWorldVolume, initialWorldVolume, 'menu click changes the world volume slider');
   assert.equal(
-    await evaluate("JSON.parse(localStorage.getItem('deadvox.audio.settings')).world"),
+    await evaluate("JSON.parse(localStorage.getItem('skelly.audio.settings')).world"),
     savedWorldVolume,
     'world volume is persisted to localStorage',
   );
@@ -668,7 +668,7 @@ try {
     'clearing the preference restores the mod default',
   );
   assert.equal(
-    await evaluate("Object.hasOwn(JSON.parse(localStorage.getItem('deadvox.graphics-settings')), 'fastCamo')"),
+    await evaluate("Object.hasOwn(JSON.parse(localStorage.getItem('skelly.graphics-settings')), 'fastCamo')"),
     false,
     'clear removes the explicit setting rather than persisting the resolved default',
   );
@@ -858,7 +858,7 @@ try {
   );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
-  assert.equal(await evaluate("localStorage.getItem('deadvox.shambler-spawn-count')"), '2');
+  assert.equal(await evaluate("localStorage.getItem('skelly.shambler-spawn-count')"), '2');
   assert.equal(await spawnActionLabel(), true, 'spawn label follows the changed count and effective binding');
   await action('debug.panel-toggle');
   assert.equal(
@@ -1475,7 +1475,7 @@ try {
   assert.equal(sandboxMetrics.seed, await evaluate('window.uiContractRuntime.sim.seed'));
   assert.equal(
     await evaluate('window.__metricsFilename'),
-    `deadvox-metrics-seed-${sandboxMetrics.seed}.json`,
+    `skelly-metrics-seed-${sandboxMetrics.seed}.json`,
     'independent-world metrics download identifies its seed',
   );
   process.stdout.write(

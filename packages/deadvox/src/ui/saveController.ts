@@ -33,9 +33,9 @@ import { factDetail } from './factDetail.ts';
 import { computeMenuState } from './menuState.ts';
 
 const BROWSER_MOD_DIFFERENCE_PREFIX = /^(Missing|Different|Additional) mod: browser\./;
-const CONTINUE_KEY = 'deadvox.continue-namespace';
-const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
-const DEAD_WORLD_KEY = 'deadvox.dead-world';
+const CONTINUE_KEY = 'skelly.continue-namespace';
+const RESTORE_REFUSAL_KEY = 'skelly.restore-refusal';
+const DEAD_WORLD_KEY = 'skelly.dead-world';
 
 export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string, item?: ItemState): boolean => {
   switch (kind) {
@@ -827,7 +827,7 @@ export class SaveController {
       );
       const link = $('save-download') as HTMLAnchorElement;
       link.href = url;
-      link.download = `deadvox-current-${this.namespace}.bin`;
+      link.download = `skelly-current-${this.namespace}.bin`;
       link.click();
       URL.revokeObjectURL(url);
       this.statusText = this.text.snapshotExported;
@@ -873,7 +873,7 @@ export class SaveController {
       );
       const link = $('save-download') as HTMLAnchorElement;
       link.href = url;
-      link.download = `deadvox-${this.namespace}-${slot}.bin`;
+      link.download = `skelly-${this.namespace}-${slot}.bin`;
       link.click();
       URL.revokeObjectURL(url);
     }

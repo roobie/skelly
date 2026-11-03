@@ -210,7 +210,7 @@ if (uWeathering > 0.0 && vWeatherable > 0.5 && (uWeatheringSplitEnabled < 0.5 ||
   float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y / uWeatheringStreakLength))) * broadStrength;
   float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
   float baseMoss = (1.0 - sheltered) * (0.4 + 0.6 * weatherPatch) * (0.25 + 0.75 * verticalFace) * northShade;
-#ifdef DEADVOX_COARSE_WEATHER
+#ifdef SKELLY_COARSE_WEATHER
   float mossNoise = broadNoise;
 #else
   vec2 warp = (vec2(
@@ -236,7 +236,7 @@ if (uWeathering > 0.0 && vWeatherable > 0.5 && (uWeatheringSplitEnabled < 0.5 ||
 }`,
       );
   };
-  material.customProgramCacheKey = () => 'deadvox-chunk-weathering-variation';
+  material.customProgramCacheKey = () => 'skelly-chunk-weathering-variation';
   return material;
 };
 
@@ -358,30 +358,30 @@ export class ChunkMeshes implements ColumnReveal {
   }
 
   get fastCamo(): boolean {
-    return this.material.defines?.DEADVOX_FAST_CAMO === 1;
+    return this.material.defines?.SKELLY_FAST_CAMO === 1;
   }
 
   setFastCamo(on: boolean): void {
-    this.setDetailDefine('DEADVOX_FAST_CAMO', on);
+    this.setDetailDefine('SKELLY_FAST_CAMO', on);
   }
 
   get coarseWeathering(): boolean {
-    return this.material.defines?.DEADVOX_COARSE_WEATHER === 1;
+    return this.material.defines?.SKELLY_COARSE_WEATHER === 1;
   }
 
   setCoarseWeathering(on: boolean): void {
-    this.setDetailDefine('DEADVOX_COARSE_WEATHER', on);
+    this.setDetailDefine('SKELLY_COARSE_WEATHER', on);
   }
 
   setCachedSurfaceNoise(on: boolean): void {
     if (on) {
       this.surfaceNoise.value ??= createSurfaceNoise();
     }
-    this.setDetailDefine('DEADVOX_TEXTURE_NOISE', on);
+    this.setDetailDefine('SKELLY_TEXTURE_NOISE', on);
   }
 
   private setDetailDefine(
-    name: 'DEADVOX_FAST_CAMO' | 'DEADVOX_COARSE_WEATHER' | 'DEADVOX_TEXTURE_NOISE',
+    name: 'SKELLY_FAST_CAMO' | 'SKELLY_COARSE_WEATHER' | 'SKELLY_TEXTURE_NOISE',
     on: boolean,
   ): void {
     this.material.defines ??= {};

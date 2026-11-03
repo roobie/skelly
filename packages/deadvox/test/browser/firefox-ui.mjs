@@ -68,7 +68,7 @@ try {
   });
   await page.addInitScript(installSaveStatusTrace);
   await page.addInitScript(() => {
-    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
+    localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
     let locked = null;
     Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
     Element.prototype.requestPointerLock = function () {
@@ -569,10 +569,10 @@ try {
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
 
-  const runWeatheringTestPage = process.env.DEADVOX_FIREFOX_UI_WEATHERING_TEST === '1';
+  const runWeatheringTestPage = process.env.SKELLY_FIREFOX_UI_WEATHERING_TEST === '1';
   if (!runWeatheringTestPage) {
     process.stdout.write(
-      'Skipping Firefox weatheringTest page subflow (#670 quarantine; set DEADVOX_FIREFOX_UI_WEATHERING_TEST=1 to run locally).\n',
+      'Skipping Firefox weatheringTest page subflow (#670 quarantine; set SKELLY_FIREFOX_UI_WEATHERING_TEST=1 to run locally).\n',
     );
   }
   // Quarantined as a flake under `AGENTS.md`, "Tests"; #670 owns the root cause.

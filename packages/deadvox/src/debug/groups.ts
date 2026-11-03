@@ -137,7 +137,7 @@ export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: s
 /** The bare parameter name of a `name=values` hint. */
 export const paramName = (param: string): string => param.split('=')[0]!;
 
-const STORAGE_KEY = 'deadvox.debug-groups-closed';
+const STORAGE_KEY = 'skelly.debug-groups-closed';
 
 export type GroupStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

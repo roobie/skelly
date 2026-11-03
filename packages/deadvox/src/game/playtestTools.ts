@@ -160,7 +160,7 @@ export class SessionMetrics {
   }
 }
 
-export const metricsStorageKey = (seed: number): string => `deadvox:playtest-metrics:v1:${seed}`;
+export const metricsStorageKey = (seed: number): string => `skelly:playtest-metrics:v1:${seed}`;
 
 export const persistMetrics = (metrics: SessionMetrics, storage: Pick<Storage, 'setItem'>): void => {
   storage.setItem(metricsStorageKey(metrics.toJSON().seed), JSON.stringify(metrics.toJSON()));
@@ -269,12 +269,12 @@ export interface HandBackFile {
 
 export const metricsFile = (metrics: SessionMetrics): HandBackFile => ({
   blob: new Blob([metricsExportJson(metrics)], { type: 'application/json' }),
-  name: `deadvox-metrics-seed-${metrics.toJSON().seed}.json`,
+  name: `skelly-metrics-seed-${metrics.toJSON().seed}.json`,
 });
 
 export const replayFile = (bytes: Uint8Array, exportedAt: Date): HandBackFile => ({
   blob: new Blob([bytes.slice().buffer], { type: 'application/json' }),
-  name: `deadvox-replay-${exportedAt.toISOString().replaceAll(':', '-')}.json`,
+  name: `skelly-replay-${exportedAt.toISOString().replaceAll(':', '-')}.json`,
 });
 
 /** A download link needs no clipboard, so saving works on a plain-http preview too. */

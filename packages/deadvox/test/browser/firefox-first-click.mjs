@@ -59,7 +59,7 @@ try {
     }
   });
   await page.addInitScript(() => {
-    localStorage.setItem('deadvox.hud-options', JSON.stringify({ clock: true }));
+    localStorage.setItem('skelly.hud-options', JSON.stringify({ clock: true }));
     const describe = (element) =>
       element
         ? `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${typeof element.className === 'string' && element.className ? `.${element.className.trim().replaceAll(' ', '.')}` : ''}`

@@ -1,6 +1,6 @@
 import type { BrowserMod } from './browserMods.ts';
 
-const DATABASE = 'deadvox.browser-mods';
+const DATABASE = 'skelly.browser-mods';
 const STORE = 'selection';
 
 // Only this failure is cured by discarding the stored value; an unavailable store is not.

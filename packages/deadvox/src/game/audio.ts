@@ -14,7 +14,7 @@ import {
   playerHeartbeat,
 } from './audioPresentation.ts';
 
-const SETTINGS_KEY = 'deadvox.audio.settings';
+const SETTINGS_KEY = 'skelly.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
 type AudioCategory = (typeof CATEGORIES)[number];
 

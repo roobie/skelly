@@ -37,7 +37,7 @@ test('unavailable storage names the failure and starts with an empty mod set', a
 
 const storeRaw = async (factory: IDBFactory, value: unknown) => {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
-    const request = factory.open('deadvox.browser-mods', 1);
+    const request = factory.open('skelly.browser-mods', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('selection');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);

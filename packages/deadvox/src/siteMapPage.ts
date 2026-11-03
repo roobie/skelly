@@ -117,12 +117,12 @@ if (overlay) {
   document.body.classList.add('map-overlay');
   document.querySelector<HTMLElement>('#map-label')!.textContent = `${config.site.toUpperCase()} · REVIEW MAP`;
   const requestClose = () =>
-    globalThis.parent.postMessage({ type: 'deadvox-review-map-close' }, globalThis.location.origin);
+    globalThis.parent.postMessage({ type: 'skelly-review-map-close' }, globalThis.location.origin);
   const forwardKey = (event: KeyEventLike, phase: 'down' | 'up') => {
     event.preventDefault();
     globalThis.parent.postMessage(
       {
-        type: 'deadvox-review-map-key',
+        type: 'skelly-review-map-key',
         phase,
         code: event.code,
         shiftKey: event.shiftKey,

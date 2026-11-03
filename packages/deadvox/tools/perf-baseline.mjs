@@ -183,7 +183,7 @@ try {
     await page.addInitScript((count) => {
       globalThis.addEventListener('mousemove', (event) => event.stopImmediatePropagation(), true);
       if (count) {
-        localStorage.setItem('deadvox.shambler-spawn-count', String(count));
+        localStorage.setItem('skelly.shambler-spawn-count', String(count));
       }
     }, route.spawnCount);
     let cdp;

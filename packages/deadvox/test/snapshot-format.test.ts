@@ -42,7 +42,7 @@ import {
 // Bounds the decompressed envelope, which tracks saved-state growth; compression would hide it.
 const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024;
 // biome-ignore lint/style/noProcessEnv: timings print only under the bench script.
-const benchmarking = process.env.DEADVOX_BENCH === '1';
+const benchmarking = process.env.SKELLY_BENCH === '1';
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
 

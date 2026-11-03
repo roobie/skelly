@@ -40,8 +40,8 @@ export const readBundledPacks = (packageRoot: string): PackInput[] =>
     };
   });
 
-const CONTENT_PACKS_DEFINE = '__DEADVOX_CONTENT_PACKS__';
-const FILE_HASHES_DEFINE = '__DEADVOX_FILE_HASHES__';
+const CONTENT_PACKS_DEFINE = '__SKELLY_CONTENT_PACKS__';
+const FILE_HASHES_DEFINE = '__SKELLY_FILE_HASHES__';
 
 export const bundledPackDefines = async (inputs: readonly PackInput[]): Promise<Record<string, string>> => {
   const { packs, issues } = admitPacks(inputs);

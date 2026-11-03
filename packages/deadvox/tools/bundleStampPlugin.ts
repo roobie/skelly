@@ -9,8 +9,8 @@ import { admitPacks, packContentHash } from '../src/core/packAdmission.ts';
 import { bundledPackDefines, readBundledPacks } from './readBundledPacks.ts';
 import { fingerprintSimulationSources } from './simulationFingerprint.ts';
 
-const BUNDLE_STAMP_DEFINE = '__DEADVOX_BUNDLE_STAMP__';
-const ADMISSION_FINGERPRINT_DEFINE = '__DEADVOX_ADMISSION_FINGERPRINT__';
+const BUNDLE_STAMP_DEFINE = '__SKELLY_BUNDLE_STAMP__';
+const ADMISSION_FINGERPRINT_DEFINE = '__SKELLY_ADMISSION_FINGERPRINT__';
 export const ADMISSION_ENTRIES = ['src/game/browserMods.ts', 'src/game/bundledMods.ts'];
 export const UNSTAMPED_BUNDLE_DEFINES = {
   [BUNDLE_STAMP_DEFINE]: 'undefined',
@@ -23,7 +23,7 @@ export function bundleStampPlugin(packageRoot: string): Plugin {
   let packHashes: string[] | undefined;
   const snapshot = new Map<string, string>();
   return {
-    name: 'deadvox:validated-bundle',
+    name: 'skelly:validated-bundle',
     enforce: 'pre',
     async configResolved(config) {
       if (config.command !== 'build' || config.isWorker) {

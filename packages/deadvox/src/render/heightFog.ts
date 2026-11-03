@@ -68,6 +68,6 @@ export const patchHeightFog = (shader: WebGLProgramParametersWithUniforms, categ
 /** A built-in material that has no shader patch of its own, fogged with the mist. */
 export const withHeightFog = <T extends Material>(material: T, category: HotCategory = 'other'): T => {
   material.onBeforeCompile = (shader) => patchHeightFog(shader, category);
-  material.customProgramCacheKey = () => 'deadvox-height-fog';
+  material.customProgramCacheKey = () => 'skelly-height-fog';
   return material;
 };
