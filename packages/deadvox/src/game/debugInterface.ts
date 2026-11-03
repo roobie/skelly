@@ -9,7 +9,7 @@ import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { DrawSubmission } from '../render/drawCounters.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
-import type { ZombieRenderer } from '../render/mobActors.ts';
+import type { ActorRenderer } from '../render/mobActors.ts';
 import type { HeardSound } from './audio.ts';
 import type { DebugGunPoseMode } from './debugGunPose.ts';
 import type { Engine } from './engine.ts';
@@ -52,7 +52,7 @@ export interface DebugHooks {
   /** The camera's current roll in radians (damage feedback; 0 otherwise). */
   readonly roll: () => number;
   readonly zombies: () => ZombieSystem | undefined;
-  readonly zombieRenderer: ZombieRenderer;
+  readonly zombieRenderer: ActorRenderer;
   readonly feet: () => Vec3;
   readonly showNotice: (text: string) => void;
   readonly strikeTerrainCell: Session['strikeTerrainCell'];

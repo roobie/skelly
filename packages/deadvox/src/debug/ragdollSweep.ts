@@ -3,7 +3,7 @@ import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId } from '../core/entities.ts';
 import type { ZombieSystem } from '../core/zombies.ts';
-import type { ZombieRenderer } from '../render/mobActors.ts';
+import type { ActorRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';
 
 export function stageRagdollSweep({
@@ -17,7 +17,7 @@ export function stageRagdollSweep({
   groundAt,
 }: {
   system: ZombieSystem | undefined;
-  renderer: ZombieRenderer;
+  renderer: ActorRenderer;
   registry: Registry;
   origin: Vec3;
   blockSize: number;

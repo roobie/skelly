@@ -1,7 +1,7 @@
-// Draws zombies as full mobgen actors instead of ZombieMeshes' six boxes — the default behind
+// Draws zombies as full mobgen actors instead of ActorMeshes' six boxes — the default behind
 // `?actors=detailed` (GameConfig.actors; `?actors=boxes` selects the fallback; see src/game/config.ts).
-// Same shape as ZombieMeshes
-// (group/sync/…, see ZombieRenderer below) so play.ts can hold either behind one variable.
+// Same shape as ActorMeshes
+// (group/sync/…, see ActorRenderer below) so play.ts can hold either behind one variable.
 //
 // mobgen's pure core/mob modules (bones, IK, gait, the crowd bone-matrix packing) are reused directly via
 // the `@mobgen/` alias (vite.config.ts, tsconfig.json) — no npm dependency, just a sibling-project source
@@ -140,13 +140,12 @@ import { type Ragdoll, RagdollWorld, ragdollContent } from './ragdoll.ts';
 import { angularVelocity, applyImpulseAtClampedPoint, type RigidBody, type RigidWorld } from './rigidImpulse.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
-/** What play.ts needs from either renderer, so it can hold `ZombieMeshes | MobActorMeshes` behind one
- * variable. `dispose`/`setCamera`/`zombieDied` are optional: ZombieMeshes has none of them (see
- * src/render/zombies.ts — left unchanged, so a death for it is just the plain vanish-from-the-store path
- * it's always had), MobActorMeshes has all three. `zombieDied` must be called for every death (see
+/** What play.ts needs from either renderer, so it can hold `ActorMeshes | MobActorMeshes` behind one
+ * variable. `dispose`/`setCamera`/`zombieDied` are optional: ActorMeshes has none of them (see
+ * src/render/actors.ts), MobActorMeshes has all three. `zombieDied` must be called for every death (see
  * src/core/zombies.ts's onDeath and play.ts's forwarding) so a corpse renderer can tell "died, keep as a
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
-export interface ZombieRenderer {
+export interface ActorRenderer {
   readonly group: Group;
   sync: (
     store: EntityStore<Zombie>,
@@ -174,7 +173,7 @@ export interface ZombieRenderer {
   zombieCarved?: (id: EntityId, zombie: Zombie, cells: readonly number[], hit: HitImpulse) => void;
 }
 
-const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
+const DEFAULT_CAPACITY = 64; // matches ActorMeshes' own default
 
 const PELVIS_HEIGHT_M = 0.9;
 const BOUNDING_RADIUS_M = 1.2;
@@ -579,7 +578,7 @@ const buildActorVariants = (
 
 /** Draws zombies as full mobgen actors, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
-export class MobActorMeshes implements ZombieRenderer {
+export class MobActorMeshes implements ActorRenderer {
   readonly group = new Group();
   private readonly blockSize: number;
   private readonly reveal: ColumnReveal | undefined;
@@ -1864,7 +1863,7 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   /** Interpolated pos/yaw/headYaw at `blend` between a zombie's last two fixed-step poses — exactly
-   * ZombieMeshes.renderPose's own maths (src/render/zombies.ts), duplicated rather than extracted there:
+   * ActorMeshes.renderPose's own maths (src/render/actors.ts), duplicated rather than extracted there:
    * that file is left alone on purpose (see this module's header comment). */
   private interpolateRenderPose(zombie: Zombie, blend: number): { pos: Vec3; yaw: number; headYaw: number } {
     const previous = zombie.renderPrevious;

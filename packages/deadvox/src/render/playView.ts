@@ -33,6 +33,7 @@ import { playerTuning } from '../game/player.ts';
 import { THIRD_PERSON_CAMERA } from '../game/thirdPersonOrbit.ts';
 import type { FromMesher } from '../worker/protocol.ts';
 import { AcidEffects } from './acidEffects.ts';
+import { ActorMeshes } from './actors.ts';
 import { createAvatarMannequin } from './avatarMannequin.ts';
 import { createAvatarStudy } from './avatarStudy.ts';
 import { BlastFlashes } from './blastFlashes.ts';
@@ -53,20 +54,18 @@ import { ItemThrows } from './itemThrows.ts';
 import { LeverProps } from './leverProps.ts';
 import { acidGlows, LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
-import { MobActorMeshes, type MobActorMeshesOptions, type ZombieRenderer } from './mobActors.ts';
+import { type ActorRenderer, MobActorMeshes, type MobActorMeshesOptions } from './mobActors.ts';
 import { modelMaterialWarmUp } from './modelMaterials.ts';
 import { ModelLibrary } from './models.ts';
 import { createNightVisionFlareUpdate } from './nightVisionFlare.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { ragdollContent } from './ragdoll.ts';
-
 import { PLAYER_SELF_MASK_LAYER } from './shadowFlags.ts';
 import { applySky } from './sky.ts';
 import { StepOffset } from './stepOffset.ts';
 import { VehicleShapes } from './vehicleShapes.ts';
 import { VehicleMeshes } from './vehicles.ts';
-import { ZombieMeshes } from './zombies.ts';
 
 const corpseBudget = (seed: number | undefined, maxCorpses: number, look: MobActorMeshesOptions['look']) => ({
   maxCorpses: seed === undefined ? maxCorpses : ragdollContent.sweep.capacity,
@@ -344,7 +343,7 @@ export const createPlayView = (
     models,
   }); // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
-  const zombieMeshes: ZombieRenderer =
+  const zombieMeshes: ActorRenderer =
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
           ...corpseBudget(config.ragdollSweep, graphics.mobActors.maxCorpses, look.mobActors),
@@ -357,7 +356,7 @@ export const createPlayView = (
           onFleshLanded: (centre) => gore.landed(centre),
           bloodiness: (zombie) => gore.severity(zombie),
         })
-      : new ZombieMeshes(s, undefined, meshes);
+      : new ActorMeshes(s, undefined, meshes);
   zombieMeshes.setWorld?.(physicalSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(playerTuning(registry).stepHeight);

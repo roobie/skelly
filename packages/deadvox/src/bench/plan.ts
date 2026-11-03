@@ -110,7 +110,7 @@ export interface ShamblerRunResult {
   zombieTick: SampleStats;
   backgroundTick?: SampleStats;
   renderSubmit: SampleStats;
-  /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ZombieMeshes'
+  /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ActorMeshes'
    * instance-matrix writes for 'boxes'). */
   actorSync: SampleStats;
   /** Scene-pass renderer.info.render.calls/.triangles from one measured frame — the population is fixed

@@ -37,6 +37,7 @@ import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombi
 import type { Zombie, ZombieMode, ZombieSystemOptions } from '../src/core/zombies.ts';
 import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import { AcidEffects } from '../src/render/acidEffects.ts';
+import { ActorMeshes } from '../src/render/actors.ts';
 import { CARVED_NEIGHBOUR } from '../src/render/amalgamFlesh.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
 import { Gore } from '../src/render/gore.ts';
@@ -48,7 +49,6 @@ import {
 } from '../src/render/mobActors.ts';
 import { initializeRagdollPhysics, ragdollContent } from '../src/render/ragdoll.ts';
 import RAPIER from '../src/render/ragdollRapier.ts';
-import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { fixtureIds } from './fixtures/capabilityIds.ts';
@@ -542,7 +542,7 @@ describe('MobActorMeshes', () => {
       poolSize: 1,
       reveal: terrain,
     });
-    const boxes = new ZombieMeshes(0.5, 1, terrain);
+    const boxes = new ActorMeshes(0.5, 1, terrain);
     const store = new MapEntityStore<Zombie>();
     const zombie = makeZombie([2 * CHUNK + 1, 0, 1]);
     const id = store.add(zombie);

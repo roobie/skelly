@@ -3,7 +3,7 @@ import { expect, it } from 'vitest';
 import { syncClock } from '../src/bench/renderClock.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, type PlayerSense } from '../src/core/zombies.ts';
-import { ZombieMeshes } from '../src/render/zombies.ts';
+import { ActorMeshes } from '../src/render/actors.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { createPlayerBody, physicsFor } from './playerFixture.ts';
@@ -68,7 +68,7 @@ it('draws a background actor partway between its own slice updates when synced o
   const elapsedFraction = 0.25;
   const now = secondAt + interval * elapsedFraction;
   const clock = syncClock(now, now, otherAt);
-  const meshes = new ZombieMeshes(SCALE.blockSize);
+  const meshes = new ActorMeshes(SCALE.blockSize);
   meshes.sync(system.store, 0, clock.alpha, false, clock.backgroundAlpha, clock.simSeconds);
 
   const matrix = new Matrix4();

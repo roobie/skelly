@@ -29,7 +29,7 @@ const REGION_FOR_PART: Readonly<Record<Part, ZombieRegion>> = {
 };
 
 /** Six instanced boxes, never one draw object per shambler. */
-export class ZombieMeshes {
+export class ActorMeshes {
   readonly group = new Group();
   private readonly meshes = new Map<Part, InstancedMesh>();
   private readonly dummy = new Object3D();

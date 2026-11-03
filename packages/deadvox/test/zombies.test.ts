@@ -43,10 +43,10 @@ import {
   pickZombieMove,
   type Zombie,
 } from '../src/core/zombies.ts';
+import { ActorMeshes } from '../src/render/actors.ts';
 import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
-import { ZombieMeshes } from '../src/render/zombies.ts';
 import { baseRegistry } from './baseRegistry.ts';
 import { BASE_CLOCK } from './dayPhaseFixture.ts';
 import { SnapshotSite } from './fixtures/snapshotSite.ts';
@@ -2399,7 +2399,7 @@ describe('shambler scenarios', () => {
     expect(Object.keys(FIGURE_BOXES)).toEqual(expect.arrayContaining(requiredParts));
 
     const { system } = standing([0, 1, 0]);
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const meshes = new ActorMeshes(BLOCK_SIZE);
     meshes.sync(system.store);
     const renderedParts = meshes.group.children as InstancedMesh[];
     const rendered = new Map(FIGURE_PARTS.map((part, index) => [part, instanceBox(renderedParts[index]!)] as const));
@@ -2443,7 +2443,7 @@ describe('shambler scenarios', () => {
     const stepWorld: SolidAt = (x, y) => y === 0 || (x === 2 && y === 1);
     const { system, zombie } = standing([1.4, 1, 0], [1, 0, 0]);
     zombie.body.vel[0] = 2.8 / BLOCK_SIZE;
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const meshes = new ActorMeshes(BLOCK_SIZE);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const legs = [parts[4]!, parts[5]!];
     const feet = () => {
@@ -2486,7 +2486,7 @@ describe('shambler scenarios', () => {
   });
 
   it('hides severed regions while keeping the other figure instances visible', () => {
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const meshes = new ActorMeshes(BLOCK_SIZE);
     const { system, zombie } = standing([4, 1, 4], [1, 0, 0]);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const meshFor = (part: (typeof FIGURE_PARTS)[number]) => parts[FIGURE_PARTS.indexOf(part)]!;
@@ -2507,7 +2507,7 @@ describe('shambler scenarios', () => {
   });
 
   it('renders collision-sized figures at game scale and swings each leg forward/back about its hip', () => {
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const meshes = new ActorMeshes(BLOCK_SIZE);
     const { system, id, zombie } = standing([4, 1, 4], [1, 0, 0]);
     meshes.sync(system.store);
     const parts = meshes.group.children as import('three').InstancedMesh[];
@@ -3322,7 +3322,7 @@ describe('idle and stroll shambling', () => {
     settle(zombie.body);
     let idleTurned = false;
     let strollingTicks = 0;
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const meshes = new ActorMeshes(BLOCK_SIZE);
     const parts = meshes.group.children as import('three').InstancedMesh[];
     const yaw = (mesh: import('three').InstancedMesh): number => {
       const matrix = new Matrix4();
@@ -3361,7 +3361,7 @@ describe('idle and stroll shambling', () => {
     const id = system.add({ ...SHAMBLER, sightCone: 180 }, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
     settle(zombie.body);
-    const meshes = new ZombieMeshes(BLOCK_SIZE);
+    const meshes = new ActorMeshes(BLOCK_SIZE);
     const bodyMesh = meshes.group.children[0] as import('three').InstancedMesh;
     meshes.sync(system.store);
     const pose = () => {
@@ -3396,7 +3396,7 @@ describe('idle and stroll shambling', () => {
     const idleZombie = idleSystem.store.get(idleId)!;
     settle(idleZombie.body);
     idleZombie.modeTimer = 100;
-    const idleMeshes = new ZombieMeshes(BLOCK_SIZE);
+    const idleMeshes = new ActorMeshes(BLOCK_SIZE);
     const idleBody = idleMeshes.group.children[0] as import('three').InstancedMesh;
     idleMeshes.sync(idleSystem.store);
     const idlePose = () => {

@@ -24,9 +24,9 @@ import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { PHYSICS_RATE } from '../game/session.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
-import { MobActorMeshes, type ZombieRenderer } from '../render/mobActors.ts';
+import { ActorMeshes } from '../render/actors.ts';
+import { type ActorRenderer, MobActorMeshes } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
-import { ZombieMeshes } from '../render/zombies.ts';
 import {
   ACTIVE_SHAMBLER_TARGET,
   type BenchRecord,
@@ -134,7 +134,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   const backgroundCount = count - activeCount;
   let playerBody!: Body;
   let zombies!: ZombieSystem;
-  let zombieMeshes!: ZombieRenderer;
+  let zombieMeshes!: ActorRenderer;
   let simTime = 0;
   let lastZombieStepTime = 0;
   let lastBackgroundStepTime = 0;
@@ -200,7 +200,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
             handlingReachMetres: reachTuning(engine.registry).reachMetres,
             gravityMetresPerSimSecondSquared: worldGravity(engine.registry),
           })
-        : new ZombieMeshes(s, count);
+        : new ActorMeshes(s, count);
     scene.add(zombieMeshes.group);
   };
 

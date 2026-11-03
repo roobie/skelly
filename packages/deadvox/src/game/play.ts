@@ -1074,7 +1074,7 @@ export const startPlay = (
     onAcidImpact: (position, type) => view.acidEffects.splash(position, type.acidSpit!.presentation),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
-    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ZombieMeshes leaves
+    // corpse, and blood for every wound. Only MobActorMeshes implements the zombie hooks; ActorMeshes leaves
     // them undefined.
     zombieEffects: {
       onWound: (id, _zombie, hit, damage) => {

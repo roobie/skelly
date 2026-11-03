@@ -66,7 +66,7 @@ export interface GameConfig {
   /** Debug-only world-x boundary; only fragments east of it receive weathering. */
   weatheringSplit?: number;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
-   * ZombieMeshes' six boxes instead. */
+   * ActorMeshes' six boxes instead. */
   actors: ActorRenderMode;
 }
 
