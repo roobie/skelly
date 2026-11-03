@@ -4,7 +4,7 @@ import { templateByName } from '@mobgen/core/template.ts';
 import { crawlGaitPose } from '@mobgen/mob/crawl.ts';
 import { InstancedMesh, Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
-import { actorFigure, figureSeedPool } from '../src/core/actorFigure.ts';
+import { actorFigure } from '../src/core/actorFigure.ts';
 import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { actorCrawls, actorPoseInputFor, HIT_FLINCH_DURATION, posedActor } from '../src/core/actorPose.ts';
 import {
@@ -46,7 +46,6 @@ import type { ActorSpawn, Site } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate, simSeconds } from '../src/core/time.ts';
 import { ActorMeshes } from '../src/render/actors.ts';
-import { mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { type RagdollWorld, ragdollContent } from '../src/render/ragdoll.ts';
 import type { RigidBody } from '../src/render/rigidImpulse.ts';
 import { baseRegistry } from './baseRegistry.ts';
@@ -219,11 +218,10 @@ const outwardRay = (zombie: Actor, region: HumanoidHitRegion, bone: string, id: 
   const origin: Vec3 = [center[0] + out[0] / BLOCK_SIZE, center[1], center[2] + out[2] / BLOCK_SIZE];
   return { origin, direction: [-out[0], 0, -out[2]] as Vec3 };
 };
-/** A ray into one region, posed as the system poses entity `id`. Acid limbs sit behind its torso from the
- * front, so they are approached from outside instead. */
+/** Acid limbs and some humanoid forearms sit behind the torso from the front; approach them from outside. */
 const regionRay = (zombie: Actor, region: HumanoidHitRegion, id = 1) => {
   const bone = (TARGET_BONES[zombie.type.model] ?? TARGET_BONES.humanoid!)[region];
-  if (zombie.type.model === 'acid' && region !== 'head') {
+  if ((zombie.type.model === 'acid' && region !== 'head') || region.endsWith('Arm')) {
     return outwardRay(zombie, region, bone, id);
   }
   const { center } = posedBox(zombie, region, bone, id);
@@ -3384,10 +3382,17 @@ describe('idle and stroll shambling', () => {
     expect(headLookObserved).toBe(true);
   });
 
-  it('interpolates 20 Hz chase poses between 60 Hz draws within facing and speed bounds', () => {
+  it('interpolates ordinary 20 Hz chase acceleration between 60 Hz draws within facing and speed bounds', () => {
+    const tickSeconds = 1 / 20;
+    const type = {
+      ...SHAMBLER,
+      sightCone: 180,
+      chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSimSecond: simRate(0) },
+    };
+    const maxSpeedChange = type.wander.movementAccelerationMetresPerSimSecondSquared * tickSeconds;
     let target: Vec3 = [20, 1, 0];
     const system = new ActorSystem(senses(() => player(target)));
-    const id = system.add({ ...SHAMBLER, sightCone: 180 }, [0, 1, 0], [1, 0, 0]);
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
     settle(zombie.body);
     const meshes = new ActorMeshes(BLOCK_SIZE);
@@ -3408,14 +3413,14 @@ describe('idle and stroll shambling', () => {
       if (frame % 3 === 0) {
         const angle = (frame / 60) * Math.PI;
         target = [20 * Math.cos(angle), 1, 20 * Math.sin(angle)];
-        system.tick(1 / 20);
+        system.tick(tickSeconds);
       }
       Reflect.apply(meshes.sync, meshes, [system.store, 1 / 60, (frame % 3) / 3]);
       const current = pose();
       const speed = Math.hypot(current.x - previous.x, current.z - previous.z) * BLOCK_SIZE * 60;
       const turn = Math.abs(Math.atan2(Math.sin(current.yaw - previous.yaw), Math.cos(current.yaw - previous.yaw)));
       expect((turn * 180) / Math.PI).toBeLessThanOrEqual(4);
-      expect(Math.abs(speed - previousSpeed)).toBeLessThanOrEqual(0.25);
+      expect(Math.abs(speed - previousSpeed)).toBeLessThanOrEqual(maxSpeedChange + 1e-5);
       previous = current;
       previousSpeed = speed;
     }
@@ -3880,9 +3885,8 @@ describe('dismemberment', () => {
       });
       const id = system.add(type, [4, 1, 4], [0, 0, -1]);
       const zombie = system.store.get(id)!;
-      renderer = new MobActorMeshes(BLOCK_SIZE, 64, {
-        zombies: registry.actors,
-        poolSize: mobFigurePoolSizeThrough(figureSeedPool(registry.actors), zombie.figureSeed),
+      renderer = new MobActorMeshes(BLOCK_SIZE, 2, {
+        zombies: new Map([[type.id, { ...type, figureSeeds: [zombie.figureSeed] }]]),
       });
       renderer.setWorld((_x, y, _z) => y === -1, BLOCK_SIZE);
       renderer.sync(system.store, 0, 1);

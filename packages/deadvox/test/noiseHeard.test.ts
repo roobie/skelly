@@ -804,7 +804,7 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   session.sim.paused = false;
   const doorOrigin: Vec3 = [0, 1, 0];
   const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
-  const listenerId = session.actors.add(registry.actors.get('shambler')!, [8, 1, 0.5]);
+  const listenerId = session.actors.add({ ...registry.actors.get('shambler')!, sight: 0, nightSight: 0 }, [8, 1, 0.5]);
   const listener = session.zombieStore.get(listenerId)!;
   expect(listener.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
