@@ -144,6 +144,7 @@ import {
   type Zombie,
   ZombieSystem,
 } from '../core/zombies.ts';
+import { actorVoiceLaw } from './actorAudio.ts';
 import { applyActorPlayerHit } from './actorPlayerHit.ts';
 import { firearmShotSound } from './audioPresentation.ts';
 import { interruptDisarm, registerTrapActions } from './bearTrapActions.ts';
@@ -175,7 +176,6 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
-import { actorVoiceLaw } from './actorAudio.ts';
 import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 import { ThrowCharge } from './throwCharge.ts';
@@ -826,10 +826,7 @@ export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const text = actionText(registry);
   const dayCycle = requireDayCycle(registry);
-  const actorVoice = actorVoiceLaw(
-    figureSeedPool(registry.zombies),
-    claimed(registry.senses, 'player')!.actorVoice,
-  );
+  const actorVoice = actorVoiceLaw(figureSeedPool(registry.zombies), claimed(registry.senses, 'player')!.actorVoice);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
   const Player = playerTuning(registry);
