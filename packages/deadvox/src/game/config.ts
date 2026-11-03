@@ -67,10 +67,10 @@ export interface GameConfig {
   weatheringSplit?: number;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
    * ZombieMeshes' six boxes instead. */
-  actors: ActorRenderer;
+  actors: ActorRenderMode;
 }
 
-export type ActorRenderer = 'boxes' | 'detailed';
+export type ActorRenderMode = 'boxes' | 'detailed';
 
 const defaultStart = (content: StartupContent): number => requireDayCycle(content.registry).defaultStartGameTimeOfDay;
 
@@ -113,7 +113,7 @@ export const makeConfig = (
 };
 
 /** `?actors=boxes`; anything else (including absent) is 'detailed'. */
-export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
+export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderMode =>
   params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
 export type SiteName = string;

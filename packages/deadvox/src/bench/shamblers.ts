@@ -19,7 +19,7 @@ import {
   BACKGROUND_ZOMBIE_SLICE_RATE,
   ZombieSystem,
 } from '../core/zombies.ts';
-import { type ActorRenderer, actorRendererFromUrl } from '../game/config.ts';
+import { type ActorRenderMode, actorRendererFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { physicsFor, playerTuning } from '../game/player.ts';
 import { PHYSICS_RATE } from '../game/session.ts';
@@ -52,7 +52,7 @@ export interface ShamblerBenchRun {
   index: number;
   seed: number;
   time: string;
-  actors: ActorRenderer;
+  actors: ActorRenderMode;
   /** Draw through the mood pass with the default look (`&post=1`, bench/post.ts). */
   post: boolean;
 }

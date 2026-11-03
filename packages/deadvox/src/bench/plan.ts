@@ -3,7 +3,7 @@
 
 import type { ItemDef } from '../core/content.ts';
 import type { StorageStats } from '../core/storage.ts';
-import type { ActorRenderer } from '../game/config.ts';
+import type { ActorRenderMode } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 
 export interface BenchConfig {
@@ -105,7 +105,7 @@ export interface ShamblerRunResult {
   background?: number;
   seed: number;
   /** Which renderer drew the zombies. */
-  actors: ActorRenderer;
+  actors: ActorRenderMode;
   frame: FrameStats;
   zombieTick: SampleStats;
   backgroundTick?: SampleStats;
@@ -159,7 +159,7 @@ export interface BenchRecord {
     dropped: number;
     pointLightSlots: number;
     shamblers: number;
-    actors: ActorRenderer;
+    actors: ActorRenderMode;
     settings: Record<
       string,
       Pick<
