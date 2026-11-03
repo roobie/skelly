@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { generate, realize } from '../src/core/generate.ts';
 import { applyPoint } from '../src/core/math.ts';
 import { boneTransforms } from '../src/core/pose.ts';
-import { dogGaitPose, dogStrideLength } from '../src/mob/dog.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
+import { quadrupedGaitPose, quadrupedStrideLength } from '../src/mob/quadruped.ts';
 
 const dog = realize(generate(dogTemplate, 7));
 
 describe('dog trot', () => {
   it('keeps the impaired gait shorter than the unimpaired trot', () => {
-    const impaired = dogStrideLength(dog, { limp: 0.6 });
+    const impaired = quadrupedStrideLength(dog, { limp: 0.6 });
     expect(impaired).toBeGreaterThan(0);
-    expect(impaired).toBeLessThan(dogStrideLength(dog));
+    expect(impaired).toBeLessThan(quadrupedStrideLength(dog));
   });
 
   it('scales stride with the skeleton and lowers cadence as stride grows', () => {
@@ -26,15 +26,15 @@ describe('dog trot', () => {
         })),
       },
     };
-    expect(dogStrideLength(larger)).toBeCloseTo(dogStrideLength(dog) * 2);
+    expect(quadrupedStrideLength(larger)).toBeCloseTo(quadrupedStrideLength(dog) * 2);
     const speed = 2.8;
-    expect(speed / dogStrideLength(larger)).toBeLessThan(speed / dogStrideLength(dog));
+    expect(speed / quadrupedStrideLength(larger)).toBeLessThan(speed / quadrupedStrideLength(dog));
   });
 
   it.each([0, 0.6])('compensates bob and pitch at both planted diagonals (limp %s)', (limp) => {
     const stance = { limp };
-    const stride = dogStrideLength(dog, stance);
-    const shortStep = stride - dogStrideLength(dog) / 2;
+    const stride = quadrupedStrideLength(dog, stance);
+    const shortStep = stride - quadrupedStrideLength(dog) / 2;
     const halves = [
       { start: 0, length: shortStep, paws: ['forePaw.L', 'hindPaw.R'] },
       { start: shortStep, length: stride - shortStep, paws: ['forePaw.R', 'hindPaw.L'] },
@@ -42,7 +42,7 @@ describe('dog trot', () => {
     for (const half of halves) {
       const samples = [0, 0.2, 0.5, 0.8, 1 - 1e-6].map((progress) => {
         const distance = half.start + half.length * progress;
-        const pose = dogGaitPose(dog, distance, 2.8, stance);
+        const pose = quadrupedGaitPose(dog, distance, 2.8, stance);
         return { distance, pose, transforms: boneTransforms(dog.body.bones, pose) };
       });
       // Real root motion and changing pitch: a frozen torso cannot satisfy this probe.

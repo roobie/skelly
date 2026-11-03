@@ -1,6 +1,6 @@
-// The dog body plan: a quadruped infected animal, built deterministically from a genome's sampled
+// The quadruped body plan, built deterministically from a genome's sampled
 // params. It is its own body plan rather than a humanoid variant because its support, pose and gait all
-// come from four paws on the ground, not two feet. dogPose/dogGaitPose/dogHitPose layer a limping,
+// come from four paws on the ground, not two feet. quadrupedPose/quadrupedGaitPose/quadrupedHitPose layer a limping,
 // lurching walk over the rest pose the way crawl.ts does for a prone humanoid.
 
 import type { Body, Feature, Material } from '../core/body.ts';
@@ -37,7 +37,7 @@ type Side = (typeof SIDES)[number];
 const sideSign = (s: Side): number => (s === 'L' ? -1 : 1);
 
 /** Params sampled in this fixed order (see core/generate.ts's sampleParams). */
-const DOG_PARAM_ORDER = [
+const QUADRUPED_PARAM_ORDER = [
   'height',
   'girth',
   'headScale',
@@ -52,10 +52,10 @@ const DOG_PARAM_ORDER = [
   'limp',
 ] as const;
 
-type DogParams = Readonly<Record<(typeof DOG_PARAM_ORDER)[number], number>>;
+type QuadrupedParams = Readonly<Record<(typeof QUADRUPED_PARAM_ORDER)[number], number>>;
 
 /** Bones a wound may sit on; paws are excluded so a carve can never detach a ground contact. */
-const DOG_WOUNDABLE_BONES = [
+const QUADRUPED_WOUNDABLE_BONES = [
   'pelvis',
   'spine',
   'neck',
@@ -73,7 +73,7 @@ const DOG_WOUNDABLE_BONES = [
 ] as const;
 
 /** A cut may take any limb subtree or the head/tail; severedBoneSet hides everything below the cut. */
-export const DOG_SEVERABLE_PARTS = [
+export const QUADRUPED_SEVERABLE_PARTS = [
   'head',
   'tail',
   'foreUpper.L',
@@ -99,7 +99,7 @@ interface LegJoints {
   readonly toe: Vec3;
 }
 
-interface DogLayout {
+interface QuadrupedLayout {
   readonly height: number;
   readonly girth: number;
   readonly hips: Vec3;
@@ -122,7 +122,7 @@ const LEGS = [
   { key: 'hindUpper.R', lower: 'hindLower.R', paw: 'hindPaw.R', front: false, side: 'R' as Side },
 ] as const;
 
-const dogLayout = (p: DogParams): DogLayout => {
+const quadrupedLayout = (p: QuadrupedParams): QuadrupedLayout => {
   const { height: h, girth, neckLength: neckLen, tailLength: tailLen } = p;
   const hips: Vec3 = [0, 0.96 * h, 0.28 * h];
   const midTorso: Vec3 = [0, 0.99 * h, 0];
@@ -156,7 +156,7 @@ const dogLayout = (p: DogParams): DogLayout => {
   return { height: h, girth, hips, midTorso, chest, neckTop, headTip, jawHinge, jawTip, tailBase, tailTip, legs };
 };
 
-const buildBones = (layout: DogLayout): Body['bones'] => {
+const buildBones = (layout: QuadrupedLayout): Body['bones'] => {
   const bones: Body['bones'][number][] = [
     { id: 'pelvis', parent: null, head: layout.hips, tail: layout.midTorso },
     { id: 'spine', parent: 'pelvis', head: layout.midTorso, tail: layout.chest },
@@ -223,7 +223,7 @@ const pawFeature = (bone: string, joints: LegJoints, dims: { readonly h: number;
   return { bone, op: 'add', shape: { kind: 'box', center, half, round: 0.012 * h * g }, material: 'skin' };
 };
 
-const buildFlesh = (layout: DogLayout, p: DogParams): Feature[] => {
+const buildFlesh = (layout: QuadrupedLayout, p: QuadrupedParams): Feature[] => {
   const h = layout.height;
   const g = p.girth * FLESH_SCALE;
   const hs = p.headScale;
@@ -297,7 +297,7 @@ const buildFlesh = (layout: DogLayout, p: DogParams): Feature[] => {
   return features;
 };
 
-const buildFace = (layout: DogLayout, p: DogParams): Feature[] => {
+const buildFace = (layout: QuadrupedLayout, p: QuadrupedParams): Feature[] => {
   const h = layout.height;
   const hs = p.headScale;
   const features: Feature[] = [];
@@ -362,7 +362,7 @@ const buildFace = (layout: DogLayout, p: DogParams): Feature[] => {
   return features;
 };
 
-const DOG_FLESH_RADIUS: Readonly<Record<string, number>> = {
+const QUADRUPED_FLESH_RADIUS: Readonly<Record<string, number>> = {
   pelvis: 0.15,
   spine: 0.14,
   neck: 0.08,
@@ -380,12 +380,12 @@ const DOG_FLESH_RADIUS: Readonly<Record<string, number>> = {
 const boneById = (bones: Body['bones'], id: string): Body['bones'][number] => {
   const bone = bones.find((candidate) => candidate.id === id);
   if (!bone) {
-    throw new Error(`dog: unknown wound bone "${id}"`);
+    throw new Error(`quadruped: unknown wound bone "${id}"`);
   }
   return bone;
 };
 
-const buildWounds = (bones: Body['bones'], layout: DogLayout, wounds: readonly Wound[]): Feature[] => {
+const buildWounds = (bones: Body['bones'], layout: QuadrupedLayout, wounds: readonly Wound[]): Feature[] => {
   const h = layout.height;
   const features: Feature[] = [];
   for (const w of wounds) {
@@ -398,7 +398,7 @@ const buildWounds = (bones: Body['bones'], layout: DogLayout, wounds: readonly W
     const outward = add(scale(perp0, Math.cos(angle)), scale(perp1, Math.sin(angle)));
     const center = add(bone.head, scale(sub(bone.tail, bone.head), w.t));
     const base = w.bone.split('.')[0]!;
-    const radius = (DOG_FLESH_RADIUS[base] ?? 0.05) * h * layout.girth;
+    const radius = (QUADRUPED_FLESH_RADIUS[base] ?? 0.05) * h * layout.girth;
     const surface = add(center, scale(outward, radius));
     features.push({
       bone: w.bone,
@@ -417,20 +417,20 @@ const buildWounds = (bones: Body['bones'], layout: DogLayout, wounds: readonly W
   return features;
 };
 
-const buildDog = (genome: Genome): Body => {
-  const p = genome.params as DogParams;
-  const layout = dogLayout(p);
+const buildQuadruped = (genome: Genome): Body => {
+  const p = genome.params as QuadrupedParams;
+  const layout = quadrupedLayout(p);
   const bones = buildBones(layout);
   const features = [...buildFlesh(layout, p), ...buildFace(layout, p), ...buildWounds(bones, layout, genome.wounds)];
   return { bones, features, materials: resolveMaterials(templateByName(genome.template), p) };
 };
 
-const sampleDog: BodyPlanDef['sample'] = (rng: Rng, template: Template) => {
-  const params = sampleParams(rng, template.params, DOG_PARAM_ORDER);
+const sampleQuadruped: BodyPlanDef['sample'] = (rng: Rng, template: Template) => {
+  const params = sampleParams(rng, template.params, QUADRUPED_PARAM_ORDER);
   const wounds: Wound[] = [];
   for (let i = 0; i < Math.max(0, Math.round(params.woundCount!)); i++) {
     wounds.push({
-      bone: pick(rng, DOG_WOUNDABLE_BONES),
+      bone: pick(rng, QUADRUPED_WOUNDABLE_BONES),
       t: range(rng, 0.2, 0.8),
       angle: range(rng, 0, 360),
       radius: range(rng, 0.014, 0.03),
@@ -439,11 +439,11 @@ const sampleDog: BodyPlanDef['sample'] = (rng: Rng, template: Template) => {
   return { params, wounds };
 };
 
-registerBodyPlan('dog', {
-  sample: sampleDog,
-  build: (genome) => buildDog(genome),
-  paramOrder: DOG_PARAM_ORDER,
-  woundBones: DOG_WOUNDABLE_BONES,
+registerBodyPlan('quadruped', {
+  sample: sampleQuadruped,
+  build: (genome) => buildQuadruped(genome),
+  paramOrder: QUADRUPED_PARAM_ORDER,
+  woundBones: QUADRUPED_WOUNDABLE_BONES,
   budgets: heightHeadBudgets,
   limbBones: SIDES.flatMap((side) =>
     ['foreUpper', 'foreLower', 'hindUpper', 'hindLower'].map((segment) => `${segment}.${side}`),
@@ -454,7 +454,7 @@ registerBodyPlan('dog', {
 
 const PAW_BONES = LEGS.map((leg) => leg.paw);
 
-export interface DogStance {
+export interface QuadrupedStance {
   readonly limp?: number;
   readonly headTilt?: number;
   /** Bones hidden by accumulated cuts; grounding ignores them so a severed limb is not an invisible support. */
@@ -463,7 +463,7 @@ export interface DogStance {
 
 /** The rest stance: a low, uneven four-paw stand, head hanging. Regrounded against the surviving bones so
  * the paws define the contact and nothing else dips below them. */
-export const dogPose = (realized: Realized, stance: DogStance = {}): Pose => {
+export const quadrupedPose = (realized: Realized, stance: QuadrupedStance = {}): Pose => {
   const limp = stance.limp ?? 0;
   const headTilt = stance.headTilt ?? 0;
   const limpScale = Math.max(0, Math.min(1, limp));
@@ -480,7 +480,7 @@ export const dogPose = (realized: Realized, stance: DogStance = {}): Pose => {
     'foreLower.L': rotX(-6 * limpScale),
     'hindLower.L': rotX(8 * limpScale),
   };
-  return groundDogPose(realized, { root: [0, 0, 0], rotations }, stance.severed);
+  return groundQuadrupedPose(realized, { root: [0, 0, 0], rotations }, stance.severed);
 };
 
 const smoothstep = (value: number): number => value * value * (3 - 2 * value);
@@ -489,7 +489,7 @@ const smoothstep = (value: number): number => value * value * (3 - 2 * value);
  * planted paws are the lowest points keeps them exactly on the ground; a swing paw that lifts does not.
  * Severed bones are excluded, so the body rests or falls on its surviving geometry rather than hovering on
  * a hidden leg. */
-const groundDogPose = (realized: Realized, pose: Pose, severed?: ReadonlySet<string>): Pose => {
+const groundQuadrupedPose = (realized: Realized, pose: Pose, severed?: ReadonlySet<string>): Pose => {
   const probe: Pose = { root: [pose.root[0], 0, pose.root[2]], rotations: pose.rotations };
   const surviving = realized.body.bones.map((bone) => bone.id).filter((id) => !(severed?.has(id) ?? false));
   const surfaces = posedVoxelSurfaceBoundsForBones(realized, probe, surviving);
@@ -497,7 +497,7 @@ const groundDogPose = (realized: Realized, pose: Pose, severed?: ReadonlySet<str
   return { ...pose, root: [pose.root[0], -lowest, pose.root[2]] };
 };
 
-const DOG_TROT = {
+const QUADRUPED_TROT = {
   stridePerWithersHeight: 1.77,
   liftPerWithersHeight: 0.14,
   supportPerWithersHeight: 0.31,
@@ -574,11 +574,11 @@ const stanceLegAngles = (
 
 /** Opposite-corner diagonals: fore-left with hind-right, fore-right with hind-left. The first carries
  * the limp so the shamble's step timing is uneven. */
-const DOG_PAIRS = [
+const QUADRUPED_PAIRS = [
   { legs: ['foreUpper.L', 'hindUpper.R'] as const, limp: true },
   { legs: ['foreUpper.R', 'hindUpper.L'] as const, limp: false },
 ] as const;
-const DOG_PAIR_OF_LEG: Readonly<Record<string, number>> = {
+const QUADRUPED_PAIR_OF_LEG: Readonly<Record<string, number>> = {
   'foreUpper.L': 0,
   'hindUpper.R': 0,
   'foreUpper.R': 1,
@@ -588,12 +588,15 @@ const DOG_PAIR_OF_LEG: Readonly<Record<string, number>> = {
 /** Every leg's rest sagitta plus the shared stance offsets and the per-diagonal step lengths they imply.
  * Both legs of a stance half are planted at the same Z offsets, so neither can drift against the other;
  * each diagonal's step length is exactly the ground its stance sweeps. */
-const dogStepGeometry = (realized: Realized, limpScale: number) => {
+const quadrupedStepGeometry = (realized: Realized, limpScale: number) => {
   const legs = LEGS.map((leg) => ({ leg, ...legSegmentsOf(realized, leg) }));
-  const frontOffset = (-boneById(realized.body.bones, 'foreUpper.L').head[1] * DOG_TROT.stridePerWithersHeight) / 4;
+  const frontOffset =
+    (-boneById(realized.body.bones, 'foreUpper.L').head[1] * QUADRUPED_TROT.stridePerWithersHeight) / 4;
   const backOffset = -frontOffset;
   const fullStep = backOffset - frontOffset;
-  const stepLengths = DOG_PAIRS.map((pair) => (pair.limp ? fullStep * (1 - LIMP_STEP_SHORTEN * limpScale) : fullStep));
+  const stepLengths = QUADRUPED_PAIRS.map((pair) =>
+    pair.limp ? fullStep * (1 - LIMP_STEP_SHORTEN * limpScale) : fullStep,
+  );
   return { legs, frontOffset, stepLengths };
 };
 
@@ -625,24 +628,29 @@ const legAnchors = (realized: Realized, base: Pose): Readonly<Record<string, Leg
 };
 
 /** Ground distance per full cycle (both diagonals), shared with the pose's stance sweep. */
-export const dogStrideLength = (realized: Realized, stance: DogStance = {}): number => {
+export const quadrupedStrideLength = (realized: Realized, stance: QuadrupedStance = {}): number => {
   const limpScale = Math.max(0, Math.min(1, stance.limp ?? 0));
-  return dogStepGeometry(realized, limpScale).stepLengths.reduce((sum, step) => sum + step, 0);
+  return quadrupedStepGeometry(realized, limpScale).stepLengths.reduce((sum, step) => sum + step, 0);
 };
 
 /** A staggering diagonal gait driven by ground distance, not wall time: `distance` is how far the body
  * has advanced, so a planted paw rides the moving ground and any speed just changes how fast distance
  * grows. The fore-left/hind-right pair reaches while fore-right/hind-left plants, then they swap; `limp`
  * shortens and droops the injured diagonal, so the walk lurches rather than trots. */
-export const dogGaitPose = (realized: Realized, distance: number, speed: number, stance: DogStance = {}): Pose => {
+export const quadrupedGaitPose = (
+  realized: Realized,
+  distance: number,
+  speed: number,
+  stance: QuadrupedStance = {},
+): Pose => {
   const limp = stance.limp ?? 0;
   const limpScale = Math.max(0, Math.min(1, limp));
-  const base = dogPose(realized, stance);
+  const base = quadrupedPose(realized, stance);
   if (speed <= 0 || !Number.isFinite(distance)) {
     return base;
   }
   const [, height] = boneById(realized.body.bones, 'foreUpper.L').head;
-  const { legs, frontOffset, stepLengths } = dogStepGeometry(realized, limpScale);
+  const { legs, frontOffset, stepLengths } = quadrupedStepGeometry(realized, limpScale);
   const cycleLength = stepLengths[0]! + stepLengths[1]!;
   const cycle = ((distance % cycleLength) + cycleLength) % cycleLength;
   const pairIndex = cycle < stepLengths[0]! ? 0 : 1;
@@ -650,15 +658,15 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   const stepDistance = pairIndex === 0 ? cycle : cycle - stepLengths[0]!;
   const progress = stepDistance / stepLength;
   const reach = Math.sin(progress * Math.PI);
-  const liftHeight = height * DOG_TROT.liftPerWithersHeight * reach;
+  const liftHeight = height * QUADRUPED_TROT.liftPerWithersHeight * reach;
   const bodyRotations = {
     ...base.rotations,
-    pelvis: mulMM(base.rotations.pelvis!, rotX(DOG_TROT.pitchDeg * Math.sin(2 * Math.PI * progress))),
+    pelvis: mulMM(base.rotations.pelvis!, rotX(QUADRUPED_TROT.pitchDeg * Math.sin(2 * Math.PI * progress))),
   };
   const anchors = legAnchors(realized, { ...base, rotations: bodyRotations });
   const blend = progress * progress * (3 - 2 * progress);
   const phase = legs.map((leg) => {
-    const legPair = DOG_PAIR_OF_LEG[leg.leg.key]!;
+    const legPair = QUADRUPED_PAIR_OF_LEG[leg.leg.key]!;
     const isStance = legPair === pairIndex;
     const sideScale = leg.leg.side === 'L' ? 1 - 0.5 * limpScale : 1;
     const fromOffset = frontOffset + stepLengths[legPair]!;
@@ -670,7 +678,8 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   // knee flex at its widest sweep; footfall compression changes torso height without moving the paws.
   const supportY =
     height *
-    (DOG_TROT.supportPerWithersHeight + DOG_TROT.compressionPerWithersHeight * Math.cos(2 * Math.PI * progress));
+    (QUADRUPED_TROT.supportPerWithersHeight +
+      QUADRUPED_TROT.compressionPerWithersHeight * Math.cos(2 * Math.PI * progress));
   const rotations: Record<string, Mat3> = { ...bodyRotations };
   for (const { leg, offset, lift, anchor } of phase) {
     // Rotations act in rest-pose world axes while the solve lives in the parent's frame, so rotate the
@@ -695,17 +704,22 @@ export const dogGaitPose = (realized: Realized, distance: number, speed: number,
   };
   addBodyRotation('neck', rotX(4 * reach));
   addBodyRotation('head', rotX(5 * reach));
-  return groundDogPose(realized, { root: [0, base.root[1], 0], rotations }, stance.severed);
+  return groundQuadrupedPose(realized, { root: [0, base.root[1], 0], rotations }, stance.severed);
 };
 
 /** How a flinch lands: which side it mirrors to, and the cuts whose bones must not bear its regrounding. */
-export interface DogHitOptions {
+export interface QuadrupedHitOptions {
   readonly side?: number;
   readonly severed?: ReadonlySet<string>;
 }
 
 /** A short brace/recoil layered over the current pose and re-grounded against the surviving supports. */
-export const dogHitPose = (realized: Realized, base: Pose, time: number, options: DogHitOptions = {}): Pose => {
+export const quadrupedHitPose = (
+  realized: Realized,
+  base: Pose,
+  time: number,
+  options: QuadrupedHitOptions = {},
+): Pose => {
   if (!(time > 0) || time >= HIT_FLINCH.duration) {
     return base;
   }
@@ -722,8 +736,8 @@ export const dogHitPose = (realized: Realized, base: Pose, time: number, options
   addRotation('jaw', rotX(10 * intensity));
   addRotation('foreUpper.L', rotZ(-3 * intensity * side));
   addRotation('foreUpper.R', rotZ(3 * intensity * side));
-  return groundDogPose(realized, { ...base, rotations }, options.severed);
+  return groundQuadrupedPose(realized, { ...base, rotations }, options.severed);
 };
 
 /** Exported for tests: the paw bones that bear the ground contact. */
-export const dogPawBones: readonly string[] = PAW_BONES;
+export const quadrupedPawBones: readonly string[] = PAW_BONES;

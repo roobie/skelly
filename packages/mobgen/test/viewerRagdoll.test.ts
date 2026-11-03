@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import player from '../../deadvox/src/content/base/player.json' with { type: 'json' };
 import { RagdollWorld, ragdollContent } from '../../deadvox/src/render/ragdoll.ts';
 import { generateValid } from '../src/core/generate.ts';
-import { dogPose } from '../src/mob/dog.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
 import { createGaitCache, footRestExtents } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { idlePose } from '../src/mob/idle.ts';
+import { quadrupedPose } from '../src/mob/quadruped.ts';
 import { skeletonTemplate } from '../src/mob/skeletonTemplate.ts';
 import { buildActor, disposeActor } from '../src/viewer/scene.ts';
 
@@ -17,8 +17,8 @@ describe('viewer ragdoll transforms', () => {
       const found = generateValid(template, 1)!;
       const { realized, genome } = found;
       const pose =
-        template.bodyPlan === 'dog'
-          ? dogPose(realized)
+        template.bodyPlan === 'quadruped'
+          ? quadrupedPose(realized)
           : idlePose(
               {
                 bones: realized.body.bones,

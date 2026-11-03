@@ -8,9 +8,15 @@ import { boneTransforms } from '../src/core/pose.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../src/core/voxelBounds.ts';
 import { crowdTextureLayout, isSeveredInMask, packSeveredMask } from '../src/mob/crowd.ts';
 import { severedBoneSet } from '../src/mob/dismember.ts';
-import { dogGaitPose, dogHitPose, dogPawBones, dogPose, dogStrideLength } from '../src/mob/dog.ts';
 import { dogTemplate } from '../src/mob/dogTemplate.ts';
 import { templateFigure } from '../src/mob/humanoidFigure.ts';
+import {
+  quadrupedGaitPose,
+  quadrupedHitPose,
+  quadrupedPawBones,
+  quadrupedPose,
+  quadrupedStrideLength,
+} from '../src/mob/quadruped.ts';
 import { HIT_FLINCH } from '../src/mob/reactions.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
@@ -49,13 +55,16 @@ const ownerIds = (realized: ReturnType<typeof realize>): ReadonlySet<string> => 
   return owners;
 };
 
-const pawSurface = (realized: ReturnType<typeof realize>, pose: ReturnType<typeof dogPose>, boneId: string): number =>
-  posedVoxelSurfaceBoundsForBones(realized, pose, [boneId]).get(boneId)!;
+const pawSurface = (
+  realized: ReturnType<typeof realize>,
+  pose: ReturnType<typeof quadrupedPose>,
+  boneId: string,
+): number => posedVoxelSurfaceBoundsForBones(realized, pose, [boneId]).get(boneId)!;
 
 /** The lowest voxel surface among the bones a set of cuts leaves behind. */
 const survivingSurface = (
   realized: ReturnType<typeof realize>,
-  pose: ReturnType<typeof dogPose>,
+  pose: ReturnType<typeof quadrupedPose>,
   hidden: ReadonlySet<string>,
 ): number => {
   const survivors = realized.body.bones.map((bone) => bone.id).filter((id) => !hidden.has(id));
@@ -88,7 +97,7 @@ const longestStillRun = (values: readonly number[], tolerance: number): readonly
 
 describe('dog shambler', () => {
   it('is its own body plan, outside the templates Deadvox spawns', () => {
-    expect(dogTemplate.bodyPlan).toBe('dog');
+    expect(dogTemplate.bodyPlan).toBe('quadruped');
     expect(TEMPLATES.some((template) => template.name === 'dog')).toBe(false);
   });
 
@@ -118,14 +127,14 @@ describe('dog shambler', () => {
 
   it('grounds the body on exactly its four declared paws', () => {
     const realized = realizedFor(1);
-    expect(realized.supportBones).toEqual(new Set(dogPawBones));
-    expect(groundContactBones(realized)).toEqual(new Set(dogPawBones));
+    expect(realized.supportBones).toEqual(new Set(quadrupedPawBones));
+    expect(groundContactBones(realized)).toEqual(new Set(quadrupedPawBones));
     expect(realized.report.issues.filter((issue) => issue.rule === 'grounded')).toEqual([]);
 
-    const rest = dogPose(realized);
+    const rest = quadrupedPose(realized);
     const tolerance = realized.voxels.size;
     const owners = ownerIds(realized);
-    for (const paw of dogPawBones) {
+    for (const paw of quadrupedPawBones) {
       expect(owners).toContain(paw);
       expect(Math.abs(pawSurface(realized, rest, paw))).toBeLessThanOrEqual(tolerance);
     }
@@ -136,9 +145,9 @@ describe('dog shambler', () => {
       const realized = realizedFor(seed);
       const stance = { limp: 0.3, headTilt: 4 };
       const tolerance = realized.voxels.size;
-      const stride = dogStrideLength(realized, stance);
-      const rest = dogPose(realized, stance);
-      expect(dogGaitPose(realized, 0.5, 0, stance)).toEqual(rest);
+      const stride = quadrupedStrideLength(realized, stance);
+      const rest = quadrupedPose(realized, stance);
+      expect(quadrupedGaitPose(realized, 0.5, 0, stance)).toEqual(rest);
 
       for (const [fraction, speed] of [
         [0.1, 1],
@@ -147,31 +156,31 @@ describe('dog shambler', () => {
         [0.85, 0.6],
         [0.99, 1],
       ] as const) {
-        const gait = dogGaitPose(realized, stride * fraction, speed, stance);
-        const surfaces = dogPawBones.map((paw) => pawSurface(realized, gait, paw));
+        const gait = quadrupedGaitPose(realized, stride * fraction, speed, stance);
+        const surfaces = quadrupedPawBones.map((paw) => pawSurface(realized, gait, paw));
         expect(Math.min(...surfaces)).toBeGreaterThanOrEqual(-tolerance);
         // At least one paw is planted on the ground at every phase.
         expect(surfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
 
-        const flinch = dogHitPose(realized, gait, 0.08, { side: 0.5 });
+        const flinch = quadrupedHitPose(realized, gait, 0.08, { side: 0.5 });
         expect(flinch.rotations.head).not.toEqual(gait.rotations.head);
-        const flinchSurfaces = dogPawBones.map((paw) => pawSurface(realized, flinch, paw));
+        const flinchSurfaces = quadrupedPawBones.map((paw) => pawSurface(realized, flinch, paw));
         expect(Math.min(...flinchSurfaces)).toBeGreaterThanOrEqual(-tolerance);
         expect(flinchSurfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
-        expect(dogHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
+        expect(quadrupedHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
       }
     }
   });
 
   it('walks with opposite-corner diagonal pairs and a real stride', () => {
     const realized = realizedFor(1);
-    const stride = dogStrideLength(realized);
+    const stride = quadrupedStrideLength(realized);
     const tolerance = realized.voxels.size;
     const firstPair = ['forePaw.L', 'hindPaw.R'] as const;
     const secondPair = ['forePaw.R', 'hindPaw.L'] as const;
     const surfacesAt = (distance: number): Record<string, number> =>
       Object.fromEntries(
-        dogPawBones.map((paw) => [paw, pawSurface(realized, dogGaitPose(realized, distance, 1), paw)]),
+        quadrupedPawBones.map((paw) => [paw, pawSurface(realized, quadrupedGaitPose(realized, distance, 1), paw)]),
       );
 
     // Mid first step the fore-left/hind-right diagonal is planted while the other is lifted; mid second
@@ -193,8 +202,8 @@ describe('dog shambler', () => {
     }
 
     // The gait moves: at its stance end a planted paw sits a clear voxel behind its rest position.
-    const restTransforms = boneTransforms(realized.body.bones, dogPose(realized));
-    const stanceEnd = boneTransforms(realized.body.bones, dogGaitPose(realized, stride / 2 - tolerance, 1));
+    const restTransforms = boneTransforms(realized.body.bones, quadrupedPose(realized));
+    const stanceEnd = boneTransforms(realized.body.bones, quadrupedGaitPose(realized, stride / 2 - tolerance, 1));
     const toeZ = (transforms: ReturnType<typeof boneTransforms>, paw: string): number => {
       const bone = realized.body.bones.find((candidate) => candidate.id === paw)!;
       return applyPoint(transforms.get(paw)!, bone.tail)[2];
@@ -205,19 +214,19 @@ describe('dog shambler', () => {
   it('keeps each planted paw fixed in the ground frame while the body advances', () => {
     const realized = realizedFor(1);
     const stance = { limp: 0.4 };
-    const stride = dogStrideLength(realized, stance);
+    const stride = quadrupedStrideLength(realized, stance);
     const tolerance = realized.voxels.size / 2;
     // A stride that covers real ground, so a standing pose or a pinned phase cannot pass this test.
     expect(stride).toBeGreaterThan(tolerance);
     const samples = 120;
     const distance = Array.from({ length: samples + 1 }, (_, i) => (stride * i) / samples);
-    const toeZ = (paw: string, pose: ReturnType<typeof dogPose>): number => {
+    const toeZ = (paw: string, pose: ReturnType<typeof quadrupedPose>): number => {
       const bone = realized.body.bones.find((candidate) => candidate.id === paw)!;
       return applyPoint(boneTransforms(realized.body.bones, pose).get(paw)!, bone.tail)[2];
     };
 
-    for (const paw of dogPawBones) {
-      const poses = distance.map((d) => dogGaitPose(realized, d, 1, stance));
+    for (const paw of quadrupedPawBones) {
+      const poses = distance.map((d) => quadrupedGaitPose(realized, d, 1, stance));
       // The dog walks forward (-Z), so its root drops by `d`; a planted paw's ground-frame Z
       // (`local Z - d`) must stay put. A planted paw is fixed exactly, so a tenth-of-a-voxel run finds the
       // true stance half and rejects the slow tail of the swing, whose Z creeps too much to qualify.
@@ -258,13 +267,13 @@ describe('dog shambler', () => {
     const tolerance = realized.voxels.size;
 
     // One leg gone: the surviving three paws at least keep the body planted and nothing dips below ground.
-    const stride = dogStrideLength(realized);
+    const stride = quadrupedStrideLength(realized);
     for (const cut of ALL_LEG_CUTS) {
       const hidden = severedBoneSet(realized.body.bones, [cut]);
-      const remainingPaws = dogPawBones.filter((paw) => !hidden.has(paw));
+      const remainingPaws = quadrupedPawBones.filter((paw) => !hidden.has(paw));
       expect(remainingPaws.length).toBe(3);
       for (const fraction of [0.25, 0.75]) {
-        const pose = dogGaitPose(realized, stride * fraction, 1, { severed: hidden });
+        const pose = quadrupedGaitPose(realized, stride * fraction, 1, { severed: hidden });
         const surfaces = remainingPaws.map((paw) => pawSurface(realized, pose, paw));
         expect(Math.min(...surfaces)).toBeGreaterThanOrEqual(-tolerance);
         expect(surfaces.some((surface) => Math.abs(surface) <= tolerance)).toBe(true);
@@ -275,11 +284,11 @@ describe('dog shambler', () => {
     // All four paws gone: grounding must ignore the hidden legs and rest the body on its lowest surviving
     // geometry, rather than hovering on an invisible paw.
     const allLegsHidden = severedBoneSet(realized.body.bones, ALL_LEG_CUTS);
-    for (const paw of dogPawBones) {
+    for (const paw of quadrupedPawBones) {
       expect(allLegsHidden.has(paw)).toBe(true);
     }
     for (const fraction of [0.25, 0.75]) {
-      const pose = dogGaitPose(realized, stride * fraction, 1, { severed: allLegsHidden });
+      const pose = quadrupedGaitPose(realized, stride * fraction, 1, { severed: allLegsHidden });
       expect(Math.abs(survivingSurface(realized, pose, allLegsHidden))).toBeLessThanOrEqual(tolerance);
     }
   });
@@ -288,7 +297,7 @@ describe('dog shambler', () => {
     it.each(EXTRA_SWEEP_SEEDS)('validates and rests grounded for seed %i', (seed) => {
       const realized = realizedFor(seed);
       expect(realized.report.ok, realized.report.issues.map((issue) => issue.message).join('; ')).toBe(true);
-      expect(realized.supportBones).toEqual(new Set(dogPawBones));
+      expect(realized.supportBones).toEqual(new Set(quadrupedPawBones));
     });
   });
 });
