@@ -1,7 +1,7 @@
 import { Group } from 'three';
 import { expect, it, vi } from 'vitest';
+import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { bodyPlanModel, figureVariantOf } from '../src/core/zombieModels.ts';
 import { stageRagdollSweep } from '../src/debug/ragdollSweep.ts';
 import { ragdollContent } from '../src/render/ragdoll.ts';
 import { baseRegistry } from './baseRegistry.ts';

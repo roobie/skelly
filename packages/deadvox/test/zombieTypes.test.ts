@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { bodyPlanModel, figureVariantOf } from '../src/core/zombieModels.ts';
+import { bodyPlanModel, figureVariantOf } from '../src/core/actorModels.ts';
 import { posedShambler } from '../src/core/zombiePose.ts';
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;

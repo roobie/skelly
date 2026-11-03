@@ -1,7 +1,7 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import { amalgamFigure } from './amalgamFigure.ts';
-import { bodyPlanModel, figureVariantOf } from './zombieModels.ts';
 
 export interface ZombieFigureType {
   readonly model: string;

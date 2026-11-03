@@ -14,10 +14,10 @@ import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle
 import { LOOK_AT_PROFILES } from '@mobgen/mob/lookAtProfiles.ts';
 import { flinchClipFor, flinchPoseWithClip, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import { amalgamFigure, amalgamSeveredBones } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { ZombieFigure } from './zombieFigure.ts';
-import { bodyPlanModel, figureVariantOf } from './zombieModels.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {

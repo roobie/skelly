@@ -3,17 +3,17 @@ import { acidTemplate } from '@mobgen/mob/acidTemplate.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import { describe, expect, it } from 'vitest';
+import { FIGURE_VARIANTS } from '../src/core/actorModels.ts';
 import { AMALGAM_FIGURE_SEED } from '../src/core/amalgamFigure.ts';
 import { validateContent } from '../src/core/content.ts';
 import { amalgamTypeOf, zombieFigure } from '../src/core/zombieFigure.ts';
-import { FIGURE_VARIANTS } from '../src/core/zombieModels.ts';
 import { baseRegistry } from './baseRegistry.ts';
 
 const registry = baseRegistry();
 // A seed every shipped humanoid template generates valid on the first try.
 const FIXTURE_SEED = 1;
 
-describe('zombie models', () => {
+describe('actor models', () => {
   it('lets content select every ready mobgen zombie template the renderer draws', () => {
     const [row] = registry.zombies.values();
     const refused = [...TEMPLATES, acidTemplate, amalgamTemplate]

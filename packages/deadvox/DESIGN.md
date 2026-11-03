@@ -3020,7 +3020,7 @@ preserve their distinct realizations without misclassifying anatomy. A figure se
 must realize a valid body by itself. Falling through to the next valid seed would
 draw two seeds as one body and quietly shrink authored variety, so it is refused;
 a figure variant whose template rejects shared seeds authors its own. See
-`src/core/zombieModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
+`src/core/actorModels.ts`, `BODY_PLANS`, `FIGURE_VARIANTS`, `figureVariantOf` and `bodyPlanModel`;
 `src/render/mobActors.ts`, `figureSeedsByModel`; and
 `packages/mobgen/src/mob/shamblerFigure.ts`, `zombieFigure`.
 

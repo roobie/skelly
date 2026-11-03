@@ -113,8 +113,8 @@ export interface Registry extends RegistryMaps {
 
 const AIR: BlockDef = { id: 'air', material: 'air', name: 'Air', color: '#000000', solid: false };
 
+import { FIGURE_VARIANTS } from './actorModels.ts';
 import { registrySection } from './registrySection.ts';
-import { FIGURE_VARIANTS } from './zombieModels.ts';
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;

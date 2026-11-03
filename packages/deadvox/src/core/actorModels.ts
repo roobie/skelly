@@ -14,14 +14,14 @@ export const FIGURE_VARIANTS = {
 } as const;
 
 export type BodyPlan = keyof typeof BODY_PLANS;
-export type ZombieModel = keyof typeof FIGURE_VARIANTS;
+export type ActorModel = keyof typeof FIGURE_VARIANTS;
 
-export const figureVariantOf = (type: { readonly model: string; readonly figure?: string | undefined }): ZombieModel =>
-  (type.figure ?? type.model) as ZombieModel;
+export const figureVariantOf = (type: { readonly model: string; readonly figure?: string | undefined }): ActorModel =>
+  (type.figure ?? type.model) as ActorModel;
 
 export const bodyPlanModel = (variant: string) => {
   if (!Object.hasOwn(FIGURE_VARIANTS, variant)) {
     throw new Error(`Unsupported figure variant "${variant}"`);
   }
-  return FIGURE_VARIANTS[variant as ZombieModel].model;
+  return FIGURE_VARIANTS[variant as ActorModel].model;
 };

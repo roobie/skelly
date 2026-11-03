@@ -152,7 +152,7 @@ Actor identity must not determine its skeleton. Deadvox resolves a selected body
 at the mobgen boundary, keeping each plan's region ownership authoritative rather than
 forcing the acid body's distinct bones through humanoid names. See
 `packages/deadvox/src/core/schema/actors.ts`, `BODY_PLAN`;
-`packages/deadvox/src/core/zombieModels.ts`, `bodyPlanModel`;
+`packages/deadvox/src/core/actorModels.ts`, `bodyPlanModel`;
 `src/mob/shamblerFigure.ts`, `zombieFigure`; and
 `packages/deadvox/src/core/zombieRegions.ts`.
 

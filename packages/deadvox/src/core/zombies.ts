@@ -2,6 +2,7 @@ import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { type AcidGlobState, advanceAcidGlob } from './acidGlob.ts';
 import { type AcidPuddleState, feetInAcidPuddle } from './acidPuddle.ts';
+import { bodyPlanModel, figureVariantOf } from './actorModels.ts';
 import {
   carveAround,
   centralCell,
@@ -50,7 +51,6 @@ import type { SoundId } from './soundEvents.ts';
 import { soundOcclusion } from './soundOcclusion.ts';
 import { zombieBodyDimensions as measureZombieBody } from './spawnClearance.ts';
 import { updateStepOffset } from './stepOffset.ts';
-import { bodyPlanModel, figureVariantOf } from './zombieModels.ts';
 import {
   advanceStanceWeight,
   posedMouth,

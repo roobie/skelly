@@ -1,7 +1,7 @@
+import { bodyPlanModel, figureVariantOf } from '../core/actorModels.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId } from '../core/entities.ts';
-import { bodyPlanModel, figureVariantOf } from '../core/zombieModels.ts';
 import type { ZombieSystem } from '../core/zombies.ts';
 import type { ZombieRenderer } from '../render/mobActors.ts';
 import { ragdollContent } from '../render/ragdoll.ts';

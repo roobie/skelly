@@ -486,7 +486,7 @@ a declared name cannot manufacture an unsupported world reaction.
 
 Creature stats are content, but abilities and body models are closed code lists, and the
 AI targets only the player character; see `src/core/schema/actors.ts`, `ZOMBIE_ABILITIES`;
-`src/core/zombieModels.ts`, `BODY_PLANS`; and `src/core/zombies.ts`, `ZombieMode`.
+`src/core/actorModels.ts`, `BODY_PLANS`; and `src/core/zombies.ts`, `ZombieMode`.
 Summons and raised dead need factions and target choice, the deepest change here, so it
 comes last.
 

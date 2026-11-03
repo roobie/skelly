@@ -115,8 +115,8 @@ export function adaptMainSeedPool(source) {
     }),`,
     )
     .replace(
-      "import type { ZombieModel } from '../core/zombieModels.ts';",
-      "import { bodyPlanModel, figureVariantOf, type ZombieModel } from '../core/zombieModels.ts';",
+      "import type { ActorModel } from '../core/actorModels.ts';",
+      "import { type ActorModel, bodyPlanModel, figureVariantOf } from '../core/actorModels.ts';",
     )
     .replaceAll('zombie.type.model', 'figureVariantOf(zombie.type)')
     .replaceAll('type.model', 'figureVariantOf(type)')

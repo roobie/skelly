@@ -106,7 +106,7 @@ it('a main renderer on one shared seed pool builds only the seeds each model rea
 });
 
 it('main actor overlays keep renamed body-plan selectors separate from mobgen mechanism names', () => {
-  const source = `import type { ZombieModel } from '../core/zombieModels.ts';
+  const source = `import type { ActorModel } from '../core/actorModels.ts';
 return types.map((type) => {
   const model = type.model;
   const v = { model };

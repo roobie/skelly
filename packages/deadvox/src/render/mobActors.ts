@@ -119,13 +119,13 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import { type ActorModel, bodyPlanModel, FIGURE_VARIANTS, figureVariantOf } from '../core/actorModels.ts';
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import type { LookDefaults } from '../core/mood.ts';
 import type { Quaternion } from '../core/spatial.ts';
 import { amalgamTypeOf, type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
-import { bodyPlanModel, FIGURE_VARIANTS, figureVariantOf, type ZombieModel } from '../core/zombieModels.ts';
 import { acidSpitWindupProgress, posedShambler, zombieCrawls, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
@@ -469,9 +469,8 @@ const anchorWorld = (
   return [placement.x + world[0], placement.y + world[1], placement.z + world[2]];
 };
 
-type ActorModel = ZombieModel;
 type DrawnZombieType = ZombieFigureType & {
-  readonly model: ZombieModel;
+  readonly model: ActorModel;
   readonly carving?: { readonly interiorColor: string } | undefined;
 };
 interface BuiltActorVariant {
