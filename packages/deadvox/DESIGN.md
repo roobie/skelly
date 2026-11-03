@@ -11,7 +11,7 @@ read_if:
   - you're changing fixed-reservoir lamp fuel, burn accounting or service admission
   - you decide how realism should trade off against tedium
   - you change food exposure ownership or ambient catch-up
-  - you change the test-house normal or debug-only boundary
+  - you change the test-house normal or debug-only boundary, static range, stock or catalogue
   - you change regional paper-map coverage, item ownership or persistence
   - you change held sharpening, blade repair entry points or prepared hand pairs
   - you change zombie hesitation, refusal, interest chaining or attention phase ordering
@@ -1186,12 +1186,13 @@ specific sites and their rewards.
 
 ### Debug scenes
 
-Keep the firearm-handling range in the debug test house, not ordinary world
-sites, so test stock cannot become a playable-world loot source. Derive rack
-contents from firearm and ammunition compatibility rather than maintaining a catalogue.
-See `src/core/range.ts`, `HandlingRange`, and `src/game/testHouseRange.ts`,
-`testHouseRangeSupply`. Every addition must decide its normal or debug-only scope;
-see `docs/test-house.md`, "Normal and debug additions".
+Author test-house evaluation staging in an explicitly selected debug scenario mod,
+not behind scenario-id or debug checks in runtime. Range geometry belongs in templates
+and building rows; rack stock and the furniture catalogue are hand-kept lists, not
+runtime synthesis. Accept an edit for each new gun, tool or furniture piece: an unlisted
+item is silently absent. Evaluation supplies must not become ordinary world rewards,
+and a resumed evaluation world requires the same admitted mod. See
+`docs/test-house.md`, "Normal and debug additions", and `docs/test-house.md`, "Garage".
 
 ### Loot
 
