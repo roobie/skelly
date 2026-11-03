@@ -3,6 +3,7 @@ read_if:
   - you're an agent starting any task in this repository (always)
   - you check whether the framework refactor gate permits a new PR
   - you add or upgrade a dependency, including the pinned Rapier f64 build
+  - you rename, move or re-import TypeScript symbols
 ---
 
 # Notes for coding agents
@@ -26,6 +27,10 @@ Before writing or changing player-visible text, apply `packages/deadvox/INTERFAC
 ## Jsonnet
 
 The repository-wide authoring and conversion rule is `docs/jsonnet.md`.
+
+## TypeScript symbolic edits
+
+Rename, move or re-import TypeScript symbols through the TypeScript language service (an LSP client, or `tsc`'s language-service API), not by text edits. It resolves each reference by symbol, so it neither misses an aliased or destructured use nor touches a same-named symbol elsewhere, and one call replaces a long run of hand edits. Prose, Jsonnet, JSON, CSS and string keys stay text edits, and the result is still reviewed as a diff.
 
 ## No host-specific information in tracked files
 
