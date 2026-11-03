@@ -17,6 +17,7 @@ import {
 import { type Actor, type AgentMode, copy } from './actorState.ts';
 import type { ActorSystemOptions } from './actorSystem.ts';
 import type { ActorTickScratch } from './actorTickScratch.ts';
+
 import type { AgentHorde } from './agentHorde.ts';
 import {
   farBearingTarget,
@@ -28,11 +29,20 @@ import {
 } from './agentPerception.ts';
 import type { Vec3 } from './coords.ts';
 import type { EntityStore } from './entities.ts';
+import { type Body, CONTACT_SKIN, type PhysicsParams, stepBody } from './physics.ts';
+import type { SolidAt } from './raycast.ts';
 
 export class AgentController {
   private readonly options: Pick<
     ActorSystemOptions,
-    'isSoundBlocking' | 'isSunExposedAt' | 'tuning' | 'onSound' | 'blockSize' | 'terrainFloor'
+    | 'isSoundBlocking'
+    | 'isSunExposedAt'
+    | 'tuning'
+    | 'onSound'
+    | 'blockSize'
+    | 'terrainFloor'
+    | 'physics'
+    | 'bashObstacle'
   >;
   private readonly tickScratch: ActorTickScratch;
   private readonly store: EntityStore<Actor>;
@@ -655,4 +665,168 @@ export class AgentController {
       actor.horizontalSpeed = Math.min(actor.horizontalSpeed, remaining / (dt * outward));
     }
   }
+
+  applyObstacleSlide(): void {
+    const scratch = this.tickScratch;
+    const { actor, aimDirection, wanderingAtTickStart } = scratch;
+    if (!wanderingAtTickStart && actor.obstacleContact && actor.obstacleSlideSide !== 0 && aimDirection) {
+      scratch.direction = headingAt(angleOf(aimDirection) + (actor.obstacleSlideSide * Math.PI) / 2);
+    }
+  }
+
+  private startObstacleWander(): void {
+    const scratch = this.tickScratch;
+    const { actor, sees, wanderingAtTickStart, obstacleContact, wasObstacleContact, aimDirection, rng } = scratch;
+    if (
+      !(sees || wanderingAtTickStart) &&
+      obstacleContact &&
+      !wasObstacleContact &&
+      aimDirection &&
+      rng.chance(actor.type.wander.obstacleWanderChance)
+    ) {
+      const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
+      const headings = openWanderHeadings({
+        body: actor.body,
+        intent: aimDirection,
+        isSolid: scratch.isSolid,
+        physics,
+        blockSize: scratch.blockSize,
+      });
+      if (headings.length > 0) {
+        actor.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
+        actor.obstacleWanderRemaining = actor.type.wander.obstacleWanderDistanceMetres;
+      }
+    }
+  }
+
+  private updateObstacleSlideSide(openSide: (aim: Vec3) => -1 | 1 | undefined): void {
+    const scratch = this.tickScratch;
+    const { actor, obstacleContact, wasObstacleContact, aimDirection, jumpAttempted, travelled, rng } = scratch;
+    if (!obstacleContact) {
+      actor.obstacleSlideSide = 0;
+    } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
+      const side = rng.int(0, 1) === 0 ? -1 : 1;
+      actor.obstacleSlideSide = openSide(aimDirection) ?? side;
+    } else if (actor.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
+      actor.obstacleSlideSide = actor.obstacleSlideSide === -1 ? 1 : -1;
+    }
+  }
+
+  updateObstacleContact(openSide: (aim: Vec3) => -1 | 1 | undefined, bodyAhead: (aim: Vec3) => Body): void {
+    const scratch = this.tickScratch;
+    const { actor, obstacleContact, travelled, wanderingAtTickStart } = scratch;
+    scratch.wasObstacleContact = actor.obstacleContact;
+    if (wanderingAtTickStart) {
+      if (obstacleContact) {
+        actor.obstacleWanderRemaining = 0;
+        actor.obstacleWanderHeading = undefined;
+      } else {
+        actor.obstacleWanderRemaining = Math.max(0, actor.obstacleWanderRemaining - travelled);
+        if (actor.obstacleWanderRemaining === 0) {
+          actor.obstacleWanderHeading = undefined;
+        }
+      }
+    }
+    this.updateObstacleSlideSide(openSide);
+    this.startObstacleWander();
+    actor.obstacleContact = obstacleContact;
+    this.bashObstacle(bodyAhead);
+  }
+
+  /**
+   * A zombie held up on the way to its target bashes what holds it, once per attack cooldown, but only where that is
+   * its one way through (`DESIGN.md`, "Senses and AI"): a piece it can walk past is left to its slide and wander.
+   * Whether the blow does anything is the piece's gate, not the zombie's (`DESIGN.md`, "Base building and
+   * electricity"); a type of strength 0 never bashes. A zombie whose blow lands stays at the piece instead of sliding
+   * or wandering off along the wall.
+   */
+  private bashObstacle(bodyAhead: (aim: Vec3) => Body): void {
+    const scratch = this.tickScratch;
+    const { actor, type, obstacleContact, aimDirection } = scratch;
+    const { bashObstacle } = this.options;
+    if (
+      !(bashObstacle && obstacleContact && aimDirection) ||
+      type.strength <= 0 ||
+      (actor.mode !== 'chase' && actor.mode !== 'investigate') ||
+      actor.attackWait > 0 ||
+      actor.attackWindup > 0
+    ) {
+      return;
+    }
+    const around = {
+      body: actor.body,
+      intent: aimDirection,
+      isSolid: scratch.isSolid,
+      physics: { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 },
+      blockSize: scratch.blockSize,
+    };
+    if (
+      hasWayAround(around, type.wander.wayAroundReachMetres, type.wander.wayAroundMinGainFraction) ||
+      !bashObstacle(bodyAhead(aimDirection), type.strength)
+    ) {
+      return;
+    }
+    actor.attackWait = type.attack.cooldownSimSeconds;
+    actor.obstacleSlideSide = 0;
+    actor.obstacleWanderHeading = undefined;
+    actor.obstacleWanderRemaining = 0;
+  }
 }
+
+export const OBSTACLE_PROBE_DISTANCE_METRES = 0.75;
+export const OBSTACLE_PROBE_SPEED = 4;
+export const OBSTACLE_WANDER_ANGLES = [
+  Math.PI / 4,
+  -Math.PI / 4,
+  Math.PI / 2,
+  -Math.PI / 2,
+  (3 * Math.PI) / 4,
+  (-3 * Math.PI) / 4,
+  Math.PI,
+] as const;
+/** The slanted headings that still gain ground toward an intent, which a zombie held up tries to get past a piece. */
+export const OBSTACLE_BYPASS_ANGLES = [Math.PI / 4, -Math.PI / 4] as const;
+export const WAY_AROUND_STEPS = 8;
+export interface ObstacleProbe {
+  body: Body;
+  intent: Vec3;
+  isSolid: SolidAt;
+  physics: PhysicsParams;
+  blockSize: number;
+}
+/**
+ * Where a body stands after walking `distanceMetres` along a heading, sliding along whatever blocks it. A contact
+ * zeroes the blocked axis' speed, so a probe that must get past an edge asks for the heading again each of `steps`.
+ */
+export const probeHeading = (
+  { body, isSolid, physics, blockSize }: ObstacleProbe,
+  heading: Vec3,
+  distanceMetres: number,
+  steps = 1,
+): Vec3 => {
+  const probe: Body = { ...body, pos: copy(body.pos), vel: [0, 0, 0] };
+  for (let step = 0; step < steps; step++) {
+    probe.vel = [(heading[0] * OBSTACLE_PROBE_SPEED) / blockSize, 0, (heading[2] * OBSTACLE_PROBE_SPEED) / blockSize];
+    stepBody(probe, distanceMetres / OBSTACLE_PROBE_SPEED / steps, isSolid, physics);
+  }
+  return probe.pos;
+};
+const openWanderHeadings = (probe: ObstacleProbe): Vec3[] =>
+  OBSTACLE_WANDER_ANGLES.map((offset) => headingAt(angleOf(probe.intent) + offset)).filter((heading) => {
+    const end = probeHeading(probe, heading, OBSTACLE_PROBE_DISTANCE_METRES);
+    const { pos } = probe.body;
+    const progress = ((end[0] - pos[0]) * heading[0] + (end[2] - pos[2]) * heading[2]) * probe.blockSize;
+    return progress >= OBSTACLE_PROBE_DISTANCE_METRES * 0.5;
+  });
+/**
+ * Whether a body held up along its intent can walk past what holds it: within `reachMetres`, a slanted heading still
+ * gains at least `minGainFraction` of the ground toward the intent that a clear one would. A wall slides the probe
+ * along itself and gains none, so a piece in a doorway or a narrow gap has no way around, and clutter in the open has.
+ */
+const hasWayAround = (probe: ObstacleProbe, reachMetres: number, minGainFraction: number): boolean =>
+  OBSTACLE_BYPASS_ANGLES.some((offset) => {
+    const end = probeHeading(probe, headingAt(angleOf(probe.intent) + offset), reachMetres, WAY_AROUND_STEPS);
+    const { pos } = probe.body;
+    const gained = ((end[0] - pos[0]) * probe.intent[0] + (end[2] - pos[2]) * probe.intent[2]) * probe.blockSize;
+    return gained >= reachMetres * Math.cos(offset) * minGainFraction;
+  });
