@@ -314,7 +314,7 @@ const runChaserAtWall = (isSolid: SolidAt, seconds: number) => {
   let clearOfSolid = true;
   for (let frame = 0; frame < seconds * 60; frame++) {
     system.tick(1 / 60);
-    states.push({ mode: actor.mode, verticalVelocity: actor.body.vel[1], onGround: actor.body.onGround });
+    states.push({ mode: actor.agent.mode, verticalVelocity: actor.body.vel[1], onGround: actor.body.onGround });
     clearOfSolid &&= !bodyHitsSolid(actor.body, isSolid);
   }
   return { states, clearOfSolid };
@@ -328,10 +328,10 @@ const settle = (body: Body, solid: SolidAt = FLOOR): void => {
   }
 };
 const beginObstacleWander = (system: ActorSystem, actor: Actor): void => {
-  for (let tick = 0; tick < 10 * 60 && actor.obstacleWanderRemaining === 0; tick++) {
+  for (let tick = 0; tick < 10 * 60 && actor.agent.obstacleWanderRemaining === 0; tick++) {
     system.tick(1 / 60);
   }
-  if (actor.obstacleWanderRemaining <= 0) {
+  if (actor.agent.obstacleWanderRemaining <= 0) {
     throw new Error('Fixture shambler did not start an obstacle wander');
   }
 };
@@ -426,7 +426,7 @@ describe('melee hit sounds', () => {
     });
     const id = system.add({ ...SHAMBLER, dismember: { chance: 0, headOnKillChance: 0 } }, [1, 1, 0], [0, 0, -1]);
     const actor = system.store.get(id)!;
-    actor.modeTimer = 1000;
+    actor.agent.modeTimer = 1000;
     const ray = regionRay(actor, 'torso');
     const hit = system.swing(ray.origin, ray.direction, weapon, isFist);
     return {
@@ -670,7 +670,7 @@ describe('shambler perception', () => {
       const system = new ActorSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
       system.tick(1 / 60);
-      return system.store.get(id)!.mode;
+      return system.store.get(id)!.agent.mode;
     };
     const carriedAt = (hour: number, sunlit: boolean) => {
       const sensed = (): PlayerSense => ({
@@ -680,7 +680,7 @@ describe('shambler perception', () => {
       const system = new ActorSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
       system.tick(1 / 60);
-      return system.store.get(id)!.mode;
+      return system.store.get(id)!.agent.mode;
     };
     expect(lureAt(12, true)).toBe('idle');
     expect(lureAt(12, false)).toBe('investigate');
@@ -723,7 +723,7 @@ describe('shambler perception', () => {
     const shadowLure = new ActorSystem(sensesWithLocalSun(shadowLurePlayer, 12, daylightSky));
     const shadowLureId = shadowLure.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     shadowLure.tick(1 / 60);
-    expect(shadowLure.store.get(shadowLureId)!.mode).toBe('idle');
+    expect(shadowLure.store.get(shadowLureId)!.agent.mode).toBe('idle');
   });
 
   it('keeps crouched light reach in the open but lets a half-wall block the lowered light', () => {
@@ -777,8 +777,8 @@ describe('shambler scenarios', () => {
     const id = open.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     open.tick(1 / 60);
     const actor = open.store.get(id)!;
-    expect(actor.mode).toBe('investigate');
-    expect(actor.lastPerceived).toEqual(target);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.lastPerceived).toEqual(target);
     const startingDistance = metres(actor.body.pos, target);
     run(open, 1);
     expect(metres(actor.body.pos, target)).toBeLessThan(startingDistance);
@@ -787,7 +787,7 @@ describe('shambler scenarios', () => {
     const blocked = new ActorSystem(senses(sensedPlayer, wall, () => 0));
     const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     blocked.tick(1 / 60);
-    expect(blocked.store.get(blockedId)!.mode).toBe('idle');
+    expect(blocked.store.get(blockedId)!.agent.mode).toBe('idle');
   });
 
   it('keeps a dropped light hidden behind a one-block wall while the same light in the open lures', () => {
@@ -813,7 +813,7 @@ describe('shambler scenarios', () => {
       const system = new ActorSystem({ ...senses(sensedPlayer, isOpaque, () => 0), isOpaque });
       const id = system.add(SHAMBLER, [3.05, 1, 0.5], [1, 0, 0]);
       system.tick(1 / 60);
-      return system.store.get(id)!.mode;
+      return system.store.get(id)!.agent.mode;
     };
 
     expect(lureMode(false)).toBe('investigate');
@@ -840,26 +840,26 @@ describe('shambler scenarios', () => {
     const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     system.tick(1 / 60);
-    let investigating = actor.mode === 'investigate';
+    let investigating = actor.agent.mode === 'investigate';
     let investigationEntries = Number(investigating);
-    const observed = new Set([actor.mode]);
+    const observed = new Set([actor.agent.mode]);
     const maxSearch = SHAMBLER.hearingModel.searchSimSeconds.max;
     const roundTripSeconds = (distanceMetres / SHAMBLER.speed.wanderMetresPerSimSecond) * 2;
     const frames = Math.ceil((maxSearch + roundTripSeconds + 10) * 60);
     for (let frame = 1; frame <= frames; frame++) {
       system.tick(1 / 60, frame / 60);
-      observed.add(actor.mode);
-      if (actor.mode === 'investigate' && !investigating) {
+      observed.add(actor.agent.mode);
+      if (actor.agent.mode === 'investigate' && !investigating) {
         investigationEntries += 1;
       }
-      investigating = actor.mode === 'investigate';
+      investigating = actor.agent.mode === 'investigate';
     }
 
     expect(observed).toContain('search');
     expect(observed).toContain('return');
     expect(investigationEntries).toBe(1);
     expect(alerts).toHaveLength(1);
-    expect(actor.mode).not.toBe('investigate');
+    expect(actor.agent.mode).not.toBe('investigate');
   });
 
   it('alerts when a searching shambler spots the player after its cry cooldown', () => {
@@ -885,13 +885,13 @@ describe('shambler scenarios', () => {
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     system.tick(1 / 20, 0.05);
-    expect(actor.mode).toBe('investigate');
+    expect(actor.agent.mode).toBe('investigate');
 
     sensed = player([100, 1, 100]);
-    for (let tick = 0; tick < 500 && actor.mode !== 'search'; tick++) {
+    for (let tick = 0; tick < 500 && actor.agent.mode !== 'search'; tick++) {
       system.tick(1 / 20, 0.1 + tick / 20);
     }
-    expect(actor.mode).toBe('search');
+    expect(actor.agent.mode).toBe('search');
     alerts.length = 0;
     const { facing } = actor;
     sensed = player(
@@ -900,7 +900,7 @@ describe('shambler scenarios', () => {
     );
     system.tick(1 / 20, 0.05 + type.hearingModel.alertCooldownSimSeconds);
 
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     expect(alerts).toEqual([type.sounds.alert]);
   });
 
@@ -917,7 +917,7 @@ describe('shambler scenarios', () => {
 
     system.tick(1 / 60);
 
-    expect(system.store.get(id)!.lastPerceived).toEqual(noiseTarget);
+    expect(system.store.get(id)!.agent.lastPerceived).toEqual(noiseTarget);
   });
 
   it('refuses to close a real door on the player or a shambler, then closes with a 1 m clearance', () => {
@@ -972,7 +972,7 @@ describe('shambler scenarios', () => {
     }
     expect(
       ids.every((id) => system.store.get(id)!.body.pos[2] < -2),
-      ids.map((id) => `${system.store.get(id)!.mode}:${system.store.get(id)!.body.pos}`).join('; '),
+      ids.map((id) => `${system.store.get(id)!.agent.mode}:${system.store.get(id)!.body.pos}`).join('; '),
     ).toBe(true);
   });
 
@@ -1001,7 +1001,7 @@ describe('shambler scenarios', () => {
       const actor = system.store.get(id)!;
       positions.push([...actor.body.pos]);
       expect(entities.bodyIntersects(door, actor.body)).toBe(false);
-      if (actor.mode === 'chase' || actor.mode === 'investigate') {
+      if (actor.agent.mode === 'chase' || actor.agent.mode === 'investigate') {
         awareFrames += 1;
       }
       frames += 1;
@@ -1041,8 +1041,8 @@ describe('shambler scenarios', () => {
     const system = new ActorSystem(senses(() => target, wall));
     const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     system.tick(1 / 60);
-    expect(system.store.get(id)!.mode).toBe('chase');
-    const lastSeen = [...system.store.get(id)!.lastPerceived!] as Vec3;
+    expect(system.store.get(id)!.agent.mode).toBe('chase');
+    const lastSeen = [...system.store.get(id)!.agent.lastPerceived!] as Vec3;
     target = player([24, 1, 0], [1, 0, 0]);
     wallOn = true;
     let reached = false;
@@ -1055,15 +1055,15 @@ describe('shambler scenarios', () => {
     }
     expect(reached).toBe(true);
     run(system, 15);
-    expect(system.store.get(id)!.mode).not.toBe('chase');
+    expect(system.store.get(id)!.agent.mode).not.toBe('chase');
     const chaser = system.store.get(id)!;
-    let closestHome = metres(chaser.body.pos, chaser.home);
+    let closestHome = metres(chaser.body.pos, chaser.agent.home);
     for (let frame = 0; frame < 120 * 60; frame++) {
       system.tick(1 / 60);
-      closestHome = Math.min(closestHome, metres(chaser.body.pos, chaser.home));
+      closestHome = Math.min(closestHome, metres(chaser.body.pos, chaser.agent.home));
     }
     expect(closestHome).toBeLessThanOrEqual(3);
-    expect(metres(chaser.body.pos, chaser.home)).toBeLessThanOrEqual(12.5);
+    expect(metres(chaser.body.pos, chaser.agent.home)).toBeLessThanOrEqual(12.5);
   });
 
   it('does not start a search at the projection of a sound on another floor', () => {
@@ -1076,9 +1076,9 @@ describe('shambler scenarios', () => {
     const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     system.tick(1 / 20);
-    expect(actor.mode).toBe('investigate');
-    expect(actor.lastPerceived).toEqual(target.pos);
-    expect(actor.searchAnchor).toBeUndefined();
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.lastPerceived).toEqual(target.pos);
+    expect(actor.agent.searchAnchor).toBeUndefined();
   });
 
   it('beelines directly toward an attention target across open ground', () => {
@@ -1090,7 +1090,7 @@ describe('shambler scenarios', () => {
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     run(system, 1);
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     expect(actor.body.pos[0]).toBeGreaterThan(0);
     expect(Math.abs(actor.body.pos[2])).toBeLessThan(0.1);
   });
@@ -1112,7 +1112,7 @@ describe('shambler scenarios', () => {
     let alongWall = false;
     for (let tick = 0; tick < 4 * 60; tick++) {
       system.tick(1 / 60);
-      if (tick > 20 && actor.mode === 'chase' && metres(actor.body.pos, [20, 1, 10]) > type.attack.reach) {
+      if (tick > 20 && actor.agent.mode === 'chase' && metres(actor.body.pos, [20, 1, 10]) > type.attack.reach) {
         expect(Math.hypot(actor.body.vel[0], actor.body.vel[2])).toBeGreaterThan(0);
       }
       alongWall ||= actor.body.pos[2] * BLOCK_SIZE > 0.5;
@@ -1151,7 +1151,7 @@ describe('shambler scenarios', () => {
         const wasAtWall = hitWall;
         const before = [...actor.body.pos] as Vec3;
         system.tick(1 / 60);
-        if (wasAtWall && actor.mode === 'chase' && metres(actor.body.pos, target) > type.attack.reach) {
+        if (wasAtWall && actor.agent.mode === 'chase' && metres(actor.body.pos, target) > type.attack.reach) {
           checkedPostContactMovement = true;
           expect(metres(before, actor.body.pos)).toBeGreaterThan(0.005);
         }
@@ -1225,10 +1225,10 @@ describe('shambler scenarios', () => {
     for (let tick = 0; tick < 5 * 60; tick++) {
       system.tick(1 / 60);
       sawObstacleContact ||= actor.obstacleContact;
-      expect(actor.obstacleWanderRemaining).toBe(0);
+      expect(actor.agent.obstacleWanderRemaining).toBe(0);
     }
     expect(sawObstacleContact).toBe(true);
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
   });
 
   it('still wanders at an obstacle when the same target is unseen', () => {
@@ -1250,9 +1250,9 @@ describe('shambler scenarios', () => {
     let beganWandering = false;
     for (let tick = 0; tick < 5 * 60 && !beganWandering; tick++) {
       system.tick(1 / 60);
-      beganWandering = actor.obstacleWanderRemaining > 0;
+      beganWandering = actor.agent.obstacleWanderRemaining > 0;
     }
-    expect(actor.mode).toBe('investigate');
+    expect(actor.agent.mode).toBe('investigate');
     expect(beganWandering).toBe(true);
   });
 
@@ -1273,14 +1273,14 @@ describe('shambler scenarios', () => {
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     beginObstacleWander(system, actor);
-    expect(actor.mode).toBe('investigate');
+    expect(actor.agent.mode).toBe('investigate');
     target = player([...actor.body.pos].map((value, axis) => value + (axis === 0 ? 10 : 0)) as Vec3);
 
     system.tick(1 / 60);
 
-    expect(actor.mode).toBe('chase');
-    expect(actor.obstacleWanderRemaining).toBe(0);
-    expect(actor.obstacleWanderHeading).toBeUndefined();
+    expect(actor.agent.mode).toBe('chase');
+    expect(actor.agent.obstacleWanderRemaining).toBe(0);
+    expect(actor.agent.obstacleWanderHeading).toBeUndefined();
   });
 
   it('moves in an open direction during an obstacle wander, then resumes pursuit', () => {
@@ -1313,9 +1313,9 @@ describe('shambler scenarios', () => {
     for (let tick = 0; tick < 30 * 60; tick++) {
       system.tick(1 / 60);
       expect(bodyHitsSolid(actor.body, obstacle)).toBe(false);
-      if (actor.obstacleWanderRemaining > 0) {
+      if (actor.agent.obstacleWanderRemaining > 0) {
         wanderStart ??= [...actor.body.pos];
-        wanderingHeading ??= actor.obstacleWanderHeading;
+        wanderingHeading ??= actor.agent.obstacleWanderHeading;
         furthestWanderDistance = Math.max(furthestWanderDistance, metres(actor.body.pos, wanderStart));
       } else if (wanderStart) {
         xAtWanderEnd ??= actor.body.pos[0];
@@ -1326,9 +1326,9 @@ describe('shambler scenarios', () => {
     expect(furthestWanderDistance).toBeGreaterThan(0);
     expect(xAtWanderEnd).toBeDefined();
     expect(actor.body.pos[0]).toBeGreaterThan(xAtWanderEnd!);
-    expect(actor.obstacleWanderRemaining).toBe(0);
-    expect(actor.mode).toBe('investigate');
-    expect(actor.lastPerceived).toEqual(target);
+    expect(actor.agent.obstacleWanderRemaining).toBe(0);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.lastPerceived).toEqual(target);
   });
 
   it('ends a blocked obstacle wander and resumes its attention target', () => {
@@ -1350,7 +1350,7 @@ describe('shambler scenarios', () => {
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     beginObstacleWander(system, actor);
-    const heading = actor.obstacleWanderHeading!;
+    const heading = actor.agent.obstacleWanderHeading!;
     const axis = Math.abs(heading[0]) > Math.abs(heading[2]) ? 0 : 2;
     const direction = Math.sign(heading[axis]);
     barrier = {
@@ -1363,25 +1363,25 @@ describe('shambler scenarios', () => {
     let endedAtBlockedContact = false;
     let resumedMotion = false;
     for (let tick = 0; tick < 10 * 60; tick++) {
-      const wasWandering = actor.obstacleWanderRemaining > 0;
+      const wasWandering = actor.agent.obstacleWanderRemaining > 0;
       const before = [...actor.body.pos] as Vec3;
       system.tick(1 / 60);
       const travelled = metres(before, actor.body.pos);
       endedAtBlockedContact ||=
-        wasWandering && actor.obstacleWanderRemaining === 0 && actor.obstacleContact && travelled < 0.01;
+        wasWandering && actor.agent.obstacleWanderRemaining === 0 && actor.obstacleContact && travelled < 0.01;
       if (endedAtBlockedContact) {
         barrier = undefined;
       }
-      resumedMotion ||= endedAtBlockedContact && actor.obstacleWanderRemaining === 0 && travelled > 0.01;
+      resumedMotion ||= endedAtBlockedContact && actor.agent.obstacleWanderRemaining === 0 && travelled > 0.01;
       if (resumedMotion) {
         break;
       }
     }
     expect(endedAtBlockedContact).toBe(true);
     expect(resumedMotion).toBe(true);
-    expect(actor.mode).toBe('investigate');
-    expect(actor.lastPerceived).toEqual([300, 1, 0]);
-    expect(actor.obstacleWanderRemaining).toBe(0);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.lastPerceived).toEqual([300, 1, 0]);
+    expect(actor.agent.obstacleWanderRemaining).toBe(0);
   });
 
   it("takes off with each type's own jump speed", () => {
@@ -1577,7 +1577,7 @@ describe('shambler scenarios', () => {
     const id = system.add(SHAMBLER, [-5, 1, 0], [1, 0, 0]);
     const actor = system.store.get(id)!;
     run(system, 3, () => expect(boxesOverlap(playerBody, actor.body)).toBe(false));
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     expect(hits).toBeGreaterThan(0);
   });
 
@@ -1627,7 +1627,7 @@ describe('shambler scenarios', () => {
     for (let tick = 0; tick < 20 * 20; tick++) {
       system.tick(1 / 20);
       for (const id of ids) {
-        expect(['chase', 'investigate', 'search', 'return']).toContain(system.store.get(id)!.mode);
+        expect(['chase', 'investigate', 'search', 'return']).toContain(system.store.get(id)!.agent.mode);
       }
       expect(terrainBodyViolations(bodies, stairs), `tick ${tick}`).toEqual([]);
     }
@@ -1783,7 +1783,7 @@ describe('shambler scenarios', () => {
     const noRandomSever = { ...type, dismember: { chance: 0, headOnKillChance: 0 } };
     const id = system.add(noRandomSever, [1, 1, 0], [0, 0, -1]);
     const actor = system.store.get(id)!;
-    actor.modeTimer = 1000;
+    actor.agent.modeTimer = 1000;
     const ray = regionRay(actor, region, id);
     const weapon = { ...FISTS_MELEE, cooldown: 0 };
     const hits = Math.ceil(actor.regions[region]! / weapon.damage);
@@ -1878,10 +1878,10 @@ describe('shambler scenarios', () => {
     const system = new ActorSystem(options);
     const id = system.add(type, [1, 1, 0], [0, 0, -1]);
     const actor = system.store.get(id)!;
-    actor.mode = 'chase';
+    actor.agent.mode = 'chase';
     const start: Vec3 = [...actor.body.pos];
-    const { mode } = actor;
-    const behaviorRng = actor.behaviorRng.state();
+    const { mode } = actor.agent;
+    const behaviorRng = actor.agent.behaviorRng.state();
     const ray = regionRay(actor, 'torso');
     expect(system.swing(ray.origin, ray.direction, FISTS_MELEE)).toBe(id);
     expect(actor.incapacitated).toBe(true);
@@ -1900,8 +1900,8 @@ describe('shambler scenarios', () => {
     expect(actor.attackWindup).toBe(0);
     expect(sawAttackWindup).toBe(false);
     expect(playerHits).toBe(0);
-    expect(actor.mode).toBe(mode);
-    expect(actor.behaviorRng.state()).toEqual(behaviorRng);
+    expect(actor.agent.mode).toBe(mode);
+    expect(actor.agent.behaviorRng.state()).toEqual(behaviorRng);
     expect(emitted).toHaveLength(soundsAfterHit);
 
     const restored = new ActorSystem(options);
@@ -1919,8 +1919,8 @@ describe('shambler scenarios', () => {
     };
     const shambler = pursue(SHAMBLER);
     const runner = pursue(RUNNER);
-    expect(shambler.mode).toBe('chase');
-    expect(runner.mode).toBe('chase');
+    expect(shambler.agent.mode).toBe('chase');
+    expect(runner.agent.mode).toBe('chase');
     expect(runner.body.pos[0]).toBeGreaterThan(shambler.body.pos[0]);
     expect(runner.body.pos[0]).toBeGreaterThan(Math.abs(runner.body.pos[2]));
   });
@@ -1992,7 +1992,7 @@ describe('shambler scenarios', () => {
         {
           type: actor.type,
           figureSeed: actor.figureSeed,
-          mode: actor.mode,
+          mode: actor.agent.mode,
           body: actor.body,
           gaitPhase: actor.gaitPhase,
         },
@@ -2005,7 +2005,7 @@ describe('shambler scenarios', () => {
       expect({
         type: actor.type.id,
         figureSeed: actor.figureSeed,
-        mode: actor.mode,
+        mode: actor.agent.mode,
         body: actor.body,
         gaitPhase: actor.gaitPhase,
       }).toEqual(expected.get(id));
@@ -2201,7 +2201,7 @@ describe('shambler scenarios', () => {
     const state = system.snapshotState();
     const id = state.hordes[0]?.id;
     expect(id).toBeDefined();
-    expect([...system.store.entries()].some(([, actor]) => actor.hordeId === id)).toBe(true);
+    expect([...system.store.entries()].some(([, actor]) => actor.agent.hordeId === id)).toBe(true);
     const { size } = system.store;
     spawner.onColumn({ cx: column![0], cz: column![1], site, registry, actors: system });
     expect(system.store.size).toBe(size);
@@ -2274,7 +2274,7 @@ describe('shambler scenarios', () => {
         });
       });
       spawner.advance({ calendar: DUSK, registry, actors: system });
-      return [...system.store.entries()].map(([id, actor]) => ({ id, home: actor.home }));
+      return [...system.store.entries()].map(([id, actor]) => ({ id, home: actor.agent.home }));
     };
 
     const first = spawnOrder(markers);
@@ -2376,7 +2376,7 @@ describe('shambler scenarios', () => {
     const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     const blockedActor = blocked.store.get(blockedId)!;
     run(blocked, 2);
-    expect(blockedActor.mode).toBe('investigate');
+    expect(blockedActor.agent.mode).toBe('investigate');
     expect(blockedActor.body.pos[0]).toBeLessThan(1);
     const phaseAtWall = blockedActor.gaitPhase;
     let detourDistance = 0;
@@ -2612,12 +2612,12 @@ describe('attention targets across terrain and changing blockers', () => {
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     system.tick(1 / 20);
     const actor = system.store.get(id)!;
-    expect(actor.investigationTier).toBe('far');
-    expect(actor.lastPerceived).toBeDefined();
-    const [gx, gy, gz] = actor.lastPerceived!.map(Math.floor);
+    expect(actor.agent.investigationTier).toBe('far');
+    expect(actor.agent.lastPerceived).toBeDefined();
+    const [gx, gy, gz] = actor.agent.lastPerceived!.map(Math.floor);
     expect(solid(gx!, gy!, gz!)).toBe(false);
     expect(solid(gx!, gy! - 1, gz!)).toBe(true);
-    expect(actor.lastPerceived![1]).not.toBe(source[1]);
+    expect(actor.agent.lastPerceived![1]).not.toBe(source[1]);
   });
 
   it('keeps a visible high target in sight as it moves to a higher elevation', () => {
@@ -2645,7 +2645,7 @@ describe('attention targets across terrain and changing blockers', () => {
     const id = system.add(type, source, [1, 0, 0]);
     const actor = system.store.get(id)!;
     system.tick(1 / 20, 1 / 20);
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
 
     target = highTarget;
     const startDistance = metres(actor.body.pos, target);
@@ -2657,7 +2657,7 @@ describe('attention targets across terrain and changing blockers', () => {
 
     for (let tick = 2; tick <= 10; tick++) {
       system.tick(1 / 20, tick / 20);
-      expect(actor.mode).toBe('chase');
+      expect(actor.agent.mode).toBe('chase');
     }
 
     for (let tick = 11; tick <= 20 * 20; tick++) {
@@ -2665,7 +2665,7 @@ describe('attention targets across terrain and changing blockers', () => {
       expect(bodyHitsSolid(actor.body, solid)).toBe(false);
     }
 
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     expect(actor.body.onGround).toBe(true);
     expect(actor.body.pos[1]).toBeGreaterThan(source[1]);
     expect(metres(actor.body.pos, target)).toBeLessThan(startDistance);
@@ -2864,11 +2864,11 @@ describe('facing-directed movement', () => {
       run(system, 2);
       sensed = distant;
     }
-    for (let tick = 0; tick < 60 * 20 && actor.mode !== mode; tick++) {
+    for (let tick = 0; tick < 60 * 20 && actor.agent.mode !== mode; tick++) {
       const time = mode === 'return' ? type.stimulusMemorySimSeconds + 3 + tick / 20 : tick / 20;
       system.tick(1 / 20, time);
     }
-    if (actor.mode !== mode) {
+    if (actor.agent.mode !== mode) {
       throw new Error(`Fixture shambler did not enter ${mode}`);
     }
     if (mode === 'investigate') {
@@ -2900,7 +2900,7 @@ describe('facing-directed movement', () => {
         reverseTarget();
       }
       system.tick(1 / 20);
-      observed.add(actor.mode);
+      observed.add(actor.agent.mode);
       const error = velocityFacingErrorDegrees(actor);
       if (error !== undefined) {
         errors.push(error);
@@ -3009,9 +3009,9 @@ describe('two-tier shambler hearing', () => {
     const actor = system.store.get(id)!;
 
     system.tick(1 / 20, 0.05);
-    expect(actor.mode).toBe('investigate');
-    expect(actor.investigationTier).toBe('near');
-    expect(actor.lastPerceived).toEqual(noise.pos);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.investigationTier).toBe('near');
+    expect(actor.agent.lastPerceived).toEqual(noise.pos);
     expect(heard).toContain('shambler_alert');
     system.tick(1 / 20, 0.1);
     expect(heard.filter((event) => event === 'shambler_alert')).toHaveLength(1);
@@ -3021,7 +3021,7 @@ describe('two-tier shambler hearing', () => {
     const distantSystem = new ActorSystem(senses(() => distantPlayer));
     const distantId = distantSystem.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
     distantSystem.tick(1 / 20, 0.05);
-    expect(distantSystem.store.get(distantId)!.mode).toBe('idle');
+    expect(distantSystem.store.get(distantId)!.agent.mode).toBe('idle');
   });
 
   it('does not leak a heard vocal noise into the next actor pass', function vocalNoiseDoesNotLeakBetweenActorPasses() {
@@ -3031,8 +3031,8 @@ describe('two-tier shambler hearing', () => {
     const secondId = system.add(SHAMBLER, [80, 1, 0]);
     const second = system.store.get(secondId)!;
     system.tick(1 / 20, 0.05);
-    expect(second.lastVocalNoiseId).toBe(noise.id);
-    expect(second.mode).toBe('idle');
+    expect(second.agent.lastVocalNoiseId).toBe(noise.id);
+    expect(second.agent.mode).toBe('idle');
 
     const firstId = system.add(SHAMBLER, [8, 1, 0]);
     const first = system.store.get(firstId)!;
@@ -3045,10 +3045,10 @@ describe('two-tier shambler hearing', () => {
     );
     system.tick(1 / 20, 0.1);
 
-    expect(first.mode).toBe('hesitate');
-    expect(first.lastPerceived).toBeDefined();
-    expect(second.mode).toBe('idle');
-    expect(second.lastPerceived).toBeUndefined();
+    expect(first.agent.mode).toBe('hesitate');
+    expect(first.agent.lastPerceived).toBeDefined();
+    expect(second.agent.mode).toBe('idle');
+    expect(second.agent.lastPerceived).toBeUndefined();
   });
 
   it('applies one coarse wall step that demotes a near noise to far', () => {
@@ -3068,32 +3068,32 @@ describe('two-tier shambler hearing', () => {
     const nearId = nearSystem.add({ ...SHAMBLER, sight: 1, nightSight: 1 }, [0, 1, 0]);
     nearSystem.tick(1 / 20);
     const nearActor = nearSystem.store.get(nearId)!;
-    expect(nearActor.mode).toBe('investigate');
-    expect(nearActor.investigationTier).toBe('near');
-    expect(nearActor.lastPerceived).toEqual(nearPlayer.pos);
+    expect(nearActor.agent.mode).toBe('investigate');
+    expect(nearActor.agent.investigationTier).toBe('near');
+    expect(nearActor.agent.lastPerceived).toEqual(nearPlayer.pos);
 
     const distant = player([35, 1, 0], [-1, 0, 0], 'sprinting');
     const farSystem = new ActorSystem({ ...senses(() => distant), seed: 17 });
     const farId = farSystem.add({ ...SHAMBLER, sight: 1, nightSight: 1 }, [0, 1, 0]);
     farSystem.tick(1 / 20);
     const curious = farSystem.store.get(farId)!;
-    expect(curious.mode).toBe('investigate');
-    expect(curious.investigationTier).toBe('far');
-    expect(curious.lastPerceived).not.toEqual(distant.pos);
+    expect(curious.agent.mode).toBe('investigate');
+    expect(curious.agent.investigationTier).toBe('far');
+    expect(curious.agent.lastPerceived).not.toEqual(distant.pos);
 
-    curious.mode = 'chase';
-    curious.lastPerceived = [3, 1, 0];
+    curious.agent.mode = 'chase';
+    curious.agent.lastPerceived = [3, 1, 0];
     farSystem.tick(1 / 20);
-    expect(curious.mode).toBe('investigate');
-    expect(curious.investigationTier).toBe('near');
-    expect(curious.lastPerceived).toEqual([3, 1, 0]);
-    curious.mode = 'investigate';
-    curious.investigationTier = 'near';
-    curious.lastPerceived = [4, 1, 0];
+    expect(curious.agent.mode).toBe('investigate');
+    expect(curious.agent.investigationTier).toBe('near');
+    expect(curious.agent.lastPerceived).toEqual([3, 1, 0]);
+    curious.agent.mode = 'investigate';
+    curious.agent.investigationTier = 'near';
+    curious.agent.lastPerceived = [4, 1, 0];
     farSystem.tick(1 / 20);
-    expect(curious.mode).toBe('investigate');
-    expect(curious.investigationTier).toBe('near');
-    expect(curious.lastPerceived).toEqual([4, 1, 0]);
+    expect(curious.agent.mode).toBe('investigate');
+    expect(curious.agent.investigationTier).toBe('near');
+    expect(curious.agent.lastPerceived).toEqual([4, 1, 0]);
   });
 
   it('lets a far noise during search restart investigation from a new bearing', () => {
@@ -3102,16 +3102,19 @@ describe('two-tier shambler hearing', () => {
     const id = system.add({ ...SHAMBLER, sight: 0.01, nightSight: 0.01 }, [0, 1, 0]);
     const actor = system.store.get(id)!;
     settle(actor.body);
-    actor.mode = 'search';
-    actor.searchAnchor = [0, 1, 0];
-    actor.searchTimer = 30;
-    actor.searchStrolling = false;
+    actor.agent.mode = 'search';
+    actor.agent.searchAnchor = [0, 1, 0];
+    actor.agent.searchTimer = 30;
+    actor.agent.searchStrolling = false;
     const before = [...actor.body.pos] as Vec3;
     system.tick(1 / 20);
-    expect(actor.mode).toBe('investigate');
-    expect(actor.investigationTier).toBe('far');
-    expect(actor.lastPerceived).not.toEqual(distant.pos);
-    expect(metres(actor.lastPerceived!, before)).toBeCloseTo(SHAMBLER.hearingModel.investigationDistanceMetres, 5);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.investigationTier).toBe('far');
+    expect(actor.agent.lastPerceived).not.toEqual(distant.pos);
+    expect(metres(actor.agent.lastPerceived!, before)).toBeCloseTo(
+      SHAMBLER.hearingModel.investigationDistanceMetres,
+      5,
+    );
   });
 
   const advanceToMode = (
@@ -3120,10 +3123,10 @@ describe('two-tier shambler hearing', () => {
     mode: string,
     maxTicks: number,
   ): boolean => {
-    for (let tick = 0; tick < maxTicks && actor.mode !== mode; tick++) {
+    for (let tick = 0; tick < maxTicks && actor.agent.mode !== mode; tick++) {
       system.tick(1 / 20);
     }
-    return actor.mode === mode;
+    return actor.agent.mode === mode;
   };
   const stayInsideSearch = (
     system: ActorSystem,
@@ -3134,10 +3137,10 @@ describe('two-tier shambler hearing', () => {
     let sawStroll = false;
     for (let tick = 0; tick < ticks; tick++) {
       system.tick(1 / 20);
-      if (actor.mode !== 'search' || metres(actor.body.pos, actor.searchAnchor!) > radius + 0.01) {
+      if (actor.agent.mode !== 'search' || metres(actor.body.pos, actor.agent.searchAnchor!) > radius + 0.01) {
         return false;
       }
-      sawStroll ||= actor.searchStrolling;
+      sawStroll ||= actor.agent.searchStrolling;
     }
     return sawStroll;
   };
@@ -3147,13 +3150,13 @@ describe('two-tier shambler hearing', () => {
     maxTicks: number,
     radius: number,
   ): boolean => {
-    for (let tick = 0; tick < maxTicks && actor.mode === 'search'; tick++) {
+    for (let tick = 0; tick < maxTicks && actor.agent.mode === 'search'; tick++) {
       system.tick(1 / 20);
-      if (actor.mode === 'search' && metres(actor.body.pos, actor.searchAnchor!) > radius + 0.01) {
+      if (actor.agent.mode === 'search' && metres(actor.body.pos, actor.agent.searchAnchor!) > radius + 0.01) {
         return false;
       }
     }
-    return actor.mode === 'return';
+    return actor.agent.mode === 'return';
   };
 
   it('searches around a near sound for its data duration and restarts around a second exact sound', () => {
@@ -3165,22 +3168,22 @@ describe('two-tier shambler hearing', () => {
     expect(advanceToMode(system, actor, 'investigate', 200)).toBe(true);
     noise = { ...noise, movement: 'still' };
     expect(advanceToMode(system, actor, 'search', 200)).toBe(true);
-    expect(actor.searchAnchor).toEqual([20, 1, 0]);
+    expect(actor.agent.searchAnchor).toEqual([20, 1, 0]);
     for (let tick = 0; tick < 20; tick++) {
       system.tick(1 / 20);
-      expect(actor.mode).toBe('search');
+      expect(actor.agent.mode).toBe('search');
     }
 
     noise = player([24, 1, 0], [-1, 0, 0], 'sprinting');
     system.tick(1 / 20);
-    expect(actor.mode).toBe('investigate');
-    expect(actor.investigationTier).toBe('near');
-    expect(actor.lastPerceived).toEqual(noise.pos);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.investigationTier).toBe('near');
+    expect(actor.agent.lastPerceived).toEqual(noise.pos);
     noise = { ...noise, movement: 'still' };
     expect(advanceToMode(system, actor, 'search', 200)).toBe(true);
-    expect(actor.searchAnchor).toEqual([24, 1, 0]);
-    expect(actor.searchTimer).toBeGreaterThanOrEqual(type.hearingModel.searchSimSeconds.min);
-    expect(actor.searchTimer).toBeLessThanOrEqual(type.hearingModel.searchSimSeconds.max);
+    expect(actor.agent.searchAnchor).toEqual([24, 1, 0]);
+    expect(actor.agent.searchTimer).toBeGreaterThanOrEqual(type.hearingModel.searchSimSeconds.min);
+    expect(actor.agent.searchTimer).toBeLessThanOrEqual(type.hearingModel.searchSimSeconds.max);
 
     const minSearchTicks = Math.floor((type.hearingModel.searchSimSeconds.min - 0.1) * 20);
     expect(stayInsideSearch(system, actor, minSearchTicks, type.hearingModel.searchRadiusMetres)).toBe(true);
@@ -3229,7 +3232,7 @@ describe('background actor tier', () => {
     const actor = system.store.get(id)!;
     system.tickBackground(0.5, 0.5);
     expect(actor.tier).toBe('background');
-    expect(actor.lastVocalNoiseId).toBe(noise.id);
+    expect(actor.agent.lastVocalNoiseId).toBe(noise.id);
     const startDistance = metres(actor.body.pos, target.pos);
     for (let step = 1; step < 60; step++) {
       system.tickBackground(0.5, (step + 1) * 0.5);
@@ -3251,8 +3254,8 @@ describe('background actor tier', () => {
     for (let step = 0; step < 40; step++) {
       system.tickBackground(0.5, (step + 1) * 0.5);
     }
-    expect(['idle', 'stroll']).toContain(actor.mode);
-    expect(actor.lastPerceived).toBeUndefined();
+    expect(['idle', 'stroll']).toContain(actor.agent.mode);
+    expect(actor.agent.lastPerceived).toBeUndefined();
     expect(metres(actor.body.pos, [0, 1, 0])).toBeGreaterThan(startDistance * 0.75);
   });
 
@@ -3274,8 +3277,8 @@ describe('background actor tier', () => {
     const id = system.add(SHAMBLER, [100, 1, 0]);
     system.tickBackground(0.5, 0.5);
     expect(system.store.get(id)?.tier).toBe('background');
-    expect(system.store.get(id)?.lastVocalNoiseId).toBe(noise.id);
-    expect(system.store.get(id)?.lastPerceived).toBeDefined();
+    expect(system.store.get(id)?.agent.lastVocalNoiseId).toBe(noise.id);
+    expect(system.store.get(id)?.agent.lastPerceived).toBeDefined();
   });
 
   it('uses the active visible-light sense for distant background actors', () => {
@@ -3296,8 +3299,8 @@ describe('background actor tier', () => {
     system.tickBackground(0.5, 0.5);
     const actor = system.store.get(id)!;
     expect(actor.tier).toBe('background');
-    expect(actor.mode).toBe('investigate');
-    expect(actor.lastPerceived).toEqual(lightTarget);
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.lastPerceived).toEqual(lightTarget);
   });
 });
 
@@ -3321,15 +3324,15 @@ describe('idle and stroll shambling', () => {
       withExtraBody.tick(1 / 20);
       if (tick % 100 === 0) {
         expect(independent.body.pos).toEqual(actor.body.pos);
-        expect(independent.behaviorRng.state()).toEqual(actor.behaviorRng.state());
+        expect(independent.agent.behaviorRng.state()).toEqual(actor.agent.behaviorRng.state());
       }
-      if (String(actor.mode) === 'idle') {
+      if (String(actor.agent.mode) === 'idle') {
         idleTicks += 1;
       }
-      if (String(actor.mode) === 'stroll') {
+      if (String(actor.agent.mode) === 'stroll') {
         strollTicks += 1;
       }
-      expect(metres(actor.body.pos, actor.home)).toBeLessThanOrEqual(12.5);
+      expect(metres(actor.body.pos, actor.agent.home)).toBeLessThanOrEqual(12.5);
     }
     expect(idleTicks / sampleTicks).toBeGreaterThanOrEqual(0.2);
     expect(strollTicks / sampleTicks).toBeGreaterThanOrEqual(0.2);
@@ -3351,7 +3354,7 @@ describe('idle and stroll shambling', () => {
     };
     let headLookObserved = false;
     for (let tick = 0; tick < 1200; tick++) {
-      const mode = String(actor.mode);
+      const mode = String(actor.agent.mode);
       const beforeFacing = Math.atan2(actor.facing[0], actor.facing[2]);
       const beforePosition = [...actor.body.pos] as Vec3;
       system.tick(1 / 20);
@@ -3422,7 +3425,7 @@ describe('idle and stroll shambling', () => {
     const idleId = idleSystem.add(SHAMBLER, [0, 1, 0]);
     const idleActor = idleSystem.store.get(idleId)!;
     settle(idleActor.body);
-    idleActor.modeTimer = 100;
+    idleActor.agent.modeTimer = 100;
     const idleMeshes = new ActorMeshes(BLOCK_SIZE);
     const idleBody = idleMeshes.group.children[0] as import('three').InstancedMesh;
     idleMeshes.sync(idleSystem.store);
@@ -3443,9 +3446,9 @@ describe('idle and stroll shambling', () => {
       previousYaw = currentYaw;
     }
 
-    idleActor.mode = 'stroll';
-    idleActor.modeTimer = 100;
-    idleActor.strollHeading = [1, 0, 0];
+    idleActor.agent.mode = 'stroll';
+    idleActor.agent.modeTimer = 100;
+    idleActor.agent.strollHeading = [1, 0, 0];
     previousYaw = idlePose();
     for (let frame = 0; frame < 180; frame++) {
       if (frame % 3 === 0) {
@@ -3477,7 +3480,7 @@ describe('attack windup', () => {
     system.tick(1 / 60);
     expect(damage).toBe(0);
     const actor = system.store.get(id)!;
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     expect(actor.attackWindup).toBeCloseTo(SHAMBLER.attack.windupSimSeconds, 5);
     expect(actor.attackWait).toBeCloseTo(SHAMBLER.attack.cooldownSimSeconds, 5);
   });
@@ -3630,15 +3633,15 @@ describe('attack windup', () => {
     const dt = 1 / 60;
     let frame = 0;
     uninterrupted.tick(dt, frame * dt);
-    expect(uninterrupted.store.get(id)!.mode).toBe('investigate');
-    expect(uninterrupted.store.get(id)!.investigationTier).toBe('far');
-    expect(uninterrupted.store.get(id)!.lastVocalNoiseId).toBe(noise.id);
+    expect(uninterrupted.store.get(id)!.agent.mode).toBe('investigate');
+    expect(uninterrupted.store.get(id)!.agent.investigationTier).toBe('far');
+    expect(uninterrupted.store.get(id)!.agent.lastVocalNoiseId).toBe(noise.id);
 
-    while (uninterrupted.store.get(id)!.mode !== 'search' && frame < 1800) {
+    while (uninterrupted.store.get(id)!.agent.mode !== 'search' && frame < 1800) {
       frame += 1;
       uninterrupted.tick(dt, frame * dt);
     }
-    expect(uninterrupted.store.get(id)!.mode).toBe('search');
+    expect(uninterrupted.store.get(id)!.agent.mode).toBe('search');
     expect(frame * dt).toBeLessThan(noise.expiresAt);
 
     const searchFrame = frame;
@@ -3647,8 +3650,8 @@ describe('attack windup', () => {
     const firstAfterRestore = searchFrame + 1;
     uninterrupted.tick(dt, firstAfterRestore * dt);
     restored.tick(dt, firstAfterRestore * dt);
-    expect(uninterrupted.store.get(id)!.mode).toBe('search');
-    expect(restored.store.get(id)!.mode).toBe('search');
+    expect(uninterrupted.store.get(id)!.agent.mode).toBe('search');
+    expect(restored.store.get(id)!.agent.mode).toBe('search');
     for (let nextFrame = firstAfterRestore + 1; nextFrame <= searchFrame + 600; nextFrame += 1) {
       uninterrupted.tick(dt, nextFrame * dt);
       restored.tick(dt, nextFrame * dt);
@@ -3661,10 +3664,10 @@ describe('attack windup', () => {
     const system = new ActorSystem(senses(() => player([100, 2, 0]), FLOOR));
     const id = system.add(SHAMBLER, [0, 1, 0]);
     const actor = system.store.get(id)!;
-    actor.obstacleWanderHeading = [0, 0, 1];
-    actor.obstacleWanderRemaining = 3;
+    actor.agent.obstacleWanderHeading = [0, 0, 1];
+    actor.agent.obstacleWanderRemaining = 3;
     actor.obstacleContact = true;
-    actor.obstacleSlideSide = -1;
+    actor.agent.obstacleSlideSide = -1;
     const state = system.snapshotState();
     expect(state).not.toHaveProperty('routes');
     expect(state).not.toHaveProperty('routeClock');
@@ -3747,7 +3750,7 @@ describe('stagger', () => {
       return { system, id, actor: system.store.get(id)! };
     };
     const { system, id, actor } = chasing();
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     const before = [...actor.body.pos];
     const ray = regionRay(actor, 'torso');
     expect(system.swing(ray.origin, ray.direction, heavy)).toBe(id);

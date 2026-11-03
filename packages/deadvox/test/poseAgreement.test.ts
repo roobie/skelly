@@ -188,7 +188,7 @@ describe('rendered and hit shambler poses', () => {
     for (let tick = 0; tick < 60 && actor.gaitPhase === 0; tick++) {
       system.tick(1 / 60);
     }
-    expect(actor.mode).toBe('chase');
+    expect(actor.agent.mode).toBe('chase');
     const head = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, BLOCK_SIZE)).head.find(
       (box) => box.bone === 'head',
     )!.center;
@@ -307,7 +307,7 @@ describe('rendered and hit shambler poses', () => {
     const freshActor = freshSystem.store.get(freshId)!;
     expect(freshActor.stanceWeight).toBeUndefined();
     freshSystem.tick(1 / 20);
-    expect(freshActor.mode).toBe('chase');
+    expect(freshActor.agent.mode).toBe('chase');
     expect(freshActor.stanceWeight).toBe(1);
   });
 

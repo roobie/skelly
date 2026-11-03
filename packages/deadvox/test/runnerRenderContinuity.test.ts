@@ -116,7 +116,7 @@ const runEngagement = (seed: number): EngagementResult => {
       }
 
       const beforePos: Vec3 = [...runner.body.pos];
-      const beforeMode = runner.mode;
+      const beforeMode = runner.agent.mode;
       const beforeWindup = runner.attackWindup > 0;
       system.tickActive(dt, time);
       renderer.sync(system.store, dt, 1, false, 1, time);
@@ -126,7 +126,7 @@ const runEngagement = (seed: number): EngagementResult => {
         (after.body.pos[0] - beforePos[0]) * BLOCK_SIZE,
         (after.body.pos[2] - beforePos[2]) * BLOCK_SIZE,
       );
-      const transition = `${beforeMode}->${after.mode}:${beforeWindup ? 'windup' : 'ready'}->${after.attackWindup > 0 ? 'windup' : 'ready'}`;
+      const transition = `${beforeMode}->${after.agent.mode}:${beforeWindup ? 'windup' : 'ready'}->${after.attackWindup > 0 ? 'windup' : 'ready'}`;
       const drawn = renderStates.states.get(runnerId)?.lastPlacement;
       const drawnPosition = drawn ? ([drawn.x, drawn.y, drawn.z] as Vec3) : undefined;
       samples.push({
@@ -142,7 +142,7 @@ const runEngagement = (seed: number): EngagementResult => {
         previousDrawn,
       });
       previousDrawn = drawnPosition;
-      visitedModes.add(after.mode);
+      visitedModes.add(after.agent.mode);
       sawAttackWindup ||= after.attackWindup > 0;
       sawSprintSpeed ||= after.horizontalSpeed > RUNNER.speed.wanderMetresPerSimSecond;
     }

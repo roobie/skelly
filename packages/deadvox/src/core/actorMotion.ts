@@ -137,7 +137,7 @@ export const pushTurn = (body: Body, shape: FusedMassShape, turn: number): boole
 
 export const stepChaseMotion = (actor: Actor, dt: number): { sway: number; speedFactor: number } => {
   const { chaseMotion } = actor.type;
-  const rng = actor.behaviorRng;
+  const rng = actor.agent.behaviorRng;
   if (actor.swayDuration === 0 || actor.swayElapsed >= actor.swayDuration) {
     actor.swayStart = actor.swayValue;
     actor.swayTarget = rng.range(-chaseMotion.swayDegrees, chaseMotion.swayDegrees);
@@ -210,14 +210,14 @@ export function haltActor(actor: Actor) {
 export function turnActorBodyLook(actor: Actor, type: Actor['type'], dt: number) {
   actor.facing = turnToward(
     actor.facing,
-    headingAt(actor.bodyLookTarget),
+    headingAt(actor.agent.bodyLookTarget),
     (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
   );
 }
 export function turnActorHeadLook(actor: Actor, type: Actor['type'], dt: number) {
   actor.headYaw = approachAngle(
     actor.headYaw,
-    actor.headYawTarget,
+    actor.agent.headYawTarget,
     (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
   );
 }

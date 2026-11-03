@@ -737,7 +737,7 @@ describe('long-action interruptions', () => {
     for (let i = 0; i < 600 && session.rest.action; i++) {
       frame();
       chasedAtCap ||=
-        session.actorStore.get(id)!.mode === 'chase' &&
+        session.actorStore.get(id)!.agent.mode === 'chase' &&
         sim.compression.active &&
         sim.compression.c === sim.compression.limits.cap;
     }

@@ -190,7 +190,7 @@ describe('passable but opaque vegetation', () => {
     const id = system.add(registry.actors.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
     system.tick(1 / 20);
     const actor = system.store.get(id)!;
-    expect(actor.mode).not.toBe('chase');
+    expect(actor.agent.mode).not.toBe('chase');
     system.setFrozen(true);
     const { center } = posedHumanoidRegionBoxes(actorPoseInputFor(actor, id, 0.5)).head.find(
       (box) => box.bone === 'head',

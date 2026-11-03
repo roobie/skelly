@@ -99,7 +99,7 @@ describe('acid spit', () => {
     const modes = new Set<string>();
     for (let frame = 0; frame < 300; frame++) {
       heard.system.tick(1 / 60);
-      modes.add(hearing.actor.mode);
+      modes.add(hearing.actor.agent.mode);
       expect(hearing.actor.spitWindup).toBe(0);
     }
     expect(modes).toContain('investigate');

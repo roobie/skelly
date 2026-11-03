@@ -432,14 +432,19 @@ export const inspect = (runtime: Runtime): unknown => {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       hordes: runtime.zombies.snapshotState().hordes,
       entries: [...runtime.zombies.store.entries()].map(([id, actor]) => {
-        const { type, behaviorRng, soundRng, renderPrevious: _renderPrevious, tier: _tier, ...fields } = actor;
+        const {
+          type,
+          renderPrevious: _renderPrevious,
+          tier: _tier,
+          agent: { behaviorRng, soundRng, ...agentFields },
+          ...fields
+        } = actor;
         return [
           id,
           {
             ...structuredClone(fields),
             type: type.id,
-            behaviorRng: behaviorRng.state(),
-            soundRng: soundRng.state(),
+            agent: { ...structuredClone(agentFields), behaviorRng: behaviorRng.state(), soundRng: soundRng.state() },
           },
         ];
       }),
@@ -519,17 +524,17 @@ export const prepareAudioContinuation = (runtime: Runtime): Runtime => {
   listener.body.vel = [0, 0, 0];
   listener.body.onGround = true;
   listener.facing = [0, 0, 1];
-  listener.mode = 'idle';
-  listener.modeTimer = 100;
-  listener.idleSoundTimer = 100;
-  listener.lastVocalNoiseId = 0;
+  listener.agent.mode = 'idle';
+  listener.agent.modeTimer = 100;
+  listener.agent.idleSoundTimer = 100;
+  listener.agent.lastVocalNoiseId = 0;
   saved.character.playerAudio.vocalNoise!.expiresAt = runtime.sim.time + 0.25;
   const idle = saved.world.actors.actors.find(({ id }) => id === groaner)!.actor;
   idle.body.onGround = true;
-  idle.mode = 'idle';
-  idle.modeTimer = 100;
-  idle.idleSoundTimer = 0.02;
-  idle.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
+  idle.agent.mode = 'idle';
+  idle.agent.modeTimer = 100;
+  idle.agent.idleSoundTimer = 0.02;
+  idle.agent.lastVocalNoiseId = saved.character.playerAudio.vocalNoiseId;
   return createRuntime(saved, runtime.restAnchorUid !== undefined, runtime.columns);
 };
 

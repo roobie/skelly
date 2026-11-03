@@ -658,40 +658,44 @@ const horde = obj({
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });
 const actor = obj({
+  agent: obj({
+    hordeId: opt(str({ nonEmpty: true })),
+    hordeOffset: opt(vec3),
+    home: vec3,
+    mode: enumeration(['idle', 'stroll', 'hesitate', 'search', 'chase', 'investigate', 'return']),
+    investigationTier: opt(enumeration(['near', 'far'])),
+    hesitationFrom: opt(enumeration(['idle', 'stroll'])),
+    refusedAt: opt(nonNegative),
+    leanTarget: opt(vec3),
+    behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
+    soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
+    lastVocalNoiseId: nullable(nonNegativeInt),
+    lastAlertAt: opt(nonNegative),
+    idleSoundTimer: nonNegative,
+    modeTimer: finite,
+    searchAnchor: opt(vec3),
+    searchTimer: finite,
+    searchStrolling: bool,
+    searchHeading: vec3,
+    strollHeading: vec3,
+    obstacleWanderHeading: opt(vec3),
+    obstacleWanderRemaining: nonNegative,
+    obstacleSlideSide: enumeration([-1, 0, 1]),
+    bodyLookTarget: finite,
+    headYawTarget: finite,
+    lookTimer: finite,
+    lastPerceived: opt(vec3),
+    stimulusAt: opt(nonNegative),
+  }),
   type: str({ id: true }),
-  hordeId: opt(str({ nonEmpty: true })),
-  hordeOffset: opt(vec3),
   figureSeed: safeInt,
   incapacitated: bool,
   body,
   facing: vec3,
-  home: vec3,
-  mode: enumeration(['idle', 'stroll', 'hesitate', 'search', 'chase', 'investigate', 'return']),
-  investigationTier: opt(enumeration(['near', 'far'])),
-  hesitationFrom: opt(enumeration(['idle', 'stroll'])),
-  refusedAt: opt(nonNegative),
-  leanTarget: opt(vec3),
-  behaviorRng: tuple(safeInt, safeInt, safeInt, safeInt),
-  soundRng: tuple(safeInt, safeInt, safeInt, safeInt),
   dismemberRng: tuple(safeInt, safeInt, safeInt, safeInt),
-  lastVocalNoiseId: nullable(nonNegativeInt),
-  lastAlertAt: opt(nonNegative),
-  idleSoundTimer: nonNegative,
-  modeTimer: finite,
-  searchAnchor: opt(vec3),
-  searchTimer: finite,
-  searchStrolling: bool,
-  searchHeading: vec3,
-  strollHeading: vec3,
   horizontalSpeed: finite,
-  obstacleWanderHeading: opt(vec3),
-  obstacleWanderRemaining: nonNegative,
   obstacleContact: bool,
-  obstacleSlideSide: enumeration([-1, 0, 1]),
-  bodyLookTarget: finite,
   headYaw: finite,
-  headYawTarget: finite,
-  lookTimer: finite,
   swayValue: finite,
   swayStart: finite,
   swayTarget: finite,
@@ -706,8 +710,6 @@ const actor = obj({
   stumbleElapsed: finite,
   stumbleDuration: finite,
   regions: record(nonNegative),
-  lastPerceived: opt(vec3),
-  stimulusAt: opt(nonNegative),
   attackWait: finite,
   attackWindup: finite,
   spitWindup: nonNegative,
@@ -1931,13 +1933,13 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     hordes.set(hordeState.id, hordeState);
   }
   for (const { actor: actorState } of snapshot.world.actors.actors) {
-    if ((actorState.hordeId === undefined) !== (actorState.hordeOffset === undefined)) {
+    if ((actorState.agent.hordeId === undefined) !== (actorState.agent.hordeOffset === undefined)) {
       throw new Error('Incomplete zombie horde membership');
     }
-    if (actorState.hordeId !== undefined) {
-      const hordeState = hordes.get(actorState.hordeId);
+    if (actorState.agent.hordeId !== undefined) {
+      const hordeState = hordes.get(actorState.agent.hordeId);
       if (!hordeState || hordeState.type !== actorState.type) {
-        throw new Error(`Invalid horde membership ${actorState.hordeId}`);
+        throw new Error(`Invalid horde membership ${actorState.agent.hordeId}`);
       }
     }
   }

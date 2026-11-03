@@ -68,7 +68,7 @@ describe('shambler interest', () => {
     const actor = f.add();
     const before = [...actor.body.pos];
     f.step();
-    expect(actor.mode).toBe('hesitate');
+    expect(actor.agent.mode).toBe('hesitate');
     expect(actor.body.pos[0]).toBe(before[0]);
     expect(actor.body.pos[2]).toBe(before[2]);
     expect(Math.abs(actor.headYaw)).toBeGreaterThan(0);
@@ -78,19 +78,19 @@ describe('shambler interest', () => {
     const f = fixture(type.hearingModel.loudNoiseRadiusMetres);
     const actor = f.add();
     f.step();
-    expect(actor.mode).toBe('investigate');
+    expect(actor.agent.mode).toBe('investigate');
   });
 
   it('a loud far-tier sound interrupts an existing quiet pause', () => {
     const f = fixture();
     const actor = f.add();
     f.step();
-    expect(actor.mode).toBe('hesitate');
+    expect(actor.agent.mode).toBe('hesitate');
     f.player.vocalNoise = { id: 2, pos: [30, 1, 0], radiusMetres: 10, expiresAt: 2 };
     f.step();
-    expect(actor.mode).toBe('investigate');
-    expect(actor.investigationTier).toBe('far');
-    expect(actor.hesitationFrom).toBeUndefined();
+    expect(actor.agent.mode).toBe('investigate');
+    expect(actor.agent.investigationTier).toBe('far');
+    expect(actor.agent.hesitationFrom).toBeUndefined();
   });
 
   it('an idle refusal biases the next stroll and makes the next sound suspicious', () => {
@@ -99,16 +99,16 @@ describe('shambler interest', () => {
     f.step();
     f.step(0.15);
     f.step(0.06);
-    expect(actor.mode).toBe('idle');
-    expect(actor.refusedAt).toBeDefined();
-    expect(actor.leanTarget).toEqual(f.player.vocalNoise!.pos);
+    expect(actor.agent.mode).toBe('idle');
+    expect(actor.agent.refusedAt).toBeDefined();
+    expect(actor.agent.leanTarget).toEqual(f.player.vocalNoise!.pos);
     f.step(0.11);
-    expect(actor.mode).toBe('stroll');
-    expect(actor.strollHeading[0]).toBeGreaterThan(0);
-    expect(actor.leanTarget).toBeUndefined();
+    expect(actor.agent.mode).toBe('stroll');
+    expect(actor.agent.strollHeading[0]).toBeGreaterThan(0);
+    expect(actor.agent.leanTarget).toBeUndefined();
     f.player.vocalNoise = { ...f.player.vocalNoise!, id: 2, expiresAt: 2 };
     f.step();
-    expect(actor.mode).toBe('investigate');
+    expect(actor.agent.mode).toBe('investigate');
   });
 
   it('a strolling listener pursues after the pause rather than refusing', () => {
@@ -116,12 +116,12 @@ describe('shambler interest', () => {
     f.player.vocalNoise = undefined;
     const actor = f.add();
     f.step(0.11);
-    expect(actor.mode).toBe('stroll');
+    expect(actor.agent.mode).toBe('stroll');
     f.player.vocalNoise = { id: 2, pos: [6, 1, 0], radiusMetres: 4, expiresAt: 2 };
     f.step();
-    expect(actor.mode).toBe('hesitate');
+    expect(actor.agent.mode).toBe('hesitate');
     f.step(0.21);
-    expect(actor.mode).toBe('investigate');
+    expect(actor.agent.mode).toBe('investigate');
   });
 
   it('horde members beeline even for a quiet sound', () => {
@@ -130,7 +130,7 @@ describe('shambler interest', () => {
     f.step();
     const members = [...f.system.store.entries()].map(([, actor]) => actor);
     expect(members.length).toBeGreaterThan(0);
-    expect(members.every((actor) => actor.mode === 'investigate')).toBe(true);
+    expect(members.every((actor) => actor.agent.mode === 'investigate')).toBe(true);
   });
 
   it('chains within the caller radius, cascades, and preserves the caller target point', () => {
@@ -151,14 +151,14 @@ describe('shambler interest', () => {
     const cascade = f.add([16, 1, 0], callerType);
     const beyond = f.add([40, 1, 0], callerType);
     f.step();
-    expect(caller.mode).toBe('investigate');
+    expect(caller.agent.mode).toBe('investigate');
     for (const actor of [listener, cascade]) {
-      expect(actor.mode).toBe('investigate');
-      expect(actor.lastPerceived).toEqual(caller.lastPerceived);
-      expect(actor.lastPerceived).not.toEqual(caller.body.pos);
+      expect(actor.agent.mode).toBe('investigate');
+      expect(actor.agent.lastPerceived).toEqual(caller.agent.lastPerceived);
+      expect(actor.agent.lastPerceived).not.toEqual(caller.body.pos);
     }
-    expect(beyond.mode).toBe('idle');
-    expect(beyond.lastPerceived).toBeUndefined();
+    expect(beyond.agent.mode).toBe('idle');
+    expect(beyond.agent.lastPerceived).toBeUndefined();
   });
 
   it.each(['search', 'return'] as const)('does not re-recruit a body already in %s', (mode) => {
@@ -179,13 +179,13 @@ describe('shambler interest', () => {
     };
     const listener = f.add([0, 1, 0], def);
     f.step();
-    expect(listener.mode).toBe('investigate');
+    expect(listener.agent.mode).toBe('investigate');
     f.player.vocalNoise = undefined;
-    for (let tick = 0; tick < 200 && listener.mode !== mode; tick++) {
+    for (let tick = 0; tick < 200 && listener.agent.mode !== mode; tick++) {
       f.step();
     }
-    expect(listener.mode).toBe(mode);
-    const rememberedAt = listener.stimulusAt;
+    expect(listener.agent.mode).toBe(mode);
+    const rememberedAt = listener.agent.stimulusAt;
     const callerPos: Vec3 = [listener.body.pos[0] + 8, 1, listener.body.pos[2]];
     const caller = f.add(callerPos, def);
     f.player.vocalNoise = {
@@ -195,9 +195,9 @@ describe('shambler interest', () => {
       expiresAt: 30,
     };
     f.step();
-    expect(caller.mode).toBe('investigate');
-    expect(listener.mode).toBe(mode);
-    expect(listener.stimulusAt).toBe(rememberedAt);
+    expect(caller.agent.mode).toBe('investigate');
+    expect(listener.agent.mode).toBe(mode);
+    expect(listener.agent.stimulusAt).toBe(rememberedAt);
   });
 
   it('a listener before its caller in entity order moves on the same tick as the chain', () => {
@@ -216,7 +216,7 @@ describe('shambler interest', () => {
     const listener = f.add([8, 1, 0], def);
     f.add([0, 1, 0], def);
     f.step();
-    expect(listener.mode).toBe('investigate');
+    expect(listener.agent.mode).toBe('investigate');
     expect(listener.horizontalSpeed).toBeGreaterThan(0);
   });
 
@@ -236,7 +236,7 @@ describe('shambler interest', () => {
     f.add([0, 1, 0], def);
     const listener = f.add([8, 1, 0], def);
     f.step();
-    expect(listener.mode).toBe('idle');
+    expect(listener.agent.mode).toBe('idle');
   });
 
   it('measures undamped spread across a dense yard from one local noise', () => {
@@ -247,9 +247,11 @@ describe('shambler interest', () => {
       f.add([(index % 10) * 6, 1, Math.floor(index / 10) * 6], def),
     );
     f.step();
-    expect(crowd[0]!.stimulusAt).toBeDefined();
-    const pursuing = crowd.filter((actor) => actor.stimulusAt !== undefined);
-    const reach = Math.max(...pursuing.map((actor) => Math.hypot(actor.home[0], actor.home[2]) * scale.blockSize));
+    expect(crowd[0]!.agent.stimulusAt).toBeDefined();
+    const pursuing = crowd.filter((actor) => actor.agent.stimulusAt !== undefined);
+    const reach = Math.max(
+      ...pursuing.map((actor) => Math.hypot(actor.agent.home[0], actor.agent.home[2]) * scale.blockSize),
+    );
     // biome-ignore lint/suspicious/noConsole: This fixture measures undamped reach without pinning a tuning-dependent count.
     console.info(
       `Undamped dense-yard spread: ${pursuing.length}/${crowd.length} pursuing; ${reach.toFixed(2)} metres from source.`,
@@ -278,7 +280,7 @@ describe('shambler interest', () => {
       for (let tick = 0; tick < 200; tick++) {
         f.step();
       }
-      expect(crowd.every((actor) => actor.mode === 'idle' || actor.mode === 'stroll')).toBe(true);
+      expect(crowd.every((actor) => actor.agent.mode === 'idle' || actor.agent.mode === 'stroll')).toBe(true);
     };
     const stimulate = (id: number) => {
       f.player.vocalNoise = {
@@ -295,7 +297,7 @@ describe('shambler interest', () => {
     settle();
     expect(f.time() - firstCryAt).toBeLessThan(base.hearingModel.alertCooldownSimSeconds);
     stimulate(2);
-    expect(crowd[0]!.stimulusAt).toBe(f.time());
+    expect(crowd[0]!.agent.stimulusAt).toBe(f.time());
     expect(counts()).toEqual(crowd.map(() => 1));
     f.player.vocalNoise = undefined;
     while (f.time() - firstCryAt < base.hearingModel.alertCooldownSimSeconds) {
@@ -328,24 +330,24 @@ describe('shambler interest', () => {
     for (let tick = 0; tick < 100; tick++) {
       f.step();
     }
-    expect(listener.mode === 'idle' || listener.mode === 'stroll').toBe(true);
+    expect(listener.agent.mode === 'idle' || listener.agent.mode === 'stroll').toBe(true);
     const snapshot = f.system.snapshotState();
     const restored = new ActorSystem(f.options);
     restored.restoreState(snapshot, () => def);
     expect(restored.snapshotState()).toEqual(snapshot);
     const [, savedListener] = [...restored.store.entries()][0]!;
-    expect(savedListener.lastAlertAt).toBe(firstCryAt);
+    expect(savedListener.agent.lastAlertAt).toBe(firstCryAt);
     const pos: Vec3 = [savedListener.body.pos[0] + 8, 1, savedListener.body.pos[2]];
     restored.add(def, pos);
     f.player.vocalNoise = { id: 2, pos, radiusMetres: 0.5, expiresAt: f.time() + 1 };
     const before = f.cries.length;
     restored.tick(0.05, f.time() + 0.05);
     expect(f.cries.length - before).toBe(1);
-    expect(savedListener.lastPerceived).toEqual(pos);
-    expect(savedListener.stimulusAt).toBe(f.time() + 0.05);
-    expect(savedListener.lastAlertAt).toBe(firstCryAt);
+    expect(savedListener.agent.lastPerceived).toEqual(pos);
+    expect(savedListener.agent.stimulusAt).toBe(f.time() + 0.05);
+    expect(savedListener.agent.lastAlertAt).toBe(firstCryAt);
     const invalid = structuredClone(snapshot);
-    invalid.actors[0]!.actor.lastAlertAt = -1;
+    invalid.actors[0]!.actor.agent.lastAlertAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(invalid, () => def)).toThrow('Invalid zombie state');
   });
 
@@ -360,12 +362,12 @@ describe('shambler interest', () => {
       expect(restored.snapshotState()).toEqual(snapshot);
       return snapshot;
     };
-    expect(restore().actors[0]!.actor.mode).toBe('hesitate');
+    expect(restore().actors[0]!.actor.agent.mode).toBe('hesitate');
     f.step(0.15);
     f.step(0.06);
-    expect(actor.leanTarget).toBeDefined();
+    expect(actor.agent.leanTarget).toBeDefined();
     const snapshot = structuredClone(restore());
-    snapshot.actors[0]!.actor.refusedAt = -1;
+    snapshot.actors[0]!.actor.agent.refusedAt = -1;
     expect(() => new ActorSystem(f.options).restoreState(snapshot, () => type)).toThrow('Invalid zombie state');
   });
 });

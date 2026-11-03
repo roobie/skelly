@@ -4,6 +4,7 @@ read_if:
   - you replace content ids or setting names in TypeScript with capabilities
   - you change default weathering selection or shared versus product weathering ownership
   - you classify creature, ranged, vehicle, sound or damage-kind content, including drop-sound receivers and item character
+  - you separate actor body state from decision memory and its save representation
   - you name body-plan mechanisms descriptively or separate anatomy, leg cuts and figure builds
   - you change settlement role claims or melee pose selection
   - you change skill providers, combat policy, starts or pack save identity
@@ -104,6 +105,11 @@ retain those realizations without making actor identity select implementation. S
 `bodyPlanModel`; `packages/mobgen/src/core/template.ts`, `Template.legCut`;
 `src/core/actorPose.ts`, `actorCrawls`; and `src/core/schema/actors.ts`, `ActorSchema`
 and `actorRegionsMatchModel`.
+Decision memory is nested apart from body state in both the type and the save, so
+supporting an undriven body can mean omitting one field, and another kind of agent
+can bring its own memory. See `src/core/actorState.ts`, `AgentState`, `Actor` and
+`ActorState`, and `src/core/saveFormat.ts`, `wirePayloadSchema`.
+
 Settlement population requests require their claimed providers only when that population
 is selected, so shared content needs no actor merely to validate; see
 `src/core/settlementSpawns.ts`, `settlementHordeSpawn` and `settlementActorSpawns`,

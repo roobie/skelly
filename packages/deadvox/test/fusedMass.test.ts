@@ -341,7 +341,7 @@ const runObstacleCase = (
     startZ,
     reachedBarrier,
     stalled,
-    mode: simulation.store.get(id)!.mode,
+    mode: simulation.store.get(id)!.agent.mode,
   };
 };
 
@@ -366,13 +366,13 @@ describe('fused-mass body and combat seam', () => {
         const chasing = simulation.store.get(id)!;
         const alignment = stepHeadingAlignment(before, chasing.body.pos, seenPlayer.pos);
         firstStepAlignment ??= alignment;
-        if (type.id === 'amalgam' && chasing.mode === 'chase') {
+        if (type.id === 'amalgam' && chasing.agent.mode === 'chase') {
           expect(alignment ?? 1).toBeGreaterThan(Math.cos(Math.PI / 180));
           checkedAmalgamHeading ||= alignment !== undefined;
         }
       }
       const actor = simulation.store.get(id)!;
-      expect(actor.mode).toBe('chase');
+      expect(actor.agent.mode).toBe('chase');
       if (type.id === 'amalgam') {
         expect(checkedAmalgamHeading).toBe(true);
       }

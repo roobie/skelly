@@ -22,7 +22,7 @@
 //
 // Living base pose (gait, idle clock, attack cooldown phase, and hit flinch) is simulation-owned and comes
 // from core/actorPose.ts, the same pure function used by hit-region FK. This renderer adds the
-// interpolated root transform and neck/head gaze toward the camera while Actor.mode is 'chase', or toward
+// interpolated root transform and neck/head gaze toward the camera while Actor.agent.mode is 'chase', or toward
 // a recent near stimulus while investigating. Hearing gaze has deterministic render-only jitter; stale gaze
 // eases back to the simulation pose at the same bounded rate, and never feeds hit-region FK.
 // Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
@@ -309,15 +309,15 @@ export const perceptionLabelFor = (
   playerEye: Vec3 | undefined,
   { blockSize, maxSpeed }: { blockSize: number; maxSpeed: number },
 ): PerceptionLabel => {
-  if (actor.mode === 'chase') {
+  if (actor.agent.mode === 'chase') {
     return 'sees you';
   }
   if (recentNearStimulus) {
-    return actor.lastPerceived && perceivedAtPlayer(actor.lastPerceived, playerEye, blockSize, maxSpeed)
+    return actor.agent.lastPerceived && perceivedAtPlayer(actor.agent.lastPerceived, playerEye, blockSize, maxSpeed)
       ? 'hears you'
       : 'notices something';
   }
-  if (actor.lastPerceived !== undefined || actor.mode === 'investigate' || actor.mode === 'search') {
+  if (actor.agent.lastPerceived !== undefined || actor.agent.mode === 'investigate' || actor.agent.mode === 'search') {
     return 'remembers';
   }
   return 'unaware';
@@ -1974,7 +1974,7 @@ export class MobActorMeshes implements ActorRenderer {
   }
 
   private hasRecentNearStimulus(state: ActorRenderState, actor: Actor): boolean {
-    const { stimulusAt, mode, investigationTier } = actor;
+    const { stimulusAt, mode, investigationTier } = actor.agent;
     return (
       (mode === 'hesitate' || mode === 'investigate') &&
       investigationTier === 'near' &&
@@ -2008,14 +2008,14 @@ export class MobActorMeshes implements ActorRenderer {
       const rootRotation = transpose(rotY((yaw * 180) / Math.PI));
       const eye = this.playerEyePosition ?? [this.cameraPosition.x, this.cameraPosition.y, this.cameraPosition.z];
       let target: readonly [number, number, number] | undefined;
-      if (actor.mode === 'chase' && (this.playerEyePosition !== undefined || this.camera)) {
+      if (actor.agent.mode === 'chase' && (this.playerEyePosition !== undefined || this.camera)) {
         target = mulMV(rootRotation, [eye[0] - worldPos[0], eye[1] - worldPos[1], eye[2] - worldPos[2]]);
-      } else if (this.hasRecentNearStimulus(state, actor) && actor.lastPerceived) {
+      } else if (this.hasRecentNearStimulus(state, actor) && actor.agent.lastPerceived) {
         target = hearingGazeTarget(
           mulMV(rootRotation, [
-            actor.lastPerceived[0] * this.blockSize - worldPos[0],
-            actor.lastPerceived[1] * this.blockSize - worldPos[1],
-            actor.lastPerceived[2] * this.blockSize - worldPos[2],
+            actor.agent.lastPerceived[0] * this.blockSize - worldPos[0],
+            actor.agent.lastPerceived[1] * this.blockSize - worldPos[1],
+            actor.agent.lastPerceived[2] * this.blockSize - worldPos[2],
           ]),
           state.id,
           presentationSimSeconds,

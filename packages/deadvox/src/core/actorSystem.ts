@@ -473,7 +473,13 @@ type GlobContact =
 const holdSpitGround = (scratch: ActorTickScratch, toward: Vec3): void => {
   const { actor, type, sees, metresToTarget, dt } = scratch;
   const band = type.acidSpit?.rangeBand;
-  if (band && actor.mode === 'chase' && sees && metresToTarget >= band.nearMetres && metresToTarget <= band.farMetres) {
+  if (
+    band &&
+    actor.agent.mode === 'chase' &&
+    sees &&
+    metresToTarget >= band.nearMetres &&
+    metresToTarget <= band.farMetres
+  ) {
     scratch.moving = false;
     steer(actor, toward, (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180);
   }
@@ -818,14 +824,14 @@ export class ActorSystem {
         if (
           !Number.isSafeInteger(id) ||
           id < 1 ||
-          !validRngState(actor.behaviorRng) ||
-          !validRngState(actor.soundRng) ||
+          !validRngState(actor.agent.behaviorRng) ||
+          !validRngState(actor.agent.soundRng) ||
           !validRngState(actor.dismemberRng) ||
           !validRngState(actor.spitRng) ||
           !validSpitTimers(actor) ||
           !validStaggerTime(actor) ||
-          !Number.isFinite(actor.idleSoundTimer) ||
-          actor.idleSoundTimer < 0 ||
+          !Number.isFinite(actor.agent.idleSoundTimer) ||
+          actor.agent.idleSoundTimer < 0 ||
           !validActorEventState(actor) ||
           !validHordeMemberState(actor) ||
           !Number.isSafeInteger(actor.figureSeed) ||
@@ -889,29 +895,38 @@ export class ActorSystem {
         if (actor.spitWindup > 0 && type.acidSpit === undefined) {
           throw new Error(`Invalid acid spit state for entity ${id}`);
         }
-        const { type: _type, behaviorRng, soundRng, dismemberRng, spitRng, lastVocalNoiseId, ...fields } = actor;
+        const {
+          type: _type,
+          agent: { behaviorRng, soundRng, lastVocalNoiseId, ...agentFields },
+          dismemberRng,
+          spitRng,
+          ...fields
+        } = actor;
         const restored: Actor = {
+          agent: {
+            ...agentFields,
+            behaviorRng: new Rng(behaviorRng),
+            soundRng: new Rng(soundRng),
+            lastVocalNoiseId: lastVocalNoiseId ?? undefined,
+            home: [...actor.agent.home],
+            ...(actor.agent.searchAnchor === undefined ? {} : { searchAnchor: [...actor.agent.searchAnchor] }),
+            searchHeading: [...actor.agent.searchHeading],
+            strollHeading: [...actor.agent.strollHeading],
+            ...(actor.agent.obstacleWanderHeading === undefined
+              ? {}
+              : { obstacleWanderHeading: [...actor.agent.obstacleWanderHeading] as Vec3 }),
+            ...(actor.agent.hordeOffset === undefined ? {} : { hordeOffset: [...actor.agent.hordeOffset] as Vec3 }),
+            ...(actor.agent.lastPerceived === undefined ? {} : { lastPerceived: [...actor.agent.lastPerceived] }),
+          },
           ...fields,
           type,
           modifiers: [],
           regions: { ...actor.regions },
-          behaviorRng: new Rng(behaviorRng),
-          soundRng: new Rng(soundRng),
           dismemberRng: new Rng(dismemberRng),
           spitRng: new Rng(spitRng),
-          lastVocalNoiseId: lastVocalNoiseId ?? undefined,
           footstepClock: { ...actor.footstepClock },
           body: { ...actor.body, pos: [...actor.body.pos], vel: [...actor.body.vel] },
           facing: [...actor.facing],
-          home: [...actor.home],
-          ...(actor.searchAnchor === undefined ? {} : { searchAnchor: [...actor.searchAnchor] }),
-          searchHeading: [...actor.searchHeading],
-          strollHeading: [...actor.strollHeading],
-          ...(actor.obstacleWanderHeading === undefined
-            ? {}
-            : { obstacleWanderHeading: [...actor.obstacleWanderHeading] as Vec3 }),
-          ...(actor.hordeOffset === undefined ? {} : { hordeOffset: [...actor.hordeOffset] as Vec3 }),
-          ...(actor.lastPerceived === undefined ? {} : { lastPerceived: [...actor.lastPerceived] }),
           tier: this.tierAt(actor.body.pos, this.options.player()),
           renderPrevious: {
             pos: [...actor.body.pos],
@@ -949,10 +964,10 @@ export class ActorSystem {
       });
     }
     for (const [, actor] of this.store.entries()) {
-      if (actor.hordeId !== undefined) {
-        const horde = this.agentHorde.hordes.get(actor.hordeId)?.state;
+      if (actor.agent.hordeId !== undefined) {
+        const horde = this.agentHorde.hordes.get(actor.agent.hordeId)?.state;
         if (!horde || horde.type !== actor.type.id) {
-          throw new Error(`Missing or mismatched horde ${actor.hordeId} for zombie`);
+          throw new Error(`Missing or mismatched horde ${actor.agent.hordeId} for zombie`);
         }
       }
     }
@@ -971,6 +986,25 @@ export class ActorSystem {
           ]!;
     const dimensions = actorBodyDimensions(type, this.options.blockSize);
     const actor: Actor = {
+      agent: {
+        home: copy(position),
+        mode: 'idle',
+        investigationTier: undefined,
+        behaviorRng: Rng.stream(this.options.seed ?? 0, `actor:${this.store.size + 1}`),
+        soundRng: Rng.stream(this.options.seed ?? 0, `actor-sound:${this.store.size + 1}`),
+        idleSoundTimer: 8,
+        modeTimer: 0,
+        searchAnchor: undefined,
+        searchTimer: 0,
+        searchStrolling: false,
+        searchHeading: copy(direction),
+        strollHeading: copy(direction),
+        obstacleWanderRemaining: 0,
+        obstacleSlideSide: 0,
+        bodyLookTarget: angleOf(direction),
+        headYawTarget: 0,
+        lookTimer: 0,
+      },
       type,
       modifiers: [],
       tier: this.tierAt(position, this.options.player()),
@@ -983,28 +1017,11 @@ export class ActorSystem {
         onGround: false,
       },
       facing: direction,
-      home: copy(position),
-      mode: 'idle',
-      investigationTier: undefined,
-      behaviorRng: Rng.stream(this.options.seed ?? 0, `actor:${this.store.size + 1}`),
-      soundRng: Rng.stream(this.options.seed ?? 0, `actor-sound:${this.store.size + 1}`),
       dismemberRng: Rng.stream(this.options.seed ?? 0, `actor-dismember:${this.store.size + 1}`),
       spitRng: Rng.stream(this.options.seed ?? 0, `actor-spit:${this.store.size + 1}`),
-      idleSoundTimer: 8,
-      modeTimer: 0,
-      searchAnchor: undefined,
-      searchTimer: 0,
-      searchStrolling: false,
-      searchHeading: copy(direction),
-      strollHeading: copy(direction),
       horizontalSpeed: 0,
-      obstacleWanderRemaining: 0,
       obstacleContact: false,
-      obstacleSlideSide: 0,
-      bodyLookTarget: angleOf(direction),
       headYaw: 0,
-      headYawTarget: 0,
-      lookTimer: 0,
       swayValue: 0,
       swayStart: 0,
       swayTarget: 0,
@@ -1036,11 +1053,11 @@ export class ActorSystem {
     };
     const id = this.store.add(actor);
     // EntityStore ids are stable within the world's entity lifetime.
-    actor.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
-    actor.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
+    actor.agent.behaviorRng = Rng.stream(this.options.seed ?? 0, `actor:${id}`);
+    actor.agent.soundRng = Rng.stream(this.options.seed ?? 0, `actor-sound:${id}`);
     actor.dismemberRng = Rng.stream(this.options.seed ?? 0, `actor-dismember:${id}`);
     actor.spitRng = Rng.stream(this.options.seed ?? 0, `actor-spit:${id}`);
-    actor.idleSoundTimer = inRange(actor.soundRng, actor.type.idleSound.intervalSimSeconds);
+    actor.agent.idleSoundTimer = inRange(actor.agent.soundRng, actor.type.idleSound.intervalSimSeconds);
     this.agent.beginIdle(actor);
     return id;
   }
@@ -1077,9 +1094,9 @@ export class ActorSystem {
       ];
       const position: Vec3 = [center[0] + offset[0], center[1], center[2] + offset[2]];
       const member = this.store.get(this.add(type, position, [center[0] - position[0], 0, center[2] - position[2]]))!;
-      member.hordeId = id;
-      member.hordeOffset = offset;
-      member.home = copy(position);
+      member.agent.hordeId = id;
+      member.agent.hordeOffset = offset;
+      member.agent.home = copy(position);
       member.body.onGround = true;
     }
   }
@@ -1156,7 +1173,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.behaviorRng;
+      scratch.rng = actor.agent.behaviorRng;
       this.updateActorTimers();
       this.agent.updatePerception();
       this.agent.updateAttention();
@@ -1171,7 +1188,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.behaviorRng;
+      scratch.rng = actor.agent.behaviorRng;
       let { direction, speed } = this.agent.backgroundIntent(scratch);
       if (actorCrawls(actor)) {
         speed = Math.min(speed, actor.type.speed.crawlMetresPerSimSecond);
@@ -1365,7 +1382,7 @@ export class ActorSystem {
     );
     actor.stepOffset = stepOffsetState.offset;
     actor.gaitPhase += (travelled / actor.type.stepLength) * Math.PI;
-    if (actor.mode === 'idle' || actor.mode === 'stroll') {
+    if (actor.agent.mode === 'idle' || actor.agent.mode === 'stroll') {
       actor.wanderClock += dt;
     }
     this.agent.updateMovementDecisionAfterStep(scratch);
@@ -1436,7 +1453,7 @@ export class ActorSystem {
     }
     const metres = horizontalDistance(player.pos, pos) * blockSize;
     if (
-      actor.mode === 'chase' &&
+      actor.agent.mode === 'chase' &&
       scratch.sees &&
       actor.staggerSimSeconds <= 0 &&
       actor.spitWait <= 0 &&
@@ -1452,7 +1469,7 @@ export class ActorSystem {
   private finishActorTick(): void {
     const scratch = this.tickScratch;
     const { actor, returnArrived, blockSize, dt, id } = scratch;
-    if (actor.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
+    if (actor.agent.mode === 'return' && returnArrived && actor.horizontalSpeed <= 0.01) {
       this.agent.beginIdle(actor);
     }
     const poseInput = actorPoseInputFor(actor, id, blockSize);
@@ -1516,7 +1533,7 @@ export class ActorSystem {
         continue;
       }
       for (let step = 0; step < steps; step++) {
-        this.options.onFootstep?.(copy(actor.body.pos), id, actor.mode, actor);
+        this.options.onFootstep?.(copy(actor.body.pos), id, actor.agent.mode, actor);
       }
     }
   }
@@ -1564,7 +1581,7 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.behaviorRng;
+      scratch.rng = actor.agent.behaviorRng;
       this.updateActorTimers();
       this.agent.updatePerception();
       this.agent.updateAttention();
@@ -1579,8 +1596,8 @@ export class ActorSystem {
       scratch.actor = actor;
       scratch.pos = actor.body.pos;
       scratch.type = actor.type;
-      scratch.rng = actor.behaviorRng;
-      scratch.sees = actor.mode === 'chase';
+      scratch.rng = actor.agent.behaviorRng;
+      scratch.sees = actor.agent.mode === 'chase';
       this.agent.checkInvestigationArrival();
 
       this.agent.selectMovementIntent();

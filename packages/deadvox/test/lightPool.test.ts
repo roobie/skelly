@@ -244,8 +244,8 @@ describe('made-light point pool', () => {
     });
     const id = actors.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     actors.tick(1 / 60);
-    expect(actors.store.get(id)!.mode).toBe('investigate');
-    expect(actors.store.get(id)!.lastPerceived).toEqual(source?.pos);
+    expect(actors.store.get(id)!.agent.mode).toBe('investigate');
+    expect(actors.store.get(id)!.agent.lastPerceived).toEqual(source?.pos);
   });
 
   it('shines a set-down light from the flame its pile draws', () => {

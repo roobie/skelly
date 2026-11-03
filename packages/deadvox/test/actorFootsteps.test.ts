@@ -72,10 +72,10 @@ const addWalker = ({
   const id = system.add(type, position, [1, 0, 0]);
   const actor = store.get(id)!;
   actor.body.onGround = true;
-  actor.mode = mode;
-  actor.modeTimer = 100;
-  actor.lastPerceived = [40, position[1], position[2]];
-  actor.strollHeading = [1, 0, 0];
+  actor.agent.mode = mode;
+  actor.agent.modeTimer = 100;
+  actor.agent.lastPerceived = [40, position[1], position[2]];
+  actor.agent.strollHeading = [1, 0, 0];
   actor.horizontalSpeed = mode === 'stroll' ? type.speed.wanderMetresPerSimSecond : type.speed.chaseMetresPerSimSecond;
   actor.lurchValue = 1;
   actor.stumbleFactor = 1;
@@ -109,15 +109,15 @@ describe('actor footsteps', () => {
     expect(played).toHaveLength(0);
 
     const walker = store.get(actor)!;
-    walker.mode = 'stroll';
-    walker.modeTimer = 100;
-    walker.strollHeading = [1, 0, 0];
+    walker.agent.mode = 'stroll';
+    walker.agent.modeTimer = 100;
+    walker.agent.strollHeading = [1, 0, 0];
     walker.horizontalSpeed = SHAMBLER.speed.wanderMetresPerSimSecond;
     run(system, 2);
     const strollSteps = played.length;
     expect(strollSteps).toBeGreaterThan(0);
     const stopped = store.get(actor)!;
-    stopped.mode = 'idle';
+    stopped.agent.mode = 'idle';
     stopped.horizontalSpeed = 0;
     stopped.body.vel[0] = 0;
     stopped.body.vel[2] = 0;
