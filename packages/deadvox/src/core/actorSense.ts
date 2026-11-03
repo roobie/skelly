@@ -1,5 +1,3 @@
-import type { SensedLightSource } from './agentPerception.ts';
-
 import type { Vec3 } from './coords.ts';
 import type { Body } from './physics.ts';
 import type { PlayerStance } from './playerStance.ts';
@@ -27,4 +25,13 @@ export interface PlayerSense {
   sunlit?: boolean | undefined;
   lightSources?: readonly SensedLightSource[] | undefined;
   vocalNoise?: VocalNoise | undefined;
+}
+export interface SensedLightSource {
+  pos: Vec3;
+  seenFrom: number;
+  heightMetres: number;
+  /** Direct sunlight at the source; omitted by isolated perception fixtures. */
+  sunlit?: boolean | undefined;
+  /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
+  carried: boolean;
 }

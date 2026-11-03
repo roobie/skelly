@@ -1,5 +1,5 @@
 import { type HorizontalFootprint, headingAt, onTerrainFloor, sub, type TerrainFloorAt, unit } from './actorMotion.ts';
-import type { PlayerMovement, PlayerSense, VocalNoise } from './actorSense.ts';
+import type { PlayerMovement, PlayerSense, SensedLightSource, VocalNoise } from './actorSense.ts';
 import { copy } from './actorState.ts';
 import type { ActorDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
@@ -304,15 +304,6 @@ export type HearingTier = 'near' | 'far';
 export interface HeardNoise {
   tier: HearingTier;
   target: Vec3;
-}
-export interface SensedLightSource {
-  pos: Vec3;
-  seenFrom: number;
-  heightMetres: number;
-  /** Direct sunlight at the source; omitted by isolated perception fixtures. */
-  sunlit?: boolean | undefined;
-  /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
-  carried: boolean;
 }
 export const sameInvestigationFloor = (
   a: Vec3,

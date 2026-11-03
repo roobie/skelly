@@ -1,5 +1,11 @@
-import { projectSnapshot, validRngState, validVec3State } from './actorState.ts';
+import { horizontalDistance } from './actorMotion.ts';
+import type { PlayerSense } from './actorSense.ts';
+import { type Actor, copy, projectSnapshot, validRngState, validVec3State } from './actorState.ts';
+import type { ActorSystemOptions } from './actorSystem.ts';
+import { hearVocalNoise } from './agentPerception.ts';
 import type { Vec3 } from './coords.ts';
+import type { DayPhase } from './dayPhase.ts';
+import type { EntityStore } from './entities.ts';
 import type { Rng, RngState } from './random.ts';
 import type { ActorDef } from './schema.ts';
 
@@ -66,14 +72,6 @@ const hordeSnapshotProjectors = {
 } satisfies HordeSnapshotProjectors;
 export const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
   projectSnapshot({ horde, rng }, hordeSnapshotProjectors) as HordeSnapshot;
-
-import { horizontalDistance } from './actorMotion.ts';
-import type { PlayerSense } from './actorSense.ts';
-import { type Actor, copy } from './actorState.ts';
-import type { ActorSystemOptions } from './actorSystem.ts';
-import { hearVocalNoise } from './agentPerception.ts';
-import type { DayPhase } from './dayPhase.ts';
-import type { EntityStore } from './entities.ts';
 export class AgentHorde {
   private readonly options: Pick<ActorSystemOptions, 'blockSize' | 'isSoundBlocking' | 'isSolid' | 'tuning'>;
   private readonly store: EntityStore<Actor>;
